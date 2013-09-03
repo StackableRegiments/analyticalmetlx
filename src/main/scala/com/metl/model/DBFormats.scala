@@ -334,7 +334,7 @@ object Topic extends Topic with MongoMetaRecord[Topic]
   ensureDBIndex
   def ensureDBIndex = {
     useColl(_.ensureIndex(new BasicDBObject("name",1),"topicNameIndex",false))
-    useColl(_.ensureIndex(new BasicDBObject("name",1),"teachingEventIdentityIndex",true))
+    useColl(_.ensureIndex(new BasicDBObject("teachingEventIdentity",1),"teachingEventIdentityIndex",true))
   }
   def getDefaultValue = find("teachingEventIdentity","default") match {
     case Full(topic) => topic

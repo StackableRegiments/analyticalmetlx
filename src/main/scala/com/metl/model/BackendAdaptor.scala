@@ -19,6 +19,28 @@ import com.metl.cas._
 import com.metl.auth._
 import com.metl.h2._
 
+import com.mongodb._
+import net.liftweb.mongodb._
+
+object StackConfiguration {
+	def setup = {
+    val mo = new MongoOptions
+    mo.socketTimeout = 10000
+    mo.socketKeepAlive = true
+    val srvr = new ServerAddress("127.0.0.1", 27017)
+
+    MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), "stack")
+
+    //construct standingCache from DB
+    com.metl.model.Reputation.populateStandingMap
+    //construct LiftActors for topics with history from DB
+    com.metl.model.TopicManager.preloadAllTopics
+    //ensure that the default topic is available
+    com.metl.model.Topic.getDefaultValue
+
+	}
+}
+
 object MeTLXConfiguration {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
   val updateGlobalFunc = (c:Conversation) => {
@@ -108,6 +130,7 @@ object MeTLXConfiguration {
     if (xmppBridgeEnabled){
       EmbeddedXmppServer.start
     }
+		StackConfiguration.setup
   }
   def getRoom(jid:String,configName:String) = {
     configs(configName)._2.get(jid)
