@@ -1,0 +1,5 @@
+# Properties in this file will be read when running in production mode
+svnRevision=${subversion.revision}
+svnRepo=${subversion.repository}
+svnPath=${subversion.path}
+status=${subversion.status}

@@ -1,0 +1,154 @@
+<lift:surround with="defaultWebMeTL" at="content">
+
+<head>
+	<style>
+/* <![CDATA[ */
+
+.myAnswer {
+	background-color: red;
+}
+.notMyAnswer {
+	background-color: green;
+}
+
+#slide {
+	position: absolute;
+	left: 128px;
+	right: 128px;
+	text-align: center;
+	top:100px;
+	bottom:0px;
+}
+
+.wideImage {
+	max-width: 100% !important;
+	max-height: none !important;
+}
+.tallImage {
+	max-height:100% !important;
+	max-width:none !important;
+}
+#slideImage img {
+	max-width: 100%;
+}
+
+/* ]]> */
+	</style>
+
+	<script>
+// <![CDATA[
+function changeResponseTo (answer) {
+	$('.quizResponse').removeClass('myAnswer').addClass('notMyAnswer')
+	$('#quizResponse_'+answer).removeClass('notMyAnswer').addClass('myAnswer')
+}
+
+var refreshTime = 10000;
+$(function () {
+	var slideSource = $("#slideImage img").attr("src");
+
+	var reloadSlide = function () {
+		var img = $("#slideImage img")
+		img.attr("src",slideSource+"?"+new Date().getTime());
+	}
+	var query = document.location.search;
+	var updateFunc = function(container,urlPrefix){
+		$.get(
+			urlPrefix+query,
+			{},
+			function(data) {
+				var snippet = $(data).find("#retrieve").html();
+				container.html(snippet);
+			},
+			"html"
+		);
+	};
+
+	var reloadButtons = function() {
+		updateFunc($("#navLinkContainer"),"/slideNavigation");
+		updateFunc($("#headTitle"),"/slideTitle");
+		updateFunc($("#titleText"),"/slideTitle");
+		updateFunc($("#prevContainer"),"/slidePrev");
+		updateFunc($("#nextContainer"),"/slideNext");	
+	};
+
+	var reloadSlideTimed;
+	var reloadSlideTimed = function () {
+		reloadSlide();
+		reloadButtons();
+		updateSize();
+		setTimeout(reloadSlideTimed, refreshTime);
+	};
+	setTimeout(reloadSlideTimed, refreshTime);
+
+	
+	var currentAspect;
+	var currentSize;
+	var updateSize = function () {
+		$("#slideImage img").removeClass("wideImage").removeClass("tallImage").css("max-width","none").css("max-height","none");
+		var getWidth = function(selector,attribute){
+			var px = selector.css(attribute);
+			return px.substr(0,px.length -2);
+		}
+		var headerHeight = getWidth($("#header"),"height");
+		var slideLeft = getWidth($("#slide"),"left");
+		var slideRight = getWidth($("#slide"),"right");
+		var width = $(window).innerWidth() - slideLeft - slideRight;
+		var height = $(window).innerHeight() - headerHeight;
+		currentAspect = width / height;
+		$("#slideImage").css("height",(height - 5) + "px").css("width",(width - 5) + "px")
+		if (currentAspect <= 1.3) {
+			$("#slideImage img").addClass("wideImage");
+			currentSize = (width <= 320) ? "small" : (width >= 1024) ? "large" : "medium";
+		}
+		else {
+			$("#slideImage img").addClass("tallImage");
+			currentSize = (height <= 240) ? "small" : (width >= 768) ? "large" : "medium";
+		}
+	}
+
+	$(window).resize(function () {
+		var cur = currentSize;
+		updateSize();
+
+		if (cur !== currentSize) {
+			var bits  = slideSource.split('/');
+			bits.pop();
+			bits.push(currentSize);
+			slideSource = bits.join('/');
+			reloadSlide();
+		}
+	}).resize();
+});
+// ]]>
+	</script>
+</head>
+
+<lift:bind-at name="titleText">
+	<h1 id="titleText"><lift:SlideSnippet.title/></h1>
+</lift:bind-at>
+<lift:bind-at name="headTitle">
+	<title><lift:SlideSnippet.title/> - MeTL Viewer</title>
+</lift:bind-at>
+
+<lift:bind-at name="navLinkContainer">
+	<lift:SlideSnippet.navigation/>
+</lift:bind-at>
+
+<div id="slideNavigation">
+	<div id="prevContainer">
+		<lift:embed what="slidePrev"/>
+	</div>
+	<div id="nextContainer">
+		<lift:embed what="slideNext"/>
+	</div>
+</div>
+<div id="slideContainer">
+	<div id="slide">
+		<lift:SlideSnippet.slide>
+			<div id="slideError"/>
+			<div id="slideImage"/>
+		</lift:SlideSnippet.slide>
+	</div>
+</div>
+
+</lift:surround>

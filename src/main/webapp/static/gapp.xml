@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs title="MeTLX">
+    <Require feature="rpc"/>
+    <Require feature="views"/>
+  </ModulePrefs>
+  <Content type="html">
+    <![CDATA[
+      <script src="//talkgadget.google.com/hangouts/_/api/hangout.js?v=1.1"></script>
+			<iframe src="http://adm-app11-v02.adm.monash.edu:8080/WebPlayer/WebPlayer.html"></iframe>
+    ]]>
+  </Content>
+</Module>

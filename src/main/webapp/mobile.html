@@ -1,0 +1,163 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
+  <head>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <script src="static/js/jquery-1.7.2.min.js"></script>
+    <script src="static/js/jquery.mobile-1.2.0-alpha.1.min.js"></script>
+    <script src="static/js/sprintf-0.7-beta1.js"></script>
+    <script src="static/js/underscore-min.js"></script>
+    <script src="static/js/historyReader.js"></script>
+    <script src="static/js/toolbar.js"></script>
+    <style>
+      body{
+      overflow-x:hidden;
+      }
+      #board{
+      border:1px solid black;
+      background-color:white;
+      display:table-cell;
+      }
+      .thumb{
+      color:white;
+      }
+      #slideContainer,#boardContainer{
+      position:relative;
+      }
+      #slideContainer{
+      float:left;
+      }
+      #boardContainer{
+      display:table;
+      }
+      #board,#silverlightControlHost{
+      position:absolute;
+      top:0;
+      left:0;
+      border:2px solid black;
+      }
+      #silverlightControlHost{
+      width:100%;
+      height:100%;
+      }
+      #preferencesPopup{
+      width:100%;
+      height:100%;
+      position:absolute;
+      background-color:rgba(100,100,200,0.7);
+      }
+      #preferencesContainer{
+      margin-left:100px;
+      margin-top:100px;
+      }
+      #marquee{
+      pointer-events:none;
+      }
+      #marquee,.selectionAdorner{
+      border:1px dashed red;
+      position:absolute;
+      }
+      #backBuffer{
+      border:1px solid black;
+      }
+      #minimap{
+      border:1px solid black;
+      vertical-align:bottom;
+      float:right;
+      background-color:white;
+      }
+      #setPressureSimilarityThreshold{
+      vertical-align:middle;
+      }
+      input.toolbar, #slideContainer button{
+      height:60px;
+      width:80px;
+      }
+      #expansionControls{
+      position:absolute;
+      left:80px;
+      padding:80px;
+      background-color:lightgray;
+      position:relative;
+      }
+      #mainContent{
+      float:left;
+      }
+      #left,#up,#right,#down{
+      position:absolute;
+      }
+      #left,#right{
+      width:80px;
+      height:100%;
+      top:0;
+      }
+      #up,#down{
+      height:80px;
+      width:100%;
+      left:0;
+      }
+      #left{
+      left:0;
+      }
+      #right{
+      right:0;
+      }
+      #up{
+      top:0;
+      }
+      #down{
+      bottom:0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mainContent">
+      <div id="ribbon">
+        <input class="toolbar" type="button" id="preferences" value="Preferences" />
+        <input class="toolbar" type="button" id="drawMode" value="Ink" />
+        <input class="toolbar" type="button" id="selectMode" value="Select" />
+        <input class="toolbar" type="button" id="panMode" value="Pan" />
+        <!--input class="toolbar" type="button" id="zoomToSlide" value="Slide" />
+            <input class="toolbar" type="button" id="zoomToAll" value="All" /-->
+        <canvas id="minimap" width="80" height="60"/>
+      </div>
+      <lift:Board.thumbs>
+        <div id="slideContainer" />
+      </lift:Board.thumbs>
+      <div id="expansionControls">
+        <input type="button" value="&lt;" id="left" />
+        <input type="button" value="&gt;" id="right" />
+        <input type="button" value="^" id="up" />
+        <input type="button" value="v" id="down" />
+        <div id="boardContainer">
+          <canvas id="board" />
+          <div id="selectionAdorner">
+          </div>
+          <div id="marquee" />
+          <div id="preferencesPopup">
+            <div id="preferencesContainer">
+              <div>
+                <label for="showGrid">Show grid</label>
+              </div>
+              <input type="checkbox" id="showGrid" />
+              <div>
+                <label for="implicitlyExpanding">Implicit expansion</label>
+              </div>
+              <input type="checkbox" id="implicitlyExpanding" />
+              <div>
+                <label for="toggleHighQualityInk">High quality stylus</label>
+              </div>
+              <input type="checkbox" id="toggleHighQualityInk" />
+              <div>
+                <label>Ink render quality</label>(<span id="opCount" />)
+              </div>
+              <input type="radio" name="renderQuality" value="8">High</input><br />
+              <input type="radio" name="renderQuality"  checked="true" value="32">Medium</input><br />
+              <input type="radio" name="renderQuality" value="127">Low</input><br />
+            </div>
+          </div>
+          <div class="lift:embed?what=_inkOverlay" />
+        </div>
+      </div>
+    </div>
+    <lift:MeTL.specific />
+  </body>
+</html>

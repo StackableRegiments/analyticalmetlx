@@ -1,0 +1,92 @@
+<lift:surround with="defaultWebMeTL" at="content">
+
+<head>
+	<style>
+/* <![CDATA[ */
+
+#quiz {
+    position: absolute;
+    left: 128px;
+    right: 128px;
+}
+#quizQuestion {
+	font-size: xx-large;
+	font-weight: bold;
+}
+#quizOptions {
+	width: 45%;
+	float: left;
+	padding: 1em;
+}
+.quizOption {
+	width: 100%;
+	margin-bottom: 1em;
+}
+.quizOptionAnchor {
+	display: block;
+	width: 100%;
+	border: solid #888 1px;
+	color: inherit;
+	text-decoration: none;
+}
+.quizOptionAnchor:hover {
+	background-color: #ccc;
+	color: inherit;
+}
+.quizOptionName {
+	display: inline-block;
+	padding: 0.4em;
+	font-size: xx-large;
+}
+.quizOptionText {
+	display: inline-block;
+	font-size: x-large;
+	margin-left: 1em;
+}
+.quizUserResponse > .quizOptionAnchor {
+	background-color: wheat;
+}
+#quizImage {
+}
+
+
+/* ]]> */
+	</style>
+
+	<script>
+// <![CDATA[
+//
+// ]]>
+	</script>
+</head>
+
+<lift:bind-at name="titleText">
+	<h1 id="titleText"><lift:QuizSnippet.title/></h1>
+</lift:bind-at>
+<lift:bind-at name="headTitle">
+	<title><lift:QuizSnippet.title/> - MeTL Viewer</title>
+</lift:bind-at>
+
+<lift:bind-at name="navLinkContainer">
+	<lift:QuizSnippet.navigation/>
+</lift:bind-at>
+
+<div id="quizNavigation">
+	<lift:QuizSnippet.previous>
+		<div id="quizNavigationPrevious" class="navigationPrevious"/>
+	</lift:QuizSnippet.previous>
+	<lift:QuizSnippet.next>
+		<div id="quizNavigationNext" class="navigationNext"/>
+	</lift:QuizSnippet.next>
+</div>
+
+<div id="quiz">
+	<lift:QuizSnippet.quiz>
+		<div id="quizError"/>
+		<div id="quizQuestion"/>
+		<div id="quizOptions"/>
+		<div id="quizImage"/>
+	</lift:QuizSnippet.quiz>
+</div>
+
+</lift:surround>

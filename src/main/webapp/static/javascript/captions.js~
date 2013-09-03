@@ -1,0 +1,5 @@
+function indexConversation(c){
+    $.get(sprintf("/static/captions/%s.xml",c.jid),function(captions){
+	console.log(captions);
+    });
+}

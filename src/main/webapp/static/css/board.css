@@ -1,0 +1,470 @@
+html{
+    height:100%;
+}
+body{
+    margin:0;
+    font-family: segoe ui, verdana, arial, sans-serif;
+    font-size:12px;
+    overflow-x:hidden;
+    height:100%;
+    background-color:#3d4550;
+}
+#username{
+}
+#masterLayout, #boardContainer{
+    width:100%;
+    height:100%;
+}
+#masterLayout{
+    border-spacing:0;
+    border-collapse:collapse;
+    color:black;
+    background-color:whitesmoke;
+}
+#masterLayout td{
+    vertical-align:top;
+    padding:0;
+}
+.shrinkWrappedColumn{
+    width:0;
+}
+.shrinkWrappedRow{
+    height:0;
+}
+.expandoColumn{
+    width:100%;
+}
+.expandoRow{
+    height:100%;
+}
+#board{
+    border:1px solid gray;
+    border-radius:15px;
+}
+.slideThumbnailNumber {
+    position:absolute;
+    bottom:3px;
+    left:3px;
+}
+.slideButtonContainer {
+    position: relative;
+    border:1px solid gray;
+}
+#notices{
+    margin:0 1em;
+}
+#slideContainer,#boardContainer{
+    position:relative;
+}
+#board,#silverlightControlHost{
+    position:absolute;
+    top:0;
+    left:0;
+}
+.quizTitle {
+    font-size: large;
+    font-weight:bold;
+}
+#silverlightControlHost{
+    width:100%;
+    height:100%;
+}
+#backstageContainer{
+    width:100%;
+    height:100%;
+    position:absolute;
+    top:0px;
+    left:0px;
+    color:black;
+    background-color: rgba(255,255,255,0.8);
+    border-radius:15px;
+    display:none;
+}
+
+.backstageHeader{
+    width:100%;
+    height:100%;
+    position:absolute;
+    top:0px;
+    left:5px;
+    display:none;
+}
+.hidden {
+    display:none;
+}
+.backstage{
+    width:90%;
+    height:80%;
+    position:absolute;
+    top:20%;
+    left:10%;
+    display:none;
+
+}
+#marquee,#zoomMarquee,#selectMarquee{
+    display:none;
+}
+.ImageSizeControls {
+}
+#uploadControls {
+    position:absolute;
+    bottom:20px;
+}
+.uploadImageButton,
+.imageUploadSizeChoice {
+    display: inline-block;
+    width:40px;
+    margin-top:0px;
+    white-space:normal;
+}
+#marquee,.selectionAdorner,.resizeHandle,#zoomMarquee,#selectMarquee{
+    border:1px dashed red;
+    position:absolute;
+    pointer-events:none;
+}
+.preferenceChoice{
+    border:1px solid black;
+    background-color:gray;
+    color:black;
+    text-align:center;
+    display:inline-block;
+    margin:0 30px;
+}
+#board {
+    background-color:white;
+}
+table.dots td{
+    border:1px solid black;
+}
+.searchResult{
+    color:blue;
+    overflow: hidden;
+    border-bottom:solid gray 1px;
+}
+.searchResult .conversationTitle{
+    text-decoration:underline;
+}
+.searchResult:hover {
+    background-color: lightgray;
+}
+.middleRow {
+    clear:both;
+}
+#s2cMessageContainer {
+    top:10%;
+    width:75%;
+    left:12%;
+    padding:3em;
+    color:black;
+    border-radius:15px;
+    position:absolute;
+    background: whiteSmoke;
+    border:1px solid gray;
+    display:none;
+}
+.s2cLabel {
+    font-weight:bold;
+    font-size:x-large;
+    padding-bottom: 1em;
+}
+.conversationTitle {
+    display:block;
+    font-weight:bold;
+    font-size: x-large;
+    padding: 5px;
+    float:left;
+    width: 75%;
+}
+.conversationAuthor, .conversationSubject, .conversationCreated {
+    margin-left:2em;
+    float:left;
+}
+.conversationSubject,
+.conversationCreated,
+.conversationAuthor {
+    display:block;
+}
+.extraConversationTools,
+.conversationJoinButton {
+    float:right;
+    margin: 5px;
+}
+#s2cConversationMessageContainer{
+    margin-bottom: 5px;
+}
+.simpleMultipleButtonInteractableMessageButton a{
+    padding: 2px;
+}
+
+.simpleMultipleButtonInteractableMessageButton a,
+.quizCreationButton,
+.quizSummary,
+.conversationSearchButton {
+    text-align: center;
+    font-weight: normal;
+    line-height: 2.0em;
+    padding: .4em 1em;
+    display: inline-block;
+}
+#backBuffer{
+    border:1px solid black;
+}
+#setPressureSimilarityThreshold{
+    vertical-align:middle;
+}
+#upload{
+    z-index:1;
+    position:absolute;
+    display:none;
+    background-color:white;
+    color:black;
+}
+#imageUploadSubmit{
+    display:none;
+}
+#upload progress{
+    vertical-align:top;
+}
+.fail{
+    background-color:red;
+}
+#boardContainer{
+}
+#footer{
+    background-color:white;
+    bottom:0;
+    width:100%;
+}
+
+#closeTextInput{
+    float:right;
+    background-color:red;
+    color:white;
+    font-weight:bold;
+    width:30px;
+    height:30px;
+    text-align:center;
+}
+#submissionsContainer{
+    height:90%;
+}
+#submissionListing{
+    width:50%;
+    overflow-x:none;
+    overflow-y:auto;
+    display:inline-block;
+    vertical-align:top;
+    height:100%;
+}
+#currentSubmission{
+    width:40%;
+    display:inline-block;
+}
+#currentSubmission img{
+    width:100%;
+}
+.viewSubmissionButton {
+    position:absolute;
+}
+.submissionImageThumb{
+    height:90%;
+}
+.submissionSummary{
+    border:solid 1px black;
+    position:relative;
+    height: 200px;
+    display:inline-block;
+}
+
+#preferencesContainer{
+    position:absolute;
+    top:0px;
+    left:0px;
+    height:100%;
+    width:100%;
+    overflow:auto;
+}
+#preferencesContainerLeft, #preferencesContainerRight{
+    vertical-align:top;
+    padding:4px;
+    display:inline-block;
+}
+#search{
+    width:80%;
+    margin: 0 auto;
+}
+#searchForConversationBox {
+    width: 75%;
+    height: 32px;
+}
+.searchResult:Hover,
+.conversationSearchButton:Hover {
+    cursor:pointer;
+}
+#conversationsContainer{
+    height:100%;
+}
+#searchResults{
+    height:67%;
+    width: 80%;
+    margin:0 auto;
+    overflow-y:auto;
+}
+#slideContainer{
+    height:100%;
+    overflow-x:hidden;
+    overflow-y:scroll;
+}
+#footer{
+    position:absolute;
+    bottom:0px;
+    background:transparent;
+    margin-left:auto;
+    margin-right:auto;
+    width:60%;
+}
+#footer span, #footer div{
+    background:white;
+}
+#ribbon{
+    height:100%;
+    overflow-x:hidden;
+    overflow-y:auto;
+}
+#progress{
+    display:inline-block;
+    vertical-align:center;
+}
+#heading{
+    font-size:large;
+    font-weight:b#333;
+}
+#insertOptions{
+    border:1px solid darkgrey;
+    padding:1em;
+    background-color:lightgrey;
+}
+#textEditor{
+    border:1px solid darkgrey;
+    padding:1em;
+    background-color:lightgrey;
+}
+#textEditor textarea{
+    position:relative;
+}
+.textOptionsContainer{
+    color:black;
+}
+.textOptionsDropdown{
+}
+.textOptionsToggleContainer{
+}
+.textOptionsToggleLabel{
+}
+.textOptionsToggleButton{
+}
+.simpleTextAreaInteractableMessageTextarea{
+    width:80%;
+}
+.simpleMultipleButtonInteractableMessageButton{
+}
+.simpleRadioButtonInteractableMessageButton{
+}
+.simpleDropdownInteractableMessageDropdown{
+}
+#sharingLinks {
+    float: left;
+    clear:right;
+}
+#closeSharingButton {
+    float:right;
+    margin-left: 4px;
+}
+#shareContainer {
+    position: absolute;
+    top: 35%;
+    left: 35%;
+    z-index: 10;
+    padding: 20px;
+    display:none;
+    border-color:#003264;
+    border-style:solid;
+    border-thickness:2px;
+    background-color: darkgray;
+    border-radius: 15px;
+    color:white;
+}
+#absoluteCloseButton{
+    position:absolute;
+    right:0px;
+    top:0px;
+}
+x
+#colors .dots {
+    text-align: left;
+}
+.sizeDot, #colors .dots div {
+    margin: 2px;
+    display:inline-block;
+}
+#penColor,#penSize,#penModes,#resetPenButton{
+    display:inline-block;
+    width:30%;
+    vertical-align:top;
+}
+#dots,
+#bars,
+#penMode {
+    margin-top: 3px;
+}
+#penModes,
+#penSize,
+#penColor {
+    padding: 5px;
+    border-color: #003264;
+    border-style: solid;
+    border-width: 2px;
+    background-color: #FEFEF2;
+    border-radius: 15px;
+    color: black;
+}
+.comboBoxTextField {
+    width: 150px;
+}
+.comboBoxListItem:hover {
+    background-color: blue;
+    color: white;
+}
+.comboBoxButton {
+    display: inline-block;
+    position: relative;
+    margin-left: -2px;
+}
+.comboxDownArrowImage {
+    position:absolute;
+
+}
+.comboBoxList {
+    width: 150px;
+    margin-top: -2px;
+    margin-left: 2px;
+    border:1px solid black;
+    background-color: white;
+}
+#majorModesColumn{
+    padding-right:1em !important;
+}
+#minorModesColumn{
+}
+#toolsColumn, #thumbsColumn{
+    display:none;
+}
+.headerRow2{
+    float:right;
+}
+#currentConversationTitle{
+    font-weight:bold;
+}
+#showTools, #showSlides{
+    display:none;
+}

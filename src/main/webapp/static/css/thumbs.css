@@ -1,0 +1,6 @@
+#slideContainer{
+}
+.scroller{
+    position:absolute;
+    z-index:1;
+}

@@ -1,0 +1,14 @@
+<serverConfiguration>
+	<defaultServerConfiguration>localH2</defaultServerConfiguration>
+	<serverConfigurations>
+		<server>
+			<type>localH2</type>
+		</server>
+		<server>
+			<type>transientLoopback</type>
+		</server>
+		<server>
+			<type>frontend</type>
+		</server>
+	</serverConfigurations>
+</serverConfiguration>
