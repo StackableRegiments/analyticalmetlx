@@ -200,7 +200,7 @@ function repl(dataType,seed,label){
         },
         keywords:{
             narration:"Show which of the teaching objectives for the relevant teaching event are in common usage in this cohort.",
-            applies:["question","answer","topic","slide"],
+            applies:["slide"],
             limit:1,
             invoke:function(){
                 var d = genDiv();

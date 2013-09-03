@@ -41,7 +41,7 @@ function renderSlide(slide){
         return unclean[term];
     })
     return $("<img />",{
-	src:sprintf("http://metlviewer.adm.monash.edu.au/thumbnail/standalone/%s",slide),
+        src:sprintf("http://metlviewer.adm.monash.edu.au/thumbnail/standalone/%s",slide),
         title:sprintf("Slide %s: %s",slide,handwriting)
     }).css("width",px($(".replContainer").width()));
 }
@@ -180,7 +180,7 @@ function renderSlideVisualElements(id){
     var userUnderMouseDisplay = $("<span />",{
         text:"authcate"
     }).click(function(){
-	alert($(this).text());
+        alert($(this).text());
     });
     var scrubHeight = 30
 

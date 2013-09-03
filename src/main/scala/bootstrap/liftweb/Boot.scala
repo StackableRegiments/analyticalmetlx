@@ -49,15 +49,12 @@ class Boot {
         DefaultNotFound
       }
       case _ => NotFoundAsResponse(RedirectResponse("/board"))
-      //case _ => NotFoundAsResponse(RedirectResponse("/index"))
     }
-
-
 
     def sitemap() = SiteMap(
       //MeTLX
       Menu(Loc("Board","board" :: Nil,"Main face to face",Hidden)),
-			Menu(Loc("Summaries","summaries" :: Nil,"Analytics",Hidden)),
+      Menu(Loc("Summaries","summaries" :: Nil,"Analytics",Hidden)),
       //WebMeTL
       Menu("Directory") / "directory",
       Menu("Home") / "index",

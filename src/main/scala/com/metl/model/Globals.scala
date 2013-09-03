@@ -39,29 +39,29 @@ object Globals {
   }
   object currentUser extends SessionVar[String](casState.is.username)
 
-	val thumbnailSize = SnapshotResolution(320,240) // MeTL thumbnail
-	val snapshotSizes = Map(
-		SnapshotSize.Thumbnail -> thumbnailSize,  // MeTL thumbnail
-		SnapshotSize.Small  -> SnapshotResolution(640,480),  // MeTL small for phones
-		SnapshotSize.Medium -> SnapshotResolution(1024,768), // dunno, seems like a good midpoint
-		SnapshotSize.Large  -> SnapshotResolution(2560,1600) // WQXGA, largest reasonable size (we guess)
-	)
+  val thumbnailSize = SnapshotResolution(320,240) // MeTL thumbnail
+  val snapshotSizes = Map(
+    SnapshotSize.Thumbnail -> thumbnailSize,  // MeTL thumbnail
+    SnapshotSize.Small  -> SnapshotResolution(640,480),  // MeTL small for phones
+    SnapshotSize.Medium -> SnapshotResolution(1024,768), // dunno, seems like a good midpoint
+    SnapshotSize.Large  -> SnapshotResolution(2560,1600) // WQXGA, largest reasonable size (we guess)
+  )
 }
 case class SnapshotResolution(width:Int,height:Int)
 
 object SnapshotSize extends Enumeration {
-	type SnapshotSize = Value
-	val Thumbnail, Small, Medium, Large = Value
+  type SnapshotSize = Value
+  val Thumbnail, Small, Medium, Large = Value
 
-	def parse(name:String) ={
-		name match {
-			case "thumbnail" => Thumbnail
-			case "small"  => Small
-			case "medium" => Medium
-			case "large"  => Large
-			case _ => Medium
-		}
-	}
+  def parse(name:String) ={
+    name match {
+      case "thumbnail" => Thumbnail
+      case "small"  => Small
+      case "medium" => Medium
+      case "large"  => Large
+      case _ => Medium
+    }
+  }
 }
 
 object CurrentSlide extends SessionVar[Box[String]](Empty)
@@ -71,4 +71,3 @@ object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
 
 object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
 object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
-
