@@ -390,9 +390,8 @@ table.dots td{
     border-color:#003264;
     border-style:solid;
     border-thickness:2px;
-    background-color: darkgray;
     border-radius: 15px;
-    color:white;
+    color:black;
 }
 #absoluteCloseButton{
     position:absolute;

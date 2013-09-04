@@ -36,20 +36,18 @@
 .quizSummary,
 .conversationSearchButton,
 .toolbar, .modeSpecificTool, .privacyButton, .closeButton, .floatingToolbar{
+    background-color:white;
     text-align:center;
     border:1px solid gray;
     margin-top:1em;
     min-height:3em;
     padding-top:1em;
     border-radius:10px;
-    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#3194c6), to(#5bacd6));
-    color:white;
     font-size:1.25em;
-    font-weight:bold;
     min-width:6em;
 
     box-shadow:
-    0 8px 0 #1a74a1,
+    0 8px 0 #222222,
     0 15px 20px rgba(0,0,0,.35);
 }
 
@@ -62,11 +60,10 @@
 }
 .activeSlide, .activeBackstageTab, .activeBrush, .activePrivacy, .activeTool{
     box-shadow:
-    0 -3px 0 #1a74a1,
+    0 -3px 0 #222222,
     5px 5px 5px #ffffff;
     margin-top:1.5em !important;
-    background:none;
-    background-color:#5bacd6;
+    background-color:white;
 }
 #applicationMenuButton.activeBackstageTab{
     margin-top:0.5em !important;
@@ -91,10 +88,10 @@
     min-width:1em;
     margin-bottom:1em;
     font-size:3em;
-    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#ff0000), to(#ff2222));
     box-shadow:
-    0 3px 0 darkred,
+    0 3px 0 #222222,
     0 15px 20px rgba(0,0,0,.35);
+    color:black;
     padding:0;
 }
 #insertOptions .closeButton{
@@ -114,7 +111,6 @@ a.s2cClose{
     width:0.8em;
     height:0.8em;
     border-radius:10px;
-    color:white;
 }
 #hideBackstage{
     margin-top:0.45em;
@@ -128,8 +124,6 @@ a.s2cClose{
 }
 
 .activeSlide, .activeBackstageTab, .activeBrush, .activePrivacy, .activeTool{
-    background: -webkit-radial-gradient(50% 30%, cover, #2590C6, #3599C9 80%);
-    text-shadow:0 1px black;
 }
 .sizeDot{
     text-align:center;
