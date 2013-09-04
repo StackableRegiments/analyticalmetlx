@@ -40,8 +40,9 @@ function renderSlide(slide){
     var handwriting = metlTextForSlide(slide).map(function(term){
         return unclean[term];
     })
+    var root = ""
     return $("<img />",{
-        src:sprintf("http://metlviewer.adm.monash.edu.au/thumbnail/standalone/%s",slide),
+        src:sprintf("%s/thumbnail/standalone/%s",root,slide),
         title:sprintf("Slide %s: %s",slide,handwriting)
     }).css("width",px($(".replContainer").width()));
 }

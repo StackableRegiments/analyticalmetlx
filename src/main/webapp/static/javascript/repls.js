@@ -208,25 +208,25 @@ function repl(dataType,seed,label){
                 container.width(container.width() * 2);
                 d.css("width",container.width() - 30);
                 radar("#"+d.attr("id"),peek(),container.width() - 30);
-		_.defer(function(){
-		    container.append($("<div />",{
-			text:weekText(inferWeek(peek()))
-		    }));
-		});
+                _.defer(function(){
+                    container.append($("<div />",{
+                        text:weekText(inferWeek(peek()))
+                    }));
+                });
             }
         },
-	tron:{
-	    narration:"Simulate the social interactions in relation to the teaching objectives for this subject's week.",
-	    applies:["slide"],
-	    limit:1,
-	    invoke:function(){
-		var d = genDiv();
-		container.prepend(d);
-		container.width(container.width() * 2);
-		d.css("width",container.width() - 30);
-		simulateHistory("#"+d.attr("id"),peek(),container.width() - 30);
-	    }
-	},
+        tron:{
+            narration:"Simulate the social interactions in relation to the teaching objectives for this subject's week.",
+            applies:["slide"],
+            limit:1,
+            invoke:function(){
+                var d = genDiv();
+                container.prepend(d);
+                container.width(container.width() * 2);
+                d.css("width",container.width() - 30);
+                simulateHistory("#"+d.attr("id"),peek(),container.width() - 30);
+            }
+        },
         objectives:{
             narration:"List the registered teaching objectives for the context to this workspace.",
             applies:["question","answer","topic","conversation","slide"],
@@ -263,11 +263,11 @@ function repl(dataType,seed,label){
             applies:["slide"],
             limit:1,
             invoke:function(){
-		var context = pop();
-		var details = items[parentConversation(context)];
-		var current = details.slides.indexOf(context);
-		var slide = current > 0 ? details.slides[current - 1] : details.slides[details.slides.length - 1];
-		container.find("img").remove();
+                var context = pop();
+                var details = items[parentConversation(context)];
+                var current = details.slides.indexOf(context);
+                var slide = current > 0 ? details.slides[current - 1] : details.slides[details.slides.length - 1];
+                container.find("img").remove();
                 push(dataType,slide);
             }
         },
@@ -275,12 +275,12 @@ function repl(dataType,seed,label){
             narration:"Show the next slide",
             applies:["slide"],
             limit:1,
-            invoke:function(){		
-		var context = pop();
-		var details = items[parentConversation(context)];
-		var current = details.slides.indexOf(context);
-		var slide = current < details.slides.length - 1 ? details.slides[current + 1] : details.slides[0];
-		container.find("img").remove();
+            invoke:function(){
+                var context = pop();
+                var details = items[parentConversation(context)];
+                var current = details.slides.indexOf(context);
+                var slide = current < details.slides.length - 1 ? details.slides[current + 1] : details.slides[0];
+                container.find("img").remove();
                 push(dataType,slide);
             }
         },
@@ -342,7 +342,7 @@ function repl(dataType,seed,label){
         return dataStack[dataStack.length - 1]
     }
     var push = function(type,data){
-        dataStack.push(data)	
+        dataStack.push(data)
         pushStack()
     }
     var pop = function(){
