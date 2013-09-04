@@ -209,6 +209,70 @@ function actOnReceivedStanza(stanza){
 }
 function transformReceived(transform){
     var op = "";
+		var transformBounds = (function(){
+			var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
+			var incBounds = function(bounds){
+				var max = function(count){
+					var reference = myBounds[count];
+					if (reference != undefined && !isNaN(reference)){
+						myBounds[count] = Math.max(reference,bounds[count]);
+					} else {
+						myBounds[count] = bounds[count];
+					}
+				};
+				var min = function(count){
+					var reference = myBounds[count];
+					if (reference != undefined && !isNaN(reference)){
+						myBounds[count] = Math.min(reference,bounds[count]);
+					} else {
+						myBounds[count] = bounds[count];
+					}
+				};
+				min(0);
+				min(1);
+				max(2);
+				max(3);
+			};
+			var getBounds = function(){
+				return myBounds;
+			};	
+			var incBoardBounds = function(){
+				var thisBounds = getBounds();
+				if (thisBounds[0] != undefined && thisBounds[1] != undefined && thisBounds[2] != undefined && thisBounds[3] != undefined){
+					incorporateBoardBounds(thisBounds);
+				}
+			};
+			var setMinX = function(input){
+				safelySet(input,0);
+			};
+			var setMinY = function(input){
+				safelySet(input,1);
+			};
+			var setMaxX = function(input){
+				safelySet(input,2);
+			};
+			var setMaxY = function(input){
+				safelySet(input,3);
+			};
+			var safelySet = function(input,reference){
+				if (input != undefined && !isNaN(input)){
+					myBounds[reference] = input;
+				}
+			};
+			return {
+				"minX":getBounds[0],
+				"setMinX":setMinX,
+				"minY":getBounds[1],
+				"setMinY":setMinY,
+				"maxX":getBounds[2],
+				"setMaxX":setMaxX,
+				"maxY":getBounds[3],
+				"setMaxY":setMaxY,
+				"incorporateBounds":incBounds,
+				"getBounds":getBounds,
+				"incorporateBoardBounds":incBoardBounds
+			};
+		})();
     if(transform.newPrivacy != "not_set"){
         var p = transform.newPrivacy;
         op += "Became "+p;
@@ -294,6 +358,8 @@ function transformReceived(transform){
 						}
 					});
 				}
+				transformBounds.setMinX(totalBounds.x);
+				transformBounds.setMinY(totalBounds.y);
         var transformInk = function(index,ink){
             if(ink && ink != undefined){
                 var ps = ink.points;
@@ -313,6 +379,7 @@ function transformReceived(transform){
                     ps[p+1] = (yPos + yp * transform.yScale) + offsetY;
                 }
                 calculateInkBounds(ink);
+								transformBounds.incorporateBounds(ink.bounds);
             }
         };
 				var transformImage = function(index,image){
@@ -328,6 +395,7 @@ function transformReceived(transform){
 						image.y = image.y + offsetY;				
 					
 						calculateImageBounds(image);
+						transformBounds.incorporateBounds(image.bounds);
 					}
 				};
 				var transformText = function(index,text){
@@ -345,13 +413,15 @@ function transformReceived(transform){
             text.size = text.size * transform.yScale;
             text.font = sprintf("%spx %s",text.size,text.family);
             if(isUsable(text)){
-                prerenderText(text);
+							prerenderText(text);
+							calculateTextBounds(text);
             }
             else{
                 if(text.identity in boardContent.texts){
                     delete boardContent.texts[text.identity];
                 }
             }
+						transformBounds.incorporateBounds(text.bounds);
 					}
 				};
 				$.each(relevantInks,transformInk);
@@ -370,6 +440,7 @@ function transformReceived(transform){
                     ps[p+1] += deltaY;
                 }
                 calculateInkBounds(ink);
+								transformBounds.incorporateBounds(ink.bounds);
             }
         }
         $.each(transform.inkIds,function(i,id){
@@ -381,14 +452,17 @@ function transformReceived(transform){
             image.x += transform.xTranslate;
             image.y += transform.yTranslate;
             calculateImageBounds(image);
+						transformBounds.incorporateBounds(image.bounds);
         });
         $.each(transform.textIds,function(i,id){
             var text = boardContent.texts[id];
             text.x += transform.xTranslate;
             text.y += transform.yTranslate;
             calculateTextBounds(text);
+						transformBounds.incorporateBounds(text.bounds);
         });
     }
+		transformBounds.incorporateBoardBounds();
     updateStatus(sprintf("%s %s %s %s",
                          op,
                          transform.imageIds.length,
