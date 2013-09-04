@@ -65,7 +65,9 @@ object MeTLXConfiguration {
     val servers = ServerConfiguration.getServerConfigurations
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
     Globals.isDevMode match {
-      case false => {}//CASAuthentication.attachCASAuthenticator(auth)
+      case false => {
+				CASAuthentication.attachCASAuthenticator(auth) 
+			}
       case _ => {}
     }
   }
@@ -80,7 +82,9 @@ object MeTLXConfiguration {
     val servers = ServerConfiguration.getServerConfigurations
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
     Globals.isDevMode match {
-      case false => OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
+      case false => {
+				OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
+			}
       case _ => {}
     }
   }
