@@ -1,0 +1,7 @@
+This fixtures directory contains the mongo data which serves the analytical front end at /summaries.
+
+It will be loaded by the TopicManager contained in StackManager.scala, and other associated classes.
+
+For the system to run, it must have had the data loaded into its addressed mongo instance.  The syntax for this command is:
+
+mongorestore mongo.dump
