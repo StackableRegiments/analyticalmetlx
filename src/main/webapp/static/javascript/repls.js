@@ -222,7 +222,7 @@ function repl(dataType,seed,label){
             invoke:function(){
                 var d = genDiv();
                 container.prepend(d);
-                container.width(container.width() * 2);
+                //container.width(container.width() * 2);
                 d.css("width",container.width() - 30);
                 simulateHistory("#"+d.attr("id"),peek(),container.width() - 30);
             }
