@@ -1,0 +1,145 @@
+<lift:surround with="defaultWebMeTL" at="content">
+
+<head>
+	<style>
+/* <![CDATA[ */
+
+#search {
+	text-align: center;
+	padding: 3em 0;
+}
+#search > div {
+	display: inline-block;
+	width: 75%;
+}
+
+#search #searchServerSelect {
+	width: 10%;
+}
+#search #searchQueryBox {
+	width: 75%;
+}
+#search #searchSubmitButton {
+	width: 10%;
+}
+
+#searchResults {
+	width: 90%;
+	margin: 0 auto;
+	height:
+}
+
+#searchResultsMeta {
+	font-size: large;
+	width: 100%;
+	overflow: hidden;
+}
+#searchResultsMetaTerms {
+	font-size: xx-large;
+	padding-left: 1em;
+	float: left;
+}
+#searchResultsMetaCountContainer {
+	padding-right: 1em;
+	float: right;
+	text-align: center;
+}
+#searchResultsMetaNavigation > a {
+	margin: 0 0.2em;
+	padding: 2px;
+	text-decoration: none;
+	color: inherit;
+	border: solid #888888 1px;
+}
+
+.searchResult {
+	margin: 1em 0;
+	padding: 0.5em;
+	clear: both;
+	overflow: hidden;
+	height: 125px;
+	text-overflow: ellipsis;
+	border: solid black 1px;
+}
+.searchResult:hover {
+	background: #ccc;
+}
+.searchResultAnchor {
+	display: block;
+	position: relative;
+	width: 100%;
+	height: 100%;
+	text-decoration: none;
+	color: inherit;
+}
+.searchResultAnchor:hover {
+	color: inherit;
+}
+.searchResultTitle {
+	display: block;
+	font-weight: bold;
+	font-size: x-large;
+}
+.searchResultAuthor {
+	font-size: large;
+}
+
+.searchResultQuizLinks {
+	float: right;
+}
+.searchResultQuizLink {
+	display: inline-block;
+	height: 125px;
+	overflow: hidden;
+	vertical-align: top;
+}
+.searchResultQuizLinkAnchor {
+	background: url("/static/quiz.png") no-repeat;
+	background-size: 75px 75px;
+	display: inline-block;
+	width: 75px;
+	height: 100px;
+}
+.searchResultQuizLinkText {
+	display: block;
+	padding-top: 75px;
+	text-align: center;
+}
+.searchResultSlideLinks {
+	display: block;
+	position: absolute;
+	bottom: 0;
+	font-size: large;
+}
+.searchResultSlideLinks > a {
+	padding: 0 2px;
+}
+
+/* ]]> */
+	</style>
+</head>
+
+<div id="search">
+	<div>
+		<h2 id="searchInstructions">Search for a MeTL Conversation</h2>
+		<form id="searchForm">
+			<input id="searchQueryBox" type="text" name="q"/>
+			<input id="searchSubmitButton" type="submit" value="search"/>
+		</form>
+	</div>
+</div>
+
+<lift:SearchSnippet.searchResults>
+	<div id="searchResultsContainer">
+		<div id="searchResultsMeta">
+			<div id="searchResultsMetaTerms"/>
+			<div id="searchResultsMetaCountContainer">
+				<div id="searchResultsMetaCount"/>
+				<div id="searchResultsMetaNavigation"/>
+			</div>
+		</div>
+		<div id="searchResults"/>
+	</div>
+</lift:SearchSnippet.searchResults>
+
+</lift:surround>

@@ -48,24 +48,24 @@ class Boot {
         println("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
-      case _ => NotFoundAsResponse(RedirectResponse("/board"))
+      case _ => NotFoundAsResponse(RedirectResponse("/"))
     }
 
     def sitemap() = SiteMap(
       //MeTLX
-      Menu(Loc("Board","board" :: Nil,"Main face to face",Hidden)),
-      Menu(Loc("Summaries","summaries" :: Nil,"Analytics",Hidden)),
+      Menu(Loc("Home","index" :: Nil,"Home")),
+			Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
+      Menu(Loc("Board","board" :: Nil,"MeTL X")),
+      Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
       //WebMeTL
-      Menu("Directory") / "directory",
-      Menu("Home") / "index",
-      Menu("Conversation") / "conversation",
-      Menu("Slide") / "slide",
-      Menu("SlidePrev") / "slidePrev",
-      Menu("SlideNext") / "slideNext",
-      Menu("SlideNavigation") / "slideNavigation",
-      Menu("SlideTitle") / "slideTitle",
-      Menu("Quiz") / "quiz",
-      Menu("Quizzes") / "quizzes",
+      Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
+      Menu(Loc("Slide","slide" :: Nil,"Slide",Hidden)),
+      Menu(Loc("SlidePrev","slidePrev" :: Nil,"Previous Slide",Hidden)),
+      Menu(Loc("SlideNext","slideNext" :: Nil,"Next Slide",Hidden)),
+      Menu(Loc("SlideNavigation","slideNavigation" :: Nil,"Slide Navigation",Hidden)),
+      Menu(Loc("SlideTitle","slideTitle" :: Nil,"Slide Title",Hidden)),
+      Menu(Loc("Quiz","quiz" :: Nil,"Quiz",Hidden)),
+      Menu(Loc("Quizzes","quizzes" :: Nil,"Quizzes",Hidden)),
       //Default
       Menu(Loc("Static", Link(List("static"), true, "/static/index"), "Static Content", Hidden)))
 
