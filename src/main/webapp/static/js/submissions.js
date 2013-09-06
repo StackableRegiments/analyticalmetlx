@@ -96,7 +96,7 @@ var Submissions = (function(){
         try {
             if ("type" in history && history.type == "history"){
                 clearState();
-                _.forEach(history.submissions,doStanzaReceivedFunction);
+                _.forEach(history.submissions,function(submission){onSubmissionReceived(submission,true);});
                 renderSubmissionsInPlace();
             }
         }
@@ -104,14 +104,16 @@ var Submissions = (function(){
             console.log("Submissions.historyReceivedFunction",e);
         }
     };
-    var onSubmissionReceived = function(submission){
+    var onSubmissionReceived = function(submission,skipRender){
         try {
             if ("target" in submission && submission.target == "submission"){
                 if (filterSubmission(submission)){
                     submissions.push(submission);
                 }
             }
-            renderSubmissionsInPlace();
+						if (!skipRender){
+            	renderSubmissionsInPlace();
+						}
         }
         catch (e){
             console.log("Submissions.stanzaReceivedFunction",e);

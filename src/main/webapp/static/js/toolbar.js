@@ -1553,18 +1553,33 @@ var Modes = (function(){
                             var overlapThreshold = 0.5;
                             var intersectCategory = function(category){
                                 $.each(boardContent[category],function(i,item){
-																		if ("bounds" in item){
-																			var b = item.bounds;
-																			var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
-																			var overlap = overlapRect(selectionBounds,item.bounds);
-																			console.log(overlap,selectionThreshold);
-																			if(overlap >= selectionThreshold){
-																					//if(intersectRect(item.bounds,selectionBounds)){
-																					incrementKey(intersectAuthors,item.author);
-																					if(item.author == UserSettings.getUsername()){
-																							intersected[category][item.identity] = item;
-																					}
+																		if (!("bounds" in item)){
+																			if ("type" in item){
+																				switch(item.type){
+																					case "text":
+																						prerenderText(item);
+																						break;
+																					case "image":
+																						prerenderImage(item);
+																						break;
+																					case "ink":
+																						prerenderInk(item);
+																						break;
+																					default:
+																						item.bounds = [NaN,NaN,NaN,NaN];		
+																				}
 																			}
+																		}
+																		var b = item.bounds;
+																		var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
+																		var overlap = overlapRect(selectionBounds,item.bounds);
+																		console.log(overlap,selectionThreshold);
+																		if(overlap >= selectionThreshold){
+																				//if(intersectRect(item.bounds,selectionBounds)){
+																				incrementKey(intersectAuthors,item.author);
+																				if(item.author == UserSettings.getUsername()){
+																						intersected[category][item.identity] = item;
+																				}
 																		}
                                 });
                             }

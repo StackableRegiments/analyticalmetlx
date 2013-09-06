@@ -480,6 +480,9 @@ class MeTLActor extends StronglyTypedJsonActor{
         },("class","quizQuestion"))
       }
       </div>
+			{
+				tempQuiz.url.map(tqu => { <img src={tqu}>This quiz has an image</img> }).openOr(NodeSeq.Empty)
+			}
       <div>
       {
         quiz.options.sortBy(o => o.name).map(qo => {
@@ -522,6 +525,26 @@ class MeTLActor extends StronglyTypedJsonActor{
       }
       </div>
       <div class="quizCreationControls">
+			{
+				val quizImageButtonText = tempQuiz.url.map(u => "attach current slide").openOr("update quiz image with current slide")
+				ajaxSubmit(quizImageButtonText, () => {
+					for (
+						conversation <- CurrentConversation;
+						slideJid <- CurrentSlide
+					) yield {
+						val conversationJid = conversation.jid.toString
+						val now = new Date().getTime
+						val mergedHistory = rooms.get((server,slideJid.toString)).map(r => r.getHistory).getOrElse(History.empty)
+						val title = "submission%s%s.jpg".format(username,now.toString)
+						val imageBytes = SlideRenderer.render(mergedHistory,(mergedHistory.getRight - mergedHistory.getLeft).toInt,(mergedHistory.getBottom - mergedHistory.getTop).toInt)
+						val uri = serverConfig.postResource(conversationJid,title,imageBytes)
+						val newTempQuiz = tempQuiz.replaceImage(Full(uri))
+						this ! editableQuizNodeSeq(newTempQuiz)
+						i.done
+					}
+					Noop
+				},("class","quizAttachImageButton toolbar"))
+			}
       {
         ajaxSubmit("Delete this quiz", ()=>{
           var deletedQuiz = tempQuiz.delete
