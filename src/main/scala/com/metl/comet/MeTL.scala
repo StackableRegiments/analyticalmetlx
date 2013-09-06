@@ -452,14 +452,24 @@ class MeTLActor extends StronglyTypedJsonActor{
       val privHistory = rooms.get((server,slideJid.toString+username)).map(r => r.getHistory).getOrElse(History.empty)
       val mergedHistory = pubHistory.merge(privHistory)
       val title = "submission%s%s.jpg".format(username,now.toString)
-      val imageBytes = SlideRenderer.render(mergedHistory,(mergedHistory.getRight - mergedHistory.getLeft).toInt,(mergedHistory.getBottom - mergedHistory.getTop).toInt)
-      val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-      val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri)
-      rooms.get((server,conversationJid)).map(r =>{
-        r ! LocalToServerMeTLStanza(submission)
-      });
-      this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot submitted"))
-      JNull
+
+			val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
+			val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
+			(width,height) match {
+				case (a:Int,b:Int) if a > 0 && b > 0 => {
+					val imageBytes = SlideRenderer.render(mergedHistory,width,height)
+					val uri = serverConfig.postResource(conversationJid,title,imageBytes)
+					val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri)
+					rooms.get((server,conversationJid)).map(r =>{
+						r ! LocalToServerMeTLStanza(submission)
+					});
+					this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot submitted"))
+				}
+				case _ => {
+					this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot was not submitted.  Your canvas is empty."))
+				}
+			}
+			JNull
     },Empty)
   )
   private def editableQuizNodeSeq(quiz:MeTLQuiz):InteractableMessage = {
@@ -539,9 +549,17 @@ class MeTLActor extends StronglyTypedJsonActor{
 						val now = new Date().getTime
 						val mergedHistory = rooms.get((server,slideJid.toString)).map(r => r.getHistory).getOrElse(History.empty)
 						val title = "submission%s%s.jpg".format(username,now.toString)
-						val imageBytes = SlideRenderer.render(mergedHistory,(mergedHistory.getRight - mergedHistory.getLeft).toInt,(mergedHistory.getBottom - mergedHistory.getTop).toInt)
-						val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-						val newTempQuiz = tempQuiz.replaceImage(Full(uri))
+						val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
+						val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
+						val uriBox = (width,height) match {
+							case (a:Int,b:Int) if a > 0 && b > 0 => {
+								val imageBytes = SlideRenderer.render(mergedHistory,width,height)
+								val uri = serverConfig.postResource(conversationJid,title,imageBytes)
+								Full(uri)
+							}
+							case _ => Empty
+						}
+						val newTempQuiz = tempQuiz.replaceImage(uriBox)
 						this ! editableQuizNodeSeq(newTempQuiz)
 						i.done
 					}
