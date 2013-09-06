@@ -531,14 +531,14 @@ var Conversations = (function(){
             type:"button"
         }).append($("<span/>",{text:"Create Conversation"})).on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
-        }).appendTo("#createConversationContainer");
+        })).appendTo("#createConversationContainer");
         $("<span />", {
             id:"myConversationsButton",
             class: "conversationSearchButton toolbar",
             type:"button",
         }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
-        }).appendTo("#createConversationContainer");
+        })).appendTo("#createConversationContainer");
         $("<span />", {
             id:"searchButton",
             class: "conversationSearchButton toolbar",

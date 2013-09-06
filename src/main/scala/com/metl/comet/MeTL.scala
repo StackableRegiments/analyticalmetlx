@@ -481,7 +481,7 @@ class MeTLActor extends StronglyTypedJsonActor{
       }
       </div>
 			{
-				tempQuiz.url.map(tqu => { <img src={tqu}>This quiz has an image</img> }).openOr(NodeSeq.Empty)
+				tempQuiz.url.map(tqu => { <img class="quizImagePreview" src={tqu}>This quiz has an image</img> }).openOr(NodeSeq.Empty)
 			}
       <div>
       {
@@ -526,7 +526,7 @@ class MeTLActor extends StronglyTypedJsonActor{
       </div>
       <div class="quizCreationControls">
 			{
-				val quizImageButtonText = tempQuiz.url.map(u => "attach current slide").openOr("update quiz image with current slide")
+				val quizImageButtonText = tempQuiz.url.map(u => "update quiz image with current slide").openOr("attach current slide")
 				ajaxSubmit(quizImageButtonText, () => {
 					for (
 						conversation <- CurrentConversation;
