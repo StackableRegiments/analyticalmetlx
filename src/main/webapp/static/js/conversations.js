@@ -524,7 +524,7 @@ var Conversations = (function(){
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
-        $("<span />", {
+        $("<div />", {
             id:"createConversationButton",
             class: "conversationSearchButton toolbar",
             name:"createConversationButton",
@@ -532,14 +532,14 @@ var Conversations = (function(){
         }).append($("<span/>",{text:"Create Conversation"})).on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
         })).appendTo("#createConversationContainer");
-        $("<span />", {
+        $("<div />", {
             id:"myConversationsButton",
             class: "conversationSearchButton toolbar",
             type:"button",
         }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
         })).appendTo("#createConversationContainer");
-        $("<span />", {
+        $("<div />", {
             id:"searchButton",
             class: "conversationSearchButton toolbar",
             name:"searchButton",
