@@ -70,18 +70,20 @@ function receiveHistory(json){
             clearBoard();
             render(boardContent);
             blitMark = Date.now();
-            $("#timingLog").text(sprintf("receiveHistory %s timing:\n%s milis download\n%s milis prerender ink\n%s milis prerender highlighters\n%s milis prerender text\n%s milis imagesLoaded\n%s milis history decorators\n%s milis blit\n%s milis total\n%s milis bench",
-                                         Date.now(),
-                                         historyDownloadedMark - startMark,
-                                         prerenderInkMark - historyDownloadedMark,
-                                         prerenderHighlightersMark - prerenderInkMark,
-                                         prerenderTextMark - prerenderHighlightersMark,
-                                         imagesLoadedMark - prerenderTextMark,
-                                         historyDecoratorsMark - imagesLoadedMark,
-                                         blitMark - prerenderTextMark,
-                                         blitMark - startMark,
-                                         blitMark - historyDownloadedMark
-                                        ));
+            /*
+             $("#timingLog").text(sprintf("receiveHistory %s timing:\n%s milis download\n%s milis prerender ink\n%s milis prerender highlighters\n%s milis prerender text\n%s milis imagesLoaded\n%s milis history decorators\n%s milis blit\n%s milis total\n%s milis bench",
+             Date.now(),
+             historyDownloadedMark - startMark,
+             prerenderInkMark - historyDownloadedMark,
+             prerenderHighlightersMark - prerenderInkMark,
+             prerenderTextMark - prerenderHighlightersMark,
+             imagesLoadedMark - prerenderTextMark,
+             historyDecoratorsMark - imagesLoadedMark,
+             blitMark - prerenderTextMark,
+             blitMark - startMark,
+             blitMark - historyDownloadedMark
+             ));
+             */
         }
         if(_.keys(boardContent.images).length == 0){
             _.defer(startRender);
@@ -474,8 +476,8 @@ function scale(){
 function prerenderImage(image) {
     var canvas = $("<canvas/>")[0];
     image.canvas = canvas;
-		canvas.width = image.width;
-		canvas.height = image.height;
+    canvas.width = image.width;
+    canvas.height = image.height;
     var borderW = canvas.width * 0.10;
     var borderH = canvas.height * 0.10;
     canvas.width = image.width + borderW;
@@ -638,6 +640,7 @@ function render(content){
                 inksRenderedMark = Date.now();
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
+                console.log("renderImmediateContent");
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
@@ -655,15 +658,17 @@ function render(content){
             });
             imagesRenderedMark = Date.now();
             renderImmediateContent();
-            $("#renderTimingLog").text(sprintf("Render %s timing:\n%s milis fit\n%s milis images\n%s milis highlighters\n%s milis texts\n%s milis inks\n%s milis renderDecorators\n%s milis total",
-                                               Date.now(),
-                                               fitMark - startMark,
-                                               imagesRenderedMark - fitMark,
-                                               highlightersRenderedMark - imagesRenderedMark,
-                                               textsRenderedMark - highlightersRenderedMark,
-                                               inksRenderedMark - textsRenderedMark,
-                                               renderDecoratorsMark - inksRenderedMark,
-                                               renderDecoratorsMark - startMark));
+            /*
+             console.log("Render %s timing:\n%s milis fit\n%s milis images\n%s milis highlighters\n%s milis texts\n%s milis inks\n%s milis renderDecorators\n%s milis total",
+             Date.now(),
+             fitMark - startMark,
+             imagesRenderedMark - fitMark,
+             highlightersRenderedMark - imagesRenderedMark,
+             textsRenderedMark - highlightersRenderedMark,
+             inksRenderedMark - textsRenderedMark,
+             renderDecoratorsMark - inksRenderedMark,
+             renderDecoratorsMark - startMark);
+             */
         }
         catch(e){
             console.log("Render exception",e);
@@ -689,7 +694,7 @@ function monashBlueGradient(context,width,height){
 }
 var blit = function(){
     render(boardContent);
-}
+};
 function pica(value){
     return value / 128;
 }
