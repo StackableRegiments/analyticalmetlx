@@ -628,7 +628,7 @@ var Modes = (function(){
                                         return $("<div/>", {
                                             class:"imageUploadSizeChoice"
                                         })
-                                            .on("click",thumbnailDrawer(img.width * scaleFactor, img.height * scaleFactor))
+                                            .on("click",bounceAnd(thumbnailDrawer(img.width * scaleFactor, img.height * scaleFactor)))
                                             .append($("<span/>",{text:buttonName}));
                                     };
                                     var scaleAtFixedSize = function(size, buttonName) {
@@ -644,7 +644,7 @@ var Modes = (function(){
                                     var uploadImage = $("<div/>", {
                                         class:"imageUploadSizeChoice",
                                         text:"Upload"
-                                    }).on("click", function() {
+                                    }).on("click", bounceAnd(function() {
                                         $.ajax({
                                             url: url,
                                             type: 'POST',
@@ -681,7 +681,7 @@ var Modes = (function(){
                                             contentType: false,
                                             processData: false
                                         });
-                                    });
+                                    }));
                                     imageSizeControls.append(thumbSize).append(miniature).append(smallImage).append(mediumImage).append(nativeImage);
                                     uploadImage.appendTo(pkg);
                                 }
@@ -727,9 +727,9 @@ var Modes = (function(){
                 options.append($("<div />",{
                     text:"X",
                     class:"closeButton"
-                }).click(function(){
+                }).click(bounceAnd(function(){
                     options.remove();
-                }));
+                })));
                 if(currentInsertMode.toLowerCase() == "image"){
                     var insertImage = $("<input />",{
                         type:"file",
@@ -844,18 +844,18 @@ var Modes = (function(){
                         return $("<div/>",{
                             class:"comboBoxListItem",
                             text:opt
-                        }).click(function(){setTextPropValue(opt);});
+                        }).click(bounceAnd(function(){setTextPropValue(opt);}));
                     })));
                     var listContainer = $("<span/>",{
                         class:"comboBoxListContainer"
                     }).append(listOfOptions).hide();
-                    toggleButton.click(function(){
+                    toggleButton.click(bounceAnd(function(){
                         var isOpen = listOfOptions.is(":visible");
                         $(".comboBoxListContainer").hide();
                         if (!isOpen){
                             listContainer.show();
                         }
-                    });
+                    }));
                     topRow.append(textArea,toggleButton);
                     bottomRow.append(listContainer);
                     cont.append(topRow,bottomRow);
@@ -1053,9 +1053,9 @@ var Modes = (function(){
                     text:"X"
                 }).css({
                     "float":"right"
-                }).click(function(){
+                }).click(bounceAnd(function(){
                     textEditor.remove();
-                }));
+                })));
 
                 var inputArea = $("#textEditorInputArea");
                 inputArea.css({
@@ -1180,7 +1180,7 @@ var Modes = (function(){
                     });
                     Progress.call("onLayoutUpdated");
                     $("#minorText").click(function(){});
-                    $("#deleteTextUnderEdit").unbind("click").on("click",function(){
+                    $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
                         deletedStanza = selectedTexts[0];
                         updateStatus(sprintf("Deleted %s",deletedStanza.identity));
                         var deleteTransform = batchTransform();
@@ -1188,7 +1188,7 @@ var Modes = (function(){
                         deleteTransform.textIds = [deletedStanza.identity];
                         sendStanza(deleteTransform);
                         upload.hide();
-                    });
+                    }));
                     updateStatus("Text input mode");
                     var up = function(x,y,worldPos){
                         if(typingTimer){
@@ -1780,26 +1780,26 @@ var Modes = (function(){
                     id:"submitScreenshotButton",
                     class:"modeSpecificTool",
                     text:"Submit screenshot"
-                }).on("click",function(){
+                }).on("click",bounceAnd(function(){
                     var currentConversation = Conversations.getCurrentConversation();
                     var currentSlide = Conversations.getCurrentSlideJid();
                     if("jid" in currentConversation){
                         submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
                     }
                     bounceButton(this);
-                }).appendTo(tools);
+                })).appendTo(tools);
                 $("<div/>",{
                     class:"modeSpecificTool quizzes",
                     text:"Quizzes"
-                }).on("click",function(){
+                }).on("click",bounceAnd(function(){
                     showBackstage("quizzes");
-                }).appendTo(tools);
+                })).appendTo(tools);
                 $("<div/>",{
                     class:"modeSpecificTool submissions",
                     text:"Submissions"
-                }).on("click",function(){
+                }).on("click",bounceAnd(function(){
                     showBackstage("submissions");
-                }).appendTo(tools);
+                })).appendTo(tools);
                 return tools;
             };
             var studentTools=function(){
@@ -1808,14 +1808,14 @@ var Modes = (function(){
                     id:"submitScreenshotButton",
                     class:"modeSpecificTool",
                     text:"Submit screenshot"
-                }).on("click",function(){
+                }).on("click",bounceAnd(function(){
                     var currentConversation = Conversations.getCurrentConversation();
                     var currentSlide = Conversations.getCurrentSlideJid();
                     if("jid" in currentConversation){
                         submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
                     }
                     bounceButton(this);
-                }).appendTo(tools);
+                })).appendTo(tools);
                 /*
                  $("<div/>",{
                  id:"syncToTeacherButton",
@@ -1829,15 +1829,15 @@ var Modes = (function(){
                 $("<div/>",{
                     class:"modeSpecificTool quizzes",
                     text:"Quizzes"
-                }).on("click",function(){
+                }).on("click",bounceAnd(function(){
                     showBackstage("quizzes");
-                }).appendTo(tools);
+                })).appendTo(tools);
                 $("<div/>",{
                     class:"modeSpecificTool submissions",
                     text:"Submissions"
-                }).on("click",function(){
+                }).on("click",bounceAnd(function(){
                     showBackstage("submissions");
-                }).appendTo(tools);
+                })).appendTo(tools);
                 return tools;
             };
             var roleAppropriateTools = function(){
@@ -2013,10 +2013,10 @@ var Modes = (function(){
                             .append($("<div />",{
                                 text:"More"
                             }).addClass("modeSpecificTool")
-                                    .click(function(){
+                                    .click(bounceAnd(function(){
                                         drawAdvancedTools(Modes.draw.drawingAttributes);
                                         showBackstage("customizeBrush");
-                                    }));
+                                    })));
                         Progress.call("onLayoutUpdated");
                     }
                     setActiveMode("#drawTools","#drawMode");

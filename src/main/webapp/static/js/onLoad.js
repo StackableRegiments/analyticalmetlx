@@ -25,9 +25,9 @@
 var reapplyStylingToServerGeneratedContent = function(contentId){
 };
 var bounceAnd = function(func){
-    return function(){
+    return function(e){
         bounceButton(this);
-        func();
+        func(e);
     }
 };
 function updateStatus(message){
@@ -35,7 +35,6 @@ function updateStatus(message){
     status.text(message);
 }
 function serverResponse(){
-    $("#notices").fadeOut(100).fadeIn(100);
 };
 var noActiveBackstage = "none";
 var flash = function(el){
@@ -501,14 +500,14 @@ $(function(){
     $("#zoomToOriginal").click(bounceAnd(zoomToOriginal));
     window.currentBackstage = noActiveBackstage;
     $("#hideBackstage").click(bounceAnd(hideBackstage));
-    $("#applicationMenuButton").click(bounceAnd(function(){
+    $("#applicationMenuButton").click(function(){
         if(window.currentBackstage == "applicationMenu"){
             hideBackstage();
         }
         else{
             showBackstage("applicationMenu");
         }
-    }));
+    });
     loadSlidesAtNativeZoom = UserSettings.getUserPref("loadSlidesAtNativeZoom") == "true";
     var zoom = $("#loadSlidesAtNativeZoom");
     if(loadSlidesAtNativeZoom){
@@ -532,14 +531,14 @@ $(function(){
                     width:px(size),
                     height:px(size)
                 })
-                .click(function(){
+                .click(bounceAnd(function(){
                     console.log("Setting user pref",pref,size);
                     UserSettings.setUserPref(pref,size);
                     var mode = Modes.currentMode;
                     Modes.none.activate();
                     mode.activate();
                     Progress.call("onLayoutUpdated");
-                })
+                }))
                 .appendTo(container);
         };
         values.map(choice);
@@ -566,9 +565,9 @@ $(function(){
         green:"#00FF00",
         blue:"#0000FF"
     },function(id,code){
-        $("#"+id).click(function(){
+        $("#"+id).click(bounceAnd(function(){
             Modes.draw.drawingAttributes.color = code;
-        });
+        }));
     });
     $.each({
         thin:0.3,
@@ -576,9 +575,9 @@ $(function(){
         fat:3,
         xfat:30
     },function(id,width){
-        $("#"+id).attr("title",width).click(function(){
+        $("#"+id).attr("title",width).click(bounceAnd(function(){
             Modes.draw.drawingAttributes.width = width;
-        });
+        }));
     });
     $("#toggleHighlighter").click(function(){
         Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
@@ -587,8 +586,6 @@ $(function(){
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
     $("#progress").hide();
     setLoadProgress(8);
-    var toolsToggle = $("#restoreTools");
-    var slidesToggle = $("#restoreSlides");
     var toggler = function(idFragment){
         var element = $(sprintf("#restore%s",idFragment));
         var toggleFuncField = sprintf("set%s",idFragment);
@@ -601,12 +598,12 @@ $(function(){
                 element.text(sprintf("Hide %s",idFragment.toLowerCase()));
             }
         }
-        element.click(function(){
+        element.click(bounceAnd(function(){
             DeviceConfiguration[toggleFuncField](toggled);
             DeviceConfiguration.applyFit();
             toggled = !toggled;
             setText();
-        });
+        }));
         setText();
     }
     toggler("Tools");
