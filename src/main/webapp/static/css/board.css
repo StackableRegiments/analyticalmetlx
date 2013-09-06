@@ -472,3 +472,6 @@ x
     background-color:gray;
     width:50%;
 }
+#conversationCreationControls div{
+    float:left;
+}
