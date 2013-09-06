@@ -101,7 +101,6 @@ function worldToScreen(x,y){
  RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
  * */
 
-var throttledBlit = _.debounce(blit,50);
 function registerPositionHandlers(contexts,down,move,up){
     var isDown = false;
     var modifiers = function(e){
@@ -1906,6 +1905,7 @@ var Modes = (function(){
                                 drawAdvancedTools(brush);
                             })
                             var bar = Canvas.circle(brush.color,width,60);
+                            console.log(width,brush.width);
                             if (width == brush.width){
                                 sizeDot.addClass("activeTool");
                             }

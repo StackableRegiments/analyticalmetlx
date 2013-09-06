@@ -414,10 +414,10 @@ var Conversations = (function(){
             class:"thumbnail",
             alt:sprintf("Slide %s",slideIndex),
             title:sprintf("Slide %s (%s)",slideIndex,slide.id)
-        }).on("click",bounceAnd(function(){
+        }).on("click",function(){
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());
-        })).appendTo(newSlide);
+        }).appendTo(newSlide);
         $("<span/>",{
             text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
             class: "slideThumbnailNumber"

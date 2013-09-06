@@ -174,3 +174,10 @@ a.s2cClose{
 #minimizedTools{
     display:none;
 }
+#createConversationContainer div{
+    float:left;
+}
+.extraConversationTools div{
+    float:right;
+    color:black;
+}
