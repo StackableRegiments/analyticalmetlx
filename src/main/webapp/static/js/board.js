@@ -94,8 +94,8 @@ function batchTransform(){
         inkIds:[],
         textIds:[],
         imageIds:[],
-				xOrigin:0,
-				yOrigin:0,
+        xOrigin:0,
+        yOrigin:0,
         xTranslate:0,
         yTranslate:0,
         xScale:1.0,
@@ -209,70 +209,70 @@ function actOnReceivedStanza(stanza){
 }
 function transformReceived(transform){
     var op = "";
-		var transformBounds = (function(){
-			var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
-			var incBounds = function(bounds){
-				var max = function(count){
-					var reference = myBounds[count];
-					if (reference != undefined && !isNaN(reference)){
-						myBounds[count] = Math.max(reference,bounds[count]);
-					} else {
-						myBounds[count] = bounds[count];
-					}
-				};
-				var min = function(count){
-					var reference = myBounds[count];
-					if (reference != undefined && !isNaN(reference)){
-						myBounds[count] = Math.min(reference,bounds[count]);
-					} else {
-						myBounds[count] = bounds[count];
-					}
-				};
-				min(0);
-				min(1);
-				max(2);
-				max(3);
-			};
-			var getBounds = function(){
-				return myBounds;
-			};	
-			var incBoardBounds = function(){
-				var thisBounds = getBounds();
-				if (thisBounds[0] != undefined && thisBounds[1] != undefined && thisBounds[2] != undefined && thisBounds[3] != undefined){
-					incorporateBoardBounds(thisBounds);
-				}
-			};
-			var setMinX = function(input){
-				safelySet(input,0);
-			};
-			var setMinY = function(input){
-				safelySet(input,1);
-			};
-			var setMaxX = function(input){
-				safelySet(input,2);
-			};
-			var setMaxY = function(input){
-				safelySet(input,3);
-			};
-			var safelySet = function(input,reference){
-				if (input != undefined && !isNaN(input)){
-					myBounds[reference] = input;
-				}
-			};
-			return {
-				"minX":getBounds[0],
-				"setMinX":setMinX,
-				"minY":getBounds[1],
-				"setMinY":setMinY,
-				"maxX":getBounds[2],
-				"setMaxX":setMaxX,
-				"maxY":getBounds[3],
-				"setMaxY":setMaxY,
-				"incorporateBounds":incBounds,
-				"getBounds":getBounds,
-				"incorporateBoardBounds":incBoardBounds
-			};
-		})();
+    var transformBounds = (function(){
+        var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
+        var incBounds = function(bounds){
+            var max = function(count){
+                var reference = myBounds[count];
+                if (reference != undefined && !isNaN(reference)){
+                    myBounds[count] = Math.max(reference,bounds[count]);
+                } else {
+                    myBounds[count] = bounds[count];
+                }
+            };
+            var min = function(count){
+                var reference = myBounds[count];
+                if (reference != undefined && !isNaN(reference)){
+                    myBounds[count] = Math.min(reference,bounds[count]);
+                } else {
+                    myBounds[count] = bounds[count];
+                }
+            };
+            min(0);
+            min(1);
+            max(2);
+            max(3);
+        };
+        var getBounds = function(){
+            return myBounds;
+        };
+        var incBoardBounds = function(){
+            var thisBounds = getBounds();
+            if (thisBounds[0] != undefined && thisBounds[1] != undefined && thisBounds[2] != undefined && thisBounds[3] != undefined){
+                incorporateBoardBounds(thisBounds);
+            }
+        };
+        var setMinX = function(input){
+            safelySet(input,0);
+        };
+        var setMinY = function(input){
+            safelySet(input,1);
+        };
+        var setMaxX = function(input){
+            safelySet(input,2);
+        };
+        var setMaxY = function(input){
+            safelySet(input,3);
+        };
+        var safelySet = function(input,reference){
+            if (input != undefined && !isNaN(input)){
+                myBounds[reference] = input;
+            }
+        };
+        return {
+            "minX":getBounds[0],
+            "setMinX":setMinX,
+            "minY":getBounds[1],
+            "setMinY":setMinY,
+            "maxX":getBounds[2],
+            "setMaxX":setMaxX,
+            "maxY":getBounds[3],
+            "setMaxY":setMaxY,
+            "incorporateBounds":incBounds,
+            "getBounds":getBounds,
+            "incorporateBoardBounds":incBoardBounds
+        };
+    })();
     if(transform.newPrivacy != "not_set"){
         var p = transform.newPrivacy;
         op += "Became "+p;
@@ -308,69 +308,69 @@ function transformReceived(transform){
     }
     if(transform.xScale != 1 || transform.yScale != 1){
         op += sprintf("scale (%s,%s)",transform.xScale,transform.yScale);
-				var relevantInks = [];
-				var relevantTexts = [];
-				var relevantImages = [];
-				$.each(transform.inkIds,function(i,id){
-					relevantInks.push(boardContent.inks[id]);
-					relevantInks.push(boardContent.highlighters[id]);
-				});
-				$.each(transform.imageIds,function(i,id){
-					relevantImages.push(boardContent.images[id]);
-				});
-				$.each(transform.textIds,function(i,id){
-					relevantTexts.push(boardContent.texts[id]);
-				});
-				var point = function(x,y){return {"x":x,"y":y};};
-				var totalBounds = point(0,0);
-				if ("xOrigin" in transform && "yOrigin" in transform){
-					totalBounds.x = transform.xOrigin;
-					totalBounds.y = transform.yOrigin;	
-				} else {
-					var first = true;
-					var updateRect = function(point){
-						if (first){
-							totalBounds.x = point.x;
-							totalBounds.y = point.y;
-							first = false;
-						} else {
-							if (point.x < totalBounds.x){
-								totalBounds.x = point.x;
-							}
-							if (point.y < totalBounds.y){
-								totalBounds.y = point.y;
-							}
-						}	
-					};
-					$.each(relevantInks,function(i,ink){
-						if (ink != undefined && "bounds" in ink && _.size(ink.bounds) > 1){
-							updateRect(point(ink.bounds[0],ink.bounds[1]));
-						}
-					});
-					$.each(relevantTexts,function(i,text){
-						if (text != undefined && "x" in text && "y" in text){
-							updateRect(point(text.x,text.y));
-						}
-					});
-					$.each(relevantImages,function(i,image){
-						if (image != undefined && "x" in image && "y" in image){
-							updateRect(point(image.x,image.y));
-						}
-					});
-				}
-				transformBounds.setMinX(totalBounds.x);
-				transformBounds.setMinY(totalBounds.y);
+        var relevantInks = [];
+        var relevantTexts = [];
+        var relevantImages = [];
+        $.each(transform.inkIds,function(i,id){
+            relevantInks.push(boardContent.inks[id]);
+            relevantInks.push(boardContent.highlighters[id]);
+        });
+        $.each(transform.imageIds,function(i,id){
+            relevantImages.push(boardContent.images[id]);
+        });
+        $.each(transform.textIds,function(i,id){
+            relevantTexts.push(boardContent.texts[id]);
+        });
+        var point = function(x,y){return {"x":x,"y":y};};
+        var totalBounds = point(0,0);
+        if ("xOrigin" in transform && "yOrigin" in transform){
+            totalBounds.x = transform.xOrigin;
+            totalBounds.y = transform.yOrigin;
+        } else {
+            var first = true;
+            var updateRect = function(point){
+                if (first){
+                    totalBounds.x = point.x;
+                    totalBounds.y = point.y;
+                    first = false;
+                } else {
+                    if (point.x < totalBounds.x){
+                        totalBounds.x = point.x;
+                    }
+                    if (point.y < totalBounds.y){
+                        totalBounds.y = point.y;
+                    }
+                }
+            };
+            $.each(relevantInks,function(i,ink){
+                if (ink != undefined && "bounds" in ink && _.size(ink.bounds) > 1){
+                    updateRect(point(ink.bounds[0],ink.bounds[1]));
+                }
+            });
+            $.each(relevantTexts,function(i,text){
+                if (text != undefined && "x" in text && "y" in text){
+                    updateRect(point(text.x,text.y));
+                }
+            });
+            $.each(relevantImages,function(i,image){
+                if (image != undefined && "x" in image && "y" in image){
+                    updateRect(point(image.x,image.y));
+                }
+            });
+        }
+        transformBounds.setMinX(totalBounds.x);
+        transformBounds.setMinY(totalBounds.y);
         var transformInk = function(index,ink){
             if(ink && ink != undefined){
                 var ps = ink.points;
                 var xPos = ink.bounds[0];
                 var yPos = ink.bounds[1];
                 var xp, yp;
-							
-								var internalX = xPos - totalBounds.x;
-								var internalY = yPos - totalBounds.y;
-								var offsetX = -(internalX - (internalX * transform.xScale));
-								var offsetY = -(internalY - (internalY * transform.yScale));		
+
+                var internalX = xPos - totalBounds.x;
+                var internalY = yPos - totalBounds.y;
+                var offsetX = -(internalX - (internalX * transform.xScale));
+                var offsetY = -(internalY - (internalY * transform.yScale));
 
                 for(var p = 0; p < ps.length; p += 3){
                     xp = ps[p] - xPos;
@@ -379,54 +379,54 @@ function transformReceived(transform){
                     ps[p+1] = (yPos + yp * transform.yScale) + offsetY;
                 }
                 calculateInkBounds(ink);
-								transformBounds.incorporateBounds(ink.bounds);
+                transformBounds.incorporateBounds(ink.bounds);
             }
         };
-				var transformImage = function(index,image){
-					if (image != undefined){
-						image.width = image.width * transform.xScale;
-						image.height = image.height * transform.yScale;
+        var transformImage = function(index,image){
+            if (image != undefined){
+                image.width = image.width * transform.xScale;
+                image.height = image.height * transform.yScale;
 
-						var internalX = image.x - totalBounds.x;
-						var internalY = image.y - totalBounds.y;
-						var offsetX = -(internalX - (internalX * transform.xScale));
-						var offsetY = -(internalY - (internalY * transform.yScale));		
-						image.x = image.x + offsetX;
-						image.y = image.y + offsetY;				
-					
-						calculateImageBounds(image);
-						transformBounds.incorporateBounds(image.bounds);
-					}
-				};
-				var transformText = function(index,text){
-					if (text != undefined){
-            text.width = text.width * transform.xScale;
-            text.height = text.height * transform.yScale;
+                var internalX = image.x - totalBounds.x;
+                var internalY = image.y - totalBounds.y;
+                var offsetX = -(internalX - (internalX * transform.xScale));
+                var offsetY = -(internalY - (internalY * transform.yScale));
+                image.x = image.x + offsetX;
+                image.y = image.y + offsetY;
 
-								var internalX = text.x - totalBounds.x;
-								var internalY = text.y - totalBounds.y;
-								var offsetX = -(internalX - (internalX * transform.xScale));
-								var offsetY = -(internalY - (internalY * transform.yScale));		
-					text.x = text.x + offsetX;
-					text.y = text.y + offsetY;				
-
-            text.size = text.size * transform.yScale;
-            text.font = sprintf("%spx %s",text.size,text.family);
-            if(isUsable(text)){
-							prerenderText(text);
-							calculateTextBounds(text);
+                calculateImageBounds(image);
+                transformBounds.incorporateBounds(image.bounds);
             }
-            else{
-                if(text.identity in boardContent.texts){
-                    delete boardContent.texts[text.identity];
+        };
+        var transformText = function(index,text){
+            if (text != undefined){
+                text.width = text.width * transform.xScale;
+                text.height = text.height * transform.yScale;
+
+                var internalX = text.x - totalBounds.x;
+                var internalY = text.y - totalBounds.y;
+                var offsetX = -(internalX - (internalX * transform.xScale));
+                var offsetY = -(internalY - (internalY * transform.yScale));
+                text.x = text.x + offsetX;
+                text.y = text.y + offsetY;
+
+                text.size = text.size * transform.yScale;
+                text.font = sprintf("%spx %s",text.size,text.family);
+                if(isUsable(text)){
+                    prerenderText(text);
+                    calculateTextBounds(text);
                 }
+                else{
+                    if(text.identity in boardContent.texts){
+                        delete boardContent.texts[text.identity];
+                    }
+                }
+                transformBounds.incorporateBounds(text.bounds);
             }
-						transformBounds.incorporateBounds(text.bounds);
-					}
-				};
-				$.each(relevantInks,transformInk);
-				$.each(relevantImages,transformImage);
-				$.each(relevantTexts,transformText);
+        };
+        $.each(relevantInks,transformInk);
+        $.each(relevantImages,transformImage);
+        $.each(relevantTexts,transformText);
     }
     if(transform.xTranslate || transform.yTranslate){
         var deltaX = transform.xTranslate;
@@ -440,7 +440,7 @@ function transformReceived(transform){
                     ps[p+1] += deltaY;
                 }
                 calculateInkBounds(ink);
-								transformBounds.incorporateBounds(ink.bounds);
+                transformBounds.incorporateBounds(ink.bounds);
             }
         }
         $.each(transform.inkIds,function(i,id){
@@ -452,17 +452,17 @@ function transformReceived(transform){
             image.x += transform.xTranslate;
             image.y += transform.yTranslate;
             calculateImageBounds(image);
-						transformBounds.incorporateBounds(image.bounds);
+            transformBounds.incorporateBounds(image.bounds);
         });
         $.each(transform.textIds,function(i,id){
             var text = boardContent.texts[id];
             text.x += transform.xTranslate;
             text.y += transform.yTranslate;
             calculateTextBounds(text);
-						transformBounds.incorporateBounds(text.bounds);
+            transformBounds.incorporateBounds(text.bounds);
         });
     }
-		transformBounds.incorporateBoardBounds();
+    transformBounds.incorporateBoardBounds();
     updateStatus(sprintf("%s %s %s %s",
                          op,
                          transform.imageIds.length,
@@ -535,15 +535,15 @@ function screenBounds(worldBounds){
 }
 function drawImage(image){
     try{
-				if (image.canvas != undefined){
-					var sBounds = screenBounds(image.bounds);
-					visibleBounds.push(image.bounds);
-					var borderW = sBounds.screenWidth * 0.10;
-					var borderH = sBounds.screenHeight * 0.10;
-//					prerenderImage(image);
-//					boardContext.drawImage(image.canvas, 0, 0, image.canvas.width, image.canvas.height, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
-					boardContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
-				}
+        if (image.canvas != undefined){
+            var sBounds = screenBounds(image.bounds);
+            visibleBounds.push(image.bounds);
+            var borderW = sBounds.screenWidth * 0.10;
+            var borderH = sBounds.screenHeight * 0.10;
+            //                                  prerenderImage(image);
+            //                                  boardContext.drawImage(image.canvas, 0, 0, image.canvas.width, image.canvas.height, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+            boardContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+        }
     }
     catch(e){
         console.log("drawImage exception",e);

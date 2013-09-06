@@ -26,7 +26,8 @@ function updateStatus(message){
     var status = $("#status");
     status.text(message);
 }
-function serverResponse(){}
+function serverResponse(){
+};
 var noActiveBackstage = "none";
 var flash = function(el){
     var t = 100;
@@ -379,14 +380,18 @@ var Extend = (function(){
         }
     }
 })();
+
+var active = "activeBackstageTab";
 function showBackstage(id){
     $(".backstage").hide();
-    $(".backstageTabHeader").removeClass("activeBackstageTab");
-    $(".backstage").removeClass("activeBackstageTab");
+    $(".backstageTabHeader").removeClass(active);
+    $(".backstage").removeClass(active);
     var popup = $("#"+id+"Popup");
     window.currentBackstage = id;
     popup.show();
-    $("#"+id).addClass("activeBackstageTab");
+    $(".modeSpecificTool").removeClass(active);
+    $("#"+id).addClass(active);
+    $(".modeSpecificTool."+id).addClass(active);
     $("#backstageContainer").show();
     $("#applicationMenuPopup").show();
     if(Conversations.inConversation()){
@@ -397,21 +402,22 @@ function showBackstage(id){
         $("#backstageTabHeaders").hide();
         $("#applicationMenuButton").hide();
     }
-    $("#applicationMenuButton").addClass("activeBackstageTab");
+    $("#applicationMenuButton").addClass(active);
     $("#hideBackstage").show();
 }
 function hideBackstage(){
     window.currentBackstage = noActiveBackstage;
     $(".backstage").hide();
-    $(".backstageTabHeader").removeClass("activeBackstageTab");
-    $(".backstage").removeClass("activeBackstageTab");
-    $("#applicationMenuButton").removeClass("activeBackstageTab");
+    $(".backstageTabHeader").removeClass(active);
+    $(".backstage").removeClass(active);
+    $("#applicationMenuButton").removeClass(active);
     $("#applicationMenuPopup").hide();
     $("#backstageTabHeaders").hide();
     $("#backstageContainer").hide();
     $("#hideBackstage").hide();
     $("#notices").show();
-}
+    $(".modeSpecificTool").removeClass(active);
+};
 $(function(){
     var heading = $("#heading");
     heading.text("Loading MeTLX...");

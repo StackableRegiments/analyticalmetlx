@@ -642,15 +642,15 @@ var Modes = (function(){
                                             type: 'POST',
                                             success: function(e){
                                                 updateTracking(identity);
-//                                                var thumbnail = $(thumbnail);
-																								var thumbnail = $("#imageUploadThumbnail");
+                                                //                                                var thumbnail = $(thumbnail);
+                                                var thumbnail = $("#imageUploadThumbnail");
                                                 var loader = $("#upload");
                                                 var imageStanza = {
                                                     type:"image",
                                                     author:UserSettings.getUsername(),
                                                     timestamp:t,
                                                     tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+identity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-//identity,
+                                                    //identity,
                                                     identity:identity,
                                                     slide:currentSlide.toString(),
                                                     source:$(e).text(),
@@ -1512,21 +1512,21 @@ var Modes = (function(){
                         else if(resizing){
                             var resized = batchTransform();
                             var xScale = x / resizeHandle[0];
-														var totalBounds = {x:Infinity,y:Infinity};
-														_.forEach(Modes.select.selected.inks,function(ink){
-															totalBounds.x = Math.min(ink.bounds[0]);
-															totalBounds.y = Math.min(ink.bounds[1]);
-														});
-														_.forEach(Modes.select.selected.texts,function(text){
-															totalBounds.x = Math.min(text.bounds[0]);
-															totalBounds.y = Math.min(text.bounds[1]);
-														});
-														_.forEach(Modes.select.selected.images,function(image){
-															totalBounds.x = Math.min(image.bounds[0]);
-															totalBounds.y = Math.min(image.bounds[1]);
-														});
-														resized.xOrigin = totalBounds.x;
-														resized.yOrigin = totalBounds.y;
+                            var totalBounds = {x:Infinity,y:Infinity};
+                            _.forEach(Modes.select.selected.inks,function(ink){
+                                totalBounds.x = Math.min(ink.bounds[0]);
+                                totalBounds.y = Math.min(ink.bounds[1]);
+                            });
+                            _.forEach(Modes.select.selected.texts,function(text){
+                                totalBounds.x = Math.min(text.bounds[0]);
+                                totalBounds.y = Math.min(text.bounds[1]);
+                            });
+                            _.forEach(Modes.select.selected.images,function(image){
+                                totalBounds.x = Math.min(image.bounds[0]);
+                                totalBounds.y = Math.min(image.bounds[1]);
+                            });
+                            resized.xOrigin = totalBounds.x;
+                            resized.yOrigin = totalBounds.y;
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
@@ -1553,34 +1553,34 @@ var Modes = (function(){
                             var overlapThreshold = 0.5;
                             var intersectCategory = function(category){
                                 $.each(boardContent[category],function(i,item){
-																		if (!("bounds" in item)){
-																			if ("type" in item){
-																				switch(item.type){
-																					case "text":
-																						prerenderText(item);
-																						break;
-																					case "image":
-																						prerenderImage(item);
-																						break;
-																					case "ink":
-																						prerenderInk(item);
-																						break;
-																					default:
-																						item.bounds = [NaN,NaN,NaN,NaN];		
-																				}
-																			}
-																		}
-																		var b = item.bounds;
-																		var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
-																		var overlap = overlapRect(selectionBounds,item.bounds);
-																		console.log(overlap,selectionThreshold);
-																		if(overlap >= selectionThreshold){
-																				//if(intersectRect(item.bounds,selectionBounds)){
-																				incrementKey(intersectAuthors,item.author);
-																				if(item.author == UserSettings.getUsername()){
-																						intersected[category][item.identity] = item;
-																				}
-																		}
+                                    if (!("bounds" in item)){
+                                        if ("type" in item){
+                                            switch(item.type){
+                                            case "text":
+                                                prerenderText(item);
+                                                break;
+                                            case "image":
+                                                prerenderImage(item);
+                                                break;
+                                            case "ink":
+                                                prerenderInk(item);
+                                                break;
+                                            default:
+                                                item.bounds = [NaN,NaN,NaN,NaN];
+                                            }
+                                        }
+                                    }
+                                    var b = item.bounds;
+                                    var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
+                                    var overlap = overlapRect(selectionBounds,item.bounds);
+                                    console.log(overlap,selectionThreshold);
+                                    if(overlap >= selectionThreshold){
+                                        //if(intersectRect(item.bounds,selectionBounds)){
+                                        incrementKey(intersectAuthors,item.author);
+                                        if(item.author == UserSettings.getUsername()){
+                                            intersected[category][item.identity] = item;
+                                        }
+                                    }
                                 });
                             }
                             categories(intersectCategory);
@@ -1748,6 +1748,15 @@ var Modes = (function(){
                     sync.show();
                     desync.show();
                 }
+                $(".modeSpecificTool").removeClass(active);
+                switch(currentBackstage){
+                case "quizzes":$(".modeSpecificTool.quizzes").addClass(active);
+                    break;
+                case "submissions":$(".modeSpecificTool.submissions").addClass(active);
+                    break;
+                default:
+                    break;
+                }
             };
             Progress.onConversationJoin["setConversationRole"] = function(){
                 applyStateStyling();
@@ -1756,6 +1765,7 @@ var Modes = (function(){
                 }
             }
             Progress.conversationDetailsReceived["respectNewPermissions"] = applyStateStyling;
+
             var teacherTools=function(){
                 var tools = $("<div />");
                 $("<div/>",{
@@ -1770,13 +1780,13 @@ var Modes = (function(){
                     }
                 }).appendTo(tools);
                 $("<div/>",{
-                    class:"modeSpecificTool",
+                    class:"modeSpecificTool quizzes",
                     text:"Quizzes"
                 }).on("click",function(){
                     showBackstage("quizzes");
                 }).appendTo(tools);
                 $("<div/>",{
-                    class:"modeSpecificTool",
+                    class:"modeSpecificTool submissions",
                     text:"Submissions"
                 }).on("click",function(){
                     showBackstage("submissions");
@@ -1807,13 +1817,13 @@ var Modes = (function(){
                  }).appendTo(tools);
                  */
                 $("<div/>",{
-                    class:"modeSpecificTool",
+                    class:"modeSpecificTool quizzes",
                     text:"Quizzes"
                 }).on("click",function(){
                     showBackstage("quizzes");
                 }).appendTo(tools);
                 $("<div/>",{
-                    class:"modeSpecificTool",
+                    class:"modeSpecificTool submissions",
                     text:"Submissions"
                 }).on("click",function(){
                     showBackstage("submissions");
