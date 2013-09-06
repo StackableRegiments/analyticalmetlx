@@ -428,6 +428,14 @@ function drawSelectionBounds(item){
         height:originalHeight
     }).data("originalWidth",originalWidth).data("originalHeight",originalHeight));
 }
+var bounceButton = function(button){
+    var b = $(button);
+    var c = "activeBrush";
+    b.addClass(c);
+    setTimeout(function(){
+        b.removeClass(c);
+    },200);
+}
 var Modes = (function(){
     var removeActiveMode = function(){
         $(".activeTool").removeClass("activeTool");
@@ -1715,7 +1723,7 @@ var Modes = (function(){
                     enabled = currentConversation.permissions.studentCanPublish;
                     if(!enabled){
                         Conversations.changeConversationToTutorial();
-                        applyStateStyling();
+                        enable.addClass("activePrivacy");
                     }
                 });
                 var disable = $("#disableCollaboration").unbind("click").on("click",function(){
@@ -1723,7 +1731,7 @@ var Modes = (function(){
                     enabled = currentConversation.permissions.studentCanPublish;
                     if(enabled){
                         Conversations.changeConversationToLecture();
-                        applyStateStyling();
+                        disable.addClass("activePrivacy");
                     }
                 });
                 var sync = $("#enableSync").unbind("click").on("click",Conversations.enableSyncMove);
@@ -1778,6 +1786,7 @@ var Modes = (function(){
                     if("jid" in currentConversation){
                         submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
                     }
+                    bounceButton(this);
                 }).appendTo(tools);
                 $("<div/>",{
                     class:"modeSpecificTool quizzes",
@@ -1805,6 +1814,7 @@ var Modes = (function(){
                     if("jid" in currentConversation){
                         submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
                     }
+                    bounceButton(this);
                 }).appendTo(tools);
                 /*
                  $("<div/>",{

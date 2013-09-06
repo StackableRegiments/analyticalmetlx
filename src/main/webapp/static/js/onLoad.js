@@ -22,11 +22,18 @@
             clearTimeout(id);
         };
 }());
+var bounceAnd = function(func){
+    return function(){
+        bounceButton(this);
+        func();
+    }
+};
 function updateStatus(message){
     var status = $("#status");
     status.text(message);
 }
 function serverResponse(){
+    $("#notices").fadeOut(100).fadeIn(100);
 };
 var noActiveBackstage = "none";
 var flash = function(el){
@@ -436,12 +443,12 @@ $(function(){
     DeviceConfiguration.resetCurrentDevice();
     $("input.toolbar").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#slideContainer button").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
-    $("#up").click(Extend.up);
-    $("#down").click(Extend.down);
-    $("#left").click(Extend.left);
-    $("#right").click(Extend.right);
-    $("#in").click(Zoom.in);
-    $("#out").click(Zoom.out);
+    $("#up").click(bounceAnd(Extend.up));
+    $("#down").click(bounceAnd(Extend.down));
+    $("#left").click(bounceAnd(Extend.left));
+    $("#right").click(bounceAnd(Extend.right));
+    $("#in").click(bounceAnd(Zoom.in));
+    $("#out").click(bounceAnd(Zoom.out));
     $("#drawMode").click(function(){
         if(Modes.currentMode != Modes.draw){
             Modes.draw.activate();
@@ -487,31 +494,29 @@ $(function(){
         $("#showGrid").attr("checked",showGrid);
     }
     setLoadProgress(2);
-    $("#zoomToFull").click(zoomToFit);
-    $("#zoomToPage").click(zoomToPage);
-    $("#zoomToOriginal").click(zoomToOriginal);
+    $("#zoomToFull").click(bounceAnd(zoomToFit));
+    $("#zoomToPage").click(bounceAnd(zoomToPage));
+    $("#zoomToOriginal").click(bounceAnd(zoomToOriginal));
     window.currentBackstage = noActiveBackstage;
-    $("#hideBackstage").click(function(){
-        hideBackstage();
-    });
-    $("#applicationMenuButton").click(function(){
+    $("#hideBackstage").click(bounceAnd(hideBackstage));
+    $("#applicationMenuButton").click(bounceAnd(function(){
         if(window.currentBackstage == "applicationMenu"){
             hideBackstage();
         }
         else{
             showBackstage("applicationMenu");
         }
-    });
+    }));
     loadSlidesAtNativeZoom = UserSettings.getUserPref("loadSlidesAtNativeZoom") == "true";
     var zoom = $("#loadSlidesAtNativeZoom");
     if(loadSlidesAtNativeZoom){
         zoom.attr("checked",true);
     }
-    zoom.click(function(){
+    zoom.click(bounceAnd(function(){
         loadSlidesAtNativeZoom = $(this).is(":checked");
         UserSettings.setUserPref("loadSlidesAtNativeZoom",loadSlidesAtNativeZoom);
         receiveHistory(boardContent);
-    });
+    }));
     var sizeChooser = function(pref,values){
         var container = $("<div />");
         $("<div />",{

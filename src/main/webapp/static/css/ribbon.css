@@ -50,6 +50,9 @@
     0 8px 0 #222222,
     0 15px 20px rgba(0,0,0,.35);
 }
+.toolbar, .modeSpecificTool{
+    margin-bottom:0.5em;
+}
 
 #floatingToggleContainer{
     position:absolute;
@@ -64,6 +67,7 @@
     5px 5px 5px #ffffff;
     margin-top:1.5em !important;
     background-color:white;
+    margin-bottom:-0.5em;
 }
 #applicationMenuButton.activeBackstageTab{
     margin-top:0.5em !important;

@@ -22,7 +22,7 @@ var Conversations = (function(){
                 //then fire paint as normal, which paints from the cache
                 paintThumb(slide,slideContainer);
             };
-	    cache[slide.id] = "data:image/jpeg;base64,"
+            cache[slide.id] = "data:image/jpeg;base64,"
             $.ajax({
                 url:thumbUrl,
                 beforeSend: function ( xhr ) {
@@ -41,7 +41,7 @@ var Conversations = (function(){
         };
         var possiblyUpdateThumbnail = function(slide,slidesContainer,slideContainerHeight){
             var slidesTop = 0;
-	    var slidesBottom = slidesTop + slideContainerHeight;
+            var slidesBottom = slidesTop + slideContainerHeight;
             var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
             var slideTop = slideContainer.position().top + 10; //10 pixel margin for the top, which appears to be being ignored.
             var slideBottom = slideTop + slideContainer.height();
@@ -229,7 +229,7 @@ var Conversations = (function(){
         //setting index to zero because this isn't necessary.
         var slidesContainer = $("#slideContainer");
         var containerHeight = slidesContainer.height();
-	ThumbCache.paintThumb({id:slideId,index:0},slidesContainer,containerHeight);
+        ThumbCache.paintThumb({id:slideId,index:0},slidesContainer,containerHeight);
     }
     var goToNextSlideFunction = function(){
         if ("slides" in currentConversation && currentSlide > 0){
