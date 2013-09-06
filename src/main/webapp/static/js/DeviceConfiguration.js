@@ -34,7 +34,7 @@ var DeviceConfiguration = (function(){
     };
     var setDefaultOptions = function(){
         tryToDetermineCurrentDevice();
-        $("#absoluteCloseButton").removeClass("closeButton").text("").click(function(){});
+        $("#absoluteCloseButton").removeClass("closeButton").text("").click(bounceAnd(function(){}));
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
         zoomToPage();
@@ -46,13 +46,13 @@ var DeviceConfiguration = (function(){
         currentDevice = "projector";
         fitFunction = projectorFitFunction;
         zoomToFit();
-        $("#absoluteCloseButton").addClass("closeButton").text("X").click(function(){
+        $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
             UserSettings.setIsInteractive(true);
             DeviceConfiguration.setHeader(true);
             DeviceConfiguration.setTools(true);
             DeviceConfiguration.setSlides(true);
             setDefaultOptions();
-        });
+        }));
         $("#applicationMenuButton").hide();
         Modes.none.activate();
         fitFunction();
@@ -196,17 +196,17 @@ var DeviceConfiguration = (function(){
                     xOffset += 4;
                     thumbsColumn.hide();
                 }
-								var thumbScrollOffset = 35;
-								var thumbContainerWidth = thumbWidth;
-								if (thumbWidth > 0){
-									thumbContainerWidth = thumbContainerWidth + thumbScrollOffset;
-								}
+                var thumbScrollOffset = 35;
+                var thumbContainerWidth = thumbWidth;
+                if (thumbWidth > 0){
+                    thumbContainerWidth = thumbContainerWidth + thumbScrollOffset;
+                }
                 thumbsColumn.width(thumbContainerWidth).height(height).css("display","block");
                 thumbScrollContainer.width(thumbContainerWidth).height(height);
                 slideContainer.width(thumbContainerWidth).height(height);
-								$(".slideButtonContainer").width(thumbWidth).height(thumbHeight).css("margin",px(10));
+                $(".slideButtonContainer").width(thumbWidth).height(thumbHeight).css("margin",px(10));
                 thumbs.width(thumbWidth).height(thumbHeight);
-								$("#addSlideButton").css("margin",px(10));
+                $("#addSlideButton").css("margin",px(10));
 
                 var gestureWiggleRoomWidth = 0; // magic number to create a bit of wiggle room for the gestures
                 var gestureWiggleRoomHeight = 0; // magic number to create a bit of wiggle room for the gesture
@@ -253,14 +253,14 @@ var DeviceConfiguration = (function(){
         window.scrollTo(1,1);
         window.scrollTo(0,0);
     };
-		var innerFit = function(){
-			if (fitFunction){
-				fitFunction();
-			}
-		}
+    var innerFit = function(){
+        if (fitFunction){
+            fitFunction();
+        }
+    }
     var outerFit = function(){
-			innerFit();
-//			_.throttle(_.debounce(innerFit,150,false),100)();
+        innerFit();
+        //                      _.throttle(_.debounce(innerFit,150,false),100)();
     };
     var initialized = false;
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
@@ -297,22 +297,22 @@ var DeviceConfiguration = (function(){
             w.on("orientationchange",outerFit);
         }
         w.resize(outerFit);
-       /* $.get(
-            //this is a quick and dirty workaround to ensure that the devices log their useragent in a stateful manner on lift's end
-            "/logDevice",
-            {},
-            function(data){
-            }
-        );
-*/
-        $("#toolsToggleButton").on("click",function(){
+        /* $.get(
+         //this is a quick and dirty workaround to ensure that the devices log their useragent in a stateful manner on lift's end
+         "/logDevice",
+         {},
+         function(data){
+         }
+         );
+         */
+        $("#toolsToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("tools",!sectionsVisible.tools);
             outerFit();
-        });
-        $("#slidesToggleButton").on("click",function(){
+        }));
+        $("#slidesToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("slides",!sectionsVisible.slides);
             outerFit();
-        });
+        }));
     });
     var actOnCurrentDevice = function(){
         switch (currentDevice){

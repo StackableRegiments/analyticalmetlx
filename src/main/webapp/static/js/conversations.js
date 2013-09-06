@@ -276,7 +276,7 @@ var Conversations = (function(){
         $("#projectorLink").html($("<a/>",{
             href:projectorUrl,
             text:serviceUrlRoot + projectorUrl
-        })).on("click",function(){
+        })).on("click",bounceAnd(function(){
             var el = document.documentElement, rfs =
                     el.requestFullScreen
                     || el.webkitRequestFullScreen
@@ -285,8 +285,7 @@ var Conversations = (function(){
 
             DeviceConfiguration.setCurrentDevice("projector");
             return false;
-        });
-        //console.log(shareUrl,projectorUrl,$("#shareLink").text(),$("#projectorLink").text());
+        }));
     };
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){
@@ -367,7 +366,7 @@ var Conversations = (function(){
                 class:"toolbar",
                 name: "addSlideButton",
                 type: "button"
-            }).append($("<span>Add Slide</span>")).on("click",function(){
+            }).append($("<span>Add Slide</span>")).on("click",bounceAnd(function(){
                 var currentJid = currentConversation.jid;
                 var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
                 var newIndex = currentSlideIndex + 1;
@@ -382,7 +381,7 @@ var Conversations = (function(){
                         }
                     }
                 };
-            });
+            }));
         } else {
             return $("<div/>");
         }
@@ -415,10 +414,10 @@ var Conversations = (function(){
             class:"thumbnail",
             alt:sprintf("Slide %s",slideIndex),
             title:sprintf("Slide %s (%s)",slideIndex,slide.id)
-        }).on("click",function(){
+        }).on("click",bounceAnd(function(){
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());
-        }).appendTo(newSlide);
+        })).appendTo(newSlide);
         $("<span/>",{
             text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
             class: "slideThumbnailNumber"
@@ -436,7 +435,7 @@ var Conversations = (function(){
         var newConv = $("<div/>",{
             id: uniq("conversation"),
             class:"searchResult"
-        }).on("click",function(e){
+        }).on("click",bounceAnd(function(e){
             var id1 = e.target.parentElement.id;
             var id2 = e.target.parentElement.parentElement.id;
             if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
@@ -444,7 +443,7 @@ var Conversations = (function(){
             var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
             hideBackstage();
             doMoveToSlide(firstSlide.id.toString());
-        });
+        }));
         var jidString = conversation.jid.toString();
         var row1 = $("<div/>");
         var row2 = $("<div/>",{
@@ -477,32 +476,32 @@ var Conversations = (function(){
             class: "conversationJoinButton conversationSearchButton",
             name: uniq("conversationJoin"),
             type: "button"
-        }).on("click",function(){
+        }).on("click",bounceAnd(function(){
             targetConversationJid = jidString;
             var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
             hideBackstage();
             doMoveToSlide(firstSlide.id.toString());
-        }).append("<span>join</span>");
+        })).append("<span>join</span>");
         var renameConvButton = $("<div/>", {
             id: uniq("conversationRenameSubmit"),
             class: "conversationSearchButton",
             name: uniq("conversationRenameSubmit"),
             type: "button"
-        }).on("click",function(){requestRenameConversationDialogue(jidString);}).append(renameSpan);
+        }).on("click",bounceAnd(function(){requestRenameConversationDialogue(jidString);})).append(renameSpan);
         var changeSharingButton = $("<div/>", {
             id: uniq("conversationChangeSubjectSubmit"),
             name: uniq("conversationChangeSubjectSubmit"),
             class: "conversationSearchButton",
             type: "button"
-        }).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);}).append(sharingSpan);
+        }).on("click",bounceAnd(function(){requestChangeSubjectOfConversationDialogue(jidString);})).append(sharingSpan);
         var deleteConvButton = $("<div/>", {
             id: uniq("conversationDelete"),
             class: "conversationSearchButton",
             name: uniq("conversationDelete"),
             type: "button"
-        }).on("click",function(){
+        }).on("click",bounceAnd(function(){
             requestDeleteConversationDialogue(jidString);
-        }).append(deleteSpan);
+        })).append(deleteSpan);
         newConv.append(row1.append(convTitle));
         newConv.append(row2.append(convAuthor).append(convSubject).append(convCreated));
         if (shouldModifyConversationFunction(conversation)){
@@ -530,24 +529,24 @@ var Conversations = (function(){
             class: "conversationSearchButton",
             name:"createConversationButton",
             type:"button"
-        }).append($("<span/>",{text:"Create Conversation"})).on("click",function(){
+        }).append($("<span/>",{text:"Create Conversation"})).on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
-        }).appendTo("#createConversationContainer");
+        })).appendTo("#createConversationContainer");
         $("<div/>", {
             id:"myConversationsButton",
             class: "conversationSearchButton",
             type:"button",
-        }).append($("<span/>",{text:"My Conversations"})).on("click",function(){
+        }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
-        }).appendTo("#createConversationContainer");
+        })).appendTo("#createConversationContainer");
         $("<div/>", {
             id:"searchButton",
             class: "conversationSearchButton",
             name:"searchButton",
             type: "button"
-        }).append($("<span/>", {text: "Search"})).on("click",function(){
+        }).append($("<span/>", {text: "Search"})).on("click",bounceAnd(function(){
             getSearchResult(currentSearchTerm);
-        }).appendTo("#searchButtonContainer");
+        })).appendTo("#searchButtonContainer");
         var updateSearchTerm = function(e){
             currentSearchTerm = this.value;
             if (e.which == 13){
@@ -567,13 +566,13 @@ var Conversations = (function(){
         $("<span />",{
             text:"share",
             id:"shareButton"
-        }).on("click",function(){
+        }).on("click",bounceAnd(function(){
             $("#shareContainer").toggle();
             updateLinks();
-        }).appendTo($("#shareButton"));
-        $("#closeSharingButton").on("click", function() {
+        })).appendTo($("#shareButton"));
+        $("#closeSharingButton").on("click", bounceAnd(function() {
             $("#shareContainer").toggle();
-        });
+        }));
     });
     return {
         inConversation:function(){
