@@ -485,19 +485,19 @@ var Conversations = (function(){
         }).append("<span>join</span>");
         var renameConvButton = $("<div/>", {
             id: uniq("conversationRenameSubmit"),
-            class: "conversationSearchButton",
+            class: "conversationSearchButton toolbar",
             name: uniq("conversationRenameSubmit"),
             type: "button"
         }).on("click",function(){requestRenameConversationDialogue(jidString);}).append(renameSpan);
         var changeSharingButton = $("<div/>", {
             id: uniq("conversationChangeSubjectSubmit"),
             name: uniq("conversationChangeSubjectSubmit"),
-            class: "conversationSearchButton",
+            class: "conversationSearchButton toolbar",
             type: "button"
         }).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);}).append(sharingSpan);
         var deleteConvButton = $("<div/>", {
             id: uniq("conversationDelete"),
-            class: "conversationSearchButton",
+            class: "conversationSearchButton toolbar",
             name: uniq("conversationDelete"),
             type: "button"
         }).on("click",function(){
@@ -525,24 +525,24 @@ var Conversations = (function(){
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
-        $("<div/>", {
+        $("<span />", {
             id:"createConversationButton",
-            class: "conversationSearchButton",
+            class: "conversationSearchButton toolbar",
             name:"createConversationButton",
             type:"button"
         }).append($("<span/>",{text:"Create Conversation"})).on("click",function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
         }).appendTo("#createConversationContainer");
-        $("<div/>", {
+        $("<span />", {
             id:"myConversationsButton",
-            class: "conversationSearchButton",
+            class: "conversationSearchButton toolbar",
             type:"button",
         }).append($("<span/>",{text:"My Conversations"})).on("click",function(){
             getSearchResult(UserSettings.getUsername());
         }).appendTo("#createConversationContainer");
-        $("<div/>", {
+        $("<span />", {
             id:"searchButton",
-            class: "conversationSearchButton",
+            class: "conversationSearchButton toolbar",
             name:"searchButton",
             type: "button"
         }).append($("<span/>", {text: "Search"})).on("click",function(){

@@ -22,6 +22,8 @@
             clearTimeout(id);
         };
 }());
+var reapplyStylingToServerGeneratedContent = function(contentId){
+};
 var bounceAnd = function(func){
     return function(){
         bounceButton(this);

@@ -621,7 +621,7 @@ class MeTLActor extends StronglyTypedJsonActor{
   private val defaultContainerId  = "s2cMessageContainer"
   private val clientMessageBroker = new ClientMessageBroker(TemplateHolder.clientMessageTemplate,".s2cMessage",".s2cLabel",".s2cContent",".s2cClose",
     (cm) => {
-      partialUpdate(SetHtml(defaultContainerId,cm.renderMessage) & Show(defaultContainerId))
+      partialUpdate(SetHtml(defaultContainerId,cm.renderMessage) & Show(defaultContainerId) & Call("reapplyStylingToServerGeneratedContent",JString(cm.uniqueId)))
     },
     (cm) => {
       partialUpdate(Hide(defaultContainerId) & cm.done)
