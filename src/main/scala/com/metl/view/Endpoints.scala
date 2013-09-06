@@ -90,6 +90,8 @@ object MeTLStatefulRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", () => StatelessHtml.quizProxy(conversation,identity))
     case Req(List("submissionProxy",conversation,author,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.submissionProxy", () => StatelessHtml.submissionProxy(conversation,author,identity))
+		case r @ Req(List("resourceProxy",identity),_,_) => 
+			() => Stopwatch.time("MeTLStatefulRestHelper.resourceProxy", () => StatelessHtml.resourceProxy(Helpers.urlDecode(identity)))
     case r@Req("join" :: Nil, _, _) => {
       for {
         conversationJid <- r.param("conversation");

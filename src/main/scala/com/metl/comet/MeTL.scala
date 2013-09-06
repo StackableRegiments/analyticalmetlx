@@ -481,7 +481,10 @@ class MeTLActor extends StronglyTypedJsonActor{
       }
       </div>
 			{
-				tempQuiz.url.map(tqu => { <img class="quizImagePreview" src={tqu}>This quiz has an image</img> }).openOr(NodeSeq.Empty)
+				tempQuiz.url.map(quizUrl => {
+					val imageUrl = "/resourceProxy/%s".format(Helpers.urlEncode(quizUrl))
+					<img class="quizImagePreview" src={imageUrl}>This quiz has an image</img>
+				}).openOr(NodeSeq.Empty)
 			}
       <div>
       {
