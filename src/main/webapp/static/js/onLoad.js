@@ -271,7 +271,7 @@ var TweenController = (function(){
         Progress.call("onViewboxChanged");
     };
     var teacherViewUpdated = function(x,y,w,h){
-        if(Conversations.isAuthor()){
+        if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
             var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
             if(w == 0 || h == 0){
                 return;
