@@ -8,6 +8,7 @@ import _root_.net.liftweb.util._
 import _root_.net.liftweb.common._
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriver.IWebElement;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -163,6 +164,34 @@ abstract class SeleniumUser(usr:String,svr:String){
 
 	def elementIsDisplayed(selector:String):Boolean = tryo(driver.findElements(By.cssSelector(selector)).first.isDisplayed).openOr(false)
 
+	def allHaveClass(selector:String,clazz:String,permitEmpty:Boolean = false):Boolean = {
+		applyCheckToCollectionOfElements(selector,(elements) => {
+			elements.filter(e => e.getAttribute("class").split(" ").contains(clazz)).length == elements.length
+		},permitEmpty)
+	}
+	def anyHaveClass(selector:String,clazz:String,permitEmpty:Boolean = false):Boolean = {
+		applyCheckToCollectionOfElements(selector,(elements) => {
+			elements.exists(e => e.getAttribute("class").split(" ").contains(clazz))
+		},permitEmpty)
+	}
+	def allLackClass(selector:String,clazz:String,permitEmpty:Boolean):Boolean = {
+		applyCheckToCollectionOfElements(selector,(elements) => {
+			!(elements.exists(e => e.getAttribute("class").split(" ").contains(clazz)))
+		},permitEmpty)
+	}
+	def someLackClass(selector:String,clazz:String,permitEmpty:Boolean):Boolean = {
+		applyCheckToCollectionOfElements(selector,(elements) => {
+			!(elements.filter(e => e.getAttribute("class").split(" ").contains(clazz)).length == elements.length)
+		},permitEmpty)
+	}
+	protected def applyCheckToCollectionOfElements(cssSelector:String,check:List[IWebElement]=>Boolean,emptySucceeds:Boolean):Boolean = {
+		val elements = driver.findElements(By.cssSelector(cssSelector))
+		if (!emptySucceeds && elements.length == 0)
+			false
+		else
+			check(elements)
+	}
+
 	protected val allTests = List.empty[TestingAction]
 
 	protected def perform(name:String):Unit ={
@@ -208,13 +237,69 @@ abstract class SeleniumUser(usr:String,svr:String){
 		trigger()
 		waitUntilDisplayed(traceSelector)
 	}
-
-
 }
 
 case class MetlXUser(override val username:String, override val server:String) extends SeleniumUser(username,server){
-	override def setup = {}
+	override def setup = {
+		driver.get("http://%s/board")
+	}
 	override val allTests = List.empty[TestingAction]
+
+	def canToggleApplicationButton = elementIsDisplayed("#applicationMenuButton")
+	def backstageIsOpen = elementIsDisplayed("#backstageContainer")
+	def canOpenBackstage = canToggleApplicationButton && !backstageIsOpen
+	def canCloseBackstage = canToggleApplicationButton && backstageIsOpen
+	def canSearchConversations = elementIsDisplayed("#searchButton")
+	def canShowMyConversations = elementIsDisplayed("#myConversationsButton")
+	def canEnterConversationIntoSearchbox = elementIsDisplayed("#searchForConversationBox")
+	def canSwitchToPrivate = toolsAreVisible && elementIsDisplayed("#privateMode")
+	def canSwitchToPublic = toolsAreVisible && elementIsDisplayed("#publicMode")
+	def canSwitchToCollaborate = toolsAreVisible && elementIsDisplayed("#enableCollaboration")
+	def canSwitchToPresent = toolsAreVisible && elementIsDisplayed("#disableCollaboration")
+	def canSwitchToSelectMode = toolsAreVisible && elementIsDisplayed("#selectMode")		
+	def canSwitchToDrawMode = toolsAreVisible && elementIsDisplayed("#drawMode")		
+	def canSwitchToInsertMode = toolsAreVisible && elementIsDisplayed("#insertMode")		
+	def canSwitchToFeedbackMode = toolsAreVisible && elementIsDisplayed("#feedbackMode")		
+	def canSwitchToZoomMode = toolsAreVisible && elementIsDisplayed("#zoomMode")		
+	def canSwitchToPanMode = toolsAreVisible && elementIsDisplayed("#panMode")		
+	def canSelectSelectSubtool = toolsAreVisible && elementIsDisplayed("#selectTools")
+	def canSelectDrawSubtool = toolsAreVisible && elementIsDisplayed("#drawTools")
+	def canSelectInsertSubtool = toolsAreVisible && elementIsDisplayed("#insertTools")
+	def canSelectFeedbackSubtool = toolsAreVisible && elementIsDisplayed("#feedbackTools")
+	def canSelectZoomSubtool = toolsAreVisible && elementIsDisplayed("#zoomTools")
+	def canSelectPanSubtool = toolsAreVisible && elementIsDisplayed("#panTools")
+	def canSelectPen1 = toolsAreVisible && elementIsDisplayed("#pen1Button")
+	def canSelectPen2 = toolsAreVisible && elementIsDisplayed("#pen2Button")
+	def canSelectPen3 = toolsAreVisible && elementIsDisplayed("#pen3Button")
+	def canSelectErase = toolsAreVisible && elementIsDisplayed("#eraseButton")
+	def canSelectPenCustomization = toolsAreVisible && elementIsDisplayed("#penCustomizationButton")
+	def canDeleteSelection = toolsAreVisible && elementIsDisplayed("#delete") && !allHaveClass("#delete","disabledButton")
+	def canResizeSelection = toolsAreVisible && elementIsDisplayed("#resize") && !allHaveClass("#resize","disabledButton")
+	def canShowSelection = toolsAreVisible && elementIsDisplayed("#publicize") && !allHaveClass("#publicize","disabledButton")
+	def canHideSelection = toolsAreVisible && elementIsDisplayed("#privatize") && !allHaveClass("#privatize","disabledButton")
+	def canInsertText = toolsAreVisible && elementIsDisplayed("#insertTextButton")
+	def canInsertImage = toolsAreVisible && elementIsDisplayed("#insertImageButton")
+	def canSubmitScreenshot = toolsAreVisible && elementIsDisplayed("#submitScreenshotButton")
+	def canOpenQuizzes = (toolsAreVisible && elementIsDisplayed("#quizzesSubToolButton")) || elementIsDisplayed("#quizzes") ||  elementIsDisplayed("#submissionCount")
+	def canOpenSubmissions = (toolsAreVisible && elementIsDisplayed("#submissionsSubToolButton")) || elementIsDisplayed("#submissions") || elementIsDisplayed("#quizCount")
+	def canResetZoom = toolsAreVisible && elementIsDisplayed("#zoomToOriginal")
+	def canAutoFitZoom = toolsAreVisible && elementIsDisplayed("#zoomToFull")
+	def canZoomToPage = toolsAreVisible && elementIsDisplayed("#zoomToPage")
+	def canZoomIn = toolsAreVisible && elementIsDisplayed("#in")
+	def canZoomOut = toolsAreVisible && elementIsDisplayed("#out")
+	def canPanLeft = toolsAreVisible && elementIsDisplayed("#left")
+	def canPanRight = toolsAreVisible && elementIsDisplayed("#right")
+	def canPanUp = toolsAreVisible && elementIsDisplayed("#up")
+	def canPanDown = toolsAreVisible && elementIsDisplayed("#down")
+	def canOpenPreferences = backstageIsOpen && elementIsDisplayed("#preferences")
+	def canOpenConversation = backstageIsOpen && elementIsDisplayed("#conversations")
+	def toolsAreVisible = elementIsDisplayed("#toolsColumn")
+	def slidesAreVisible = elementIsDisplayed("#slidesColumn")
+	def canShowTools = elementIsDisplayed("#restoreTools") && !toolsAreVisible
+	def canHideTools = elementIsDisplayed("#restoreTools") && toolsAreVisible
+	def canShowSlides = elementIsDisplayed("#restoreSlides") && !slidesAreVisible
+	def canHideSlides = elementIsDisplayed("#restoreSlides") && slidesAreVisible 
+	def canAddSlide = elementIsDisplayed("#addSlideButton") && slidesAreVisible
 }
 
 case class StackUser(override val username:String, override val server:String) extends SeleniumUser(username,server){
