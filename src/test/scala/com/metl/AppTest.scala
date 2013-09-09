@@ -14,6 +14,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.Keys
 import com.mongodb._
 import net.liftweb.mongodb._
 import scala.util.Random
@@ -100,9 +101,13 @@ abstract class SeleniumUser(usr:String,svr:String){
 		driver.findElements(new By.ByCssSelector(selector))
 	}
 
-	protected def enterText(selector:String,text:String) ={
+	protected def enterText(selector:String,text:String,pressEnter:Boolean = false) ={
 		waitUntilDisplayed(selector)
 		driver.executeScript("$('%s').val('%s')".format(selector,text))
+		if (pressEnter){
+			val element = getDisplayedElement(selector)
+			element.sendKeys(Keys.RETURN);
+		}
 	}
 
 	protected def updateText(selector:String,text:String) ={
@@ -272,10 +277,15 @@ case class MetlXUser(override val username:String, override val server:String) e
 	def canSearchConversations = conversationsOpen && elementIsDisplayed("#searchButton")
 	def clickSearchButton = trace("clickSearchButton", { getDisplayedElement("#searchButton").click })
 
+	def canCreateConversation = conversationsOpen && elementIsDisplayed("#createConversationButton")
+	def createConversation = trace("createConversation", { getDisplayedElement("#createConversationButton").click })
+
 	def canShowMyConversations = conversationsOpen && elementIsDisplayed("#myConversationsButton")
 	def showMyConversations = trace("showMyConversations", { getDisplayedElement("#myConversationsButton").click })
 	def canEnterConversationIntoSearchbox = conversationsOpen && elementIsDisplayed("#searchForConversationBox")
-	def searchForConversation(convName:String) = trace("searchForConversation(%s)".format(convName), {enterText("#searchForConversationBox",convName) })
+	def searchForConversation(convName:String) = trace("searchForConversation(%s)".format(convName), {
+		enterText("#searchForConversationBox",convName,true) 
+	})
 	def canSelectConversation = conversationsOpen && elementIsDisplayed(".searchResult")
 	def chooseAConversation = trace("chooseAConversation", { clickOneOf(".searchResult") })
 
