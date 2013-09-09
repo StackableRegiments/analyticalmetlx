@@ -8,7 +8,6 @@ import _root_.net.liftweb.util._
 import _root_.net.liftweb.common._
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebDriver.IWebElement;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -184,8 +183,8 @@ abstract class SeleniumUser(usr:String,svr:String){
 			!(elements.filter(e => e.getAttribute("class").split(" ").contains(clazz)).length == elements.length)
 		},permitEmpty)
 	}
-	protected def applyCheckToCollectionOfElements(cssSelector:String,check:List[IWebElement]=>Boolean,emptySucceeds:Boolean):Boolean = {
-		val elements = driver.findElements(By.cssSelector(cssSelector))
+	protected def applyCheckToCollectionOfElements(cssSelector:String,check:List[WebElement]=>Boolean,emptySucceeds:Boolean):Boolean = {
+		val elements = driver.findElements(By.cssSelector(cssSelector)).toList
 		if (!emptySucceeds && elements.length == 0)
 			false
 		else
