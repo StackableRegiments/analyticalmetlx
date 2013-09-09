@@ -129,6 +129,13 @@ abstract class SeleniumUser(usr:String,svr:String){
 		else
 			act()
 	}
+
+	def clickOneOf(selector:String) = {
+		var elements = getDisplayedElements(selector)
+		var element = elements(Random.nextInt(elements.size))
+		element.click
+	}
+
 	protected def trace(label:String,action: =>Any)= action
 
 	protected def attemptToCloseAlerts:Unit = {
@@ -240,17 +247,39 @@ abstract class SeleniumUser(usr:String,svr:String){
 
 case class MetlXUser(override val username:String, override val server:String) extends SeleniumUser(username,server){
 	override def setup = {
-		driver.get("http://%s/board")
+		driver.get("http://%s/board".format(server))
 	}
-	override val allTests = List.empty[TestingAction]
+	override val allTests = List(
+		TestingAction("toggleApplicationButton",1,toggleApplicationButton _,canToggleApplicationButton _),
+		TestingAction("searchFor(bear)",1,()=> searchForConversation("bear"),canEnterConversationIntoSearchbox _),
+		TestingAction("clickSearchButton",1,clickSearchButton _,canSearchConversations _),
+		TestingAction("chooseAConversationRandomly",1,chooseAConversation _,canSelectConversation _),
+		TestingAction("openConversations",1,openConversations _,canOpenConversations _),
+		TestingAction("chooseASlide",1,chooseASlide _,canSelectSlide _),
+		TestingAction("showMyConversations",1,showMyConversations _,canShowMyConversations _)	
+	)
+
 
 	def canToggleApplicationButton = elementIsDisplayed("#applicationMenuButton")
 	def backstageIsOpen = elementIsDisplayed("#backstageContainer")
 	def canOpenBackstage = canToggleApplicationButton && !backstageIsOpen
 	def canCloseBackstage = canToggleApplicationButton && backstageIsOpen
-	def canSearchConversations = elementIsDisplayed("#searchButton")
-	def canShowMyConversations = elementIsDisplayed("#myConversationsButton")
-	def canEnterConversationIntoSearchbox = elementIsDisplayed("#searchForConversationBox")
+	def toggleApplicationButton = trace("toggleApplicationButton", { getDisplayedElement("#applicationMenuButton").click })
+	
+	def canOpenConversations = backstageIsOpen && elementIsDisplayed("#conversations")
+	def conversationsOpen = backstageIsOpen && elementIsDisplayed("#conversationsContainer")
+	def openConversations = trace("openConversations", { getDisplayedElement("#conversations").click })
+	def canSearchConversations = conversationsOpen && elementIsDisplayed("#searchButton")
+	def clickSearchButton = trace("clickSearchButton", { getDisplayedElement("#searchButton").click })
+
+	def canShowMyConversations = conversationsOpen && elementIsDisplayed("#myConversationsButton")
+	def showMyConversations = trace("showMyConversations", { getDisplayedElement("#myConversationsButton").click })
+	def canEnterConversationIntoSearchbox = conversationsOpen && elementIsDisplayed("#searchForConversationBox")
+	def searchForConversation(convName:String) = trace("searchForConversation(%s)".format(convName), {enterText("#searchForConversationBox",convName) })
+	def canSelectConversation = conversationsOpen && elementIsDisplayed(".searchResult")
+	def chooseAConversation = trace("chooseAConversation", { clickOneOf(".searchResult") })
+
+//	def canDeleteConversation = conversationsOpen && elementIsDisplayed("
 	def canSwitchToPrivate = toolsAreVisible && elementIsDisplayed("#privateMode")
 	def canSwitchToPublic = toolsAreVisible && elementIsDisplayed("#publicMode")
 	def canSwitchToCollaborate = toolsAreVisible && elementIsDisplayed("#enableCollaboration")
@@ -299,6 +328,28 @@ case class MetlXUser(override val username:String, override val server:String) e
 	def canShowSlides = elementIsDisplayed("#restoreSlides") && !slidesAreVisible
 	def canHideSlides = elementIsDisplayed("#restoreSlides") && slidesAreVisible 
 	def canAddSlide = elementIsDisplayed("#addSlideButton") && slidesAreVisible
+
+	def canSelectSlide = elementIsDisplayed(".slideContainer") && slidesAreVisible
+	def chooseASlide = trace("chooseASlide", { clickOneOf(".slideContainer") })
+
+	def submissionsAreVisible = backstageIsOpen && elementIsDisplayed("#submissionsContainer")
+	def canSelectSubmission = submissionsAreVisible && elementIsDisplayed(".submissionSummary")
+	def quizzesAreVisible = backstageIsOpen && elementIsDisplayed("#quizzesContainer")
+	def canSelectQuiz = quizzesAreVisible && elementIsDisplayed(".quizSummary")
+	def canCreateQuiz = quizzesAreVisible && elementIsDisplayed("#quizCreationButton")
+	def quizCreationDialogOpen = quizzesAreVisible && elementIsDisplayed("#createQuizForm")
+	def canAddOptionToQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizAddOptionButton")
+	def canDeleteOptionFromQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizRemoveOptionButton")	
+	def caAttachCurrentSlideToQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizAttachImageButton")
+	def canDeleteQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizDeleteButton")
+	def canSubmitQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizSubmitButton")
+	def canEnterQuizQuestion = quizCreationDialogOpen && elementIsDisplayed(".quizQuestion")
+	def canEnterQuizOptionText = quizCreationDialogOpen && elementIsDisplayed(".quizText")
+	def canEditQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizSummaryEditButton")
+	def canFocusQuiz = quizzesAreVisible && elementIsDisplayed(".quizSummary")
+	def quizFocused = quizzesAreVisible && elementIsDisplayed(".quizItem")
+	def canAnswerQuiz = quizFocused && elementIsDisplayed(".quizOption")
+//	def canDisplayQuizOnNextSlide = quizFocused && elementIsDisplayed("
 }
 
 case class StackUser(override val username:String, override val server:String) extends SeleniumUser(username,server){
@@ -470,11 +521,7 @@ case class StackUser(override val username:String, override val server:String) e
 	// tests for topics
 	def chooseATopic {
 		trace("chooseATopic", {
-			waitAcrossRefresh("#appLabel", ()=> {
-				var topicElements = getDisplayedElements(".topicName")
-				var topic = topicElements(Random.nextInt(topicElements.size))
-				topic.click
-			})
+			waitAcrossRefresh("#appLabel", ()=> { clickOneOf(".topicName") })
 		})
 	}
 
@@ -509,7 +556,9 @@ case class StackUser(override val username:String, override val server:String) e
 	)
 }
 
-class MongoTrackedTestCase(name:String,mongoServer:String = "127.0.0.1",mongoPort:Int = 27017) extends TestCase(name){
+class MongoTrackedTestCase(name:String) extends TestCase(name){
+	protected val mongoServer:String = "127.0.0.1"
+	protected val mongoPort:Int = 27017
   protected var users:List[SeleniumUser] = List.empty[SeleniumUser]
 	def setUsers(newUsers:List[SeleniumUser]):Unit = {
 		users = newUsers
@@ -527,46 +576,9 @@ class MongoTrackedTestCase(name:String,mongoServer:String = "127.0.0.1",mongoPor
 		MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), "%s_results".format(name))
 
 		val currentTestQuery = new BasicDBObject("started", new BasicDBObject("$gt", new Date().getTime-5*60*1000))
-	/*	StackTestHelpers.currentTest = MongoDB.useCollection("testRunInfo") {
-			coll => coll.findAndModify(
-				currentTestQuery,
-				new BasicDBObject(), 
-				new BasicDBObject(), 
-				false, 
-				new BasicDBObject(Map("isRunning" -> true, "started" -> new Date().getTime)),
-				true,
-				true).get("_id").toString
-		}
-		println("TEST ID: "+StackTestHelpers.currentTest)
-*/
-		/*
-		println(tryo({
-			val srvr = new ServerAddress(server, 27017)
-			val mo = new MongoOptions
-			mo.socketTimeout = 10000
-			mo.socketKeepAlive = true
-			MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), "metl")
-			StackQuestion.findAll.foreach(_.delete_!)
-			"cleared mongo"
-		}).openOr("couldn't clear mongo"))
-		*/
-/*
-		println(tryo({	
-			var u = StackUser("topicseeder_from_%s".format(localhost),server)
-			u.seedTopics
-			u.driver.quit
-			"pre-seeded topics"
-		}).openOr("couldn't pre-seed topics"))
-*/
   }
   override def tearDown ={
 		clearUsers
-/*		println(tryo({
-			users.foreach(_.teardown)
-			"shut down each user's chromedriver"
-		}).openOr("couldn't shutdown each user's chromedriver"))
-		users = List.empty[SeleniumUser]
-*/
   }
   protected def iter(i:Int):Unit ={
 		val timeout = 9000000L
@@ -602,18 +614,36 @@ class MongoTrackedTestCase(name:String,mongoServer:String = "127.0.0.1",mongoPor
 	}
 }
 
-class MeTLXTest extends TestCase("metlx"){
-	val server = "127.0.0.1"
-	var users = List.empty[MetlXUser]
+class MeTLXTest extends MongoTrackedTestCase("metlx"){
+	val server = "localhost:8080"
+	//val server = "racy.its.monash.edu:8080"
+	val localhost = "lt%s".format(Random.nextInt(10000)) 
 	def testInheritance = {
+		assertEquals(true,true)
+	}
+	def testSingleUser = {
+		setUsers(List(MetlXUser("singleUser_from_%s".format(localhost),server)))
+		val testActions = List(
+			"searchFor(bear)",
+			"clickSearchButton",
+			"chooseAConversationRandomly",
+			"toggleApplicationButton",
+			"chooseASlide",
+			"chooseASlide",
+			"chooseASlide",
+			"chooseASlide"
+		)
+		testActions.map(name => { users.map({
+			Thread.sleep(1500)
+			_.act(name)
+		})})
+		Thread.sleep(5000)
+		clearUsers
 		assertEquals(true,true)
 	}
 }
 
 class StackTest extends MongoTrackedTestCase("stack"){
-	//val server = "127.0.0.1"
-	//val server = "psych-stack.adm.monash.edu"
-	//val server = "psych-stack-staging.adm.monash.edu"
 	val server = "kayak.adm.monash.edu"
 	val localhost = "lt%s".format(Random.nextInt(10000)) 
 
@@ -653,7 +683,7 @@ class StackTest extends MongoTrackedTestCase("stack"){
 		assertEquals(true,true)
 	}
 
-  def testMultipleUsersInteracting = {
+  def _testMultipleUsersInteracting = {
     val count = 5
     setUsers(Range(0,count).map(t=>{
       Thread.sleep((Random.nextInt(4)+1)*1000)
