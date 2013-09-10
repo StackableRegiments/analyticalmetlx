@@ -167,7 +167,7 @@ var Quizzes = (function(){
         var theseQuizAnswerers = quizAnswersFunction(quiz);
         if ("url" in quiz){
             $("<img/>",{
-		class:"quizImagePreview",
+                class:"quizImagePreview",
                 src: sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quiz.id)
             }).appendTo(rootElem);
         }
