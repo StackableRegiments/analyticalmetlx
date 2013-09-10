@@ -75,7 +75,7 @@ case class TestingAction(name:String,weight:Int,doable:()=>Unit,requirements:()=
 	def canAct = requirements()
 }
 
-abstract class SeleniumUser(usr:String,svr:String){
+abstract class SeleniumUser(usr:String,svr:String,testCase:MongoTrackedTestCase){
 	val username:String = usr
 	val server:String = svr
 	def setup:Unit = {}
@@ -157,14 +157,14 @@ abstract class SeleniumUser(usr:String,svr:String){
 				driver.navigate().refresh()
 			attemptToCloseAlerts
 			action()
-			DBActor ! TestResult(label,this,start,new Date().getTime-start,true,Empty)
+			testCase.sendToActor(TestResult(label,this,start,new Date().getTime-start,true,Empty))
 		}
 		catch {
 			case (e:Exception) => {
 				if(!needsToRefresh)
 					performTestOrRefresh(label,action,true)
 				else
-					DBActor ! TestResult(label,this,start,new Date().getTime-start,false,Full(e))
+					testCase.sendToActor(TestResult(label,this,start,new Date().getTime-start,false,Full(e)))
 			}
 		}
 	}
@@ -212,8 +212,10 @@ abstract class SeleniumUser(usr:String,svr:String){
 	}
 	protected def performRandom(actions:List[TestingAction]):Unit = {
 		val weightedActions = actions.foldLeft(List[TestingAction]())((acc,item) => acc ::: List.fill(item.weight)(item))
-		val action = weightedActions(Random.nextInt(weightedActions.length))
-		performTestOrRefresh(action.name, () => action.act)
+		if (weightedActions.length > 0){
+			val action = weightedActions(Random.nextInt(weightedActions.length))
+			performTestOrRefresh(action.name, () => action.act)
+		}
 	}
 
 	def act = performPossible
@@ -247,19 +249,23 @@ abstract class SeleniumUser(usr:String,svr:String){
 	}
 }
 
-case class MetlXUser(override val username:String, override val server:String) extends SeleniumUser(username,server){
+case class MetlXUser(override val username:String, override val server:String,testCase:MongoTrackedTestCase) extends SeleniumUser(username,server,testCase){
 	override def setup = {
+		driver.get("http://%s/board".format(server))
+		waitUntilDisplayed("#backstageContainer")
+		driver.asInstanceOf[JavascriptExecutor].executeScript("changeUser('%s');".format(username))
 		driver.get("http://%s/board".format(server))
 	}
 	override val allTests = List(
+		TestingAction("closeS2CMessage",1,closeS2CMessage _,canCloseS2CMessage _),
 		TestingAction("toggleApplicationButton",1,toggleApplicationButton _,canToggleApplicationButton _),
-		TestingAction("searchForConversation",1,()=> searchForConversation("forb"),canEnterConversationIntoSearchbox _),
+		TestingAction("searchForConversation",1,()=> searchForConversation("testSpace"),canEnterConversationIntoSearchbox _),
 		TestingAction("clickSearchButton",1,clickSearchButton _,canSearchConversations _),
 		TestingAction("chooseAConversationRandomly",1,chooseAConversation _,canSelectConversation _),
 		TestingAction("openConversations",1,openConversations _,canOpenConversations _),
-		TestingAction("chooseASlide",1,chooseASlide _,canSelectSlide _),
-		TestingAction("showMyConversations",1,showMyConversations _,canShowMyConversations _),
-		TestingAction("createConversation",1,createConversation _,canCreateConversation _),
+		TestingAction("chooseASlide",1,chooseASlide _,canChooseASlide _),
+//		TestingAction("showMyConversations",1,showMyConversations _,canShowMyConversations _),
+//		TestingAction("createConversation",1,createConversation _,canCreateConversation _),
 		TestingAction("switchToPrivate",1,switchToPrivate _,canSwitchToPrivate _),
 		TestingAction("switchToPublic",1,switchToPublic _,canSwitchToPublic _),
 		TestingAction("switchToCollaborate",1,switchToCollaborate _,canSwitchToCollaborate _),
@@ -283,29 +289,50 @@ case class MetlXUser(override val username:String, override val server:String) e
 		TestingAction("switchToFeedbackMode",1,switchToFeedbackMode _,canSwitchToFeedbackMode _),
 		TestingAction("submitScreenshot",1,submitScreenshot _,canSubmitScreenshot _),
 		TestingAction("openSubmissions",1,openSubmissions _,canOpenSubmissions _),
-		TestingAction("openQuizzes",1,openQuizzes _,canOpenQuizzes _)
+		TestingAction("openQuizzes",1,openQuizzes _,canOpenQuizzes _),
+		
+		TestingAction("switchToZoomMode",1,switchToZoomMode _,canSwitchToZoomMode _),
+		TestingAction("resetZoom",1,resetZoom _,canResetZoom _),
+		TestingAction("autoFitZoom",1,autoFitZoom _,canAutoFitZoom _),
+		TestingAction("zoomToPage",1,zoomToPage _,canZoomToPage _),
+		TestingAction("zoomIn",1,zoomIn _,canZoomIn _),
+		TestingAction("zoomOut",1,zoomOut _,canZoomOut _),
+		
+		TestingAction("switchToPanMode",1,switchToPanMode _,canSwitchToPanMode _),
+		TestingAction("panLeft",1,panLeft _,canPanLeft _),
+		TestingAction("panRight",1,panRight _,canPanRight _),
+		TestingAction("panUp",1,panUp _,canPanUp _),
+		TestingAction("panDown",1,panDown _,canPanDown _),
 
-	
+		TestingAction("openPreferences",1,openPreferences _,canOpenPreferences _),
+		TestingAction("openConversations",1,openConversations _,canOpenConversations _),
+		TestingAction("showSlides",1,showSlides _,canShowSlides _),
+		TestingAction("hideSlides",1,hideSlides _,canHideSlides _),
+		TestingAction("showTools",1,showTools _,canShowTools _),
+		TestingAction("hideTools",1,hideTools _,canHideTools _),
+		TestingAction("addSlide",1,addSlide _,canAddSlide _)
 	)
 
+	def canCloseS2CMessage = elementIsDisplayed(".s2cClose")
+	def closeS2CMessage = trace("closeS2CMessage",{ clickOneOf(".s2cClose")})
 
 	def canToggleApplicationButton = elementIsDisplayed("#applicationMenuButton")
 	def backstageIsOpen = elementIsDisplayed("#backstageContainer")
 	def canOpenBackstage = canToggleApplicationButton && !backstageIsOpen
 	def canCloseBackstage = canToggleApplicationButton && backstageIsOpen
-	def toggleApplicationButton = trace("toggleApplicationButton", { getDisplayedElement("#applicationMenuButton").click })
+	def toggleApplicationButton = trace("toggleApplicationButton", { clickOneOf("#applicationMenuButton")})
 	
 	def canOpenConversations = backstageIsOpen && elementIsDisplayed("#conversations")
 	def conversationsOpen = backstageIsOpen && elementIsDisplayed("#conversationsContainer")
-	def openConversations = trace("openConversations", { getDisplayedElement("#conversations").click })
+	def openConversations = trace("openConversations", { clickOneOf("#conversations")})
 	def canSearchConversations = conversationsOpen && elementIsDisplayed("#searchButton")
-	def clickSearchButton = trace("clickSearchButton", { getDisplayedElement("#searchButton").click })
+	def clickSearchButton = trace("clickSearchButton", { clickOneOf("#searchButton")})
 
 	def canCreateConversation = conversationsOpen && elementIsDisplayed("#createConversationButton")
-	def createConversation = trace("createConversation", { getDisplayedElement("#createConversationButton").click })
+	def createConversation = trace("createConversation", { clickOneOf("#createConversationButton")})
 
 	def canShowMyConversations = conversationsOpen && elementIsDisplayed("#myConversationsButton")
-	def showMyConversations = trace("showMyConversations", { getDisplayedElement("#myConversationsButton").click })
+	def showMyConversations = trace("showMyConversations", { clickOneOf("#myConversationsButton")})
 	def canEnterConversationIntoSearchbox = conversationsOpen && elementIsDisplayed("#searchForConversationBox")
 	def searchForConversation(convName:String) = trace("searchForConversation(%s)".format(convName), {
 		enterText("#searchForConversationBox",convName,true) 
@@ -328,25 +355,28 @@ case class MetlXUser(override val username:String, override val server:String) e
 	def switchToPresent = trace("switchToPresent", {clickOneOf("#disableCollaboration")})	
 
 	def canSwitchToSelectMode = toolsAreVisible && elementIsDisplayed("#selectMode")
+	def selectSubToolsVisible = toolsAreVisible && elementIsDisplayed("#selectTools")
 	def switchToSelectMode = trace("switchToSelectMode", {clickOneOf("#selectMode")})	
-	def canDeleteSelection = toolsAreVisible && elementIsDisplayed("#delete") && !allHaveClass("#delete","disabledButton")
+	def canDeleteSelection = toolsAreVisible && selectSubToolsVisible && elementIsDisplayed("#delete") && !allHaveClass("#delete","disabledButton")
 	def deleteSelection = trace("deleteSelection", {clickOneOf("#delete")})
-	def canResizeSelection = toolsAreVisible && elementIsDisplayed("#resize") && !allHaveClass("#resize","disabledButton")
+	def canResizeSelection = toolsAreVisible && selectSubToolsVisible && elementIsDisplayed("#resize") && !allHaveClass("#resize","disabledButton")
 	def resizeSelection = trace("resizeSelection", {clickOneOf("#resize")})
-	def canShowSelection = toolsAreVisible && elementIsDisplayed("#publicize") && !allHaveClass("#publicize","disabledButton")
+	def canShowSelection = toolsAreVisible && selectSubToolsVisible && elementIsDisplayed("#publicize") && !allHaveClass("#publicize","disabledButton")
 	def showSelection = trace("showSelection", {clickOneOf("#publicize")})
-	def canHideSelection = toolsAreVisible && elementIsDisplayed("#privatize") && !allHaveClass("#privatize","disabledButton")
+	def canHideSelection = toolsAreVisible && selectSubToolsVisible && elementIsDisplayed("#privatize") && !allHaveClass("#privatize","disabledButton")
 	def hideSelection = trace("hideSelection", {clickOneOf("#privatize")})
 				
 	def canSwitchToDrawMode = toolsAreVisible && elementIsDisplayed("#drawMode")		
+	def drawSubtoolsVisible = toolsAreVisible && elementIsDisplayed("#drawTools")
 	def switchToDrawMode = trace("switchToDrawMode", {clickOneOf("#drawMode")})
-//	def canSelectPen1 = toolsAreVisible && elementIsDisplayed("#pen1Button")
-//	def canSelectPen2 = toolsAreVisible && elementIsDisplayed("#pen2Button")
-//	def canSelectPen3 = toolsAreVisible && elementIsDisplayed("#pen3Button")
-//	def canSelectErase = toolsAreVisible && elementIsDisplayed("#eraseButton")
-//	def canSelectPenCustomization = toolsAreVisible && elementIsDisplayed("#penCustomizationButton")
+//	def canSelectPen1 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen1Button")
+//	def canSelectPen2 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen2Button")
+//	def canSelectPen3 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen3Button")
+//	def canSelectErase = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#eraseButton")
+//	def canSelectPenCustomization = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#penCustomizationButton")
 
 	def canSwitchToInsertMode = toolsAreVisible && elementIsDisplayed("#insertMode")		
+	def canSelectInsertSubtool = toolsAreVisible && elementIsDisplayed("#insertTools")
 	def switchToInsertMode = trace("switchToInsertMode",{clickOneOf("#insertMode")})
 	def canInsertText = toolsAreVisible && elementIsDisplayed("#insertTextButton")
 	def insertText = trace("insertText", {clickOneOf("#insertTextButton")})
@@ -354,65 +384,99 @@ case class MetlXUser(override val username:String, override val server:String) e
 	def insertImage = trace("insertImage", {clickOneOf("#insertImageButton")})
 
 	def canSwitchToFeedbackMode = toolsAreVisible && elementIsDisplayed("#feedbackMode")		
+	def feedbackSubtoolsVisible = toolsAreVisible && elementIsDisplayed("#feedbackTools")
 	def switchToFeedbackMode = trace("switchToFeedbackMode",{clickOneOf("#feedbackMode")})
-	def canSubmitScreenshot = toolsAreVisible && elementIsDisplayed("#submitScreenshotButton")
+	def canSubmitScreenshot = toolsAreVisible && feedbackSubtoolsVisible && elementIsDisplayed("#submitScreenshotButton")
 	def submitScreenshot = trace("submitScreenshot",{clickOneOf("#submitScreenshotButton")})
-	def canOpenQuizzes = (toolsAreVisible && elementIsDisplayed("#quizzesSubToolButton")) || elementIsDisplayed("#quizzes") ||  elementIsDisplayed("#quizCount")
+	def canOpenQuizzes = canToggleApplicationButton && ((toolsAreVisible && feedbackSubtoolsVisible && elementIsDisplayed("#quizzesSubToolButton")) || elementIsDisplayed("#quizzes") ||  elementIsDisplayed("#quizCount"))
 	def openQuizzes = trace("openQuizzes",{clickOneOf("#quizCount")})
-	def canOpenSubmissions = (toolsAreVisible && elementIsDisplayed("#submissionsSubToolButton")) || elementIsDisplayed("#submissions") || elementIsDisplayed("#submissionCount")
+	def canOpenSubmissions = canToggleApplicationButton && ((toolsAreVisible && feedbackSubtoolsVisible && elementIsDisplayed("#submissionsSubToolButton")) || elementIsDisplayed("#submissions") || elementIsDisplayed("#submissionCount"))
 	def openSubmissions = trace("openSubmissions",{clickOneOf("#submissionCount")})
 
 	def canSwitchToZoomMode = toolsAreVisible && elementIsDisplayed("#zoomMode")		
+	def switchToZoomMode = trace("switchToZoomMode", { clickOneOf("#zoomMode")})
+	def zoomSubtoolsVisible = toolsAreVisible && elementIsDisplayed("#zoomTools")
+	def canResetZoom = toolsAreVisible && zoomSubtoolsVisible && elementIsDisplayed("#zoomToOriginal")
+	def resetZoom = trace("resetZoom", {clickOneOf("#zoomToOriginal")})	
+	def canAutoFitZoom = toolsAreVisible && zoomSubtoolsVisible && elementIsDisplayed("#zoomToFull")
+	def autoFitZoom = trace("autoFitZoom", {clickOneOf("#zoomToFull")})
+	def canZoomToPage = toolsAreVisible && zoomSubtoolsVisible && elementIsDisplayed("#zoomToPage")
+	def zoomToPage = trace("zoomToPage", {clickOneOf("#zoomToPage")})
+	def canZoomIn = toolsAreVisible && zoomSubtoolsVisible && elementIsDisplayed("#in")
+	def zoomIn = trace("zoomIn", { clickOneOf("#in")})
+	def canZoomOut = toolsAreVisible && zoomSubtoolsVisible && elementIsDisplayed("#out")
+	def zoomOut = trace("zoomOut", {clickOneOf("#out")})
+
 	def canSwitchToPanMode = toolsAreVisible && elementIsDisplayed("#panMode")		
-	def canSelectSelectSubtool = toolsAreVisible && elementIsDisplayed("#selectTools")
-	def canSelectDrawSubtool = toolsAreVisible && elementIsDisplayed("#drawTools")
-	def canSelectInsertSubtool = toolsAreVisible && elementIsDisplayed("#insertTools")
-	def canSelectFeedbackSubtool = toolsAreVisible && elementIsDisplayed("#feedbackTools")
-	def canSelectZoomSubtool = toolsAreVisible && elementIsDisplayed("#zoomTools")
-	def canSelectPanSubtool = toolsAreVisible && elementIsDisplayed("#panTools")
-	def canResetZoom = toolsAreVisible && elementIsDisplayed("#zoomToOriginal")
-	def canAutoFitZoom = toolsAreVisible && elementIsDisplayed("#zoomToFull")
-	def canZoomToPage = toolsAreVisible && elementIsDisplayed("#zoomToPage")
-	def canZoomIn = toolsAreVisible && elementIsDisplayed("#in")
-	def canZoomOut = toolsAreVisible && elementIsDisplayed("#out")
-	def canPanLeft = toolsAreVisible && elementIsDisplayed("#left")
-	def canPanRight = toolsAreVisible && elementIsDisplayed("#right")
-	def canPanUp = toolsAreVisible && elementIsDisplayed("#up")
-	def canPanDown = toolsAreVisible && elementIsDisplayed("#down")
+	def switchToPanMode = trace("switchToPanMode", { clickOneOf("#panMode")})
+	def panSubToolsVisible = toolsAreVisible && elementIsDisplayed("#panTools")
+	def canPanLeft = toolsAreVisible && panSubToolsVisible && elementIsDisplayed("#left")
+	def panLeft = trace("pan left", { clickOneOf("#left")})
+	def canPanRight = toolsAreVisible && panSubToolsVisible && elementIsDisplayed("#right")
+	def panRight = trace("pan right", { clickOneOf("#right")})
+	def canPanUp = toolsAreVisible && panSubToolsVisible && elementIsDisplayed("#up")
+	def panUp = trace("pan up", { clickOneOf("#up")})
+	def canPanDown = toolsAreVisible && panSubToolsVisible && elementIsDisplayed("#down")
+	def panDown = trace("pan down", { clickOneOf("#down")})
+
 	def canOpenPreferences = backstageIsOpen && elementIsDisplayed("#preferences")
-	def canOpenConversation = backstageIsOpen && elementIsDisplayed("#conversations")
+	def openPreferences = trace("openPreferences", {clickOneOf("#preferences")})
 	def toolsAreVisible = elementIsDisplayed("#toolsColumn")
 	def slidesAreVisible = elementIsDisplayed("#slidesColumn")
 	def canShowTools = elementIsDisplayed("#restoreTools") && !toolsAreVisible
+	def showTools = trace("showTools",{clickOneOf("#restoreTools")})
 	def canHideTools = elementIsDisplayed("#restoreTools") && toolsAreVisible
+	def hideTools = trace("hideTools",{clickOneOf("#restoreTools")})
 	def canShowSlides = elementIsDisplayed("#restoreSlides") && !slidesAreVisible
+	def showSlides = trace("showSlides",{clickOneOf("#restoreSlides")})
 	def canHideSlides = elementIsDisplayed("#restoreSlides") && slidesAreVisible 
+	def hideSlides = trace("hideSlides",{clickOneOf("#restoreSlides")})
 	def canAddSlide = elementIsDisplayed("#addSlideButton") && slidesAreVisible
+	def addSlide = trace("addSlide",{clickOneOf("#addSlideButton")})
 
-	def canSelectSlide = elementIsDisplayed(".slideContainer") && slidesAreVisible
+	def canChooseASlide = elementIsDisplayed(".slideContainer") && slidesAreVisible
 	def chooseASlide = trace("chooseASlide", { clickOneOf(".slideContainer") })
 
 	def submissionsAreVisible = backstageIsOpen && elementIsDisplayed("#submissionsContainer")
 	def canSelectSubmission = submissionsAreVisible && elementIsDisplayed(".submissionSummary")
+	def selectSubmission = trace("selectSubmission",{clickOneOf(".submissionSummary")})
 	def quizzesAreVisible = backstageIsOpen && elementIsDisplayed("#quizzesContainer")
 	def canSelectQuiz = quizzesAreVisible && elementIsDisplayed(".quizSummary")
+	def selectQuiz = trace("selectQuiz",{clickOneOf(".quizSummary")})
 	def canCreateQuiz = quizzesAreVisible && elementIsDisplayed("#quizCreationButton")
+	def createQuiz = trace("createQuiz",{clickOneOf("#quizCreationButton")})
 	def quizCreationDialogOpen = quizzesAreVisible && elementIsDisplayed("#createQuizForm")
 	def canAddOptionToQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizAddOptionButton")
+	def addOptionToQuiz = trace("addQuizOption",{clickOneOf(".quizAddOptionButton")})
 	def canDeleteOptionFromQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizRemoveOptionButton")	
+	def deleteOptionFromQuiz = trace("deleteQuizOption",{clickOneOf(".quizRemoveOptionButton")})
 	def caAttachCurrentSlideToQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizAttachImageButton")
+	def attachCurrentSlideToQuiz = trace("attachCurrentSlideToQuiz",{clickOneOf(".quizAttachImageButton")})
 	def canDeleteQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizDeleteButton")
+	def deleteQuiz = trace("deleteQuiz",{clickOneOf(".quizDeleteButton")})
 	def canSubmitQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizSubmitButton")
+	def submitQuiz = trace("submitQuiz",{clickOneOf(".quizSubmitButton")})
 	def canEnterQuizQuestion = quizCreationDialogOpen && elementIsDisplayed(".quizQuestion")
+	def enterQuizQuestion = trace("enterQuizQuestion",{
+		val text = "Question from %s @ %s".format(username,server)
+		enterText(".quizQuestion",text,true) 
+	})
 	def canEnterQuizOptionText = quizCreationDialogOpen && elementIsDisplayed(".quizText")
+	def enterQuizOptionText = trace("enterQuizOptionText",{
+		val text = "Option from %s @ %s".format(username,server)
+		enterText(".quizText",text,true) 
+	})
 	def canEditQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizSummaryEditButton")
+	def editQuiz = trace("editQuiz",{clickOneOf(".quizSummaryEditButton")})
 	def canFocusQuiz = quizzesAreVisible && elementIsDisplayed(".quizSummary")
+	def focusQuiz = trace("focusQuiz",{clickOneOf(".quizSummary")})
 	def quizFocused = quizzesAreVisible && elementIsDisplayed(".quizItem")
 	def canAnswerQuiz = quizFocused && elementIsDisplayed(".quizOption")
+	def answerQuiz = trace("answerQuiz",{clickOneOf(".quizOption")})
 //	def canDisplayQuizOnNextSlide = quizFocused && elementIsDisplayed("
 }
 
-case class StackUser(override val username:String, override val server:String) extends SeleniumUser(username,server){
+case class StackUser(override val username:String, override val server:String,testCase:MongoTrackedTestCase) extends SeleniumUser(username,server,testCase){
   override def setup = {
 		openTopic("default")
 	}
@@ -615,10 +679,46 @@ case class StackUser(override val username:String, override val server:String) e
 	)
 }
 
+case object Setup
+case object ClearDB
+case object Shutdown
+
+class DBActor(host:String,port:Int,db:String,collection:String) extends LiftActor {
+	protected var mongoClient:Box[Mongo] = Empty
+	protected var mongoDB:Box[DB] = Empty
+	protected val collectionName = "%s_%s".format(collection,new Date().getTime)
+	protected def setup = {
+		val srvr = new ServerAddress(host, port)
+		val mo = new MongoOptions
+		mo.socketTimeout = 10000
+		mo.socketKeepAlive = true
+		mongoClient = Full(new Mongo(srvr,mo))
+		mongoDB = mongoClient.map(client => client.getDB(db))
+	}
+	protected def clearDB = {
+		mongoDB.map(db => db.getCollection(collectionName).drop)
+	}
+	protected def teardown = {
+	}
+	protected def saveToDB(input:MongoRecord[_]):Unit = {
+		mongoDB.map(db => db.getCollection(collectionName).save(input.asDBObject))
+	}
+	override def messageHandler = {
+		case Setup => setup
+		case ClearDB => clearDB
+		case Shutdown => teardown
+		case t:TestResult => saveToDB(TestResultRecord.fromTestResult(t))
+		case _ => println("DBActor recieved unknown message")
+	}
+}
+
 class MongoTrackedTestCase(name:String) extends TestCase(name){
 	protected val mongoServer:String = "127.0.0.1"
 	protected val mongoPort:Int = 27017
   protected var users:List[SeleniumUser] = List.empty[SeleniumUser]
+	protected val dbName = "seleniumTesting"
+	protected val collectionName = "%s_results".format(name)
+	protected val myActor = new DBActor(mongoServer,mongoPort,dbName,collectionName)
 	def setUsers(newUsers:List[SeleniumUser]):Unit = {
 		users = newUsers
 		users.foreach(_.setup)
@@ -628,16 +728,12 @@ class MongoTrackedTestCase(name:String) extends TestCase(name){
 		users = List.empty[SeleniumUser]
 	}
   override def setUp={
-		val srvr = new ServerAddress(mongoServer, mongoPort)
-		val mo = new MongoOptions
-		mo.socketTimeout = 10000
-		mo.socketKeepAlive = true
-		MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), "%s_results".format(name))
-
-		val currentTestQuery = new BasicDBObject("started", new BasicDBObject("$gt", new Date().getTime-5*60*1000))
+		myActor ! Setup
+		myActor ! ClearDB	
   }
   override def tearDown ={
 		clearUsers
+		myActor ! Shutdown
   }
   protected def iter(i:Int):Unit ={
 		val timeout = 9000000L
@@ -651,7 +747,9 @@ class MongoTrackedTestCase(name:String) extends TestCase(name){
 			Futures.awaitAll(timeout,userFutures:_*).toList
     }
     catch{
-      case e:Throwable=> println("%s: %s".format(new java.util.Date(),e))
+      case e:Throwable=> {
+				println("%s: %s".format(new java.util.Date(),e))
+			}
 		}
   } 
 	protected def successRate(input:List[TestResult]):Double = {
@@ -671,6 +769,9 @@ class MongoTrackedTestCase(name:String) extends TestCase(name){
 	def testDefaultTestingHarness = {
 		assertEquals(true,true)
 	}
+	def sendToActor(a:Any):Unit = {
+		myActor ! a
+	}
 }
 
 class MeTLXTest extends MongoTrackedTestCase("metlx"){
@@ -681,9 +782,9 @@ class MeTLXTest extends MongoTrackedTestCase("metlx"){
 		assertEquals(true,true)
 	}
 	def _testSingleUser = {
-		setUsers(List(MetlXUser("singleUser_from_%s".format(localhost),server)))
+		setUsers(List(MetlXUser("singleUser_from_%s".format(localhost),server,this)))
 		val testActions = List(
-			"searchFor(bear)",
+			"searchForConversation",
 			"clickSearchButton",
 			"chooseAConversationRandomly",
 			"toggleApplicationButton",
@@ -701,24 +802,12 @@ class MeTLXTest extends MongoTrackedTestCase("metlx"){
 		assertEquals(true,true)
 	}
 	def testMultipleUsersInteracting = {
-		val count = 5
+		val count = 2
 		setUsers(Range(0,count).map(t=>{
 			Thread.sleep((Random.nextInt(4)+1)*1000)
-			MetlXUser("m%sf%s".format(t,localhost),server)}
+			MetlXUser("m%sf%s".format(t,localhost),server,this)}
 		).toList)
-    /*val results = */iter(120)
-/*		val activities = results.map(tr => tr.name).distinct
-		println("results")
-		println
-		("all" :: activities).foreach(a => {
-			val specificResults = if (a == "all") results else results.filter(tr => tr.name == a)
-			println("activity: %s".format(a))
-			println("action count: %s".format(specificResults.length))
-			println("average duration: %s".format(averageDuration(specificResults)))
-			println("success rate: %s".format(successRate(specificResults)))
-			println("exceptions: %s".format(specificResults.filter(sr => sr.exception != Empty).map(sr => sr.exception)))
-			println	
-	})*/
+    iter(120)
 		assertEquals(true,true)
   }
 
@@ -729,7 +818,7 @@ class StackTest extends MongoTrackedTestCase("stack"){
 	val localhost = "lt%s".format(Random.nextInt(10000)) 
 
 	def _testSingleUserSequential = {
-		setUsers(List(StackUser("sequentialTester_from_%s".format(localhost), server)))
+		setUsers(List(StackUser("sequentialTester_from_%s".format(localhost), server,this)))
 		val testActions = List(
 			"Choose a topic",
 			"Ask a question",
@@ -756,9 +845,9 @@ class StackTest extends MongoTrackedTestCase("stack"){
 			"Choose a search result",
 			"Choose a topic"
 		)
-		testActions.map(name => { users.map({
+		testActions.map(name => { users.map(u => {
 			Thread.sleep(500)
-			_.act(name)
+			u.act(name)
 		})})
 		clearUsers
 		assertEquals(true,true)
@@ -768,33 +857,10 @@ class StackTest extends MongoTrackedTestCase("stack"){
     val count = 5
     setUsers(Range(0,count).map(t=>{
       Thread.sleep((Random.nextInt(4)+1)*1000)
-      StackUser("m%sf%s".format(t,localhost),server)}
+      StackUser("m%sf%s".format(t,localhost),server,this)}
     ).toList)
-    /*val results = */iter(120)
-/*		val activities = results.map(tr => tr.name).distinct
-		println("results")
-		println
-		("all" :: activities).foreach(a => {
-			val specificResults = if (a == "all") results else results.filter(tr => tr.name == a)
-			println("activity: %s".format(a))
-			println("action count: %s".format(specificResults.length))
-			println("average duration: %s".format(averageDuration(specificResults)))
-			println("success rate: %s".format(successRate(specificResults)))
-			println("exceptions: %s".format(specificResults.filter(sr => sr.exception != Empty).map(sr => sr.exception)))
-			println	
-	})*/
+    iter(120)
 		assertEquals(true,true)
   }
 }
-
-object DBActor extends LiftActor {
-	override def messageHandler = {
-		case t:TestResult => sendToDB(t)
-		case _ => println("DBActor recieved unknown message")
-	}
-	def sendToDB(result:TestResult) = {
-		TestResultRecord.fromTestResult(result).save
-	}
-}
-
 
