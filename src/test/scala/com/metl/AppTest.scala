@@ -9,6 +9,7 @@ import _root_.net.liftweb.common._
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -107,6 +108,53 @@ abstract class SeleniumUser(usr:String,svr:String,testCase:MongoTrackedTestCase)
 		if (pressEnter){
 			val element = getDisplayedElement(selector)
 			element.sendKeys(Keys.RETURN);
+		}
+	}
+
+	protected def drawOnRandomly(selector:String,shouldLeaveBounds:Boolean = false) = {
+		drawOn(selector,List((0,20),(20,0),(0,-20),(-20,0)),shouldLeaveBounds)	
+	}
+	protected def drawOn(selector:String,points:List[Tuple2[Int,Int]],shouldLeaveBounds:Boolean) = {
+		val builder = new Actions(driver)
+		val element = getDisplayedElement(selector)
+		val elementSize = element.getSize
+		val elementHeight = elementSize.getHeight
+		val elementWidth = elementSize.getWidth
+		if (elementHeight > 1 && elementWidth > 1){
+			def adjustPoints(points:List[Tuple2[Int,Int]]):List[Tuple2[Int,Int]] = {
+				if (shouldLeaveBounds){
+					points
+				} else {
+					points.foldLeft((List.empty[Tuple2[Int,Int]],(elementWidth/2,elementHeight/2)))((acc,item)=>{
+						var x = item._1
+						var y = item._2
+						val currentPos = acc._2
+						val currentX = currentPos._1
+						val currentY = currentPos._2
+						if (x + currentX > elementWidth){
+							x = 0
+						}
+						if (x + currentX < 1){
+							x = 0
+						}
+						if (y + currentY > elementHeight){
+							y = 0
+						}
+						if (y + currentY < 1){
+							y = 0
+						}
+						(acc._1 ::: List((x,y)),(currentX + x,currentY + y))
+					})._1
+				}
+			}
+			val internalPoints = adjustPoints(points)
+			var action = builder.clickAndHold(element)
+			internalPoints.foreach(p => {
+				action = action.moveByOffset(p._1,p._2)
+			})
+			action = action.release()
+			val finalAction = action.build()
+			finalAction.perform()
 		}
 	}
 
@@ -320,12 +368,14 @@ case class MetlXUser(override val username:String, override val server:String,te
 		TestingAction("deleteQuiz",1,deleteQuiz _,canDeleteQuiz _),
 		TestingAction("submitQuiz",1,submitQuiz _,canSubmitQuiz _),
 		TestingAction("enterQuizQuestion",1,enterQuizQuestion _,canEnterQuizQuestion _),
-		TestingAction("enterQuizOption",1,enterQuizOption _,canEnterQuizOption _),
+		TestingAction("enterQuizOption",1,enterQuizOptionText _,canEnterQuizOptionText _),
 		TestingAction("editQuiz",1,editQuiz _,canEditQuiz _),
 		TestingAction("focusQuiz",1,focusQuiz _,canFocusQuiz _),
-		TestingAction("answerQuiz",1,answerQuiz _,canAnswerQuiz _)
-
+		TestingAction("answerQuiz",1,answerQuiz _,canAnswerQuiz _),
+		TestingAction("interactWithCanvasRandomly",20,mouseOnCanvas _,canMouseOnCanvas _)
 	)
+	def canMouseOnCanvas = !backstageIsOpen && elementIsDisplayed("#board")
+	def mouseOnCanvas = trace("mouseOnCanvas",{ drawOnRandomly("#board",true)})
 
 	def canCloseS2CMessage = elementIsDisplayed(".s2cClose")
 	def closeS2CMessage = trace("closeS2CMessage",{ clickOneOf(".s2cClose")})
