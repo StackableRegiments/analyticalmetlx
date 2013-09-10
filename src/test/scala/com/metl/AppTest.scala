@@ -112,7 +112,12 @@ abstract class SeleniumUser(usr:String,svr:String,testCase:MongoTrackedTestCase)
 	}
 
 	protected def drawOnRandomly(selector:String,shouldLeaveBounds:Boolean = false) = {
-		drawOn(selector,List((0,20),(20,0),(0,-20),(-20,0)),shouldLeaveBounds)	
+		drawOn(selector,generateRandomPoints(Random.nextInt(300),Random.nextInt(200),Random.nextInt(200)),shouldLeaveBounds)	
+	}
+	protected def generateRandomPoints(count:Int = 30,xVariation:Int = 5,yVariation:Int = 5):List[Tuple2[Int,Int]] = {
+		Range(0,count).map(n => {
+			(Random.nextInt(1 + Math.abs(xVariation * 2)) - xVariation,Random.nextInt(1 + Math.abs(yVariation * 2)) - yVariation)
+		}).toList
 	}
 	protected def drawOn(selector:String,points:List[Tuple2[Int,Int]],shouldLeaveBounds:Boolean) = {
 		val builder = new Actions(driver)
@@ -307,13 +312,13 @@ case class MetlXUser(override val username:String, override val server:String,te
 	override val allTests = List(
 		TestingAction("closeS2CMessage",1,closeS2CMessage _,canCloseS2CMessage _),
 		TestingAction("toggleApplicationButton",1,toggleApplicationButton _,canToggleApplicationButton _),
-		TestingAction("searchForConversation",1,()=> searchForConversation("testSpace"),canEnterConversationIntoSearchbox _),
+		TestingAction("searchForConversation",20,()=> searchForConversation("testSpace"),canEnterConversationIntoSearchbox _),
 		TestingAction("clickSearchButton",1,clickSearchButton _,canSearchConversations _),
-		TestingAction("chooseAConversationRandomly",1,chooseAConversation _,canSelectConversation _),
+		TestingAction("chooseAConversationRandomly",10,chooseAConversation _,canSelectConversation _),
 		TestingAction("openConversations",1,openConversations _,canOpenConversations _),
 		TestingAction("chooseASlide",1,chooseASlide _,canChooseASlide _),
-//		TestingAction("showMyConversations",1,showMyConversations _,canShowMyConversations _),
-//		TestingAction("createConversation",1,createConversation _,canCreateConversation _),
+		TestingAction("showMyConversations",1,showMyConversations _,canShowMyConversations _),
+		TestingAction("createConversation",1,createConversation _,canCreateConversation _),
 		TestingAction("switchToPrivate",1,switchToPrivate _,canSwitchToPrivate _),
 		TestingAction("switchToPublic",1,switchToPublic _,canSwitchToPublic _),
 		TestingAction("switchToCollaborate",1,switchToCollaborate _,canSwitchToCollaborate _),
@@ -323,14 +328,12 @@ case class MetlXUser(override val username:String, override val server:String,te
 		TestingAction("resizeSelection",1,resizeSelection _,canResizeSelection _),
 		TestingAction("showSelection",1,showSelection _,canShowSelection _),
 		TestingAction("hideSelection",1,hideSelection _,canHideSelection _),
-		TestingAction("switchToDrawMode",1,switchToDrawMode _,canSwitchToDrawMode _),
-/*
-		TestingAction("switchToPen1",1,switchToDrawMode _,canSwitchToDrawMode _),
-		TestingAction("switchToPen2",1,switchToDrawMode _,canSwitchToDrawMode _),
-		TestingAction("switchToPen3",1,switchToDrawMode _,canSwitchToDrawMode _),
-		TestingAction("switchToEraser",1,switchToDrawMode _,canSwitchToDrawMode _),
-		TestingAction("openPenCustomization",1,switchToDrawMode _,canSwitchToDrawMode _),
-*/
+		TestingAction("switchToDrawMode",20,switchToDrawMode _,canSwitchToDrawMode _),
+		TestingAction("switchToPen1",10,selectPen1 _,canSelectPen1 _),
+		TestingAction("switchToPen2",10,selectPen2 _,canSelectPen2 _),
+		TestingAction("switchToPen3",10,selectPen3 _,canSelectPen3 _),
+		TestingAction("switchToEraser",1,selectErase _,canSelectErase _),
+		TestingAction("openPenCustomization",1,selectPenCustomization _,canSelectPenCustomization _),
 		TestingAction("switchToInsertMode",1,switchToInsertMode _,canSwitchToInsertMode _),
 		TestingAction("insertText",1,insertText _,canInsertText _),
 		TestingAction("insertImage",1,insertImage _,canInsertImage _),
@@ -338,20 +341,17 @@ case class MetlXUser(override val username:String, override val server:String,te
 		TestingAction("submitScreenshot",1,submitScreenshot _,canSubmitScreenshot _),
 		TestingAction("openSubmissions",1,openSubmissions _,canOpenSubmissions _),
 		TestingAction("openQuizzes",1,openQuizzes _,canOpenQuizzes _),
-		
 		TestingAction("switchToZoomMode",1,switchToZoomMode _,canSwitchToZoomMode _),
 		TestingAction("resetZoom",1,resetZoom _,canResetZoom _),
 		TestingAction("autoFitZoom",1,autoFitZoom _,canAutoFitZoom _),
 		TestingAction("zoomToPage",1,zoomToPage _,canZoomToPage _),
 		TestingAction("zoomIn",1,zoomIn _,canZoomIn _),
 		TestingAction("zoomOut",1,zoomOut _,canZoomOut _),
-		
 		TestingAction("switchToPanMode",1,switchToPanMode _,canSwitchToPanMode _),
 		TestingAction("panLeft",1,panLeft _,canPanLeft _),
 		TestingAction("panRight",1,panRight _,canPanRight _),
 		TestingAction("panUp",1,panUp _,canPanUp _),
 		TestingAction("panDown",1,panDown _,canPanDown _),
-
 		TestingAction("openPreferences",1,openPreferences _,canOpenPreferences _),
 		TestingAction("openConversations",1,openConversations _,canOpenConversations _),
 		TestingAction("showSlides",1,showSlides _,canShowSlides _),
@@ -372,7 +372,7 @@ case class MetlXUser(override val username:String, override val server:String,te
 		TestingAction("editQuiz",1,editQuiz _,canEditQuiz _),
 		TestingAction("focusQuiz",1,focusQuiz _,canFocusQuiz _),
 		TestingAction("answerQuiz",1,answerQuiz _,canAnswerQuiz _),
-		TestingAction("interactWithCanvasRandomly",20,mouseOnCanvas _,canMouseOnCanvas _)
+		TestingAction("interactWithCanvasRandomly",40,mouseOnCanvas _,canMouseOnCanvas _)
 	)
 	def canMouseOnCanvas = !backstageIsOpen && elementIsDisplayed("#board")
 	def mouseOnCanvas = trace("mouseOnCanvas",{ drawOnRandomly("#board",true)})
@@ -433,11 +433,16 @@ case class MetlXUser(override val username:String, override val server:String,te
 	def canSwitchToDrawMode = toolsAreVisible && elementIsDisplayed("#drawMode")		
 	def drawSubtoolsVisible = toolsAreVisible && elementIsDisplayed("#drawTools")
 	def switchToDrawMode = trace("switchToDrawMode", {clickOneOf("#drawMode")})
-//	def canSelectPen1 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen1Button")
-//	def canSelectPen2 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen2Button")
-//	def canSelectPen3 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen3Button")
-//	def canSelectErase = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#eraseButton")
-//	def canSelectPenCustomization = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#penCustomizationButton")
+	def canSelectPen1 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen1Button")
+	def selectPen1 = trace("selectPen1",{clickOneOf("#pen1Button")})
+	def canSelectPen2 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen2Button")
+	def selectPen2 = trace("selectPen2",{clickOneOf("#pen2Button")})
+	def canSelectPen3 = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#pen3Button")
+	def selectPen3 = trace("selectPen3",{clickOneOf("#pen3Button")})
+	def canSelectErase = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#eraseTool")
+	def selectErase = trace("selectErase",{clickOneOf("#eraseTool")})
+	def canSelectPenCustomization = toolsAreVisible && drawSubtoolsVisible && elementIsDisplayed("#penCustomizationButton")
+	def selectPenCustomization = trace("selectPenCustomization",{clickOneOf("#penCustomizationButton")})
 
 	def canSwitchToInsertMode = toolsAreVisible && elementIsDisplayed("#insertMode")		
 	def canSelectInsertSubtool = toolsAreVisible && elementIsDisplayed("#insertTools")
