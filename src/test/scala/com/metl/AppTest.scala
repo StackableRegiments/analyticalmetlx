@@ -111,8 +111,8 @@ abstract class SeleniumUser(usr:String,svr:String,testCase:MongoTrackedTestCase)
 		}
 	}
 
-	protected def drawOnRandomly(selector:String,shouldLeaveBounds:Boolean = false) = {
-		drawOn(selector,generateRandomPoints(Random.nextInt(300),Random.nextInt(200),Random.nextInt(200)),shouldLeaveBounds)	
+	protected def drawOnRandomly(selector:String,shouldLeaveBounds:Boolean = Random.nextBoolean) = {
+		drawOn(selector,generateRandomPoints(Random.nextInt(150),Random.nextInt(200),Random.nextInt(200)),shouldLeaveBounds)	
 	}
 	protected def generateRandomPoints(count:Int = 30,xVariation:Int = 5,yVariation:Int = 5):List[Tuple2[Int,Int]] = {
 		Range(0,count).map(n => {
@@ -194,7 +194,10 @@ abstract class SeleniumUser(usr:String,svr:String,testCase:MongoTrackedTestCase)
 		element.click
 	}
 
-	protected def trace(label:String,action: =>Any)= action
+	protected def trace(label:String,action: =>Any)= {
+		println("%s : %s".format(username,label))
+		action
+	}
 
 	protected def attemptToCloseAlerts:Unit = {
 		tryo({
@@ -316,6 +319,9 @@ case class MetlXUser(override val username:String, override val server:String,te
 		TestingAction("clickSearchButton",1,clickSearchButton _,canSearchConversations _),
 		TestingAction("chooseAConversationRandomly",10,chooseAConversation _,canSelectConversation _),
 		TestingAction("openConversations",1,openConversations _,canOpenConversations _),
+		TestingAction("deleteConversation",1,deleteConversation _,canDeleteConversation _),
+		TestingAction("renameConversation",1,renameConversation _,canRenameConversation _),
+		TestingAction("shareConversation",1,shareConversation _,canShareConversation _),
 		TestingAction("chooseASlide",1,chooseASlide _,canChooseASlide _),
 		TestingAction("showMyConversations",1,showMyConversations _,canShowMyConversations _),
 		TestingAction("createConversation",1,createConversation _,canCreateConversation _),
@@ -404,9 +410,12 @@ case class MetlXUser(override val username:String, override val server:String,te
 	def canSelectConversation = conversationsOpen && elementIsDisplayed(".searchResult")
 	def chooseAConversation = trace("chooseAConversation", { clickOneOf(".searchResult") })
 
-//	def canDeleteConversation = conversationsOpen && elementIsDisplayed("
-//	def canRenameConversation = conversationsOpen && elementIsDisplayed("
-//	def canShareConversation = conversationsOpen && elementIsDisplayed("
+ 	def canDeleteConversation = conversationsOpen && elementIsDisplayed(".conversationDeleteButton")
+	def deleteConversation = trace("deleteAConversation", { clickOneOf(".conversationDeleteButton")})
+	def canRenameConversation = conversationsOpen && elementIsDisplayed(".conversationRenameButton")
+	def renameConversation = trace("renameAConversation", {clickOneOf(".conversationRenameButton")})
+	def canShareConversation = conversationsOpen && elementIsDisplayed(".conversationShareButton")
+	def shareConversation = trace("shareAConversation", {clickOneOf("conversationShareButton")})
 
 	def canSwitchToPrivate = toolsAreVisible && elementIsDisplayed("#privateMode")
 	def switchToPrivate = trace("switchToPrivate", {clickOneOf("#privateMode")})
@@ -871,9 +880,9 @@ class MeTLXTest extends MongoTrackedTestCase("metlx"){
 		assertEquals(true,true)
 	}
 	def testMultipleUsersInteracting = {
-		val count = 2
+		val count = 6
 		setUsers(Range(0,count).map(t=>{
-			Thread.sleep((Random.nextInt(4)+1)*1000)
+			Thread.sleep(Random.nextInt(5000))
 			MetlXUser("m%sf%s".format(t,localhost),server,this)}
 		).toList)
     iter(120)

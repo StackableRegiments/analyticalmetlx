@@ -484,19 +484,19 @@ var Conversations = (function(){
         })).append("<span>join</span>");
         var renameConvButton = $("<div/>", {
             id: uniq("conversationRenameSubmit"),
-            class: "conversationSearchButton toolbar",
+            class: "conversationSearchButton toolbar conversationRenameButton",
             name: uniq("conversationRenameSubmit"),
             type: "button"
         }).on("click",bounceAnd(function(){requestRenameConversationDialogue(jidString);})).append(renameSpan);
         var changeSharingButton = $("<div/>", {
             id: uniq("conversationChangeSubjectSubmit"),
             name: uniq("conversationChangeSubjectSubmit"),
-            class: "conversationSearchButton toolbar",
+            class: "conversationSearchButton toolbar conversationSharingButton",
             type: "button"
         }).on("click",bounceAnd(function(){requestChangeSubjectOfConversationDialogue(jidString);})).append(sharingSpan);
         var deleteConvButton = $("<div/>", {
             id: uniq("conversationDelete"),
-            class: "conversationSearchButton toolbar",
+            class: "conversationSearchButton toolbar conversationDeleteButton",
             name: uniq("conversationDelete"),
             type: "button"
         }).on("click",bounceAnd(function(){
