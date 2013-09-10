@@ -1980,10 +1980,14 @@ var Modes = (function(){
                     });
                     var drawTools = function(){
                         $(".activeBrush").removeClass("activeBrush");
+												var penNumber = 1;
                         $("#drawTools").empty().html(unwrap(
                             Modes.draw.brushes.map(function(brush){
                                 var dot = Canvas.swirl(brush.color,brush.width,parseInt(UserSettings.getUserPref("subModeSize")),brush.isHighlighter);
-                                var dotButton = $("<div />")
+                                var dotButton = $("<div />",{
+																					class:"modeSpecificTool",
+																					id:"pen"+penNumber+"Button"
+																				})
                                         .click(function(){
                                             currentBrush = brush;
                                             erasing = false;
@@ -1992,8 +1996,8 @@ var Modes = (function(){
                                             $(this).addClass("activeBrush");
                                             drawAdvancedTools(Modes.draw.drawingAttributes);
                                         })
-                                        .addClass("modeSpecificTool")
                                         .append(dot);
+																penNumber = penNumber + 1;
                                 if (brush == currentBrush){
                                     dotButton.addClass("activeBrush");
                                 } else {
@@ -2004,6 +2008,7 @@ var Modes = (function(){
                             .append($("<div />",{
                                 text:"Erase",
                                 class:"modeSpecificTool",
+																id:"eraseTool",
                                 click:function(){
                                     erasing = true;
                                     $(".activeBrush").removeClass("activeBrush");
@@ -2011,7 +2016,8 @@ var Modes = (function(){
                                 }
                             }))
                             .append($("<div />",{
-                                text:"More"
+                                text:"More",
+																id:"penCustomizationButton"
                             }).addClass("modeSpecificTool")
                                     .click(bounceAnd(function(){
                                         drawAdvancedTools(Modes.draw.drawingAttributes);
