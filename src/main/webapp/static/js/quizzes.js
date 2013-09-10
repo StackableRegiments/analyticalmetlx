@@ -179,8 +179,14 @@ var Quizzes = (function(){
                     }
                 ]
             };
-            console.log(data);
-            new Chart(graph[0].getContext("2d")).Bar(data);
+            var options = {
+                scaleOverride:true,
+                scaleStepWidth:1,
+                scaleSteps:Math.max.apply(Math,data.datasets[0].data),
+                scaleStartValue:0
+            }
+            console.log(data,options);
+            new Chart(graph[0].getContext("2d")).Bar(data,options);
         });
         var theseQuizAnswerers = quizAnswersFunction(quiz);
         if ("url" in quiz){
