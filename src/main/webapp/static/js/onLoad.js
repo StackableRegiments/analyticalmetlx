@@ -270,7 +270,7 @@ var TweenController = (function(){
         teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
         Progress.call("onViewboxChanged");
     };
-    var teacherViewUpdated = function(x,y,w,h){
+    var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
             var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
             if(w == 0 || h == 0){
@@ -291,7 +291,7 @@ var TweenController = (function(){
                 })
             });
         }
-    };
+    },300);
     var tween;
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
         var interval = 300;//milis

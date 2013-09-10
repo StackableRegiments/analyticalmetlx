@@ -248,6 +248,11 @@ table.dots td{
 #submissionsContainer{
     height:90%;
 }
+.submissionTitle, .quizzesTitle{
+		margin-left:30%;
+		padding:1em;
+		height:65px;
+}
 #submissionListing{
     width:50%;
     overflow-x:none;
@@ -267,7 +272,8 @@ table.dots td{
     position:absolute;
 }
 .submissionImageThumb{
-    height:90%;
+		height:180px;
+		width:180px;
 }
 .submissionSummary{
     border:solid 1px black;
@@ -275,7 +281,6 @@ table.dots td{
     height: 200px;
     display:inline-block;
 }
-
 #preferencesContainer{
     position:absolute;
     top:0px;
@@ -392,6 +397,7 @@ table.dots td{
     border-thickness:2px;
     border-radius: 15px;
     color:black;
+		background-color:white;
 }
 #absoluteCloseButton{
     position:absolute;
@@ -471,6 +477,7 @@ x
     border:1px solid black;
     background-color:gray;
     width:50%;
+		height:180px;
 }
 #conversationCreationControls div{
     float:left;

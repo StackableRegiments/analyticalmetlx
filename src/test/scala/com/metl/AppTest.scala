@@ -310,7 +310,21 @@ case class MetlXUser(override val username:String, override val server:String,te
 		TestingAction("hideSlides",1,hideSlides _,canHideSlides _),
 		TestingAction("showTools",1,showTools _,canShowTools _),
 		TestingAction("hideTools",1,hideTools _,canHideTools _),
-		TestingAction("addSlide",1,addSlide _,canAddSlide _)
+		TestingAction("addSlide",1,addSlide _,canAddSlide _),
+		TestingAction("selectSubmission",1,selectSubmission _,canSelectSubmission _),
+		TestingAction("selectQuiz",1,selectQuiz _,canSelectQuiz _),
+		TestingAction("createQuiz",1,createQuiz _,canCreateQuiz _),
+		TestingAction("addOptionToQuiz",1,addOptionToQuiz _,canAddOptionToQuiz _),
+		TestingAction("deleteOptionFromQuiz",1,deleteOptionFromQuiz _,canDeleteOptionFromQuiz _),
+		TestingAction("attachCurrentSlideToQuiz",1,attachCurrentSlideToQuiz _,canAttachCurrentSlideToQuiz _),
+		TestingAction("deleteQuiz",1,deleteQuiz _,canDeleteQuiz _),
+		TestingAction("submitQuiz",1,submitQuiz _,canSubmitQuiz _),
+		TestingAction("enterQuizQuestion",1,enterQuizQuestion _,canEnterQuizQuestion _),
+		TestingAction("enterQuizOption",1,enterQuizOption _,canEnterQuizOption _),
+		TestingAction("editQuiz",1,editQuiz _,canEditQuiz _),
+		TestingAction("focusQuiz",1,focusQuiz _,canFocusQuiz _),
+		TestingAction("answerQuiz",1,answerQuiz _,canAnswerQuiz _)
+
 	)
 
 	def canCloseS2CMessage = elementIsDisplayed(".s2cClose")
@@ -450,7 +464,7 @@ case class MetlXUser(override val username:String, override val server:String,te
 	def addOptionToQuiz = trace("addQuizOption",{clickOneOf(".quizAddOptionButton")})
 	def canDeleteOptionFromQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizRemoveOptionButton")	
 	def deleteOptionFromQuiz = trace("deleteQuizOption",{clickOneOf(".quizRemoveOptionButton")})
-	def caAttachCurrentSlideToQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizAttachImageButton")
+	def canAttachCurrentSlideToQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizAttachImageButton")
 	def attachCurrentSlideToQuiz = trace("attachCurrentSlideToQuiz",{clickOneOf(".quizAttachImageButton")})
 	def canDeleteQuiz = quizCreationDialogOpen && elementIsDisplayed(".quizDeleteButton")
 	def deleteQuiz = trace("deleteQuiz",{clickOneOf(".quizDeleteButton")})
