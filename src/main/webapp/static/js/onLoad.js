@@ -412,6 +412,7 @@ function showBackstage(id){
     }
     $("#applicationMenuButton").addClass(active);
     $("#hideBackstage").show();
+    $(".dedicatedClose").click(hideBackstage);
 }
 function hideBackstage(){
     window.currentBackstage = noActiveBackstage;
@@ -501,7 +502,7 @@ $(function(){
     window.currentBackstage = noActiveBackstage;
     $("#hideBackstage").click(bounceAnd(hideBackstage));
     $("#applicationMenuButton").click(function(){
-        if(window.currentBackstage == "applicationMenu"){
+        if(window.currentBackstage != noActiveBackstage){
             hideBackstage();
         }
         else{
