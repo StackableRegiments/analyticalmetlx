@@ -13,17 +13,20 @@ var Submissions = (function(){
             showBackstage("submissions");
         });
         refreshSubmissionCount();
-    })
+    });
     var refreshSubmissionCount = function(){
         var submissionCount = _.size(filteredSubmissions());
         if (submissionCount > 0){
             if(submissionCount == 1){
                 $("#submissionCount").text(sprintf("%s submission",submissionCount));
+                $("#dedicatedSubmissionCount").text("This conversation has 1 submission");
             } else{
                 $("#submissionCount").text(sprintf("%s submissions",submissionCount));
+                $("#dedicatedSubmissionCount").text(sprintf("This conversation has %s submissions",submissionCount));
             }
         } else {
             $("#submissionCount").text("");
+            $("#dedicatedSubmissionCount").text(sprintf("This conversation has %s submissions",submissionCount));
         }
     };
     var filteredSubmissions = function(){
@@ -111,15 +114,14 @@ var Submissions = (function(){
                     submissions.push(submission);
                 }
             }
-						if (!skipRender){
-            	renderSubmissionsInPlace();
-						}
+            if (!skipRender){
+                renderSubmissionsInPlace();
+            }
         }
         catch (e){
             console.log("Submissions.stanzaReceivedFunction",e);
         }
     };
-
 
     Progress.onConversationJoin["Submissions"] = clearState;
     Progress.historyReceived["Submissions"] = historyReceivedFunction;

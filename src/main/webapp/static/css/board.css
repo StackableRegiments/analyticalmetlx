@@ -490,3 +490,8 @@ x
     height:100%;
     background-color:white;
 }
+.dedicatedClose{
+    width:1em;
+    float:right;
+    margin-top:0 !important;
+}

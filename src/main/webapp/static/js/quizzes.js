@@ -20,11 +20,14 @@ var Quizzes = (function(){
         if (quizCount > 0){
             if(quizCount == 1){
                 $("#quizCount").text(sprintf("%s quiz",_.size(quizzes)));
+                $("#dedicatedQuizCount").text("This conversation has 1 quiz");
             }else {
                 $("#quizCount").text(sprintf("%s quizzes",_.size(quizzes)));
+                $("#dedicatedQuizCount").text(sprintf("This conversation has %s quizzes",quizCount));
             }
         } else {
             $("#quizCount").text("");
+	    $("#dedicatedQuizCount").text("This conversation has no quizzes");
         }
     };
     var clearState = function(){
