@@ -27,7 +27,7 @@ var Quizzes = (function(){
             }
         } else {
             $("#quizCount").text("");
-	    $("#dedicatedQuizCount").text("This conversation has no quizzes");
+            $("#dedicatedQuizCount").text("This conversation has no quizzes");
         }
     };
     var clearState = function(){
@@ -104,7 +104,6 @@ var Quizzes = (function(){
             class:"quizSummary"
         }).on("click",function(){
             currentQuiz = quiz;
-            console.log(quiz);
             $("#currentQuiz").html(renderQuiz(quiz));
         })
         $("<div/>",{
@@ -134,7 +133,6 @@ var Quizzes = (function(){
         return $("<div/>").append(rootElem);
     };
     var renderQuiz = function(quiz){
-        console.log("rendering quiz");
         var quizOptionAnswerCount = function(quiz, qo){
             var count = 0;
             if (quiz.id in quizAnswers){
@@ -144,7 +142,7 @@ var Quizzes = (function(){
                     }
                 });
             };
-            return "Responses: " + count;
+            return count;
         }
         var quizOptionClass = function(quiz, qo){
             var text = "quizOption";
@@ -167,6 +165,23 @@ var Quizzes = (function(){
             class:"quizQuestion",
             text: quiz.question
         }).appendTo(rootElem);
+        var graph = $("<canvas />").appendTo(rootElem);
+        _.defer(function(){
+            var data = {
+                labels:_.pluck(quiz.options,"name"),
+                datasets:[
+                    {
+                        fillColor:"gray",
+                        strokeColor:"black",
+                        data:quiz.options.map(function(qo){
+                            return quizOptionAnswerCount(quiz,qo);
+                        })
+                    }
+                ]
+            };
+            console.log(data);
+            new Chart(graph[0].getContext("2d")).Bar(data);
+        });
         var theseQuizAnswerers = quizAnswersFunction(quiz);
         if ("url" in quiz){
             $("<img/>",{
@@ -198,8 +213,8 @@ var Quizzes = (function(){
             if(Conversations.shouldModifyConversation())
                 quizRootElem.append($("<span/>",{
                     class:"optionResultCount",
-                    text:       quizOptionAnswerCount(quiz, qo)
-                }))     ;
+                    text:"Responses: "+quizOptionAnswerCount(quiz, qo)
+                }));
             quizRootElem.appendTo(rootElem);
         });
         if (Conversations.shouldModifyConversation()){
