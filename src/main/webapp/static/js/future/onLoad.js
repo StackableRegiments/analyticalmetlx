@@ -21,7 +21,6 @@
         window.cancelAnimationFrame = function(id) {
             clearTimeout(id);
         };
-    showLobby();
 }());
 function updateStatus(message){
     var status = $("#status");
