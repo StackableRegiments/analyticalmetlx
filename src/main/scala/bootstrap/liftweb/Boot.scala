@@ -52,9 +52,11 @@ class Boot {
     }
 
     def sitemap() = SiteMap(
+      //FutureMeTL
+      Menu(Loc("Future","future" :: Nil,"Future MeTL")),
       //MeTLX
       Menu(Loc("Home","index" :: Nil,"Home")),
-			Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
+      Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
       //WebMeTL
