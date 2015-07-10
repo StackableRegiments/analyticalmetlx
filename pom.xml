@@ -25,21 +25,21 @@
       <name>eEducation Centre Maven Repository</name>
       <url>svn:svn://refer.adm.monash.edu.au/maven2</url>
     </repository>
-		<repository>
-			<id>maven-repositories</id>
-			<name>mvnrepository</name>
-			<url>http://mvnrepository.com/maven2</url>
-		</repository>
-		<repository>
-			<id>mvn-default</id>
-			<name>maven default</name>
-			<url>http://repo1.maven.org/maven2</url>
-		</repository>
-		<repository>
-			<id>apache-mvn</id>
-			<name>apache Maven Repository</name>
-			<url>http://repo.maven.apache.org/maven2</url>
-		</repository>
+    <repository>
+      <id>maven-repositories</id>
+      <name>mvnrepository</name>
+      <url>http://mvnrepository.com/maven2</url>
+    </repository>
+    <repository>
+      <id>mvn-default</id>
+      <name>maven default</name>
+      <url>http://repo1.maven.org/maven2</url>
+    </repository>
+    <repository>
+      <id>apache-mvn</id>
+      <name>apache Maven Repository</name>
+      <url>http://repo.maven.apache.org/maven2</url>
+    </repository>
   </repositories>
 
   <pluginRepositories>
@@ -59,7 +59,7 @@
       <url>http://scala-tools.org/repo-releases</url>
     </pluginRepository>
   </pluginRepositories>
-		
+
   <dependencies>
     <dependency>
       <groupId>com.metl</groupId>
@@ -209,24 +209,24 @@
       <artifactId>lift-mongodb-record_2.9.0-1</artifactId>
       <version>2.4-M2</version>
     </dependency>
-		<!-- for apache vysper xmpp server -->
-		<dependency>
-			<groupId>org.apache.vysper</groupId>
-			<artifactId>vysper-core</artifactId>
-			<version>0.7</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.vysper.extensions</groupId>
-			<artifactId>xep0045-muc</artifactId>
-			<version>0.7</version>
-		</dependency>
-<!--		<dependency>
-			<groupId>org.apache.vysper</groupId>
-			<artifactId>vysper-extensions</artifactId>
-			<version>0.7</version>
-		</dependency>
--->
-		<!--
+    <!-- for apache vysper xmpp server -->
+    <dependency>
+      <groupId>org.apache.vysper</groupId>
+      <artifactId>vysper-core</artifactId>
+      <version>0.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.vysper.extensions</groupId>
+      <artifactId>xep0045-muc</artifactId>
+      <version>0.7</version>
+    </dependency>
+    <!--                <dependency>
+        <groupId>org.apache.vysper</groupId>
+        <artifactId>vysper-extensions</artifactId>
+        <version>0.7</version>
+        </dependency>
+    -->
+    <!--
         <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>

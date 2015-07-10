@@ -1,78 +1,35 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/" xmlns:svg="http://www.w3.org/2000/svg">
+<lift:surround with="analytics" at="content">
   <head>
-    <title>
-      Analytical Summary View
-    </title>
-    <link rel="stylesheet" href="/static/css/jquery-ui-1.8.12.custom.css"></link>
-    <link rel="stylesheet" href="/static/css/default.css"></link>
-    <link rel="stylesheet" href="/static/css/chord.css"></link>
-    <link rel="stylesheet" href="/static/css/summaries.css"></link>
-    <link type="text/css" href="/static/css/blue.monday/jplayer.blue.monday.css" rel="stylesheet" />
-    <script src="/static/offline/stagingSnapshot.js"></script>
-    <script src="/static/javascript/porterStemmer.js"></script>
-    <script src="/static/javascript/utils.js"></script>
-    <script src="/static/javascript/sprintf-0.7-beta1.js" type="text/javascript"></script>
-    <script src="/static/javascript/jquery-1.7.1.min.js"></script>
-    <script src="/static/javascript/underscore-min.js"></script>
-    <script src="/static/javascript/Tween.js" type="text/javascript"/>
-    <script src="/static/javascript/Three.js" type="text/javascript"/>
-    <script src="/static/javascript/jquery-ui-1.8.12.custom.min.js"></script>
-    <script src="/static/javascript/highstock.js"></script>
-    <script src="/static/javascript/json2.js" type="text/javascript"/>
-    <script src="/static/javascript/d3.v2.chordfix.js" type="text/javascript"/>
-    <script src="/static/javascript/chord-latest.js" />
-    <script src="/static/javascript/force.js" type="text/javascript"/>
-    <script src="/static/javascript/graphing.js" type="text/javascript"/>
-    <script src="/static/javascript/similarity.js" type="text/javascript"/>
-    <script src="/static/javascript/repls.js" type="text/javascript"/>
-    <script src="/static/javascript/receiveQuestions.js" type="text/javascript"/>
-    <script src="/static/javascript/clouding.js" type="text/javascript"/>
-    <script src="/static/javascript/stopwords.js" type="text/javascript"></script>
-    <script src="/static/javascript/relations.js" type="text/javascript"/>
-    <script src="/static/javascript/categories.js" type="text/javascript"/>
-    <script src="/static/javascript/renderData.js" type="text/javascript"/>
-    <script src="/static/javascript/standings.js" type="text/javascript"/>
-    <script src="/static/javascript/proximities.js" type="text/javascript"/>
-    <script src="/static/javascript/keywordObjectives.js" type="text/javascript"/>
-    <script src="/static/javascript/radar.js" type="text/javascript"/>
-    <script src="/static/javascript/3dSimulation.js" type="text/javascript"/>
-    <script src="/static/javascript/captions.js" type="text/javascript"/>
-    <script src="/static/javascript/jquery.jplayer.min.js" type="text/javascript" />
-    <script src="/static/javascript/jquery.head.js" type="text/javascript" />
-    <script id="json" src="/classpath/json.js" type="text/javascript"></script>
-    <script src="/static/javascript/date.js"></script>
-    <script src="/static/javascript/timeline.js"></script>
+    <title>Analytical Summary View</title>
     <script src="/static/javascript/onLoad.js"></script>
   </head>
-  <body>
-    <div id="tutorial">
-      <p>Welcome to your teaching workbench!</p>
-      <p>All of your active topics are listed above.</p>
-      <p>
-        Click one of these to isolate it on a new workspace.  Once you are working with a topic on its own, more options will become available.  Hover your mouse over them to see what they do!
-      </p>
-      <p>
-        Notice the checkbox to the left of the command prompt on your new workspace.  If this is checked, the workspace is linked to all other checked workspaces.  Now any highlighted button will activate every linked workspace.  This is a fast way to compare the same operation across different cohorts.  If you split a cohort by academic standing, the new workspaces will be automatically linked.
-      </p>
+  <div id="tutorial">
+    <p>Welcome to your teaching workbench!</p>
+    <p>All of your active topics are listed above.</p>
+    <p>
+      Click one of these to isolate it on a new workspace.  Once you are working with a topic on its own, more options will become available.  Hover your mouse over them to see what they do!
+    </p>
+    <p>
+      Notice the checkbox to the left of the command prompt on your new workspace.  If this is checked, the workspace is linked to all other checked workspaces.  Now any highlighted button will activate every linked workspace.  This is a fast way to compare the same operation across different cohorts.  If you split a cohort by academic standing, the new workspaces will be automatically linked.
+    </p>
+  </div>
+  <div id="headerBar" />
+  <div>
+    <div id="masterTimeline" />
+    <div id="timelineMeta">
+      <div id="timelineLog" />
+      <input type="button" id="timelineToggle" value="Toggle timeline" />
     </div>
-    <div id="headerBar" />
-    <div>
-      <div id="masterTimeline" />
-      <div id="timelineMeta">
-        <div id="timelineLog" />
-        <input type="button" id="timelineToggle" value="Toggle timeline" />
-      </div>
+  </div>
+  <div id="visualisations" />
+  <div id="repls" />
+  <div id="output" />
+  <div>
+    <div class="lift:Summaries.render">
+      Summaries
     </div>
-    <div id="visualisations" />
-    <div id="repls" />
-    <div id="output" />
-    <div>
-      <div class="lift:Summaries.render">
-        Summaries
-      </div>
-    </div>
-    <div id="sampleAudioPlayer">
-      <div id="jquery_jplayer_1" class="jp-jplayer"></div>
-    </div>
-  </body>
-</html>
+  </div>
+  <div id="sampleAudioPlayer">
+    <div id="jquery_jplayer_1" class="jp-jplayer"></div>
+  </div>
+</lift:surround>

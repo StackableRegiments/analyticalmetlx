@@ -52,6 +52,10 @@ class Boot {
     }
 
     def sitemap() = SiteMap(
+      //2011 piggyback auth
+      Menu(Loc("Authentication",Link("authenticationState" :: Nil,true,"/authenticationState"),"Authentication",Hidden)),
+      //Widget
+      Menu(Loc("Analytical widget","widget" :: Nil,"Widgets")),
       //FutureMeTL
       Menu(Loc("Future","future" :: Nil,"Future MeTL")),
       //MeTLX
