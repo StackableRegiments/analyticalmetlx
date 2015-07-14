@@ -21,6 +21,14 @@
   </properties>
   <repositories>
     <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>libs-release</name>
+      <url>https://artifactory.its.monash.edu/libs-release</url>
+    </repository>
+    <repository>
       <id>eec-svn</id>
       <name>eEducation Centre Maven Repository</name>
       <url>svn:svn://refer.adm.monash.edu.au/maven2</url>
@@ -41,7 +49,6 @@
       <url>http://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
-
   <pluginRepositories>
     <pluginRepository>
       <id>cloudbees-public-release</id>
@@ -221,10 +228,10 @@
       <version>0.7</version>
     </dependency>
     <!--                <dependency>
-        <groupId>org.apache.vysper</groupId>
-        <artifactId>vysper-extensions</artifactId>
-        <version>0.7</version>
-        </dependency>
+         <groupId>org.apache.vysper</groupId>
+         <artifactId>vysper-extensions</artifactId>
+         <version>0.7</version>
+         </dependency>
     -->
     <!--
         <dependency>

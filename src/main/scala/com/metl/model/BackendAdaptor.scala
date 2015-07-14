@@ -23,7 +23,7 @@ import com.mongodb._
 import net.liftweb.mongodb._
 
 object StackConfiguration {
-	def setup = {
+  def setup = {
     val mo = new MongoOptions
     mo.socketTimeout = 10000
     mo.socketKeepAlive = true
@@ -38,7 +38,7 @@ object StackConfiguration {
     //ensure that the default topic is available
     com.metl.model.Topic.getDefaultValue
 
-	}
+  }
 }
 
 object MeTLXConfiguration {
@@ -66,8 +66,8 @@ object MeTLXConfiguration {
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
     Globals.isDevMode match {
       case false => {
-				CASAuthentication.attachCASAuthenticator(auth) 
-			}
+        CASAuthentication.attachCASAuthenticator(auth)
+      }
       case _ => {}
     }
   }
@@ -83,8 +83,8 @@ object MeTLXConfiguration {
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
     Globals.isDevMode match {
       case false => {
-				OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
-			}
+        OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
+      }
       case _ => {}
     }
   }
@@ -134,7 +134,7 @@ object MeTLXConfiguration {
     if (xmppBridgeEnabled){
       EmbeddedXmppServer.start
     }
-		StackConfiguration.setup
+    StackConfiguration.setup
   }
   def getRoom(jid:String,configName:String) = {
     configs(configName)._2.get(jid)
