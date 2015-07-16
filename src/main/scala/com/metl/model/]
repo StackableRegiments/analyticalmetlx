@@ -12,12 +12,7 @@ import net.liftweb.http.LiftRules
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 
-import net.liftweb.util.Props
 import scala.xml._
-
-case class PropertyNotFoundException(key: String) extends Exception(key) {
-  override def getMessage: String = "Property not found: " + key
-}
 
 trait PropertyReader {
   def readProperty(key: String, default: Option[String] = None): String = {
