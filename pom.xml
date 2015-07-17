@@ -26,7 +26,7 @@
       </snapshots>
       <id>central</id>
       <name>libs-release</name>
-      <url>https://artifactory.its.monash.edu/libs-release</url>
+      <url>https://artifactory.its.monash.edu/artifactory/libs-release</url>
     </repository>
     <repository>
       <id>eec-svn</id>
@@ -72,6 +72,20 @@
       <groupId>monash</groupId>
       <artifactId>samlauthentication_2.9.2</artifactId>
       <version>0.2.4</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>jcl-over-slf4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>jul-to-slf4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>log4j-over-slf4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.metl</groupId>
@@ -139,16 +153,16 @@
       <version>1.0.4</version>
     </dependency>
     <!--
-        <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>1.2.16</version>
-        </dependency>
-        <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
-        <version>1.6.1</version>
-        </dependency>
+	<dependency>
+	<groupId>log4j</groupId>
+	<artifactId>log4j</artifactId>
+	<version>1.2.16</version>
+	</dependency>
+	<dependency>
+	<groupId>org.slf4j</groupId>
+	<artifactId>slf4j-log4j12</artifactId>
+	<version>1.6.1</version>
+	</dependency>
     -->
     <dependency>
       <groupId>com.h2database</groupId>
@@ -219,16 +233,18 @@
       <version>2.4-M2</version>
     </dependency>
     <!-- for apache vysper xmpp server -->
-    <dependency>
-      <groupId>org.apache.vysper</groupId>
-      <artifactId>vysper-core</artifactId>
-      <version>0.7</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.vysper.extensions</groupId>
-      <artifactId>xep0045-muc</artifactId>
-      <version>0.7</version>
-    </dependency>
+    <!--
+        <dependency>
+        <groupId>org.apache.vysper</groupId>
+        <artifactId>vysper-core</artifactId>
+        <version>0.7</version>
+        </dependency>
+        <dependency>
+        <groupId>org.apache.vysper.extensions</groupId>
+        <artifactId>xep0045-muc</artifactId>
+        <version>0.7</version>
+        </dependency>
+    -->
     <!--                <dependency>
          <groupId>org.apache.vysper</groupId>
          <artifactId>vysper-extensions</artifactId>

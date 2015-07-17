@@ -12,8 +12,8 @@
     </expectedAttributes>
     <callbackUrl>saml-callback</callbackUrl>
     <protectedRoutes>
-      <route>opt-in</route>
+      <route>authenticationState</route>
     </protectedRoutes>
-    <idpMetadataFileName>adfs-qa-metadata.xml</idpMetadataFileName>
+    <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
   </saml>
 </properties>

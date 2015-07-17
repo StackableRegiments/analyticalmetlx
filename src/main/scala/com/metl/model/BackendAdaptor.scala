@@ -41,7 +41,6 @@ object StackConfiguration {
     com.metl.model.TopicManager.preloadAllTopics
     //ensure that the default topic is available
     com.metl.model.Topic.getDefaultValue
-
   }
 }
 
@@ -59,25 +58,29 @@ object MeTLXConfiguration {
     }
   }
   def setupForStandalone = {
-    val auth = new CASAuthenticator("metlx",() => Globals.casState.authenticated, (cs:com.metl.cas.CASStateData) => {
-      println("loginHandler")
-      Globals.casState(cs)
-      Globals.currentUser(cs.username)
-    })
+    def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
+      if ( la.authenticated ) {
+        Globals.currentUser(la.username)
+        Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
+      }
+    }
+    LiftAuthAuthentication.attachAuthenticator(
+      new SAMLAuthenticationSystem(
+        new SAMLAuthenticator(
+          alreadyLoggedIn = () => Globals.casState.authenticated,
+          onSuccess = setupUserWithSamlState _,
+          samlConfiguration = Globals.getSAMLconfiguration
+        )
+      )
+    )
+
     MeTL2011ServerConfiguration.initialize
     ServerConfiguration.loadServerConfigsFromFile("servers.standalone.xml",updateGlobalFunc)
     val servers = ServerConfiguration.getServerConfigurations
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
-    Globals.isDevMode match {
-      case false => {
-        CASAuthentication.attachCASAuthenticator(auth)
-      }
-      case _ => {}
-    }
   }
   def setupForExternal = {
     val auth = new OpenIdAuthenticator(()=>Globals.casState.authenticated,(cs:com.metl.cas.CASStateData) => {
-      println("openId loginHandler")
       Globals.casState(cs)
       Globals.currentUser(cs.username)
     })
@@ -94,6 +97,7 @@ object MeTLXConfiguration {
   }
   def setupForMonash = {
     def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
+      /*Intentionally moving back into CAS paradigm to support that assumption where it is embedded across the application*/
       if ( la.authenticated ) {
         Globals.currentUser(la.username)
         Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
@@ -142,10 +146,7 @@ object MeTLXConfiguration {
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
-    if (xmppBridgeEnabled){
-      EmbeddedXmppServer.start
-    }
-    StackConfiguration.setup
+    //StackConfiguration.setup
   }
   def getRoom(jid:String,configName:String) = {
     configs(configName)._2.get(jid)
