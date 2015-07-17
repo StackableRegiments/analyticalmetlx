@@ -49,13 +49,8 @@ object MeTLXConfiguration {
   val updateGlobalFunc = (c:Conversation) => {
     getRoom("global",c.server.name) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
-  protected var xmppBridgeEnabled:Boolean = false
   def getRoomProvider(name:String) = {
-    if (xmppBridgeEnabled) {
-      new XmppBridgingHistoryCachingRoomProvider(name)
-    } else {
-      new HistoryCachingRoomProvider(name)
-    }
+    new HistoryCachingRoomProvider(name)
   }
   def setupForStandalone = {
     def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
@@ -132,10 +127,6 @@ object MeTLXConfiguration {
       case s:String if s.toLowerCase.trim == "standalone" => setupForStandalone
       case _ => setupForExternal
     }
-    xmppBridgeEnabled = System.getProperty("metl.xmppBridgeEnabled") match {
-      case s:String if s.toLowerCase.trim == "true" => true
-      case _ => false
-    }
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
     LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
     LiftRules.dispatch.append(MeTLStatefulRestHelper)
@@ -146,7 +137,7 @@ object MeTLXConfiguration {
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
-    //StackConfiguration.setup
+    StackConfiguration.setup
   }
   def getRoom(jid:String,configName:String) = {
     configs(configName)._2.get(jid)
