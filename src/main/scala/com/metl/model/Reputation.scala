@@ -15,13 +15,6 @@ object Reputation{
       })
     }
   }
-/*
-  def predictions:JObject = { 
-    Stopwatch.time("Reputation:predictions",()=>{ 
-      
-    })
-  }
-  */
   def allStandings:List[Standing] = Stopwatch.time("Reputation:allStandings",()=>standingMap.map(st => Standing(st._1,st._2,0)).filter(a => a.isInstanceOf[Standing]).map(a => a.asInstanceOf[Standing]).toList)
   def populateStandingMap:Unit = Stopwatch.time("Reputation:populateStandingMap",()=>{
     Informal.findAll.foreach(i => addStanding(i.protagonist.is,i.action.is))

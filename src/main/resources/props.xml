@@ -15,5 +15,6 @@
       <route>authenticationState</route>
     </protectedRoutes>
     <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
+    <keystorePath>exampleKeystorePath</keystorePath>
   </saml>
 </properties>

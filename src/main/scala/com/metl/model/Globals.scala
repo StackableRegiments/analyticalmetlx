@@ -47,7 +47,7 @@ object Globals extends PropertyReader {
 
   object currentStack extends SessionVar[Topic](Topic.defaultValue)
   def getSAMLconfiguration = {
-    val propertyFile: NodeSeq = secureXML.load(getClass.getResource("/props.xml"))
+    val propertyFile: NodeSeq = XML.load(getClass.getResource("/props.xml"))
     val properties: scala.xml.NodeSeq = (for (
       props <- propertyFile \\ "properties"
     ) yield {
