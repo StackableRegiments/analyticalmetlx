@@ -4,11 +4,11 @@
     <serverName>localhost</serverName>
     <serverPort>8443</serverPort>
     <maximumAuthenticationLifetime>
-      3600 <!-- in seconds, must match corresponding settings in IDP -->
+      28800 <!-- in seconds, must match corresponding settings in IDP -->
     </maximumAuthenticationLifetime>
     <expectedAttributes>
-      <fullname>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name</fullname>
       <emailAddress>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</emailAddress>
+      <group>http://schemas.xmlsoap.org/claims/Group</group>
     </expectedAttributes>
     <callbackUrl>saml-callback</callbackUrl>
     <protectedRoutes>
