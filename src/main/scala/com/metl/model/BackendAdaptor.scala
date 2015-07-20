@@ -52,28 +52,6 @@ object MeTLXConfiguration {
   def getRoomProvider(name:String) = {
     new HistoryCachingRoomProvider(name)
   }
-  def setupForStandalone = {
-    def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
-      if ( la.authenticated ) {
-        Globals.currentUser(la.username)
-        Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
-      }
-    }
-    LiftAuthAuthentication.attachAuthenticator(
-      new SAMLAuthenticationSystem(
-        new SAMLAuthenticator(
-          alreadyLoggedIn = () => Globals.casState.authenticated,
-          onSuccess = setupUserWithSamlState _,
-          samlConfiguration = Globals.getSAMLconfiguration
-        )
-      )
-    )
-
-    MeTL2011ServerConfiguration.initialize
-    ServerConfiguration.loadServerConfigsFromFile("servers.standalone.xml",updateGlobalFunc)
-    val servers = ServerConfiguration.getServerConfigurations
-    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
-  }
   def setupForExternal = {
     val auth = new OpenIdAuthenticator(()=>Globals.casState.authenticated,(cs:com.metl.cas.CASStateData) => {
       Globals.casState(cs)
@@ -83,16 +61,14 @@ object MeTLXConfiguration {
     ServerConfiguration.loadServerConfigsFromFile("servers.external.xml",updateGlobalFunc)
     val servers = ServerConfiguration.getServerConfigurations
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
-    Globals.isDevMode match {
-      case false => {
-        OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
-      }
-      case _ => {}
+    println("setting up config file:[%s]".format("servers.external.xml"))
+    if(Globals.isDevMode) {
+      OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
     }
   }
-  def setupForMonash = {
+  def setupOnFile(config:String) = {
+    /*Intentionally moving back into CAS paradigm to support that assumption where it is embedded across the application*/
     def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
-      /*Intentionally moving back into CAS paradigm to support that assumption where it is embedded across the application*/
       if ( la.authenticated ) {
         Globals.currentUser(la.username)
         Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
@@ -107,13 +83,13 @@ object MeTLXConfiguration {
         )
       )
     )
+    MeTL2011ServerConfiguration.initialize
+    ServerConfiguration.loadServerConfigsFromFile(config,updateGlobalFunc)
+    val servers = ServerConfiguration.getServerConfigurations
+    println("setting up on config file:[%s]".format(config))
+    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
+    println(configs)
   }
-  MeTL2011ServerConfiguration.initialize
-  ServerConfiguration.loadServerConfigsFromFile("servers.monash.xml",updateGlobalFunc)
-  val servers = ServerConfiguration.getServerConfigurations
-  configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
-  println("setting up Monash")
-  println(configs)
 
   def initializeSystem = {
     Props.mode match {
@@ -123,8 +99,8 @@ object MeTLXConfiguration {
     val prop = System.getProperty("metl.backend")
     println("startupParams: "+prop)
     prop match {
-      case s:String if s.toLowerCase.trim == "monash" => setupForMonash
-      case s:String if s.toLowerCase.trim == "standalone" => setupForStandalone
+      case s:String if s.toLowerCase.trim == "monash" => setupOnFile("servers.monash.xml")
+      case s:String if s.toLowerCase.trim == "standalone" => setupOnFile("servers.standalone.xml")
       case _ => setupForExternal
     }
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
