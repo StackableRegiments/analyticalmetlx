@@ -73,10 +73,10 @@
       <artifactId>samlauthentication_2.9.2</artifactId>
       <version>0.2.4</version>
       <exclusions>
-	<exclusion>
-	  <groupId>net.liftweb</groupId>
-	  <artifactId>lift-webkit_2.9.2</artifactId>
-	</exclusion>
+        <exclusion>
+          <groupId>net.liftweb</groupId>
+          <artifactId>lift-webkit_2.9.2</artifactId>
+        </exclusion>
         <exclusion>
           <groupId>net.liftweb</groupId>
           <artifactId>lift-util_2.9.2</artifactId>
@@ -141,11 +141,11 @@
       <version>1.4</version>
     </dependency>
     <!--
-    <dependency>
-      <groupId>net.liftweb</groupId>
-      <artifactId>lift-util_2.9.0</artifactId>
-      <version>2.4</version>
-    </dependency>
+        <dependency>
+        <groupId>net.liftweb</groupId>
+        <artifactId>lift-util_2.9.0</artifactId>
+        <version>2.4</version>
+        </dependency>
     -->
     <dependency>
       <groupId>net.liftweb</groupId>
@@ -306,6 +306,18 @@
         <artifactId>jetty-maven-plugin</artifactId>
         <version>8.1.4.v20120524</version>
         <configuration>
+          <connectors>
+	    <connector implementation="org.eclipse.jetty.server.bio.SocketConnector">
+              <port>8080</port>
+            </connector>
+            <connector implementation="org.eclipse.jetty.server.ssl.SslSocketConnector">
+              <port>8443</port>
+              <maxIdleTime>60000</maxIdleTime>
+              <keystore>${project.build.directory}/classes/jetty-ssl.keystore</keystore>
+              <password>sandwiches</password>
+              <keyPassword>sandwiches</keyPassword>
+            </connector>
+          </connectors>
           <stopPort>8091</stopPort>
           <stopKey>stopMeTLX</stopKey>
           <!-- for logging control -->
