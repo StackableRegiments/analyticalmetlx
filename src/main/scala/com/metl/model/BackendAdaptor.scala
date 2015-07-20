@@ -70,8 +70,9 @@ object MeTLXConfiguration {
     /*Intentionally moving back into CAS paradigm to support that assumption where it is embedded across the application*/
     def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
       if ( la.authenticated ) {
+        println("Auth state: %s".format(la))
         Globals.currentUser(la.username)
-        Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
+        Globals.casState.set(new CASStateData(true,la.username,la.informationGroups,la.informationGroups))
       }
     }
     LiftAuthAuthentication.attachAuthenticator(
