@@ -1,0 +1,95 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <script src="static/js/stable/jquery-1.8.2.min.js"></script>
+    <script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
+    <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+    <script src="static/js/stable/underscore-min.js"></script>
+    <script src="static/js/defaults.js"></script>
+    <script src="static/js/Progress.js"></script>
+    <script src="static/js/historyReader.js"></script>
+    <script src="static/js/board.js"></script>
+    <script src="static/js/toolbar.js"></script>
+    <script src="static/js/conversations.js"></script>
+    <script src="static/js/userSettings.js"></script>
+    <script src="static/js/scroll.js"></script>
+    <script src="static/js/Canvas.js"></script>
+    <script src="static/js/onLoad.js"></script>
+    <script src="static/js/test.js"></script>
+    <script src="static/js/quizzes.js"></script>
+    <script src="static/js/submissions.js"></script>
+    <script src="static/js/privacy.js"></script>
+    <script src="static/js/stable/Tween.js"></script>
+    <script src="static/js/DeviceConfiguration.js"></script>
+    <script src="static/js/hotkeys.js"></script>
+    <script src="static/js/Chart.min.js"></script>
+    <link rel="stylesheet" href="static/css/board.css"></link>
+    <link rel="stylesheet" href="static/css/quiz.css"></link>
+    <link rel="stylesheet" href="static/css/ribbon.css"></link>
+    <link rel="stylesheet" href="static/css/header.css"></link>
+  </head>
+  <body>
+    <table id="masterLayout">
+      <tr>
+        <td class="shrinkWrappedColumn" id="toolsColumn">
+          <div class="lift:embed?what=_ribbon" />
+        </td>
+        <td class="expandoColumn expandoRow" id="boardColumn">
+          <div class="lift:embed?what=_presentationSpace" />
+          <div id="notices">
+            <div class="headerRow1">
+              <span id="username" />
+              <span> is working </span>
+              <span id="currentPrivacyStatus"></span>
+              <span> in </span>
+              <span id="currentConversationTitle" />
+              <span> with </span>
+              <span id="currentConversationState"/>
+              <span id="shareContainer">
+                <div id="sharingLinks">
+                  <div>
+                    <span>Join this slide: </span>
+                    <span id="shareLink">
+                      No slide selected
+                    </span>
+                  </div>
+                  <div>
+                    <span>Follow this conversation: </span>
+                    <span id="projectorLink">
+                      No conversation selected
+                    </span>
+                  </div>
+                </div>
+                <div class="closeButton" id="closeSharingButton">X</div>
+              </span>
+            </div>
+            <div class="headerRow2">
+              <span id="feedbackStatus"/>
+              <span id="shareButton"/>
+            </div>
+            <div class="headerRow3">
+            </div>
+          </div>
+        </td>
+        <td class="shrinkWrappedColumn expandoRow" id="thumbsColumn">
+          <div class="lift:embed?what=_thumbs" />
+        </td>
+      </tr>
+    </table>
+    <div class="lift:embed?what=_dedicatedPopups"></div>
+    <span id="absoluteCloseButton"/>
+    <div id="floatingToggleContainer">
+      <div class="floatingToolbar" id="applicationMenuButton">
+        <div>
+          <img src="/static/images/metlx.png" />
+        </div>
+        <div>
+          Menu
+        </div>
+      </div>
+    </div>
+    <div id="s2cMessageContainer" />
+    <lift:MeTL.specific />
+  </body>
+</html>

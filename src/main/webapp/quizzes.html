@@ -1,0 +1,55 @@
+<lift:surround with="defaultWebMeTL" at="content">
+
+<head>
+	<style>
+/* <![CDATA[ */
+
+#quizList {
+	text-align: center;
+	margin: 0 auto;
+}
+.quizItem {
+	display: inline-block;
+	vertical-align: top;
+	margin: 0.5em;
+}
+.quizItem a {
+	background: url("/static/quiz.png") no-repeat;
+	background-size: 75px 75px;
+	display: inline-block;
+	width: 75px;
+}
+.quizItem a > span {
+	display: block;
+	padding-top: 75px;
+	text-align: center;
+}
+
+/* ]]> */
+	</style>
+
+	<script>
+// <![CDATA[
+//
+// ]]>
+	</script>
+</head>
+
+<lift:bind-at name="titleText">
+	<h1 id="titleText"><lift:QuizzesSnippet.title/></h1>
+</lift:bind-at>
+<lift:bind-at name="headTitle">
+	<title><lift:QuizzesSnippet.title/> - MeTL Viewer</title>
+</lift:bind-at>
+
+<lift:bind-at name="navLinkContainer">
+	<lift:QuizzesSnippet.navigation eager_eval="true">
+        <lift:embed what="navlink"/>
+    </lift:QuizzesSnippet.navigation>
+</lift:bind-at>
+
+<lift:QuizzesSnippet.list>
+	<div id="quizList"/>
+</lift:QuizzesSnippet.list>
+
+</lift:surround>

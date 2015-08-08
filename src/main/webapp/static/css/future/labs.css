@@ -1,0 +1,26 @@
+#thumbsColumn, #toolsColumn, #boardHeader{
+    width:0;
+    display:none;
+}
+.backstageHeader{
+    background-color:red;
+}
+.postitLooking{
+    background-color:yellow;
+    height:5em;
+    min-width:5em;
+    opacity:0.7;
+    color:black;
+    border-color:red;
+}
+.focussedPostit{
+    border:1px solid red;
+}
+.postitAnnotation{
+    border:1px solid red;
+    background-color:yellow;
+    border-radius:15px;
+    padding:1em;
+    width:60%;
+    margin:auto;
+}

@@ -1,0 +1,56 @@
+#boardHeader{
+    color:white;
+    background-color:    #003264;
+    width:100%;
+    height:100%;
+    display:block;
+    border-bottom: 2px solid #333;
+}
+#backstageTabHeaders{
+    margin-left:12em;
+}
+.backstageTabHeader {
+    margin-left:1em;
+    float:left;
+}
+.headerToolbar{
+    display:inline-block;
+    margin:2px 0;
+}
+#toggleThumbs{
+    float:right;
+}
+#heading{
+    padding-left:120px;
+    padding-right:120px;
+    //padding-left:20px;
+    display: inline-block;
+    width:55%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+#submissionCount,
+#quizCount,
+#shareButton {
+    cursor: pointer;
+}
+#submissionCount,
+#quizCount {
+    padding-right:5px;
+}
+.ViewStateToggleButton {
+    width:100px;
+    background-color:dark-blue;
+    position:absolute;
+    text-align:center;
+    height:35px;
+    border:1px solid blue;
+}
+#toolsToggleButton {
+    left:0px;
+}
+#slidesToggleButton {
+    right:0px;
+}
+

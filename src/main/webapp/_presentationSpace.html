@@ -1,0 +1,76 @@
+<div id="boardContainer">
+  <canvas id="board" class="fill" />
+  <div id="selectionAdorner" />
+  <div id="radar" />
+  <div id="marquee" />
+  <div id="textAdorner" />
+  <div id="backstageContainer">
+    <div id="applicationMenuPopup" class="backstageHeader">
+      <div class="lift:embed?what=_futureApplicationButton" />
+    </div>
+    <div id="customizeBrushPopup" class="backstage">
+      <div id="penColor">
+        <span>Choose Pen Color</span>
+        <div id="colors" />
+      </div>
+      <div id="penSize">
+        <span>Choose Pen Size </span>
+        <div id="sizes" />
+      </div>
+      <div id="penModes">
+        <span>Choose Pen Mode</span>
+        <div id="penMode" />
+      </div>
+      <div class="toolbar" id="resetPenButton" />
+    </div>
+    <div id="preferencesPopup" class="backstage">
+      <div id="preferencesContainer">
+        <div id="preferencesContainerLeft">
+          <div>
+            <label for="showGrid">Show grid</label>
+          </div>
+          <input type="checkbox" id="showGrid" />
+          <div>
+            <label for="implicitlyExpanding">Implicit expansion</label>
+          </div>
+          <input type="checkbox" id="implicitlyExpanding" />
+          <div>
+            <label for="toggleHighQualityInk">High quality stylus</label>
+          </div>
+          <input type="checkbox" id="toggleHighQualityInk" />
+          <div>
+            <label>Ink render quality</label>(<span id="opCount" />)
+          </div>
+          <input type="radio" name="renderQuality" value="8">High</input><br />
+          <input type="radio" name="renderQuality"  checked="true" value="32">Medium</input><br />
+          <input type="radio" name="renderQuality" value="127">Low</input><br />
+          <div>
+            <label>Load slides at native zoom</label>
+          </div>
+          <input type="checkbox" id="loadSlidesAtNativeZoom" />
+        </div>
+        <div id="preferencesContainerRight"/>
+      </div>
+    </div>
+    <div id="conversationsPopup" class="backstage">
+      <div id="conversationsContainer">
+        <div id="search">
+          <div id="conversationCreationControls">
+            <div id="s2cConversationMessageContainer"/>
+            <div id="createConversationContainer"/>
+            <div id="importPowerpointContainer"/>
+          </div>
+          <span>
+            <span id="searchForConversationBoxContainer" />
+            <span id="searchButtonContainer" />
+          </span>
+        </div>
+        <div id="searchResults" />
+      </div>
+    </div>
+  </div>
+  <div id="loadingSlidePopup" class="backstage">
+    <div><span id="targetSlide" /></div>
+    <img class="slideLoading" src="static/images/ajax-loader.gif" alt="Loading..."/>
+  </div>
+</div>

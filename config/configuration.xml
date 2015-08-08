@@ -1,0 +1,32 @@
+<serverConfiguration>
+	<!--	<metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
+	<defaultServerConfiguration>saintleo</defaultServerConfiguration>
+	<serverConfigurations>
+		<server>
+			<type>MeTL2011</type>
+			<name>saintleo</name>
+			<host>localhost</host>
+			<meggleUrl>unused</meggleUrl>
+			<xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
+		</server>
+		<server>
+      <type>transientLoopback</type>
+    </server>
+    <server>
+      <type>frontend</type>
+    </server>
+  </serverConfigurations>
+<!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
+<!--
+  <authentication>
+    <casAuthenticator domain="metlx" baseUrl="http://refer.adm.monash.edu.au:11000/cas"/>
+    <openIdAuthenticator>
+      <openIdEndpoint name="gmail" formattedEndpoint="https://www.google.com/accounts/o8/id" imageSrc="https://ssl.gstatic.com/images/icons/gplus-128.png" />
+    </openIdAuthenticator>
+  </authentication>
+-->
+  <groupsProvider>
+    <openIdGroups/>
+  </groupsProvider>
+  <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
+</serverConfiguration>
