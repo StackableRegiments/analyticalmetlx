@@ -1,0 +1,62 @@
+.groupActivityTitle{
+    margin-bottom:1em;
+}
+.groupOverview, .groupOverview div{
+    vertical-align:top;
+}
+.groupContainer{
+    border:1px solid black;
+    display:inline-block;
+    vertical-align:top;
+    text-align:center;
+    max-width:20em;
+    margin:0 1em;
+}
+#groupFinderPopup{
+    padding-left:2em;
+}
+.closedGroup{
+    color:red;
+}
+.startupGroupParameter{
+    margin-left:1em;
+    margin-bottom:1em;
+}
+#groupHud{
+    position:absolute;
+    top:0;
+    right:60px;
+    max-width:20%;
+    display:none;
+}
+.groupMemberPortrait{
+    margin-right:1em;
+}
+
+#groupChat{
+    display:none;
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:30%;
+    height:40%;
+    border:1px solid black;
+    background-color:lightgray;
+}
+#groupChat .header{
+    width:100%;
+    background-color:blue;
+    color:white;
+}
+#groupChat .line{
+    margin-top:5px;
+}
+#groupChat .system{
+    color:blue;
+}
+#chatInput input{
+    width:100%;
+    position:absolute;
+    bottom:0;
+    left:0;
+}

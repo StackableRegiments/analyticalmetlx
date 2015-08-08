@@ -52,27 +52,11 @@ object MeTLXConfiguration {
   def getRoomProvider(name:String) = {
     new HistoryCachingRoomProvider(name)
   }
-  def setupForExternal = {
-    val auth = new OpenIdAuthenticator(()=>Globals.casState.authenticated,(cs:com.metl.cas.CASStateData) => {
-      Globals.casState(cs)
-      Globals.currentUser(cs.username)
-    })
-    LocalH2ServerConfiguration.initialize
-    ServerConfiguration.loadServerConfigsFromFile("servers.external.xml",updateGlobalFunc)
-    val servers = ServerConfiguration.getServerConfigurations
-    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
-    println("setting up config file:[%s]".format("servers.external.xml"))
-    if(Globals.isDevMode) {
-      OpenIdAuthenticator.attachOpenIdAuthenticator(auth)
-    }
-  }
-  def setupOnFile(config:String) = {
-    /*Intentionally moving back into CAS paradigm to support that assumption where it is embedded across the application*/
+  def setupServersFromFile(filePath:String) = {
     def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
       if ( la.authenticated ) {
-        println("Auth state: %s".format(la))
         Globals.currentUser(la.username)
-        Globals.casState.set(new CASStateData(true,la.username,la.informationGroups,la.informationGroups))
+        Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
       }
     }
     LiftAuthAuthentication.attachAuthenticator(
@@ -84,26 +68,19 @@ object MeTLXConfiguration {
         )
       )
     )
-    MeTL2011ServerConfiguration.initialize
-    ServerConfiguration.loadServerConfigsFromFile(config,updateGlobalFunc)
-    val servers = ServerConfiguration.getServerConfigurations
-    println("setting up on config file:[%s]".format(config))
-    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
-    println(configs)
-  }
 
+    MeTL2011ServerConfiguration.initialize
+    LocalH2ServerConfiguration.initialize
+    ServerConfiguration.loadServerConfigsFromFile(filePath,updateGlobalFunc)
+    val servers = ServerConfiguration.getServerConfigurations
+    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
+  }
   def initializeSystem = {
     Props.mode match {
       case Props.RunModes.Production => Globals.isDevMode = false
       case _=> Globals.isDevMode = true
     }
-    val prop = System.getProperty("metl.backend")
-    println("startupParams: "+prop)
-    prop match {
-      case s:String if s.toLowerCase.trim == "monash" => setupOnFile("servers.monash.xml")
-      case s:String if s.toLowerCase.trim == "standalone" => setupOnFile("servers.standalone.xml")
-      case _ => setupForExternal
-    }
+    setupServersFromFile(Globals.configurationFileLocation)
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
     LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
     LiftRules.dispatch.append(MeTLStatefulRestHelper)
@@ -115,6 +92,7 @@ object MeTLXConfiguration {
     })
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     StackConfiguration.setup
+    println(configs)
   }
   def getRoom(jid:String,configName:String) = {
     configs(configName)._2.get(jid)

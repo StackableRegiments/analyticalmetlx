@@ -1,0 +1,76 @@
+.quizOption {
+	display: block;
+	width: 100%;
+	border: solid #888 1px;
+	color: inherit;
+	text-decoration: none;
+	margin-bottom:1px;
+
+}
+
+.s2cMessage .quizQuestion {
+	margin:10px;
+}
+.s2cMessage .quizOption {
+	width: 31%;
+}
+.quizText {
+	width: 65%;
+	display: inline-block;
+	font-size: x-large;
+	margin-left: 1em;
+	color: black;
+
+}
+#quizListing{
+	position:relative;
+	margin-top: 15px;
+	display:inline-block;
+	width:30%;
+	vertical-align:top;
+	overflow:auto;
+	height: 500px;
+}
+.quizSummaryEditButton {
+	height: 50px;
+	width: 100px;
+}
+#currentQuiz .toolbar {
+	padding: 3px;
+}
+#currentQuiz{
+		display:inline-block;
+		width:50%;
+}
+.quizSummary{
+		display:block;
+}
+.quizName {
+	display: inline-block;
+	padding: 0.4em;
+	font-size: xx-large;
+	color: black;
+	border-right: solid #888 1px;
+	border-bottom: solid #888 1px;
+	width: 5%;
+}
+.quizOption:Hover {
+	cursor:pointer;
+}
+.activeAnswer {
+	background-color: wheat;
+}
+.quizQuestion {
+	font-size: xx-large;
+	font-weight: bold;
+}
+.quizSummaryQuestion {
+	text-align:left;
+}
+.quizSummaryAnswerCount {
+	text-align:right;
+}
+.quizzesTitle {
+	font-weight:bold;
+	font-size:x-large;
+}

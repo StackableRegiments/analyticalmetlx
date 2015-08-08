@@ -1,0 +1,386 @@
+html{
+    height:100%;
+}
+body{
+    margin:0;
+    font-family:Verdana,arial,sans-serif;
+    font-size:12px;
+    overflow:hidden;
+    height:100%;
+    background-color:#3d4550;
+}
+#username{
+    margin-right:20px;
+}
+#masterLayout, #boardContainer{
+    width:100%;
+    height:100%;
+}
+#masterLayout{
+    border-spacing:0;
+    border-collapse:collapse;
+    background-color:#3d4550;
+    color:white;
+}
+#masterLayout td{
+    vertical-align:top;
+    padding:0;
+}
+.shrinkWrappedColumn{
+    width:0;
+}
+.shrinkWrappedRow{
+    height:0;
+}
+.expandoColumn{
+    width:100%;
+}
+.expandoRow{
+    height:100%;
+}
+#board{
+    background-color:white;
+}
+#slideContainer,#boardContainer{
+    position:relative;
+}
+#board,#silverlightControlHost{
+    position:absolute;
+    top:0;
+    left:0;
+}
+.quizTitle {
+    font-size: large;
+    font-weight:bold;
+}
+#silverlightControlHost{
+    width:100%;
+    height:100%;
+}
+#backstageContainer{
+    width:100%;
+    height:100%;
+}
+.backstage, .midstage{
+    background-color:rgba(100,100,200,0.85);
+    display:none;
+    position:absolute;
+    top:0px;
+    left:0px;
+}
+.midstage{
+    width:50%;
+    left:25%;
+    margin-top:2em;
+    border-radius:10px;
+    border:1px solid darkblue;
+    padding:1em;
+    max-height:75%;
+    overflow-y:auto;
+}
+.backstageHeader{
+    width:100%;
+    height:10%;
+    position:absolute;
+    top:0px;
+    left:0px;
+    display:none;
+}
+.backstage{
+    width:100%;
+    height:90%;
+    position:absolute;
+    top:10%;
+    left:0px;
+    display:none;
+}
+#marquee,#zoomMarquee{
+    display:none;
+}
+#marquee,.selectionAdorner,.resizeHandle,#zoomMarquee{
+    border:1px dashed red;
+    position:absolute;
+    pointer-events:none;
+}
+.preferenceChoice{
+    border:1px solid black;
+    background-color:gray;
+    color:black;
+    text-align:center;
+    display:inline-block;
+    margin:0 30px;
+}
+table.dots td{
+    border:1px solid black;
+}
+#conversationsPopup {
+    background-color:white;
+}
+.searchResult{
+    color:black;
+    margin: 1em;
+    padding: 0.5 em;
+    clear: both;
+    overflow: hidden;
+    height: 125px;
+    text-overflow: ellipsis;
+    border:solid black 1px;
+    position: relative;
+}
+
+.searchResult:hover {
+    background-color: lightgray;
+}
+.middleRow {
+    clear:both;
+}
+.s2cMessage {
+    color:black;
+}
+.s2cLabel {
+    font-weight:bold;
+    font-size:x-large;
+    padding-bottom: 1em;
+
+}
+
+.conversationTitle {
+    display:block;
+    font-weight:bold;
+    font-size: x-large;
+    padding: 5px;
+    float:left;
+    width: 75%;
+}
+.conversationAuthor {
+    float:left;
+    padding:5px;
+}
+.extraConversationTools,
+.conversationJoinButton {
+    float:right;
+    margin: 5px;
+}
+.quizSummary:hover{
+
+    background-color: gray;
+}
+
+#s2cConversationMessageContainer{
+    margin-bottom: 5px;
+}
+.simpleMultipleButtonInteractableMessageButton a{
+    padding: 2px;
+}
+.simpleMultipleButtonInteractableMessageButton a:Hover,
+.quizCreationButton:hover,
+.conversationSearchButton:hover{
+    background-color: gray;
+}
+
+.simpleMultipleButtonInteractableMessageButton a,
+.quizCreationButton,
+.quizSummary,
+.conversationSearchButton {
+    background-color: #EEE7E0;
+    color: #447;
+    text-align: center;
+    border: 1px solid #DADADA;
+    font-weight: normal;
+    line-height: 2.0em;
+    padding: .4em 1em;
+    display: inline-block;
+
+}
+#backBuffer{
+    border:1px solid black;
+}
+#setPressureSimilarityThreshold{
+    vertical-align:middle;
+}
+#upload{
+    z-index:1;
+    position:absolute;
+    display:none;
+    background-color:white;
+    color:black;
+}
+#imageUploadSubmit{
+    display:none;
+}
+#upload progress{
+    vertical-align:top;
+}
+.fail{
+    background-color:red;
+}
+#hideBackstage{
+    position:absolute;
+    top:0;
+    right:0;
+    background-color:red;
+    color:white;
+    font-size:xx-large;
+    display:none;
+}
+#thumbScrollContainer{
+    border-left:1px solid gray;
+}
+#footer{
+    background-color:white;
+    bottom:0;
+    width:100%;
+}
+#quickMoves{
+    float:right;
+}
+#closeTextInput{
+    float:right;
+    background-color:red;
+    color:white;
+    font-weight:bold;
+    width:30px;
+    height:30px;
+    text-align:center;
+}
+#submissionsContainer{
+    height:90%;
+}
+#submissionListing{
+    width:300px;
+    overflow-x:none;
+    overflow-y:auto;
+    display:inline-block;
+    vertical-align:top;
+    height:100%;
+}
+#currentSubmission{
+    width:50%;
+    display:inline-block;
+}
+#currentSubmission img{
+    width:100%;
+}
+.viewSubmissionButton {
+    position:absolute;
+}
+.submissionImageThumb{
+    height:90%;
+}
+.submissionSummary{
+    border:solid 1px black;
+    position:relative;
+    height: 200px;
+}
+
+#preferencesContainer{
+    position:absolute;
+    top:0px;
+    left:0px;
+    height:100%;
+    width:100%;
+    overflow:auto;
+}
+#preferencesContainerLeft, #preferencesContainerRight{
+    vertical-align:top;
+    padding:4px;
+    display:inline-block;
+}
+#search{
+    width:90%;
+    margin: 0 auto;
+    padding-top: 2em;
+    padding-left: 2em;
+}
+#searchForConversationBox {
+    width: 75%;
+    height: 32px;
+}
+.searchResult:Hover,
+.conversationSearchButton:Hover {
+    cursor:pointer;
+}
+#conversationsContainer{
+    height:100%;
+}
+#searchResults{
+    height:80%;
+    width: 90%;
+    margin:0 auto;
+    overflow:auto;
+    position:absolute;
+    padding-left:5%;
+}
+#slideContainer{
+    height:100%;
+    overflow-x:hidden;
+    overflow-y:scroll;
+}
+#footer{
+    position:absolute;
+    bottom:0px;
+    background:transparent;
+    margin-left:auto;
+    margin-right:auto;
+    width:60%;
+}
+#footer span, #footer div{
+    background:white;
+}
+#ribbon{
+    height:100%;
+    overflow-x:hidden;
+    overflow-y:auto;
+}
+#progress{
+    display:inline-block;
+    vertical-align:center;
+}
+#heading{
+    font-size:large;
+    font-weight:bold;
+}
+.toggleLink{
+    margin-top:1em;
+}
+.activeSlide{
+    border:3px solid gold;
+}
+.activeBackstageTab{
+    border:3px solid red !important;
+}
+.activeBrush{
+    border:3px solid darkblue !important;
+}
+
+#insertOptions{
+    border:1px solid darkgrey;
+    padding:1em;
+    background-color:lightgrey;
+}
+#textEditor{
+    border:1px solid darkgrey;
+    padding:1em;
+    background-color:lightgrey;
+}
+#textEditor textarea{
+}
+.textOptionsContainer{
+    color:black;
+}
+.textOptionsDropdown{
+}
+.textOptionsToggleContainer{
+}
+.textOptionsToggleLabel{
+}
+.textOptionsToggleButton{
+}
+.simpleTextAreaInteractableMessageTextArea{
+}
+.simpleMultipleButtonInteractableMessageButton{
+}
+.simpleRadioButtonInteractableMessageButton{
+}
+.simpleDropdownInteractableMessageDropdown{
+}

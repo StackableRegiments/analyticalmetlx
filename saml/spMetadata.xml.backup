@@ -1,0 +1,13 @@
+<md:EntityDescriptor
+    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+    ID="_z7b6d339da96016iib0ed98ed476er3d7ae4dct5"
+    entityID="MeTLTrialEnvironment">
+  <md:SPSSODescriptor AuthnRequestsSigned="false"
+                      WantAssertionsSigned="true"
+                      protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+    <md:AssertionConsumerService
+        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        Location="https://192.168.20.253/saml-callback" index="0"/>
+  </md:SPSSODescriptor>
+</md:EntityDescriptor>

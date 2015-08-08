@@ -1,0 +1,52 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
+  <head>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <script src="static/js/stable/jquery-1.7.2.min.js"></script>
+    <script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
+    <script src="static/js/smartResize.js"></script>
+    <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+    <script src="static/js/stable/underscore-min.js"></script>
+    <script src="static/js/Progress.js"></script>
+    <script src="static/js/historyReader.js"></script>
+    <script src="static/js/board.js"></script>
+    <script src="static/js/toolbar.js"></script>
+    <script src="static/js/conversations.js"></script>
+    <script src="static/js/userSettings.js"></script>
+    <script src="static/js/scroll.js"></script>
+    <script src="static/js/Canvas.js"></script>
+    <script src="static/js/onLoad.js"></script>
+    <script src="static/js/test.js"></script>
+    <script src="static/js/quizzes.js"></script>
+    <script src="static/js/submissions.js"></script>
+		<script src="static/js/privacy.js"></script>
+    <script src="static/js/stable/Tween.js"></script>
+    <link rel="stylesheet" href="static/css/board.css"></link>
+    <link rel="stylesheet" href="static/css/ribbon.css"></link>
+    <link rel="stylesheet" href="static/css/header.css"></link>
+  </head>
+  <body>
+    <table id="masterLayout">
+      <tr>
+        <td colspan="3" class="shrinkWrappedRow">
+          <div class="lift:embed?what=_boardHeader" />
+        </td>
+      </tr>
+      <tr>
+        <td class="shrinkWrappedColumn" id="toolsColumn">
+          <div class="lift:embed?what=_ribbon" />
+        </td>
+        <td class="expandoColumn expandoRow">
+          <div class="lift:embed?what=_presentationSpace" />
+        </td>
+        <td class="shrinkWrappedColumn expandoRow" id="thumbsColumn">
+          <div class="lift:embed?what=_thumbs" />
+        </td>
+      </tr>
+    </table>
+    <div id="footer">
+       <div id="s2cMessageContainer" />
+    </div>
+    <lift:MeTL.specific />
+  </body>
+</html>

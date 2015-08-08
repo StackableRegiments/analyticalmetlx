@@ -1,0 +1,74 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <script src="static/js/stable/elizabot.js"></script>
+    <script src="static/js/stable/elizadata.js"></script>
+    <script src="static/js/stable/jquery-1.8.2.js"></script>
+    <script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
+    <script src="static/js/stable/jquery-ui-1.9.0.custom.min.js"></script>
+    <script src="static/js/stable/jquery.ui.touch-punch.min.js"></script>
+    <script src="static/js/stable/d3.v2.min.js"></script>
+    <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+    <script src="static/js/stable/underscore-min.js"></script>
+    <script src="static/js/stable/Tween.js"></script>
+    <script src="static/js/future/smartResize.js"></script>
+    <script src="static/js/future/Canvas.js"></script>
+    <script src="static/js/future/Layouts.js"></script>
+    <script src="static/js/future/Progress.js"></script>
+    <script src="static/js/future/historyReader.js"></script>
+    <script src="static/js/future/labsLayout.js"></script>
+    <script src="static/js/future/board.js"></script>
+    <script src="static/js/future/toolbar.js"></script>
+    <script src="static/js/future/conversations.js"></script>
+    <script src="static/js/future/userSettings.js"></script>
+    <script src="static/js/future/scroll.js"></script>
+    <script src="static/js/future/screenPlay.js"></script>
+    <script src="static/js/future/onLoad.js"></script>
+    <script src="static/js/future/test.js"></script>
+    <script src="static/js/future/dummies.js"></script>
+    <script src="static/js/future/quizzes.js"></script>
+    <script src="static/js/future/submissions.js"></script>
+    <script src="static/js/future/privacy.js"></script>
+    <script src="static/js/future/groupFinder.js"></script>
+    <script src="static/js/future/profiles.js"></script>
+    <script src="static/js/future/Peers.js"></script>
+    <script src="static/js/future/composition.js"></script>
+    <link rel="stylesheet" href="static/css/future/board.css"></link>
+    <link rel="stylesheet" href="static/css/future/groups.css"></link>
+    <link rel="stylesheet" href="static/css/future/quiz.css"></link>
+    <link rel="stylesheet" href="static/css/future/ribbon.css"></link>
+    <link rel="stylesheet" href="static/css/future/header.css"></link>
+    <link rel="stylesheet" href="static/css/future/jquery-ui-1.9.0.custom.min.css"></link>
+  </head>
+  <body>
+    <table id="masterLayout">
+      <tr>
+        <td colspan="3" class="shrinkWrappedRow">
+          <div class="lift:embed?what=_futureBoardHeader" />
+        </td>
+      </tr>
+      <tr>
+        <td class="shrinkWrappedColumn" id="toolsColumn">
+          <div class="lift:embed?what=_futureRibbon" />
+        </td>
+        <td class="expandoColumn expandoRow">
+          <div class="lift:embed?what=_futurePresentationSpace" />
+        </td>
+        <td class="shrinkWrappedColumn expandoRow" id="thumbsColumn">
+          <div class="lift:embed?what=_futureThumbs" />
+        </td>
+      </tr>
+    </table>
+    <div class="lift:MeTL.specific" />
+    <div id="peers">
+      <div id="peerTallySummary" />
+    </div>
+    <div id="groupChat">
+      <div class="header">
+        Group Chat
+      </div>
+      <div id="chatInput"></div>
+    </div>
+  </body>
+</html>
