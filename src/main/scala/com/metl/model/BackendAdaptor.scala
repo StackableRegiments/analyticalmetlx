@@ -56,7 +56,7 @@ object MeTLXConfiguration {
     def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
       if ( la.authenticated ) {
         Globals.currentUser(la.username)
-        Globals.casState.set(new CASStateData(true,la.username,Nil,Nil))
+        Globals.casState.set(new CASStateData(true,la.username,la.eligibleGroups,la.informationGroups))
       }
     }
     LiftAuthAuthentication.attachAuthenticator(
