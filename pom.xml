@@ -26,7 +26,7 @@
       </snapshots>
       <id>central</id>
       <name>libs-release</name>
-      <url>https://artifactory.its.monash.edu/artifactory/libs-release</url>
+      <url>https://artifactory.its.monash.edu/artifactory/repo</url>
     </repository>
     <repository>
       <id>eec-svn</id>
@@ -71,7 +71,7 @@
     <dependency>
       <groupId>monash</groupId>
       <artifactId>samlauthentication_2.9.2</artifactId>
-      <version>0.2.4</version>
+      <version>0.3.0</version>
       <exclusions>
         <exclusion>
           <groupId>net.liftweb</groupId>
