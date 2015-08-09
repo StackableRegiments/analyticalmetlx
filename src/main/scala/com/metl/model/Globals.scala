@@ -31,6 +31,14 @@ trait PropertyReader {
     case s: String if s.trim.isEmpty => throw new Exception("mandatory field (%s) not supplied in expected node %s".format(tag, node))
     case other                       => other.trim
   }
+  def readAttribute(node:NodeSeq,attrName:String):String = node match {
+    case e:Elem => e.attribute(attrName).map(a => a.text).getOrElse("")
+    case _ => ""
+  }
+  def readMandatoryAttribute(node:NodeSeq,attrName:String):String = readAttribute(node,attrName) match {
+    case s: String if s.trim.isEmpty => throw new Exception("mandatory attr (%s) not supplied in expected node %s".format(attrName, node))
+    case other                       => other.trim
+  }
 }
 
 object Globals extends PropertyReader {
@@ -89,6 +97,15 @@ object Globals extends PropertyReader {
       nodeProtectedRoute.text :: Nil
     }).toList
 
+    val attrTransformers = Map(readNodes(readNode(propertySAML, "informationAttributes"),"informationAttribute").flatMap(elem => elem match {
+      case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"attributeType")))
+      case _ => None
+    }).toList:_*)
+    val groupMap = Map(readNodes(readNode(propertySAML, "eligibleGroups"),"eligibleGroup").flatMap(elem => elem match {
+      case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"groupType")))
+      case _ => None
+    }).toList:_*)
+
     SAMLconfiguration(
       idpMetaDataPath = idpMetadataFileName, //getClass.getResource("/%s".format(idpMetadataFileName)).getPath,
       serverScheme = serverScheme,
@@ -96,7 +113,9 @@ object Globals extends PropertyReader {
       serverPort = serverPort.toInt,
       callBackUrl = samlCallbackUrl,
       protectedRoutes = protectedRoutes,
-      optionOfSettingsForADFS = optionOfSettingsForADFS
+      optionOfSettingsForADFS = optionOfSettingsForADFS,
+      eligibleGroups = groupMap,
+      attributeTransformers = attrTransformers
     )
   }
   def getUserGroups:List[(String,String)] = {

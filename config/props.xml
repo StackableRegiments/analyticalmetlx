@@ -28,6 +28,12 @@
     <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
     <keystorePath>exampleKeystorePath</keystorePath>
     <keystorePassword>exampleKeystorePassword</keystorePassword>
-    <keystorePrivateKeyPassword>exampleKeystorePassword</keystorePrivateKeyPassword>
+		<keystorePrivateKeyPassword>exampleKeystorePassword</keystorePrivateKeyPassword>
+		<informationAttributes>
+			<informationAttribute samlAttribute="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" attributeType="email" />
+		</informationAttributes>
+		<eligibleGroups>
+			<eligibleGroup samlAttribute="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" groupType="ou" />
+		</eligibleGroups>
   </saml>
 </properties>
