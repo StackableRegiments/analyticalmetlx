@@ -56,27 +56,20 @@ object MeTLXConfiguration extends PropertyReader {
     new HistoryCachingRoomProvider(name)
   }
   def getSAMLconfiguration(propertySAML:NodeSeq) = {
-//    val propertySAML = readNode(properties, "saml")
-
     val serverScheme = readMandatoryText(propertySAML, "serverScheme")
     val serverName = readMandatoryText(propertySAML, "serverName")
     val serverPort = readMandatoryText(propertySAML, "serverPort")
-
     val samlCallbackUrl = readMandatoryText(propertySAML, "callbackUrl")
     val idpMetadataFileName = readMandatoryText(propertySAML, "idpMetadataFileName")
-
     val maximumAuthenticationLifetime = readMandatoryText(propertySAML, "maximumAuthenticationLifetime")
-
     val optionOfSettingsForADFS = tryo{ maximumAuthenticationLifetime.toInt } match {
       case Full(number:Int) => Some(SettingsForADFS(maximumAuthenticationLifetime = number.toInt))
       case _ => None
     }
-
     val nodeProtectedRoutes = readNodes(readNode(propertySAML, "protectedRoutes"),"route")
     val protectedRoutes = nodeProtectedRoutes.map(nodeProtectedRoute => {
       nodeProtectedRoute.text :: Nil
     }).toList
-
     val attrTransformers = Map(readNodes(readNode(propertySAML, "informationAttributes"),"informationAttribute").flatMap(elem => elem match {
       case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"attributeType")))
       case _ => None
@@ -109,13 +102,15 @@ object MeTLXConfiguration extends PropertyReader {
   protected def ifConfiguredFromGroup(in:NodeSeq,elementToAction:Map[String,NodeSeq=>Unit]):Unit = {
     var oneIsConfigured = false
     elementToAction.keys.foreach(element => {
-      if (!oneIsConfigured){
-        ifConfigured(in,element,(n:NodeSeq) => {
-          oneIsConfigured = true
-          elementToAction(element)(n)
-        })
-      } else {
-        throw new Exception("too many elements in configuration file: %s".format(elementToAction))
+      if ((in \\ element).theSeq != Nil){
+        if (!oneIsConfigured){
+          ifConfigured(in,element,(n:NodeSeq) => {
+            oneIsConfigured = true
+            elementToAction(element)(n)
+          })
+        } else {
+          throw new Exception("too many elements in configuration file: %s".format(elementToAction))
+        }
       }
     })
   }
@@ -135,17 +130,36 @@ object MeTLXConfiguration extends PropertyReader {
     ifConfiguredFromGroup(authenticationNodes,Map(
       "saml" -> {(n:NodeSeq) => {
         def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
+          println("saml step 1: %s".format(la))
           if ( la.authenticated ) {
+          println("saml step 2: authed")
             Globals.currentUser(la.username)
-            Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
+          println("saml step 3: set user")
+            var existingGroups:List[Tuple2[String,String]] = Nil
+            if (Globals.groupsProviders != null){
+            println("saml step 4: groupsProviders not null")
+              Globals.groupsProviders.foreach(gp => {
+                println("saml step 5: groupProvider: %s".format(gp))
+                val newGroups = gp.getGroupsFor(la.username)
+                if (newGroups != null){
+                  println("saml step 6: newGroups: %s".format(newGroups))
+                  existingGroups = existingGroups ::: newGroups
+                }
+              })
+            }
+            println("saml step 7: allGroups %s".format(existingGroups))
+            Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
+          println("saml step 8: completed %s".format(Globals.casState.is))
           }
         }
+        val samlConf = getSAMLconfiguration(n)
+        println("samlConf: %s".format(samlConf))
         LiftAuthAuthentication.attachAuthenticator(
           new SAMLAuthenticationSystem(
             new SAMLAuthenticator(
               alreadyLoggedIn = () => Globals.casState.authenticated,
               onSuccess = setupUserWithSamlState _,
-              samlConfiguration = getSAMLconfiguration(n)
+              samlConfiguration = samlConf
             )
           )
         )
@@ -162,7 +176,16 @@ object MeTLXConfiguration extends PropertyReader {
               onSuccess = (la:LiftAuthStateData) => {
                 if ( la.authenticated ) {
                   Globals.currentUser(la.username)
-                  Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
+                  var existingGroups:List[Tuple2[String,String]] = Nil
+                  if (Globals.groupsProviders != null){
+                    Globals.groupsProviders.foreach(gp => {
+                      val newGroups = gp.getGroupsFor(la.username)
+                      if (newGroups != null){
+                        existingGroups = existingGroups ::: newGroups
+                      }
+                    })
+                  }
+                  Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
                 }
               }
             ){
