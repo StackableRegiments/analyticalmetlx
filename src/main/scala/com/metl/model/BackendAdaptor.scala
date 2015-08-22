@@ -205,7 +205,7 @@ object MeTLXConfiguration extends PropertyReader {
   def initializeSystem = {
     Props.mode match {
       case Props.RunModes.Production => Globals.isDevMode = false
-      case _=> Globals.isDevMode = true
+      case _ => Globals.isDevMode = true
     }
     setupServersFromFile(Globals.configurationFileLocation)
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
