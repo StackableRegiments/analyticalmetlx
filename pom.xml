@@ -71,7 +71,7 @@
     <dependency>
       <groupId>monash</groupId>
       <artifactId>samlauthentication_2.9.2</artifactId>
-      <version>0.3.1</version>
+      <version>0.3.2</version>
       <exclusions>
         <exclusion>
           <groupId>net.liftweb</groupId>
