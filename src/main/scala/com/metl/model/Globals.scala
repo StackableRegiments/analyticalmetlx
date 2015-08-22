@@ -42,9 +42,8 @@ trait PropertyReader {
 }
 
 object Globals extends PropertyReader {
-  val propertyFileLocation = System.getProperty("metlx.adfsPropertiesFile")
   val configurationFileLocation = System.getProperty("metlx.configurationFile")
-  List(propertyFileLocation,configurationFileLocation).filter(prop => prop match {
+  List(configurationFileLocation).filter(prop => prop match {
     case null => true
     case "" => true
     case _ => false
@@ -67,57 +66,6 @@ object Globals extends PropertyReader {
   }
 
   object currentStack extends SessionVar[Topic](Topic.defaultValue)
-  def getSAMLconfiguration = {
-    val propertyFile: NodeSeq = XML.load(propertyFileLocation)//getClass.getResource("/props.xml"))
-    val properties: scala.xml.NodeSeq = (for (
-      props <- propertyFile \\ "properties"
-    ) yield {
-      props
-    }).headOption.getOrElse({
-      throw new Exception("properties.invalid.format")
-    })
-    val propertySAML = readNode(properties, "saml")
-
-    val serverScheme = readMandatoryText(propertySAML, "serverScheme")
-    val serverName = readMandatoryText(propertySAML, "serverName")
-    val serverPort = readMandatoryText(propertySAML, "serverPort")
-
-    val samlCallbackUrl = readMandatoryText(propertySAML, "callbackUrl")
-    val idpMetadataFileName = readMandatoryText(propertySAML, "idpMetadataFileName")
-
-    val maximumAuthenticationLifetime = readMandatoryText(propertySAML, "maximumAuthenticationLifetime")
-
-    val optionOfSettingsForADFS = tryo{ maximumAuthenticationLifetime.toInt } match {
-      case Full(number:Int) => Some(SettingsForADFS(maximumAuthenticationLifetime = number.toInt))
-      case _ => None
-    }
-
-    val nodeProtectedRoutes = readNodes(readNode(propertySAML, "protectedRoutes"),"route")
-    val protectedRoutes = nodeProtectedRoutes.map(nodeProtectedRoute => {
-      nodeProtectedRoute.text :: Nil
-    }).toList
-
-    val attrTransformers = Map(readNodes(readNode(propertySAML, "informationAttributes"),"informationAttribute").flatMap(elem => elem match {
-      case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"attributeType")))
-      case _ => None
-    }).toList:_*)
-    val groupMap = Map(readNodes(readNode(propertySAML, "eligibleGroups"),"eligibleGroup").flatMap(elem => elem match {
-      case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"groupType")))
-      case _ => None
-    }).toList:_*)
-
-    SAMLconfiguration(
-      idpMetaDataPath = idpMetadataFileName, //getClass.getResource("/%s".format(idpMetadataFileName)).getPath,
-      serverScheme = serverScheme,
-      serverName = serverName,
-      serverPort = serverPort.toInt,
-      callBackUrl = samlCallbackUrl,
-      protectedRoutes = protectedRoutes,
-      optionOfSettingsForADFS = optionOfSettingsForADFS,
-      eligibleGroups = groupMap,
-      attributeTransformers = attrTransformers
-    )
-  }
   def getUserGroups:List[(String,String)] = {
     if (isDevMode){
       List(
@@ -134,7 +82,8 @@ object Globals extends PropertyReader {
       casState.is.eligibleGroups.toList
     }
   }
-  object casState extends SessionVar[com.metl.cas.CASStateData](com.metl.cas.CASStateDataForbidden)
+  var groupsProviders:List[GroupsProvider] = Nil
+  object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
   object currentUser extends SessionVar[String](casState.is.username)
 
   val thumbnailSize = SnapshotResolution(320,240) // MeTL thumbnail
