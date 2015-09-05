@@ -76,7 +76,7 @@ object Globals extends PropertyReader {
         ("ou","Staff"),
         ("ou","Outpatients"),
         ("ou","Detectives"),
-        ("ou","villians")
+        ("ou","Villains")
       )
     } else {
       casState.is.eligibleGroups.toList

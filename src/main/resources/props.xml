@@ -12,18 +12,18 @@
     </expectedAttributes>
     <callbackUrl>saml-callback</callbackUrl>
     <protectedRoutes>
-			<route>authenticationState</route>
-			<route>board</route>
-			<route>future</route>
-			<route>metlviewer</route>
-			<route>summaries</route>
-			<route>conversation</route>
-			<route>slide</route>
-			<route>slideNext</route>
-			<route>slidePrev</route>
-			<route>slideNavigation</route>
-			<route>quiz</route>
-			<route>quizzes</route>
+      <route>authenticationState</route>
+      <route>board</route>
+      <route>future</route>
+      <route>metlviewer</route>
+      <route>summaries</route>
+      <route>conversation</route>
+      <route>slide</route>
+      <route>slideNext</route>
+      <route>slidePrev</route>
+      <route>slideNavigation</route>
+      <route>quiz</route>
+      <route>quizzes</route>
     </protectedRoutes>
     <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
     <keystorePath>exampleKeystorePath</keystorePath>

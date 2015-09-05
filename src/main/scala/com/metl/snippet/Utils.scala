@@ -12,20 +12,20 @@ import Helpers._
 import S._
 
 object Utils {
-	def navLinkTemplate = Templates(List("_navLink")).openOr(NodeSeq.Empty)
+  def navLinkTemplate = Templates(List("_navLink")).openOr(NodeSeq.Empty)
 
-	case class Link(clazz:String,url:String,text:String)
-	def navLinks(links:List[Link]):NodeSeq =
-		links.foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderNavLink(item).apply(navLinkTemplate))
-		
-	private def renderNavLink(link:Link) =
-		".navLinkAnchor [class+]" #> link.clazz &
-		".navLinkAnchor [href]" #> link.url &
-		".navLinkText *" #> Text(link.text)
+  case class Link(clazz:String,url:String,text:String)
+  def navLinks(links:List[Link]):NodeSeq =
+    links.foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderNavLink(item).apply(navLinkTemplate))
 
-	def prepareServerFromRequest ={
-		val server = S.param("server").map(name => ServerConfiguration.configForName(name)).openOr(ServerConfiguration.default)
-		server
-	}
+  private def renderNavLink(link:Link) =
+    ".navLinkAnchor [class+]" #> link.clazz &
+  ".navLinkAnchor [href]" #> link.url &
+  ".navLinkText *" #> Text(link.text)
+
+  def prepareServerFromRequest ={
+    val server = S.param("server").map(name => ServerConfiguration.configForName(name)).openOr(ServerConfiguration.default)
+    server
+  }
 
 }
