@@ -32,13 +32,13 @@ object TopicManager{
   protected val cachedTopics = Stopwatch.time("TopicManager:cachedTopics",()=> new PeriodicallyRefreshingVar[List[Topic]](2 minutes,()=>{
     println("TopicManager loading all topics")
     try {
-			Topic.findAll
-		} catch {
-			case e:Throwable => {
-				println("failed to get topics: %s".format(e.getMessage))
-				List.empty[Topic]
-			}
-		}
+      Topic.findAll
+    } catch {
+      case e:Throwable => {
+        println("failed to get topics: %s".format(e.getMessage))
+        List.empty[Topic]
+      }
+    }
   }))
   def preloadAllTopics = Stopwatch.time("TopicManager:preloadAllTopics",()=> getAll.foreach(preloadTopic))
   def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic),()=> com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.is).questions)

@@ -17,7 +17,7 @@ import java.util.Date
 import scala.xml.{Text, NodeSeq}
 import com.metl.model.Globals._
 import js.jquery
-import net.liftweb.json.JsonAST._ 
+import net.liftweb.json.JsonAST._
 
 case object RefreshAllStandings
 case object StartingRepActor
@@ -25,61 +25,61 @@ case object StartingRepActor
 object ReputationServer extends LiftActor with ListenerManager{
   def createUpdate = StartingRepActor
   override def lowPriority = {
-		case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),()=> reps.foreach(rep => XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
-		case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),()=> XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
-		case local:Standing => Stopwatch.time("ReputationServer:lowPriority:standing (%s)".format(local),()=> updateListeners(local) )
-		case other => {
-			println("Rep server received unknown message: %s".format(other.toString))
-		}
+    case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),()=> reps.foreach(rep => XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
+    case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),()=> XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
+    case local:Standing => Stopwatch.time("ReputationServer:lowPriority:standing (%s)".format(local),()=> updateListeners(local) )
+    case other => {
+      println("Rep server received unknown message: %s".format(other.toString))
+    }
   }
 }
 object ReputationActor{
-	def local(message:Any, session:Box[LiftSession]):Unit = session.map(s => s.sendCometActorMessage("ReputationActor", Box(currentUser.is), message))
+  def local(message:Any, session:Box[LiftSession]):Unit = session.map(s => s.sendCometActorMessage("ReputationActor", Box(currentUser.is), message))
 }
 class ReputationActor extends CometActor with CometListener{
-	def registerWith = ReputationServer
-	override def lifespan:Box[TimeSpan] = Full(1 minute)
-	private var currentStanding:Int = Reputation.standing(currentUser.is).formative
+  def registerWith = ReputationServer
+  override def lifespan:Box[TimeSpan] = Full(1 minute)
+  private var currentStanding:Int = Reputation.standing(currentUser.is).formative
   override def lowPriority = {
-		case s:Standing => recieveStanding(s)
-		case RefreshAllStandings => recieveRefreshAllStandings
-		case StartingRepActor => {}
-		case other => println("ReputationActor received unknown message: %s".format(other.toString))
+    case s:Standing => recieveStanding(s)
+    case RefreshAllStandings => recieveRefreshAllStandings
+    case StartingRepActor => {}
+    case other => println("ReputationActor received unknown message: %s".format(other.toString))
   }
-	def recieveStanding(s:Standing) = Stopwatch.time("ReputationActor:recieveStanding(%s)".format(s),()=>{partialUpdate(updatePersonalRep(s) & updateAll(s))})
-	def recieveRefreshAllStandings = Stopwatch.time("ReputationActor:recieveRefreshAllStandings", ()=>{
-		val allStandings = com.metl.model.Reputation.allStandings
-		println("updating all standings with: %s".format(allStandings))
-		partialUpdate(allStandings.foldLeft(Noop)((acc,item) => acc & updateAll(item)))
-	})
-	private def fadeOutAndRemove(id:String):JsCmd = Call("fadeOutAndRemove", "#%s".format(id))
-	def updatePersonalRep(i:Standing):JsCmd = {
-			val standingChange = i.formative - currentStanding
-			if (i.who == currentUser.is && standingChange  > 0){
-				val id = nextFuncName
-				val delta = <span id={id} class="informal">{"+%s".format(standingChange.toString)}</span>;
-				currentStanding = i.formative
-				AppendHtml("delta",delta) & 
-				fadeOutAndRemove(id) &
-				SetHtml("formative",Text(i.formative.toString))
-			}
-			else Noop
-	}
-	def updateAll(i:Standing):JsCmd = {
-		i match {
-			case Standing(who,form,summ) if who != "" => Call("setRepForUser",JArray(List(JString(who),JInt(form),JInt(summ))))
-			case _ => Noop 
-		}
-	}
+  def recieveStanding(s:Standing) = Stopwatch.time("ReputationActor:recieveStanding(%s)".format(s),()=>{partialUpdate(updatePersonalRep(s) & updateAll(s))})
+  def recieveRefreshAllStandings = Stopwatch.time("ReputationActor:recieveRefreshAllStandings", ()=>{
+    val allStandings = com.metl.model.Reputation.allStandings
+    println("updating all standings with: %s".format(allStandings))
+    partialUpdate(allStandings.foldLeft(Noop)((acc,item) => acc & updateAll(item)))
+  })
+  private def fadeOutAndRemove(id:String):JsCmd = Call("fadeOutAndRemove", "#%s".format(id))
+  def updatePersonalRep(i:Standing):JsCmd = {
+    val standingChange = i.formative - currentStanding
+    if (i.who == currentUser.is && standingChange  > 0){
+      val id = nextFuncName
+      val delta = <span id={id} class="informal">{"+%s".format(standingChange.toString)}</span>;
+      currentStanding = i.formative
+      AppendHtml("delta",delta) &
+      fadeOutAndRemove(id) &
+      SetHtml("formative",Text(i.formative.toString))
+    }
+    else Noop
+  }
+  def updateAll(i:Standing):JsCmd = {
+    i match {
+      case Standing(who,form,summ) if who != "" => Call("setRepForUser",JArray(List(JString(who),JInt(form),JInt(summ))))
+      case _ => Noop
+    }
+  }
   override def render = NodeSeq.Empty
   override def fixedRender = Stopwatch.time("ReputationActor:fixedRender",()=>{
     val totalScore = Reputation.standing(currentUser.is)
-    "#formative *" #> totalScore.formative & 
-		"#summative *" #> totalScore.summative & 
-		"#delta *" #> NodeSeq.Empty &
-		"#refreshAllButton *" #> a(()=> {
-			this ! RefreshAllStandings
-			Noop
-		},Text("RefreshAll"))
+    "#formative *" #> totalScore.formative &
+    "#summative *" #> totalScore.summative &
+    "#delta *" #> NodeSeq.Empty &
+    "#refreshAllButton *" #> a(()=> {
+      this ! RefreshAllStandings
+      Noop
+    },Text("RefreshAll"))
   })
 }

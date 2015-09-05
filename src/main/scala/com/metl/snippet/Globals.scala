@@ -11,8 +11,8 @@ import net.liftweb.util.Helpers._
 import java.util.Date
 
 object GlobalsSnippet {
-	def currentUser = Text(Globals.currentUser.is match {
-		case user:String if (user.length > 0) => user
-		case _ => "[unknown]"
-	})
+  def currentUser = Text(Globals.currentUser.is match {
+    case user:String if (user.length > 0) => user
+    case _ => "[unknown]"
+  })
 }

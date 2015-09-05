@@ -80,6 +80,7 @@ object WebMeTLRestHelper extends RestHelper {
 }
 object MeTLStatefulRestHelper extends RestHelper {
   println("MeTLStatefulRestHelper inline")
+  val DEMO_TEACHER = "Mr Roboto"
   val serializer = new GenericXmlSerializer("rest")
   serve {
     case Req(List("proxyDataUri",slide,source),_,_) =>
@@ -90,8 +91,8 @@ object MeTLStatefulRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", () => StatelessHtml.quizProxy(conversation,identity))
     case Req(List("submissionProxy",conversation,author,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.submissionProxy", () => StatelessHtml.submissionProxy(conversation,author,identity))
-		case r @ Req(List("resourceProxy",identity),_,_) => 
-			() => Stopwatch.time("MeTLStatefulRestHelper.resourceProxy", () => StatelessHtml.resourceProxy(Helpers.urlDecode(identity)))
+    case r @ Req(List("resourceProxy",identity),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.resourceProxy", () => StatelessHtml.resourceProxy(Helpers.urlDecode(identity)))
     case r@Req("join" :: Nil, _, _) => {
       for {
         conversationJid <- r.param("conversation");
@@ -156,6 +157,13 @@ object MeTLStatefulRestHelper extends RestHelper {
         println("UserAgent:"+ua)
         PlainTextResponse("loggedUserAgent")
       })
+    }
+    /*Extensions for 'Try it out' workflow in public page*/
+    case r @ Req(List("createConversation"),_,_) => {
+      val sourceIp = r.remoteAddr
+      val time = new java.util.Date().getTime
+      val title = "%s @ %s".format(sourceIp,time)
+      XmlResponse(serializer.fromConversation(serverConfig.createConversation(title,DEMO_TEACHER)))
     }
   }
 }

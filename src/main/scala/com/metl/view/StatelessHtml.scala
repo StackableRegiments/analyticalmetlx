@@ -20,8 +20,8 @@ import bootstrap.liftweb.Boot
 import com.metl.model._
 
 /**
- * Use Lift's templating without a session and without state
- */
+  * Use Lift's templating without a session and without state
+  */
 object StatelessHtml {
   val serializer = new GenericXmlSerializer("rest")
   private val fakeSession = new LiftSession("/", "fakeSession", Empty)
@@ -83,8 +83,8 @@ object StatelessHtml {
       }).openOr(NotFoundResponse("quiz image bytes not available"))
     }).getOrElse(NotFoundResponse("quiz not available")))
   })
-	def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), () => {
-		val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
+  def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), () => {
+    val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
   })
   def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy()".format(conversationJid,identity), () => {
