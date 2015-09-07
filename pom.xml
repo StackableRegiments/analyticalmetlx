@@ -21,19 +21,6 @@
   </properties>
   <repositories>
     <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>central</id>
-      <name>libs-release</name>
-      <url>https://artifactory.its.monash.edu/artifactory/repo</url>
-    </repository>
-    <repository>
-      <id>eec-svn</id>
-      <name>eEducation Centre Maven Repository</name>
-      <url>svn:svn://refer.adm.monash.edu.au/maven2</url>
-    </repository>
-    <repository>
       <id>maven-repositories</id>
       <name>mvnrepository</name>
       <url>http://mvnrepository.com/maven2</url>
@@ -51,16 +38,6 @@
   </repositories>
   <pluginRepositories>
     <pluginRepository>
-      <id>cloudbees-public-release</id>
-      <url>http://repository-cloudbees.forge.cloudbees.com/public-release</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
       <id>scala-tools.releases</id>
       <name>Scala-Tools Plugins Repository for Releases</name>
       <url>http://scala-tools.org/repo-releases</url>
@@ -69,31 +46,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>monash</groupId>
-      <artifactId>samlauthentication_2.9.2</artifactId>
-      <version>0.3.2</version>
-      <exclusions>
-        <exclusion>
-          <groupId>net.liftweb</groupId>
-          <artifactId>lift-webkit_2.9.2</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.liftweb</groupId>
-          <artifactId>lift-util_2.9.2</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>jcl-over-slf4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>jul-to-slf4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>log4j-over-slf4j</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.pac4j</groupId>
+      <artifactId>pac4j-saml</artifactId>
+      <version>1.6.0</version>
     </dependency>
     <dependency>
       <groupId>com.metl</groupId>
@@ -140,13 +95,6 @@
       <artifactId>mail</artifactId>
       <version>1.4</version>
     </dependency>
-    <!--
-        <dependency>
-        <groupId>net.liftweb</groupId>
-        <artifactId>lift-util_2.9.0</artifactId>
-        <version>2.4</version>
-        </dependency>
-    -->
     <dependency>
       <groupId>net.liftweb</groupId>
       <artifactId>lift-mapper_2.9.0</artifactId>
@@ -246,14 +194,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.cloudbees</groupId>
-        <artifactId>bees-maven-plugin</artifactId>
-        <version>1.3.2</version>
-        <configuration>
-          <port>8088</port>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
         <version>2.4.2</version>
@@ -307,18 +247,9 @@
         <version>8.1.4.v20120524</version>
         <configuration>
           <connectors>
-	    <connector implementation="org.eclipse.jetty.server.bio.SocketConnector">
+            <connector implementation="org.eclipse.jetty.server.bio.SocketConnector">
               <port>8080</port>
-						</connector>
-						<!--
-            <connector implementation="org.eclipse.jetty.server.ssl.SslSocketConnector">
-              <port>8443</port>
-              <maxIdleTime>60000</maxIdleTime>
-              <keystore>${project.build.directory}/classes/jetty-ssl.keystore</keystore>
-              <password>sandwiches</password>
-              <keyPassword>sandwiches</keyPassword>
-						</connector>
--->
+            </connector>
           </connectors>
           <stopPort>8091</stopPort>
           <stopKey>stopMeTLX</stopKey>
@@ -326,8 +257,8 @@
           <systemProperties>
             <systemProperty>
               <name>logback.configurationFile</name>
-							<!--<value>./src/etc/logback.xml</value>-->
-							<value>${project.basedir}/src/etc/logback.xml</value>
+              <!--<value>./src/etc/logback.xml</value>-->
+              <value>${project.basedir}/src/etc/logback.xml</value>
             </systemProperty>
           </systemProperties>
           <!-- end logging control  -->
@@ -365,12 +296,4 @@
       </plugin>
     </plugins>
   </reporting>
-  <!-- start specify maven svn wagon distribution system -->
-  <distributionManagement>
-    <repository>
-      <id>eec-svn</id>
-      <url>svn:svn://refer.adm.monash.edu.au/maven2</url>
-    </repository>
-  </distributionManagement>
-  <!-- end specify maven svn wagon distribution system -->
 </project>
