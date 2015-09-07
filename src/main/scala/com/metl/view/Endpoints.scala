@@ -158,13 +158,6 @@ object MeTLStatefulRestHelper extends RestHelper {
         PlainTextResponse("loggedUserAgent")
       })
     }
-    /*Extensions for 'Try it out' workflow in public page*/
-    case r @ Req(List("createConversation"),_,_) => {
-      val sourceIp = r.remoteAddr
-      val time = new java.util.Date().getTime
-      val title = "%s @ %s".format(sourceIp,time)
-      XmlResponse(serializer.fromConversation(serverConfig.createConversation(title,DEMO_TEACHER)))
-    }
   }
 }
 object WebMeTLStatefulRestHelper extends RestHelper {
