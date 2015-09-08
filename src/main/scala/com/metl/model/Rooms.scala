@@ -263,3 +263,23 @@ class HistoryCachingRoom(configName:String,location:String,creator:RoomProvider)
   })
   override def toString = "HistoryCachingRoom(%s,%s,%s)".format(configName,location,creator)
 }
+
+class XmppBridgingHistoryCachingRoom(configName:String,location:String,creator:RoomProvider) extends HistoryCachingRoom(configName,location,creator) {
+  protected var stanzasToIgnore = List.empty[MeTLStanza]
+  def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
+    stanzasToIgnore = stanzasToIgnore ::: List(s)
+    sendStanzaToServer(s)
+  })
+  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
+    EmbeddedXmppServer.relayMessageToXmppMuc(location,s)
+  })
+  override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendToChildren", () => {
+    val (matches,remaining) = stanzasToIgnore.partition(sti => sti.equals(s))
+    matches.length match {
+      case 1 => stanzasToIgnore = remaining
+      case i:Int if i > 1 => stanzasToIgnore = remaining ::: matches.drop(1)
+      case _ => sendMessageToBridge(s)
+    }
+    super.sendToChildren(s)
+  })
+}
