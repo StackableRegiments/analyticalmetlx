@@ -18,6 +18,8 @@
     <maven.scaladoc.vscaladocVersion>1.2-m1</maven.scaladoc.vscaladocVersion>
     <vscaladoc.links.liftweb.pathsufix>scaladocs/</vscaladoc.links.liftweb.pathsufix>
     <vscaladoc.links.liftweb.baseurl>http://scala-tools.org/mvnsites/liftweb</vscaladoc.links.liftweb.baseurl>
+    <slf4j.version>1.5.5</slf4j.version>
+    <logback.version>1.0.1</logback.version>
   </properties>
   <repositories>
     <repository>
@@ -110,11 +112,25 @@
       <artifactId>lift-mapper_2.9.0</artifactId>
       <version>2.4</version>
     </dependency>
+    
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!--dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.4</version>
+      <version>${logback.version}</version>
+    </dependency-->
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>${logback.version}</version>
     </dependency>
+
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
@@ -174,9 +190,9 @@
     <!-- start import maven svn wagon -->
     <extensions>
       <extension>
-        <groupId>com.google.code.maven-svn-wagon</groupId>
-        <artifactId>maven-svn-wagon</artifactId>
-        <version>1.4</version>
+	<groupId>com.google.code.maven-svn-wagon</groupId>
+	<artifactId>maven-svn-wagon</artifactId>
+	<version>1.4</version>
       </extension>
     </extensions>
     <!-- end import maven svn wagon -->
@@ -184,30 +200,30 @@
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
       <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>2.14.3</version>
-        <configuration>
+	<groupId>org.scala-tools</groupId>
+	<artifactId>maven-scala-plugin</artifactId>
+	<version>2.14.3</version>
+	<configuration>
           <charset>${project.build.sourceEncoding}</charset>
           <jvmArgs>
             <jvmArg>-Xmx1024m</jvmArg>
             <jvmArg>-DpackageLinkDefs=file://${project.build.directory}/packageLinkDefs.properties</jvmArg>
           </jvmArgs>
-        </configuration>
-        <executions>
+	</configuration>
+	<executions>
           <execution>
             <goals>
               <goal>compile</goal>
               <goal>testCompile</goal>
             </goals>
           </execution>
-        </executions>
+	</executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>2.4.2</version>
-        <executions>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-resources-plugin</artifactId>
+	<version>2.4.2</version>
+	<executions>
           <execution>
             <id>default-copy-resources</id>
             <phase>process-resources</phase>
@@ -218,13 +234,13 @@
               <overwrite>true</overwrite>
               <outputDirectory>${project.build.directory}</outputDirectory>
               <resources>
-                <resource>
+		<resource>
                   <directory>${project.basedir}/src</directory>
                   <includes>
                     <include>packageLinkDefs.properties</include>
                   </includes>
                   <filtering>true</filtering>
-                </resource>
+		</resource>
               </resources>
             </configuration>
           </execution>
@@ -238,24 +254,24 @@
               <overwrite>true</overwrite>
               <outputDirectory>${project.build.directory}/classes/props</outputDirectory>
               <resources>
-                <resource>
+		<resource>
                   <directory>${project.basedir}/src/main/resources/props</directory>
                   <includes>
                     <include>default.props</include>
                     <include>production.default.props</include>
                   </includes>
                   <filtering>true</filtering>
-                </resource>
+		</resource>
               </resources>
             </configuration>
           </execution>
-        </executions>
+	</executions>
       </plugin>
       <plugin>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>8.1.4.v20120524</version>
-        <configuration>
+	<groupId>org.mortbay.jetty</groupId>
+	<artifactId>jetty-maven-plugin</artifactId>
+	<version>8.1.4.v20120524</version>
+	<configuration>
           <connectors>
             <connector implementation="org.eclipse.jetty.server.bio.SocketConnector">
               <port>8080</port>
@@ -276,32 +292,32 @@
             <jvmArg>-DpackageLinkDefs=file://${project.build.directory}/packageLinkDefs.properties</jvmArg>
           </jvmArgs>
           <!--webApp>${basedir}/target/webmetl-3.0.war</webApp-->
-        </configuration>
-        <!-- for logging control -->
-        <dependencies>
+	</configuration>
+	<!-- for logging control -->
+	<dependencies>
           <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-logback</artifactId>
             <version>8.1.4.v20120524</version>
           </dependency>
-        </dependencies>
-        <!-- end logging control -->
+	</dependencies>
+	<!-- end logging control -->
       </plugin>
     </plugins>
   </build>
   <reporting>
     <plugins>
       <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>2.14.3</version>
-        <configuration>
+	<groupId>org.scala-tools</groupId>
+	<artifactId>maven-scala-plugin</artifactId>
+	<version>2.14.3</version>
+	<configuration>
           <charset>${project.build.sourceEncoding}</charset>
           <jvmArgs>
             <jvmArg>-Xmx1024m</jvmArg>
             <jvmArg>-DpackageLinkDefs=file://${project.build.directory}/packageLinkDefs.properties</jvmArg>
           </jvmArgs>
-        </configuration>
+	</configuration>
       </plugin>
     </plugins>
   </reporting>
