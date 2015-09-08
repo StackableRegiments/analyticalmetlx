@@ -267,7 +267,6 @@
           <systemProperties>
             <systemProperty>
               <name>logback.configurationFile</name>
-              <!--<value>./src/etc/logback.xml</value>-->
               <value>${project.basedir}/src/etc/logback.xml</value>
             </systemProperty>
           </systemProperties>

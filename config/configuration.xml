@@ -1,71 +1,71 @@
 <serverConfiguration>
-	<!--	<metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
-	<defaultServerConfiguration>saintleo</defaultServerConfiguration>
-	<serverConfigurations>
-		<server>
-			<type>MeTL2011</type>
-			<name>saintleo</name>
-			<host>localhost</host>
-			<meggleUrl>unused</meggleUrl>
-			<xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
-		</server>
-		<server>
+  <!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
+  <defaultServerConfiguration>saintleo</defaultServerConfiguration>
+  <serverConfigurations>
+    <server>
+      <type>MeTL2011</type>
+      <name>saintleo</name>
+      <host>localhost</host>
+      <meggleUrl>unused</meggleUrl>
+      <xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
+    </server>
+    <server>
       <type>transientLoopback</type>
     </server>
     <server>
       <type>frontend</type>
     </server>
   </serverConfigurations>
-<!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
-	<authentication>
-		<!-- only one authenticator can be used at a time -->
-		<saml>
-			<serverScheme>https</serverScheme>
-			<serverName>devmetl.saintleo.edu</serverName>
-			<serverPort>8443</serverPort>
-			<maximumAuthenticationLifetime>
-				28800 <!-- in seconds, must match corresponding settings in IDP -->
-			</maximumAuthenticationLifetime>
-			<expectedAttributes>
-				<emailAddress>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</emailAddress>
-				<group>http://schemas.xmlsoap.org/claims/Group</group>
-			</expectedAttributes>
-			<callbackUrl>saml-callback</callbackUrl>
-			<protectedRoutes>
-				<route>authenticationState</route>
-				<route>board</route>
-				<route>future</route>
-				<route>metlviewer</route>
-				<route>summaries</route>
-				<route>conversation</route>
-				<route>slide</route>
-				<route>slideNext</route>
-				<route>slidePrev</route>
-				<route>slideNavigation</route>
-				<route>quiz</route>
-				<route>quizzes</route>
-			</protectedRoutes>
-			<idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
-			<keystorePath>adfs.jks</keystorePath>
-			<keystorePassword>helpme</keystorePassword>
-			<keystorePrivateKeyPassword>password</keystorePrivateKeyPassword>
-			<informationAttributes>
-				<informationAttribute samlAttribute="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" attributeType="email" />
-			</informationAttributes>
-			<eligibleGroups>
-				<eligibleGroup samlAttribute="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" groupType="ou" />
-			</eligibleGroups>
-		</saml>
-		<!--
-		<casAuthenticator domain="metlx" baseUrl="http://refer.adm.monash.edu.au:11000/cas"/>
--->
+  <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
+  <authentication>
+    <!-- only one authenticator can be used at a time -->
+    <saml>
+      <serverScheme>https</serverScheme>
+      <serverName>devmetl.saintleo.edu</serverName>
+      <serverPort>8443</serverPort>
+      <maximumAuthenticationLifetime>
+        28800 <!-- in seconds, must match corresponding settings in IDP -->
+      </maximumAuthenticationLifetime>
+      <expectedAttributes>
+        <emailAddress>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</emailAddress>
+        <group>http://schemas.xmlsoap.org/claims/Group</group>
+      </expectedAttributes>
+      <callbackUrl>saml-callback</callbackUrl>
+      <protectedRoutes>
+        <route>authenticationState</route>
+        <route>board</route>
+        <route>future</route>
+        <route>metlviewer</route>
+        <route>summaries</route>
+        <route>conversation</route>
+        <route>slide</route>
+        <route>slideNext</route>
+        <route>slidePrev</route>
+        <route>slideNavigation</route>
+        <route>quiz</route>
+        <route>quizzes</route>
+      </protectedRoutes>
+      <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
+      <keystorePath>adfs.jks</keystorePath>
+      <keystorePassword>helpme</keystorePassword>
+      <keystorePrivateKeyPassword>password</keystorePrivateKeyPassword>
+      <informationAttributes>
+        <informationAttribute samlAttribute="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" attributeType="email" />
+      </informationAttributes>
+      <eligibleGroups>
+        <eligibleGroup samlAttribute="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" groupType="ou" />
+      </eligibleGroups>
+    </saml>
+    <!--
+        <casAuthenticator domain="metlx" baseUrl="http://refer.adm.monash.edu.au:11000/cas"/>
+    -->
   </authentication>
-	<groupsProvider>
-		<!-- as many groupsProviders can be used at a time -->
-		<selfGroups/>
-		<flatFileGroups format="stLeo" location="" refreshPeriod=""/>
-		<flatFileGroups format="globalOverrides" location="" refreshPeriod=""/>
-		<flatFileGroups format="specificOverrides" location="" refreshPeriod=""/>
+  <groupsProvider>
+    <!-- as many groupsProviders can be used at a time -->
+    <selfGroups/>
+    <flatFileGroups format="stLeo" location="" refreshPeriod=""/>
+    <flatFileGroups format="globalOverrides" location="" refreshPeriod=""/>
+    <flatFileGroups format="specificOverrides" location="" refreshPeriod=""/>
   </groupsProvider>
   <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
 </serverConfiguration>

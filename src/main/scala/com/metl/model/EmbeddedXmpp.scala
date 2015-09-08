@@ -117,7 +117,7 @@ object EmbeddedXmppServer {
   protected var mucModule:Box[MeTLMucModule] = Empty
   protected var roomAdaptor:Box[EmbeddedXmppServerRoomAdaptor] = Empty
 
-  def start = {
+  def initialize = {
     println("embedded xmpp server start handler")
     val domain = "metl.adm.monash.edu.au"
     val providerRegistry = new MemoryStorageProviderRegistry()
