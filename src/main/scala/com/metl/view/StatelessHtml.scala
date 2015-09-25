@@ -112,7 +112,7 @@ object StatelessHtml {
     req.param("source").map(jid=> XmlResponse(loadHistory(jid)))
   })
   def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
-    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name).getHistory.getAll.map(s => serializer.fromMeTLStanza(s))}</history>))
+    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
   })
   def mergedHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
     req.param("source").map(jid=> {

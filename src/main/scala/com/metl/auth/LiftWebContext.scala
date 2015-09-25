@@ -6,6 +6,8 @@ import net.liftweb.common.Logger
 import net.liftweb.http.{CurrentReq, SessionVar}
 import org.pac4j.core.context.WebContext
 
+class NotDefinedError(msg:String) extends Error
+
 class LiftWebContext(scheme:String, serverName:String, port:Int = 80) extends WebContext with ProxyTrace with Logger {
 
   object sessionSAML extends SessionVar[scala.collection.immutable.Map[String, AnyRef]](scala.collection.immutable.Map.empty[String, AnyRef])
