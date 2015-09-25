@@ -166,9 +166,9 @@ class Xmpp(username:String,password:String,incomingHost:String, incomingRoomName
 object XMPPQuestionAnnouncer {
   def fromXMLString(xString:String):Box[XMPPQuestionAnnouncer] = tryo({
     val xmlNode = scala.xml.XML.loadString(xString)
-    val questionId = (xmlNode \\ "question").first.text
-    val topic = (xmlNode \\ "topic").first.text
-    val silent =(xmlNode \\ "silent").first.text.toBoolean
+    val questionId = (xmlNode \\ "question").head.text
+    val topic = (xmlNode \\ "topic").head.text
+    val silent =(xmlNode \\ "silent").head.text.toBoolean
     new XMPPQuestionAnnouncer(questionId,topic,silent)
   })
 }
@@ -190,7 +190,7 @@ class XMPPQuestionAnnouncer(incomingQuestionId:String,incomingTopic:String,incom
 object XMPPTopicAnnouncer {
   def fromXMLString(xString:String):Box[XMPPTopicAnnouncer] = tryo({
     val xmlNode = scala.xml.XML.loadString(xString)
-    val topicId = (xmlNode \\ "topicId").first.text
+    val topicId = (xmlNode \\ "topicId").head.text
     new XMPPTopicAnnouncer(topicId)
   })
 }
@@ -209,8 +209,8 @@ class XMPPTopicAnnouncer(incomingTopicId:String) extends PacketExtension{
 object XMPPReputationAnnouncer {
   def fromXMLString(xString:String):Box[XMPPReputationAnnouncer] = tryo({
     val xmlNode = scala.xml.XML.loadString(xString)
-    val user = (xmlNode \\ "user").first.text
-    val action = (xmlNode \\ "action").first.text.toInt
+    val user = (xmlNode \\ "user").head.text
+    val action = (xmlNode \\ "action").head.text.toInt
     new XMPPReputationAnnouncer(user,action)
   })
 }

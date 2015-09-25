@@ -50,6 +50,7 @@ object MeTLActorManager extends LiftActor with ListenerManager {
   }
 }
 class MeTLActor extends StronglyTypedJsonActor{
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
   // javascript functions to fire
@@ -818,7 +819,10 @@ class MeTLActor extends StronglyTypedJsonActor{
     }
   })
   private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName), () => {
-    sendStanzaToServer(serializer.toMeTLStanza(jVal),serverName)
+    serializer.toMeTLData(jVal) match {
+      case m:MeTLStanza => sendStanzaToServer(m,serverName)
+      case _ => {}
+    }
   })
   private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName), () => {
     //println("OUT -> %s".format(stanza))
@@ -951,7 +955,7 @@ class MeTLActor extends StronglyTypedJsonActor{
       }
       case _ => {
         //println("receiving: %s".format(metlStanza))
-        val response = serializer.fromMeTLStanza(metlStanza) match {
+        val response = serializer.fromMeTLData(metlStanza) match {
           case j:JValue => j
           case other => JString(other.toString)
         }

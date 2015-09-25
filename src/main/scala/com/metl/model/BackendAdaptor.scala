@@ -19,7 +19,7 @@ import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
 import com.metl.cas._
-import com.metl.auth._
+//import com.metl.auth._
 import com.metl.h2._
 
 import net.liftweb.util.Props

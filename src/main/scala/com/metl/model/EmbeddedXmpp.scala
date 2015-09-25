@@ -78,14 +78,19 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
     MeTLXConfiguration.getRoom(location,configName) match {
       case r:XmppBridgingHistoryCachingRoom => {
         JavaListUtils.foreach(payloads,(payload:XMLFragment) => {
-          val metlStanza = serializer.toMeTLStanza(converter.toScala(payload))
-          r.sendMessageFromBridge(metlStanza)
+          serializer.toMeTLData(converter.toScala(payload)) match {
+            case m:MeTLStanza => r.sendMessageFromBridge(m)
+            case _ => {}
+          }
         })
       }
       case _ => {}
     }
   }
-  def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = relayMessageNodeToXmppMuc(location,serializer.fromMeTLStanza(message).asInstanceOf[Node])
+  def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = serializer.fromMeTLData(message) match {
+    case n:Node => relayMessageNodeToXmppMuc(location,n)
+    case _ => {}
+  }
   def relayMessageNodeToXmppMuc(location:String,message:Node):Unit = {
     val roomJid:Entity = EntityImpl.parse("%s@%s".format(location,conferenceString))
     val room:Room = conference.findRoom(roomJid)

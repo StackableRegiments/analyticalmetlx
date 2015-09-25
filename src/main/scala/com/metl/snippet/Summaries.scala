@@ -17,7 +17,7 @@ import net.liftweb.actor.LiftActor
 import xml.{NodeSeq, Text}
 import ElemAttr._
 import com.metl.model.Globals._
-import scala.actors.Futures._
+//import scala.actors.Futures._
 import com.metl.model._
 import com.metl.comet._
 
