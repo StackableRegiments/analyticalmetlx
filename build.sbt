@@ -1,9 +1,8 @@
-name := "metlx"
+name := "web-container-metlx"
 version := "0.2.0"
 organization := "io.github.stackableregiments"
 
 scalaVersion := "2.11.5"
-
 
 resolvers ++= Seq(
   "snapshots"     at "http://oss.sonatype.org/content/repositories/snapshots",
@@ -17,9 +16,14 @@ scalacOptions ++= Seq("-deprecation", "-unchecked")
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
+  val scalaVersionString = "2.11.5"
 
   Seq(
-    "org.scala-lang" % "scala-library" % scalaVersion.toString,
+    "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided",
+    "org.eclipse.jetty" % "jetty-webapp" % "9.1.5.v20140505",
+    "org.eclipse.jetty" % "jetty-plus" % "9.1.5.v20140505",
+    "org.slf4j" % "slf4j-simple" % "1.6.2",
+    "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.+",
 		"org.specs2" %% "specs2" % "3.3.1" % "test",
@@ -46,6 +50,12 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "slide-renderer" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
   )
 }
+
+// enable the in-sbt jettyContainer for testing
+
+enablePlugins(JettyPlugin)
+
+//containerPort := 8080
 
 // increase the time between polling for file changes when using continuous execution
 pollInterval := 1000
@@ -97,7 +107,8 @@ logLevel in compile := Level.Warn
 
 // only show warnings and errors on the screen for all tasks (the default is Info)
 //  individual tasks can then be more verbose using the previous setting
-logLevel := Level.Warn
+//logLevel := Level.Warn
+logLevel := Level.Debug
 
 // only store messages at info and above (the default is Debug)
 //   this is the logging level for replaying logging with 'last'
