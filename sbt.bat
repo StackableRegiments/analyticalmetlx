@@ -1,1 +1,1 @@
-java -jar sbt-launch.jar 
+java -jar sbt-launch.jar -Dmetlx.configurationFile=config/configuration.xml

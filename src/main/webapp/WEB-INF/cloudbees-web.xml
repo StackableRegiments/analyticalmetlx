@@ -1,5 +1,0 @@
-<resource name="jdbc/metlx" auth="Container" type="javax.sql.DataSource">
-  <param name="username" value="sandpit" />
-  <param name="password" value="R@gnar0k42" />
-  <param name="url" value="jdbc:cloudbees://metlx" />
-</resource>
