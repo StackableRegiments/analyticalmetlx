@@ -13,16 +13,36 @@ unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp"
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
+//seq(webSettings :_*)
+
+jetty()
+
+javaOptions in container ++= Seq(
+  "-Dmetlx.configurationFile=config/configuration.local.xml",
+  "-XX:+UseConcMarkSweepGC",
+  "-XX:+CMSClassUnloadingEnabled"
+)
+
+libraryDependencies ++= {
+    Seq(
+//              "net.liftweb"       %% "lift-webkit" % liftVersion % "compile",
+ //             "net.liftmodules"   %% "lift-jquery-module" % (liftVersion + "-2.2"),
+              "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
+              "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar")
+//              "ch.qos.logback" % "logback-classic" % "1.0.6"
+    )
+}
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
   val scalaVersionString = "2.11.5"
 
   Seq(
-    "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided",
-    "org.eclipse.jetty" % "jetty-webapp" % "9.1.5.v20140505",
-    "org.eclipse.jetty" % "jetty-plus" % "9.1.5.v20140505",
-    "org.slf4j" % "slf4j-simple" % "1.6.2",
+//    "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided",
+//    "org.eclipse.jetty" % "jetty-webapp" % "9.1.5.v20140505",
+//    "org.eclipse.jetty" % "jetty-plus" % "9.1.5.v20140505",
+//    "org.slf4j" % "slf4j-simple" % "1.6.2",
+    "ch.qos.logback" % "logback-classic" % "1.1.3",
     "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.+",
@@ -45,7 +65,7 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "form-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "cas-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "metl2011" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metl-h2" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
+    "io.github.stackableregiments" %% "metl-h2" % "0.3.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "lift-extensions" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "slide-renderer" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
   )
@@ -53,7 +73,7 @@ libraryDependencies ++= {
 
 // enable the in-sbt jettyContainer for testing
 
-enablePlugins(JettyPlugin)
+//enablePlugins(JettyPlugin)
 
 //containerPort := 8080
 
@@ -107,8 +127,7 @@ logLevel in compile := Level.Warn
 
 // only show warnings and errors on the screen for all tasks (the default is Info)
 //  individual tasks can then be more verbose using the previous setting
-//logLevel := Level.Warn
-logLevel := Level.Debug
+logLevel := Level.Warn
 
 // only store messages at info and above (the default is Debug)
 //   this is the logging level for replaying logging with 'last'
@@ -123,8 +142,10 @@ traceLevel := 0
 credentials += Credentials(Path.userHome / ".ivy2" / "ivy-credentials")
 
 // Exclude transitive dependencies, e.g., include log4j without including logging via jdmk, jmx, or jms.
+/*
 libraryDependencies += "log4j" % "log4j" % "1.2.15" excludeAll(
   ExclusionRule(organization = "com.sun.jdmk"),
   ExclusionRule(organization = "com.sun.jmx"),
   ExclusionRule(organization = "javax.jms")
 )
+*/

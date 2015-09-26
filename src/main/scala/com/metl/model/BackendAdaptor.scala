@@ -28,23 +28,6 @@ import net.liftweb.mongodb._
 
 import scala.xml._
 
-object StackConfiguration {
-  def setup = {
-    val mo = new MongoOptions
-    mo.socketTimeout = 10000
-    mo.socketKeepAlive = true
-    val srvr = new ServerAddress("127.0.0.1", 27017)
-
-    MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), "stack")
-
-    //construct standingCache from DB
-    com.metl.model.Reputation.populateStandingMap
-    //construct LiftActors for topics with history from DB
-    com.metl.model.TopicManager.preloadAllTopics
-    //ensure that the default topic is available
-    com.metl.model.Topic.getDefaultValue
-  }
-}
 
 
 object MeTLXConfiguration extends PropertyReader {
@@ -55,6 +38,7 @@ object MeTLXConfiguration extends PropertyReader {
   def getRoomProvider(name:String) = {
     new HistoryCachingRoomProvider(name)
   }
+
   def getSAMLconfiguration(propertySAML:NodeSeq) = {
     val serverScheme = readMandatoryText(propertySAML, "serverScheme")
     val serverName = readMandatoryText(propertySAML, "serverName")
@@ -114,6 +98,31 @@ object MeTLXConfiguration extends PropertyReader {
       }
     })
   }
+  def setupStackAdaptorFromFile(filePath:String) = {
+    val propFile = XML.load(filePath)
+    ifConfigured(propFile,"stackAdaptor",(n:NodeSeq) => {
+      for (
+        enabled <- tryo((n \ "@enabled").text.toBoolean);
+        if enabled;
+        mongoHost <- tryo((n \ "@mongoHost").text);
+        mongoPort <- tryo((n \ "@mongoPort").text.toInt);
+        mongoDb <- tryo((n \ "@mongoDb").text)
+      ) yield {  
+        val mo = new MongoOptions
+        mo.socketTimeout = 10000
+        mo.socketKeepAlive = true
+        val srvr = new ServerAddress(mongoHost,mongoPort)
+        MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), mongoDb)
+        //construct standingCache from DB
+        com.metl.model.Reputation.populateStandingMap
+        //construct LiftActors for topics with history from DB
+        com.metl.model.TopicManager.preloadAllTopics
+        //ensure that the default topic is available
+        com.metl.model.Topic.getDefaultValue
+      }
+    })
+  }
+
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "properties" \\ "groupsProvider"
@@ -227,10 +236,13 @@ object MeTLXConfiguration extends PropertyReader {
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
   }
   def initializeSystem = {
+    Globals
+    /*
     Props.mode match {
       case Props.RunModes.Production => Globals.isDevMode = false
       case _ => Globals.isDevMode = true
     }
+    */
     setupServersFromFile(Globals.configurationFileLocation)
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
     LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
@@ -244,7 +256,8 @@ object MeTLXConfiguration extends PropertyReader {
     setupAuthorizersFromFile(Globals.configurationFileLocation)
     setupAuthenticatorsFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
-    StackConfiguration.setup
+
+    setupStackAdaptorFromFile(Globals.configurationFileLocation)
     println(configs)
   }
   def getRoom(jid:String,configName:String) = {
