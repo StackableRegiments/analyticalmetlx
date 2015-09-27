@@ -15,11 +15,13 @@ import com.metl.comet._
 import com.metl.model._
 import Globals._
 
-class MeTL {
+object Metl extends Metl
+class Metl {
   def specific = {
     val name = "%s".format(Globals.currentUser.is)
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
-    <span class={clazz}>
-    </span>
+    val output = <span class={clazz} />
+    println("generating comet html: %s".format(output))
+    output
   }
 }
