@@ -1,11 +1,13 @@
 <serverConfiguration>
   <!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
-  <defaultServerConfiguration>reifier</defaultServerConfiguration>
+  <defaultServerConfiguration>localH2</defaultServerConfiguration>
   <serverConfigurations>
     <server>
       <type>localH2</type>
-      <name>reifier</name>
+      <name>localH2</name>
+      <!--
       <filename>c:\stackable\analyticalmetlx\localh2.db</filename>
+      -->
     </server>
     <!--
     <server>
