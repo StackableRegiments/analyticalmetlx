@@ -1,4 +1,4 @@
-<lift:surround with="defaultWebMeTL" at="content">
+<div class="lift:surround?with=defaultWebMeTL;at=content">
 
 <head>
 	<style>
@@ -54,11 +54,11 @@
     </lift:ConversationSnippet.navigation>
 </lift:bind-at>
 
-<div id="conversation">
-	<lift:ConversationSnippet.conversation>
-		<div id="conversationError"/>
-		<div id="conversationSlideList"/>
-	</lift:ConversationSnippet.conversation>
+  <div id="conversation">
+    <div class="lift:ConversationSnippet.conversation">
+    <div id="conversationError"></div>
+    <div id="conversationSlideList"></div>
+  </div>
 </div>
 
-</lift:surround>
+</div>

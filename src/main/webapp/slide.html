@@ -1,4 +1,4 @@
-<lift:surround with="defaultWebMeTL" at="content">
+<div class="lift:surround?with=defaultWebMeTL;at=content">
 
   <head>
     <style>
@@ -124,30 +124,30 @@ $(function () {
   </head>
 
   <lift:bind-at name="titleText">
-    <h1 id="titleText"><lift:SlideSnippet.title/></h1>
+    <h1 id="titleText"><span class="lift:SlideSnippet.title"></span></h1>
   </lift:bind-at>
   <lift:bind-at name="headTitle">
-    <title><lift:SlideSnippet.title/> - MeTL Viewer</title>
+    <title><span class="lift:SlideSnippet.title"></span> - MeTL Viewer</title>
   </lift:bind-at>
 
   <lift:bind-at name="navLinkContainer">
-    <lift:SlideSnippet.navigation/>
+    <span class="lift:SlideSnippet.navigation"></span>
   </lift:bind-at>
 
   <div id="slideNavigation">
     <div id="prevContainer">
-      <lift:embed what="slidePrev"/>
+      <div class="lift:embed?what=slidePrev"></div>
     </div>
     <div id="nextContainer">
-      <lift:embed what="slideNext"/>
+      <div class="lift:embed?what=slideNext"></div>
     </div>
   </div>
   <div id="slideContainer">
     <div id="slide">
-      <lift:SlideSnippet.slide>
-        <div id="slideError"/>
-        <div id="slideImage"/>
-      </lift:SlideSnippet.slide>
+      <div class="lift:SlideSnippet.slide">
+        <div id="slideError"></div>
+        <div id="slideImage"></div>
+      </div>
     </div>
   </div>
-</lift:surround>
+</div>
