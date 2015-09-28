@@ -24,10 +24,12 @@ class SearchSnippet {
 
   private val resultsPerPage = 10
 
-  def searchResults ={
+  def searchResults = {
     query.is match {
       case q:String if (q.length > 0) => {
-        val results = server.searchForConversation(q).filter(c => c.shouldDisplayFor(Globals.currentUser.is,Globals.getUserGroups.map(eg => eg._2)))
+        val rawResults = server.searchForConversation(q)
+        val results = rawResults.filter(c => c.shouldDisplayFor(Globals.currentUser.is,Globals.getUserGroups.map(eg => eg._2)))
+        println("rawResults: %s\r\nfilteredResults: %s".format(rawResults,results))
         "#searchResultsMetaTerms *" #> Text(q) & {
           results.length match {
             case 0 =>
