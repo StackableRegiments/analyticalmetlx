@@ -19,6 +19,7 @@ jetty()
 
 javaOptions in container ++= Seq(
   "-Dmetlx.configurationFile=config/configuration.local.xml",
+  "-Dlogback.configurationFile=config/logback.xml",
   "-XX:+UseConcMarkSweepGC",
   "-XX:+CMSClassUnloadingEnabled"
 )
