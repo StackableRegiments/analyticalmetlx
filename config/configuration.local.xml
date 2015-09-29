@@ -1,6 +1,6 @@
 <serverConfiguration>
   <!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
-  <defaultServerConfiguration>localH2</defaultServerConfiguration>
+  <defaultServerConfiguration>reifier</defaultServerConfiguration>
   <serverConfigurations>
     <server>
       <type>localH2</type>
@@ -9,7 +9,6 @@
       <filename>c:\stackable\analyticalmetlx\localh2.db</filename>
       -->
     </server>
-    <!--
     <server>
       <type>MeTL2011</type>
       <name>reifier</name>
@@ -17,7 +16,6 @@
       <meggleUrl>unused</meggleUrl>
       <xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
     </server>
-    -->
     <server>
       <type>transientLoopback</type>
     </server>
