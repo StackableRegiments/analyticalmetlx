@@ -1,4 +1,4 @@
-<configuration debug="false" >
+<configuration debug="false" scan="true" >
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <Pattern>LOG %d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
@@ -17,7 +17,7 @@
       <appender-ref ref="FILE"/>
       </logger>
   -->
-<!--  <logger name="net.liftweb" level="DEBUG"/>-->
+  <logger name="net.liftweb" level="INFO"/>
   <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
