@@ -131,7 +131,7 @@ logLevel := Level.Warn
 
 // only store messages at info and above (the default is Debug)
 //   this is the logging level for replaying logging with 'last'
-persistLogLevel := Level.Debug
+//persistLogLevel := Level.Debug
 
 // only show 10 lines of stack traces
 traceLevel := 10
