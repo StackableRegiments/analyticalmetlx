@@ -19,6 +19,7 @@ import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
 import com.metl.cas._
+import com.metl.formAuthenticator._
 //import com.metl.auth._
 import com.metl.h2._
 
@@ -28,7 +29,32 @@ import net.liftweb.mongodb._
 
 import scala.xml._
 
-
+class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) {
+  println("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
+  override def constructResponseWithMessages(req:Req,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",() => {
+      val loginPageNode = (
+        "%s [method]".format(formSelector) #> "POST" &
+        "%s [action]".format(formSelector) #> "/formLogon" &
+        "%s *".format(formSelector) #> {(formNode:NodeSeq) => {
+          <input type="hidden" name="path" value={makeUrlFromReq(req)}></input> ++ 
+          additionalMessages.foldLeft(NodeSeq.Empty)((acc,am) => {
+            acc ++ <div class="loginError">{am}</div>
+          }) ++ (
+// these next two lines aren't working, and I'm not sure why not
+            "%s [name]".format(usernameSelector) #> "username" &
+            "%s [name]".format(passwordSelector) #> "password"
+          ).apply(formNode) 
+        }} 
+      ).apply(loginPage)
+      println("constructed: %s".format(loginPageNode))
+      LiftRules.convertResponse(
+        (loginPageNode,200),
+        S.getHeaders(LiftRules.defaultHeaders((loginPageNode,req))),
+        S.responseCookies,
+        req
+      )
+  })
+}
 
 object MeTLXConfiguration extends PropertyReader {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
@@ -89,6 +115,7 @@ object MeTLXConfiguration extends PropertyReader {
       if ((in \\ element).theSeq != Nil){
         if (!oneIsConfigured){
           ifConfigured(in,element,(n:NodeSeq) => {
+            println("configuring: %s".format(element))
             oneIsConfigured = true
             elementToAction(element)(n)
           })
@@ -125,7 +152,7 @@ object MeTLXConfiguration extends PropertyReader {
 
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
-    val authorizationNodes = propFile \\ "properties" \\ "groupsProvider"
+    val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
     ifConfigured(authorizationNodes,"selfGroups",(n:NodeSeq) => {
       Globals.groupsProviders = new SelfGroupsProvider() :: Globals.groupsProviders
     },false)
@@ -135,7 +162,7 @@ object MeTLXConfiguration extends PropertyReader {
   }
   def setupAuthenticatorsFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
-    val authenticationNodes = propFile \\ "properties" \\ "authentication"
+    val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
     ifConfiguredFromGroup(authenticationNodes,Map(
       "saml" -> {(n:NodeSeq) => {
         def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
@@ -173,8 +200,44 @@ object MeTLXConfiguration extends PropertyReader {
           )
         )
       }},
+      "mock" -> {(n:NodeSeq) => {
+        val template = (n \\ "template" \ "_")
+        val legalCharacters = (Range.inclusive('a','z').toList ::: Range.inclusive('A','Z').toList ::: Range.inclusive('0','9').toList)
+        LiftAuthAuthentication.attachAuthenticator(
+          new FormAuthenticationSystem(
+            new Gen2FormAuthenticator(
+              loginPage = template,
+              formSelector = (n \ "@formSelector").text,
+              usernameSelector = (n \ "@usernameSelector").text,
+              passwordSelector = (n \ "@passwordSelector").text,
+              verifyCredentials = (cred:Tuple2[String,String]) => {
+                val username = cred._1
+                val _password = cred._2
+                if (username.exists(c => !legalCharacters.contains(c))){
+                  throw new Exception("username contains illegal characters.  Please use only alphanumeric characters")
+                } else {
+                  LiftAuthStateData(true,username,Nil,Nil)
+                }
+              },
+              alreadyLoggedIn = () => Globals.casState.authenticated,
+              onSuccess = (la:LiftAuthStateData) => {
+                Globals.currentUser(la.username)
+                var existingGroups:List[Tuple2[String,String]] = Nil
+                if (Globals.groupsProviders != null){
+                  Globals.groupsProviders.foreach(gp => {
+                    val newGroups = gp.getGroupsFor(la.username)
+                    if (newGroups != null){
+                      existingGroups = existingGroups ::: newGroups
+                    }
+                  })
+                }
+                Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
+              }
+            )
+          )
+        )
+      }},
       "cas" -> {(n:NodeSeq) => {
-//        CASAuthentication.attachCASAuthenticator( 
         LiftAuthAuthentication.attachAuthenticator(
           new CASAuthenticationSystem(
             new CASAuthenticator(
