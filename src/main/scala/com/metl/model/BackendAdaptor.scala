@@ -58,6 +58,8 @@ class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSele
 
 object MeTLXConfiguration extends PropertyReader {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
+  var clientConfig:Option[ClientConfiguration] = None
+  var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
     getRoom("global",c.server.name) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
@@ -75,6 +77,13 @@ object MeTLXConfiguration extends PropertyReader {
     val optionOfSettingsForADFS = tryo{ maximumAuthenticationLifetime.toInt } match {
       case Full(number:Int) => Some(SettingsForADFS(maximumAuthenticationLifetime = number.toInt))
       case _ => None
+    }
+    val optionOfKeyStoreInfo = for (
+      keystore <- (propertySAML \ "keystorePath").headOption.map(_.text);
+      password <- (propertySAML \ "keystorePassword").headOption.map(_.text);
+      privateKeyPassword <- (propertySAML \ "keystorePrivateKeyPassword").headOption.map(_.text)
+    ) yield {
+      keyStoreInfo(keystore,password,privateKeyPassword)
     }
     val nodeProtectedRoutes = readNodes(readNode(propertySAML, "protectedRoutes"),"route")
     val protectedRoutes = nodeProtectedRoutes.map(nodeProtectedRoute => {
@@ -98,7 +107,8 @@ object MeTLXConfiguration extends PropertyReader {
       protectedRoutes = protectedRoutes,
       optionOfSettingsForADFS = optionOfSettingsForADFS,
       eligibleGroups = groupMap,
-      attributeTransformers = attrTransformers
+      attributeTransformers = attrTransformers,
+      optionOfKeyStoreInfo = optionOfKeyStoreInfo
     )
   }
   protected def ifConfigured(in:NodeSeq,elementName:String,action:NodeSeq=>Unit, permitMultipleValues:Boolean = false):Unit = {
@@ -150,6 +160,56 @@ object MeTLXConfiguration extends PropertyReader {
     })
   }
 
+  def setupClientConfigFromFile(filePath:String) = {
+    val propFile = XML.load(filePath)
+    val configurationProviderNodes = propFile \\ "serverConfiguration" \\ "securityProvider"
+    ifConfiguredFromGroup(configurationProviderNodes,Map(
+      "stableKeyProvider" -> {(n:NodeSeq) => {
+        for (
+          lp <- (n \ "@localPort").headOption.map(_.text.toInt);
+          rbh <- (n \ "@remoteBackendHost").headOption.map(_.text);
+          rbp <- (n \ "@remoteBackendPort").headOption.map(_.text.toInt)
+        ) yield {
+          configurationProvider = Some(new StableKeyConfigurationProvider(lp,rbh,rbp))
+        }
+      }},
+      "staticKeyProvider" -> {(n:NodeSeq) => {
+        for (
+          ep <- (n \ "@ejabberdPassword").headOption.map(_.text);
+          yu = (n \ "@yawsUsername").headOption.map(_.text);
+          yp <- (n \ "@yawsPassword").headOption.map(_.text)
+        ) yield {
+          val eu = (n \ "@ejabberdUsername").headOption.map(_.text)
+          configurationProvider = Some(new StaticKeyConfigurationProvider(eu,ep,yu,yp))
+        }
+      }}
+    ));
+    ifConfigured(propFile,"clientConfig",(n:NodeSeq) => {
+      clientConfig = for (
+        xh <- (n \ "xmppHost").headOption.map(_.text);
+        xp <- (n \ "xmppPort").headOption.map(_.text.toInt);
+        xd <- (n \ "xmppDomain").headOption.map(_.text);
+        xuser = "";
+        xpass = "";
+        csu <- (n \ "conversationSearchUrl").headOption.map(_.text);
+        wau <- (n \ "webAuthenticationUrl").headOption.map(_.text);
+        tu <- (n \ "thumbnailUrl").headOption.map(_.text);
+        ru <- (n \ "resourceUrl").headOption.map(_.text);
+        hu <- (n \ "historyUrl").headOption.map(_.text);
+        httpU = "";
+        httpP = "";
+        sd <- (n \ "structureDirectory").headOption.map(_.text);
+        rd <- (n \ "resourceDirectory").headOption.map(_.text);
+        up <- (n \ "uploadPath").headOption.map(_.text);
+        pkg <- (n \ "primaryKeyGenerator").headOption.map(_.text);
+        ck <- (n \ "cryptoKey").headOption.map(_.text);
+        civ <- (n \ "cryptoIV").headOption.map(_.text);
+        iu <- (n \ "imageUrl").headOption.map(_.text)
+      ) yield {
+        ClientConfiguration(xh,xp,xd,xuser,xpass,csu,wau,tu,ru,hu,httpU,httpP,sd,rd,up,pkg,ck,civ,iu)
+      }
+    })
+  }
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
@@ -318,6 +378,7 @@ object MeTLXConfiguration extends PropertyReader {
     })
     setupAuthorizersFromFile(Globals.configurationFileLocation)
     setupAuthenticatorsFromFile(Globals.configurationFileLocation)
+    setupClientConfigFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
 
     setupStackAdaptorFromFile(Globals.configurationFileLocation)

@@ -59,7 +59,7 @@ import scala.xml._
 import org.apache.vysper.xml.fragment.{Renderer => vXmlRenderer}
 
 // for MeTL integration
-import com.metl.data._
+import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.metl2011._
 
 class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,conference:Conference) {
