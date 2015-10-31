@@ -52,6 +52,8 @@ class Boot {
     }
 
     def sitemap() = SiteMap(
+      //API catalog
+      Menu(Loc("API","catalog" :: Nil,"Application Programming Interfaces")),
       //2011 piggyback auth
       Menu(Loc("Authentication",Link("authenticationState" :: Nil,true,"/authenticationState"),"Authentication",Hidden)),
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
