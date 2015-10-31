@@ -739,6 +739,7 @@ class MeTLActor extends StronglyTypedJsonActor{
       CurrentConversation(Full(details))
       val conversationJid = details.jid.toString
       joinRoomByJid(conversationJid)
+//      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
       //joinRoomByJid(conversationJid,"loopback")
       CurrentConversation
     } else{
@@ -764,46 +765,51 @@ class MeTLActor extends StronglyTypedJsonActor{
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)
   private def moveToSlide(jid:String):Unit = {
-    println("moveToSlide",jid)
+    println("moveToSlide".format(jid))
+    println("CurrentConversation".format(CurrentConversation.is))
+    println("CurrentSlide".format(CurrentSlide.is))
     val slideId = jid.toInt
-    if (CurrentSlide.map(cs => cs == jid).openOr(false)){
-      println("No moveToSlide action")
-      //do nothing
-    } else {
-      CurrentConversation.map(cc => conversationContainsSlideId(cc,slideId)).openOr(false) match {
-        case false => {
-          println("Have to join conversation using %s".format(serverConfig))
-          joinConversation(serverConfig.getConversationForSlide(jid))
-        }
-        case true => {
-          println("Have to leave conversation")
-          CurrentSlide.map(cs => {
-            leaveRoomByJid(cs)
-            leaveRoomByJid(cs+username)
-            //  leaveRoomByJid(jid,"loopback")
-          })
-        }
-      }
-      CurrentConversation.map(cc => {
+    CurrentSlide.filterNot(_ == jid).map(cs => {
+      CurrentConversation.filter(cc => conversationContainsSlideId(cc,slideId)).map(cc => {
+        println("Don't have to leave conversation, current slide is in it")
+//        rooms.get((server,cc.jid.toString)).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cs,false,Nil)))
+      }).getOrElse({
         println("Joining conversation for",slideId)
-        if (conversationContainsSlideId(cc,slideId)){
-          CurrentSlide(Full(jid))
-          if (cc.author.trim.toLowerCase == username.trim.toLowerCase && IsInteractiveUser.map(iu => iu == true).getOrElse(true)){
-            val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid))
-            rooms.get((server,cc.jid.toString)).map(r => r ! LocalToServerMeTLStanza(syncMove))
-          }
-          joinRoomByJid(jid)
-          joinRoomByJid(jid+username)
-          //joinRoomByJid(jid,"loopback")
-        }
+        joinConversation(serverConfig.getConversationForSlide(jid))
       })
-    }
+      leaveRoomByJid(cs)
+      leaveRoomByJid(cs+username)
+    })
+    CurrentConversation.is.getOrElse({
+      println("Joining conversation for",slideId)
+      joinConversation(serverConfig.getConversationForSlide(jid))
+    })
+    CurrentConversation.map(cc => {
+      println("checking to see that current conv and current slide now line up")
+      if (conversationContainsSlideId(cc,slideId)){
+        println("conversation contains slide")
+        CurrentSlide(Full(jid))
+        if (cc.author.trim.toLowerCase == username.trim.toLowerCase && IsInteractiveUser.map(iu => iu == true).getOrElse(true)){
+          val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid))
+          rooms.get((server,cc.jid.toString)).map(r => r ! LocalToServerMeTLStanza(syncMove))
+        }
+        joinRoomByJid(jid)
+        joinRoomByJid(jid+username)
+        println("looking for attendance room")
+        rooms.get((server,cc.jid.toString)).foreach(r => {
+          println("sending command")
+//          r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
+        })
+        //joinRoomByJid(jid,"loopback")
+      }
+    })
     partialUpdate(refreshClientSideStateJs)
   }
   private def leaveAllRooms(shuttingDown:Boolean = false) = {
     //println("leaving all rooms: %s".format(rooms))
     rooms.foreach(r => {
       if (shuttingDown || (r._1._2 != username && r._1._2 != "global")){
+//        CurrentConversation.filter(cc => cc.jid.toString == r._1._2).foreach(cc => r._2 ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cc.jid.toString,false,Nil)))
         //println("leaving room: %s".format(r))
         r._2 ! LeaveRoom(username,userUniqueId,this)
       }
@@ -812,10 +818,49 @@ class MeTLActor extends StronglyTypedJsonActor{
   override def lifespan = Full(5 minutes)
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms", () => {
+    println("roomInfo received: %s".format(roomInfo))
     //println("updateRooms: %s".format(roomInfo))
     roomInfo match {
-      case RoomJoinAcknowledged(s,r) => rooms = rooms.updated((s,r),MeTLXConfiguration.getRoom(r,s))
-      case RoomLeaveAcknowledged(s,r) => rooms = rooms.filterNot(rm => rm._1 == (s,r))
+      case RoomJoinAcknowledged(s,r) => {
+        println("joining room: %s".format(r))
+        rooms = rooms.updated((s,r),MeTLXConfiguration.getRoom(r,s))
+        try {
+          val slideNum = r.toInt
+          val conv = serverConfig.getConversationForSlide(r)
+          println("trying to send truePresence to room: %s %s".format(conv,slideNum))
+          if (conv != r){
+            val room = MeTLXConfiguration.getRoom(conv.toString,s)
+            println("room to send to [1]: %s".format(room))
+            room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,true,Nil))
+          } else {
+            val room = MeTLXConfiguration.getRoom("global",s)
+            println("room to send to [2]: %s".format(room))
+            room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,true,Nil))
+          }
+        } catch {
+          case e:Exception => {}
+        }
+      }
+      case RoomLeaveAcknowledged(s,r) => {
+        println("leaving room: %s".format(r))
+        try {
+          val slideNum = r.toInt
+          val conv = serverConfig.getConversationForSlide(r)
+          println("trying to send falsePresence to room: %s %s".format(conv,slideNum))
+          if (conv != r){
+            val room = MeTLXConfiguration.getRoom(conv.toString,s) 
+            println("room to send to [3]: %s".format(room))
+            room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,false,Nil))
+          } else {
+            val room = MeTLXConfiguration.getRoom("global",s) 
+            println("room to send to [4]: %s".format(room))
+            room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,false,Nil))
+          }
+        } catch {
+          case e:Exception => {}
+        }
+        rooms = rooms.filterNot(rm => rm._1 == (s,r))
+      }
       case _ => {}
     }
   })

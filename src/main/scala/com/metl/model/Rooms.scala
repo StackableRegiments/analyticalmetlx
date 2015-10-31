@@ -56,7 +56,7 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 case object HealthyWelcomeFromRoom
 case object Ping
 
-abstract class MeTLRoom(configName:String,location:String,creator:RoomProvider) extends LiftActor with ListenerManager {
+abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider) extends LiftActor with ListenerManager {
   lazy val config = ServerConfiguration.configForName(configName)
   private var shouldBacklog = false
   private var backlog = Queue.empty[MeTLStanza]
@@ -130,6 +130,7 @@ abstract class MeTLRoom(configName:String,location:String,creator:RoomProvider) 
   protected def sendStanzaToServer(s:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer", () => {
     //println("%s l->s %s".format(location,s))
     //println("MeTLRoom(%s):sendToServer(%s)".format(location,s))
+    println("%s received stanza to send: %s".format(location,s))
     showInterest
     if (shouldBacklog) {
       //println("MeTLRoom(%s):sendToServer.backlogging".format(location))
@@ -177,7 +178,7 @@ object ThumbnailSpecification {
   val width = 320
 }
 
-class NoCacheRoom(configName:String,location:String,creator:RoomProvider) extends MeTLRoom(configName,location,creator) {
+class NoCacheRoom(configName:String,override val location:String,creator:RoomProvider) extends MeTLRoom(configName,location,creator) {
   override def getHistory = config.getHistory(location)
   override def getThumbnail = SlideRenderer.render(getHistory,ThumbnailSpecification.width,ThumbnailSpecification.height)
   override def getSnapshot(size:SnapshotSize.Value) = {
@@ -200,7 +201,7 @@ class StartupInformation {
   }
 }
 
-class HistoryCachingRoom(configName:String,location:String,creator:RoomProvider) extends MeTLRoom(configName,location,creator) {
+class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider) extends MeTLRoom(configName,location,creator) {
   private var history:History = History.empty
   private val isPublic = tryo(location.toInt).map(l => true).openOr(false)
   private var snapshots:Map[SnapshotSize.Value,Array[Byte]] = Map.empty[SnapshotSize.Value,Array[Byte]]
@@ -264,7 +265,7 @@ class HistoryCachingRoom(configName:String,location:String,creator:RoomProvider)
   override def toString = "HistoryCachingRoom(%s,%s,%s)".format(configName,location,creator)
 }
 
-class XmppBridgingHistoryCachingRoom(configName:String,location:String,creator:RoomProvider) extends HistoryCachingRoom(configName,location,creator) {
+class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider) extends HistoryCachingRoom(configName,location,creator) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
     stanzasToIgnore = stanzasToIgnore ::: List(s)
