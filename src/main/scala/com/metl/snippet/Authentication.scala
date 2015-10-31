@@ -32,25 +32,25 @@ class AuthenticationSnippet {
           cc <- cp.vendClientConfiguration(authData.username)
         ) yield {
           <clientConfig> 
-            <xmppHost>{PCData(cc.xmppHost)}</xmppHost>
+            <xmppHost>{cc.xmppHost}</xmppHost>
             <xmppPort>{cc.xmppPort}</xmppPort>
-            <xmppDomain>{PCData(cc.xmppDomain)}</xmppDomain>
+            <xmppDomain>{cc.xmppDomain}</xmppDomain>
             <xmppUsername>{cc.xmppUsername}</xmppUsername>
             <xmppPassword>{cc.xmppPassword}</xmppPassword>
-            <conversationSearchUrl>{PCData(cc.conversationSearchUrl)}</conversationSearchUrl>
-            <webAuthenticationUrl>{PCData(cc.webAuthenticationUrl)}</webAuthenticationUrl>
-            <thumbnailUrl>{PCData(cc.thumbnailUrl)}</thumbnailUrl>
-            <resourceUrl>{PCData(cc.resourceUrl)}</resourceUrl>
-            <historyUrl>{PCData(cc.historyUrl)}</historyUrl>
-            <httpUsername>{PCData(cc.httpUsername)}</httpUsername>
-            <httpPassword>{PCData(cc.httpPassword)}</httpPassword>
-            <structureDirectory>{PCData(cc.structureDirectory)}</structureDirectory>
-            <resourceDirectory>{PCData(cc.resourceDirectory)}</resourceDirectory>
-            <uploadPath>{PCData(cc.uploadPath)}</uploadPath>
-            <primaryKeyGenerator>{PCData(cc.primaryKeyGenerator)}</primaryKeyGenerator>
-            <cryptoKey>{PCData(cc.cryptoKey)}</cryptoKey>
-            <cryptoIV>{PCData(cc.cryptoIV)}</cryptoIV>
-            <imageUrl>{PCData(cc.imageUrl)}</imageUrl>
+            <conversationSearchUrl>{cc.conversationSearchUrl}</conversationSearchUrl>
+            <webAuthenticationUrl>{cc.webAuthenticationUrl}</webAuthenticationUrl>
+            <thumbnailUrl>{cc.thumbnailUrl + ServerConfiguration.default.name + "/"}</thumbnailUrl>
+            <resourceUrl>{cc.resourceUrl}</resourceUrl>
+            <historyUrl>{cc.historyUrl}</historyUrl>
+            <httpUsername>{cc.httpUsername}</httpUsername>
+            <httpPassword>{cc.httpPassword}</httpPassword>
+            <structureDirectory>{cc.structureDirectory}</structureDirectory>
+            <resourceDirectory>{cc.resourceDirectory}</resourceDirectory>
+            <uploadPath>{cc.uploadPath}</uploadPath>
+            <primaryKeyGenerator>{cc.primaryKeyGenerator}</primaryKeyGenerator>
+            <cryptoKey>{cc.cryptoKey}</cryptoKey>
+            <cryptoIV>{cc.cryptoIV}</cryptoIV>
+            <imageUrl>{cc.imageUrl}</imageUrl>
           </clientConfig>
         }).getOrElse(NodeSeq.Empty)
       }</authData>
