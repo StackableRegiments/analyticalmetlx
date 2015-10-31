@@ -1,0 +1,3 @@
+cp target/webmetl-3.0.war ../jettycontainer/apps
+../jettycontainer/stop.sh
+../jettycontainer/start.sh
