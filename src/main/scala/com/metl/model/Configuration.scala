@@ -14,6 +14,7 @@ case class ClientConfiguration(xmppHost:String,xmppPort:Int,xmppDomain:String,xm
 abstract class ConfigurationProvider {
   val keys:MutableMap[String,String] = MutableMap.empty[String,String]
   def checkPassword(username:String,password:String):Boolean = {
+    println("checking: %s %s in %s".format(username,password,keys))
     keys.get(username).exists(_ == password)
   }
   def getPasswords(username:String):Option[Tuple2[String,String]] = {
@@ -23,7 +24,7 @@ abstract class ConfigurationProvider {
     val xp = keys.get(xu) match {
       case None => {
         val np = generatePasswordForEjabberd(xu)
-        keys.update(xu,np)
+        keys += (xu,np)
         Some(np)
       }
       case some => some
@@ -31,7 +32,7 @@ abstract class ConfigurationProvider {
     val hp = keys.get(hu) match {
       case None => {
         val np = generatePasswordForYaws(hu)
-        keys.update(hu,np)
+        keys += (hu,np)
         Some(np)
       }
       case some => some
