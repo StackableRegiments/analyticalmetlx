@@ -14,6 +14,7 @@
         "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
     },
     "tags":[
+        {"name":"contentCreation","description":"Creation of MeTL content."},
         {"name":"monitoring","description":"Health checks and event management."},
         {"name":"readConversation","description":"Logical reconstructions of conversation state."},
         {"name":"readDetails","description":"Conversation structure and metadata."},
@@ -22,7 +23,8 @@
         {"name":"assessment","description":"Quizzes, quiz structure and submissions."},
         {"name":"resources","description":"Uploaded images and attached files."},
         {"name":"pullUser","description":"Moving users to MeTL locations."},
-        {"name":"devices","description":"Metadata collection about user devices."}
+        {"name":"devices","description":"Metadata collection about user devices."},
+        {"name":"inSession","description":"Calls only executable from a web client which has an active session with the MeTL backend"}
     ],
     "consumes": [
         "application/json"
@@ -31,6 +33,131 @@
         "application/json"
     ],
     "paths": {
+        "/projector/{conversationJid}":{
+            "get":{
+                "tags":["inSession"],
+                "description":"Move the peered clients who have my identity to a location (for projector control)",
+                "parameters":[
+                    {
+                        "name":"conversationJid",
+                        "in":"path",
+                        "required":"true"
+                    }
+                ]
+            }
+        },
+        "/logDevice":{
+            "get":{
+                "tags":["monitoring"],
+                "description":"Log a User Agent string for analysis"
+            }
+        },
+        "/quizResponse/{conversation}/{quiz}/{response}":{
+            "get":{
+                "tags":["inSession","assessment"],
+                "description":"Answer a quiz",
+                "parameters":[
+                    {
+                        "name":"conversation",
+                        "description":"The conversation in which the quiz was published",
+                        "in":"path",
+                        "required":"true"
+                    },
+                    {
+                        "name":"quiz",
+                        "description":"The quiz being answered",
+                        "in":"path",
+                        "required":"true"
+                    },
+                    {
+                        "name":"id",
+                        "description":"The response being chosen",
+                        "in":"path",
+                        "required":"true"
+                    }
+                ]
+            }
+        },
+        "/uploadDataUri":{
+            "get":{
+                "tags":["inSession","contentCreation"],
+                "description":"Upload a file",
+                "parameters":[
+                    {
+                        "name":"filename",
+                        "description":"The intended filename at destination",
+                        "in":"query",
+                        "required":"true"
+                    },
+                    {
+                        "name":"jid",
+                        "description":"The destination in MeTL",
+                        "in":"query",
+                        "required":"true"
+                    },
+                    {
+                        "name":"dataUri",
+                        "description":"A data uri describing the file contents to upload",
+                        "in":"body",
+                        "required":"true"
+                    }
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {"$ref":"#/definitions/Upload"}
+                    }
+                }
+            }
+        },
+        "/upload":{
+            "get":{
+                "tags":["inSession","contentCreation"],
+                "description":"Upload a file",
+                "parameters":[
+                    {
+                        "name":"filename",
+                        "description":"The intended filename at destination",
+                        "in":"query",
+                        "required":"true"
+                    },
+                    {
+                        "name":"jid",
+                        "description":"The destination in MeTL",
+                        "in":"query",
+                        "required":"true"
+                    },
+                    {
+                        "name":"data",
+                        "description":"The file contents to upload",
+                        "in":"body",
+                        "required":"true"
+                    }
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {"$ref":"#/definitions/Upload"}
+                    }
+                }
+            }
+        },
+        "/join":{
+            "get":{
+                "tags":["inSession","pullUser"],
+                "description":"Move this user to a location",
+                "parameters":[
+                    {
+                        "name":"conversation",
+                        "in":"query",
+                        "required":"true"
+                    },
+                    {
+                        "name":"slide",
+                        "in":"query",
+                        "required":"true"
+                    }
+                ]
+            }
+        },
         "/search":{
             "get":{
                 "tags":["search"],
@@ -118,6 +245,32 @@
                     "200": {
                         "schema": {
                             "$ref":"#/definitions/ConversationDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/themes": {
+            "get": {
+                "tags":["readConversation"],
+                "description": "Recognized text used in a slide.",
+                "produces": [
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"source",
+                        "description":"The location of the slide or conversation",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Theme"}
                         }
                     }
                 }
@@ -488,6 +641,31 @@
                 "title":{"type":"string"},
                 "created":{"type":"string"},
                 "permissions":{"$ref":"#/definitions/Permissions"}
+            }
+        },
+        "Upload":{
+            "type":"object",
+            "properties":{
+                "uploadedLocation":{
+                    "type":"string"
+                }
+            }
+        },
+        "Fragment":{
+            "type":"object",
+            "properties":{
+                "text":{"type":"string"},
+                "confidence":{"type":"double"}
+            }
+        },
+        "Theme":{
+            "type":"object",
+            "properties":{
+                "username":"string",
+                "text":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/Fragment"}
+                }
             }
         },
         "History": {
