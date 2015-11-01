@@ -25,6 +25,34 @@ object MeTLRestHelper extends RestHelper {
     </cross-domain-policy>
   }
   serve {
+    case Req("verifyUserCredentialsForm" :: Nil,_,_) => () => {
+      Full(InMemoryResponse(
+        ( <html>
+          <body>
+            <form action="/verifyUserCredentials" method="POST">
+              <div>
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username"/>
+              </div>
+              <div>
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password"/>
+              </div>
+              <input type="submit"/>
+            </form>
+          </body>
+        </html> ).toString.getBytes("UTF-8"),Nil,Nil,200
+      ))
+    }
+    case Req("verifyUserCredentials" :: Nil,_,_) => () => {
+      for (
+        u <- S.param("username");
+        p <- S.param("password");
+        cp <- MeTLXConfiguration.configurationProvider
+      ) yield {
+        PlainTextResponse(cp.checkPassword(u,p).toString,Nil,200)
+      }
+    }
     case Req("serverStatus" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", () => Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
     case Req(List("probe","index"),"html",_) =>
