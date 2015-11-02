@@ -167,10 +167,11 @@ object MeTLXConfiguration extends PropertyReader {
       "stableKeyProvider" -> {(n:NodeSeq) => {
         for (
           lp <- (n \ "@localPort").headOption.map(_.text.toInt);
+          ls <- (n \ "@localScheme").headOption.map(_.text);
           rbh <- (n \ "@remoteBackendHost").headOption.map(_.text);
           rbp <- (n \ "@remoteBackendPort").headOption.map(_.text.toInt)
         ) yield {
-          configurationProvider = Some(new StableKeyConfigurationProvider(lp,rbh,rbp))
+          configurationProvider = Some(new StableKeyConfigurationProvider(ls,lp,rbh,rbp))
         }
       }},
       "staticKeyProvider" -> {(n:NodeSeq) => {
@@ -353,8 +354,39 @@ object MeTLXConfiguration extends PropertyReader {
   def setupServersFromFile(filePath:String) = {
     //EmbeddedXmppServer.initialize
     MeTL2011ServerConfiguration.initialize
+    MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
-    ServerConfiguration.loadServerConfigsFromFile(filePath,updateGlobalFunc)
+    ServerConfiguration.loadServerConfigsFromFile(
+      path = filePath,
+      onConversationDetailsUpdated = updateGlobalFunc,
+      messageBusCredentailsFunc = () => {
+        (for (
+          cc <- configurationProvider;
+          creds <- cc.getPasswords("metlxMessageBus_"+new java.util.Date().getTime.toString)
+        ) yield {
+          println("vending msgBusCreds: %s".format(creds))
+          (creds._1,creds._2)
+        }).getOrElse(("",""))
+      },
+      conversationListenerCredentialsFunc = () => {
+        (for (
+          cc <- configurationProvider;
+          creds <- cc.getPasswords("metlxConversationListener_"+new java.util.Date().getTime.toString)
+        ) yield {
+          println("vending convCreds: %s".format(creds))
+          (creds._1,creds._2)
+        }).getOrElse(("",""))
+      },
+      httpCredentialsFunc = () => {
+        (for (
+          cc <- configurationProvider;
+          creds <- cc.getPasswords("metlxHttp_"+new java.util.Date().getTime.toString)
+        ) yield {
+          println("vending httpCreds: %s".format(creds))
+          (creds._3,creds._4)
+        }).getOrElse(("",""))
+      }
+    )
     val servers = ServerConfiguration.getServerConfigurations
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
   }
@@ -366,21 +398,20 @@ object MeTLXConfiguration extends PropertyReader {
       case _ => Globals.isDevMode = true
     }
     */
-    setupServersFromFile(Globals.configurationFileLocation)
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
     LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
     LiftRules.dispatch.append(MeTLStatefulRestHelper)
     LiftRules.statelessDispatchTable.prepend(WebMeTLRestHelper)
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
+    setupAuthorizersFromFile(Globals.configurationFileLocation)
+    setupAuthenticatorsFromFile(Globals.configurationFileLocation)
+    setupClientConfigFromFile(Globals.configurationFileLocation)
+    setupServersFromFile(Globals.configurationFileLocation)
+    configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     configs.values.foreach(c => {
       getRoom("global",c._1.name)
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
-    setupAuthorizersFromFile(Globals.configurationFileLocation)
-    setupAuthenticatorsFromFile(Globals.configurationFileLocation)
-    setupClientConfigFromFile(Globals.configurationFileLocation)
-    configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
-
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
     println(configs)
   }

@@ -670,11 +670,11 @@ trait StackRouter extends LiftActor with ListenerManager{
     case e:Emerge=> Stopwatch.time("StackRouter:emerge",()=>updateListeners(e))
     case s:Silently=> Stopwatch.time("StackRouter:silently",()=>{
       val qp = s.present
-      XMPPQuestionSyncActor ! QuestionSyncRequest(qp.location,qp.id,true)
+      //XMPPQuestionSyncActor ! QuestionSyncRequest(qp.location,qp.id,true)
     })
     case d:Detail => Stopwatch.time("StackRouter:detail",()=>updateListeners(d))
-    case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",()=> XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
-    case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter",()=> XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
+    case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",()=>{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
+    case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter",()=> {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
     case other => println("StackRouter received unknown: %s".format(other))
   }
 }

@@ -69,13 +69,13 @@ object TopicManager{
   def createTopic(location:String):Unit = Stopwatch.time("TopicManager:createTopic %s".format(location),()=>{
     val newTopic = Topic.createRecord.name(location).creator(currentUser.is).deleted(false)
     newTopic.teachingEventIdentity(newTopic.identity).save
-    XMPPQuestionSyncActor ! TopicSyncRequest(newTopic.identity)
+    //XMPPQuestionSyncActor ! TopicSyncRequest(newTopic.identity)
   })
   def renameTopic(topicId:String,newName:String):Unit = Stopwatch.time("TopicManager:renameTopic",()=>{
     Topic.find("_id",new ObjectId(topicId)) match {
       case t:Topic => {
         t.rename(newName)
-        XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
+        //XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
       }
       case _ => {}
     }
@@ -84,7 +84,7 @@ object TopicManager{
     Topic.find("_id",new ObjectId(topicId)) match {
       case t:Topic => {
         t.delete
-        XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
+        //XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
       }
       case _ => {}
     }
