@@ -1,3 +1,5 @@
+/*
+
 package com.metl.model
 
 import org.jivesoftware.smack._
@@ -261,3 +263,4 @@ class XMPPSyncActor extends LiftActor {
     case other => println("XMPPSyncActor (%s) received unknown message: %s".format(xmpp.map(x => x.roomName).openOr("unknown room"),other))
   }
 }
+*/

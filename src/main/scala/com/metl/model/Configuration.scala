@@ -17,14 +17,14 @@ abstract class ConfigurationProvider {
     println("checking: %s %s in %s".format(username,password,keys))
     keys.get(username).exists(_ == password)
   }
-  def getPasswords(username:String):Option[Tuple2[String,String]] = {
+  def getPasswords(username:String):Option[Tuple4[String,String,String,String]] = {
     val xu = adornUsernameForEjabberd(username)
     val hu = adornUsernameForYaws(username)
 
     val xp = keys.get(xu) match {
       case None => {
         val np = generatePasswordForEjabberd(xu)
-        keys += (xu,np)
+        keys.update(xu,np)
         Some(np)
       }
       case some => some
@@ -32,7 +32,7 @@ abstract class ConfigurationProvider {
     val hp = keys.get(hu) match {
       case None => {
         val np = generatePasswordForYaws(hu)
-        keys += (hu,np)
+        keys.update(hu,np)
         Some(np)
       }
       case some => some
@@ -41,7 +41,7 @@ abstract class ConfigurationProvider {
       x <- xp;
       h <- hp
     ) yield {
-      (x,h)
+      (xu,x,hu,h)
     }
   }
   protected def generatePasswordForYaws(username:String):String 
@@ -51,9 +51,7 @@ abstract class ConfigurationProvider {
   def vendClientConfiguration(username:String):Option[ClientConfiguration] = {
     for (
       cc <- MeTLXConfiguration.clientConfig;
-      xu = adornUsernameForEjabberd(username);
-      hu = adornUsernameForYaws(username);
-      (xp,hp) <- getPasswords(username)
+      (xu,xp,hu,hp) <- getPasswords(username)
     ) yield {
       cc.copy(
         xmppUsername = xu,
@@ -64,29 +62,49 @@ abstract class ConfigurationProvider {
     }
   }
 }
-class StableKeyConfigurationProvider(localPort:Int,remoteBackendHost:String,remoteBackendPort:Int) extends ConfigurationProvider {
+class StableKeyConfigurationProvider(scheme:String,localPort:Int,remoteBackendHost:String,remoteBackendPort:Int) extends ConfigurationProvider {
+  protected val ejPassword = nextFuncName
+  protected val verifyPath:String = "verifyUserCredentials"
   protected val returnAddress:String = {
     "%s:%s".format(getLocalIp,getLocalPort)    
   }
-  protected def getLocalIp:String = {
+  protected val getLocalIp:String = {
     val socket = new java.net.Socket(remoteBackendHost,remoteBackendPort)
     val ip = socket.getLocalAddress.toString match {
       case s if s.startsWith("/") => s.drop(1)
       case s => s
     }
     socket.close()
-    return ip;
+    ip
   }
-  protected def getLocalPort:String = {
+  protected val getLocalPort:String = {
     localPort.toString
+  }
+  override def checkPassword(username:String,password:String):Boolean = {
+    if (username.startsWith("ejUserAndIp_"))
+      password == ejPassword
+    else 
+      super.checkPassword(username,password)
   }
   protected def generatePasswordForEjabberd(username:String):String = nextFuncName
   protected def generatePasswordForYaws(username:String):String = nextFuncName
-  def adornUsernameForEjabberd(username:String):String = "ejUserAndIp_%s_%s".format(username,returnAddress)
+  def adornUsernameForEjabberd(username:String):String = "ejUserAndIp|%s|%s".format(username,scheme,getLocalIp,getLocalPort,verifyPath)
   def adornUsernameForYaws(username:String):String = "%s@%s".format(username,returnAddress)
 }
 
 class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPassword:String,yawsUsername:Option[String],yawsPassword:String) extends ConfigurationProvider {
+  ejabberdUsername.foreach(eu => {
+    keys.update(eu,ejabberdPassword)
+  })
+  yawsUsername.foreach(yu => {
+    keys.update(yu,yawsPassword)
+  })
+  override def checkPassword(username:String,password:String):Boolean = {
+    println("checking: %s %s in %s".format(username,password,keys))
+    ejabberdUsername.filter(_ == username).map(_u => password == ejabberdPassword).getOrElse(false) || 
+    yawsUsername.filter(_ == username).map(_u => password == yawsPassword).getOrElse(false) ||
+    keys.get(username).exists(_ == password)
+  }
   protected def generatePasswordForEjabberd(username:String):String = ejabberdPassword
   protected def generatePasswordForYaws(username:String):String = yawsPassword
   def adornUsernameForEjabberd(username:String):String = ejabberdUsername.getOrElse(username)

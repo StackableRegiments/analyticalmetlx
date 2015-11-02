@@ -25,8 +25,8 @@ case object StartingRepActor
 object ReputationServer extends LiftActor with ListenerManager{
   def createUpdate = StartingRepActor
   override def lowPriority = {
-    case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),()=> reps.foreach(rep => XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
-    case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),()=> XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
+    case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),()=> reps.foreach(rep => {}))//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
+    case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),()=> {})//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
     case local:Standing => Stopwatch.time("ReputationServer:lowPriority:standing (%s)".format(local),()=> updateListeners(local) )
     case other => {
       println("Rep server received unknown message: %s".format(other.toString))
