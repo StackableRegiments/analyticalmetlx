@@ -67,8 +67,8 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "form-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "cas-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-//    "io.github.stackableregiments" %% "metl2011" % "3.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"), //3.1.0 brings smack v4.1.4, but it's currently got issues.
-    "io.github.stackableregiments" %% "metl2011" % "2.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
+    "io.github.stackableregiments" %% "metl2011" % "3.3.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"), //3.1.0 brings smack v4.1.4, but it's currently got issues.
+//    "io.github.stackableregiments" %% "metl2011" % "2.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "metl-h2" % "2.0.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "lift-extensions" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "slide-renderer" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
