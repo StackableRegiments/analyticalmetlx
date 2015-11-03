@@ -111,10 +111,13 @@ object StatelessHtml {
     <userThemes>{
       inks.groupBy(_.author).map
       {
-        case (author,inks) => <userTheme>
+        case (author,inks@i :: is) => <userTheme>
           <user>{author}</user>
-          <themes>{CanvasContentAnalysis.extract(inks)}</themes>
+          {
+            <themes>{ CanvasContentAnalysis.extract(inks).map(i => <theme>{i}</theme> ) }</themes>
+          }
           </userTheme>
+        case _ => None
       }
     }</userThemes>
   })

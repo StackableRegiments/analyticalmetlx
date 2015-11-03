@@ -23,9 +23,10 @@ object CanvasContentAnalysis {
       }
     }._2.map(_.reverse)
   }
-  def extract(inks:List[MeTLInk]) = {
+  def extract(inks:List[MeTLInk]):List[String] = {
     if(inks.size < analysisThreshold) {
       println("Not analysing themes for %s strokes".format(inks.size))
+      Nil
     }
     else{
       println("Loading themes for %s strokes".format(inks.size))
@@ -53,16 +54,13 @@ object CanvasContentAnalysis {
       val response = for(
         s <- f.right
       ) yield {
-        println(s)
-        val responseJson = parse(s)
-        val labels = (responseJson \\ "label")
-        println(labels)
-        val recognitionCandidates = labels.children.collect{ case JField(_,JString(s)) => s }
-        println(recognitionCandidates)
-        recognitionCandidates.map(println _)
-        recognitionCandidates
+        (parse(s)\\ "label").children.collect{ case JField(_,JString(s)) => s }
       }
-      response()
+      val r = response()
+      r match {
+        case Right(rs) => rs
+        case _ => Nil
+      }
     }
   }
 }
