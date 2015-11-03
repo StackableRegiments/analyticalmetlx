@@ -41,7 +41,8 @@
                     {
                         "name":"conversationJid",
                         "in":"path",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     }
                 ]
             }
@@ -61,19 +62,22 @@
                         "name":"conversation",
                         "description":"The conversation in which the quiz was published",
                         "in":"path",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"quiz",
                         "description":"The quiz being answered",
                         "in":"path",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"id",
                         "description":"The response being chosen",
                         "in":"path",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     }
                 ]
             }
@@ -87,19 +91,22 @@
                         "name":"filename",
                         "description":"The intended filename at destination",
                         "in":"query",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"jid",
                         "description":"The destination in MeTL",
                         "in":"query",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"dataUri",
                         "description":"A data uri describing the file contents to upload",
                         "in":"body",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     }
                 ],
                 "responses":{
@@ -118,13 +125,15 @@
                         "name":"filename",
                         "description":"The intended filename at destination",
                         "in":"query",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"jid",
                         "description":"The destination in MeTL",
                         "in":"query",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"data",
@@ -148,12 +157,14 @@
                     {
                         "name":"conversation",
                         "in":"query",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     },
                     {
                         "name":"slide",
                         "in":"query",
-                        "required":"true"
+                        "required":"true",
+                        "type":"string"
                     }
                 ]
             }
@@ -253,7 +264,7 @@
         "/themes": {
             "get": {
                 "tags":["readConversation"],
-                "description": "Recognized text used in a slide.",
+                "description": "Recognized words handwritten on a slide.",
                 "produces": [
                     "application/xml"
                 ],
@@ -585,8 +596,8 @@
                 "Inheriting":{"$ref":"#/definitions/MeTLContent"},
                 "author":{"type":"string"},
                 "id":{"type":"integer"},
-                "defHeight":{"type":"integer"},
-                "defWidth":{"type":"integer"},
+                "defHeight":{"type":"double"},
+                "defWidth":{"type":"double"},
                 "exposed":{"type":"boolean"},
                 "slideType":{"type":"string"},
                 "groupSet":{
@@ -630,14 +641,14 @@
             "properties":{
                 "Inheriting":{"$ref":"#/definitions/MeTLContent"},
                 "author":{"type":"string"},
-                "lastAccessed":{"type":"long"},
+                "lastAccessed":{"type":"string"},
                 "slides":{
                     "type":"array",
                     "items":{"$ref":"#/definitions/Slide"}
                 },
                 "subject":{"type":"string"},
                 "tag":{"type":"string"},
-                "jid":{"type":"int"},
+                "jid":{"type":"string"},
                 "title":{"type":"string"},
                 "created":{"type":"string"},
                 "permissions":{"$ref":"#/definitions/Permissions"}
@@ -646,9 +657,7 @@
         "Upload":{
             "type":"object",
             "properties":{
-                "uploadedLocation":{
-                    "type":"string"
-                }
+                "uploadedLocation":{"type":"string"}
             }
         },
         "Fragment":{
@@ -661,7 +670,7 @@
         "Theme":{
             "type":"object",
             "properties":{
-                "username":"string",
+                "username":{"type":"string"},
                 "text":{
                     "type":"array",
                     "items":{"$ref":"#/definitions/Fragment"}
