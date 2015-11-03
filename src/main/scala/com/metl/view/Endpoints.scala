@@ -29,19 +29,19 @@ object MeTLRestHelper extends RestHelper {
       Full(InMemoryResponse(
         ( <html>
           <body>
-            <form action="/verifyUserCredentials" method="POST">
-              <div>
-                <label for="username">Username</label>
-                <input type="text" name="username" id="username"/>
-              </div>
-              <div>
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password"/>
-              </div>
-              <input type="submit"/>
-            </form>
+          <form action="/verifyUserCredentials" method="POST">
+          <div>
+          <label for="username">Username</label>
+          <input type="text" name="username" id="username"/>
+          </div>
+          <div>
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password"/>
+          </div>
+          <input type="submit"/>
+          </form>
           </body>
-        </html> ).toString.getBytes("UTF-8"),Nil,Nil,200
+          </html> ).toString.getBytes("UTF-8"),Nil,Nil,200
       ))
     }
     case Req("verifyUserCredentials" :: Nil,_,_) => () => {
@@ -69,7 +69,7 @@ object MeTLRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLRestHelper.mergedHistory", () => StatelessHtml.mergedHistory(r))
     case r @ Req(List("fullHistory"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.fullHistory", () => StatelessHtml.fullHistory(r))
-case r @ Req(List("themes"),_,_) =>
+    case r @ Req(List("themes"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.themes", () => StatelessHtml.themes(r))
     case r @ Req(List("details",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.details", () => StatelessHtml.details(jid))
