@@ -58,7 +58,7 @@ object StatelessHtml {
   })
 
   def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity), () =>
-    Full(MeTLXConfiguration.getRoom(slideJid,config.name).getHistory.getImageByIdentity(identity).map(image => {
+    Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
       image.imageBytes.map(bytes => {
         println("found bytes: %s (%s)".format(bytes,bytes.length))
         val dataUri = "data:image/png;base64,"+net.liftweb.util.SecurityHelpers.base64Encode(bytes)
@@ -67,7 +67,7 @@ object StatelessHtml {
     }).getOrElse(NotFoundResponse("image not available"))))
 
   def proxy(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxy(%s)".format(identity), () => {
-    Full(MeTLXConfiguration.getRoom(slideJid,config.name).getHistory.getImageByIdentity(identity).map(image => {
+    Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
       image.imageBytes.map(bytes => {
         println("found bytes: %s (%s)".format(bytes,bytes.length))
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
@@ -76,7 +76,7 @@ object StatelessHtml {
     }).getOrElse(NotFoundResponse("image not available")))
   })
   def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), () => {
-    Full(MeTLXConfiguration.getRoom(conversationJid,config.name).getHistory.getQuizByIdentity(identity).map(quiz => {
+    Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(conversationJid)).getHistory.getQuizByIdentity(identity).map(quiz => {
       quiz.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
         InMemoryResponse(bytes,headers,Nil,200)
@@ -88,7 +88,7 @@ object StatelessHtml {
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
   })
   def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy()".format(conversationJid,identity), () => {
-    Full(MeTLXConfiguration.getRoom(conversationJid,config.name).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
+    Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(conversationJid)).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
       sub.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
         InMemoryResponse(bytes,headers,Nil,200)
@@ -103,16 +103,16 @@ object StatelessHtml {
   })
 
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), () => {
-    <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name).getHistory)}</history>
+    <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),() => {
-    <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name).getHistory))}</history>
+    <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
   })
   def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
     req.param("source").map(jid=> XmlResponse(loadHistory(jid)))
   })
   def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
-    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
+    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
   })
   def mergedHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
     req.param("source").map(jid=> {

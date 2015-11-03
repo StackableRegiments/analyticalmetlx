@@ -1,6 +1,6 @@
 package com.metl.model
 
-import com.metl.data._
+import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
 
@@ -18,22 +18,71 @@ import scala.collection.mutable.Queue
 
 abstract class RoomProvider {
   def get(jid:String):MeTLRoom
+  def get(jid:String,roomMetaData:RoomMetaData):MeTLRoom
   def removeMeTLRoom(room:String):Unit
   def exists(room:String):Boolean
 }
 
 object EmptyRoomProvider extends RoomProvider {
   override def get(jid:String) = EmptyRoom
+  override def get(jid:String,roomDefinition:RoomMetaData) = EmptyRoom
   override def removeMeTLRoom(room:String) = {}
   override def exists(room:String) = false
 }
 
+object MeTLRoomType extends Enumeration {
+  type MeTLRoomType = Value
+  val Conversation,Slide,PrivateSlide,PersonalChatroom,Global,Unknown = Value
+}
+
+abstract class RoomMetaData(val roomType:MeTLRoomType.Value) 
+
+case class ConversationRoom(jid:String) extends RoomMetaData(MeTLRoomType.Conversation){
+  var cd:Conversation = Conversation.empty
+}
+case class SlideRoom(jid:String,slideId:Int) extends RoomMetaData(MeTLRoomType.Slide){
+  var cd:Conversation = Conversation.empty
+  var s:Slide = Slide.empty
+}
+case class PrivateSlideRoom(jid:String,slideId:Int,owner:String) extends RoomMetaData(MeTLRoomType.PrivateSlide){
+  var cd:Conversation = Conversation.empty
+  var s:Slide = Slide.empty
+}
+case class PersonalChatRoom(owner:String) extends RoomMetaData(MeTLRoomType.PersonalChatroom)
+case object GlobalRoom extends RoomMetaData(MeTLRoomType.Global)
+case object UnknownRoom extends RoomMetaData(MeTLRoomType.Unknown)
+object RoomMetaDataUtils {
+  protected val numerics = Range('0','9').toList
+  protected def splitJid(in:String):Tuple2[Int,String] = {
+    val first = in.takeWhile(i => numerics.contains(i)).toString
+    val second = in.dropWhile(i => numerics.contains(i)).toString
+    val jid = try {
+      first.toInt
+    } catch {
+      case e:Exception => 0
+    }
+    (jid,second)
+  }
+  def fromJid(jid:String):RoomMetaData = {
+    splitJid(jid) match {
+      case (0,"") => UnknownRoom
+      case (0,"global") => GlobalRoom
+      case (conversationJid,"") if (conversationJid % 1000 == 0) => ConversationRoom(conversationJid.toString)
+      case (slideJid,"") => SlideRoom((slideJid - (slideJid % 1000)).toString,slideJid)
+      case (0,user) => PersonalChatRoom(user)
+      case (slideJid,user) => PrivateSlideRoom((slideJid - (slideJid % 1000)).toString,slideJid,user)
+      case _ => UnknownRoom
+    }
+  }
+}
+
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
-  private lazy val metlRooms = new SynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k))
+  private lazy val metlRooms = new SynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", () => metlRooms.keys.exists(k => k == room))
-  override def get(room:String) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room)))
-  protected def createNewMeTLRoom(room:String) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room), () => {
-    val r = new HistoryCachingRoom(configName,room,this)
+  override def get(room:String) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
+  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
+  protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room), () => {
+    val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
     r.localSetup
     r
   })
@@ -44,6 +93,7 @@ class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
     }
   })
 }
+
 
 case class ServerToLocalMeTLStanza(stanza:MeTLStanza)
 case class LocalToServerMeTLStanza(stanza:MeTLStanza)
@@ -56,8 +106,22 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 case object HealthyWelcomeFromRoom
 case object Ping
 
-abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider) extends LiftActor with ListenerManager {
+abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData) extends LiftActor with ListenerManager {
   lazy val config = ServerConfiguration.configForName(configName)
+  roomMetaData match {
+    case c:ConversationRoom => {
+      c.cd = config.detailsOfConversation(c.jid)
+    }
+    case s:SlideRoom => {
+      s.cd = config.detailsOfConversation(s.jid)
+      s.s = s.cd.slides.find(_.id == s.s.id).getOrElse(Slide.empty)
+    }
+    case p:PrivateSlideRoom => {
+      p.cd = config.detailsOfConversation(p.jid)
+      p.s = p.cd.slides.find(_.id == p.s.id).getOrElse(Slide.empty)
+    }
+    case _ => {}
+  }
   private var shouldBacklog = false
   private var backlog = Queue.empty[MeTLStanza]
   private def onConnectionLost:Unit = {
@@ -84,6 +148,45 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   def getHistory:History
   def getThumbnail:Array[Byte]
   def getSnapshot(size:SnapshotSize.Value):Array[Byte]
+  def getAttendance:List[String] = {
+    getAttendances.map(_.author).distinct
+  }
+  def getAttendances:List[Attendance] = {
+    getHistory.getAttendances
+  }
+  def getGroupSets:List[GroupSet] = {
+    roomMetaData match {
+      case cr:ConversationRoom => cr.cd.slides.flatMap(s => s.groupSet).toList
+      case s:SlideRoom => s.s.groupSet.toList
+      case _ => Nil
+    }
+  }
+  def updateGroupSets:Option[Conversation] = {
+    roomMetaData match {
+      case cr:ConversationRoom => {
+        val details = cr.cd
+        val newSlides = details.slides.map(slide => {
+          val a = getAttendance
+          slide.copy(groupSet = slide.groupSet.map(gs => {
+            var newGs = gs.copy()
+            val grouped = gs.groups.flatMap(g => g.members)
+            a.filterNot(m => grouped.contains(m)).foreach(ug => {
+              newGs.groups.find(g => {
+                gs.groupSize.map(_ > g.members.length).getOrElse(false) 
+              }).map(fg => {
+                newGs = newGs.copy(groups = fg.copy(members = ug :: fg.members) :: newGs.groups.filterNot(_ == fg))
+              }).getOrElse({
+                newGs = newGs.copy(groups = MeTLGroup(config,nextFuncName,location,List(ug)) :: newGs.groups)
+              })
+            })
+            newGs
+          }))
+        })
+        Some(cr.cd.copy(slides = newSlides))
+      }
+      case _ => None
+    }
+  }
   private val pollInterval = new TimeSpan(120000)
   private var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
@@ -123,6 +226,14 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.toList
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",() => {
+    (a,roomMetaData) match {
+      case (m:Attendance,cr:ConversationRoom) => {
+        if (!getAttendance.exists(_ == m.author)){
+          updateGroupSets
+        }
+      }
+      case _ => {}
+    }
     //println("%s s->l %s".format(location,a))
     //println("MeTLRoom(%s):sendToChildren(%s)".format(location,a))
     joinedUsers.foreach(j => j._3 ! a)
@@ -165,7 +276,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   override def toString = "MeTLRoom(%s,%s,%s)".format(configName,location,creator)
 }
 
-object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider) {
+object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider,UnknownRoom) {
   override def getHistory = History.empty
   override def getThumbnail = Array.empty[Byte]
   override def getSnapshot(size:SnapshotSize.Value) = Array.empty[Byte]
@@ -178,12 +289,28 @@ object ThumbnailSpecification {
   val width = 320
 }
 
-class NoCacheRoom(configName:String,override val location:String,creator:RoomProvider) extends MeTLRoom(configName,location,creator) {
+class NoCacheRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends MeTLRoom(configName,location,creator,roomMetaData) {
   override def getHistory = config.getHistory(location)
-  override def getThumbnail = SlideRenderer.render(getHistory,ThumbnailSpecification.width,ThumbnailSpecification.height)
+  override def getThumbnail = {
+    roomMetaData match {
+      case s:SlideRoom => {
+        SlideRenderer.render(getHistory,ThumbnailSpecification.width,ThumbnailSpecification.height)
+      }
+      case _ => {
+        Array.empty[Byte]
+      }
+    }
+  }
   override def getSnapshot(size:SnapshotSize.Value) = {
-    val d = Globals.snapshotSizes(size)
-    SlideRenderer.render(getHistory,d.width,d.height)
+    roomMetaData match {
+      case s:SlideRoom => {
+        val d = Globals.snapshotSizes(size)
+        SlideRenderer.render(getHistory,d.width,d.height)
+      }
+      case _ => {
+        Array.empty[Byte]
+      }
+    }
   }
 }
 
@@ -201,7 +328,7 @@ class StartupInformation {
   }
 }
 
-class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider) extends MeTLRoom(configName,location,creator) {
+class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends MeTLRoom(configName,location,creator,roomMetaData) {
   private var history:History = History.empty
   private val isPublic = tryo(location.toInt).map(l => true).openOr(false)
   private var snapshots:Map[SnapshotSize.Value,Array[Byte]] = Map.empty[SnapshotSize.Value,Array[Byte]]
@@ -228,11 +355,18 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     lastRender = history.lastVisuallyModified
   })
   private def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName), () => {
-    val thisHistory = isPublic match {
-      case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
-      case false => history
+    roomMetaData match {
+      case s:SlideRoom => {
+        val thisHistory = isPublic match {
+          case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
+          case false => history
+        }
+        SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes.map(ss => (ss._1.toString.asInstanceOf[String],ss._2.width,ss._2.height)).toList).map(ri => (SnapshotSize.parse(ri._1.toLowerCase) -> ri._2._3))
+      }
+      case _ => {
+        Map.empty[com.metl.model.SnapshotSize.Value,Array[Byte]]
+      }
     }
-    SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes.map(ss => (ss._1.toString.asInstanceOf[String],ss._2.width,ss._2.height)).toList).map(ri => (SnapshotSize.parse(ri._1.toLowerCase) -> ri._2._3))
   })
   override def getSnapshot(size:SnapshotSize.Value) = {
     showInterest
@@ -265,7 +399,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   override def toString = "HistoryCachingRoom(%s,%s,%s)".format(configName,location,creator)
 }
 
-class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider) extends HistoryCachingRoom(configName,location,creator) {
+class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends HistoryCachingRoom(configName,location,creator,roomMetaData) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
     stanzasToIgnore = stanzasToIgnore ::: List(s)

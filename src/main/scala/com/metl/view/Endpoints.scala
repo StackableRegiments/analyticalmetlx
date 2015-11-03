@@ -79,18 +79,18 @@ object MeTLRestHelper extends RestHelper {
       })
     case Req("render" :: configName :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render", () => {
       val server = ServerConfiguration.configForName(configName)
-      val history = MeTLXConfiguration.getRoom(jid,server.name).getHistory
+      val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
       val image = SlideRenderer.render(history,width.toInt,height.toInt)
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
     case Req("thumbnail" :: configName :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail", () => {
       val server = ServerConfiguration.configForName(configName)
-      val image = MeTLXConfiguration.getRoom(jid,server.name).getThumbnail
+      val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
     case Req("thumbnailDataUri" :: configName :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", () => {
       val server = ServerConfiguration.configForName(configName)
-      val image = MeTLXConfiguration.getRoom(jid,server.name).getThumbnail
+      val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
       val dataUri = "data:image/jpeg;base64," + DatatypeConverter.printBase64Binary(image)
       Full(InMemoryResponse(IOUtils.toByteArray(dataUri),Nil,Nil,200))
     })
