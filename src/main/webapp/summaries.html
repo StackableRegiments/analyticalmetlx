@@ -1,35 +1,6 @@
 <lift:surround with="analytics" at="content">
-  <head>
-    <title>Analytical Summary View</title>
-    <script src="/static/javascript/onLoad.js"></script>
-  </head>
-  <div id="tutorial">
-    <p>Welcome to your teaching workbench!</p>
-    <p>All of your active topics are listed above.</p>
-    <p>
-      Click one of these to isolate it on a new workspace.  Once you are working with a topic on its own, more options will become available.  Hover your mouse over them to see what they do!
-    </p>
-    <p>
-      Notice the checkbox to the left of the command prompt on your new workspace.  If this is checked, the workspace is linked to all other checked workspaces.  Now any highlighted button will activate every linked workspace.  This is a fast way to compare the same operation across different cohorts.  If you split a cohort by academic standing, the new workspaces will be automatically linked.
-    </p>
-  </div>
-  <div id="headerBar" />
-  <div>
-    <div id="masterTimeline" />
-    <div id="timelineMeta">
-      <div id="timelineLog" />
-      <input type="button" id="timelineToggle" value="Toggle timeline" />
-    </div>
-  </div>
-  <div id="visualisations" />
-  <div id="repls" />
-  <div id="output" />
-  <div>
-    <div class="lift:Summaries.render">
-      Summaries
-    </div>
-  </div>
-  <div id="sampleAudioPlayer">
-    <div id="jquery_jplayer_1" class="jp-jplayer"></div>
-  </div>
+  <div id="headerBar"></div>
+  <div id="visualisations"></div>
+  <div id="repls"></div>
+  <div id="output"></div>
 </lift:surround>
