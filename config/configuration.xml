@@ -4,10 +4,16 @@
   <serverConfigurations>
     <server>
       <type>MeTL2011</type>
-      <name>saintleo</name>
-      <host>localhost</host>
+      <name>demo.stackable</name>
+      <host>demo.stackableregiments.com</host>
       <meggleUrl>unused</meggleUrl>
-      <xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
+			<xmppDomainName>local.temp</xmppDomainName>
+			<httpUsername>exampleUsername</httpUsername>
+			<httpPassword>examplePassword<httpPassword>
+			<messageBusUsernamePrefix>exampleUsername</messageBusUsernamePrefix>
+			<messageBusPassword>examplePassword</messageBusPassword>
+			<conversationListenerUsernamePrefix>exampleUsername</conversationListenerUsernamePrefix>
+			<conversationListenerPassword>examplePassword</conversationListenerPassword>
     </server>
     <server>
       <type>transientLoopback</type>
@@ -15,7 +21,29 @@
     <server>
       <type>frontend</type>
     </server>
-  </serverConfigurations>
+	</serverConfigurations>
+	<clientConfig>
+		<xmppHost>demo.stackableregiments.com</xmppHost>
+		<xmppPort>5222</xmppPort>
+		<xmppDomain>local.temp</xmppDomain>
+		<conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
+		<webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
+		<thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
+		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
+		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
+		<structureDirectory>Structure</structureDirectory>
+		<resourceDirectory>Resources</resourceDirectory>
+		<uploadPath>upload_nested.yaws</uploadPath>
+		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+		<cryptoKey>exampleKey</cryptoKey>
+		<cryptoKey>exampleIV</cryptoIV>
+		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+	</clientConfig>
+	<securityProvider>
+		<!--		<stableKeyProvider localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/>-->
+		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
+		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />
+	</securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
   <authentication>
     <!-- only one authenticator can be used at a time -->

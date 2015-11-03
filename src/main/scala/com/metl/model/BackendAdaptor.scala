@@ -61,7 +61,7 @@ object MeTLXConfiguration extends PropertyReader {
   var clientConfig:Option[ClientConfiguration] = None
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
-    getRoom("global",c.server.name) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+    getRoom("global",c.server.name,GlobalRoom) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String) = {
     new HistoryCachingRoomProvider(name)
@@ -263,7 +263,7 @@ object MeTLXConfiguration extends PropertyReader {
       }},
       "mock" -> {(n:NodeSeq) => {
         val template = (n \\ "template" \ "_")
-        val legalCharacters = (Range.inclusive('a','z').toList ::: Range.inclusive('A','Z').toList ::: Range.inclusive('0','9').toList)
+        val legalCharacters = (Range.inclusive('a','z').toList ::: Range.inclusive('A','Z').toList ::: Range.inclusive('0','9').toList) ::: List('.','_','-')
         LiftAuthAuthentication.attachAuthenticator(
           new FormAuthenticationSystem(
             new Gen2FormAuthenticator(
@@ -409,14 +409,15 @@ object MeTLXConfiguration extends PropertyReader {
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     configs.values.foreach(c => {
-      getRoom("global",c._1.name)
+      getRoom("global",c._1.name,GlobalRoom)
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
     println(configs)
   }
-  def getRoom(jid:String,configName:String) = {
-    configs(configName)._2.get(jid)
+  def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))
+  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = {
+    configs(configName)._2.get(jid,roomMetaData)
   }
 }
 
