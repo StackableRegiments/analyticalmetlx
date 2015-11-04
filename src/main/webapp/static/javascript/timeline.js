@@ -18,9 +18,10 @@ var teachingWeeks = (function(){
   var w = Date.UTC(2015,5,6);
   for(var i = 0; i < 24; i++){
     w = w + 7;
-    teachingWeeks.push(w);
+    ws.push(w);
   }
-  return ws.reverse();
+  ws.reverse();
+  return ws;
 })();
 function px(i){
   return sprintf("%spx",i);
@@ -214,7 +215,6 @@ function renderBlendedTimeline(){
     render();
     logProgress("Data load complete");
   }
-  _.defer(function(){bootstrap(JSON.parse(localStorage["p70"]))});
   var weekTooltip = function(week){
     var classTimes = "";
     allLectures[week].map(function(lecture){

@@ -105,8 +105,27 @@ object StatelessHtml {
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), () => {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
+  def loadThemes(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), () => {
+    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+    val inks = history.getInks
+    <userThemes>{
+      inks.groupBy(_.author).map
+      {
+        case (author,inks@i :: is) => <userTheme>
+          <user>{author}</user>
+          {
+            <themes>{ CanvasContentAnalysis.extract(inks).map(i => <theme>{i}</theme> ) }</themes>
+          }
+          </userTheme>
+        case _ => None
+      }
+    }</userThemes>
+  })
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),() => {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
+  })
+  def themes(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(req.param("source")), () => {
+    req.param("source").map(jid=> XmlResponse(loadThemes(jid)))
   })
   def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
     req.param("source").map(jid=> XmlResponse(loadHistory(jid)))

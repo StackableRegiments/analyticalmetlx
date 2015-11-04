@@ -19,13 +19,14 @@
   </head>
   <body class="swagger-section">
     <div id="header">
-      <a id="logo" href="/">MeTL</a>
+      <a id="logo" href="/">API</a>
     </div>
     <div id="swagger-ui-container" class="swagger-ui-wrap"></div>
   <script>
     new SwaggerUi({
     url:"/static/api/catalog.json",
     docExpansion:"list",
+    apisSorter:"alpha",
     dom_id:"swagger-ui-container"
     }).load();
   </script>
