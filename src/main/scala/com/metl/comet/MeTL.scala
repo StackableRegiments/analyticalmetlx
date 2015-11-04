@@ -99,7 +99,7 @@ class MeTLActor extends StronglyTypedJsonActor{
     ClientSideFunctionDefinition("getResource",List("source"),(args) => JString("not yet implemented"),Empty),
     ClientSideFunctionDefinition("moveToSlide",List("where"),(args) => {
       val where = getArgAsString(args(0))
-      println("moveToSlideRequested(%s)".format(where))
+      //println("moveToSlideRequested(%s)".format(where))
       moveToSlide(where)
       JNull
     },Empty),
@@ -633,7 +633,7 @@ class MeTLActor extends StronglyTypedJsonActor{
   private var rooms = Map.empty[Tuple2[String,String],MeTLRoom]
   private lazy val serverConfig = ServerConfiguration.default
   private lazy val server = serverConfig.name
-  println("serverConfig: %s -> %s".format(server,serverConfig))
+  //println("serverConfig: %s -> %s".format(server,serverConfig))
   private def username = Globals.currentUser.is
   private val serializer = new JsonSerializer("frontend")
   def registerWith = MeTLActorManager
@@ -691,41 +691,41 @@ class MeTLActor extends StronglyTypedJsonActor{
         joinRoomByJid(cs+username)
       })
     })
-    println("Refresh client side state: %s, %s".format(CurrentConversation,CurrentSlide))
+    //println("Refresh client side state: %s, %s".format(CurrentConversation,CurrentSlide))
     val receiveUsername:Box[JsCmd] = Full(Call(RECEIVE_USERNAME,JString(username)))
-    println(receiveUsername)
+    //println(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
-    println(receiveUserGroups)
+    //println(receiveUserGroups)
     val receiveCurrentConversation:Box[JsCmd] = CurrentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match{
       case Full(cc) => Full(cc)
       case _ => Full(Call("showBackstage",JString("conversations")))
     }
-    println(receiveCurrentConversation)
+    //println(receiveCurrentConversation)
     val receiveConversationDetails:Box[JsCmd] = CurrentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc)))
-    println(receiveConversationDetails)
+    //println(receiveConversationDetails)
     val receiveCurrentSlide:Box[JsCmd] = CurrentSlide.map(cc => Call(RECEIVE_CURRENT_SLIDE, JString(cc)))
-    println(receiveCurrentSlide)
+    //println(receiveCurrentSlide)
     val receiveLastSyncMove:Box[JsCmd] = CurrentConversation.map(cc => {
-      println("receiveLastSyncMove attempting to get room %s, %s".format(cc,server))
+      //println("receiveLastSyncMove attempting to get room %s, %s".format(cc,server))
       val room = MeTLXConfiguration.getRoom(cc.jid.toString,server)
-      println("receiveLastSyncMove: %s".format(room))
+      //println("receiveLastSyncMove: %s".format(room))
       val history = room.getHistory
-      println("receiveLastSyncMove: %s".format(history))
+      //println("receiveLastSyncMove: %s".format(history))
       history.getLatestCommands.get("/SYNC_MOVE") match{
         case Some(lastSyncMove) =>{
-          println("receiveLastSyncMove found move: %s".format(lastSyncMove))
+          //println("receiveLastSyncMove found move: %s".format(lastSyncMove))
           Call(RECEIVE_SYNC_MOVE,JString(lastSyncMove.commandParameters(0).toString))
         }
         case _ =>{
-          println("receiveLastSyncMove no move found")
+          //println("receiveLastSyncMove no move found")
           Noop
         }
       }
     })
-    println(receiveLastSyncMove)
+    //println(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = CurrentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = IsInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
-    println(receiveInteractiveUser)
+    //println(receiveInteractiveUser)
 
     val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
@@ -733,9 +733,9 @@ class MeTLActor extends StronglyTypedJsonActor{
   private def joinConversation(jid:String):Box[Conversation] = {
     val details = serverConfig.detailsOfConversation(jid)
     leaveAllRooms()
-    println("joinConversation: %s".format(details))
+    //println("joinConversation: %s".format(details))
     if (shouldDisplayConversation(details)){
-      println("conversation available")
+      //println("conversation available")
       CurrentConversation(Full(details))
       val conversationJid = details.jid.toString
       joinRoomByJid(conversationJid)
@@ -743,51 +743,51 @@ class MeTLActor extends StronglyTypedJsonActor{
       //joinRoomByJid(conversationJid,"loopback")
       CurrentConversation
     } else{
-      println("conversation denied: %s, %s.".format(jid,details.subject))
+      //println("conversation denied: %s, %s.".format(jid,details.subject))
       Empty
     }
   }
   private def getSlideHistory(jid:String):JValue = {
-    println("GetSlideHistory %s".format(jid))
+    //println("GetSlideHistory %s".format(jid))
     val convHistory = CurrentConversation.map(cc => MeTLXConfiguration.getRoom(cc.jid.toString,server).getHistory).openOr(History.empty)
-    println("conv %s".format(jid))
+    //println("conv %s".format(jid))
     val pubHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
-    println("pub %s".format(jid))
+    //println("pub %s".format(jid))
     val privHistory = IsInteractiveUser.map(iu => if (iu){
       MeTLXConfiguration.getRoom(jid+username,server).getHistory
     } else {
       History.empty
     }).openOr(History.empty)
-    println("priv %s".format(jid))
+    //println("priv %s".format(jid))
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory)
-    println("final %s".format(jid))
+    //println("final %s".format(jid))
     serializer.fromHistory(finalHistory)
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)
   private def moveToSlide(jid:String):Unit = {
-    println("moveToSlide".format(jid))
-    println("CurrentConversation".format(CurrentConversation.is))
-    println("CurrentSlide".format(CurrentSlide.is))
+    //println("moveToSlide".format(jid))
+    //println("CurrentConversation".format(CurrentConversation.is))
+    //println("CurrentSlide".format(CurrentSlide.is))
     val slideId = jid.toInt
     CurrentSlide.filterNot(_ == jid).map(cs => {
       CurrentConversation.filter(cc => conversationContainsSlideId(cc,slideId)).map(cc => {
-        println("Don't have to leave conversation, current slide is in it")
+        //println("Don't have to leave conversation, current slide is in it")
 //        rooms.get((server,cc.jid.toString)).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cs,false,Nil)))
       }).getOrElse({
-        println("Joining conversation for",slideId)
+        //println("Joining conversation for",slideId)
         joinConversation(serverConfig.getConversationForSlide(jid))
       })
       leaveRoomByJid(cs)
       leaveRoomByJid(cs+username)
     })
     CurrentConversation.is.getOrElse({
-      println("Joining conversation for",slideId)
+      //println("Joining conversation for",slideId)
       joinConversation(serverConfig.getConversationForSlide(jid))
     })
     CurrentConversation.map(cc => {
-      println("checking to see that current conv and current slide now line up")
+      //println("checking to see that current conv and current slide now line up")
       if (conversationContainsSlideId(cc,slideId)){
-        println("conversation contains slide")
+        //println("conversation contains slide")
         CurrentSlide(Full(jid))
         if (cc.author.trim.toLowerCase == username.trim.toLowerCase && IsInteractiveUser.map(iu => iu == true).getOrElse(true)){
           val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid))
@@ -795,9 +795,9 @@ class MeTLActor extends StronglyTypedJsonActor{
         }
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
-        println("looking for attendance room")
+        //println("looking for attendance room")
         rooms.get((server,cc.jid.toString)).foreach(r => {
-          println("sending command")
+          //println("sending command")
 //          r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
         })
         //joinRoomByJid(jid,"loopback")
@@ -818,46 +818,44 @@ class MeTLActor extends StronglyTypedJsonActor{
   override def lifespan = Full(5 minutes)
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms", () => {
-    println("roomInfo received: %s".format(roomInfo))
+    //println("roomInfo received: %s".format(roomInfo))
     //println("updateRooms: %s".format(roomInfo))
     roomInfo match {
       case RoomJoinAcknowledged(s,r) => {
-        println("joining room: %s".format(r))
+        //println("joining room: %s".format(r))
         rooms = rooms.updated((s,r),MeTLXConfiguration.getRoom(r,s))
         try {
           val slideNum = r.toInt
           val conv = serverConfig.getConversationForSlide(r)
-          println("trying to send truePresence to room: %s %s".format(conv,slideNum))
+          //println("trying to send truePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s)
-            println("room to send to [1]: %s".format(room))
+            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(conv.toString))
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,true,Nil))
           } else {
-            val room = MeTLXConfiguration.getRoom("global",s)
-            println("room to send to [2]: %s".format(room))
+            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
             room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,true,Nil))
           }
         } catch {
-          case e:Exception => {}
+          case e:Exception => {
+          }
         }
       }
       case RoomLeaveAcknowledged(s,r) => {
-        println("leaving room: %s".format(r))
+        //println("leaving room: %s".format(r))
         try {
           val slideNum = r.toInt
           val conv = serverConfig.getConversationForSlide(r)
-          println("trying to send falsePresence to room: %s %s".format(conv,slideNum))
+          //println("trying to send falsePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s) 
-            println("room to send to [3]: %s".format(room))
+            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(conv.toString)) 
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,false,Nil))
           } else {
-            val room = MeTLXConfiguration.getRoom("global",s) 
-            println("room to send to [4]: %s".format(room))
+            val room = MeTLXConfiguration.getRoom("global",s,ConversationRoom(conv.toString)) 
             room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,false,Nil))
           }
         } catch {
-          case e:Exception => {}
+          case e:Exception => {
+          }
         }
         rooms = rooms.filterNot(rm => rm._1 == (s,r))
       }
@@ -893,7 +891,7 @@ class MeTLActor extends StronglyTypedJsonActor{
           CurrentConversation.map(cc => {
             val roomId = cc.jid.toString
             rooms.get((serverName,roomId)).map(r =>{
-              println("sendStanzaToServer sending submission: "+r)
+              //println("sendStanzaToServer sending submission: "+r)
               r ! LocalToServerMeTLStanza(s)
             })
           })
@@ -940,7 +938,7 @@ class MeTLActor extends StronglyTypedJsonActor{
                 }
               }
               case other => {
-                println("unexpected privacy found in: %s".format(c))
+                //println("unexpected privacy found in: %s".format(c))
                 (false,c.slide,c)
               }
             }

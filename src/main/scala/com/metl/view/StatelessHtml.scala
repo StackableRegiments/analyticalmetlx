@@ -140,11 +140,13 @@ object StatelessHtml {
       }).getOrElse(NotFoundResponse("username not provided"))
     })
   })
-  def addGroupTo(onBehalfOfUser:String,conversation:String,slide:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slide),() => {
+  def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),() => {
     val conv = config.detailsOfConversation(conversation)
     for (
-      slide <- conv.slides.find(_.id.toString == slide);
-      updatedConv = config.updateConversation(conversation,conv.copy(slides = slide.copy(groupSet = groupDef :: slide.groupSet) :: conv.slides.filterNot(_ == slide)));
+      slide <- conv.slides.find(_.id.toString == slideId);
+      updatedConv = config.updateConversation(conversation,conv.copy(slides = {
+        slide.copy(groupSet = groupDef :: slide.groupSet) :: conv.slides.filterNot(_.id.toString == slideId)
+      }));
       node <- serializer.fromConversation(updatedConv).headOption
     ) yield {
       XmlResponse(node)
@@ -189,7 +191,9 @@ object StatelessHtml {
           audiences = Nil
         ))
       )
+      println("newConvWithOldSlides: "+newConvWithOldSlides)
       val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
+      println("remoteConv: "+remoteConv)
       remoteConv.slides.foreach(ns => {
         val newSlide = ns.id
         val slide = newSlide - newConv.jid + oldConv.jid
@@ -197,13 +201,13 @@ object StatelessHtml {
         ServerSideBackgroundWorker ! CopyContent(
           config,
           SlideRoom(conversation,slide),
-          SlideRoom(conversation,newSlide),
+          SlideRoom(remoteConv.jid.toString,newSlide),
           (s:MeTLStanza) => s.author == conv.author
         )
         ServerSideBackgroundWorker ! CopyContent(
           config,
           PrivateSlideRoom(conversation,slide,conv.author),
-          PrivateSlideRoom(conversation,newSlide,conv.author),
+          PrivateSlideRoom(remoteConv.jid.toString,newSlide,conv.author),
           (s:MeTLStanza) => s.author == conv.author
         )
       })
@@ -213,7 +217,9 @@ object StatelessHtml {
         ConversationRoom(newConv.jid.toString),
         (s:MeTLStanza) => s.author == remoteConv.author && s.isInstanceOf[MeTLQuiz] // || s.isInstanceOf[Attachment]
       )
-      serializer.fromConversation(remoteConv).headOption.map(n => XmlResponse(n))
+      val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)
+      println("remoteConv2: "+remoteConv2)
+      serializer.fromConversation(remoteConv2).headOption.map(n => XmlResponse(n))
     } else {
       Full(ForbiddenResponse("only the author may duplicate a conversation"))
     }

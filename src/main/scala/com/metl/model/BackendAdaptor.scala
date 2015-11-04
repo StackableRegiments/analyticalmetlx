@@ -61,6 +61,7 @@ object MeTLXConfiguration extends PropertyReader {
   var clientConfig:Option[ClientConfiguration] = None
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
+    println("serverSide updateGlobalFunc: %s".format(c))
     getRoom("global",c.server.name,GlobalRoom) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String) = {

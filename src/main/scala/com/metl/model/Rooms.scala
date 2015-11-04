@@ -175,6 +175,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   def updateGroupSets:Option[Conversation] = {
     roomMetaData match {
       case cr:ConversationRoom => {
+        println("updating conversationRoom: %s".format(cr))
         val details = cr.cd
         val newSlides = details.slides.map(slide => {
           val a = getAttendance
@@ -184,17 +185,18 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             ungrouped.foldLeft(gs.copy())((groupSet,person) => groupSet.groupingStrategy.addNewPerson(groupSet,person))
           }))
         })
+        println("newSlides: %s".format(newSlides))
         Some(cr.cd.copy(slides = newSlides))
       }
       case _ => None
     }
   }
-  private val pollInterval = new TimeSpan(120000)
-  private var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
+  protected val pollInterval = new TimeSpan(120000)
+  protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
-  private var lastInterest:Long = new Date().getTime
-  private var interestTimeout:Long = 60000
-  private def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
+  protected var lastInterest:Long = new Date().getTime
+  protected var interestTimeout:Long = 60000
+  protected def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
   def localSetup = {
     heartbeat
   }
@@ -228,8 +230,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.toList
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",() => {
+    println("stanza received: %s".format(a))
     (a,roomMetaData) match {
       case (m:Attendance,cr:ConversationRoom) => {
+        println("attendance received: %s".format(m))
         if (!getAttendance.exists(_ == m.author)){
           updateGroupSets.foreach(c => {
             config.updateConversation(c.jid.toString,c)
@@ -245,12 +249,13 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected def sendStanzaToServer(s:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer", () => {
     //println("%s l->s %s".format(location,s))
     //println("MeTLRoom(%s):sendToServer(%s)".format(location,s))
-    println("%s received stanza to send: %s".format(location,s))
+    //println("%s received stanza to send: %s".format(location,s))
     showInterest
     if (shouldBacklog) {
       //println("MeTLRoom(%s):sendToServer.backlogging".format(location))
       backlog.enqueue(s)
     } else {
+      println("sendingStanzaToServer: %s".format(s))
       messageBus.sendStanzaToRoom(s)
     }
   })
@@ -343,7 +348,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       starting.setHasStarted(false)
     } else {
       showInterest
-      history = config.getHistory(location).attachRealtimeHook((s) => super.sendToChildren(s))
+      history = config.getHistory(location).attachRealtimeHook((s) => {
+        println("ROOM %s sending %s to children %s".format(location,s,joinedUsers))
+        super.sendToChildren(s)
+      })
       updateSnapshots
     }
   })
