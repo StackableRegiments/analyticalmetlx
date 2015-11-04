@@ -436,6 +436,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
+  override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
   override def getImage(jid:String,identity:String) = MeTLImage.empty
   override def getResource(url:String) = Array.empty[Byte]
   override def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = ""

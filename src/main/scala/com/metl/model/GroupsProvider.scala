@@ -58,6 +58,7 @@ abstract class FileWatchingComprehender[T](path:String,refreshPeriod:String) {
 }
 
 class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends FileWatchingComprehender[List[Tuple2[String,String]]](path,refreshPeriod) with GroupsProvider {
+  println("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override def getGroupsFor(username:String) = lastCache
   override protected def startingValue = Nil
   override protected def comprehendFile:List[Tuple2[String,String]] = {
@@ -76,6 +77,7 @@ class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends Fi
 }
 
 class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) {
+  println("created new specificGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override def comprehendFile:Map[String,List[Tuple2[String,String]]] = {
     var rawData = Map.empty[String,List[Tuple2[String,String]]]
     Source.fromFile(path).getLines.foreach(line => {
