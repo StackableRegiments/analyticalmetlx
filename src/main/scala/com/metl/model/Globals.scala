@@ -67,20 +67,7 @@ object Globals extends PropertyReader {
 
   object currentStack extends SessionVar[Topic](Topic.defaultValue)
   def getUserGroups:List[(String,String)] = {
-    if (isDevMode){
-      List(
-        ("ou","Gotham Residents"),
-        ("ou","Vigilantes"),
-        ("ou","Unrestricted"),
-        ("ou","Monash"),
-        ("ou","Staff"),
-        ("ou","Outpatients"),
-        ("ou","Detectives"),
-        ("ou","Villains")
-      )
-    } else {
-      casState.is.eligibleGroups.toList
-    }
+    casState.is.eligibleGroups.toList
   }
   var groupsProviders:List[GroupsProvider] = Nil
   object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)

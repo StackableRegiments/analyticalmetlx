@@ -35,22 +35,33 @@ object MeTLRoomType extends Enumeration {
   val Conversation,Slide,PrivateSlide,PersonalChatroom,Global,Unknown = Value
 }
 
-abstract class RoomMetaData(val roomType:MeTLRoomType.Value) 
+abstract class RoomMetaData(val roomType:MeTLRoomType.Value) {
+  def getJid:String
+}
 
 case class ConversationRoom(jid:String) extends RoomMetaData(MeTLRoomType.Conversation){
   var cd:Conversation = Conversation.empty
+  override def getJid = jid
 }
 case class SlideRoom(jid:String,slideId:Int) extends RoomMetaData(MeTLRoomType.Slide){
   var cd:Conversation = Conversation.empty
   var s:Slide = Slide.empty
+  override def getJid = slideId.toString
 }
 case class PrivateSlideRoom(jid:String,slideId:Int,owner:String) extends RoomMetaData(MeTLRoomType.PrivateSlide){
   var cd:Conversation = Conversation.empty
   var s:Slide = Slide.empty
+  override def getJid = slideId.toString + owner
 }
-case class PersonalChatRoom(owner:String) extends RoomMetaData(MeTLRoomType.PersonalChatroom)
-case object GlobalRoom extends RoomMetaData(MeTLRoomType.Global)
-case object UnknownRoom extends RoomMetaData(MeTLRoomType.Unknown)
+case class PersonalChatRoom(owner:String) extends RoomMetaData(MeTLRoomType.PersonalChatroom){
+  override def getJid = owner
+}
+case object GlobalRoom extends RoomMetaData(MeTLRoomType.Global){
+  override def getJid = "global"
+}
+case object UnknownRoom extends RoomMetaData(MeTLRoomType.Unknown){
+  override def getJid = ""
+}
 object RoomMetaDataUtils {
   protected val numerics = Range('0','9').toList
   protected def splitJid(in:String):Tuple2[Int,String] = {
@@ -168,18 +179,9 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         val newSlides = details.slides.map(slide => {
           val a = getAttendance
           slide.copy(groupSet = slide.groupSet.map(gs => {
-            var newGs = gs.copy()
             val grouped = gs.groups.flatMap(g => g.members)
-            a.filterNot(m => grouped.contains(m)).foreach(ug => {
-              newGs.groups.find(g => {
-                gs.groupSize.map(_ > g.members.length).getOrElse(false) 
-              }).map(fg => {
-                newGs = newGs.copy(groups = fg.copy(members = ug :: fg.members) :: newGs.groups.filterNot(_ == fg))
-              }).getOrElse({
-                newGs = newGs.copy(groups = MeTLGroup(config,nextFuncName,location,List(ug)) :: newGs.groups)
-              })
-            })
-            newGs
+            val ungrouped = a.filterNot(m => grouped.contains(m))
+            ungrouped.foldLeft(gs.copy())((groupSet,person) => groupSet.groupingStrategy.addNewPerson(groupSet,person))
           }))
         })
         Some(cr.cd.copy(slides = newSlides))
@@ -229,7 +231,9 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     (a,roomMetaData) match {
       case (m:Attendance,cr:ConversationRoom) => {
         if (!getAttendance.exists(_ == m.author)){
-          updateGroupSets
+          updateGroupSets.foreach(c => {
+            config.updateConversation(c.jid.toString,c)
+          })
         }
       }
       case _ => {}

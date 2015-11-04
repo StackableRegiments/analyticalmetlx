@@ -121,4 +121,113 @@ object StatelessHtml {
       }).getOrElse(NotFoundResponse("username not provided"))
     })
   })
+  def addGroupTo(onBehalfOfUser:String,conversation:String,slide:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slide),() => {
+    val conv = config.detailsOfConversation(conversation)
+    for (
+      slide <- conv.slides.find(_.id.toString == slide);
+      updatedConv = config.updateConversation(conversation,conv.copy(slides = slide.copy(groupSet = groupDef :: slide.groupSet) :: conv.slides.filterNot(_ == slide)));
+      node <- serializer.fromConversation(updatedConv).headOption
+    ) yield {
+      XmlResponse(node)
+    }
+  })
+  def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
+    val conv = config.detailsOfConversation(conversation)
+    if (onBehalfOfUser == conv.author){
+      conv.slides.find(_.id.toString == slide).map(slide => {
+        val step1 = config.addSlideAtIndexOfConversation(conversation,slide.index + 1)
+        step1.slides.find(_.index == slide.index + 1).foreach(newSlide => {
+          val oldId = slide.id
+          val newId = newSlide.id
+          ServerSideBackgroundWorker ! CopyContent(
+            config,
+            SlideRoom(conversation,oldId),
+            SlideRoom(conversation,newId),
+            (s:MeTLStanza) => s.author == conv.author
+          )
+          ServerSideBackgroundWorker ! CopyContent(
+            config,
+            PrivateSlideRoom(conversation,oldId,conv.author),
+            PrivateSlideRoom(conversation,newId,conv.author),
+            (s:MeTLStanza) => s.author == conv.author
+          )
+        })
+      })
+      serializer.fromConversation(conv).headOption.map(n => XmlResponse(n))
+    } else {
+      Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
+    }
+  }
+  def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+    val oldConv = config.detailsOfConversation(conversation)
+    if (onBehalfOfUser == oldConv.author){
+      val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+      val newConvWithOldSlides = newConv.copy(
+        lastAccessed = new java.util.Date().getTime,
+        slides = oldConv.slides.map(s => s.copy(
+          groupSet = Nil, 
+          id = s.id - oldConv.jid + newConv.jid,
+          audiences = Nil
+        ))
+      )
+      val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
+      remoteConv.slides.foreach(ns => {
+        val newSlide = ns.id
+        val slide = newSlide - newConv.jid + oldConv.jid
+        val conv = remoteConv
+        ServerSideBackgroundWorker ! CopyContent(
+          config,
+          SlideRoom(conversation,slide),
+          SlideRoom(conversation,newSlide),
+          (s:MeTLStanza) => s.author == conv.author
+        )
+        ServerSideBackgroundWorker ! CopyContent(
+          config,
+          PrivateSlideRoom(conversation,slide,conv.author),
+          PrivateSlideRoom(conversation,newSlide,conv.author),
+          (s:MeTLStanza) => s.author == conv.author
+        )
+      })
+      ServerSideBackgroundWorker ! CopyContent(
+        config,
+        ConversationRoom(remoteConv.jid.toString),
+        ConversationRoom(newConv.jid.toString),
+        (s:MeTLStanza) => s.author == remoteConv.author && s.isInstanceOf[MeTLQuiz] // || s.isInstanceOf[Attachment]
+      )
+      serializer.fromConversation(remoteConv).headOption.map(n => XmlResponse(n))
+    } else {
+      Full(ForbiddenResponse("only the author may duplicate a conversation"))
+    }
+  }
+}
+
+case class CopyContent(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
+
+object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
+  val thisDuplicatorId = nextFuncName
+  override def messageHandler = {
+    case RoomJoinAcknowledged(server,room) => {}
+    case RoomLeaveAcknowledged(server,room) => {}
+    case CopyContent(config,oldLoc,newLoc,contentFilter) => {
+      println("copying: %s => %s".format(oldLoc,newLoc))
+      val oldContent = config.getHistory(oldLoc.getJid)
+      val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
+      room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
+      oldContent.filter(contentFilter).getAll.foreach(stanza => {   
+        room ! LocalToServerMeTLStanza(stanza match {
+          case m:MeTLInk => m.copy(slide = newLoc.getJid)
+          case m:MeTLImage => m.copy(slide = newLoc.getJid)
+          case m:MeTLText => m.copy(slide = newLoc.getJid)
+          case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
+          case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
+          case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
+          case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
+          case m:MeTLUnhandledCanvasContent[_] => m.copy(slide = newLoc.getJid)
+          case s:MeTLStanza => s
+        })
+      })
+      room ! LeaveRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
+      println("copied: %s => %s".format(oldLoc,newLoc))
+    }
+  }
 }

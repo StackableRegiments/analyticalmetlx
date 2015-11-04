@@ -111,6 +111,14 @@ object MeTLStatefulRestHelper extends RestHelper {
   val DEMO_TEACHER = "Mr Roboto"
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case Req(List("duplicateSlide",slide,conversation),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
+    case Req(List("duplicateConversation",conversation),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateConversation(Globals.currentUser.is,conversation))
+    case Req(List("requestMaximumSizedGrouping",conversation,slide,groupSize),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByMaximumSize(groupSize.toInt),Nil,Nil)))
+    case Req(List("requestClassroomSplitGrouping",conversation,slide,numberOfGroups),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.requestClassroomSplitGrouping",() => StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByTotalGroups(numberOfGroups.toInt),Nil,Nil)))
     case Req(List("proxyDataUri",slide,source),_,_) =>
       ()=> Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri",() => StatelessHtml.proxyDataUri(slide,source))
     case Req(List("proxy",slide,source),_,_) =>
