@@ -62,7 +62,7 @@ object MeTLXConfiguration extends PropertyReader {
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
     println("serverSide updateGlobalFunc: %s".format(c))
-    getRoom("global",c.server.name,GlobalRoom) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+    getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String) = {
     new HistoryCachingRoomProvider(name)
@@ -410,7 +410,7 @@ object MeTLXConfiguration extends PropertyReader {
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     configs.values.foreach(c => {
-      getRoom("global",c._1.name,GlobalRoom)
+      getRoom("global",c._1.name,GlobalRoom(c._1.name))
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
