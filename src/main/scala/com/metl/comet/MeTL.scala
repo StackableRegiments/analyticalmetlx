@@ -829,10 +829,10 @@ class MeTLActor extends StronglyTypedJsonActor{
           val conv = serverConfig.getConversationForSlide(r)
           //println("trying to send truePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(conv.toString))
+            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,true,Nil))
           } else {
-            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
             room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,true,Nil))
           }
         } catch {
@@ -847,10 +847,10 @@ class MeTLActor extends StronglyTypedJsonActor{
           val conv = serverConfig.getConversationForSlide(r)
           //println("trying to send falsePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(conv.toString)) 
+            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString)) 
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,false,Nil))
           } else {
-            val room = MeTLXConfiguration.getRoom("global",s,ConversationRoom(conv.toString)) 
+            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server)) 
             room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,false,Nil))
           }
         } catch {
