@@ -4,6 +4,8 @@ import dispatch._, Defaults._
 import com.metl.data._
 import net.liftweb.json._
 
+case class Theme(author:String,text:String)
+
 object CanvasContentAnalysis {
   implicit val formats = net.liftweb.json.DefaultFormats
   val analysisThreshold = 5
@@ -22,6 +24,30 @@ object CanvasContentAnalysis {
         case ((last,runs),item) => (item.timestamp, List(item) :: runs)
       }
     }._2.map(_.reverse)
+  }
+  def thematize(phrases:List[String]) = {
+    val api = "textanalysis.p.mashape.com/textblob-noun-phrase-extraction"
+    val keyValue = "Qm1rX4gNL4mshC888MqhPShOQYcQp1wnwgOjsn7XSceLrYy9UT"
+
+    val req = host(api).secure << Map(
+      "text" -> phrases.mkString(",")
+    ) <:< Map(
+      "X-Mashape-Key" -> keyValue
+    )
+    req.setContentType("application/x-www-form-urlencoded","UTF-8")
+    val f = Http(req OK as.String).either
+    val response = for(
+      s <- f.right
+    ) yield {
+      println(s)
+      (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
+    }
+    val r = response()
+    println(r)
+    r match {
+      case Right(rs) => rs
+      case _ => Nil
+    }
   }
   def extract(inks:List[MeTLInk]):List[String] = {
     if(inks.size < analysisThreshold) {
@@ -53,10 +79,10 @@ object CanvasContentAnalysis {
         s <- f.right
       ) yield {
         val labels = (parse(s) \\ "textLines" \\ "label").children
-        println(labels)
         labels.collect{ case JField(_,JString(s)) => s }
       }
       val r = response()
+      println(r)
       r match {
         case Right(rs) => rs
         case _ => Nil
