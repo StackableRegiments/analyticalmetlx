@@ -42,8 +42,6 @@ object CanvasContentAnalysis {
           JField("textParameter",JObject(List(
             JField("language",JString("en_US"))))))))))
 
-      println(compact(render(json)))
-
       val req = host(myScriptUrl).secure << Map(
         ("applicationKey" -> myScriptKey),
         ("analyzerInput" -> compact(render(json))))
@@ -54,7 +52,9 @@ object CanvasContentAnalysis {
       val response = for(
         s <- f.right
       ) yield {
-        (parse(s)\\ "label").children.collect{ case JField(_,JString(s)) => s }
+        val labels = (parse(s) \\ "textLines" \\ "label").children
+        println(labels)
+        labels.collect{ case JField(_,JString(s)) => s }
       }
       val r = response()
       r match {
