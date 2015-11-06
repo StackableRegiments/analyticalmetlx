@@ -51,7 +51,7 @@
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	-->
-<!-- --> 
+<!--
   <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
@@ -74,6 +74,40 @@
 		<conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
 		<webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
 		<thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
+		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
+		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
+		<structureDirectory>Structure</structureDirectory>
+		<resourceDirectory>Resources</resourceDirectory>
+		<uploadPath>upload_nested.yaws</uploadPath>
+		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+		<cryptoKey>exampleKey</cryptoKey>
+		<cryptoKey>exampleIV</cryptoIV>
+		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+	</clientConfig>
+-->
+<!-- --> 
+  <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
+	<serverConfigurations>
+    <server>
+      <type>MeTL2015</type>
+			<name>localAgainstDemo</name>
+      <host>demo.stackableregiments.com</host>
+			<xmppDomainName>local.temp</xmppDomainName>
+    </server>
+    <server>
+      <type>transientLoopback</type>
+    </server>
+    <server>
+      <type>frontend</type>
+    </server>
+	</serverConfigurations>
+	<clientConfig>
+		<xmppHost>demo.stackableregiments.com</xmppHost>
+		<xmppPort>5222</xmppPort>
+		<xmppDomain>local.temp</xmppDomain>
+		<conversationSearchUrl>http://localhost:8080/search?query=</conversationSearchUrl>
+		<webAuthenticationUrl>http://localhost:8080/authenticationState</webAuthenticationUrl>
+		<thumbnailUrl>http://localhost:8080/thumbnail/</thumbnailUrl>
 		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
 		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
 		<structureDirectory>Structure</structureDirectory>

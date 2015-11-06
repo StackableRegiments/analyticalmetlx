@@ -7,6 +7,7 @@ import com.metl.utils._
 import _root_.net.liftweb._
 import http._
 import common._
+import util.Helpers._
 import java.io.{ByteArrayOutputStream,ByteArrayInputStream,BufferedInputStream}
 import javax.imageio._
 import java.io.FileReader
@@ -24,6 +25,8 @@ import com.metl.model._
   */
 object StatelessHtml {
   val serializer = new GenericXmlSerializer("rest")
+  val exportSerializer = new ExportXmlSerializer("export"){
+  }
   private val fakeSession = new LiftSession("/", "fakeSession", Empty)
   private val config = ServerConfiguration.default
 
@@ -160,13 +163,13 @@ object StatelessHtml {
         step1.slides.find(_.index == slide.index + 1).foreach(newSlide => {
           val oldId = slide.id
           val newId = newSlide.id
-          ServerSideBackgroundWorker ! CopyContent(
+          ServerSideBackgroundWorker ! CopyLocation(
             config,
             SlideRoom(conv.server.name,conversation,oldId),
             SlideRoom(conv.server.name,conversation,newId),
             (s:MeTLStanza) => s.author == conv.author
           )
-          ServerSideBackgroundWorker ! CopyContent(
+          ServerSideBackgroundWorker ! CopyLocation(
             config,
             PrivateSlideRoom(conv.server.name,conversation,oldId,conv.author),
             PrivateSlideRoom(conv.server.name,conversation,newId,conv.author),
@@ -198,20 +201,20 @@ object StatelessHtml {
         val newSlide = ns.id
         val slide = newSlide - newConv.jid + oldConv.jid
         val conv = remoteConv
-        ServerSideBackgroundWorker ! CopyContent(
+        ServerSideBackgroundWorker ! CopyLocation(
           config,
           SlideRoom(conv.server.name,conversation,slide),
           SlideRoom(conv.server.name,remoteConv.jid.toString,newSlide),
           (s:MeTLStanza) => s.author == conv.author
         )
-        ServerSideBackgroundWorker ! CopyContent(
+        ServerSideBackgroundWorker ! CopyLocation(
           config,
           PrivateSlideRoom(conv.server.name,conversation,slide,conv.author),
           PrivateSlideRoom(conv.server.name,remoteConv.jid.toString,newSlide,conv.author),
           (s:MeTLStanza) => s.author == conv.author
         )
       })
-      ServerSideBackgroundWorker ! CopyContent(
+      ServerSideBackgroundWorker ! CopyLocation(
         config,
         ConversationRoom(remoteConv.server.name,remoteConv.jid.toString),
         ConversationRoom(newConv.server.name,newConv.jid.toString),
@@ -224,21 +227,133 @@ object StatelessHtml {
       Full(ForbiddenResponse("only the author may duplicate a conversation"))
     }
   }
+  def exportMyConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+    for (
+      conv <- Some(config.detailsOfConversation(conversation));
+      histories = exportHistories(conv,Some(List(onBehalfOfUser)));
+      xml = {
+        <export>
+          {exportSerializer.fromConversation(conv)}
+          <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
+        </export> 
+      };
+      node <- xml.headOption
+    ) yield {
+      XmlResponse(node)
+    }
+  }
+  def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+    for (
+      conv <- Some(config.detailsOfConversation(conversation));
+      if (onBehalfOfUser == conv.author);
+      histories = exportHistories(conv,None);
+      xml = {
+        <export>
+          {exportSerializer.fromConversation(conv)}
+          <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
+        </export> 
+      };
+      node <- xml.headOption
+    ) yield {
+      XmlResponse(node)
+    }
+  }
+  protected def exportHistories(conversation:Conversation,restrictToPrivateUsers:Option[List[String]]):List[History] = {
+    val convHistory = config.getHistory(conversation.jid.toString).filter(m => {
+      restrictToPrivateUsers.map(users => {
+        m match {
+          case q:MeTLQuiz => true
+          case mcc:MeTLCanvasContent => mcc.privacy == Privacy.PUBLIC || users.contains(mcc.author)
+          case ms:MeTLStanza => users.contains(ms.author)
+        }
+      }).getOrElse(true)
+    })
+    val participants = (convHistory.getAttendances.map(_.author) ::: restrictToPrivateUsers.getOrElse(List.empty[String])).distinct.filter(u => restrictToPrivateUsers.map(_.contains(u)).getOrElse(true))
+    val histories = conversation.slides.flatMap(slide => {
+      val slideJid = slide.id.toString
+      val publicHistory = config.getHistory(slideJid)
+      val privateHistories = participants.map(p => config.getHistory(slideJid + p))
+      publicHistory :: privateHistories
+    })
+    histories
+  }
+  def importConversation(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",() => {
+    (for (
+      xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
+      historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
+        val hist = exportSerializer.toHistory(h)
+        println("deserializing History: %s".format(hist.jid))
+        (hist.jid,hist)
+      }):_*));
+      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
+      remoteConv = StatelessHtml.importConversation(Globals.currentUser.is,conversation,historyMap);
+      node <- serializer.fromConversation(remoteConv).headOption
+    ) yield {
+      XmlResponse(node)
+    })
+  })
+  def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",() => {
+    (for (
+      xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
+      historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
+        val hist = exportSerializer.toHistory(h)
+        println("deserializing History: %s".format(hist.jid))
+        (hist.jid,hist)
+      }):_*));
+      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
+      remoteConv = StatelessHtml.importConversation(Globals.currentUser.is,conversation,historyMap);
+      node <- serializer.fromConversation(remoteConv).headOption
+    ) yield {
+      XmlResponse(node)
+    })
+  })
+  protected def importConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
+    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+    val newConvWithOldSlides = newConv.copy(
+      lastAccessed = new java.util.Date().getTime,
+      slides = oldConv.slides.map(s => s.copy(
+        groupSet = Nil, 
+        id = s.id - oldConv.jid + newConv.jid,
+        audiences = Nil
+      ))
+    )
+    println("newConvWithOldSlides: "+newConvWithOldSlides)
+    val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
+    println("remoteConv: "+remoteConv)
+    println("histories: %s".format(histories))
+    histories.foreach(h => {
+      val oldJid = h._1
+      val offset = remoteConv.jid - oldConv.jid
+      val serverName = remoteConv.server.name
+      val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
+        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
+        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
+        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString)) 
+        case _ => None
+      }
+      newRoom.foreach(nr => {
+        ServerSideBackgroundWorker ! CopyContent(
+          remoteConv.server,
+          h._2,
+          nr 
+        )
+      })
+    })
+    remoteConv
+  }
 }
-
-case class CopyContent(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
+case class CopyContent(server:ServerConfiguration,from:History,to:RoomMetaData)
+case class CopyLocation(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
 
 object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
   val thisDuplicatorId = nextFuncName
   override def messageHandler = {
     case RoomJoinAcknowledged(server,room) => {}
     case RoomLeaveAcknowledged(server,room) => {}
-    case CopyContent(config,oldLoc,newLoc,contentFilter) => {
-      println("copying: %s => %s".format(oldLoc,newLoc))
-      val oldContent = config.getHistory(oldLoc.getJid)
+    case CopyContent(config,oldContent,newLoc) => {
       val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
       room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
-      oldContent.filter(contentFilter).getAll.foreach(stanza => {   
+      oldContent.getAll.foreach(stanza => {   
         room ! LocalToServerMeTLStanza(stanza match {
           case m:MeTLInk => m.copy(slide = newLoc.getJid)
           case m:MeTLImage => m.copy(slide = newLoc.getJid)
@@ -248,11 +363,87 @@ object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
           case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
           case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
           case m:MeTLUnhandledCanvasContent[_] => m.copy(slide = newLoc.getJid)
+          case m:MeTLQuiz => m
           case s:MeTLStanza => s
         })
       })
       room ! LeaveRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
-      println("copied: %s => %s".format(oldLoc,newLoc))
+      println("copied: %s => %s".format(oldContent.jid,newLoc))
+    }
+    case CopyLocation(config,oldLoc,newLoc,contentFilter) => {
+      println("copying: %s => %s".format(oldLoc,newLoc))
+      val oldContent = config.getHistory(oldLoc.getJid).filter(contentFilter)
+      this ! CopyContent(config,oldContent,newLoc)
     }
   }
+}
+
+class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName){
+  override def toMeTLImage(input:NodeSeq):MeTLImage = {
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val tag = getStringByName(input,"tag")
+    val imageBytes = base64Decode(getStringByName(input,"imageBytes"))
+    val newUrl = config.postResource(c.slide.toString,nextFuncName,imageBytes)
+    val source = Full(newUrl)
+    val pngBytes = Empty
+    val width = getDoubleByName(input,"width")
+    val height = getDoubleByName(input,"height")
+    val x = getDoubleByName(input,"x")
+    val y = getDoubleByName(input,"y")
+    MeTLImage(config,m.author,m.timestamp,tag,source,Full(imageBytes),pngBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
+  }
+  override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",() => {
+    canvasContentToXml("image",input,List(
+      <tag>{input.tag}</tag>,
+      <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
+      <width>{input.width}</width>,
+      <height>{input.height}</height>,
+      <x>{input.x}</x>,
+      <y>{input.y}</y>
+    ))
+  })
+  override def toMeTLQuiz(input:NodeSeq):MeTLQuiz = Stopwatch.time("GenericXmlSerializer.toMeTLQuiz", () => {
+    val m = parseMeTLContent(input,config)
+    val created = getLongByName(input,"created")
+    val question = getStringByName(input,"question") match {
+      case q if (q.length > 0) => q
+      case _ => getStringByName(input,"title")
+    }
+    val id = getStringByName(input,"id")
+    val quizImage = Full(base64Decode(getStringByName(input,"imageBytes")))
+    val newUrl = quizImage.map(qi => config.postResource("quizImages",nextFuncName,qi))
+    val isDeleted = getBooleanByName(input,"isDeleted")
+    val options = getXmlByName(input,"quizOption").map(qo => toQuizOption(qo)).toList
+    MeTLQuiz(config,m.author,m.timestamp,created,question,id,newUrl,quizImage,isDeleted,options,m.audiences)
+  })
+  override def fromMeTLQuiz(input:MeTLQuiz):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLQuiz", () => {
+    metlContentToXml("quiz",input,List(
+      <created>{input.created}</created>,
+      <question>{input.question}</question>,
+      <id>{input.id}</id>,
+      <isDeleted>{input.isDeleted}</isDeleted>,
+      <options>{input.options.map(o => fromQuizOption(o))}</options>
+    ) ::: input.imageBytes.map(ib => List(<imageBytes>{base64Encode(ib)}</imageBytes>)).openOr(List.empty[Node]))
+  })
+  override def toSubmission(input:NodeSeq):MeTLSubmission = Stopwatch.time("GenericXmlSerializer.toSubmission", () => {
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val title = getStringByName(input,"title")
+    val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes")))
+    val url = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib)).getOrElse("unknown")
+    val blacklist = getXmlByName(input,"blacklist").map(bl => {
+      val username = getStringByName(bl,"username")
+      val highlight = getColorByName(bl,"highlight")
+      SubmissionBlacklistedPerson(username,highlight)
+    }).toList
+    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+  })
+  override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", () => {
+    canvasContentToXml("screenshotSubmission",input,List(
+      <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
+      <title>{input.title}</title>,
+      <time>{input.timestamp.toString}</time>
+    ) ::: input.blacklist.map(bl => <blacklist><username>{bl.username}</username><highlight>{ColorConverter.toRGBAString(bl.highlight)}</highlight></blacklist> ).toList)
+  })
 }
