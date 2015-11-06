@@ -33,6 +33,110 @@
         "application/json"
     ],
     "paths": {
+				"/conversationImport":{
+					"post":{
+						"tags":["inSession","contentCreation"],
+						"description":"Import an entire conversation, from a single file created by the conversationExport endpoint, where all the content is imported with the original ownership of content left intact.  This may result in a conflation of two user identities.",
+						"parameters":[
+							{
+								"name":"data",
+								"type":{"$ref":"#/definitions/Export"},
+								"description":"the export content, represented as an XML string, in the same format that the conversationExport endpoint returned.",
+								"in":"body",
+								"required":"true"
+							}
+						],
+						"consumes":[
+							"application/xml"
+						],	
+						"produces":[
+								"application/xml"
+						],
+						"responses":{
+								"200": {
+										"schema": {
+												"$ref":"#/definitions/ConversationDetails"
+										}
+								}
+						}
+
+					}
+
+				},
+				"/conversationImportAsMe":{
+					"post":{
+						"tags":["inSession","contentCreation"],
+						"description":"Import an entire conversation, from a single file created by the conversationExport endpoint, where all the content is transferred to the ownership of the logged-in user.",
+						"parameters":[
+							{
+								"name":"data",
+								"type":{"$ref":"#/definitions/Export"},
+								"description":"the export content, represented as an XML string, in the same format that the conversationExport endpoint returned.",
+								"in":"body",
+								"required":"true"
+							}
+						],
+						"produces":[
+								"application/xml"
+						],
+						"responses":{
+								"200": {
+										"schema": {
+												"$ref":"#/definitions/ConversationDetails"
+										}
+								}
+						}
+
+					}
+				},
+				"/conversationExport/{conversationJid}":{
+					"get":{
+						"tags":["inSession","readConversation"],
+						"description":"Extract an entire conversation, as a single file ready to import into another server",
+						"parameters":[
+							{
+								"name":"conversationJid",
+								"in":"path",
+								"required":"true",
+								"type":"string"
+							}
+						],
+						"produces":[
+								"application/xml"
+						],
+						"responses":{
+								"200": {
+										"schema": {
+												"$ref":"#/definitions/Export"
+										}
+								}
+						}
+					}
+				},
+				"/conversationExportForMe/{conversationJid}":{
+					"get":{
+						"tags":["inSession","readConversation"],
+						"description":"Extract an entire conversation, as a single file ready to import into another server, which includes only public content and my private content",
+						"parameters":[
+							{
+								"name":"conversationJid",
+								"in":"path",
+								"required":"true",
+								"type":"string"
+							}
+						],
+						"produces":[
+								"application/xml"
+						],
+						"responses":{
+								"200": {
+										"schema": {
+												"$ref":"#/definitions/Export"
+										}
+								}
+						}
+					}
+				},
         "/projector/{conversationJid}":{
             "get":{
                 "tags":["inSession"],
@@ -734,6 +838,18 @@
                     }
                 }
             }
-        }
+        },
+				"Export": {
+					"type": "object",
+					"properties": {
+						"conversation":{
+							"type":{"$ref":"#/definitions/ConversationDetails"}
+						},
+						"histories": {
+							"type":"array",
+							"items":{"$ref":"#/definitions/History"}
+						}
+					}
+				}
     }
 }

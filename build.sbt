@@ -63,15 +63,15 @@ libraryDependencies ++= {
     "net.liftweb" %% "lift-mongodb-record" % liftVersion,
     "org.seleniumhq.selenium" % "selenium-java" % "2.8.0",
     "io.github.stackableregiments" %% "common-utils" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metldata" % "3.0.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
+    "io.github.stackableregiments" %% "metldata" % "3.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "lift-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "form-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "cas-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metl2011" % "3.6.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"), 
-    "io.github.stackableregiments" %% "metl-h2" % "3.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
+    "io.github.stackableregiments" %% "metl2011" % "3.7.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"), 
+    "io.github.stackableregiments" %% "metl-h2" % "3.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
     "io.github.stackableregiments" %% "lift-extensions" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "slide-renderer" % "1.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
+    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
   )
 }
 
