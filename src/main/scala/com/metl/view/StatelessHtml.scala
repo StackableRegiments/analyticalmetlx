@@ -108,27 +108,33 @@ object StatelessHtml {
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), () => {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
-  def loadThemes(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), () => {
+  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), () => {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val inks = history.getInks
-    <userThemes>{
-      inks.groupBy(_.author).map
-      {
-        case (author,inks@i :: is) => <userTheme>
-          <user>{author}</user>
-          {
-            <themes>{ CanvasContentAnalysis.extract(inks).map(i => <theme>{i}</theme> ) }</themes>
-          }
-          </userTheme>
-        case _ => None
-      }
-    }</userThemes>
+    val phrases = List(
+      history.getTexts.map(t => t.text),
+      CanvasContentAnalysis.extract(history.getInks)).flatten
+    <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
+  })
+  def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), () => {
+    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+    val themes = List(
+      history.getTexts.map(t => Theme(t.author,t.text)).toList,
+      history.getInks.groupBy(_.author).flatMap{
+        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
+      }).flatten
+    println(themes)
+    val themesByUser = themes.groupBy(_.author).map(kv =>
+      <userTheme>
+        <user>{kv._1}</user>
+        <themes>{kv._2.map(t => <theme>{t.text}</theme>)}</themes>
+        </userTheme>)
+    <userThemes>{themesByUser}</userThemes>
   })
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),() => {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
   })
   def themes(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(req.param("source")), () => {
-    req.param("source").map(jid=> XmlResponse(loadThemes(jid)))
+    req.param("source").map(jid=> XmlResponse(nouns(jid)))
   })
   def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
     req.param("source").map(jid=> XmlResponse(loadHistory(jid)))
@@ -189,7 +195,7 @@ object StatelessHtml {
       val newConvWithOldSlides = newConv.copy(
         lastAccessed = new java.util.Date().getTime,
         slides = oldConv.slides.map(s => s.copy(
-          groupSet = Nil, 
+          groupSet = Nil,
           id = s.id - oldConv.jid + newConv.jid,
           audiences = Nil
         ))
