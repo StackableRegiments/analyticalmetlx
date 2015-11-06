@@ -442,4 +442,19 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
       <time>{input.timestamp.toString}</time>
     ) ::: input.blacklist.map(bl => <blacklist><username>{bl.username}</username><highlight>{ColorConverter.toRGBAString(bl.highlight)}</highlight></blacklist> ).toList)
   })
+  override def toMeTLFile(input:NodeSeq):MeTLFile = Stopwatch.time("GenericXmlSerializer.toMeTLFile",() => {
+    val m = parseMeTLContent(input,config)
+    val name = getStringByName(input,"name")
+    val id = getStringByName(input,"id")
+    val bytes = Full(base64Decode(getStringByName(input,"bytes")))
+    val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
+    MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
+  })
+  override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",() => {
+    metlContentToXml("file",input,List(
+      <name>{input.name}</name>,
+      <id>{input.id}</id>
+      ) ::: 
+      input.bytes.map(ib => List(<bytes>{base64Encode(ib)}</bytes>)).getOrElse(List.empty[Node]))
+  })
 }
