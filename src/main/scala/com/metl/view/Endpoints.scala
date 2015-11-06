@@ -82,7 +82,7 @@ object MeTLRestHelper extends RestHelper {
     case Req("render" :: configName :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render", () => {
       val server = ServerConfiguration.configForName(configName)
       val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-      val image = SlideRenderer.render(history,width.toInt,height.toInt)
+      val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
     case Req("thumbnail" :: configName :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail", () => {
@@ -113,12 +113,16 @@ object MeTLStatefulRestHelper extends RestHelper {
   val DEMO_TEACHER = "Mr Roboto"
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",() => StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
+    case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",() => StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
+    case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversation(r))
+    case r@Req(List("conversationImportAsMe"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversationAsMe(r))
     case Req(List("duplicateSlide",slide,conversation),_,_) => 
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
     case Req(List("duplicateConversation",conversation),_,_) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateConversation(Globals.currentUser.is,conversation))
+      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation",() => StatelessHtml.duplicateConversation(Globals.currentUser.is,conversation))
     case Req(List("requestMaximumSizedGrouping",conversation,slide,groupSize),_,_) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByMaximumSize(groupSize.toInt),Nil,Nil)))
+      () => Stopwatch.time("MeTLStatefulRestHelper.requestMaximumSizedGrouping",() => StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByMaximumSize(groupSize.toInt),Nil,Nil)))
     case Req(List("requestClassroomSplitGrouping",conversation,slide,numberOfGroups),_,_) => 
       () => Stopwatch.time("MeTLStatefulRestHelper.requestClassroomSplitGrouping",() => StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByTotalGroups(numberOfGroups.toInt),Nil,Nil)))
     case Req(List("proxyDataUri",slide,source),_,_) =>
