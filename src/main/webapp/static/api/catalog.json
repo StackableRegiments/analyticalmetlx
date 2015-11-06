@@ -40,7 +40,7 @@
                 "parameters":[
                     {
                         "name":"data",
-                        "$ref":"#/definitions/Export",
+                        "$ref":"Export",
                         "description":"the export content, represented as an XML string, in the same format that the conversationExport endpoint returned.",
                         "in":"body",
                         "required":"true"
@@ -68,7 +68,7 @@
                 "parameters":[
                     {
                         "name":"data",
-                        "$ref":"#/definitions/Export",
+                        "$ref":"Export",
                         "description":"the export content, represented as an XML string, in the same format that the conversationExport endpoint returned.",
                         "in":"body",
                         "required":"true"
@@ -104,9 +104,7 @@
                 ],
                 "responses":{
                     "200": {
-                        "schema": {
-                            "$ref":"#/definitions/Export"
-                        }
+                        "schema": {"$ref":"#/definitions/Export"}
                     }
                 }
             }
@@ -128,9 +126,7 @@
                 ],
                 "responses":{
                     "200": {
-                        "schema": {
-                            "$ref":"#/definitions/Export"
-                        }
+                        "schema": {"$ref":"#/definitions/Export"}
                     }
                 }
             }
@@ -511,7 +507,10 @@
             "type":"object",
             "properties":{
                 "author":{"type":"string"},
-                "timestamp":{"type":"long"},
+                "timestamp":{
+                    "type":"integer",
+                    "format":"int64"
+                },
                 "audiences":{
                     "type":"array",
                     "items":{"$ref":"#/definitions/Audience"}
@@ -587,6 +586,10 @@
                 "Inheriting":{"$ref":"#/definitions/VisualContent"},
                 "tag":{"type":"string"},
                 "source":{"type":"string"},
+                "imageBytes":{
+                    "type":"string",
+                    "format":"byte"
+                },
                 "width":{"type":"double"},
                 "height":{"type":"double"},
                 "x":{"type":"double"},
@@ -609,12 +612,29 @@
                 "highlight":{"type":"string"}
             }
         },
+        "File":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "name":{"type":"string"},
+                "id":{"type":"string"},
+                "url":{"type":"string"},
+                "bytes":{
+                    "type":"string",
+                    "format":"byte"
+                }
+            }
+        },
         "ScreenshotSubmission":{
             "type":"object",
             "properties":{
                 "Inheriting":{"$ref":"#/definitions/VisualContent"},
                 "title":{"type":"string"},
                 "url":{"type":"string"},
+                "imageBytes":{
+                    "type":"string",
+                    "format":"byte"
+                },
                 "blacklist":{
                     "type":"array",
                     "items":{"$ref":"#/definitions/SubmissionBlacklist"}
@@ -829,6 +849,10 @@
                             "type":"array",
                             "items":{"$ref":"#/definitions/Attendance"}
                         },
+                        "files":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/File"}
+                        },
                         "commands":{
                             "type":"array",
                             "items":{"$ref":"#/definitions/Command"}
@@ -840,9 +864,7 @@
         "Export": {
             "type": "object",
             "properties": {
-                "conversation":{
-                    "type":{"$ref":"#/definitions/ConversationDetails"}
-                },
+                "conversation":{"$ref":"#/definitions/ConversationDetails"},
                 "histories": {
                     "type":"array",
                     "items":{"$ref":"#/definitions/History"}
