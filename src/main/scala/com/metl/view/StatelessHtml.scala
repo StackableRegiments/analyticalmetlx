@@ -269,7 +269,7 @@ object StatelessHtml {
       }).getOrElse(true)
     })
     val participants = (convHistory.getAttendances.map(_.author) ::: restrictToPrivateUsers.getOrElse(List.empty[String])).distinct.filter(u => restrictToPrivateUsers.map(_.contains(u)).getOrElse(true))
-    val histories = conversation.slides.flatMap(slide => {
+    val histories = convHistory :: conversation.slides.flatMap(slide => {
       val slideJid = slide.id.toString
       val publicHistory = config.getHistory(slideJid)
       val privateHistories = participants.map(p => config.getHistory(slideJid + p))
