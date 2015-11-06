@@ -13,6 +13,7 @@ import util._
 import util.TimeHelpers
 import Helpers._
 import java.util.Date
+import com.metl.renderer.RenderDescription
 
 import scala.collection.mutable.Queue
 
@@ -144,7 +145,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected val messageBus = config.getMessageBus(messageBusDefinition)
   def getHistory:History
   def getThumbnail:Array[Byte]
-  def getSnapshot(size:SnapshotSize.Value):Array[Byte]
+  def getSnapshot(size:RenderDescription):Array[Byte]
 
   // this is the bit which needs tweaking now - it looks rather a lot like the members are already in the history, and what I should be checking is the slides, which may mean checking conversationDetails a little more frequently.  Fortunately, they're cached, so it shouldn't be expensive.
   def getAttendance:List[String] = {
@@ -293,7 +294,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
 object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider,UnknownRoom) {
   override def getHistory = History.empty
   override def getThumbnail = Array.empty[Byte]
-  override def getSnapshot(size:SnapshotSize.Value) = Array.empty[Byte]
+  override def getSnapshot(size:RenderDescription) = Array.empty[Byte]
   override protected def sendToChildren(s:MeTLStanza) = {}
   override protected def sendStanzaToServer(s:MeTLStanza) = {}
 }
@@ -308,18 +309,17 @@ class NoCacheRoom(configName:String,override val location:String,creator:RoomPro
   override def getThumbnail = {
     roomMetaData match {
       case s:SlideRoom => {
-        SlideRenderer.render(getHistory,ThumbnailSpecification.width,ThumbnailSpecification.height)
+        SlideRenderer.render(getHistory,Globals.ThumbnailSize,"presentationSpace")
       }
       case _ => {
         Array.empty[Byte]
       }
     }
   }
-  override def getSnapshot(size:SnapshotSize.Value) = {
+  override def getSnapshot(size:RenderDescription) = {
     roomMetaData match {
       case s:SlideRoom => {
-        val d = Globals.snapshotSizes(size)
-        SlideRenderer.render(getHistory,d.width,d.height)
+        SlideRenderer.render(getHistory,size,"presentationSpace")
       }
       case _ => {
         Array.empty[Byte]
@@ -345,7 +345,7 @@ class StartupInformation {
 class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends MeTLRoom(configName,location,creator,roomMetaData) {
   private var history:History = History.empty
   private val isPublic = tryo(location.toInt).map(l => true).openOr(false)
-  private var snapshots:Map[SnapshotSize.Value,Array[Byte]] = Map.empty[SnapshotSize.Value,Array[Byte]]
+  private var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
   private lazy val starting = new StartupInformation
   private def firstTime = initialize
   override def initialize = Stopwatch.time("HistoryCachingRoom.initalize",() => {
@@ -378,19 +378,19 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
           case false => history
         }
-        SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes.map(ss => (ss._1.toString.asInstanceOf[String],ss._2.width,ss._2.height)).toList).map(ri => (SnapshotSize.parse(ri._1.toLowerCase) -> ri._2._3))
+        SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
       }
       case _ => {
-        Map.empty[com.metl.model.SnapshotSize.Value,Array[Byte]]
+        Map.empty[RenderDescription,Array[Byte]]
       }
     }
   })
-  override def getSnapshot(size:SnapshotSize.Value) = {
+  override def getSnapshot(size:RenderDescription) = {
     showInterest
-    snapshots(size)
+    snapshots.get(size).getOrElse(Array.empty[Byte])
   }
   override def getThumbnail = {
-    getSnapshot(SnapshotSize.Thumbnail)
+    getSnapshot(Globals.ThumbnailSize)
   }
   private var renderInProgress = false;
   override def overrideableLowPriority = {

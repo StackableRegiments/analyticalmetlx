@@ -16,7 +16,13 @@ object HttpResponder extends HttpCacher{
 
   def snapshot(server:String,jid:String,size:String) ={
     val serverConfig = ServerConfiguration.configForName(server)
-    val binary = MeTLXConfiguration.getRoom(jid,server).getSnapshot(SnapshotSize.parse(size))
+    val binary = MeTLXConfiguration.getRoom(jid,server).getSnapshot(size.trim.toLowerCase match {
+      case "thumbnail" => Globals.ThumbnailSize
+      case "small" => Globals.SmallSize
+      case "medium" => Globals.MediumSize
+      case "large" => Globals.LargeSize
+      case _ => Globals.ThumbnailSize
+    })
     val cachedBinary = CachedBinary(binary,new Date().getTime)
     constructResponse(cachedBinary,"image/jpg",snapshotExpiry)
   }

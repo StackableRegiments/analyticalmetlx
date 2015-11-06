@@ -14,6 +14,7 @@ import net.liftweb.util.Helpers._
 
 import net.liftweb.util.Props
 import scala.xml._
+import com.metl.renderer.RenderDescription
 
 case class PropertyNotFoundException(key: String) extends Exception(key) {
   override def getMessage: String = "Property not found: " + key
@@ -73,29 +74,11 @@ object Globals extends PropertyReader {
   object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
   object currentUser extends SessionVar[String](casState.is.username)
 
-  val thumbnailSize = SnapshotResolution(320,240) // MeTL thumbnail
-  val snapshotSizes = Map(
-    SnapshotSize.Thumbnail -> thumbnailSize,  // MeTL thumbnail
-    SnapshotSize.Small  -> SnapshotResolution(640,480),  // MeTL small for phones
-    SnapshotSize.Medium -> SnapshotResolution(1024,768), // dunno, seems like a good midpoint
-    SnapshotSize.Large  -> SnapshotResolution(2560,1600) // WQXGA, largest reasonable size (we guess)
-  )
-}
-case class SnapshotResolution(width:Int,height:Int){}
-
-object SnapshotSize extends Enumeration {
-  type SnapshotSize = Value
-  val Thumbnail, Small, Medium, Large = Value
-
-  def parse(name:String) ={
-    name match {
-      case "thumbnail" => Thumbnail
-      case "small"  => Small
-      case "medium" => Medium
-      case "large"  => Large
-      case _ => Medium
-    }
-  }
+  val ThumbnailSize = new RenderDescription(320,240)
+  val SmallSize = new RenderDescription(640,480)
+  val MediumSize = new RenderDescription(1024,768)
+  val LargeSize = new RenderDescription(2560,1600)
+  val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize)
 }
 
 object CurrentSlide extends SessionVar[Box[String]](Empty)
