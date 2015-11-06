@@ -109,10 +109,10 @@ object StatelessHtml {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
   def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), () => {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
     val phrases = List(
-      history.getTexts.map(t => t.text),
-      CanvasContentAnalysis.extract(history.getInks)).flatten
+      history.collect{case t:MeTLText => t.text},
+      CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
     <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
   })
   def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), () => {
