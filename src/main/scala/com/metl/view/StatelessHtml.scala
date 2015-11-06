@@ -200,9 +200,7 @@ object StatelessHtml {
           audiences = Nil
         ))
       )
-      println("newConvWithOldSlides: "+newConvWithOldSlides)
       val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
-      println("remoteConv: "+remoteConv)
       remoteConv.slides.foreach(ns => {
         val newSlide = ns.id
         val slide = newSlide - newConv.jid + oldConv.jid
@@ -227,7 +225,6 @@ object StatelessHtml {
         (s:MeTLStanza) => s.author == remoteConv.author && s.isInstanceOf[MeTLQuiz] // || s.isInstanceOf[Attachment]
       )
       val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)
-      println("remoteConv2: "+remoteConv2)
       serializer.fromConversation(remoteConv2).headOption.map(n => XmlResponse(n))
     } else {
       Full(ForbiddenResponse("only the author may duplicate a conversation"))
@@ -288,7 +285,6 @@ object StatelessHtml {
       xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
         val hist = exportSerializer.toHistory(h)
-        println("deserializing History: %s".format(hist.jid))
         (hist.jid,hist)
       }):_*));
       conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
@@ -303,7 +299,6 @@ object StatelessHtml {
       xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
         val hist = exportSerializer.toHistory(h)
-        println("deserializing History: %s".format(hist.jid))
         (hist.jid,hist)
       }):_*));
       conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
@@ -323,10 +318,7 @@ object StatelessHtml {
         audiences = Nil
       ))
     )
-    println("newConvWithOldSlides: "+newConvWithOldSlides)
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
-    println("remoteConv: "+remoteConv)
-    println("histories: %s".format(histories))
     histories.foreach(h => {
       val oldJid = h._1
       val offset = remoteConv.jid - oldConv.jid
@@ -374,10 +366,8 @@ object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
         })
       })
       room ! LeaveRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
-      println("copied: %s => %s".format(oldContent.jid,newLoc))
     }
     case CopyLocation(config,oldLoc,newLoc,contentFilter) => {
-      println("copying: %s => %s".format(oldLoc,newLoc))
       val oldContent = config.getHistory(oldLoc.getJid).filter(contentFilter)
       this ! CopyContent(config,oldContent,newLoc)
     }
