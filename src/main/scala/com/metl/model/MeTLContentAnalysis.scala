@@ -51,11 +51,11 @@ object CanvasContentAnalysis {
   }
   def extract(inks:List[MeTLInk]):List[String] = {
     if(inks.size < analysisThreshold) {
-      println("Not analysing themes for %s strokes".format(inks.size))
+      println("Not analyzing handwriting for %s strokes".format(inks.size))
       Nil
     }
     else{
-      println("Loading themes for %s strokes".format(inks.size))
+      println("Analyzing handwriting for %s strokes".format(inks.size))
       val myScriptKey = "1b822746-8aa1-4b9c-8437-419f15ba71b4"
       val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
 
@@ -82,7 +82,6 @@ object CanvasContentAnalysis {
         labels.collect{ case JField(_,JString(s)) => s }
       }
       val r = response()
-      println(r)
       r match {
         case Right(rs) => rs
         case _ => Nil
