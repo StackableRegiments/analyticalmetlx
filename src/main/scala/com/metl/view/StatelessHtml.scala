@@ -25,6 +25,22 @@ import com.metl.model._
   */
 object StatelessHtml {
   val serializer = new GenericXmlSerializer("rest")
+  val metlClientSerializer = new GenericXmlSerializer("metlClient"){
+    override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
+    val attrs = (additionalAttributes ::: List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
+      item match {
+        case (k:String,v:String) => new UnprefixedAttribute(k,v,acc)
+        case _ => acc
+      }
+    })
+    wrapWithMessage match {
+      case true => {
+        new Elem(null, "message", attrs, TopScope, false, new Elem(null, rootName, new UnprefixedAttribute("xmlns","monash:metl",Null.asInstanceOf[scala.xml.MetaData]), TopScope, false, additionalNodes: _*))
+      }
+      case _ => new Elem(null, rootName, attrs, TopScope, false, additionalNodes:_*)
+    }
+  })
+  }
   val exportSerializer = new ExportXmlSerializer("export"){
   }
   private val fakeSession = new LiftSession("/", "fakeSession", Empty)
@@ -141,6 +157,10 @@ object StatelessHtml {
   })
   def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
     req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
+  })
+
+  def fullClientHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
+    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>))
   })
   def mergedHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
     req.param("source").map(jid=> {
