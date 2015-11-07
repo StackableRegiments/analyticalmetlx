@@ -77,6 +77,10 @@ object MeTLRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLRestHelper.words", () => Full(XmlResponse(StatelessHtml.words(jid))))
     case r @ Req(List("details",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.details", () => StatelessHtml.details(jid))
+    case r @ Req(List("setUserOptions"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.details", () => StatelessHtml.setUserOptions(r))
+    case r @ Req(List("getUserOptions"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.details", () => StatelessHtml.getUserOptions(r))
     case Req("search" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.search",() => {
         val query = S.params("query").head

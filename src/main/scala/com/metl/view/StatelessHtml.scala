@@ -76,6 +76,15 @@ object StatelessHtml {
     req.param("query").map(q=>XmlResponse(loadSearch(q)))
   })
 
+  def setUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.setUserOptions", () => {
+    req.body.map(bytes => {
+      InMemoryResponse(Array.empty[Byte],Nil,Nil,200)
+    })
+  })
+  def getUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getUserOptions", () => {
+    Full(InMemoryResponse(config.getResource("userOptionsFor_%s".format(Globals.currentUser)),Nil,Nil,200))
+  })
+
   def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity), () =>
     Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
       image.imageBytes.map(bytes => {

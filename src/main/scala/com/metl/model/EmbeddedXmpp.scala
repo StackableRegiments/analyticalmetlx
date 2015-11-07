@@ -7,6 +7,7 @@ import Helpers._
 import common._
 import http._
 import provider.servlet._
+import com.metl.utils._
 
 // for EmbeddedXmppServer
 import org.apache.vysper.mina.TCPEndpoint
@@ -64,12 +65,39 @@ import org.apache.vysper.xml.fragment.{Renderer => vXmlRenderer}
 import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.metl2011._
 
+class VysperClientXmlSerializer extends MeTL2011XmlSerializer("vysper"){
+  override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
+    /*
+    val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat")).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
+      item match {
+        case (k:String,v:String) => new UnprefixedAttribute(k,v,acc)
+        case _ => acc
+      }
+    })
+  */
+    val attrs = (additionalAttributes ::: List(("xmlns","monash:metl"))).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
+      item match {
+        case (k:String,v:String) => new UnprefixedAttribute(k,v,acc)
+        case _ => acc
+      }
+    })
+/*
+    wrapWithMessage match {
+      case true => {
+        new Elem(null, "message", messageAttrs, TopScope, false, new Elem(null, rootName, attrs, TopScope, false, additionalNodes: _*))
+      }
+      
+      case _ => */ new Elem(null, rootName, attrs, TopScope, false, additionalNodes:_*)
+    //}
+  })
+}
+
 class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,conference:Conference) {
   val domainString = "local.temp"
   val conferenceString = "conference.%s".format(domainString)
   val config = ServerConfiguration.default
   val configName = config.name
-  val serializer = new MeTL2011XmlSerializer(configName)
+  val serializer = new VysperClientXmlSerializer
   val converter = new VysperXMLUtils
   protected val xmppMessageDeliveryStrategy = new IgnoreFailureStrategy()
   def relayMessageToMeTLRoom(message:Stanza):Unit = {
@@ -92,7 +120,7 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
   }
   def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = serializer.fromMeTLData(message) match {
     case n:Node => {
-      println("relaying message to xmppMuc: %s".format(location,message))
+      println("relaying message to xmppMuc: %s\r\n%s\r\n%s".format(location,message.toString,n.toString))
       relayMessageNodeToXmppMuc(location,n)
     }
     case _ => {}
@@ -159,15 +187,19 @@ class EmbeddedTlsContext(keystore:java.io.File,storePass:String,keyPass:String) 
 class MeTLXAccountManagement extends AccountManagement {
   override def addUser(entity:Entity,password:String):Unit = addUser(entity.getNode,password)
   def addUser(username:String,password:String):Unit = {
+    println("adding xmpp user: %s %s".format(username,password))
     MeTLXConfiguration.configurationProvider.map(cp => cp.keys.update(username,password))
   }
   override def changePassword(entity:Entity,password:String):Unit = changePassword(entity.getNode,password)
   def changePassword(username:String,password:String):Unit = {
+    println("changing xmpp password for: %s %s".format(username,password))
     MeTLXConfiguration.configurationProvider.map(cp => cp.keys.update(username,password))
   }
   override def verifyAccountExists(entity:Entity):Boolean = verifyAccountExists(entity.getNode)
   def verifyAccountExists(username:String):Boolean = {
-    MeTLXConfiguration.configurationProvider.map(cp => cp.keys.get(username).map(_ => true).getOrElse(false)).getOrElse(false)
+    val result = MeTLXConfiguration.configurationProvider.map(cp => cp.keys.get(username).map(_ => true).getOrElse(false)).getOrElse(false)
+    println("checking xmpp existence of: %s %s".format(username,result))
+    result
   }
 }
 class MeTLXAuthentication extends UserAuthorization  {
@@ -202,7 +234,7 @@ object EmbeddedXmppServer {
     val auther = new MeTLXAuthentication()
     providerRegistry.add(auther)
     providerRegistry.add(new MemoryRosterManager())
-    //providerRegistry.add(new MeTLXAccountManagement()) // I'm hoping this isn't necessary, and it doesn't appear to be.
+    providerRegistry.add(new MeTLXAccountManagement()) // I'm hoping this isn't necessary, and it doesn't appear to be.
     privateServer = Full(new XMPPServer(domain))
     privateServer.map(p => {
       p.addEndpoint(new TCPEndpoint())
@@ -920,11 +952,13 @@ object JavaListUtils {
 
 class VysperXMLUtils {
   def vRender(input:XMLFragment):String = {
-    input match {
+    val result = input match {
       case t:XMLText => t.getText
       case e:XMLElement => new vXmlRenderer(e).getComplete()
       case other => "unable to render: %s".format(other)
     }
+    println("vRender: %s".format(input.toString,result))
+    result
   }
   def toVysper(scalaNode:Node):XMLFragment = {
     val output = scalaNode match {
@@ -936,9 +970,14 @@ class VysperXMLUtils {
       //case t:Text => new XMLText(t.text)
       case e:Elem => {
         val prefix = e.prefix
-        val namespace = e.getNamespace(prefix)
-        val label = e.label
         val attributes = toAttributes(e.attributes)
+        val namespace = e.prefix match {
+          case "" | null => {
+            toAttributeTupleList(e.attributes).find(_._1 == "xmlns").map(_._2).getOrElse(e.getNamespace(""))
+          }
+          case other => e.getNamespace(other)
+        }
+        val label = e.label
         val children:JavaList[XMLFragment] = JavaListUtils.toJavaList((e.child.map{
           case g:Group => g.nodes.map(n => toVysper(n))
           case other => List(toVysper(other))
@@ -998,13 +1037,27 @@ class VysperXMLUtils {
       case false => scala.xml.Null
     }
   }
-  protected def toAttributes(metaData:MetaData):JavaList[Attribute] = JavaListUtils.toJavaList(toAttributesList(metaData))
-  protected def toAttributesList(metaData:MetaData):List[Attribute] = {
-    metaData match {
-      case u:UnprefixedAttribute => new Attribute(u.key, scalaAttributeValue(u.value)) :: toAttributesList(metaData.next)
-      case p:PrefixedAttribute => new Attribute(p.key, scalaAttributeValue(p.value)) :: toAttributesList(metaData.next)
-      case _ => List.empty[Attribute]
-    }
+  protected def toAttributes(metaData:MetaData):JavaList[Attribute] = {
+    val result = JavaListUtils.toJavaList(toAttributesList(metaData))
+    println("toAttributes: %s".format(metaData))
+    result
   }
-  protected def scalaAttributeValue(nodes:Seq[Node]):String = nodes.foldLeft("")((acc,item) => acc + item.text)
+  protected def toAttributesList(metaData:MetaData):List[Attribute] = {
+    val result = toAttributeTupleList(metaData).map(a => new Attribute(a._1,a._2))
+    println("toAttributeList: %s => %s".format(metaData,result))
+    result
+  }
+  protected def toAttributeTupleList(metaData:MetaData):List[Tuple2[String,String]] = {
+    val result = metaData match {
+      case u:UnprefixedAttribute => ((u.key, scalaAttributeValue(u.value)) :: toAttributeTupleList(metaData.next))
+      case p:PrefixedAttribute => ((p.key, scalaAttributeValue(p.value)) :: toAttributeTupleList(metaData.next))
+      case _ => List.empty[Tuple2[String,String]]
+    }
+    println("toAttributeTupleList: %s => %s".format(metaData,result))
+    result
+
+  }
+  protected def scalaAttributeValue(nodes:Seq[Node]):String = nodes.foldLeft("")((acc,item) => acc + {
+    item.toString
+  })
 }
