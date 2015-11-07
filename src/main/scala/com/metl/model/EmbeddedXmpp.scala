@@ -12,6 +12,7 @@ import provider.servlet._
 import org.apache.vysper.mina.TCPEndpoint
 import org.apache.vysper.storage.StorageProviderRegistry
 import org.apache.vysper.storage.inmemory.MemoryStorageProviderRegistry
+import org.apache.vysper.storage.OpenStorageProviderRegistry
 import org.apache.vysper.xmpp.addressing.{Entity,EntityImpl}
 import org.apache.vysper.xmpp.authorization.AccountManagement
 import org.apache.vysper.xmpp.modules.extension.xep0054_vcardtemp.VcardTempModule
@@ -20,7 +21,8 @@ import org.apache.vysper.xmpp.modules.extension.xep0119_xmppping.XmppPingModule
 import org.apache.vysper.xmpp.modules.extension.xep0202_entity_time.EntityTimeModule
 import org.apache.vysper.xmpp.modules.extension.xep0077_inbandreg.InBandRegistrationModule
 import org.apache.vysper.xmpp.server.XMPPServer
-
+import org.apache.vysper.xmpp.authorization.UserAuthorization 
+import org.apache.vysper.xmpp.modules.roster.persistence._
 // for MeTLMucModule
 import java.util.{ArrayList => JavaArrayList,List => JavaList,Collection => JavaCollection,Arrays => JavaArrays,Set => JavaSet,Iterator => JavaIterator}
 import org.apache.vysper.xmpp.addressing.{Entity,EntityFormatException,EntityImpl,EntityUtils}
@@ -71,6 +73,7 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
   val converter = new VysperXMLUtils
   protected val xmppMessageDeliveryStrategy = new IgnoreFailureStrategy()
   def relayMessageToMeTLRoom(message:Stanza):Unit = {
+    println("relaying message to room: %s".format(message))
     val to:Entity = message.getTo()
     val location:String = to.getNode()
     val payloads:JavaList[XMLFragment] = message.getInnerFragments()
@@ -88,7 +91,10 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
     }
   }
   def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = serializer.fromMeTLData(message) match {
-    case n:Node => relayMessageNodeToXmppMuc(location,n)
+    case n:Node => {
+      println("relaying message to xmppMuc: %s".format(location,message))
+      relayMessageNodeToXmppMuc(location,n)
+    }
     case _ => {}
   }
   def relayMessageNodeToXmppMuc(location:String,message:Node):Unit = {
@@ -150,6 +156,38 @@ class EmbeddedTlsContext(keystore:java.io.File,storePass:String,keyPass:String) 
   }
 }
 */
+class MeTLXAccountManagement extends AccountManagement {
+  override def addUser(entity:Entity,password:String):Unit = addUser(entity.getNode,password)
+  def addUser(username:String,password:String):Unit = {
+    MeTLXConfiguration.configurationProvider.map(cp => cp.keys.update(username,password))
+  }
+  override def changePassword(entity:Entity,password:String):Unit = changePassword(entity.getNode,password)
+  def changePassword(username:String,password:String):Unit = {
+    MeTLXConfiguration.configurationProvider.map(cp => cp.keys.update(username,password))
+  }
+  override def verifyAccountExists(entity:Entity):Boolean = verifyAccountExists(entity.getNode)
+  def verifyAccountExists(username:String):Boolean = {
+    MeTLXConfiguration.configurationProvider.map(cp => cp.keys.get(username).map(_ => true).getOrElse(false)).getOrElse(false)
+  }
+}
+class MeTLXAuthentication extends UserAuthorization  {
+  override def verifyCredentials(jid:Entity,passwordCleartext:String,credentials:Object):Boolean = {
+    println("jid: %s\r\nnode: %s".format(jid,jid.getNode()))
+    verifyCredentials(jid.getNode(),passwordCleartext,credentials)
+  }
+  override def verifyCredentials(username:String,passwordCleartext:String,credentials:Object):Boolean = {
+    if (username.contains("@")){
+      verifyCredentials(EntityImpl.parse(username),passwordCleartext,credentials)
+    } else {
+      MeTLXConfiguration.configurationProvider.map(cp => {
+        val result = cp.checkPassword(username,passwordCleartext)
+          println("checked credentials: %s %s => %s".format(username,passwordCleartext,result))
+        result
+      }).getOrElse(false)
+    }
+  }
+}
+
 object EmbeddedXmppServer {
   protected var privateServer:Box[XMPPServer] = Empty
   protected var mucModule:Box[MeTLMucModule] = Empty
@@ -158,15 +196,13 @@ object EmbeddedXmppServer {
   def initialize = {
     println("embedded xmpp server start handler")
     val domain = "local.temp"
-    val providerRegistry = new MemoryStorageProviderRegistry()
+    //val providerRegistry = new MemoryStorageProviderRegistry()
+    val providerRegistry = new OpenStorageProviderRegistry()
 
-    val accountManagement = providerRegistry.retrieve(classOf[AccountManagement]).asInstanceOf[AccountManagement]
-    List("dave","test","chris").foreach(u => {
-    val user = EntityImpl.parse(u + "@" + domain);
-      if (!accountManagement.verifyAccountExists(user)){
-        accountManagement.addUser(user, "fred")
-      }
-    })
+    val auther = new MeTLXAuthentication()
+    providerRegistry.add(auther)
+    providerRegistry.add(new MemoryRosterManager())
+    //providerRegistry.add(new MeTLXAccountManagement()) // I'm hoping this isn't necessary, and it doesn't appear to be.
     privateServer = Full(new XMPPServer(domain))
     privateServer.map(p => {
       p.addEndpoint(new TCPEndpoint())

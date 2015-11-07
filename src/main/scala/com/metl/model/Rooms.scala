@@ -94,7 +94,8 @@ class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
   override def get(room:String) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
   override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
   protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room), () => {
-    val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
+    //val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
+    val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition)
     r.localSetup
     r
   })
@@ -418,7 +419,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
 
 class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends HistoryCachingRoom(configName,location,creator,roomMetaData) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
-  def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
+  def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge", () => {
     stanzasToIgnore = stanzasToIgnore ::: List(s)
     sendStanzaToServer(s)
   })
