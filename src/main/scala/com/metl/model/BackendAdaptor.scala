@@ -353,7 +353,7 @@ object MeTLXConfiguration extends PropertyReader {
     ))
   }
   def setupServersFromFile(filePath:String) = {
-    //EmbeddedXmppServer.initialize
+    EmbeddedXmppServer.initialize
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
