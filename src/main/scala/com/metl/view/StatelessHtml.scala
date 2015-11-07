@@ -108,21 +108,20 @@ object StatelessHtml {
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), () => {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
-  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), () => {
+  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.nouns(%s)".format(jid), () => {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
     val phrases = List(
       history.collect{case t:MeTLText => t.text},
       CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
     <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
   })
-  def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), () => {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+  def words(jid:String):Node = Stopwatch.time("StatelessHtml.words(%s)".format(jid), () => {
+    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
     val themes = List(
-      history.getTexts.map(t => Theme(t.author,t.text)).toList,
-      history.getInks.groupBy(_.author).flatMap{
+      history.collect{case t:MeTLText => t}.map(t => Theme(t.author,t.text)).toList,
+      history.collect{case i:MeTLInk => i}.groupBy(_.author).flatMap{
         case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
       }).flatten
-    println(themes)
     val themesByUser = themes.groupBy(_.author).map(kv =>
       <userTheme>
         <user>{kv._1}</user>
