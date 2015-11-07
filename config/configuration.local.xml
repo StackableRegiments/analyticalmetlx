@@ -1,6 +1,6 @@
 <serverConfiguration>
 	<!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
-	<!-- 
+	<!--  -->
   <defaultServerConfiguration>localH2</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
@@ -15,8 +15,25 @@
       <type>frontend</type>
     </server>
 	</serverConfigurations>
+	<clientConfig>
+		<xmppHost>localhost</xmppHost>
+		<xmppPort>5222</xmppPort>
+		<xmppDomain>local.temp</xmppDomain>
+		<conversationSearchUrl>http://localhost:8080/search?query=</conversationSearchUrl>
+		<webAuthenticationUrl>http://localhost:8080/authenticationState</webAuthenticationUrl>
+		<thumbnailUrl>http://localhost:8080/thumbnail/</thumbnailUrl>
+		<resourceUrl>http://localhost:8080/getResource?path=</resourceUrl>
+		<historyUrl>http://localhost:8080/getHistory?path=</historyUrl>
+		<structureDirectory>Structure</structureDirectory>
+		<resourceDirectory>Resources</resourceDirectory>
+		<uploadPath>upload_nested.yaws</uploadPath>
+		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+		<cryptoKey>01234567</cryptoKey>
+		<cryptoIV>01234567</cryptoIV>
+		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+	</clientConfig>
 
-		 -->
+	<!--		 -->
 	<!--	
   <defaultServerConfiguration>devmetl.saintleo</defaultServerConfiguration>
 	<serverConfigurations>
@@ -85,7 +102,7 @@
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 -->
-<!-- --> 
+<!--  
   <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
@@ -118,7 +135,7 @@
 		<cryptoIV>01234567</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
-	<!-- -->
+	 -->
 	<securityProvider>
 		<!--		<stableKeyProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
 		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->

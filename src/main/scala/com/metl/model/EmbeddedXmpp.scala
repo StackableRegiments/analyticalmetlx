@@ -63,7 +63,7 @@ import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.metl2011._
 
 class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,conference:Conference) {
-  val domainString = "metl.adm.monash.edu.au"
+  val domainString = "local.temp"
   val conferenceString = "conference.%s".format(domainString)
   val config = ServerConfiguration.default
   val configName = config.name
@@ -116,7 +116,40 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
     }
   }
 }
+/*
+class EmbeddedTlsContext(keystore:java.io.File,storePass:String,keyPass:String) extends org.apache.vysper.xmpp.cryptography.TLSContextFactory {
+  import java.io.{IOException,InputStream}
+  import java.security.{GeneralSecurityException, KeyStore, Security}
+  import javax.net.ssl.{KeyManagerFactory,SSLContext}
+  override def getSSLContext:javax.net.ssl.SSLContext = {
 
+        KeyStore ks = KeyStore.getInstance("JKS");
+        InputStream in = null;
+        try {
+            in = getCertificateInputStream();
+            ks.load(in, storePass.toCharArray());
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ignored) {
+                    ;
+                }
+            }
+        }
+
+        // Set up key manager factory to use our key store
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KEY_MANAGER_FACTORY_ALGORITHM);
+        kmf.init(ks, keyPass.toCharArray());
+
+        // Initialize the SSLContext to work with our key managers.
+        SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
+        sslContext.init(kmf.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+
+        return sslContext;
+  }
+}
+*/
 object EmbeddedXmppServer {
   protected var privateServer:Box[XMPPServer] = Empty
   protected var mucModule:Box[MeTLMucModule] = Empty
@@ -124,25 +157,21 @@ object EmbeddedXmppServer {
 
   def initialize = {
     println("embedded xmpp server start handler")
-    val domain = "metl.adm.monash.edu.au"
+    val domain = "local.temp"
     val providerRegistry = new MemoryStorageProviderRegistry()
 
     val accountManagement = providerRegistry.retrieve(classOf[AccountManagement]).asInstanceOf[AccountManagement]
-    val user1 = EntityImpl.parse("dave@" + domain);
-    if (!accountManagement.verifyAccountExists(user1)){
-      accountManagement.addUser(user1, "fred")
-    }
+    List("dave","test","chris").foreach(u => {
+    val user = EntityImpl.parse(u + "@" + domain);
+      if (!accountManagement.verifyAccountExists(user)){
+        accountManagement.addUser(user, "fred")
+      }
+    })
     privateServer = Full(new XMPPServer(domain))
     privateServer.map(p => {
       p.addEndpoint(new TCPEndpoint())
       p.setStorageProviderRegistry(providerRegistry)
-      LiftRules.context match {
-        case context: HTTPServletContext => {
-          println("xmpp attaching cert")
-          p.setTLSCertificateInfo(context.ctx.getResourceAsStream("WEB-INF/newSelfSingedCert.cer"),"fred")
-        }
-        case _ => throw new Exception("no certificate provided for the embedded xmpp server")
-      }
+      p.setTLSCertificateInfo(new java.io.File("/stackable/analyticalmetlx/config/metl.jks"),"helpme")
       try {
         p.start()
         println("embedded xmpp server started")
@@ -167,7 +196,7 @@ object EmbeddedXmppServer {
   def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = roomAdaptor.map(ra => ra.relayMessageToXmppMuc(location,message))
 }
 
-class MeTLMucModule(subdomain:String = "chat",conference:Conference = new Conference("Conference")) extends DefaultDiscoAwareModule with Component with ComponentInfoRequestListener with ItemRequestListener {
+class MeTLMucModule(subdomain:String = "conference",conference:Conference = new Conference("Conference")) extends DefaultDiscoAwareModule with Component with ComponentInfoRequestListener with ItemRequestListener {
   protected var fullDomain:Entity = null
   //      override final val logger:Logger = LoggerFactory.getLogger(classOf[MUCModule])
   protected var serverRuntimeContext:ServerRuntimeContext = null
