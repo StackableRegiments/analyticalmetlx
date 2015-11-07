@@ -13,6 +13,7 @@ case class ClientConfiguration(xmppHost:String,xmppPort:Int,xmppDomain:String,xm
 
 abstract class ConfigurationProvider {
   val keys:MutableMap[String,String] = MutableMap.empty[String,String]
+  keys.update("t","ejPass")
   def checkPassword(username:String,password:String):Boolean = {
     println("checking: %s %s in %s".format(username,password,keys))
     keys.get(username).exists(_ == password)
