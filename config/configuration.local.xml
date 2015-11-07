@@ -22,12 +22,12 @@
 		<conversationSearchUrl>http://localhost:8080/search?query=</conversationSearchUrl>
 		<webAuthenticationUrl>http://localhost:8080/authenticationState</webAuthenticationUrl>
 		<thumbnailUrl>http://localhost:8080/thumbnail/</thumbnailUrl>
-		<resourceUrl>http://localhost:8080/getResource?path=</resourceUrl>
-		<historyUrl>http://localhost:8080/getHistory?path=</historyUrl>
+		<resourceUrl>http://localhost:8080/getResource?identity=</resourceUrl>
+		<historyUrl>http://localhost:8080/getHistory?jid=</historyUrl>
 		<structureDirectory>Structure</structureDirectory>
 		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+		<uploadPath>http://localhost:8080/upload?</uploadPath>
+		<primaryKeyGenerator>http://localhost:8080/getNextKey</primaryKeyGenerator>
 		<cryptoKey>exampleKey</cryptoKey>
 		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
@@ -139,7 +139,8 @@
 	<securityProvider>
 		<!--		<stableKeyProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
 		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />
+		<staticKeyProvider ejabberdPassword="examplePassword" yawsPassword="examplePassword" />
+		<!--		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />-->
 	</securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
 	<authentication>
