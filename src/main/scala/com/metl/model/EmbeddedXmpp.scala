@@ -65,7 +65,40 @@ import org.apache.vysper.xml.fragment.{Renderer => vXmlRenderer}
 import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.metl2011._
 
-class VysperClientXmlSerializer extends MeTL2011XmlSerializer("vysper"){
+class VysperClientXmlSerializer extends GenericXmlSerializer("vysper"){
+  override def getValueOfNode(content:NodeSeq,name:String):String = {
+//    val result = super.getValueOfNode(content,name)
+    println("getValueOfNode: %s %s".format(content,name))
+    val result = try{ 
+      val rn = (content \\ name)
+      println("rn: "+rn)
+      val rnh = rn.head
+      println("rnh: "+rn)
+      val res = rnh.text
+      println("res: "+rn)
+      res
+    } catch {
+      case e:Exception => {
+        println("exception in getValueOfNode: %s %s".format(e.getMessage,e.getStackTraceString))
+        throw e       
+      }
+    }
+    println("getValueOfNode: %s %s (%s)".format(name,result,content))
+    result
+  }
+  override def toMeTLData(in:NodeSeq):MeTLData = {
+    try {
+    println("toMeTLData started: %s".format(in))
+    val result = super.toMeTLData(in)
+    println("toMeTLData: %s => %s".format(in,result))
+    result
+    } catch {
+      case e:Exception => {
+        println("EXCEPTION in super.toMeTLData: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        throw e
+      }
+    }
+  }
   override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
     /*
     val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat")).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
@@ -95,8 +128,8 @@ class VysperClientXmlSerializer extends MeTL2011XmlSerializer("vysper"){
 class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,conference:Conference) {
   val domainString = "local.temp"
   val conferenceString = "conference.%s".format(domainString)
-  val config = ServerConfiguration.default
-  val configName = config.name
+  lazy val config = ServerConfiguration.default
+  lazy val configName = config.name
   val serializer = new VysperClientXmlSerializer
   val converter = new VysperXMLUtils
   protected val xmppMessageDeliveryStrategy = new IgnoreFailureStrategy()
@@ -106,16 +139,29 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
     val location:String = to.getNode()
     val payloads:JavaList[XMLFragment] = message.getInnerFragments()
     //this is about to be a problem - how do I choose the appropriate serverConfiguration, I wonder?
+    println("room chosen: %s %s".format(location,configName))
     MeTLXConfiguration.getRoom(location,configName) match {
       case r:XmppBridgingHistoryCachingRoom => {
         JavaListUtils.foreach(payloads,(payload:XMLFragment) => {
-          serializer.toMeTLData(converter.toScala(payload)) match {
-            case m:MeTLStanza => r.sendMessageFromBridge(m)
-            case _ => {}
+          val nodes:NodeSeq = <message>{converter.toScala(payload)}</message>
+          println("nodes: %s".format(nodes))
+          val md = serializer.toMeTLData(nodes) 
+          println("ink? %s".format((nodes \ "ink")))
+          println("metlData: %s".format(md))
+          md match {
+            case m:MeTLStanza => {
+              println("sending metlStanza from bridge: %s %s".format(r,m))
+              r.sendMessageFromBridge(m)
+            }
+            case unknownMessage => {
+              println("unknownMessage received: %s".format(unknownMessage))
+            }
           }
         })
       }
-      case _ => {}
+      case otherRoom => {
+        println("room found but not an XmppBridingRoom: %s".format(otherRoom))
+      }
     }
   }
   def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = serializer.fromMeTLData(message) match {
@@ -973,7 +1019,7 @@ class VysperXMLUtils {
         val attributes = toAttributes(e.attributes)
         val namespace = e.prefix match {
           case "" | null => {
-            toAttributeTupleList(e.attributes).find(_._1 == "xmlns").map(_._2).getOrElse(e.getNamespace(""))
+            toAttributeTupleList(e.attributes).find(_._1 == "xmlns").map(_._2).getOrElse("") // this might spray empty xmlns descriptions on all child nodes, we'll see.
           }
           case other => e.getNamespace(other)
         }
@@ -994,7 +1040,10 @@ class VysperXMLUtils {
   }
   def toScala(vysperNode:XMLFragment):Node = {
     val output = vysperNode match {
-      case t:XMLText => Text(t.getText)
+      case t:XMLText => {
+        println("toScala found text: %s".format(t.getText))
+        Text(t.getText)
+      }
       case e:XMLElement => {
         val prefix = e.getNamespacePrefix match {
           case s:String if s.length > 0 => s
@@ -1007,11 +1056,11 @@ class VysperXMLUtils {
         val scalaAttributes = toMetaData(attributes)
         val child = JavaListUtils.map(innerElements, (fragment:XMLFragment) => toScala(fragment)) match {
           // I wonder whether I should pass a null or an empty Text()?
-          case l:List[Node] if l.length == 0 => Text("")
-          case l:List[Node] if l.length == 1 => l.head
-          case l:List[Node] => Group(l)
+          case l:List[Node] if l.length == 0 => List(Text(""))
+          case l:List[Node] => l
+          //case l:List[Node] => Group(l)
         }
-        Elem(prefix,label,scalaAttributes,scope,child)
+        Elem(prefix,label,scalaAttributes,scope,child:_*)
       }
       case other => {
         println("other found: %s (%s)".format(other, other.getClass.toString))

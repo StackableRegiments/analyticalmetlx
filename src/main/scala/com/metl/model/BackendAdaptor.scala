@@ -353,7 +353,6 @@ object MeTLXConfiguration extends PropertyReader {
     ))
   }
   def setupServersFromFile(filePath:String) = {
-    EmbeddedXmppServer.initialize
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
@@ -414,6 +413,7 @@ object MeTLXConfiguration extends PropertyReader {
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
+    EmbeddedXmppServer.initialize
     println(configs)
   }
   def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))
