@@ -137,9 +137,10 @@
 	</clientConfig>
 	 -->
 	<securityProvider>
-		<!--		<stableKeyProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
+		<stableKeyProvider /> 
+		<!--		<stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
 		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-		<staticKeyProvider ejabberdPassword="ejPass" yawsPassword="yawsPass" />
+		<!-- <staticKeyProvider ejabberdPassword="ejPass" yawsPassword="yawsPass" /> -->
 		<!--		<staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />-->
 	</securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->

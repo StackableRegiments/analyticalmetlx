@@ -649,6 +649,7 @@ var Modes = (function(){
                                             type: 'POST',
                                             success: function(e){
                                                 updateTracking(identity);
+																								var newIdentity = $(e).find("resourceUrl").text();
                                                 //                                                var thumbnail = $(thumbnail);
                                                 var thumbnail = $("#imageUploadThumbnail");
                                                 var loader = $("#upload");
@@ -656,9 +657,10 @@ var Modes = (function(){
                                                     type:"image",
                                                     author:UserSettings.getUsername(),
                                                     timestamp:t,
-                                                    tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+identity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
+                                                    tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
                                                     //identity,
-                                                    identity:identity,
+                                                    //identity:identity,
+																										identity:newIdentity,
                                                     slide:currentSlide.toString(),
                                                     source:$(e).text(),
                                                     width:parseFloat(thumbnail.width()),
