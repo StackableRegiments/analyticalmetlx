@@ -435,7 +435,7 @@ function calculateImageBounds(image){
 }
 function calculateImageSource(image){
     var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-    return sprintf("/proxy/%s/%s",slide,encodeURIComponent(image.identity));
+    return sprintf("/resourceProxy/%s",encodeURIComponent(image.identity));
 }
 function calculateTextBounds(text){
     text.bounds = [text.x,text.y,text.x + text.width, text.y + (text.runs.length * text.size * 1.25)];

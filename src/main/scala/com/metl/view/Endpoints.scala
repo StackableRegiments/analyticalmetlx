@@ -125,6 +125,10 @@ object MeTLStatefulRestHelper extends RestHelper {
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",() => StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversation(r))
     case r@Req(List("conversationImportAsMe"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversationAsMe(r))
+    case Req(List("createConversation",title),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.createConversation",() => StatelessHtml.createConversation(Globals.currentUser.is,title))
+    case Req(List("addSlideAtIndex",jid,index),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.addSlideAtIndex",() => StatelessHtml.addSlideAtIndex(Globals.currentUser.is,jid,index))
     case Req(List("duplicateSlide",slide,conversation),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
     case Req(List("duplicateConversation",conversation),_,_) =>

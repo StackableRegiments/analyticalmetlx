@@ -47,8 +47,8 @@ abstract class ConfigurationProvider {
   }
   protected def generatePasswordForYaws(username:String):String 
   protected def generatePasswordForEjabberd(username:String):String 
-  def adornUsernameForEjabberd(username:String):String 
-  def adornUsernameForYaws(username:String):String 
+  def adornUsernameForEjabberd(username:String):String = username
+  def adornUsernameForYaws(username:String):String = username
   def vendClientConfiguration(username:String):Option[ClientConfiguration] = {
     for (
       cc <- MeTLXConfiguration.clientConfig;
@@ -63,7 +63,12 @@ abstract class ConfigurationProvider {
     }
   }
 }
-class StableKeyConfigurationProvider(scheme:String,localPort:Int,remoteBackendHost:String,remoteBackendPort:Int) extends ConfigurationProvider {
+class StableKeyConfigurationProvider extends ConfigurationProvider {
+  protected def generatePasswordForEjabberd(username:String):String = nextFuncName
+  protected def generatePasswordForYaws(username:String):String = nextFuncName
+}
+
+class StableKeyWithRemoteCheckerConfigurationProvider(scheme:String,localPort:Int,remoteBackendHost:String,remoteBackendPort:Int) extends ConfigurationProvider {
   protected val ejPassword = nextFuncName
   protected val verifyPath:String = "verifyUserCredentials"
   protected val returnAddress:String = {
@@ -89,8 +94,8 @@ class StableKeyConfigurationProvider(scheme:String,localPort:Int,remoteBackendHo
   }
   protected def generatePasswordForEjabberd(username:String):String = nextFuncName
   protected def generatePasswordForYaws(username:String):String = nextFuncName
-  def adornUsernameForEjabberd(username:String):String = "ejUserAndIp|%s|%s".format(username,scheme,getLocalIp,getLocalPort,verifyPath)
-  def adornUsernameForYaws(username:String):String = "%s@%s".format(username,returnAddress)
+  override def adornUsernameForEjabberd(username:String):String = "ejUserAndIp|%s|%s".format(username,scheme,getLocalIp,getLocalPort,verifyPath)
+  override def adornUsernameForYaws(username:String):String = "%s@%s".format(username,returnAddress)
 }
 
 class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPassword:String,yawsUsername:Option[String],yawsPassword:String) extends ConfigurationProvider {
@@ -108,6 +113,6 @@ class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPas
   }
   protected def generatePasswordForEjabberd(username:String):String = ejabberdPassword
   protected def generatePasswordForYaws(username:String):String = yawsPassword
-  def adornUsernameForEjabberd(username:String):String = ejabberdUsername.getOrElse(username)
-  def adornUsernameForYaws(username:String):String = yawsUsername.getOrElse(username)
+  override def adornUsernameForEjabberd(username:String):String = ejabberdUsername.getOrElse(username)
+  override def adornUsernameForYaws(username:String):String = yawsUsername.getOrElse(username)
 }

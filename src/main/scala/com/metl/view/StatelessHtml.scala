@@ -95,13 +95,19 @@ object StatelessHtml {
     }).getOrElse(NotFoundResponse("image not available"))))
 
   def proxy(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxy(%s)".format(identity), () => {
-    Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
-      image.imageBytes.map(bytes => {
-        println("found bytes: %s (%s)".format(bytes,bytes.length))
-        val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
-        InMemoryResponse(bytes,headers,Nil,200)
-      }).openOr(NotFoundResponse("image bytes not available"))
-    }).getOrElse(NotFoundResponse("image not available")))
+    Full({
+      val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
+      val history = room.getHistory
+      val imageOption = history.getImageByIdentity(identity)
+      println("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,history.getImages,imageOption))
+      imageOption.map(image => {
+        image.imageBytes.map(bytes => {
+          println("found bytes: %s (%s)".format(bytes,bytes.length))
+          val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
+          InMemoryResponse(bytes,headers,Nil,200)
+        }).openOr(NotFoundResponse("image bytes not available"))
+      }).getOrElse(NotFoundResponse("image not available"))
+    })
   })
   def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), () => {
     Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getQuizByIdentity(identity).map(quiz => {
@@ -190,10 +196,24 @@ object StatelessHtml {
       XmlResponse(node)
     }
   })
+  def createConversation(onBehalfOfUser:String,title:String):Box[LiftResponse] = {
+    serializer.fromConversation(config.createConversation(title,onBehalfOfUser)).headOption.map(n => XmlResponse(n))
+  }
+  def addSlideAtIndex(onBehalfOfUser:String,jid:String,afterSlideId:String):Box[LiftResponse] = {
+    val conv = config.detailsOfConversation(jid)
+    if (onBehalfOfUser == conv.author){
+      val newConv = conv.slides.find(_.id.toString == afterSlideId).map(slide => {
+        config.addSlideAtIndexOfConversation(jid,slide.index + 1)
+      }).getOrElse(conv)
+      serializer.fromConversation(newConv).headOption.map(n => XmlResponse(n))
+    } else {
+      Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
+    }
+  }
   def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
     val conv = config.detailsOfConversation(conversation)
     if (onBehalfOfUser == conv.author){
-      conv.slides.find(_.id.toString == slide).map(slide => {
+      val newConv = conv.slides.find(_.id.toString == slide).map(slide => {
         val step1 = config.addSlideAtIndexOfConversation(conversation,slide.index + 1)
         step1.slides.find(_.index == slide.index + 1).foreach(newSlide => {
           val oldId = slide.id
@@ -211,8 +231,9 @@ object StatelessHtml {
             (s:MeTLStanza) => s.author == conv.author
           )
         })
-      })
-      serializer.fromConversation(conv).headOption.map(n => XmlResponse(n))
+        step1 
+      }).getOrElse(conv)
+      serializer.fromConversation(newConv).headOption.map(n => XmlResponse(n))
     } else {
       Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
     }

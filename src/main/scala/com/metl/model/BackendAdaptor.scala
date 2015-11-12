@@ -166,13 +166,16 @@ object MeTLXConfiguration extends PropertyReader {
     val configurationProviderNodes = propFile \\ "serverConfiguration" \\ "securityProvider"
     ifConfiguredFromGroup(configurationProviderNodes,Map(
       "stableKeyProvider" -> {(n:NodeSeq) => {
+        configurationProvider = Some(new StableKeyConfigurationProvider())
+      }},
+      "stableKeyWithRemoteCheckerProvider" -> {(n:NodeSeq) => {
         for (
           lp <- (n \ "@localPort").headOption.map(_.text.toInt);
           ls <- (n \ "@localScheme").headOption.map(_.text);
           rbh <- (n \ "@remoteBackendHost").headOption.map(_.text);
           rbp <- (n \ "@remoteBackendPort").headOption.map(_.text.toInt)
         ) yield {
-          configurationProvider = Some(new StableKeyConfigurationProvider(ls,lp,rbh,rbp))
+          configurationProvider = Some(new StableKeyWithRemoteCheckerConfigurationProvider(ls,lp,rbh,rbp))
         }
       }},
       "staticKeyProvider" -> {(n:NodeSeq) => {
