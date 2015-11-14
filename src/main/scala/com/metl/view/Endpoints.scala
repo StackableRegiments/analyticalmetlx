@@ -127,6 +127,8 @@ object MeTLStatefulRestHelper extends RestHelper {
     case r@Req(List("conversationImportAsMe"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversationAsMe(r))
     case Req(List("createConversation",title),_,_) => 
       () => Stopwatch.time("MeTLStatefulRestHelper.createConversation",() => StatelessHtml.createConversation(Globals.currentUser.is,title))
+    case r@Req(List("updateConversation",jid),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.updateConversation",() => StatelessHtml.updateConversation(Globals.currentUser.is,jid,r))
     case Req(List("addSlideAtIndex",jid,index),_,_) => 
       () => Stopwatch.time("MeTLStatefulRestHelper.addSlideAtIndex",() => StatelessHtml.addSlideAtIndex(Globals.currentUser.is,jid,index))
     case Req(List("duplicateSlide",slide,conversation),_,_) =>
@@ -141,6 +143,8 @@ object MeTLStatefulRestHelper extends RestHelper {
       ()=> Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri",() => StatelessHtml.proxyDataUri(slide,source))
     case Req(List("proxy",slide,source),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxy",() => StatelessHtml.proxy(slide,source))
+    case r@Req(List("proxyImageUrl",slide),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl",() => StatelessHtml.proxyImageUrl(slide,r.param("source").getOrElse("")))
     case Req(List("quizProxy",conversation,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", () => StatelessHtml.quizProxy(conversation,identity))
     case Req(List("submissionProxy",conversation,author,identity),_,_) =>
