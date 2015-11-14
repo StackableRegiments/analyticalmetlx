@@ -94,6 +94,22 @@ object StatelessHtml {
       }).openOr(NotFoundResponse("image bytes not available"))
     }).getOrElse(NotFoundResponse("image not available"))))
 
+  def proxyImageUrl(slideJid:String,url:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyImageUrl(%s)".format(url),() => {
+    val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
+    val history = room.getHistory
+    val images = history.getImages
+    println("room: %s\r\nhistory: %s\r\nimages: %s\r\nurl: %s".format(room,history,images,url))
+    Full(images.find(_.source.exists(_ == url)).map(image => {
+      println("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,images,image))
+      image.imageBytes.map(bytes => {
+        println("found bytes: %s (%s)".format(bytes,bytes.length))
+        val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
+        InMemoryResponse(bytes,headers,Nil,200)
+      }).openOr(NotFoundResponse("image bytes not available"))
+    }).getOrElse({
+      NotFoundResponse("image not available")
+    }))
+  })
   def proxy(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxy(%s)".format(identity), () => {
     Full({
       val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
@@ -191,6 +207,18 @@ object StatelessHtml {
       updatedConv = config.updateConversation(conversation,conv.copy(slides = {
         slide.copy(groupSet = groupDef :: slide.groupSet) :: conv.slides.filterNot(_.id.toString == slideId)
       }));
+      node <- serializer.fromConversation(updatedConv).headOption
+    ) yield {
+      XmlResponse(node)
+    }
+  })
+  def updateConversation(onBehalfOfUser:String,conversationJid:String,req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.updateConversation(%s)".format(conversationJid),() => {
+    val conv = config.detailsOfConversation(conversationJid)
+    for (
+      newConvBytes <- req.body;
+      newConvString = new String(newConvBytes,"UTF-8");
+      newConv = serializer.toConversation(XML.loadString(newConvString));
+      updatedConv = config.updateConversation(conversationJid,newConv);
       node <- serializer.fromConversation(updatedConv).headOption
     ) yield {
       XmlResponse(node)
