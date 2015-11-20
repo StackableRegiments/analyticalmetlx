@@ -32,24 +32,9 @@ class AuthenticationSnippet {
           cc <- cp.vendClientConfiguration(authData.username)
         ) yield {
           <clientConfig> 
-            <xmppHost>{cc.xmppHost}</xmppHost>
-            <xmppPort>{cc.xmppPort}</xmppPort>
             <xmppDomain>{cc.xmppDomain}</xmppDomain>
             <xmppUsername>{cc.xmppUsername}</xmppUsername>
             <xmppPassword>{cc.xmppPassword}</xmppPassword>
-            <conversationSearchUrl>{cc.conversationSearchUrl}</conversationSearchUrl>
-            <webAuthenticationUrl>{cc.webAuthenticationUrl}</webAuthenticationUrl>
-            <thumbnailUrl>{cc.thumbnailUrl + ServerConfiguration.default.name + "/"}</thumbnailUrl>
-            <resourceUrl>{cc.resourceUrl}</resourceUrl>
-            <historyUrl>{cc.historyUrl}</historyUrl>
-            <httpUsername>{cc.httpUsername}</httpUsername>
-            <httpPassword>{cc.httpPassword}</httpPassword>
-            <structureDirectory>{cc.structureDirectory}</structureDirectory>
-            <resourceDirectory>{cc.resourceDirectory}</resourceDirectory>
-            <uploadPath>{cc.uploadPath}</uploadPath>
-            <primaryKeyGenerator>{cc.primaryKeyGenerator}</primaryKeyGenerator>
-            <cryptoKey>{cc.cryptoKey}</cryptoKey>
-            <cryptoIV>{cc.cryptoIV}</cryptoIV>
             <imageUrl>{cc.imageUrl}</imageUrl>
           </clientConfig>
         }).getOrElse(NodeSeq.Empty)

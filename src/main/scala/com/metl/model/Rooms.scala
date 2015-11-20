@@ -425,7 +425,7 @@ class XmppBridgingHistoryCachingRoom(configName:String,override val location:Str
     sendStanzaToServer(s)
   })
   protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
-    EmbeddedXmppServer.relayMessageToXmppMuc(location,s)
+    MeTLXConfiguration.xmppServer.foreach(_.relayMessageToXmppMuc(location,s))
   })
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendToChildren", () => {
     val (matches,remaining) = stanzasToIgnore.partition(sti => sti.equals(s))
