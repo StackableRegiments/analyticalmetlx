@@ -9,7 +9,7 @@ import Helpers._
 import scala.xml._
 import scala.collection.mutable.{Map=>MutableMap}
 
-case class ClientConfiguration(xmppHost:String,xmppPort:Int,xmppDomain:String,xmppUsername:String,xmppPassword:String,conversationSearchUrl:String,webAuthenticationUrl:String,thumbnailUrl:String,resourceUrl:String,historyUrl:String,httpUsername:String,httpPassword:String,structureDirectory:String,resourceDirectory:String,uploadPath:String,primaryKeyGenerator:String,cryptoKey:String,cryptoIV:String,imageUrl:String)
+case class ClientConfiguration(xmppDomain:String,xmppUsername:String,xmppPassword:String,imageUrl:String)
 
 abstract class ConfigurationProvider {
   val keys:MutableMap[String,String] = MutableMap.empty[String,String]
@@ -56,9 +56,7 @@ abstract class ConfigurationProvider {
     ) yield {
       cc.copy(
         xmppUsername = xu,
-        xmppPassword = xp,
-        httpUsername = hu,
-        httpPassword = hp
+        xmppPassword = xp
       )
     }
   }

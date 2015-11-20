@@ -266,14 +266,13 @@ class MeTLXAuthentication extends UserAuthorization  {
   }
 }
 
-object EmbeddedXmppServer {
+class EmbeddedXmppServer(val domain:String) {
   protected var privateServer:Box[XMPPServer] = Empty
   protected var mucModule:Box[MeTLMucModule] = Empty
   protected var roomAdaptor:Box[EmbeddedXmppServerRoomAdaptor] = Empty
 
   def initialize = {
     println("embedded xmpp server start handler")
-    val domain = "local.temp"
     //val providerRegistry = new MemoryStorageProviderRegistry()
     val providerRegistry = new OpenStorageProviderRegistry()
 
@@ -980,6 +979,13 @@ object JavaListUtils {
     var output = List.empty[B]
     while (iter.hasNext)
       output = output ::: List(function(iter.next))
+    output
+  }
+  def toList[A](coll:JavaList[A]):List[A] = {
+    val iter = coll.iterator
+    var output = List.empty[A]
+    while (iter.hasNext)
+      output = output ::: List(iter.next)
     output
   }
   def foldl[A,B](coll:JavaList[A], seed:B, function:(B,A) => B):B = {

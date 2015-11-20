@@ -93,6 +93,11 @@ object MeTLRestHelper extends RestHelper {
       val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
+    case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",() => {
+      val server = ServerConfiguration.default
+      val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
+      Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
+    })
     case Req("thumbnail" :: configName :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail", () => {
       val server = ServerConfiguration.configForName(configName)
       val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail

@@ -6,6 +6,7 @@ import monash.SAML._
 import com.metl.cas._
 import com.metl.data._
 import com.metl.metl2011._
+import com.metl.auth._
 import com.metl.utils._
 
 import _root_.net.liftweb.util._
@@ -191,27 +192,12 @@ object MeTLXConfiguration extends PropertyReader {
     ));
     ifConfigured(propFile,"clientConfig",(n:NodeSeq) => {
       clientConfig = for (
-        xh <- (n \ "xmppHost").headOption.map(_.text);
-        xp <- (n \ "xmppPort").headOption.map(_.text.toInt);
         xd <- (n \ "xmppDomain").headOption.map(_.text);
+        iu <- (n \ "imageUrl").headOption.map(_.text);
         xuser = "";
-        xpass = "";
-        csu <- (n \ "conversationSearchUrl").headOption.map(_.text);
-        wau <- (n \ "webAuthenticationUrl").headOption.map(_.text);
-        tu <- (n \ "thumbnailUrl").headOption.map(_.text);
-        ru <- (n \ "resourceUrl").headOption.map(_.text);
-        hu <- (n \ "historyUrl").headOption.map(_.text);
-        httpU = "";
-        httpP = "";
-        sd <- (n \ "structureDirectory").headOption.map(_.text);
-        rd <- (n \ "resourceDirectory").headOption.map(_.text);
-        up <- (n \ "uploadPath").headOption.map(_.text);
-        pkg <- (n \ "primaryKeyGenerator").headOption.map(_.text);
-        ck <- (n \ "cryptoKey").headOption.map(_.text);
-        civ <- (n \ "cryptoIV").headOption.map(_.text);
-        iu <- (n \ "imageUrl").headOption.map(_.text)
+        xpass = ""
       ) yield {
-        ClientConfiguration(xh,xp,xd,xuser,xpass,csu,wau,tu,ru,hu,httpU,httpP,sd,rd,up,pkg,ck,civ,iu)
+        ClientConfiguration(xd,xuser,xpass,iu)
       }
     })
   }
@@ -299,6 +285,30 @@ object MeTLXConfiguration extends PropertyReader {
                 Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
               }
             )
+          )
+        )
+      }},
+      "google" -> {(n:NodeSeq) => {
+        LiftAuthAuthentication.attachAuthenticator(
+          new OpenIdConnectAuthenticationSystem(
+            googleClientId = (n \\ "@clientId").text,
+            googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text),
+            alreadyLoggedIn = () => Globals.casState.authenticated,
+            onSuccess = (la:LiftAuthStateData) => {
+              if ( la.authenticated ) {
+                Globals.currentUser(la.username)
+                var existingGroups:List[Tuple2[String,String]] = Nil
+                if (Globals.groupsProviders != null){
+                  Globals.groupsProviders.foreach(gp => {
+                    val newGroups = gp.getGroupsFor(la.username)
+                    if (newGroups != null){
+                      existingGroups = existingGroups ::: newGroups
+                    }
+                  })
+                }
+                Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
+              }
+            }
           )
         )
       }},
@@ -393,6 +403,7 @@ object MeTLXConfiguration extends PropertyReader {
     val servers = ServerConfiguration.getServerConfigurations
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
   }
+  var xmppServer:Option[EmbeddedXmppServer] = None
   def initializeSystem = {
     Globals
     /*
@@ -416,7 +427,11 @@ object MeTLXConfiguration extends PropertyReader {
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
-    EmbeddedXmppServer.initialize
+    xmppServer = clientConfig.map(cc => {
+      val exs = new EmbeddedXmppServer(cc.xmppDomain)
+      exs.initialize
+      exs
+    })
     println(configs)
   }
   def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))
