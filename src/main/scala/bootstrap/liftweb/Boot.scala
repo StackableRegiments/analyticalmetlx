@@ -59,6 +59,8 @@ class Boot {
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
       //Widget
       Menu(Loc("Analytical widget","widget" :: Nil,"Widgets")),
+      //Hybrid textboxing
+      Menu(Loc("HTML embed layer","textbox" :: Nil,"Textbox")),
       //FutureMeTL
       Menu(Loc("Future","future" :: Nil,"Future MeTL")),
       //MeTLX
