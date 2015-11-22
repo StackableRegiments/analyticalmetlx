@@ -3,23 +3,15 @@ var MeTLText = (function(){
   var px = function(i){
     return ""+i+"px";
   };
-  var l = function(s){
-    return function(){
-      alert(s);
-    };
-  }
   return {
-    live:function(){
-      $("body").click(function(e){
-        MeTLText.append(e.pageX,e.pageY);
-      });
-    },
     append:function(x,y){
+      $(".Squire-UI").hide();
       var el = document.elementFromPoint(x,y);
       var tg = el.tagName.toLowerCase();
       if(tg == "body" || tg == "html"){
         var id = "t_"+textBoxCount++;
         var c = $("<div />",{
+          class:"metltext",
           id:id
         }).appendTo("body").css(
           {
@@ -29,9 +21,13 @@ var MeTLText = (function(){
           }
         );
         new SquireUI({div:"#"+id,buildPath:"/static/"});
-        return id;
       }
-      return el.id
+      else{
+        var parent = el.closest(".metltext");
+        if(parent != null){
+          parent.find(".Squire-UI").show();
+        }
+      }
     }
   }
 })();
