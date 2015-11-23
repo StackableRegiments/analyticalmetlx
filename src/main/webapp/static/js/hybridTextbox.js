@@ -5,6 +5,14 @@ var MeTLText = (function(){
   };
   CKEDITOR.disableAutoInline = true;
   return {
+    hideControls:function(){
+      $("#topControl").hide();
+      $("#bottomControl").hide();
+    },
+    showControls:function(){
+      $("#topControl").show();
+      $("#bottomControl").show();
+    },
     append:function(x,y){
       var target = document.elementFromPoint(x,y).tagName.toLowerCase();
       if(target == "body" || target == "html"){
