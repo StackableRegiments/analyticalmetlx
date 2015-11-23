@@ -2,3 +2,4 @@ target
 debug.log
 .ivy2
 .sbt-boot
+testdb*
