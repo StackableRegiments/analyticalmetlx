@@ -3,30 +3,31 @@ var MeTLText = (function(){
   var px = function(i){
     return ""+i+"px";
   };
+  CKEDITOR.disableAutoInline = true;
   return {
     append:function(x,y){
-      $(".Squire-UI").hide();
-      var el = document.elementFromPoint(x,y);
-      var tg = el.tagName.toLowerCase();
-      if(tg == "body" || tg == "html"){
-        var id = "t_"+textBoxCount++;
-        var c = $("<div />",{
-          class:"metltext",
-          id:id
-        }).appendTo("body").css(
-          {
-            position:"absolute",
-            left:px(x),
-            top:px(y)
+      var target = document.elementFromPoint(x,y).tagName.toLowerCase();
+      if(target == "body" || target == "html"){
+        var id = "txt_"+textBoxCount++;
+        $('<textarea />',{
+          id:id,
+          name:id
+        }).appendTo('#editables');
+
+        var editor = CKEDITOR.inline(id, {
+          startupFocus:true,
+          extraPlugins: 'sharedspace,youtube',
+          removePlugins: 'floatingspace,maximize,resize',
+          sharedSpaces: {
+            top: 'topControl',
+            bottom: 'bottomControl'
           }
-        );
-        new SquireUI({div:"#"+id,buildPath:"/static/"});
-      }
-      else{
-        var parent = el.closest(".metltext");
-        if(parent != null){
-          parent.find(".Squire-UI").show();
-        }
+        });
+        editor.on('instanceReady',function(){
+          var container = editor.container.$;
+          container.style.left = px(x);
+          container.style.top = px(y);
+        });
       }
     }
   }
