@@ -13,11 +13,10 @@ unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp"
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
-//seq(webSettings :_*)
-
 jetty()
 
 javaOptions in container ++= Seq(
+  "-Drun.mode=development",
   "-Dmetlx.configurationFile=config/configuration.local.xml",
   "-Dlogback.configurationFile=config/logback.xml",
   "-XX:+UseConcMarkSweepGC",
@@ -26,26 +25,16 @@ javaOptions in container ++= Seq(
 
 libraryDependencies ++= {
   Seq(
-    //              "net.liftweb"       %% "lift-webkit" % liftVersion % "compile",
-    //             "net.liftmodules"   %% "lift-jquery-module" % (liftVersion + "-2.2"),
     "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
     "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar")
-      //              "ch.qos.logback" % "logback-classic" % "1.0.6"
   )
 }
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
   val scalaVersionString = "2.11.5"
-  //  val logbackVersion = "1.0.1"
   Seq(
-    //    "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided",
-    //    "org.eclipse.jetty" % "jetty-webapp" % "9.1.5.v20140505",
-    //    "org.eclipse.jetty" % "jetty-plus" % "9.1.5.v20140505",
-    //    "org.slf4j" % "slf4j-simple" % "1.6.2",
     "ch.qos.logback" % "logback-classic" % "1.1.3",
-    //    changing to logback-core as per Chris's changes
-    //    "ch.qos.logback" % "logback-core" % logbackVersion,
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
@@ -78,16 +67,6 @@ libraryDependencies ++= {
   )
 }
 
-// enable the in-sbt jettyContainer for testing
-
-//enablePlugins(JettyPlugin)
-
-//containerPort := 8080
-
-// increase the time between polling for file changes when using continuous execution
-pollInterval := 1000
-
-// append several options to the list of options passed to the Java compiler
 javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
 
 // append -deprecation to the options passed to the Scala compiler
@@ -147,12 +126,3 @@ traceLevel := 10
 traceLevel := 0
 
 credentials += Credentials(Path.userHome / ".ivy2" / "ivy-credentials")
-
-// Exclude transitive dependencies, e.g., include log4j without including logging via jdmk, jmx, or jms.
-/*
- libraryDependencies += "log4j" % "log4j" % "1.2.15" excludeAll(
- ExclusionRule(organization = "com.sun.jdmk"),
- ExclusionRule(organization = "com.sun.jmx"),
- ExclusionRule(organization = "javax.jms")
- )
- */

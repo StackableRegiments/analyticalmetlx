@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js" id="jquery" type="text/javascript"></script>
+    <script src="http://www.alohaeditor.org/download/aloha.min.js"></script>
+    <script type="text/javascript" src="/static/js/ybridTextbox.js"></script>
+    <style>
+      body{
+      height:100vh;
+      }
+    </style>
+    <script>
+      $(function(){
+      MeTLText.live();
+      });
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
