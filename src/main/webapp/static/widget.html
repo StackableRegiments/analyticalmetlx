@@ -7,12 +7,19 @@
       width:100%;
       height:100%;
       }
+      #progress{
+      position:absolute;
+      top:20px;
+      width:100%;
+      }
     </style>
   </head>
   <canvas id="host"></canvas>
+  <progress id="progress" />
   <script>
-    function wordcloud(items){
+    function wordcloud(items,index,limit){
         $("#host").attr('width',window.innerWidth).attr('height',window.innerHeight);
+        $("#progress").attr("value",index).attr("max",limit);
         WordCloud('host',{
             list:items,
             gridSize: 32,
