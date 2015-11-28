@@ -211,6 +211,20 @@ object MeTLXConfiguration extends PropertyReader {
       Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) :: Globals.groupsProviders
     },true)
   }
+  def setupClientAdaptorsFromFile(filePath:String) = {
+    xmppServer = (for (
+      cc <- clientConfig;
+      propFile = XML.load(filePath);
+      clientAdaptors <- (propFile \\ "clientAdaptors").headOption;
+      exs <- (clientAdaptors \ "embeddedXmppServer").headOption;
+      keystorePath <- (exs \ "@keystorePath").headOption.map(_.text);
+      keystorePassword <- (exs \ "@keystorePassword").headOption.map(_.text) 
+    ) yield {
+      val exs = new EmbeddedXmppServer(cc.xmppDomain,keystorePath,keystorePassword)
+      exs.initialize
+      exs
+    })
+  }
   def setupAuthenticatorsFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
@@ -427,11 +441,7 @@ object MeTLXConfiguration extends PropertyReader {
       println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
-    xmppServer = clientConfig.map(cc => {
-      val exs = new EmbeddedXmppServer(cc.xmppDomain)
-      exs.initialize
-      exs
-    })
+    setupClientAdaptorsFromFile(Globals.configurationFileLocation)
     println(configs)
   }
   def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))

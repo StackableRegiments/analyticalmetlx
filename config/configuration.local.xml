@@ -16,20 +16,7 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>localhost</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>http://localhost:8080/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>http://localhost:8080/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>http://localhost:8080/thumbnail/</thumbnailUrl>
-		<resourceUrl>http://localhost:8080/getResource?identity=</resourceUrl>
-		<historyUrl>http://localhost:8080/getHistory?jid=</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>http://localhost:8080/upload?</uploadPath>
-		<primaryKeyGenerator>http://localhost:8080/getNextKey</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 
@@ -51,20 +38,7 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>devmetl.saintleo.edu</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>metl.adm.monash.edu.au</xmppDomain>
-		<conversationSearchUrl>https://devmetl.saintleo.edu:8443/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>https://devmetl.saintleo.edu:8443/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>https://devmetl.saintleo.edu:8443/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://devmetl.saintleo.edu:1188/</resourceUrl>
-		<historyUrl>https://devmetl.saintleo.edu:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	-->
@@ -85,20 +59,7 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>demo.stackableregiments.com</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 -->
@@ -119,20 +80,7 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>demo.stackableregiments.com</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>http://localhost:8080/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>http://localhost:8080/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>http://localhost:8080/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	 -->
@@ -145,6 +93,9 @@
 	</securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
 	<authentication>
+		<!--
+		<google clientId="exampleGoogleClientId"/>
+-->
 		<mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
 			<template>
 				<div>
@@ -172,4 +123,7 @@
 	<!--
 	<stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
 -->
+	<clientAdaptors>
+		<embeddedXmppServer keystorePath="exampleKeystorePath" keystorePassword="exampleKeystorePassword" />
+	</clientAdaptors>
 </serverConfiguration>
