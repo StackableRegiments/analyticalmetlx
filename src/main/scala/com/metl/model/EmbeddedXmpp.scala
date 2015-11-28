@@ -266,7 +266,7 @@ class MeTLXAuthentication extends UserAuthorization  {
   }
 }
 
-class EmbeddedXmppServer(val domain:String) {
+class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:String) {
   protected var privateServer:Box[XMPPServer] = Empty
   protected var mucModule:Box[MeTLMucModule] = Empty
   protected var roomAdaptor:Box[EmbeddedXmppServerRoomAdaptor] = Empty
@@ -284,7 +284,8 @@ class EmbeddedXmppServer(val domain:String) {
     privateServer.map(p => {
       p.addEndpoint(new TCPEndpoint())
       p.setStorageProviderRegistry(providerRegistry)
-      p.setTLSCertificateInfo(new java.io.File("/stackable/analyticalmetlx/config/metl.jks"),"helpme")
+      //p.setTLSCertificateInfo(new java.io.File("/stackable/analyticalmetlx/config/metl.jks"),"helpme")
+      p.setTLSCertificateInfo(new java.io.File(keystorePath),keystorePassword)
       try {
         p.start()
         println("embedded xmpp server started")
