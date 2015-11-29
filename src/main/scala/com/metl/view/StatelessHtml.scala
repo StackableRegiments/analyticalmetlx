@@ -158,7 +158,7 @@ object StatelessHtml {
   def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), () => {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
     val phrases = List(
-      history.collect{case t:MeTLText => t.text},
+      history.collect{case t:MeTLText => t.text}.map(txt => tryo((xml.XML.loadString(txt) \\ "Run").text).openOr("")),
       CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
     <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
   })
