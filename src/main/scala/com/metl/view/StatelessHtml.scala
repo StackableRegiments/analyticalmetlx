@@ -200,6 +200,68 @@ object StatelessHtml {
       }).getOrElse(NotFoundResponse("username not provided"))
     })
   })
+  def describeHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(req.param("source")),() => {
+    req.param("source").map(jid=>{
+      val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
+      val history = room.getHistory
+      val stanzas = history.getAll
+      val allContent = stanzas.length
+      val publishers = stanzas.groupBy(_.author)
+      val canvasContent = history.getCanvasContents.length
+      val strokes = history.getInks.length
+      val texts = history.getTexts.length
+      val images = history.getImages.length
+      val attendances = history.getAttendances.length
+      val files = history.getAttendances.length
+      val quizzes = history.getQuizzes.length
+      val highlighters = history.getHighlighters.length
+      val occupants = history.getAttendances
+      val occupantCount = occupants.length
+      val uniqueOccupants = occupants.groupBy(occ => occ.author)
+      val xmlDescription = <historyDescription>
+                            <bounds>
+                              <left>{Text(history.getLeft.toString)}</left>
+                              <right>{Text(history.getRight.toString)}</right>
+                              <top>{Text(history.getTop.toString)}</top>
+                              <bottom>{Text(history.getBottom.toString)}</bottom>
+                            </bounds>
+                            <jid>{Text(jid)}</jid>
+                            <stanzaCount>{Text(allContent.toString)}</stanzaCount>
+                            <canvasContentCount>{Text(canvasContent.toString)}</canvasContentCount>
+                            <imageCount>{Text(images.toString)}</imageCount>
+                            <strokeCount>{Text(strokes.toString)}</strokeCount>
+                            <highlighterCount>{Text(highlighters.toString)}</highlighterCount>
+                            <textCount>{Text(texts.toString)}</textCount>
+                            <quizzes>{Text(quizzes.toString)}</quizzes>
+                            <files>{Text(files.toString)}</files>
+                            <uniquePublishers>{publishers.map(pub => {
+                               <publisher>
+                                <name>{pub._1}</name>
+                                <activityCount>{pub._2.length}</activityCount>
+                              </publisher>
+                            })}</uniquePublishers>
+                            <uniqueOccupants>{uniqueOccupants.map(occ => {
+                              <occupant>
+                                <name>{occ._1}</name>
+                                <activity>{
+                                  occ._2.map(action => {
+                                    <action>
+                                      <location>{Text(action.location)}</location>
+                                      <timestamp>{Text(action.timestamp.toString)}</timestamp>
+                                      <present>{Text(action.present.toString)}</present>
+                                    </action>
+                                  })
+                                }</activity>
+                              </occupant>
+                            })}</uniqueOccupants>
+                            <occupants>{Text(occupantCount.toString)}</occupants>
+                            <snapshot>{
+                              Text(base64Encode(room.getThumbnail))
+                            }</snapshot>
+                          </historyDescription>
+      XmlResponse(xmlDescription)
+    })
+  })
   def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),() => {
     val conv = config.detailsOfConversation(conversation)
     for (
