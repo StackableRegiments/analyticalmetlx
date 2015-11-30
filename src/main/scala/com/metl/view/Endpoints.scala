@@ -71,6 +71,8 @@ object MeTLRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLRestHelper.fullHistory", () => StatelessHtml.fullHistory(r))
     case r @ Req(List("fullClientHistory"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.fullClientHistory", () => StatelessHtml.fullClientHistory(r))
+    case r @ Req("describeHistory" :: _,_,_) => 
+      () => Stopwatch.time("MeTLRestHelper.describeHistory",() => StatelessHtml.describeHistory(r))
     case r @ Req(List("themes"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.themes", () => StatelessHtml.themes(r))
     case r @ Req(List("words",jid),_,_) =>
