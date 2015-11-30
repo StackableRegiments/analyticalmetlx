@@ -87,6 +87,13 @@ object MeTLRestHelper extends RestHelper {
         val server = ServerConfiguration.default
         Full(XmlResponse(<conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>))
       })
+    case Req("render" :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render", () => {
+      val server = ServerConfiguration.default
+      val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+      val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
+      Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
+    })
+
     case Req("render" :: configName :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render", () => {
       val server = ServerConfiguration.configForName(configName)
       val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
@@ -130,11 +137,11 @@ object MeTLStatefulRestHelper extends RestHelper {
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",() => StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversation(r))
     case r@Req(List("conversationImportAsMe"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversationAsMe(r))
-    case Req(List("createConversation",title),_,_) => 
+    case Req(List("createConversation",title),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.createConversation",() => StatelessHtml.createConversation(Globals.currentUser.is,title))
-    case r@Req(List("updateConversation",jid),_,_) => 
+    case r@Req(List("updateConversation",jid),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.updateConversation",() => StatelessHtml.updateConversation(Globals.currentUser.is,jid,r))
-    case Req(List("addSlideAtIndex",jid,index),_,_) => 
+    case Req(List("addSlideAtIndex",jid,index),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.addSlideAtIndex",() => StatelessHtml.addSlideAtIndex(Globals.currentUser.is,jid,index))
     case Req(List("duplicateSlide",slide,conversation),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
@@ -148,7 +155,7 @@ object MeTLStatefulRestHelper extends RestHelper {
       ()=> Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri",() => StatelessHtml.proxyDataUri(slide,source))
     case Req(List("proxy",slide,source),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxy",() => StatelessHtml.proxy(slide,source))
-    case r@Req(List("proxyImageUrl",slide),_,_) => 
+    case r@Req(List("proxyImageUrl",slide),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl",() => StatelessHtml.proxyImageUrl(slide,r.param("source").getOrElse("")))
     case Req(List("quizProxy",conversation,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", () => StatelessHtml.quizProxy(conversation,identity))

@@ -1,0 +1,875 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "0.0.1",
+        "description": "The stateless HTTP interaction surface of the MeTL open realtime learning system"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "schemes": [
+        "http"
+    ],
+    "license": {
+        "name": "Apache 2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "tags":[
+        {"name":"contentCreation","description":"Creation of MeTL content."},
+        {"name":"monitoring","description":"Health checks and event management."},
+        {"name":"readConversation","description":"Logical reconstructions of conversation state."},
+        {"name":"readDetails","description":"Conversation structure and metadata."},
+        {"name":"search","description":"Conversation search."},
+        {"name":"thumbnail","description":"Visual reconstructions of conversation state."},
+        {"name":"assessment","description":"Quizzes, quiz structure and submissions."},
+        {"name":"resources","description":"Uploaded images and attached files."},
+        {"name":"pullUser","description":"Moving users to MeTL locations."},
+        {"name":"devices","description":"Metadata collection about user devices."},
+        {"name":"inSession","description":"Calls only executable from a web client which has an active session with the MeTL backend"}
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/conversationImport":{
+            "post":{
+                "tags":["inSession","contentCreation"],
+                "description":"Import an entire conversation, from a single file created by the conversationExport endpoint, where all the content is imported with the original ownership of content left intact.  This may result in a conflation of two user identities.",
+                "parameters":[
+                    {
+                        "name":"data",
+                        "$ref":"Export",
+                        "description":"the export content, represented as an XML string, in the same format that the conversationExport endpoint returned.",
+                        "in":"body",
+                        "required":"true"
+                    }
+                ],
+                "consumes":[
+                    "application/xml"
+                ],
+                "produces":[
+                    "application/xml"
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {
+                            "$ref":"#/definitions/ConversationDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversationImportAsMe":{
+            "post":{
+                "tags":["inSession","contentCreation"],
+                "description":"Import an entire conversation, from a single file created by the conversationExport endpoint, where all the content is transferred to the ownership of the logged-in user.",
+                "parameters":[
+                    {
+                        "name":"data",
+                        "$ref":"Export",
+                        "description":"the export content, represented as an XML string, in the same format that the conversationExport endpoint returned.",
+                        "in":"body",
+                        "required":"true"
+                    }
+                ],
+                "produces":[
+                    "application/xml"
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {
+                            "$ref":"#/definitions/ConversationDetails"
+                        }
+                    }
+                }
+
+            }
+        },
+        "/conversationExport/{conversationJid}":{
+            "get":{
+                "tags":["inSession","readConversation"],
+                "description":"Extract an entire conversation, as a single file ready to import into another server",
+                "parameters":[
+                    {
+                        "name":"conversationJid",
+                        "in":"path",
+                        "required":"true",
+                        "type":"string"
+                    }
+                ],
+                "produces":[
+                    "application/xml"
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {"$ref":"#/definitions/Export"}
+                    }
+                }
+            }
+        },
+        "/conversationExportForMe/{conversationJid}":{
+            "get":{
+                "tags":["inSession","readConversation"],
+                "description":"Extract an entire conversation, as a single file ready to import into another server, which includes only public content and my private content",
+                "parameters":[
+                    {
+                        "name":"conversationJid",
+                        "in":"path",
+                        "required":"true",
+                        "type":"string"
+                    }
+                ],
+                "produces":[
+                    "application/xml"
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {"$ref":"#/definitions/Export"}
+                    }
+                }
+            }
+        },
+        "/projector/{conversationJid}":{
+            "get":{
+                "tags":["inSession"],
+                "description":"Move the peered clients who have my identity to a location (for projector control)",
+                "parameters":[
+                    {
+                        "name":"conversationJid",
+                        "in":"path",
+                        "required":"true",
+                        "type":"string"
+                    }
+                ]
+            }
+        },
+        "/logDevice":{
+            "get":{
+                "tags":["monitoring"],
+                "description":"Log a User Agent string for analysis"
+            }
+        },
+        "/quizResponse/{conversation}/{quiz}/{response}":{
+            "get":{
+                "tags":["inSession","assessment"],
+                "description":"Answer a quiz",
+                "parameters":[
+                    {
+                        "name":"conversation",
+                        "description":"The conversation in which the quiz was published",
+                        "in":"path",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"quiz",
+                        "description":"The quiz being answered",
+                        "in":"path",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"id",
+                        "description":"The response being chosen",
+                        "in":"path",
+                        "required":"true",
+                        "type":"string"
+                    }
+                ]
+            }
+        },
+        "/uploadDataUri":{
+            "get":{
+                "tags":["inSession","contentCreation"],
+                "description":"Upload a file",
+                "parameters":[
+                    {
+                        "name":"filename",
+                        "description":"The intended filename at destination",
+                        "in":"query",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"jid",
+                        "description":"The destination in MeTL",
+                        "in":"query",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"dataUri",
+                        "description":"A data uri describing the file contents to upload",
+                        "in":"body",
+                        "required":"true",
+                        "type":"string"
+                    }
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {"$ref":"#/definitions/Upload"}
+                    }
+                }
+            }
+        },
+        "/upload":{
+            "get":{
+                "tags":["inSession","contentCreation"],
+                "description":"Upload a file",
+                "parameters":[
+                    {
+                        "name":"filename",
+                        "description":"The intended filename at destination",
+                        "in":"query",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"jid",
+                        "description":"The destination in MeTL",
+                        "in":"query",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"data",
+                        "description":"The file contents to upload",
+                        "in":"body",
+                        "required":"true"
+                    }
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {"$ref":"#/definitions/Upload"}
+                    }
+                }
+            }
+        },
+        "/join":{
+            "get":{
+                "tags":["inSession","pullUser"],
+                "description":"Move this user to a location",
+                "parameters":[
+                    {
+                        "name":"conversation",
+                        "in":"query",
+                        "required":"true",
+                        "type":"string"
+                    },
+                    {
+                        "name":"slide",
+                        "in":"query",
+                        "required":"true",
+                        "type":"string"
+                    }
+                ]
+            }
+        },
+        "/search":{
+            "get":{
+                "tags":["search"],
+                "description":"Retrieve conversation identities by textual fragment search",
+                "produces":[
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"query",
+                        "description":"A textual fragment to match against title and author",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    }
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/ConversationDetails"}
+                        }
+                    }
+                }
+            }
+        },
+        "/thumbnail/{configName}/{jid}":{
+            "get":{
+                "tags":["thumbnail"],
+                "description":"Retrieve a size constrained JPEG image of a slide's public content",
+                "produces":[
+                    "image/jpeg"
+                ],
+                "parameters":[
+                    {"name":"configName","in":"path","required":"true","type":"string","description":"The server configuration against which to generate the thumbnail"},
+                    {"name":"jid","in":"path","required":"true","type":"string","description":"The slide for which to generate the thumbnail"}
+                ]
+            }
+        },
+        "/thumbnailDataUri/{configName}/{jid}":{
+            "get":{
+                "tags":["thumbnail"],
+                "description":"Retrieve a data:uri of the thumbnail of a slide's public content",
+                "produces":[
+                    "image/jpeg"
+                ],
+                "parameters":[
+                    {"name":"configName","in":"path","required":"true","type":"string","description":"The server configuration against which to generate the thumbnail"},
+                    {"name":"jid","in":"path","required":"true","type":"string","description":"The slide for which to generate the thumbnail"}
+                ]
+            }
+        },
+        "/render/{configName}/{jid}/{height}/{width}":{
+            "get":{
+                "tags":["thumbnail"],
+                "description":"Retrieve a JPEG image of a slide's public content",
+                "produces":[
+                    "image/jpeg"
+                ],
+                "parameters":[
+                    {"name":"configName","in":"path","required":"true","type":"string","description":"The server configuration against which to generate the snapshot"},
+                    {"name":"jid","in":"path","required":"true","type":"string","description":"The slide for which to generate the snapshot"},
+                    {"name":"height","in":"path","required":"true","type":"string","description":"The requested height of the snapshot"},
+                    {"name":"width","in":"path","required":"true","type":"string","description":"The requested width of the snapshot"}
+                ]
+            }
+        },
+        "/details/{id}":{
+            "get":{
+                "tags":["readDetails"],
+                "description":"Retrieve structural details of a conversation",
+                "produces":[
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"id",
+                        "description":"The identity of the conversation",
+                        "in":"path",
+                        "required":true,
+                        "type":"string"
+                    }
+                ],
+                "responses":{
+                    "200": {
+                        "schema": {
+                            "$ref":"#/definitions/ConversationDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/themes": {
+            "get": {
+                "tags":["readConversation"],
+                "description": "Recognized words handwritten on a slide.",
+                "produces": [
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"source",
+                        "description":"The location of the slide or conversation",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Theme"}
+                        }
+                    }
+                }
+            }
+        },
+        "/fullHistory": {
+            "get": {
+                "tags":["readConversation"],
+                "description": "Full history of content in a slide or conversation.  Includes elements which were later deleted or moved.",
+                "produces": [
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"source",
+                        "description":"The location of the slide or conversation",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    },
+                    {
+                        "name":"username",
+                        "description":"The identity under which to retrieve content",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    }
+
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref":"#/definitions/History"
+                        }
+                    }
+                }
+            }
+        },
+        "/mergedHistory": {
+            "get": {
+                "tags":["readConversation"],
+                "description": "Current state of content in a slide or conversation, with optimisation applied.  Includes all the private notes of a specified user.",
+                "produces": [
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"source",
+                        "description":"The location of the slide or conversation",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    },
+                    {
+                        "name":"username",
+                        "description":"The identity under which to retrieve content",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    }
+
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref":"#/definitions/History"
+                        }
+                    }
+                }
+            }
+        },
+        "/history": {
+            "get": {
+                "tags":["readConversation"],
+                "description": "Current state of content in a slide or conversation, with optimisation applied.",
+                "produces": [
+                    "application/xml"
+                ],
+                "parameters":[
+                    {
+                        "name":"source",
+                        "description":"The identity of the conversation",
+                        "in":"query",
+                        "required":true,
+                        "type":"string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref":"#/definitions/History"
+                        }
+                    }
+                }
+            }
+        },
+        "/serverStatus": {
+            "get": {
+                "tags":["monitoring"],
+                "description": "Efficient health check for incorporation into institutional monitoring",
+                "produces": [
+                    "text/plain"
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CanvasContent":{
+            "type":"object",
+            "properties":{
+                "target":{"type":"string"},
+                "privacy":{"type":"string"},
+                "slide":{"type":"string"},
+                "identity":{"type":"string"}
+            }
+        },
+        "MeTLContent":{
+            "type":"object",
+            "properties":{
+                "author":{"type":"string"},
+                "timestamp":{
+                    "type":"integer",
+                    "format":"int64"
+                },
+                "audiences":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/Audience"}
+                }
+            }
+        },
+        "Audience":{
+            "type":"object",
+            "properties":{
+                "domain":{"type":"string"},
+                "name":{"type":"string"},
+                "type":{"type":"string"},
+                "action":{"type":"string"}
+            }
+        },
+        "MeTLMoveDelta":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"},
+                "inkIds":{"type":"array","items":{"type":"string"}},
+                "textIds":{"type":"array","items":{"type":"string"}},
+                "imageIds":{"type":"array","items":{"type":"string"}},
+                "xTranslate":{"type":"double"},
+                "yTranslate":{"type":"double"},
+                "xScale":{"type":"double"},
+                "yScale":{"type":"double"},
+                "newPrivacy":{"type":"string"},
+                "isDeleted":{"type":"boolean"},
+                "xOrigin":{"type":"double"},
+                "yOrigin":{"type":"double"}
+            }
+        },
+        "DirtyInk":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"}
+            }
+        },
+        "DirtyImage":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"}
+            }
+        },
+        "DirtyText":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"}
+            }
+        },
+        "Text":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"},
+                "tag":{"type":"string"},
+                "caret":{"type":"string"},
+                "text":{"type":"string"},
+                "style":{"type":"string"},
+                "family":{"type":"string"},
+                "weight":{"type":"string"},
+                "size":{"type":"double"},
+                "decoration":{"type":"string"},
+                "color":{"type":"string"},
+                "width":{"type":"double"},
+                "height":{"type":"double"},
+                "x":{"type":"double"},
+                "y":{"type":"double"}
+            }
+        },
+        "Image":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"},
+                "tag":{"type":"string"},
+                "source":{"type":"string"},
+                "imageBytes":{
+                    "type":"string",
+                    "format":"byte"
+                },
+                "width":{"type":"double"},
+                "height":{"type":"double"},
+                "x":{"type":"double"},
+                "y":{"type":"double"}
+            }
+        },
+        "QuizOption":{
+            "type":"object",
+            "properties":{
+                "name":{"type":"string"},
+                "text":{"type":"string"},
+                "correct":{"type":"boolean"},
+                "color":{"type":"string"}
+            }
+        },
+        "SubmissionBlacklist":{
+            "type":"object",
+            "properties":{
+                "username":{"type":"string"},
+                "highlight":{"type":"string"}
+            }
+        },
+        "File":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "name":{"type":"string"},
+                "id":{"type":"string"},
+                "url":{"type":"string"},
+                "bytes":{
+                    "type":"string",
+                    "format":"byte"
+                }
+            }
+        },
+        "ScreenshotSubmission":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"},
+                "title":{"type":"string"},
+                "url":{"type":"string"},
+                "imageBytes":{
+                    "type":"string",
+                    "format":"byte"
+                },
+                "blacklist":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/SubmissionBlacklist"}
+                }
+            }
+        },
+        "Attendance":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "location":{"type":"string"},
+                "present":{"type":"boolean"}
+            }
+        },
+        "VisualContent":{
+            "type":"object",
+            "properties":{
+                "MeTL content properties":{"$ref":"#/definitions/MeTLContent"},
+                "Canvas content properties":{"$ref":"#/definitions/CanvasContent"}
+            }
+        },
+        "QuizResponse":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "answer":{"type":"string"},
+                "answerer":{"type":"string"},
+                "id":{"type":"string"}
+            }
+        },
+        "Quiz":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "created":{"type":"long"},
+                "question":{"type":"string"},
+                "id":{"type":"string"},
+                "url":{"type":"string"},
+                "quizImage":{"type":"string"},
+                "isDeleted":{"type":"boolean"},
+                "options":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/QuizOption"}
+                }
+            }
+        },
+        "Ink":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/VisualContent"},
+                "checksum":{"type":"string"},
+                "startingSum":{"type":"string"},
+                "points":{"type":"string"},
+                "color":{"type":"string"},
+                "thickness":{"type":"double"},
+                "highlight":{"type":"boolean"}
+            }
+        },
+        "Command":{
+            "type":"object",
+            "properties":{
+                "one of (with parameters in invocation syntax)":{
+                    "type":"object",
+                    "properties":{
+                        "TEACHER_IN_CONVERSATION":{"type":"string"},
+                        "SYNC_MOVE":{"type":"string"},
+                        "UPDATE_CONVERSATION_DETAILS":{"type":"string"},
+                        "GO_TO_SLIDE":{"type":"string"},
+                        "WAKEUP":{"type":"string"},
+                        "SLEEP":{"type":"string"},
+                        "PING":{"type":"string"},
+                        "PONG":{"type":"string"},
+                        "UPDATE_SLIDE_COLLECTION":{"type":"string"}
+                    }
+                }
+            }
+        },
+        "Slide":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "author":{"type":"string"},
+                "id":{"type":"integer"},
+                "defHeight":{"type":"double"},
+                "defWidth":{"type":"double"},
+                "exposed":{"type":"boolean"},
+                "slideType":{"type":"string"},
+                "groupSet":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/GroupSet"}
+                }
+            }
+        },
+        "GroupSet":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "id":{"type":"string"},
+                "location":{"type":"string"},
+                "groupSize":{"type":"string"},
+                "groups":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/Group"}
+                }
+            }
+        },
+        "Group":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "id":{"type":"string"},
+                "location":{"type":"string"},
+                "members":{"type":"string"}
+            }
+        },
+        "Permissions":{
+            "type":"object",
+            "properties":{
+                "studentCanOpenFriends":{"type":"boolean"},
+                "studentCanPublish":{"type":"boolean"},
+                "usersAreCompulsorilySynced":{"type":"boolean"}
+            }
+        },
+        "ConversationDetails":{
+            "type":"object",
+            "properties":{
+                "Inheriting":{"$ref":"#/definitions/MeTLContent"},
+                "author":{"type":"string"},
+                "lastAccessed":{"type":"string"},
+                "slides":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/Slide"}
+                },
+                "subject":{"type":"string"},
+                "tag":{"type":"string"},
+                "jid":{"type":"string"},
+                "title":{"type":"string"},
+                "created":{"type":"string"},
+                "permissions":{"$ref":"#/definitions/Permissions"}
+            }
+        },
+        "Upload":{
+            "type":"object",
+            "properties":{
+                "uploadedLocation":{"type":"string"}
+            }
+        },
+        "Fragment":{
+            "type":"object",
+            "properties":{
+                "text":{"type":"string"},
+                "confidence":{"type":"double"}
+            }
+        },
+        "Theme":{
+            "type":"object",
+            "properties":{
+                "username":{"type":"string"},
+                "text":{
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/Fragment"}
+                }
+            }
+        },
+        "History": {
+            "type": "object",
+            "properties": {
+                "A flattened union set of":{
+                    "type":"object",
+                    "properties":{
+                        "inks":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Ink"}
+                        },
+                        "images":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Image"}
+                        },
+                        "texts":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Text"}
+                        },
+                        "ink deletions":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/DirtyInk"}
+                        },
+                        "image deletions":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/DirtyImage"}
+                        },
+                        "text deletions":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/DirtyText"}
+                        },
+                        "batch content modifications":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/MeTLMoveDelta"}
+                        },
+                        "quizzes":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Quiz"}
+                        },
+                        "quiz responses":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/QuizResponse"}
+                        },
+                        "screenshot submissions":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/ScreenshotSubmission"}
+                        },
+                        "attendances":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Attendance"}
+                        },
+                        "files":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/File"}
+                        },
+                        "commands":{
+                            "type":"array",
+                            "items":{"$ref":"#/definitions/Command"}
+                        }
+                    }
+                }
+            }
+        },
+        "Export": {
+            "type": "object",
+            "properties": {
+                "conversation":{"$ref":"#/definitions/ConversationDetails"},
+                "histories": {
+                    "type":"array",
+                    "items":{"$ref":"#/definitions/History"}
+                }
+            }
+        }
+    }
+}
