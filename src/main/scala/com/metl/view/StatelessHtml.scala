@@ -479,6 +479,50 @@ object StatelessHtml {
     })
     remoteConv
   }
+  def foreignConversationImport(r:Req):Box[LiftResponse] = {
+    (for (
+      title <- r.param("title");
+      bytes <- r.body;
+      author = Globals.currentUser.is;
+      conv = config.createConversation(title,author);
+      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author);
+      remoteConv <- foreignConversationImport(config,author,conv,histories);
+      node <- serializer.fromConversation(remoteConv).headOption
+    ) yield {
+      XmlResponse(node)
+    })
+  }
+  protected def foreignConversationParse(jid:Int,in:java.io.InputStream,server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
+    try {
+      Full(new XSLFPowerpointParser().importAsImages(jid,in,server,onBehalfOfUser,3))
+    } catch {
+      case e:Exception => {
+        println("exception in foreignConversationImport: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        Empty
+      }
+    }
+  }
+  protected def foreignConversationImport(server:ServerConfiguration,onBehalfOfUser:String,conversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
+
+    try {
+      val newConvWithAllSlides = conversation.copy(
+        lastAccessed = new java.util.Date().getTime,
+        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1 + 1, h._1 - conversation.jid)).toList
+      )
+      server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
+
+      histories.toList.foreach(tup => {
+        val newLoc = RoomMetaDataUtils.fromJid((tup._1 + 1).toString)
+        ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
+      })
+      Full(newConvWithAllSlides)
+    } catch {
+      case e:Exception => {
+        println("exception in foreignConversationImport: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        Empty
+      }
+    }
+  }
 }
 case class CopyContent(server:ServerConfiguration,from:History,to:RoomMetaData)
 case class CopyLocation(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
