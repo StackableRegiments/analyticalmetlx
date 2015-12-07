@@ -69,6 +69,8 @@ class VysperClientXmlSerializer extends GenericXmlSerializer("vysper"){
   override def getValueOfNode(content:NodeSeq,name:String):String = {
 //    val result = super.getValueOfNode(content,name)
     //println("getValueOfNode: %s %s".format(content,name))
+    (content \\ name).headOption.map(_.text).getOrElse("")
+    /*
     val result = try{ 
       val rn = (content \\ name)
       //println("rn: "+rn)
@@ -85,6 +87,7 @@ class VysperClientXmlSerializer extends GenericXmlSerializer("vysper"){
     }
     //println("getValueOfNode: %s %s (%s)".format(name,result,content))
     result
+    */
   }
   override def toMeTLData(in:NodeSeq):MeTLData = {
     try {

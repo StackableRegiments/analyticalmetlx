@@ -23,18 +23,14 @@ javaOptions in container ++= Seq(
   "-XX:+CMSClassUnloadingEnabled"
 )
 
-libraryDependencies ++= {
-  Seq(
-    "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar")
-  )
-}
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
   val scalaVersionString = "2.11.5"
   Seq(
-    "ch.qos.logback" % "logback-classic" % "1.1.3",
+    "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
+    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
@@ -42,10 +38,10 @@ libraryDependencies ++= {
     "org.specs2" %% "specs2" % "3.3.1" % "test",
     "org.mockito" % "mockito-core" % "1.9.0" % "test",
     "commons-io" % "commons-io" % "1.4",
-    "org.apache.vysper" % "vysper" % "0.7" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "org.apache.vysper" % "vysper-core" % "0.7" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "org.apache.vysper" % "vysper-server" % "0.7" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "org.apache.vysper.extensions" % "xep0045-muc" % "0.7" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
+    "org.apache.vysper" % "vysper" % "0.7",
+    "org.apache.vysper" % "vysper-core" % "0.7",
+    "org.apache.vysper" % "vysper-server" % "0.7",
+    "org.apache.vysper.extensions" % "xep0045-muc" % "0.7",
     "org.pac4j" % "pac4j-saml" % "1.6.0",
     "javax.mail" % "mail" % "1.4",
     "net.liftweb" %% "lift-mapper" % liftVersion,
@@ -53,19 +49,20 @@ libraryDependencies ++= {
     "net.liftweb" %% "lift-mongodb" % liftVersion,
     "net.liftweb" %% "lift-mongodb-record" % liftVersion,
     "org.seleniumhq.selenium" % "selenium-java" % "2.8.0",
-    "io.github.stackableregiments" %% "common-utils" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metldata" % "3.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "lift-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "form-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "cas-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "openid-connect-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metl2011" % "3.7.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"), 
-    "io.github.stackableregiments" %% "metl-h2" % "3.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "lift-extensions" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
+    "org.apache.poi" % "poi" % "3.13",
+    "io.github.stackableregiments" %% "common-utils" % "0.1.+",
+    "io.github.stackableregiments" %% "metldata" % "3.2.+",
+    "io.github.stackableregiments" %% "lift-authentication" % "0.2.+",
+    "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+",
+    "io.github.stackableregiments" %% "form-authentication" % "0.2.+",
+    "io.github.stackableregiments" %% "cas-authentication" % "0.2.+",
+    "io.github.stackableregiments" %% "openid-connect-authentication" % "0.2.+",
+    "io.github.stackableregiments" %% "metl2011" % "3.7.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.2.+",
+    "io.github.stackableregiments" %% "lift-extensions" % "0.1.+",
+    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+"
   )
-}
+}.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
 javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
 

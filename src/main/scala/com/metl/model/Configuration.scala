@@ -16,11 +16,11 @@ abstract class ConfigurationProvider {
   keys.update("t","ejPass")
   def checkPassword(username:String,password:String):Boolean = {
     println("checking: %s %s in %s".format(username,password,keys))
-    keys.get(username).exists(_ == password)
+    keys.get(username.trim.toLowerCase()).exists(_ == password)
   }
   def getPasswords(username:String):Option[Tuple4[String,String,String,String]] = {
-    val xu = adornUsernameForEjabberd(username)
-    val hu = adornUsernameForYaws(username)
+    val xu = adornUsernameForEjabberd(username.trim.toLowerCase())
+    val hu = adornUsernameForYaws(username.trim.toLowerCase())
 
     val xp = keys.get(xu) match {
       case None => {
