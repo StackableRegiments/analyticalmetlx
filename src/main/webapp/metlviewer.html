@@ -4,7 +4,7 @@
 	<style>
 /* <![CDATA[ */
 
-#search {
+/*#search {
 	text-align: center;
 	padding: 3em 0;
 }
@@ -113,7 +113,7 @@
 }
 .searchResultSlideLinks > a {
 	padding: 0 2px;
-}
+}*/
 
 /* ]]> */
 	</style>
@@ -123,8 +123,11 @@
 	<div>
 		<h2 id="searchInstructions">Search for a MeTL Conversation</h2>
 		<form id="searchForm">
-      <input id="searchQueryBox" type="text" name="q"></input>
-      <input id="searchSubmitButton" type="submit" value="search"></input>
+			<div class="form-input-with-icon flex-container-row">
+				<span class="add-on"><span class="icon-search fa fa-search"></span></span>
+				<input id="searchQueryBox" class="input-search" type="search" name="q"></input>
+				<input id="searchSubmitButton" class="btn-search" type="submit" value="search"></input>
+			</div>
 		</form>
 	</div>
 </div>

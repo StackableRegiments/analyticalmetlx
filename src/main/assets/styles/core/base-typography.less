@@ -1,0 +1,58 @@
+html {
+    font-size:62.5%;
+    .std-font;
+    text-align:left;
+}
+.std-font {font-family:@font-std;}
+.std-txt {
+    font-size: 15px;
+    font-size: 1.5rem;
+    font-weight: @font-weight-light;
+}
+body {
+    color: @text-std;
+    font-size:1.5em;
+}
+input,
+button,
+textarea,
+select {
+    font-size:inherit;
+    font-family:inherit;
+}
+a {color:@text-links;}
+h1,
+.largest-txt {
+    font-size: 55px;
+    font-size: 5.5rem;
+}
+h2,
+.large-txt {
+    font-size: 45px;
+    font-size: 4.5rem;
+}
+h3,
+.med-txt {
+    font-size: 18px;
+    font-size: 1.8rem;
+}
+h4 {
+    font-size: 16px;
+    font-size: 1.6rem;
+}
+.smallest-txt {
+    font-size: 12px;
+    font-size: 1.2rem;
+}
+h1, h2, .largest-txt, .large-txt, .font-weight-light { font-weight: @font-weight-light;}
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { font-weight: inherit; }
+p, .std-line-height {
+    line-height:1.5em;
+}
+.no-list-style {
+    padding-left:0;
+    list-style: none;
+}
+code {
+    font-size:15px; /* rem in chrome for 'code' tags doesn't work */
+}

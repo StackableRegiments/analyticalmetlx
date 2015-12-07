@@ -5,10 +5,12 @@
   <meta name="description" content="" ></meta>
   <meta name="keywords" content="" ></meta>
     
-	<title id="headTitle">MeTL Viewer</title>
-
-  <style class="lift:CSS.blueprint" ></style>
-  <style class="lift:CSS.fancyType" ></style>
+  <title id="headTitle">MeTL Viewer</title>
+  <link href='https://fonts.googleapis.com/css?family=Advent+Pro:200,400,700|Lora:400,400italic' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel='stylesheet' href='/static/assets/styles/main.css'>
+  <!--<style class="lift:CSS.blueprint" ></style>
+  <style class="lift:CSS.fancyType" ></style>-->
 
   <script id="jquery" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
   <script id="json" src="/classpath/json.js" type="text/javascript"></script>
@@ -16,7 +18,7 @@
 
 	<style type="text/css">
 /* <![CDATA[ */
-.edit_error_class {
+/*.edit_error_class {
   display: block;
   color: red;
 }
@@ -122,27 +124,29 @@
 	margin: 0 auto;
 	padding-top: 128px;
 	text-align: center;
-}
+}*/
 
 /* ]]> */
 	</style>
 </head>
 
-<body>
+<body class="theme-light">
 
-	<div id="header">
-    <div id="currentUser"><div class="lift:GlobalsSnippet.currentUser" ></div></div>
-		<div id="navigation">
-			<a id="navHome" href="/"><span>Home</span></a>
-      <div id="navLinkContainer"></div>
-		</div>
-		<div id="title">
-			<h1 id="titleText">MeTL Viewer</h1>
-		</div>
+  <header id="header" class="">
+    <div id="title" class="title-container plr pbh">
+		  <p class="largest-txt">MeTL</p>
+		  <p id="currentUser" class="nm">Logged in: <!--<lift:GlobalsSnippet.currentUser/>--></p>
 	</div>
+    <div class="flex-container-row">
+        <h1 id="titleText" class="large-txt mrh">Viewer</h1>
+        <nav id="navigation" class="primary-nav">
+		  <a id="navHome" href="/" class="fa fa-home button-round mrh"><span class="hidden">Home</span></a>
+		  <div id="navLinkContainer"/>
+        </nav>
+	</div>
+  </header>
 
-	<div id="content" >
-	</div>
+  <div id="content"></div>
 
 </body>
 
