@@ -281,7 +281,7 @@ object MeTLXConfiguration extends PropertyReader {
                 if (username.exists(c => !legalCharacters.contains(c))){
                   throw new Exception("username contains illegal characters.  Please use only alphanumeric characters")
                 } else {
-                  LiftAuthStateData(true,username,Nil,Nil)
+                  LiftAuthStateData(true,username.trim.toLowerCase,Nil,Nil)
                 }
               },
               alreadyLoggedIn = () => Globals.casState.authenticated,
