@@ -12,19 +12,27 @@ header {
     top:0;
     left:5%;
     background:@title-bg;
-    .largest-txt {
-        .nm;
+    z-index:1;
+    .metl-logo {
+        background:url(images/metl-logo.svg) center center no-repeat;
+        background-size:100%;
+        width:150px;
+        height:57px;
+        .mt;
+        .mbh;
     }
+}
+.no-svg .metl-logo {
+    background-image:url(images/metl-logo.png);
 }
 .primary-nav {
     .flex-container-row;
     justify-content:flex-end;
     .button, .fa {
-        background:@menu-button-bg;
-        color:@menu-button-fg;
+        .button-transparent-border;
         margin-top:5px;
     }
 }
 #content {
-    margin-top:50px;
+    margin-top:60px;
 }

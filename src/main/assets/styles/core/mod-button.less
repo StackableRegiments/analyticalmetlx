@@ -1,6 +1,9 @@
 .button, button, input[type=submit] {
   .ptbh;
   .plr;
+  background-color:transparent;
+}
+.button-major {
   background-color: @button-bg;
   color: @button-fg;
 }
@@ -10,8 +13,17 @@
     width: 50px;
     border-radius: 3em;
     padding: 0;
+    border:2px solid @menu-button-border;
 }
-
+.button-transparent-border {
+  background:@menu-button-bg;
+  color:@menu-button-fg;
+  border:2px solid @menu-button-border;
+  &:hover {
+    color:@menu-button-hover;
+    border-color:@menu-button-hover;
+  }
+}
 .fa {
   .button;
   text-decoration:none;

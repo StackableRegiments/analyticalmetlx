@@ -1,9 +1,10 @@
 html {
     font-size:62.5%;
-    .std-font;
+    .font-std;
     text-align:left;
 }
-.std-font {font-family:@font-std;}
+.font-std {font-family:@font-std;}
+.font-heading {font-family:@font-highlight;}
 .std-txt {
     font-size: 15px;
     font-size: 1.5rem;
@@ -44,7 +45,7 @@ h4 {
     font-size: 12px;
     font-size: 1.2rem;
 }
-h1, h2, .largest-txt, .large-txt, .font-weight-light { font-weight: @font-weight-light;}
+h1, h2, .largest-txt, .large-txt, .font-weight-light { font-weight: @font-weight-light; .font-heading; }
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { font-weight: inherit; }
 p, .std-line-height {
     line-height:1.5em;
