@@ -497,12 +497,15 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
                 null
               }
             } else {
+              println("sending occupant doesn't have voice: %s".format(stanza))
               createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY,StanzaErrorCondition.FORBIDDEN, stanza)
             }
           } else {
+            println("sending occupant is null - I think that means it's not in the room: %s".format(stanza))
             createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.NOT_ACCEPTABLE, stanza)
           }
         } else {
+          println("room is null: %s".format(stanza))
           createMessageErrorStanza(moduleDomain, from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.ITEM_NOT_FOUND, stanza)
         }
       }
