@@ -40,10 +40,10 @@ class SearchSnippet {
               val countText = "Showing %d-%d of %d result%s".format(first+1, first+pageResults.length, results.length, if (results.length > 1) "s" else "")
               "#searchResultsMetaCount *" #> Text(countText) &
               "#searchResultsMetaNavigation *" #> {
-                <a href={"/?server=%s&q=%s".format(server.is.name,Helpers.urlEncode(query.is))}>« First</a>
-                <a href={"/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.max(page.is-1,0))}>‹ Previous</a>
-                <a href={"/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.min(page.is+1,results.length/resultsPerPage))}>Next ›</a>
-                <a href={"/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),results.length/resultsPerPage)}>Last »</a>
+                "#searchResultsMetaNavigationFirst [href]" #> "/?server=%s&q=%s".format(server.is.name,Helpers.urlEncode(query.is)) &
+                "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.max(page.is-1,0)) &
+                "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.min(page.is+1,results.length/resultsPerPage)) &
+                "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),results.length/resultsPerPage)
               } &
               "#searchResults *" #> pageResults.foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderResult(server,item).apply(SearchTemplates.searchResult))
             }

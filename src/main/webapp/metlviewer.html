@@ -119,7 +119,7 @@
 	</style>
 </head>
 
-<div id="search">
+<div id="search" class="block">
 	<div>
 		<h2 id="searchInstructions">Search for a MeTL Conversation</h2>
 		<form id="searchForm">
@@ -133,12 +133,17 @@
 </div>
 
 <div class="lift:SearchSnippet.searchResults">
-	<div id="searchResultsContainer">
+	<div id="searchResultsContainer" class="block">
 		<div id="searchResultsMeta">
-      <div id="searchResultsMetaTerms"></div>
+			<div id="searchResultsMetaTerms"></div>
 			<div id="searchResultsMetaCountContainer">
-        <div id="searchResultsMetaCount"></div>
-        <div id="searchResultsMetaNavigation"></div>
+			<div id="searchResultsMetaCount"></div>
+			<div id="searchResultsMetaNavigation" class="pagination">
+				<a href="#" class="searchResultsMetaNavigationFirst"><span class="hidden">First</span></a>
+                <a href="#" class="searchResultsMetaNavigationPrevious fa fa-chevron-left button-round"><span class="hidden">Previous</span></a>
+                <a href="#" class="searchResultsMetaNavigationNext fa fa-chevron-right button-round"><span class="hidden">Next</span></a>
+                <a href="#" class="searchResultsMetaNavigationLast"><span class="hidden">Last</span></a>
+			</div>
 			</div>
 		</div>
     <div id="searchResults"></div>

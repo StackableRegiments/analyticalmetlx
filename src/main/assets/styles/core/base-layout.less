@@ -26,7 +26,7 @@ input[type="search"] {
     .border-box;
 }
 /* boxes */
-.quarter, .third, .two-thirds, .half, .three-quarters, .full {
+/*.quarter, .third, .two-thirds, .half, .three-quarters, .full {
     float: left;
     margin: 0 2% 20px 0;
     padding: 10px;
@@ -36,6 +36,20 @@ input[type="search"] {
     &.np {
 	.np;
     }
+}*/
+.block {
+    .ptb;
+    .plr;
+    .mb;
+    position:relative;
+    word-wrap: break-word;
+    &.np {
+        .np;
+    }
+    &.nmb {
+        .nmb;
+    }
+    background-color:@block-bg;
 }
 .full { width:100%; .nmr;}
 .half { width:49%;}
