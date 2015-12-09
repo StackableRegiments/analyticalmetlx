@@ -27,7 +27,11 @@ object StatelessHtml {
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
-    val attrs = (additionalAttributes ::: List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
+      val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))
+    val attrs = (additionalAttributes ::: (rootName match {
+        case "quizOption" => List(("xmlns","monash:metl"))
+        case _ => messageAttrs
+      })).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
       item match {
         case (k:String,v:String) => new UnprefixedAttribute(k,v,acc)
         case _ => acc
