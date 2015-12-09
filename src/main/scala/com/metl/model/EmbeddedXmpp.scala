@@ -93,7 +93,7 @@ class VysperClientXmlSerializer extends GenericXmlSerializer("vysper"){
     try {
     //println("toMeTLData started: %s".format(in))
     val result = super.toMeTLData(in)
-    //println("toMeTLData: %s => %s".format(in,result))
+    println("toMeTLData: %s => %s".format(in,result))
     result
     } catch {
       case e:Exception => {
