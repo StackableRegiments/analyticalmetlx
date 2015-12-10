@@ -1,5 +1,9 @@
 /* light palette */
 
+@theme-dark: #343840;
+@theme-light: ;
+@theme-highlight: ;
+
 @body-bg: #f4f4f5;
 @block-bg: #fff;
 
@@ -10,9 +14,10 @@
 @font-std: 'Cabin', sans-serif;;
 @font-weight-std: 400;
 @font-weight-light: 200;
+@font-color: @theme-dark;
 
 @text-std: black;
-@text-links: ;
+@text-links: @theme-highlight;
 
 /* form */
 @form-borders:#eee;
@@ -45,3 +50,6 @@
 
 @button-bg: #547181;
 @button-fg: #1D1D1B;
+
+/* search results */
+@results-fg: @theme-dark;
