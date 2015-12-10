@@ -39,12 +39,10 @@ class SearchSnippet {
               val pageResults = results.splitAt(first)._2.take(resultsPerPage)
               val countText = "Showing %d-%d of %d result%s".format(first+1, first+pageResults.length, results.length, if (results.length > 1) "s" else "")
               "#searchResultsMetaCount *" #> Text(countText) &
-              "#searchResultsMetaNavigation *" #> {
-                "#searchResultsMetaNavigationFirst [href]" #> "/?server=%s&q=%s".format(server.is.name,Helpers.urlEncode(query.is)) &
-                "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.max(page.is-1,0)) &
-                "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.min(page.is+1,results.length/resultsPerPage)) &
-                "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),results.length/resultsPerPage)
-              } &
+              "#searchResultsMetaNavigationFirst [href]" #> "/?server=%s&q=%s".format(server.is.name,Helpers.urlEncode(query.is)) &
+              "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.max(page.is-1,0)) &
+              "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.min(page.is+1,results.length/resultsPerPage)) &
+              "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),results.length/resultsPerPage) &
               "#searchResults *" #> pageResults.foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderResult(server,item).apply(SearchTemplates.searchResult))
             }
           } }
@@ -105,5 +103,5 @@ class SearchSnippet {
       case _ => NodeSeq.Empty
     }
   private def renderSlideLink(server:ServerConfiguration,conversationId:String,slide:Slide) =
-    <a href={"/slide?server=%s&conversation=%s&slide=%s".format(server.name,conversationId,slide.id.toString)}>{slide.index+1}</a>
+    <a class="slide-link" href={"/slide?server=%s&conversation=%s&slide=%s".format(server.name,conversationId,slide.id.toString)}>{slide.index+1}</a>
 }
