@@ -138,7 +138,8 @@ object MeTLStatefulRestHelper extends RestHelper {
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",() => StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",() => StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversation(r))
-    case r@Req(List("foreignConversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.foreignConversationImport",() => StatelessHtml.foreignConversationImport(r))
+    case r@Req(List("powerpointImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.powerpointImport",() => StatelessHtml.powerpointImport(r))
+    case r@Req(List("powerpointImportFlexible"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.powerpointImportFlexible",() => StatelessHtml.powerpointImportFlexible(r))
     case r@Req(List("conversationImportAsMe"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation",() => StatelessHtml.importConversationAsMe(r))
     case Req(List("createConversation",title),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.createConversation",() => StatelessHtml.createConversation(Globals.currentUser.is,title))

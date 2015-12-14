@@ -17,106 +17,12 @@ import java.awt.geom._
 import com.metl.data._
 import com.metl.utils._
 
-class XSLFPowerpointImporter {
-  import org.apache.poi.xslf.usermodel._
-  def importAsImages(title:String,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Conversation = {
-    //val ppt:SlideShow = SlideShowFactory.create(in)//new SlideShow(in)
-    val ppt = org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(in)//new SlideShow(in)
-    in.close()
-
-    val zoom:Int = magnification
-    val at:AffineTransform = new AffineTransform()
-    at.setToScale(zoom, zoom)
-
-    val pgsize:Dimension = ppt.getPageSize()
-
-    //val slide:Array[PoiSlide] = ppt.getSlides()
-    val conv:Conversation = server.createConversation(title,author)
-    val firstSlide = conv.jid + 1
-    val importerId = nextFuncName
-    ppt.getSlides.toArray.toList.view.zipWithIndex.foreach{
-      case (slideObj,index) => {
-        val slide:XSLFSlide = slideObj.asInstanceOf[XSLFSlide]
-        val slideId = firstSlide + index
-        val identity = ""
-        val tag = ""
-        val (w,h) = (pgsize.width * zoom,pgsize.height * zoom)
-        val img:BufferedImage = new BufferedImage(w,h, BufferedImage.TYPE_INT_RGB)
-        val graphics:Graphics2D = img.createGraphics()
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
-        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-        graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
-        graphics.setTransform(at)
-        graphics.setPaint(java.awt.Color.white)
-        graphics.fill(new Rectangle2D.Float(0, 0, w,h))
-        slide.draw(graphics)
-        val out = new ByteArrayOutputStream()
-        javax.imageio.ImageIO.write(img, "jpg", out)
-        val bytes = out.toByteArray()
-        val bgImg = MeTLImage(server,author,-1L,tag,Empty,Full(bytes),Empty,w,h,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
-        val newRoom = MeTLXConfiguration.getRoom(conv.jid.toString,server.name,SlideRoom(server.name,conv.jid.toString,slideId)) 
-//        newRoom ! JoinRoom("pptAsImageImporter",importerId,this)
-        newRoom ! LocalToServerMeTLStanza(bgImg)
-//        newRoom ! LeaveRoom("pptAsImageImporter",importerId,this)
-      }
-    }
-    conv
-  }
-
-}
-
-class HSLFPowerpointImporter {
-  import org.apache.poi.hslf.usermodel._
-  def importAsImages(title:String,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Conversation = {
-    //val ppt:SlideShow = SlideShowFactory.create(in)//new SlideShow(in)
-    val ppt = org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(in))//new SlideShow(in)
-    in.close()
-
-    val zoom:Int = magnification
-    val at:AffineTransform = new AffineTransform()
-    at.setToScale(zoom, zoom)
-
-    val pgsize:Dimension = ppt.getPageSize()
-
-    //val slide:Array[PoiSlide] = ppt.getSlides()
-    val conv:Conversation = server.createConversation(title,author)
-    val firstSlide = conv.jid + 1
-    val importerId = nextFuncName
-    ppt.getSlides.toArray.toList.view.zipWithIndex.foreach{
-      case (slideObj,index) => {
-        val slide:HSLFSlide = slideObj.asInstanceOf[HSLFSlide]
-        val slideId = firstSlide + index
-        val identity = ""
-        val tag = ""
-        val (w,h) = (pgsize.width * zoom,pgsize.height * zoom)
-        val img:BufferedImage = new BufferedImage(w,h, BufferedImage.TYPE_INT_RGB)
-        val graphics:Graphics2D = img.createGraphics()
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
-        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-        graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
-        graphics.setTransform(at)
-        graphics.setPaint(java.awt.Color.white)
-        graphics.fill(new Rectangle2D.Float(0, 0, w,h))
-        slide.draw(graphics)
-        val out = new ByteArrayOutputStream()
-        javax.imageio.ImageIO.write(img, "jpg", out)
-        val bytes = out.toByteArray()
-        val bgImg = MeTLImage(server,author,-1L,tag,Empty,Full(bytes),Empty,w,h,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
-        val newRoom = MeTLXConfiguration.getRoom(conv.jid.toString,server.name,SlideRoom(server.name,conv.jid.toString,slideId)) 
-//        newRoom ! JoinRoom("pptAsImageImporter",importerId,this)
-        newRoom ! LocalToServerMeTLStanza(bgImg)
-//        newRoom ! LeaveRoom("pptAsImageImporter",importerId,this)
-      }
-    }
-    conv
-  }
-}
-
 class HSLFPowerpointParser {
   import org.apache.poi.hslf.usermodel._
-  def importAsImages(in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
+  def importAsShapes(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
+    importAsImages(jid,in,server,author,1) // not yet implemented
+  }
+  def importAsImages(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
     //val ppt:SlideShow = SlideShowFactory.create(in)//new SlideShow(in)
     val ppt = org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(in))//new SlideShow(in)
     in.close()
@@ -132,7 +38,7 @@ class HSLFPowerpointParser {
     ppt.getSlides.toArray.toList.view.zipWithIndex.foreach{
       case (slideObj,index) => {
         val slide:HSLFSlide = slideObj.asInstanceOf[HSLFSlide]
-        val slideId = index + 1
+        val slideId = jid + index 
         val identity = ""
         val tag = ""
         val (w,h) = (pgsize.width * zoom,pgsize.height * zoom)
@@ -150,10 +56,6 @@ class HSLFPowerpointParser {
         javax.imageio.ImageIO.write(img, "jpg", out)
         val bytes = out.toByteArray()
         val bgImg = MeTLImage(server,author,-1L,tag,Empty,Full(bytes),Empty,w,h,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
-//        val newRoom = MeTLXConfiguration.getRoom(conv.jid.toString,server.name,SlideRoom(server.name,conv.jid.toString,slideId)) 
-//        newRoom ! JoinRoom("pptAsImageImporter",importerId,this)
-//        newRoom ! LocalToServerMeTLStanza(bgImg)
-//        newRoom ! LeaveRoom("pptAsImageImporter",importerId,this)
         val history = new History(slideId.toString)
         history.addStanza(bgImg)
         histories = histories.updated(slideId,history)
@@ -164,9 +66,11 @@ class HSLFPowerpointParser {
 }
 class XSLFPowerpointParser {
   import org.apache.poi.xslf.usermodel._
+  def importAsShapes(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
+    importAsImages(jid,in,server,author,1) // not yet implemented
+  }
   def importAsImages(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
-    //val ppt:SlideShow = SlideShowFactory.create(in)//new SlideShow(in)
-    val ppt = org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(in)//new SlideShow(in)
+    val ppt = org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(in)
     in.close()
 
     val zoom:Int = magnification
@@ -198,10 +102,6 @@ class XSLFPowerpointParser {
         val identity = server.postResource(slideId.toString,nextFuncName,bytes) 
         val tag = "{author: '%s', privacy: '%s', id: '%s', isBackground: false, zIndex: 0, resourceIdentity: '%s', timestamp: %s}".format(author,"public",identity,identity, new java.util.Date().getTime)
         val bgImg = MeTLImage(server,author,-1L,tag,Full(identity),Full(bytes),Empty,w,h,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
-//        val newRoom = MeTLXConfiguration.getRoom(conv.jid.toString,server.name,SlideRoom(server.name,conv.jid.toString,slideId)) 
-//        newRoom ! JoinRoom("pptAsImageImporter",importerId,this)
-//        newRoom ! LocalToServerMeTLStanza(bgImg)
-//        newRoom ! LeaveRoom("pptAsImageImporter",importerId,this)
         val history = new History(slideId.toString)
         history.addStanza(bgImg)
         histories = histories.updated(slideId,history)
@@ -210,4 +110,40 @@ class XSLFPowerpointParser {
     histories
   }
 }
-
+object PowerpointVersion extends Enumeration {
+  type PowerpointVersion = Value
+  val PptXml, PptOle, NotParseable = Value
+}
+class PowerpointParser {
+  protected def detectPptVersion(in:InputStream):PowerpointVersion.Value = {
+    try {
+        org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(in))
+        PowerpointVersion.PptOle
+    } catch {
+      case e:Exception => {
+        try {
+          org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(in)
+          PowerpointVersion.PptXml
+        } catch {
+          case ex:Exception => {
+            PowerpointVersion.NotParseable
+          }
+        }
+      }
+    }
+  }
+  def importAsImages(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
+    detectPptVersion(in) match {
+      case PowerpointVersion.PptXml => new XSLFPowerpointParser().importAsImages(jid,in,server,author,magnification)
+      case PowerpointVersion.PptOle => new HSLFPowerpointParser().importAsImages(jid,in,server,author,magnification)
+      case _ => Map.empty[Int,History]
+    }
+  }
+  def importAsShapes(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
+    detectPptVersion(in) match {
+      case PowerpointVersion.PptXml => new XSLFPowerpointParser().importAsShapes(jid,in,server,author)
+      case PowerpointVersion.PptOle => new HSLFPowerpointParser().importAsShapes(jid,in,server,author)
+      case _ => Map.empty[Int,History]
+    }
+  }
+}
