@@ -483,22 +483,53 @@ object StatelessHtml {
     })
     remoteConv
   }
-  def foreignConversationImport(r:Req):Box[LiftResponse] = {
+  def powerpointImport(r:Req):Box[LiftResponse] = {
     (for (
       title <- r.param("title");
+      magnification = r.param("magnification").map(_.toInt);
       bytes <- r.body;
       author = Globals.currentUser.is;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author);
+      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author,false,magnification);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
   }
-  protected def foreignConversationParse(jid:Int,in:java.io.InputStream,server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
+  def powerpointImportFlexible(r:Req):Box[LiftResponse] = {
+    (for (
+      title <- r.param("title");
+      bytes <- r.body;
+      author = Globals.currentUser.is;
+      conv = config.createConversation(title,author);
+      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author,true,None);
+      remoteConv <- foreignConversationImport(config,author,conv,histories);
+      node <- serializer.fromConversation(remoteConv).headOption
+    ) yield {
+      XmlResponse(node)
+    })
+  }
+
+  def foreignConversationImport(r:Req):Box[LiftResponse] = {
+    (for (
+      title <- r.param("title");
+      bytes <- r.body;
+      author = Globals.currentUser.is;
+      conv = config.createConversation(title,author);
+      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author,false,None);
+      remoteConv <- foreignConversationImport(config,author,conv,histories);
+      node <- serializer.fromConversation(remoteConv).headOption
+    ) yield {
+      XmlResponse(node)
+    })
+  }
+  protected def foreignConversationParse(jid:Int,in:java.io.InputStream,server:ServerConfiguration,onBehalfOfUser:String,flexible:Boolean = false,magnification:Option[Int] = Some(3)):Box[Map[Int,History]] = {
     try {
-      Full(new XSLFPowerpointParser().importAsImages(jid,in,server,onBehalfOfUser,3))
+      Full(flexible match {
+        case true => new PowerpointParser().importAsShapes(jid,in,server,onBehalfOfUser)
+        case false => new PowerpointParser().importAsImages(jid,in,server,onBehalfOfUser,magnification.getOrElse(3))
+      })
     } catch {
       case e:Exception => {
         println("exception in foreignConversationImport: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
