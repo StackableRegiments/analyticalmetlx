@@ -62,8 +62,8 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "metl2011" % "3.7.+",
     "io.github.stackableregiments" %% "metl-h2" % "3.2.+",
-    "io.github.stackableregiments" %% "lift-extensions" % "0.1.+",
-    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+"
+//    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
+    "io.github.stackableregiments" %% "lift-extensions" % "0.1.+"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
