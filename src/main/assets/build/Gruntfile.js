@@ -13,8 +13,8 @@ module.exports = function( grunt ) {
             main: {
               files: [
                 // includes files within path and its sub-directories
-                  {expand:true, flatten:true, cwd: '../styles/images',  src: ['**'], dest: '../../webapp/static/assets/styles/images/'},
-                //{src: ['../minimal-brand/source/js/vendor/jquery-1.11.1.min.js'], dest: '../../static/assets/js/vendor/jquery.min.js'}
+                {expand:true, flatten:true, cwd: '../styles/images',  src: ['**'], dest: '../../webapp/static/assets/styles/images/'},
+                {src: ['../js/vendor/jquery-1.11.3.min.js'], dest: '../../webapp/static/assets/js/vendor/jquery.min.js'}
               ]
             }
           },

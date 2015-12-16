@@ -56,3 +56,29 @@
   font-weight: normal;
   text-decoration: inherit;
 }
+.button-toggle {
+    width:92px;
+    height:48px;
+    display:-webkit-flex;
+    display:flex;
+    border:2px solid #343434;
+    button {
+      .nm;
+      width:44px;
+      height:44px;
+      background-color:black;
+      background-position:center center;
+      color:white;
+      &.active {
+          /*background-color:@bg-components;*/
+          border-bottom-width:4px;
+          border-bottom-style:solid;
+          /*color:@text-sub;*/
+          -webkit-transition:border-bottom .5s;
+             -moz-transition:border-bottom .5s;
+              -ms-transition:border-bottom .5s;
+               -o-transition:border-bottom .5s;
+                  transition:border-bottom .5s;
+      }
+    }
+}

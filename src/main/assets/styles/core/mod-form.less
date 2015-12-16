@@ -42,6 +42,7 @@ button,
     .nm;
     .border-box;
     background:transparent;
+    -webkit-appearance: none; 
 }
 .no-boxsizing {
     input,
@@ -252,6 +253,7 @@ input[type="checkbox"]+label+label, input[type="radio"]+label+label {clear:both;
     .add-on {
         border:2px solid #eee;
         border-right:none;
+        order:1;
     }
     .icon-search {
         background-color: transparent;
@@ -260,12 +262,27 @@ input[type="checkbox"]+label+label, input[type="radio"]+label+label {clear:both;
     .input-search {
         border-left:none;
         flex-grow:1;
+        order:2;
+        &:focus + .add-on {
+            border-color: @form-borders-highlight;
+            outline:0;
+        }
+        &:focus ~ .btn-search {
+            background-color: @form-borders-highlight;
+            color:white;
+            outline:0;
+        }
     }
     .btn-search {
         margin: 0;
         background: #eee;
+        order:3;
+        &:focus {
+            background-color: @form-borders-highlight;
+            color:white;
+            outline:0;
+        }
     }
-    
 }
 .generatedcontent .required:after,
 .asterisk-required {
