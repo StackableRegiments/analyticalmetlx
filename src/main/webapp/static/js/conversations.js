@@ -539,14 +539,14 @@ var Conversations = (function(){
         }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
         })).appendTo("#createConversationContainer");
-        $("<div />", {
+        /*$("<div />", {
             id:"searchButton",
             class: "conversationSearchButton toolbar",
             name:"searchButton",
             type: "button"
-        }).append($("<span/>", {text: "Search"})).on("click",bounceAnd(function(){
+        }).append(*/$("#searchButton").on("click",bounceAnd(function(){
             getSearchResult(currentSearchTerm);
-        })).appendTo("#searchButtonContainer");
+        }));
         var updateSearchTerm = function(e){
             currentSearchTerm = this.value;
             if (e.which == 13){
@@ -554,15 +554,13 @@ var Conversations = (function(){
                 getSearchResult(currentSearchTerm);
             }
         };
-        $("<input/>", {
-            id:"searchForConversationBox",
-            name:"searchForConversationBox",
+        $("#searchForConversationBox").attr({
             blur:updateSearchTerm,
             change:updateSearchTerm,
             focus:updateSearchTerm,
             keydown:updateSearchTerm,
             select:updateSearchTerm
-        }).appendTo("#searchForConversationBoxContainer");
+        });
         $("<span />",{
             text:"share",
             id:"shareButton"

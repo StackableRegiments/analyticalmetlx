@@ -272,7 +272,8 @@ var TweenController = (function(){
     };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
-            var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
+            //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
+            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid()];
             if(w == 0 || h == 0){
                 return;
             }
@@ -401,7 +402,8 @@ function showBackstage(id){
     $("#"+id).addClass(active);
     $(".modeSpecificTool."+id).addClass(active);
     $("#backstageContainer").show();
-    $("#applicationMenuPopup").show();
+    //$("#applicationMenuPopup").show().addClass('active');
+    $("#applicationMenuPopup").addClass('active');
     if(Conversations.inConversation()){
         $("#backstageTabHeaders").show();
         $("#applicationMenuButton").show();
@@ -420,7 +422,8 @@ function hideBackstage(){
     $(".backstageTabHeader").removeClass(active);
     $(".backstage").removeClass(active);
     $("#applicationMenuButton").removeClass(active);
-    $("#applicationMenuPopup").hide();
+    //$("#applicationMenuPopup").hide().removeClass('active');
+    $("#applicationMenuPopup").removeClass('active');
     $("#backstageTabHeaders").hide();
     $("#backstageContainer").hide();
     $("#hideBackstage").hide();
@@ -442,7 +445,7 @@ $(function(){
     boardContext = board[0].getContext("2d");
     heading.text("Set up board");
     setLoadProgress(1);
-    DeviceConfiguration.resetCurrentDevice();
+    //DeviceConfiguration.resetCurrentDevice();
     $("input.toolbar").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#slideContainer button").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#up").click(bounceAnd(Extend.up));
@@ -600,8 +603,8 @@ $(function(){
             }
         }
         element.click(bounceAnd(function(){
-            DeviceConfiguration[toggleFuncField](toggled);
-            DeviceConfiguration.applyFit();
+            //DeviceConfiguration[toggleFuncField](toggled);
+            //DeviceConfiguration.applyFit();
             toggled = !toggled;
             setText();
         }));
@@ -609,5 +612,5 @@ $(function(){
     }
     toggler("Tools");
     toggler("Slides");
-    DeviceConfiguration.applyFit();
+    //DeviceConfiguration.applyFit();
 });

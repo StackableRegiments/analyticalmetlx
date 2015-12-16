@@ -1,44 +1,26 @@
 <div id="ribbon">
-  <table>
-    <tr>
-      <td>
-        <div id="applicationMenuButtonSpacer"> </div>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <div class="privacyButton" type="button" id="privateMode">Private</div>
-      </td>
-      <td>
-        <div class="privacyButton" type="button" id="publicMode">Public</div>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <div class="privacyButton" type="button" id="disableCollaboration">Present</div>
-      </td>
-      <td>
-        <div class="privacyButton" type="button" id="enableCollaboration">Collaborate</div>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <div class="privacyButton" type="button" id="disableSync">Desync</div>
-      </td>
-      <td>
-        <div class="privacyButton" type="button" id="enableSync">Sync</div>
-      </td>
-    </tr>
-    <tr>
-      <td id="majorModesColumn">
+    <div class="button-toggle">
+        <button class="privacyButton" type="button" id="privateMode">Private</button>
+        <button class="privacyButton" type="button" id="publicMode">Public</button>
+    </div>
+    <div class="button-toggle">
+        <button class="privacyButton" type="button" id="disableCollaboration">Present</button>
+        <button class="privacyButton" type="button" id="enableCollaboration">Collaborate</button>
+    </div>
+    <div class="button-toggle">
+        <button class="privacyButton" type="button" id="disableSync">Desync</button>
+        <button class="privacyButton" type="button" id="enableSync">Sync</button>
+    </div>
+    <div>
+      <div id="majorModesColumn">
         <div class="toolbar" type="button" id="selectMode">Select</div>
         <div class="toolbar" type="button" id="drawMode"  >Ink</div>
         <div class="toolbar" type="button" id="insertMode">Insert</div>
         <div class="toolbar" type="button" id="feedbackMode">Feedback</div>
         <div class="toolbar" type="button" id="zoomMode">Zoom</div>
         <div class="toolbar" type="button" id="panMode">Pan</div>
-      </td>
-      <td id="minorModesColumn">
+      </div>
+      <div id="minorModesColumn">
         <div id="selectTools" class="inactiveMode">
           <div class="modeSpecificTool disabledButton" type="button" id="delete">Delete</div>
           <div class="modeSpecificTool disabledButton" type="button" id="resize">Resize</div>
@@ -64,7 +46,6 @@
           <div id="down" class="quickMove modeSpecificTool">Down</div>
           <div id="right" class="quickMove modeSpecificTool">Right</div>
         </div>
-      </td>
-    </tr>
-  </table>
+      </div>
+    </div>
 </div>
