@@ -469,4 +469,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getImage(jid:String,identity:String) = MeTLImage.empty
   override def getResource(url:String) = Array.empty[Byte]
   override def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = ""
+  override def getResource(jid:String,identifier:String):Array[Byte] = Array.empty[Byte]
+  override def insertResource(jid:String,data:Array[Byte]):String = ""
+  override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
 }
