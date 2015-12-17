@@ -54,14 +54,14 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "io.github.stackableregiments" %% "common-utils" % "0.1.+",
-    "io.github.stackableregiments" %% "metldata" % "3.2.+",
+    "io.github.stackableregiments" %% "metldata" % "3.3.+",
     "io.github.stackableregiments" %% "lift-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "cas-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "metl2011" % "3.7.+",
-    "io.github.stackableregiments" %% "metl-h2" % "3.2.+",
+    "io.github.stackableregiments" %% "metl2011" % "3.8.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.3.+",
 //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "io.github.stackableregiments" %% "lift-extensions" % "0.1.+"
   )

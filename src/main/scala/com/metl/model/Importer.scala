@@ -115,35 +115,55 @@ object PowerpointVersion extends Enumeration {
   val PptXml, PptOle, NotParseable = Value
 }
 class PowerpointParser {
-  protected def detectPptVersion(in:InputStream):PowerpointVersion.Value = {
+  protected def detectPptVersion(in:Array[Byte]):PowerpointVersion.Value = {
     try {
-        org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(in))
+        org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(new ByteArrayInputStream(in)))
         PowerpointVersion.PptOle
     } catch {
       case e:Exception => {
+        println("not an OLE slideshow: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
         try {
-          org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(in)
+          org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(new ByteArrayInputStream(in))
           PowerpointVersion.PptXml
         } catch {
           case ex:Exception => {
+            println("not an XML slideshow: %s\r\n%s".format(ex.getMessage,ex.getStackTraceString))
             PowerpointVersion.NotParseable
           }
         }
       }
     }
   }
-  def importAsImages(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
+  def importAsImages(jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
     detectPptVersion(in) match {
-      case PowerpointVersion.PptXml => new XSLFPowerpointParser().importAsImages(jid,in,server,author,magnification)
-      case PowerpointVersion.PptOle => new HSLFPowerpointParser().importAsImages(jid,in,server,author,magnification)
-      case _ => Map.empty[Int,History]
+      case PowerpointVersion.PptXml => {
+        println("version 2007+")
+        new XSLFPowerpointParser().importAsImages(jid,new ByteArrayInputStream(in),server,author,magnification)
+      }
+      case PowerpointVersion.PptOle => {
+        println("version 2003")
+        new HSLFPowerpointParser().importAsImages(jid,new ByteArrayInputStream(in),server,author,magnification)
+      }
+      case _ => {
+        println("not sure of version")
+        Map.empty[Int,History]
+      }
     }
   }
-  def importAsShapes(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
+  def importAsShapes(jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
     detectPptVersion(in) match {
-      case PowerpointVersion.PptXml => new XSLFPowerpointParser().importAsShapes(jid,in,server,author)
-      case PowerpointVersion.PptOle => new HSLFPowerpointParser().importAsShapes(jid,in,server,author)
-      case _ => Map.empty[Int,History]
+      case PowerpointVersion.PptXml => {
+        println("version 2007+")
+        new XSLFPowerpointParser().importAsShapes(jid,new ByteArrayInputStream(in),server,author)
+      }
+      case PowerpointVersion.PptOle => {
+        println("version 2003")
+        new HSLFPowerpointParser().importAsShapes(jid,new ByteArrayInputStream(in),server,author)
+      }
+      case _ => {
+        println("not sure of version")
+        Map.empty[Int,History]
+      }
     }
   }
 }

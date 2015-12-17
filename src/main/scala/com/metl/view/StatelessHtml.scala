@@ -490,7 +490,7 @@ object StatelessHtml {
       bytes <- r.body;
       author = Globals.currentUser.is;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author,false,magnification);
+      histories <- foreignConversationParse(conv.jid,bytes,config,author,false,magnification);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
@@ -503,7 +503,7 @@ object StatelessHtml {
       bytes <- r.body;
       author = Globals.currentUser.is;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author,true,None);
+      histories <- foreignConversationParse(conv.jid,bytes,config,author,true,None);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
@@ -517,14 +517,14 @@ object StatelessHtml {
       bytes <- r.body;
       author = Globals.currentUser.is;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(conv.jid,new java.io.ByteArrayInputStream(bytes),config,author,false,None);
+      histories <- foreignConversationParse(conv.jid,bytes,config,author,false,None);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
   }
-  protected def foreignConversationParse(jid:Int,in:java.io.InputStream,server:ServerConfiguration,onBehalfOfUser:String,flexible:Boolean = false,magnification:Option[Int] = Some(3)):Box[Map[Int,History]] = {
+  protected def foreignConversationParse(jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String,flexible:Boolean = false,magnification:Option[Int] = Some(3)):Box[Map[Int,History]] = {
     try {
       Full(flexible match {
         case true => new PowerpointParser().importAsShapes(jid,in,server,onBehalfOfUser)

@@ -190,11 +190,17 @@ object SlideRenderer {
           val sectionFontFamily = xml.attribute("FontFamily").headOption.map(_.text).getOrElse(metlText.family)
           val sectionFontSize = xml.attribute("FontSize").headOption.map(_.text.toDouble).getOrElse(metlText.size)
           val sectionFontColor = xml.attribute("Foreground").headOption.map(c => ColorConverter.fromARGBHexString(c.text)).getOrElse(metlText.color)
+          val sectionFontIsBold = xml.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(metlText.weight == "Bold")
+          val sectionFontIsItalic = xml.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(metlText.style == "Italic")
+          val sectionFontIsUnderline = xml.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(metlText.decoration.contains("italic"))
           val paragraphs = (xml \\ "Paragraph") 
           paragraphs.flatMap(paragraph => {
             val paraFontFamily = paragraph.attribute("FontFamily").headOption.map(_.text).getOrElse(sectionFontFamily)
             val paraFontSize = paragraph.attribute("FontSize").headOption.map(_.text.toDouble).getOrElse(sectionFontSize)
             val paraFontColor = paragraph.attribute("Foreground").headOption.map(c => ColorConverter.fromARGBHexString(c.text)).getOrElse(sectionFontColor)
+            val paraFontIsBold = paragraph.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(sectionFontIsBold)
+            val paraFontIsItalic = paragraph.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(sectionFontIsItalic)
+            val paraFontIsUnderline = paragraph.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(sectionFontIsUnderline)
             (paragraph \\ "Run").foldLeft(List.empty[List[TextRunDefinition]])((acc,item) => item match {
               case e:Elem => {
                 val lines:List[String] = lineSeparators.foldLeft(List(e.text))((a,i) => a.flatMap(_.split(i).toList)).toList
@@ -202,6 +208,9 @@ object SlideRenderer {
                   val runFontFamily = e.attribute("FontFamily").headOption.map(_.text).getOrElse(paraFontFamily)
                   val runFontSize = e.attribute("FontSize").headOption.map(_.text.toDouble).getOrElse(paraFontSize)
                   val runFontColor = e.attribute("Foreground").headOption.map(c => ColorConverter.fromARGBHexString(c.text)).getOrElse(paraFontColor)
+                  val runFontIsBold = e.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(paraFontIsBold)
+                  val runFontIsItalic = e.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(paraFontIsItalic)
+                  val runFontIsUnderline = e.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(paraFontIsUnderline)
                   val trds = e.text.foldLeft((List.empty[String],""))((a,i) => {
                     (a._2 + i) match {
                       case s if s.endsWith("\r\n") => (a._1 ::: List(s.reverse.drop(2).reverse),"")
