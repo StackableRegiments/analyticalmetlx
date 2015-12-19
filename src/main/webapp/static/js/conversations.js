@@ -103,13 +103,13 @@ var Conversations = (function(){
     };
     var enableSyncMoveFunction = function(){
         isSyncedToTeacher = true;
-        $("#enableSync").addClass("activePrivacy");
-        $("#disableSync").removeClass("activePrivacy");
+        $("#enableSync").addClass("activePrivacy active");
+        $("#disableSync").removeClass("activePrivacy active");
     };
     var disableSyncMoveFunction = function(){
         isSyncedToTeacher = false;
-        $("#enableSync").removeClass("activePrivacy");
-        $("#disableSync").addClass("activePrivacy");
+        $("#enableSync").removeClass("activePrivacy active");
+        $("#disableSync").addClass("activePrivacy active");
     };
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
@@ -404,10 +404,6 @@ var Conversations = (function(){
         var newSlide = $("<div/>",{
             id: sprintf("slideContainer_%s",slide.id),
             class:"slideButtonContainer"
-        }).css({
-            height:"75px",
-            width:"100px",
-            margin:"10px"
         });
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
@@ -421,7 +417,7 @@ var Conversations = (function(){
         $("<span/>",{
             text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
             class: "slideThumbnailNumber"
-        }).appendTo($("<div/>").appendTo(newSlide));
+        }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
     }
     var constructConversation = function(conversation){
