@@ -66,19 +66,20 @@
       .nm;
       width:44px;
       height:44px;
-      background-color:black;
+      background-color:@toggle-bg;
       background-position:center center;
       color:white;
       &.active {
-          /*background-color:@bg-components;*/
+          background-color:@toggle-active-bg;
           border-bottom-width:4px;
           border-bottom-style:solid;
-          /*color:@text-sub;*/
+          color:@font-color;
           -webkit-transition:border-bottom .5s;
              -moz-transition:border-bottom .5s;
               -ms-transition:border-bottom .5s;
                -o-transition:border-bottom .5s;
                   transition:border-bottom .5s;
       }
+      line-height:normal;
     }
 }
