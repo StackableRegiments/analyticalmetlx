@@ -1,44 +1,26 @@
 <div id="ribbon">
-  <table>
-    <tr>
-      <td>
-        <div id="applicationMenuButtonSpacer"> </div>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <div class="privacyButton" type="button" id="privateMode">Private</div>
-      </td>
-      <td>
-        <div class="privacyButton" type="button" id="publicMode">Public</div>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <div class="privacyButton" type="button" id="disableCollaboration">Present</div>
-      </td>
-      <td>
-        <div class="privacyButton" type="button" id="enableCollaboration">Collaborate</div>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <div class="privacyButton" type="button" id="disableSync">Desync</div>
-      </td>
-      <td>
-        <div class="privacyButton" type="button" id="enableSync">Sync</div>
-      </td>
-    </tr>
-    <tr>
-      <td id="majorModesColumn">
+    <div class="button-toggle">
+        <button class="privacyButton fa fa-lock" type="button" id="privateMode"><div class="icon-txt">Private</div></button>
+        <button class="privacyButton fa fa-unlock" type="button" id="publicMode"><div class="icon-txt">Public</div></button>
+    </div>
+    <div class="button-toggle">
+        <button class="privacyButton fa fa-user" type="button" id="disableCollaboration"><div class="icon-txt">Present</div></button>
+        <button class="privacyButton fa fa-users" type="button" id="enableCollaboration"><div class="icon-txt">Collaborate</div></button>
+    </div>
+    <div class="button-toggle">
+        <button class="privacyButton fa fa-chain-broken" type="button" id="disableSync"><div class="icon-txt">Desync</div></button>
+        <button class="privacyButton fa fa-refresh" type="button" id="enableSync"><div class="icon-txt">Sync</div></button>
+    </div>
+    <div>
+      <div id="majorModesColumn">
         <div class="toolbar" type="button" id="selectMode">Select</div>
         <div class="toolbar" type="button" id="drawMode"  >Ink</div>
         <div class="toolbar" type="button" id="insertMode">Insert</div>
         <div class="toolbar" type="button" id="feedbackMode">Feedback</div>
         <div class="toolbar" type="button" id="zoomMode">Zoom</div>
         <div class="toolbar" type="button" id="panMode">Pan</div>
-      </td>
-      <td id="minorModesColumn">
+      </div>
+      <div id="minorModesColumn">
         <div id="selectTools" class="inactiveMode">
           <div class="modeSpecificTool disabledButton" type="button" id="delete">Delete</div>
           <div class="modeSpecificTool disabledButton" type="button" id="resize">Resize</div>
@@ -64,7 +46,6 @@
           <div id="down" class="quickMove modeSpecificTool">Down</div>
           <div id="right" class="quickMove modeSpecificTool">Right</div>
         </div>
-      </td>
-    </tr>
-  </table>
+      </div>
+    </div>
 </div>

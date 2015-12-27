@@ -1724,7 +1724,7 @@ var Modes = (function(){
                     enabled = currentConversation.permissions.studentCanPublish;
                     if(!enabled){
                         Conversations.changeConversationToTutorial();
-                        enable.addClass("activePrivacy");
+                        enable.addClass("activePrivacy active");
                     }
                 });
                 var disable = $("#disableCollaboration").unbind("click").on("click",function(){
@@ -1732,18 +1732,18 @@ var Modes = (function(){
                     enabled = currentConversation.permissions.studentCanPublish;
                     if(enabled){
                         Conversations.changeConversationToLecture();
-                        disable.addClass("activePrivacy");
+                        disable.addClass("activePrivacy active");
                     }
                 });
                 var sync = $("#enableSync").unbind("click").on("click",Conversations.enableSyncMove);
                 var desync = $("#disableSync").unbind("click").on("click",Conversations.disableSyncMove);
-                enable.removeClass("activePrivacy");
-                disable.removeClass("activePrivacy");
+                enable.removeClass("activePrivacy active");
+                disable.removeClass("activePrivacy active");
                 if(enabled){
-                    enable.addClass("activePrivacy");
+                    enable.addClass("activePrivacy active");
                 }
                 else{
-                    disable.addClass("activePrivacy");
+                    disable.addClass("activePrivacy active");
                 }
                 if(Conversations.isAuthor()){
                     enable.show();
