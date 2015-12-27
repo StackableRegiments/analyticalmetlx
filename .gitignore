@@ -3,3 +3,5 @@ debug.log
 .ivy2
 .sbt-boot
 testdb*
+.DS_Store
+node_modules

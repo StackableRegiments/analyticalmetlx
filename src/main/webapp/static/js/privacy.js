@@ -3,9 +3,9 @@ var Privacy = (function(){
     var setPrivacyIndicators = function(){
         $.each({privateMode:"PRIVATE",publicMode:"PUBLIC"},function(id,p){
             if (p == privacy){
-                $("#"+id).addClass("activePrivacy");
+                $("#"+id).addClass("activePrivacy active");
             } else {
-                $("#"+id).removeClass("activePrivacy");
+                $("#"+id).removeClass("activePrivacy active");
             }
         });
         $("#currentPrivacyStatus").text(privacy == "PUBLIC"?

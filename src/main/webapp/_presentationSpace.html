@@ -5,9 +5,9 @@
   <div id="marquee" ></div>
   <div id="textAdorner" ></div>
   <div id="backstageContainer">
-    <div id="applicationMenuPopup" class="backstageHeader">
+    <!--<div id="applicationMenuPopup" class="backstageHeader">
       <div class="lift:embed?what=_futureApplicationButton" ></div>
-    </div>
+    </div>-->
     <div id="customizeBrushPopup" class="backstage">
       <div id="penColor">
         <span>Choose Pen Color</span>
@@ -45,8 +45,8 @@
           <input type="radio" name="renderQuality"  checked="true" value="32">Medium</input><br />
           <input type="radio" name="renderQuality" value="127">Low</input><br />
           <div>
-            <label>Load slides at native zoom</label>
           </div>
+          <label>Load slides at native zoom</label>
           <input type="checkbox" id="loadSlidesAtNativeZoom" ></input>
         </div>
         <div id="preferencesContainerRight"></div>
@@ -61,8 +61,7 @@
             <div id="importPowerpointContainer"/>
           </div>
           <span>
-            <span id="searchForConversationBoxContainer" />
-            <span id="searchButtonContainer" />
+            <div class="lift:embed?what=_conversation-search-temp"></div>
           </span>
         </div>
         <div id="searchResults" />

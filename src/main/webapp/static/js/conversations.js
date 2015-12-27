@@ -103,13 +103,13 @@ var Conversations = (function(){
     };
     var enableSyncMoveFunction = function(){
         isSyncedToTeacher = true;
-        $("#enableSync").addClass("activePrivacy");
-        $("#disableSync").removeClass("activePrivacy");
+        $("#enableSync").addClass("activePrivacy active");
+        $("#disableSync").removeClass("activePrivacy active");
     };
     var disableSyncMoveFunction = function(){
         isSyncedToTeacher = false;
-        $("#enableSync").removeClass("activePrivacy");
-        $("#disableSync").addClass("activePrivacy");
+        $("#enableSync").removeClass("activePrivacy active");
+        $("#disableSync").addClass("activePrivacy active");
     };
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
@@ -404,10 +404,6 @@ var Conversations = (function(){
         var newSlide = $("<div/>",{
             id: sprintf("slideContainer_%s",slide.id),
             class:"slideButtonContainer"
-        }).css({
-            height:"75px",
-            width:"100px",
-            margin:"10px"
         });
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
@@ -421,7 +417,7 @@ var Conversations = (function(){
         $("<span/>",{
             text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
             class: "slideThumbnailNumber"
-        }).appendTo($("<div/>").appendTo(newSlide));
+        }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
     }
     var constructConversation = function(conversation){
@@ -539,14 +535,14 @@ var Conversations = (function(){
         }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
         })).appendTo("#createConversationContainer");
-        $("<div />", {
+        /*$("<div />", {
             id:"searchButton",
             class: "conversationSearchButton toolbar",
             name:"searchButton",
             type: "button"
-        }).append($("<span/>", {text: "Search"})).on("click",bounceAnd(function(){
+        }).append(*/$("#searchButton").on("click",bounceAnd(function(){
             getSearchResult(currentSearchTerm);
-        })).appendTo("#searchButtonContainer");
+        }));
         var updateSearchTerm = function(e){
             currentSearchTerm = this.value;
             if (e.which == 13){
@@ -554,15 +550,13 @@ var Conversations = (function(){
                 getSearchResult(currentSearchTerm);
             }
         };
-        $("<input/>", {
-            id:"searchForConversationBox",
-            name:"searchForConversationBox",
+        $("#searchForConversationBox").attr({
             blur:updateSearchTerm,
             change:updateSearchTerm,
             focus:updateSearchTerm,
             keydown:updateSearchTerm,
             select:updateSearchTerm
-        }).appendTo("#searchForConversationBoxContainer");
+        });
         $("<span />",{
             text:"share",
             id:"shareButton"
