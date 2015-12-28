@@ -1,50 +1,53 @@
-<div id="ribbon">
+<div id="ribbon" class="btn-nm">
     <div class="button-toggle">
         <button class="privacyButton fa fa-lock" type="button" id="privateMode"><div class="icon-txt">Private</div></button>
         <button class="privacyButton fa fa-unlock" type="button" id="publicMode"><div class="icon-txt">Public</div></button>
     </div>
     <div class="button-toggle">
         <button class="privacyButton fa fa-user" type="button" id="disableCollaboration"><div class="icon-txt">Present</div></button>
-        <button class="privacyButton fa fa-users" type="button" id="enableCollaboration"><div class="icon-txt">Collaborate</div></button>
+        <button class="privacyButton fa fa-users" type="button" id="enableCollaboration"><div class="icon-txt">Share</div></button>
     </div>
     <div class="button-toggle">
         <button class="privacyButton fa fa-chain-broken" type="button" id="disableSync"><div class="icon-txt">Desync</div></button>
         <button class="privacyButton fa fa-refresh" type="button" id="enableSync"><div class="icon-txt">Sync</div></button>
     </div>
-    <div>
-      <div id="majorModesColumn">
-        <div class="toolbar" type="button" id="selectMode">Select</div>
-        <div class="toolbar" type="button" id="drawMode"  >Ink</div>
-        <div class="toolbar" type="button" id="insertMode">Insert</div>
-        <div class="toolbar" type="button" id="feedbackMode">Feedback</div>
-        <div class="toolbar" type="button" id="zoomMode">Zoom</div>
-        <div class="toolbar" type="button" id="panMode">Pan</div>
+    <div class="flex-container-row">
+      <div id="majorModesColumn" class="flex-container-column">
+        <button class="toolbar btn-icon fa fa-mouse-pointer" type="button" id="selectMode"><div class="icon-txt">Select</div></button>
+        <button class="toolbar btn-icon fa fa-pencil" type="button" id="drawMode"><div class="icon-txt">Ink</div></button>
+        <button class="toolbar btn-icon fa fa-plus" type="button" id="insertMode"><div class="icon-txt">Insert</div></button>
+        <button class="toolbar btn-icon fa fa-comment" type="button" id="feedbackMode"><div class="icon-txt">Feedback</div></button>
+        <button class="toolbar btn-icon fa fa-search" type="button" id="zoomMode"><div class="icon-txt">Zoom</div></button>
+        <button class="toolbar btn-icon fa fa-arrows" type="button" id="panMode"><div class="icon-txt">Pan</div></button>
       </div>
       <div id="minorModesColumn">
-        <div id="selectTools" class="inactiveMode">
-          <div class="modeSpecificTool disabledButton" type="button" id="delete">Delete</div>
-          <div class="modeSpecificTool disabledButton" type="button" id="resize">Resize</div>
-          <div class="modeSpecificTool disabledButton" type="button" id="publicize">Show</div>
-          <div class="modeSpecificTool disabledButton" type="button" id="privatize">Hide</div>
+        <div id="selectTools" class="inactiveMode flex-container-column">
+          <button class="modeSpecificTool disabledButton btn-icon fa fa-trash" type="button" id="delete"><div class="icon-txt">Delete</div></button>
+          <button class="modeSpecificTool disabledButton btn-icon fa fa-expand" type="button" id="resize"><div class="icon-txt">Resize</div></button>
+          <button class="modeSpecificTool disabledButton btn-icon fa fa-eye" type="button" id="publicize"><div class="icon-txt">Show</div></button>
+          <button class="modeSpecificTool disabledButton btn-icon fa fa-eye-slash" type="button" id="privatize"><div class="icon-txt">Hide</div></button>
         </div>
         <div id="drawTools" class="inactiveMode">
         </div>
         <div id="insertTools" class="inactiveMode">
-          <div id="textTools"></div>
+            <!-- Todo: hide in js on load and on open of other section -->
+          <button id="insertText" class="modeSpecificTool btn-icon fa fa-font" style="display:none;"><div class="icon-txt">Text</div></button>
+          <button id="insertImage" class="modeSpecificTool btn-icon fa fa-picture-o" style="display:none;"><div class="icon-txt">Image</div></button>
+          <!--<div id="textTools"></div>-->
         </div>
-				<div id="feedbackTools" class="inactiveMode"></div>
-        <div id="zoomTools" class="inactiveMode">
-          <div id="zoomToOriginal" class="modeSpecificTool">Reset</div>
-          <div id="zoomToFull" class="modeSpecificTool">Auto fit</div>
-          <div id="zoomToPage" class="modeSpecificTool">1:1</div>
-          <div id="in" class="quickMove modeSpecificTool"> In </div>
-          <div id="out" class="quickMove modeSpecificTool"> Out </div>
+		<div id="feedbackTools" class="inactiveMode"></div>
+        <div id="zoomTools" class="inactiveMode flex-container-column">
+          <button id="zoomToOriginal" class="modeSpecificTool btn-icon fa fa-?"><div class="icon-txt">Reset</div></button>
+          <button id="zoomToFull" class="modeSpecificTool btn-icon fa fa-arrows-alt"><div class="icon-txt">Auto fit</div></button>
+          <button id="zoomToPage" class="modeSpecificTool btn-icon fa fa-?"><div class="icon-txt">1:1</div></button>
+          <button id="in" class="quickMove modeSpecificTool btn-icon fa fa-search-plus"><div class="icon-txt">In</div></button>
+          <button id="out" class="quickMove modeSpecificTool btn-icon fa fa-search-minus"><div class="icon-txt">Out</div></button>
         </div>
-        <div id="panTools" class="inactiveMode">
-          <div id="left" class="quickMove modeSpecificTool">Left</div>
-          <div id="up" class="quickMove modeSpecificTool">Up</div>
-          <div id="down" class="quickMove modeSpecificTool">Down</div>
-          <div id="right" class="quickMove modeSpecificTool">Right</div>
+        <div id="panTools" class="inactiveMode flex-container-column">
+          <button id="left" class="quickMove modeSpecificTool btn-icon fa fa-arrow-left"><div class="icon-txt">Left</div></button>
+          <button id="up" class="quickMove modeSpecificTool btn-icon fa fa-arrow-up"><div class="icon-txt">Up</div></button>
+          <button id="down" class="quickMove modeSpecificTool btn-icon fa fa-arrow-down"><div class="icon-txt">Down</div></button>
+          <button id="right" class="quickMove modeSpecificTool btn-icon fa fa-arrow-right"><div class="icon-txt">Right</div></button>
         </div>
       </div>
     </div>
