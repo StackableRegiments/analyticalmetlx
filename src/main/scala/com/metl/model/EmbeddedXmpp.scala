@@ -199,40 +199,7 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
     }
   }
 }
-/*
-class EmbeddedTlsContext(keystore:java.io.File,storePass:String,keyPass:String) extends org.apache.vysper.xmpp.cryptography.TLSContextFactory {
-  import java.io.{IOException,InputStream}
-  import java.security.{GeneralSecurityException, KeyStore, Security}
-  import javax.net.ssl.{KeyManagerFactory,SSLContext}
-  override def getSSLContext:javax.net.ssl.SSLContext = {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        InputStream in = null;
-        try {
-            in = getCertificateInputStream();
-            ks.load(in, storePass.toCharArray());
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (IOException ignored) {
-                    ;
-                }
-            }
-        }
-
-        // Set up key manager factory to use our key store
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KEY_MANAGER_FACTORY_ALGORITHM);
-        kmf.init(ks, keyPass.toCharArray());
-
-        // Initialize the SSLContext to work with our key managers.
-        SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
-        sslContext.init(kmf.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
-
-        return sslContext;
-  }
-}
-*/
 class MeTLXAccountManagement extends AccountManagement {
   override def addUser(entity:Entity,password:String):Unit = addUser(entity.getNode,password)
   def addUser(username:String,password:String):Unit = {
@@ -291,6 +258,14 @@ class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:
       p.setTLSCertificateInfo(new java.io.File(keystorePath),keystorePassword)
       try {
         p.start()
+
+        def describeSslParams(params:javax.net.ssl.SSLParameters):String = {
+          "ciphers: %s\r\nprotocols: %s".format(params.getCipherSuites().toList.mkString(", "),params.getProtocols().toList.mkString(", "))
+        }
+        val supportedParams = describeSslParams(p.getServerRuntimeContext().getSslContext().getSupportedSSLParameters())
+        val defaultParams = describeSslParams(p.getServerRuntimeContext().getSslContext().getDefaultSSLParameters())
+        println("initializing Vysper SSL\r\nsupportedParams: %s\r\ndefaultParams: %s".format(supportedParams,defaultParams))
+
         println("embedded xmpp server started")
         val metlMuc = new MeTLMucModule()
         p.addModule(new SoftwareVersionModule())
