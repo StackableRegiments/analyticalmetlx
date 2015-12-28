@@ -1,3 +1,7 @@
+import com.typesafe.sbt.SbtStartScript
+import SbtStartScript.StartScriptKeys._
+import com.earldouglas.xsbtwebplugin.WebPlugin
+
 name := "web-container-metlx"
 version := "0.2.0"
 organization := "io.github.stackableregiments"
@@ -9,19 +13,27 @@ resolvers ++= Seq(
   "releases"        at "http://oss.sonatype.org/content/repositories/releases"
 )
 
+seq(webSettings :_*)
+
+startScriptJettyVersion in Compile := "9.2.10.v20150310"
+
+startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
+
+startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://refer.adm.monash.edu/jetty-distribution-" + version + ".zip" }
+
+startScriptJettyContextPath := "/"
+
+startScriptJettyHome in Compile <<= (streams, target, startScriptJettyURL in Compile, startScriptJettyChecksum in Compile) map startScriptJettyHomeTask
+
+startScriptForWar in Compile <<= (streams, startScriptBaseDirectory, startScriptFile in Compile, com.earldouglas.xsbtwebplugin.PluginKeys.packageWar in Compile, startScriptJettyHome in Compile, startScriptJettyContextPath in Compile) map startScriptForWarTask
+
+startScript in Compile <<= startScriptForWar in Compile
+
+seq(genericStartScriptSettings:_*)
+
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
-
-jetty()
-
-javaOptions in container ++= Seq(
-  "-Drun.mode=development",
-  "-Dmetlx.configurationFile=config/configuration.local.xml",
-  "-Dlogback.configurationFile=config/logback.xml",
-  "-XX:+UseConcMarkSweepGC",
-  "-XX:+CMSClassUnloadingEnabled"
-)
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
@@ -30,6 +42,7 @@ libraryDependencies ++= {
   val scalaVersionString = "2.11.5"
   Seq(
     "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
+  "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
     "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
