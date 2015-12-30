@@ -18,6 +18,10 @@ object Boot{
     ("Cache-Control","public, max-age=%s".format(ninetyDays)),
     ("Pragma","public")
   )
+  val noCache = List(
+    ("Cache-Control","private, no-cache, max-age=0"),
+    ("Pragma","private")
+  )
 }
 
 class Boot {
@@ -36,12 +40,14 @@ class Boot {
     println("Routing begins")
     val defaultHeaders = LiftRules.defaultHeaders
     LiftRules.defaultHeaders = {
-      case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.cacheStrongly
+      case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.noCache
       case (_, Req("proxyDataUri"::_, _, _)) => Boot.cacheStrongly
       case (_, Req("proxy"::_, _, _)) => Boot.cacheStrongly
+      case (_, Req("static" ::_,_,_)) => Boot.noCache
       case any => defaultHeaders(any)
     }
 
+    LiftRules.attachResourceId = s => "%s?%s".format(s,nextFuncName)
     LiftRules.passNotFoundToChain = false
     LiftRules.uriNotFound.prepend {
       case (Req("static":: rest,_,_),failure) => {
