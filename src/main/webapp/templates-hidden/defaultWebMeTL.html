@@ -1,22 +1,26 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
 
 <head>
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" ></meta>
+  <meta name="apple-mobile-web-app-capable" content="yes" ></meta>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8" ></meta>
   <meta name="description" content="" ></meta>
   <meta name="keywords" content="" ></meta>
     
-	<title id="headTitle">MeTL Viewer</title>
+  <title id="headTitle">MeTL</title>
+  <link href='https://fonts.googleapis.com/css?family=Advent+Pro:400,200|Cabin:400,700,400italic' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel='stylesheet' href='/static/assets/styles/main.css'>
+  <!--<style class="lift:CSS.blueprint" ></style>
+  <style class="lift:CSS.fancyType" ></style>-->
 
-  <style class="lift:CSS.blueprint" ></style>
-  <style class="lift:CSS.fancyType" ></style>
-
-  <script id="jquery" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+  <script id="jquery" src="/static/assets/js/vendor/jquery.min.js" type="text/javascript"></script>
   <script id="json" src="/classpath/json.js" type="text/javascript"></script>
   <script id="ahpi.imgload" src="/static/js/ahpi.imgload.js" type="text/javascript"></script>
 
 	<style type="text/css">
 /* <![CDATA[ */
-.edit_error_class {
+/*.edit_error_class {
   display: block;
   color: red;
 }
@@ -122,27 +126,29 @@
 	margin: 0 auto;
 	padding-top: 128px;
 	text-align: center;
-}
+}*/
 
 /* ]]> */
 	</style>
 </head>
 
-<body>
+<body class="theme-light">
 
-	<div id="header">
-    <div id="currentUser"><div class="lift:GlobalsSnippet.currentUser" ></div></div>
-		<div id="navigation">
-			<a id="navHome" href="/"><span>Home</span></a>
-      <div id="navLinkContainer"></div>
-		</div>
-		<div id="title">
-			<h1 id="titleText">MeTL Viewer</h1>
-		</div>
+  <header id="header" class="">
+    <div id="title" class="title-container plr pbh">
+		  <div class="metl-logo"><span class="hidden">MeTL</span></div>
 	</div>
+    <div class="flex-container-row">
+        <h1 id="titleText" class="large-txt mrh"></h1>
+        <nav id="navigation" class="primary-nav">
+		  <a id="navHome" href="/" class="fa fa-home button-round mrh"><span class="hidden">Home</span></a>
+		  <div id="navLinkContainer"/>
+        </nav>
+	</div>
+	<p id="currentUser" class="nm">Logged in: <!--<lift:GlobalsSnippet.currentUser/>--></p>
+  </header>
 
-	<div id="content" >
-	</div>
+  <div id="content"></div>
 
 </body>
 
