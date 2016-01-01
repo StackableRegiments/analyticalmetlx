@@ -147,7 +147,7 @@ var DeviceConfiguration = (function(){
         var width = deviceDimensions.width;
 
         try{
-            var performRemeasure = function(){
+            /*var performRemeasure = function(){
                 var toolSize = 0;
                 var subSize = 0;
                 var subSizeOffset = 0;
@@ -245,7 +245,7 @@ var DeviceConfiguration = (function(){
             }
             //performRemeasure();
             performRemeasure();
-            IncludeView.default();
+            IncludeView.default();*/
         }
         catch(e){
             console.log("exception in fit",e);

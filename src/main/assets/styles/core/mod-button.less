@@ -1,0 +1,85 @@
+.button, button, input[type=submit] {
+  .ptbh;
+  .plr;
+  background-color:transparent;
+}
+.button-major {
+  background-color: @button-bg;
+  color: @button-fg;
+}
+
+.button-round {    
+    height: 50px;
+    width: 50px;
+    border-radius: 3em;
+    padding: 0;
+    border:2px solid @menu-button-border;
+    text-align: center;
+    display: inline-block;
+    text-decoration: none;
+}
+.button-round-small {
+  .button-round;
+  height:30px;
+  width:30px;
+  line-height:24px;
+}
+.button-transparent-border {
+  background:@menu-button-bg;
+  color:@menu-button-fg;
+  border:2px solid @menu-button-border;
+  &:hover {
+    color:@menu-button-hover;
+    border-color:@menu-button-hover;
+  }
+}
+.fa {
+  .button;
+  text-decoration:none;
+  font-size: @icon-font-size;
+  .np;
+  height:44px;
+  width:44px;
+  text-align:center;
+  line-height:44px;
+}
+.button-3d {
+  background-color: rgb(197, 202, 206);
+  box-shadow: 0 -5px 5px #ffffff, inset 0 -1px 2px rgba(255,255,255,0.5), 0 5px 5px #aaa;
+  border: 1px solid #CCCFD6;
+}
+
+.btn-search {
+  content: "\f000";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+}
+.button-toggle {
+    width:92px;
+    height:48px;
+    display:-webkit-flex;
+    display:flex;
+    border:2px solid #343434;
+    button {
+      .nm;
+      width:44px;
+      height:44px;
+      background-color:@toggle-bg;
+      background-position:center center;
+      color:white;
+      &.active {
+          background-color:@toggle-active-bg;
+          border-bottom-width:4px;
+          border-bottom-style:solid;
+          color:@font-color;
+          -webkit-transition:border-bottom .5s;
+             -moz-transition:border-bottom .5s;
+              -ms-transition:border-bottom .5s;
+               -o-transition:border-bottom .5s;
+                  transition:border-bottom .5s;
+      }
+      line-height:normal;
+    }
+}

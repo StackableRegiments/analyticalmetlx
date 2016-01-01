@@ -1,8 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
-  <head>
-  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" ></meta>
-    <meta name="apple-mobile-web-app-capable" content="yes" ></meta>
-    <script src="static/js/stable/jquery-1.8.2.min.js"></script>
+    <div class="lift:surround?with=defaultWebMeTL;at=content">
     <script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
     <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
     <script src="static/js/stable/underscore-min.js"></script>
@@ -21,23 +17,20 @@
     <script src="static/js/submissions.js"></script>
     <script src="static/js/privacy.js"></script>
     <script src="static/js/stable/Tween.js"></script>
-    <script src="static/js/DeviceConfiguration.js"></script>
+    <!--<script src="static/js/DeviceConfiguration.js"></script>-->
     <script src="static/js/hotkeys.js"></script>
     <script src="static/js/Chart.min.js"></script>
-    <link rel="stylesheet" href="static/css/board.css"></link>
+    <!--<link rel="stylesheet" href="static/css/board.css"></link>
     <link rel="stylesheet" href="static/css/quiz.css"></link>
     <link rel="stylesheet" href="static/css/ribbon.css"></link>
-    <link rel="stylesheet" href="static/css/header.css"></link>
-  </head>
-  <body>
-    <table id="masterLayout">
-      <tr>
-        <td class="shrinkWrappedColumn" id="toolsColumn">
+    <link rel="stylesheet" href="static/css/header.css"></link>-->
+    <div id="masterLayout" class="flex-container-row">
+        <div class="shrinkWrappedColumn block mrh" id="toolsColumn">
           <div class="lift:embed?what=_ribbon" ></div>
-        </td>
-        <td class="expandoColumn expandoRow" id="boardColumn">
-          <div class="lift:embed?what=_presentationSpace" ></div>
-          <div id="notices">
+        </div>
+        <div class="expandoColumn expandoRow main-board mrh flex-container-column np" id="boardColumn">
+          <div class="lift:embed?what=_presentationSpace grow" ></div>
+          <div id="notices" class="body-bg">
             <div class="headerRow1">
               <span id="username" ></span>
               <span> is working </span>
@@ -65,31 +58,27 @@
               </span>
             </div>
             <div class="headerRow2">
-              <span id="feedbackStatus"></div>
-                <span id="shareButton"></div>
+              <span id="feedbackStatus"></span>
+                <span id="shareButton"></span>
             </div>
             <div class="headerRow3">
             </div>
           </div>
-        </td>
-        <td class="shrinkWrappedColumn expandoRow" id="thumbsColumn">
+        </div>
+        <div class="shrinkWrappedColumn expandoRow block mrh" id="thumbsColumn">
           <div class="lift:embed?what=_thumbs"></div>
-        </td>
-      </tr>
-    </table>
+        </div>
+    </div>
     <div class="lift:embed?what=_dedicatedPopups"></div>
     <span id="absoluteCloseButton"></span>
-    <div id="floatingToggleContainer">
-      <div class="floatingToolbar" id="applicationMenuButton">
-        <div>
-          <img src="/static/images/metlx.png" ></img>
-        </div>
-        <div>
-          Menu
-        </div>
+    <div id="floatingToggleContainer" class="main-menu">
+      <button class="floatingToolbar btn-menu fa fa-bars" id="applicationMenuButton">
+        <span class="hidden">Menu</span>
+      </button>
+      <div id="applicationMenuPopup" class="backstageHeader">
+        <div class="lift:embed?what=_futureApplicationButton"></div>
       </div>
     </div>
     <div id="s2cMessageContainer" ></div>
     <div class="lift:Metl.specific" ></div>
-  </body>
-</html>
+    </div>
