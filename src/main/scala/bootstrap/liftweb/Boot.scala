@@ -46,6 +46,12 @@ class Boot {
       case (_, Req("static" ::_,_,_)) => Boot.noCache
       case any => defaultHeaders(any)
     }
+    LiftRules.supplementalHeaders.default.set(List(
+        ("Access-Control-Allow-Origin", "*"),
+        ("Access-Control-Allow-Credentials", "true"),
+        ("Access-Control-Allow-Methods", "GET, OPTIONS"),
+        ("Access-Control-Allow-Headers", "WWW-Authenticate,Keep-Alive,User-Agent,X-Requested-With,Cache-Control,Content-Type")
+      ))
 
     LiftRules.attachResourceId = s => "%s?%s".format(s,nextFuncName)
     LiftRules.passNotFoundToChain = false
