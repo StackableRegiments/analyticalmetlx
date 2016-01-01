@@ -28,22 +28,22 @@ object StatelessHtml {
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
       val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))
-    val attrs = (additionalAttributes ::: (rootName match {
+      val attrs = (additionalAttributes ::: (rootName match {
         case "quizOption" => List(("xmlns","monash:metl"))
         case _ => messageAttrs
       })).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
-      item match {
-        case (k:String,v:String) => new UnprefixedAttribute(k,v,acc)
-        case _ => acc
+        item match {
+          case (k:String,v:String) => new UnprefixedAttribute(k,v,acc)
+          case _ => acc
+        }
+      })
+      wrapWithMessage match {
+        case true => {
+          new Elem(null, "message", attrs, TopScope, false, new Elem(null, rootName, new UnprefixedAttribute("xmlns","monash:metl",Null.asInstanceOf[scala.xml.MetaData]), TopScope, false, additionalNodes: _*))
+        }
+        case _ => new Elem(null, rootName, attrs, TopScope, false, additionalNodes:_*)
       }
     })
-    wrapWithMessage match {
-      case true => {
-        new Elem(null, "message", attrs, TopScope, false, new Elem(null, rootName, new UnprefixedAttribute("xmlns","monash:metl",Null.asInstanceOf[scala.xml.MetaData]), TopScope, false, additionalNodes: _*))
-      }
-      case _ => new Elem(null, rootName, attrs, TopScope, false, additionalNodes:_*)
-    }
-  })
   }
   val exportSerializer = new ExportXmlSerializer("export"){
   }
@@ -222,48 +222,51 @@ object StatelessHtml {
       val occupants = history.getAttendances
       val occupantCount = occupants.length
       val uniqueOccupants = occupants.groupBy(occ => occ.author)
-      val xmlDescription = <historyDescription>
-                            <bounds>
-                              <left>{Text(history.getLeft.toString)}</left>
-                              <right>{Text(history.getRight.toString)}</right>
-                              <top>{Text(history.getTop.toString)}</top>
-                              <bottom>{Text(history.getBottom.toString)}</bottom>
-                            </bounds>
-                            <jid>{Text(jid)}</jid>
-                            <stanzaCount>{Text(allContent.toString)}</stanzaCount>
-                            <canvasContentCount>{Text(canvasContent.toString)}</canvasContentCount>
-                            <imageCount>{Text(images.toString)}</imageCount>
-                            <strokeCount>{Text(strokes.toString)}</strokeCount>
-                            <highlighterCount>{Text(highlighters.toString)}</highlighterCount>
-                            <textCount>{Text(texts.toString)}</textCount>
-                            <quizzes>{Text(quizzes.toString)}</quizzes>
-                            <files>{Text(files.toString)}</files>
-                            <uniquePublishers>{publishers.map(pub => {
-                               <publisher>
-                                <name>{pub._1}</name>
-                                <activityCount>{pub._2.length}</activityCount>
-                              </publisher>
-                            })}</uniquePublishers>
-                            <uniqueOccupants>{uniqueOccupants.map(occ => {
-                              <occupant>
-                                <name>{occ._1}</name>
-                                <activity>{
-                                  occ._2.map(action => {
-                                    <action>
-                                      <location>{Text(action.location)}</location>
-                                      <timestamp>{Text(action.timestamp.toString)}</timestamp>
-                                      <present>{Text(action.present.toString)}</present>
-                                    </action>
-                                  })
-                                }</activity>
-                              </occupant>
-                            })}</uniqueOccupants>
-                            <occupants>{Text(occupantCount.toString)}</occupants>
-                            <snapshot>{
-                              Text(base64Encode(room.getThumbnail))
-                            }</snapshot>
-                          </historyDescription>
-      XmlResponse(xmlDescription)
+      val xResponse = <historyDescription>
+      <bounds>
+      <left>{Text(history.getLeft.toString)}</left>
+      <right>{Text(history.getRight.toString)}</right>
+      <top>{Text(history.getTop.toString)}</top>
+      <bottom>{Text(history.getBottom.toString)}</bottom>
+      </bounds>
+      <jid>{Text(jid)}</jid>
+      <stanzaCount>{Text(allContent.toString)}</stanzaCount>
+      <canvasContentCount>{Text(canvasContent.toString)}</canvasContentCount>
+      <imageCount>{Text(images.toString)}</imageCount>
+      <strokeCount>{Text(strokes.toString)}</strokeCount>
+      <highlighterCount>{Text(highlighters.toString)}</highlighterCount>
+      <textCount>{Text(texts.toString)}</textCount>
+      <quizzes>{Text(quizzes.toString)}</quizzes>
+      <files>{Text(files.toString)}</files>
+      <uniquePublishers>{publishers.map(pub => {
+        <publisher>
+        <name>{pub._1}</name>
+        <activityCount>{pub._2.length}</activityCount>
+        </publisher>
+      })}</uniquePublishers>
+      <uniqueOccupants>{uniqueOccupants.map(occ => {
+        <occupant>
+        <name>{occ._1}</name>
+        <activity>{
+          occ._2.map(action => {
+            <action>
+            <location>{Text(action.location)}</location>
+            <timestamp>{Text(action.timestamp.toString)}</timestamp>
+            <present>{Text(action.present.toString)}</present>
+            </action>
+          })
+        }</activity>
+        </occupant>
+      })}</uniqueOccupants>
+      <occupants>{Text(occupantCount.toString)}</occupants>
+      <snapshot>{
+        Text(base64Encode(room.getThumbnail))
+      }</snapshot>
+      </historyDescription>
+      req.param("format").openOr("xml") match {
+        case "json" => JsonResponse(json.Xml.toJson(xResponse))
+        case "xml" => XmlResponse(xResponse)
+      }
     })
   })
   def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),() => {
@@ -325,7 +328,7 @@ object StatelessHtml {
             (s:MeTLStanza) => s.author == conv.author
           )
         })
-        step1 
+        step1
       }).getOrElse(conv)
       serializer.fromConversation(newConv).headOption.map(n => XmlResponse(n))
     } else {
@@ -380,9 +383,9 @@ object StatelessHtml {
       histories = exportHistories(conv,Some(List(onBehalfOfUser)));
       xml = {
         <export>
-          {exportSerializer.fromConversation(conv)}
-          <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
-        </export> 
+        {exportSerializer.fromConversation(conv)}
+        <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
+        </export>
       };
       node <- xml.headOption
     ) yield {
@@ -396,9 +399,9 @@ object StatelessHtml {
       histories = exportHistories(conv,None);
       xml = {
         <export>
-          {exportSerializer.fromConversation(conv)}
-          <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
-        </export> 
+        {exportSerializer.fromConversation(conv)}
+        <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
+        </export>
       };
       node <- xml.headOption
     ) yield {
@@ -457,7 +460,7 @@ object StatelessHtml {
     val newConvWithOldSlides = newConv.copy(
       lastAccessed = new java.util.Date().getTime,
       slides = oldConv.slides.map(s => s.copy(
-        groupSet = Nil, 
+        groupSet = Nil,
         id = s.id - oldConv.jid + newConv.jid,
         audiences = Nil
       ))
@@ -470,14 +473,14 @@ object StatelessHtml {
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
         case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
         case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
-        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString)) 
+        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
         case _ => None
       }
       newRoom.foreach(nr => {
         ServerSideBackgroundWorker ! CopyContent(
           remoteConv.server,
           h._2,
-          nr 
+          nr
         )
       })
     })
@@ -570,7 +573,7 @@ object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
     case CopyContent(config,oldContent,newLoc) => {
       val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
       room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
-      oldContent.getAll.foreach(stanza => {   
+      oldContent.getAll.foreach(stanza => {
         room ! LocalToServerMeTLStanza(stanza match {
           case m:MeTLInk => m.copy(slide = newLoc.getJid)
           case m:MeTLImage => m.copy(slide = newLoc.getJid)
@@ -673,7 +676,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     metlContentToXml("file",input,List(
       <name>{input.name}</name>,
       <id>{input.id}</id>
-      ) ::: 
+    ) :::
       input.bytes.map(ib => List(<bytes>{base64Encode(ib)}</bytes>)).getOrElse(List.empty[Node]))
   })
 }
