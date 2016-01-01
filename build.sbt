@@ -6,7 +6,9 @@ name := "web-container-metlx"
 version := "0.2.0"
 organization := "io.github.stackableregiments"
 
-scalaVersion := "2.11.5"
+val scalaVersionString = "2.11.5"
+
+scalaVersion := scalaVersionString
 
 resolvers ++= Seq(
   "snapshots"     at "http://oss.sonatype.org/content/repositories/snapshots",
@@ -39,7 +41,6 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val scalaVersionString = "2.11.5"
   Seq(
     "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
   "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config

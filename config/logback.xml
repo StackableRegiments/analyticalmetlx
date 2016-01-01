@@ -17,7 +17,9 @@
       <appender-ref ref="FILE"/>
       </logger>
   -->
-  <logger name="net.liftweb" level="INFO"/>
+	<logger name="net.liftweb" level="INFO"/>
+	<logger name="org.apache.vysper" level="DEBUG"/>
+	<logger name="org.apache.vysper.xmpp.protocol.ProtocolWorker" level="DEBUG"/>
   <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
