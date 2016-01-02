@@ -16,7 +16,13 @@ import Http._
 import scala.xml.XML
 import org.apache.commons.io._
 
-object MeTLRestHelper extends RestHelper {
+trait Stemmer {
+  def stem(in:String):Tuple2[String,String] = {
+    (("00000"+in).reverse.drop(3).take(2).reverse,in)
+  }
+}
+
+object MeTLRestHelper extends RestHelper with Stemmer {
   println("MeTLRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   val crossDomainPolicy = {
@@ -24,7 +30,31 @@ object MeTLRestHelper extends RestHelper {
     <allow-access-from domain="*" />
     </cross-domain-policy>
   }
+  protected var id = 1000;
   serve {
+    //yaws endpoints 1188
+    case r@Req(List("upload_nested"),"yaws",PostRequest) => () => {
+      for (
+        path <- r.param("path");
+        filename <- r.param("filename");
+        overwrite <- r.param("overwrite").map(_.toBoolean);
+        bytes <- r.body;
+        resp <- StatelessHtml.yawsUploadNested(path,filename,overwrite,bytes)
+      ) yield {
+        resp
+      }
+    }
+    case Req(List("primarykey"),"yaws",GetRequest) => () => {
+      StatelessHtml.yawsPrimaryKey  
+    }
+    case Req(List(rootElem,stemmedRoom,room,item),itemSuffix,GetRequest) if List("Structure","Resource").contains(rootElem) && stem(room)._1 == stemmedRoom => () => {
+      StatelessHtml.yawsResource(rootElem,room,item,itemSuffix)
+    }
+    //yaws endpoints 1749
+    case Req(List(stemmedRoom,room,"all"),"zip",GetRequest) if stem(room)._1 == stemmedRoom => () => {
+      StatelessHtml.yawsHistory(room)
+    }
+    //metlx endpoints 8080
     case Req("verifyUserCredentialsForm" :: Nil,_,_) => () => {
       Full(InMemoryResponse(
         ( <html>
