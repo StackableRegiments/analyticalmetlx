@@ -1190,7 +1190,7 @@ var Modes = (function(){
                         if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
                             tsButton.addClass("activeBrush");
                         }
-                    }).show();
+                    });
                     Progress.call("onLayoutUpdated");
                     $("#minorText").click(function(){});
                     $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
@@ -2005,7 +2005,7 @@ var Modes = (function(){
                     });
                     var drawTools = function(){
                         $(".activeBrush").removeClass("activeBrush");
-												var penNumber = 1;
+						  var penNumber = 1;
                         $("#drawTools").empty().html(unwrap(
                             Modes.draw.brushes.map(function(brush){
                                 var dot = Canvas.swirl(brush.color,brush.width,parseInt(UserSettings.getUserPref("subModeSize")),brush.isHighlighter);
