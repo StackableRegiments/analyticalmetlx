@@ -145,128 +145,68 @@ var DeviceConfiguration = (function(){
 
         var deviceDimensions = getDeviceDimensions();
         var width = deviceDimensions.width;
-				var height = deviceDimensions.height;// - $(".shrinkWrappedRow").height();
+				var height = deviceDimensions.height;
         try{
             var performRemeasure = function(){
-                var toolSize = 0;
-                var subSize = 0;
-                var subSizeOffset = 0;
-                var toolWidth = 0;
-                var preferredToolModeSize = parseInt(UserSettings.getUserPref("toolModeSize"));
-                var xOffset = 0;
-                var yOffset = 0;
-
                 if (showHeader == true){
                     boardHeader.show();
-                    //boardHeader.width(width);
                     applicationMenu.show();
-                    //applicationMenu.width(preferredToolModeSize);
                 } else {
-                    //boardHeader.width(0);
-                    //applicationMenu.width(0);
                     applicationMenu.hide();
                     boardHeader.hide();
                 }
 
-                //var height = deviceDimensions.height - $(".shrinkWrappedRow").height();
                 if (showTools == true){
-                    ///toolSize = preferredToolModeSize;
-                    //subSize = parseInt(UserSettings.getUserPref("subModeSize"));
-                    //subSizeOffset = 10; //Woo!  Magic number!  It's the left offset of the submode button
-                    //toolWidth = Math.max(toolSize,subSize + subSizeOffset);
-                    //toolsColumn.width(toolWidth).css("max-width",px(208)).height(height);
                     tools.show();
 										subTools.show();
-                    //subTools.height(subSize).css("min-width",px(toolWidth - subSizeOffset)).show();
                     toolsColumn.show();
                 } else {
-                    //xOffset += 4;
-                    //subTools.height(0).css("min-width",px(0));
                     subTools.hide();
                     tools.hide();
-                    //toolsColumn.width(0).height(0);
                     toolsColumn.hide();
                 }
-								/*
-                var thumbWidth = 0;
-                var thumbHeight = 0;
-								*/
                 if (showSlides == true){
                     thumbsColumn.show();
-										/*
-                    thumbWidth = parseInt(UserSettings.getUserPref("thumbnailSize"));
-                    thumbHeight = thumbWidth * 0.75;
-										*/
                 } else {
-                    //xOffset += 4;
                     thumbsColumn.hide();
                 }
 								/*
-                var thumbScrollOffset = 35;
-                var thumbContainerWidth = thumbWidth;
-                if (thumbWidth > 0){
-                    thumbContainerWidth = thumbContainerWidth + thumbScrollOffset;
-                }
-								*/
-								/*
-                thumbsColumn.width(thumbContainerWidth).height(height).css("display","block");
-                thumbScrollContainer.width(thumbContainerWidth).height(height);
-                slideContainer.width(thumbContainerWidth).height(height);
-                $(".slideButtonContainer").width(thumbWidth).height(thumbHeight).css("margin",px(10));
-                thumbs.width(thumbWidth).height(thumbHeight);
-                $("#addSlideButton").css("margin",px(10));
-								*/
-                //var gestureWiggleRoomWidth = 0; // magic number to create a bit of wiggle room for the gestures
-                //var gestureWiggleRoomHeight = 0; // magic number to create a bit of wiggle room for the gesture
-								/*
-                if (currentDevice != "projector"){
-                    gestureWiggleRoomHeight = 15;
-                    height -= yOffset / 2;
-                    width -= xOffset;
-                }
-								*/
-/*
-                $("#masterLayout").height(height).width(width).css({
-                    "margin-left":px(xOffset / 2),
-                    "margin-top":px(yOffset / 2)
-                });
-*/
-								//width = $("#masterLayout").width();
-								//height = $("#masterLayout").height();
-								/*
-                var actualToolsWidth = toolsColumn.width();
-                var actualThumbsWidth = thumbsColumn.width();
-                var padding = 0;
-                var containerWidth = width - (actualToolsWidth + actualThumbsWidth + gestureWiggleRoomWidth);
-                var containerHeight = height - gestureWiggleRoomHeight;
-                $("#notices").height(gestureWiggleRoomHeight);
-                var container = $("#boardContainer");
-*/
-                //$("#boardColumn").width(containerWidth).height(containerHeight);
-                //container.width(containerWidth).height(containerHeight);
-								/*
-                board.attr("width",px(containerWidth - padding));
-                board.attr("height",px(containerHeight - padding));
-                board.width(containerWidth - padding);
-                board.height(containerHeight - padding);
-								*/
-								/*
-                boardWidth = containerWidth - padding;
-                boardHeight = containerHeight - padding;
-*/
+								//leaving it manual until I can work with Jodi on doing it using CSS
+								//essentially, it's incredibly important that boardWidth and boardHeight are set accurately.
+								var header = $("#header");
+								var notices = $("#notices");
+								var arbitraryBorder = 75;
+								var boardContainer = $("#boardContainer");
+								var bheight = (height - header.height() - notices.height() - arbitraryBorder);
+								var bwidth = (width - $("#toolsColumn").width() - $("#thumbsColumn").width() - arbitraryBorder);
+								boardContainer.height(bheight + "px").width(bwidth + "px");
 								var board = $("#board");
-								boardWidth = board.width();
-								boardHeight = board.height();
-								/*
-                if ("documentElement" in document){
-                    $(document.documentElement).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
-                }
-                $(document.body).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
-                $(document).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
+								boardContext.width = bwidth;
+								boardContext.height = bheight;
+								boardContext.canvas.width = bwidth;
+								boardContext.canvas.height = bheight;
+								board.width(bwidth + "px").height(bheight + "px");
+								board.width = board.width();//bwidth;
+								board.height = board.height();//bheight;
+								boardWidth = bwidth;
+								boardHeight = bheight;
 								*/
+							/**/	
+							 // this is the version which simply reads them from the elements, which will allow Jodi to control the size of the canvas.
+								var board = $("#board");
+								var bwidth = board.width();
+								var bheight = board.height();
+								boardContext.canvas.width = bwidth;
+								boardContext.canvas.height = bheight;
+								board.width = bwidth;
+								board.height = bheight;
+								boardContext.width = bwidth;
+								boardContext.height = bheight;
+								boardWidth = bwidth;
+								boardHeight = bheight;
+								/**/
             }
             performRemeasure();
-            //performRemeasure();
             IncludeView.default();
         }
         catch(e){
