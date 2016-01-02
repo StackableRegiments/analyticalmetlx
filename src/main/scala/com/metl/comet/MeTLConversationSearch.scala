@@ -58,14 +58,8 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
     },Empty),
     ClientSideFunctionDefinition("getHistory",List("slide"),(args)=> {
       val jid = getArgAsString(args(0))
-      //println("getHistory requested")
       getSlideHistory(jid)
     },Full(RECEIVE_HISTORY)),
-    /*
-     ClientSideFunctionDefinition("getRoomPopulations",List.empty[String],(args) => {
-     JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString)),JField("population",JArray(kv._2.getChildren.map(cu => JString(cu._1)).toList))))).toList)
-     },Full("receiveRoomPopulations")),
-     */
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
       serializer.fromConversationList(serverConfig.searchForConversation(args(0).toString))
     },Full(RECEIVE_CONVERSATIONS)),
@@ -81,7 +75,6 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
     ClientSideFunctionDefinition("getResource",List("source"),(args) => JString("not yet implemented"),Empty),
     ClientSideFunctionDefinition("moveToSlide",List("where"),(args) => {
       val where = getArgAsString(args(0))
-      //println("moveToSlideRequested(%s)".format(where))
       moveToSlide(where)
       JNull
     },Empty),
@@ -97,23 +90,6 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
       leaveRoomByJid(where+username)
       JNull
     },Empty),
-    ClientSideFunctionDefinition("sendStanza",List("stanza"),(args) => {
-      val stanza = getArgAsJValue(args(0))
-      sendStanzaToServer(stanza)
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("sendTransientStanza",List("stanza"),(args) => {
-      val stanza = getArgAsJValue(args(0))
-      sendStanzaToServer(stanza,"loopback")
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("changeUser",List("username"),(args) => {
-      val newUsername = getArgAsString(args(0))
-      if (Globals.isDevMode){
-        Globals.currentUser(newUsername)
-      }
-      JString(username)
-    }, Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("joinConversation",List("where"),(args) => {
@@ -129,16 +105,6 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
       val title = getArgAsString(args(0))
       serializer.fromConversation(serverConfig.createConversation(title,username))
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
-    /*
-     ClientSideFunctionDefinition("deleteConversation",List("jid"),(args) => {
-     val jid = getArgAsString(args(0))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.deleteConversation(c.jid.toString)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
     ClientSideFunctionDefinition("requestDeleteConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -156,17 +122,6 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
         ),Full(()=> this ! SpamMessage(Text("You are not permitted to delete this conversation"))),false,Full("conversations"))
       JNull
     },Empty),
-    /*
-     ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
-     val jid = getArgAsString(args(0))
-     val newTitle = getArgAsString(args(1))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.renameConversation(c.jid.toString,newTitle)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
     ClientSideFunctionDefinition("requestRenameConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -187,17 +142,6 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    /*
-     ClientSideFunctionDefinition("changeSubjectOfConversation",List("jid","newSubject"),(args) => {
-     val jid = getArgAsString(args(0))
-     val newSubject = getArgAsString(args(1))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.updateSubjectOfConversation(c.jid.toString,newSubject)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
     ClientSideFunctionDefinition("requestChangeSubjectOfConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -244,87 +188,6 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("addQuizViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
-      val jid = getArgAsString(args(0))
-      val index = getArgAsInt(args(1))
-      val quizId = getArgAsString(args(2))
-      val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => {
-          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
-          newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
-            val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
-            val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
-            convHistory.getQuizzes.filter(q => q.id == quizId && !q.isDeleted).sortBy(q => q.timestamp).reverse.headOption.map(quiz => {
-              val now = new java.util.Date().getTime
-              val identity = "%s%s".format(username,now.toString)
-              val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(serverConfig,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
-              val quizTitle = genText(quiz.question,16,0,"title")
-              val questionOffset = quiz.url match{
-                case Full(_) => 340
-                case _ => 100
-              };
-              val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
-                acc ::: List(genText("%s: %s".format(item.name,item.text),10,(acc.length * 10) + questionOffset,"option:"+item.name))
-              })
-              val allStanzas = quiz.url.map(u => List(MeTLImage(serverConfig,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
-              allStanzas.foreach(stanza => slideRoom ! LocalToServerMeTLStanza(stanza))
-            })
-          })
-          newC
-        }
-        case _ => c
-      })
-    },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("addQuizResultsViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
-      val jid = getArgAsString(args(0))
-      val index = getArgAsInt(args(1))
-      val quizId = getArgAsString(args(2))
-      val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => {
-          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
-          newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
-            val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
-            val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
-            convHistory.getQuizzes.filter(q => q.id == quizId && !q.isDeleted).sortBy(q => q.timestamp).reverse.headOption.map(quiz => {
-              val now = new java.util.Date().getTime
-              val answers = convHistory.getQuizResponses.filter(qr => qr.id == quiz.id).foldLeft(Map.empty[String,MeTLQuizResponse])((acc,item) => {
-                acc.get(item.answerer).map(qr => {
-                  if (acc(item.answerer).timestamp < item.timestamp){
-                    acc.updated(item.answerer,item)
-                  } else {
-                    acc
-                  }
-                }).getOrElse(acc.updated(item.answerer,item))
-              }).foldLeft(Map(quiz.options.map(qo => (qo,List.empty[MeTLQuizResponse])):_*))((acc,item) => {
-                quiz.options.find(qo => qo.name == item._2.answer).map(qo => acc.updated(qo,item._2 :: acc(qo))).getOrElse(acc)
-              })
-              val identity = "%s%s".format(username,now.toString)
-              val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(serverConfig,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
-              val quizTitle = genText(quiz.question,32,0,"title")
-              val questionOffset = quiz.url match{
-                case Full(_) => 340
-                case _ => 100
-              };
-              val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
-                acc ::: List(genText(
-                  "%s: %s (%s)".format(item.name,item.text,answers.get(item).map(as => as.length).getOrElse(0)),
-                  24,
-                  (acc.length * 30) + questionOffset,
-                  "option:"+item.name))
-              })
-              val allStanzas = quiz.url.map(u => List(MeTLImage(serverConfig,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
-              allStanzas.foreach(stanza => {
-                slideRoom ! LocalToServerMeTLStanza(stanza)
-              })
-            })
-          })
-          newC
-        }
-        case _ => c
-      })
-    },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunctionDefinition("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
@@ -348,227 +211,8 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
       val jid = getArgAsString(args(0))
       val quizId = getArgAsString(args(1))
       JArray(getQuizResponsesForQuizInConversation(jid,quizId).map(q => serializer.fromMeTLQuizResponse(q)).toList)
-    },Full(RECEIVE_QUIZ_RESPONSES)),
-    ClientSideFunctionDefinition("answerQuiz",List("conversationJid","quizId","chosenOptionName"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val quizId = getArgAsString(args(1))
-      val chosenOptionName = getArgAsString(args(2))
-      val response = MeTLQuizResponse(serverConfig,username,new Date().getTime,chosenOptionName,username,quizId)
-      rooms.get((server,conversationJid)).map(r => r ! LocalToServerMeTLStanza(response))
-      JNull
-    },Empty),
-    /*
-     ClientSideFunctionDefinition("createQuiz",List("conversationJid","newQuiz"),(args) => {
-     JNull
-     },Empty),
-     */
-    ClientSideFunctionDefinition("requestCreateQuizDialogue",List("conversationJid"),(args) => {
-      if (shouldModifyConversation()){
-        val conversationJid = getArgAsString(args(0))
-        val now = new Date().getTime
-        val quiz = MeTLQuiz(serverConfig,username,now,now,"",now.toString,Empty,Empty,false,List("A","B").map(o => QuizOption(o,"",false,QuizOption.colorForName(o))))
-        this ! editableQuizNodeSeq(quiz)
-      } else {
-        this ! SpamMessage(Text("You are not permitted to create a quiz in this conversation"),Full("quizzes"))
-      }
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("requestDeleteQuizDialogue",List("conversationJid","quizId"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(conversationJid)
-      if (shouldModifyConversation(c)){
-        val quizId = getArgAsString(args(1))
-        rooms.get((server,conversationJid.toString)).map(room => {
-          room.getHistory.getQuizByIdentity(quizId).map(quiz => {
-            this ! SimpleMultipleButtonInteractableMessage("Delete quiz","Are you sure you would like to delete this quiz? \r\n(%s)".format(quiz.question),
-              Map(
-                "yes" -> {() => {
-                  if (shouldModifyConversation(c)){
-                    rooms.get((server,conversationJid.toString)).map(r => {
-                      r.getHistory.getQuizByIdentity(quizId).map(q => {
-                        val deletedQuiz = q.delete
-                        r ! LocalToServerMeTLStanza(deletedQuiz)
-                      })
-                    })
-                    true
-                  } else {
-                    false
-                  }
-                }},
-                "no" -> {() => true}
-              ),Full(()=> this ! SpamMessage(Text("You are not permitted to delete this conversation"))),false,Full("quizzes"))
-          })
-        })
-      }
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("updateQuiz",List("conversationJid","quizId","updatedQuiz"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(conversationJid)
-      if (shouldModifyConversation(c)){
-        val quizId = getArgAsString(args(1))
-        val newQuizJValue = getArgAsJValue(args(2))
-        rooms.get((server,conversationJid.toString)).map(r => {
-          r.getHistory.getQuizByIdentity(quizId).map(oq => {
-            val newQuiz = serializer.toMeTLQuiz(newQuizJValue)
-            val deletedOldQuiz = oq.delete
-            if (oq.id == newQuiz.id){
-              r ! LocalToServerMeTLStanza(deletedOldQuiz)
-              r ! LocalToServerMeTLStanza(newQuiz)
-            }
-          })
-        })
-      }
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("requestUpdateQuizDialogue",List("conversationJid","quizId"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val quizId = getArgAsString(args(1))
-      rooms.get((server,conversationJid)).map(r => r.getHistory.getQuizByIdentity(quizId).map(q => this ! editableQuizNodeSeq(q))).getOrElse({this ! SpamMessage(Text("The quiz you've requested cannot be found at this time"),Full("quizzes"))})
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("submitScreenshotSubmission",List("conversationJid","slideJid"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val slideJid = getArgAsInt(args(1))
-      val now = new Date().getTime
-      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r.getHistory).getOrElse(History.empty)
-      val privHistory = rooms.get((server,slideJid.toString+username)).map(r => r.getHistory).getOrElse(History.empty)
-      val mergedHistory = pubHistory.merge(privHistory)
-      val title = "submission%s%s.jpg".format(username,now.toString)
-
-      val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
-      val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
-        (width,height) match {
-        case (a:Int,b:Int) if a > 0 && b > 0 => {
-          val imageBytes = SlideRenderer.render(mergedHistory,width,height)
-          val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-          val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri)
-          rooms.get((server,conversationJid)).map(r =>{
-            r ! LocalToServerMeTLStanza(submission)
-          });
-          this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot submitted"))
-        }
-        case _ => {
-          this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot was not submitted.  Your canvas is empty."))
-        }
-      }
-      JNull
-    },Empty)
+    },Full(RECEIVE_QUIZ_RESPONSES))
   )
-  private def editableQuizNodeSeq(quiz:MeTLQuiz):InteractableMessage = {
-    var tempQuiz = quiz
-    InteractableMessage((i) => {
-      var answerProvided = false
-      var errorMessages = List.empty[SpamMessage]
-      <div id="createQuizForm">
-      <div>Question</div>
-      <div>
-      {
-        textarea(quiz.question,(input:String) => {
-          if (input.length > 0){
-            tempQuiz = tempQuiz.replaceQuestion(input)
-          } else {
-            errorMessages = SpamMessage(Text("Please ensure this quiz has a question"),Full("quizzes")) :: errorMessages
-          }
-        },("class","quizQuestion"))
-      }
-      </div>
-      {
-        tempQuiz.url.map(quizUrl => {
-          val imageUrl = "/resourceProxy/%s".format(Helpers.urlEncode(quizUrl))
-          <img class="quizImagePreview" src={imageUrl}>This quiz has an image</img>
-        }).openOr(NodeSeq.Empty)
-      }
-      <div>
-      {
-        quiz.options.sortBy(o => o.name).map(qo => {
-          val cssColorString = "background-color:%s;".format(ColorConverter.toRGBHexString(qo.color))
-          <div class="quizOption">
-          <span class="quizName" style={cssColorString}>
-          {
-            qo.name
-          }
-          </span>
-          {
-            textarea(qo.text, (input:String) => {
-              if (input.length > 0){
-                tempQuiz = tempQuiz.replaceOption(qo.name,input)
-              } else {
-                errorMessages = SpamMessage(Text("Please ensure that quizOption %s has a description".format(qo.name)),Full("quizzes")) :: errorMessages
-              }
-            },("class","quizText"))
-          }
-          {
-            ajaxSubmit("Delete this option", () => {
-              if (tempQuiz.options.length > 2){
-                tempQuiz = tempQuiz.removeOption(qo.name)
-                this ! editableQuizNodeSeq(tempQuiz)
-                i.done
-              } else {
-                this ! SpamMessage(Text("Please ensure that this quiz has at least two options"),Full("quizzes"))
-              }
-            },("class","quizRemoveOptionButton toolbar"))
-          }
-          </div>
-        })
-      }
-      </div>
-      {
-        ajaxSubmit("Add an option", ()=>{
-          this ! editableQuizNodeSeq(tempQuiz.addOption(QuizOption("","")))
-          i.done
-        },("class","quizAddOptionButton toolbar"))
-      }
-      </div>
-      <div class="quizCreationControls">
-      {
-        val quizImageButtonText = tempQuiz.url.map(u => "update quiz image with current slide").openOr("attach current slide")
-        ajaxSubmit(quizImageButtonText, () => {
-          for (
-            conversation <- CurrentConversation;
-            slideJid <- CurrentSlide
-          ) yield {
-            val conversationJid = conversation.jid.toString
-            val now = new Date().getTime
-            val mergedHistory = rooms.get((server,slideJid.toString)).map(r => r.getHistory).getOrElse(History.empty)
-            val title = "submission%s%s.jpg".format(username,now.toString)
-            val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
-            val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
-            val uriBox = (width,height) match {
-              case (a:Int,b:Int) if a > 0 && b > 0 => {
-                val imageBytes = SlideRenderer.render(mergedHistory,width,height)
-                val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-                Full(uri)
-              }
-              case _ => Empty
-            }
-            val newTempQuiz = tempQuiz.replaceImage(uriBox)
-            this ! editableQuizNodeSeq(newTempQuiz)
-            i.done
-          }
-          Noop
-        },("class","quizAttachImageButton toolbar"))
-      }
-      {
-        ajaxSubmit("Delete this quiz", ()=>{
-          var deletedQuiz = tempQuiz.delete
-          sendStanzaToServer(deletedQuiz,server)
-          i.done
-        },("class","quizDeleteButton toolbar"))
-      }
-      {ajaxSubmit("Submit", ()=>{
-        if (errorMessages.length > 0){
-          errorMessages.foreach(em => this ! em)
-          errorMessages = List.empty[SpamMessage]
-          Noop
-        } else {
-          sendStanzaToServer(tempQuiz,server)
-          i.done
-        }
-      },("class","quizSubmitButton toolbar"))}
-      </div>
-    },Full("quizzes"),Full("Define this quiz"))
-  }
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r.getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
       val conversation = serverConfig.detailsOfConversation(jid)
@@ -632,34 +276,34 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
     }
   )
   override def lowPriority = {
-    case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", () => updateRooms(roomInfo))
-    case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", () => sendMeTLStanzaToPage(metlStanza))
+    case roomInfo:RoomStateInformation => Stopwatch.time("MeTLConversationActor.lowPriority.RoomStateInformation", () => updateRooms(roomInfo))
+    case metlStanza:MeTLStanza => Stopwatch.time("MeTLConversationActor.lowPriority.MeTLStanza", () => sendMeTLStanzaToPage(metlStanza))
     case c:ClientMessage => clientMessageBroker.processMessage(c)
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
     case other => println("MeTLActor received unknown message: %s".format(other))
   }
   override def autoIncludeJsonCode = true
-  override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), () => {
+  override def localSetup = Stopwatch.time("MeTLConversationActor.localSetup(%s,%s)".format(username,userUniqueId), () => {
     super.localSetup()
-    println("created metlactor")
+    println("created conversations metlactor")
     //joinRoomByJid(username)
     joinRoomByJid("global")
     // joinRoomByJid("global","loopback")
   })
-  private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),() => {
+  private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLConversationActor.joinRoomByJid(%s)".format(jid),() => {
     rooms.get((serverName,jid)) match {
       //case None => RoomJoiner ! RoomJoinRequest(jid,username,serverName,userUniqueId,this)
       case _ => {}
     }
   })
-  private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.leaveRoomByJid(%s)".format(jid),() => {
+  private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLConversationActor.leaveRoomByJid(%s)".format(jid),() => {
     rooms.get((serverName,jid)) match {
       //case Some(s) => RoomJoiner ! RoomLeaveRequest(jid,username,serverName,userUniqueId,this)
       case _ => {}
     }
   })
-  override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId), () => {
+  override def localShutdown = Stopwatch.time("MeTLConversationActor.localShutdown(%s,%s)".format(username,userUniqueId), () => {
     leaveAllRooms(true)
     super.localShutdown()
   })
@@ -799,7 +443,7 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
   }
   override def lifespan = Full(5 minutes)
 
-  private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms", () => {
+  private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLConversationActor.updateRooms", () => {
     //println("roomInfo received: %s".format(roomInfo))
     //println("updateRooms: %s".format(roomInfo))
     roomInfo match {
@@ -844,13 +488,13 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
       case _ => {}
     }
   })
-  private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName), () => {
+  private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLConversationActor.sendStanzaToServer (jVal) (%s)".format(serverName), () => {
     serializer.toMeTLData(jVal) match {
       case m:MeTLStanza => sendStanzaToServer(m,serverName)
       case _ => {}
     }
   })
-  private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName), () => {
+  private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLConversationActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName), () => {
     //println("OUT -> %s".format(stanza))
     stanza match {
       case m:MeTLMoveDelta => {
@@ -957,7 +601,7 @@ class MeTLConversationActor extends StronglyTypedJsonActor{
       }
     }
   })
-  private def sendMeTLStanzaToPage(metlStanza:MeTLStanza):Unit = Stopwatch.time("MeTLActor.sendMeTLStanzaToPage", () => {
+  private def sendMeTLStanzaToPage(metlStanza:MeTLStanza):Unit = Stopwatch.time("MeTLConversationActor.sendMeTLStanzaToPage", () => {
     //println("IN -> %s".format(metlStanza))
     metlStanza match {
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
