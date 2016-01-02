@@ -1931,6 +1931,7 @@ var Modes = (function(){
                                 erasing = true;
                             });
                         });
+                        container.find(".advancedTools").click(drawAdvancedTools);
                     }
                     var drawAdvancedTools = function(brush){
                         var dots = $("<div />",{
@@ -1949,7 +1950,6 @@ var Modes = (function(){
                             }).click(function(){
                                 brush.width = width;
                                 currentBrush = brush;
-                                drawTools();
                                 drawAdvancedTools(brush);
                             })
                             var bar = Canvas.circle(brush.color,width,60);
@@ -1966,7 +1966,6 @@ var Modes = (function(){
                             }).click(function(){
                                 brush.color = color.rgb;
                                 currentBrush = brush;
-                                drawTools();
                                 drawAdvancedTools(brush);
                             });
                             var dot = Canvas.circle(color.rgb,50,50);
