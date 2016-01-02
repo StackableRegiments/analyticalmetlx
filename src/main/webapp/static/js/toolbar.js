@@ -438,13 +438,13 @@ var bounceButton = function(button){
 var Modes = (function(){
     var removeActiveMode = function(){
         $(".activeTool").removeClass("activeTool");
-        $(".activeMode").removeClass("activeMode");
+        $(".activeMode").addClass("inactiveMode").removeClass("activeMode");
     };
     var setActiveMode = function(toolsSelector,headerSelector){
-        $(".activeMode").removeClass("activeMode");
-        $(toolsSelector).addClass("activeMode");
-        $(".activeTool").removeClass("activeTool");
-        $(headerSelector).addClass("activeTool");
+				removeActiveMode();
+        $(toolsSelector).addClass("activeMode").removeClass("inactiveMode");
+        $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+        $(headerSelector).addClass("activeTool").removeClass("inactiveTool");
         //Progress.call("onLayoutUpdated");//Only necessary if the rest of the application will be disrupted.  WILL blank canvas.
     };
     var noneMode = {
