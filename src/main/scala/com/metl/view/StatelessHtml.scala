@@ -646,7 +646,7 @@ object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
           case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
           case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
-          case m:MeTLUnhandledCanvasContent[_] => m.copy(slide = newLoc.getJid)
+          case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
           case m:MeTLQuiz => m
           case s:MeTLStanza => s
         })
