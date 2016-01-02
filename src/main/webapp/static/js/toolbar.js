@@ -1165,7 +1165,7 @@ var Modes = (function(){
                     Modes.currentMode = Modes.insert;
                     setActiveMode("#insertTools","#insertMode");
                     $(".activeBrush").removeClass("activeBrush");
-                    $("#textTools").empty();
+                    /*$("#textTools").empty();
                     _.forEach(insertModes,function(modeName){
                         var tsButton = $("<div/>",{
                             class:"modeSpecificTool",
@@ -1178,7 +1178,19 @@ var Modes = (function(){
                         if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
                             tsButton.addClass("activeBrush");
                         }
-                    });
+                    });*/
+                    $("#insertTools button").each(function(){
+                        var modeName = $(this).attr("id"),
+                            tsButton = $(this)
+                        .on("click",function(){
+                            currentInsertMode = modeName;
+                            $(".activeBrush").removeClass("activeBrush");
+                            $(this).addClass("activeBrush");
+                        });
+                        if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
+                            tsButton.addClass("activeBrush");
+                        }
+                    }).show();
                     Progress.call("onLayoutUpdated");
                     $("#minorText").click(function(){});
                     $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
@@ -1746,16 +1758,27 @@ var Modes = (function(){
                     disable.addClass("activePrivacy active");
                 }
                 if(Conversations.isAuthor()){
-                    enable.show();
+                    /*enable.show();
                     disable.show();
                     sync.hide();
-                    desync.hide();
+                    desync.hide();*/
+                    enable.removeClass('disabled');
+                    disable.removeClass('disabled');
+                    sync.addClass('disabled');
+                    desync.addClass('disabled');
+
                 }
                 else{
+                    /*
                     enable.hide();
                     disable.hide();
                     sync.show();
                     desync.show();
+                    */
+                    enable.addClass('disabled');
+                    disable.addClass('disabled');
+                    sync.removeClass('disabled');
+                    desync.removeClass('disabled');
                 }
                 $(".modeSpecificTool").removeClass(active);
                 switch(currentBackstage){
