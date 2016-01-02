@@ -170,29 +170,6 @@ var DeviceConfiguration = (function(){
                 } else {
                     thumbsColumn.hide();
                 }
-								/*
-								//leaving it manual until I can work with Jodi on doing it using CSS
-								//essentially, it's incredibly important that boardWidth and boardHeight are set accurately.
-								var header = $("#header");
-								var notices = $("#notices");
-								var arbitraryBorder = 75;
-								var boardContainer = $("#boardContainer");
-								var bheight = (height - header.height() - notices.height() - arbitraryBorder);
-								var bwidth = (width - $("#toolsColumn").width() - $("#thumbsColumn").width() - arbitraryBorder);
-								boardContainer.height(bheight + "px").width(bwidth + "px");
-								var board = $("#board");
-								boardContext.width = bwidth;
-								boardContext.height = bheight;
-								boardContext.canvas.width = bwidth;
-								boardContext.canvas.height = bheight;
-								board.width(bwidth + "px").height(bheight + "px");
-								board.width = board.width();//bwidth;
-								board.height = board.height();//bheight;
-								boardWidth = bwidth;
-								boardHeight = bheight;
-								*/
-							/**/	
-							 // this is the version which simply reads them from the elements, which will allow Jodi to control the size of the canvas.
 								var board = $("#board");
 								var bwidth = board.width();
 								var bheight = board.height();
@@ -204,7 +181,6 @@ var DeviceConfiguration = (function(){
 								boardContext.height = bheight;
 								boardWidth = bwidth;
 								boardHeight = bheight;
-								/**/
             }
             performRemeasure();
             IncludeView.default();
