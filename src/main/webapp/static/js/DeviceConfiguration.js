@@ -173,12 +173,27 @@ var DeviceConfiguration = (function(){
 								var board = $("#board");
 								var bwidth = board.width();
 								var bheight = board.height();
+								var selectionAdorner = $("#selectionAdorner");
+								var radar = $("#radar");
+								var marquee = $("#marquee");									
+								var textAdorner = $("#textAdorner");
 								boardContext.canvas.width = bwidth;
 								boardContext.canvas.height = bheight;
 								boardContext.width = bwidth;
 								boardContext.height = bheight;
-								boardWidth = bwidth;
+								boardWidth = bwidth; 
 								boardHeight = bheight;
+								/*
+								selectionAdorner.css("Position","absolute");
+								selectionAdorner.width = bwidth;
+								selectionAdorner.height = bheight;
+								radar.width = bwidth;
+								radar.height = bheight;
+								marquee.width = bwidth;
+								marquee.height = bheight;
+								textAdorner.width = bwidth;
+								textAdorner.height = bheight;
+								*/
             }
             performRemeasure();
             IncludeView.default();
