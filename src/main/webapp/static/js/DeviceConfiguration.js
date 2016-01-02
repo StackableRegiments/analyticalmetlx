@@ -187,21 +187,27 @@ var DeviceConfiguration = (function(){
                     //toolsColumn.width(0).height(0);
                     toolsColumn.hide();
                 }
+								/*
                 var thumbWidth = 0;
                 var thumbHeight = 0;
+								*/
                 if (showSlides == true){
                     thumbsColumn.show();
+										/*
                     thumbWidth = parseInt(UserSettings.getUserPref("thumbnailSize"));
                     thumbHeight = thumbWidth * 0.75;
+										*/
                 } else {
-                    xOffset += 4;
+                    //xOffset += 4;
                     thumbsColumn.hide();
                 }
+								/*
                 var thumbScrollOffset = 35;
                 var thumbContainerWidth = thumbWidth;
                 if (thumbWidth > 0){
                     thumbContainerWidth = thumbContainerWidth + thumbScrollOffset;
                 }
+								*/
 								/*
                 thumbsColumn.width(thumbContainerWidth).height(height).css("display","block");
                 thumbScrollContainer.width(thumbContainerWidth).height(height);
@@ -217,12 +223,12 @@ var DeviceConfiguration = (function(){
                     height -= yOffset / 2;
                     width -= xOffset;
                 }
-
+/*
                 $("#masterLayout").height(height).width(width).css({
                     "margin-left":px(xOffset / 2),
                     "margin-top":px(yOffset / 2)
                 });
-
+*/
                 var actualToolsWidth = toolsColumn.width();
                 var actualThumbsWidth = thumbsColumn.width();
                 var padding = 0;
