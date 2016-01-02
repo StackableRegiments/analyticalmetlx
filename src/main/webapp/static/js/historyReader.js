@@ -658,17 +658,6 @@ function render(content){
             });
             imagesRenderedMark = Date.now();
             renderImmediateContent();
-            /*
-             console.log("Render %s timing:\n%s milis fit\n%s milis images\n%s milis highlighters\n%s milis texts\n%s milis inks\n%s milis renderDecorators\n%s milis total",
-             Date.now(),
-             fitMark - startMark,
-             imagesRenderedMark - fitMark,
-             highlightersRenderedMark - imagesRenderedMark,
-             textsRenderedMark - highlightersRenderedMark,
-             inksRenderedMark - textsRenderedMark,
-             renderDecoratorsMark - inksRenderedMark,
-             renderDecoratorsMark - startMark);
-             */
         }
         catch(e){
             console.log("Render exception",e);
