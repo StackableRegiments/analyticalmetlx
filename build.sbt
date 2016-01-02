@@ -6,7 +6,9 @@ name := "web-container-metlx"
 version := "0.2.0"
 organization := "io.github.stackableregiments"
 
-scalaVersion := "2.11.5"
+val scalaVersionString = "2.11.5"
+
+scalaVersion := scalaVersionString
 
 resolvers ++= Seq(
   "snapshots"     at "http://oss.sonatype.org/content/repositories/snapshots",
@@ -39,7 +41,6 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val scalaVersionString = "2.11.5"
   Seq(
     "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
   "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
@@ -66,15 +67,15 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml" % "3.13",
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
-    "io.github.stackableregiments" %% "common-utils" % "0.1.+",
-    "io.github.stackableregiments" %% "metldata" % "3.3.+",
+    "io.github.stackableregiments" %% "common-utils" % "0.2.+",
+    "io.github.stackableregiments" %% "metldata" % "3.4.+",
     "io.github.stackableregiments" %% "lift-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "cas-authentication" % "0.2.+",
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "metl2011" % "3.8.+",
-    "io.github.stackableregiments" %% "metl-h2" % "3.3.+",
+    "io.github.stackableregiments" %% "metl2011" % "3.9.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.6.+",
 //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "io.github.stackableregiments" %% "lift-extensions" % "0.1.+"
   )

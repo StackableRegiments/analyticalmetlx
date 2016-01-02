@@ -8,9 +8,8 @@ import _root_.net.liftweb._
 import http._
 import common._
 import util.Helpers._
-import java.io.{ByteArrayOutputStream,ByteArrayInputStream,BufferedInputStream}
+import java.io.{ByteArrayOutputStream,ByteArrayInputStream,BufferedInputStream,FileReader,BufferedOutputStream}
 import javax.imageio._
-import java.io.FileReader
 import org.apache.commons.io.IOUtils
 import scala.xml._
 import java.util.zip.{ZipInputStream,ZipEntry}
@@ -18,12 +17,14 @@ import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 
+import java.util.zip._
+
 import com.metl.model._
 
 /**
   * Use Lift's templating without a session and without state
   */
-object StatelessHtml {
+object StatelessHtml extends Stemmer {
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
@@ -192,6 +193,72 @@ object StatelessHtml {
   })
   def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
     req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
+  })
+
+
+  def byteArrayHeaders(filename:String):List[Tuple2[String,String]] = {
+    List(
+      "Content-Type" -> "application/octet-stream",
+      "Content-Disposition" -> "attachment; filename=%s".format(filename)
+    )
+  }
+  def yawsResource(rootPart:String,room:String,item:String,suffix:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsResource(%s/%s)".format(rootPart,room,item,suffix),() => {
+    rootPart match {
+      case "Structure" if item == "structure" && suffix == "xml" => {
+        Full(XmlResponse(serializer.fromConversation(config.detailsOfConversation(room)).head))
+      }
+      case "Resource" => {
+        val originalPath = "/%s/%s/%s/%s.%s".format(rootPart,stem(room),room,item,suffix)
+        println("yaws looking for: %s".format(originalPath))
+        val bytes = Array.empty[Byte] //stil need to find the right resource
+        val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
+        Full(InMemoryResponse(bytes,byteArrayHeaders("%s.%s".format(item,suffix)),Nil,200))
+      }
+      case _ => {
+        println("did not find an appropriate downloadable")
+        Empty
+      }
+    }
+  })
+  def constructZip(in:List[Tuple2[String,Array[Byte]]]):Array[Byte] = {
+    // the tuple represents filename (in the format of a path, eg 'firstDepth/nDepth/filename.suffix') and the bytes that file has.  Not worrying about any complex permissions in this zip.
+    val baos = new ByteArrayOutputStream()
+    val zos = new ZipOutputStream(new BufferedOutputStream(baos))
+    in.foreach(tup => {
+      zos.putNextEntry(new ZipEntry(tup._1))
+      zos.write(tup._2,0,tup._2.length)
+    })
+    zos.close()
+    val zipBytes = baos.toByteArray() 
+    baos.close()
+    zipBytes
+  }
+  def yawsHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsHistory(%s)".format(jid),() => {
+      val xml = <history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>
+      val filename = "combined.xml"
+      val xmlBytes = xml.toString.getBytes("UTF-8")
+    Full(InMemoryResponse(constructZip(List((filename,xml.toString.getBytes("UTF-8")))),byteArrayHeaders("all.zip"),Nil,200))
+  })
+  def yawsPrimaryKey:Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsPrimaryKey",() => {
+    val newConv = config.createConversation("createdForTheKey-%s".format(new java.util.Date().getTime.toString),Globals.currentUser.is)
+    config.deleteConversation(newConv.jid.toString)
+    Full(PlainTextResponse("{id,%s}.".format(newConv.jid),Nil,200))
+  })
+  def yawsUploadNested(path:String,filename:String,overwrite:Boolean,bytes:Array[Byte])():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsUploadNested(%s,%s,%s,%s)".format(path,filename,overwrite,bytes.length),() => {
+    val pathParts = path.split("/").toList
+    pathParts match {
+      case List("Structure",stemmed,jid) if stem(jid)._1 == stemmed && filename == "structure.xml" => {
+        println("conversationDetails updated detected: %s".format(jid))
+      }
+      case List("Resource",stemmed,jid) if stem(jid)._1 == stemmed => {
+        println("resource update detected: %s".format(jid))
+      }
+      case other => {
+        println("other detected (no action taken): %s".format(other))
+      }
+    }
+    val identity = "not-yet-implemented"
+    Full(XmlResponse(<resource url={identity}/>))
   })
 
   def fullClientHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
@@ -579,7 +646,7 @@ object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
           case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
           case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
-          case m:MeTLUnhandledCanvasContent[_] => m.copy(slide = newLoc.getJid)
+          case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
           case m:MeTLQuiz => m
           case s:MeTLStanza => s
         })
