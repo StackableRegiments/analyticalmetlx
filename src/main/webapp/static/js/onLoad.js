@@ -1,4 +1,4 @@
-alert('onload9');
+//alert('onload9');
 (function() {
     var lastTime = 0;
     var vendors = ['ms', 'moz', 'webkit', 'o'];
