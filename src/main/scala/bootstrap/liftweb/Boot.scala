@@ -82,6 +82,7 @@ class Boot {
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
       //WebMeTL
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
+      Menu(Loc("WebMeTL Conversation search","conversations" :: Nil,"Conversations",Hidden)),
       Menu(Loc("Slide","slide" :: Nil,"Slide",Hidden)),
       Menu(Loc("SlidePrev","slidePrev" :: Nil,"Previous Slide",Hidden)),
       Menu(Loc("SlideNext","slideNext" :: Nil,"Next Slide",Hidden)),
