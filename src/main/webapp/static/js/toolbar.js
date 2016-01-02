@@ -1925,11 +1925,9 @@ var Modes = (function(){
                                 .text(brush.width);
                         });
                         container.find(".eraser").click(function(button){
-                            $(button).click(function(){
-                                $(".activeBrush").removeClass("activeBrush");
-                                $(this).addClass("activeBrush");
-                                erasing = true;
-                            });
+                            $(".activeBrush").removeClass("activeBrush");
+                            $(this).addClass("activeBrush");
+                            erasing = true;
                         });
                         container.find(".advancedTools").click(drawAdvancedTools);
                     }
