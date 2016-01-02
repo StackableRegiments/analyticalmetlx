@@ -176,6 +176,7 @@ var DeviceConfiguration = (function(){
                     toolWidth = Math.max(toolSize,subSize + subSizeOffset);
                     //toolsColumn.width(toolWidth).css("max-width",px(208)).height(height);
                     tools.show();
+										subTools.show();
                     //subTools.height(subSize).css("min-width",px(toolWidth - subSizeOffset)).show();
                     toolsColumn.show();
                 } else {
