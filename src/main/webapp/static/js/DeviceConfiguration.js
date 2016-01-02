@@ -147,7 +147,7 @@ var DeviceConfiguration = (function(){
         var width = deviceDimensions.width;
 
         try{
-            /*var performRemeasure = function(){
+            var performRemeasure = function(){
                 var toolSize = 0;
                 var subSize = 0;
                 var subSizeOffset = 0;
@@ -158,12 +158,12 @@ var DeviceConfiguration = (function(){
 
                 if (showHeader == true){
                     boardHeader.show();
-                    boardHeader.width(width);
+                    //boardHeader.width(width);
                     applicationMenu.show();
-                    applicationMenu.width(preferredToolModeSize);
+                    //applicationMenu.width(preferredToolModeSize);
                 } else {
-                    boardHeader.width(0);
-                    applicationMenu.width(0);
+                    //boardHeader.width(0);
+                    //applicationMenu.width(0);
                     applicationMenu.hide();
                     boardHeader.hide();
                 }
@@ -174,16 +174,16 @@ var DeviceConfiguration = (function(){
                     subSize = parseInt(UserSettings.getUserPref("subModeSize"));
                     subSizeOffset = 10; //Woo!  Magic number!  It's the left offset of the submode button
                     toolWidth = Math.max(toolSize,subSize + subSizeOffset);
-                    toolsColumn.width(toolWidth).css("max-width",px(208)).height(height);
+                    //toolsColumn.width(toolWidth).css("max-width",px(208)).height(height);
                     tools.show();
-                    subTools.height(subSize).css("min-width",px(toolWidth - subSizeOffset)).show();
+                    //subTools.height(subSize).css("min-width",px(toolWidth - subSizeOffset)).show();
                     toolsColumn.show();
                 } else {
                     xOffset += 4;
-                    subTools.height(0).css("min-width",px(0));
+                    //subTools.height(0).css("min-width",px(0));
                     subTools.hide();
                     tools.hide();
-                    toolsColumn.width(0).height(0);
+                    //toolsColumn.width(0).height(0);
                     toolsColumn.hide();
                 }
                 var thumbWidth = 0;
@@ -201,13 +201,14 @@ var DeviceConfiguration = (function(){
                 if (thumbWidth > 0){
                     thumbContainerWidth = thumbContainerWidth + thumbScrollOffset;
                 }
+								/*
                 thumbsColumn.width(thumbContainerWidth).height(height).css("display","block");
                 thumbScrollContainer.width(thumbContainerWidth).height(height);
                 slideContainer.width(thumbContainerWidth).height(height);
                 $(".slideButtonContainer").width(thumbWidth).height(thumbHeight).css("margin",px(10));
                 thumbs.width(thumbWidth).height(thumbHeight);
                 $("#addSlideButton").css("margin",px(10));
-
+								*/
                 var gestureWiggleRoomWidth = 0; // magic number to create a bit of wiggle room for the gestures
                 var gestureWiggleRoomHeight = 0; // magic number to create a bit of wiggle room for the gesture
                 if (currentDevice != "projector"){
@@ -229,23 +230,27 @@ var DeviceConfiguration = (function(){
                 $("#notices").height(gestureWiggleRoomHeight);
                 var container = $("#boardContainer");
 
-                $("#boardColumn").width(containerWidth).height(containerHeight);
-                container.width(containerWidth).height(containerHeight);
+                //$("#boardColumn").width(containerWidth).height(containerHeight);
+                //container.width(containerWidth).height(containerHeight);
+								/*
                 board.attr("width",px(containerWidth - padding));
                 board.attr("height",px(containerHeight - padding));
                 board.width(containerWidth - padding);
                 board.height(containerHeight - padding);
+								*/
                 boardWidth = containerWidth - padding;
                 boardHeight = containerHeight - padding;
+								/*
                 if ("documentElement" in document){
                     $(document.documentElement).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
                 }
                 $(document.body).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
                 $(document).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
+								*/
             }
-            //performRemeasure();
             performRemeasure();
-            IncludeView.default();*/
+            //performRemeasure();
+            IncludeView.default();
         }
         catch(e){
             console.log("exception in fit",e);
