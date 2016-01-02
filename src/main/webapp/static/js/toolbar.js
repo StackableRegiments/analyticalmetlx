@@ -1190,7 +1190,7 @@ var Modes = (function(){
                         if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
                             tsButton.addClass("activeBrush");
                         }
-                    }).show();
+                    });
                     Progress.call("onLayoutUpdated");
                     $("#minorText").click(function(){});
                     $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
@@ -1911,12 +1911,18 @@ var Modes = (function(){
 
                         var container = $("#drawTools");
                         _.each(container.find(".pen"),function(button,i){
-                            $(button).click(function(){
-                                $(".activeBrush").removeClass("activeBrush");
-                                $(this).addClass("activeBrush");
-                                currentBrush = Modes.draw.brushes[i];
-                                erasing = false;
-                            });
+                            var brush = Modes.draw.brushes[i];
+                            $(button)
+                                .css({color:brush.color})
+                                .click(function(){
+                                    $(".activeBrush").removeClass("activeBrush");
+                                    $(this).addClass("activeBrush");
+                                    currentBrush = brush;
+                                    Modes.draw.drawingAttributes = currentBrush;
+                                    erasing = false;
+                                })
+                                .find(".widthIndicator")
+                                .text(brush.width);
                         });
                         container.find(".eraser").click(function(button){
                             $(button).click(function(){
@@ -2020,55 +2026,7 @@ var Modes = (function(){
                             drawAdvancedTools(currentBrush);
                         }
                     });
-                    var drawTools = function(){
-                        $(".activeBrush").removeClass("activeBrush");
-                        var penNumber = 1;
-                        $("#drawTools").empty().html(unwrap(
-                            Modes.draw.brushes.map(function(brush){
-                                var dot = Canvas.swirl(brush.color,brush.width,parseInt(UserSettings.getUserPref("subModeSize")),brush.isHighlighter);
-                                var dotButton = $("<div />",{
-                                    class:"modeSpecificTool",
-                                    id:"pen"+penNumber+"Button"
-                                })
-                                        .click(function(){
-                                            currentBrush = brush;
-                                            erasing = false;
-                                            Modes.draw.drawingAttributes = brush;
-                                            $(".activeBrush").removeClass("activeBrush");
-                                            $(this).addClass("activeBrush");
-                                            drawAdvancedTools(Modes.draw.drawingAttributes);
-                                        })
-                                        .append(dot);
-                                penNumber = penNumber + 1;
-                                if (brush == currentBrush){
-                                    dotButton.addClass("activeBrush");
-                                } else {
-                                    dotButton.removeClass("activeBrush");
-                                }
-                                return dotButton;
-                            })))
-                            .append($("<div />",{
-                                text:"Erase",
-                                class:"modeSpecificTool",
-                                id:"eraseTool",
-                                click:function(){
-                                    erasing = true;
-                                    $(".activeBrush").removeClass("activeBrush");
-                                    $(this).addClass("activeBrush");
-                                }
-                            }))
-                            .append($("<div />",{
-                                text:"More",
-                                id:"penCustomizationButton"
-                            }).addClass("modeSpecificTool")
-                                    .click(bounceAnd(function(){
-                                        drawAdvancedTools(Modes.draw.drawingAttributes);
-                                        showBackstage("customizeBrush");
-                                    })));
-                        Progress.call("onLayoutUpdated");
-                    }
                     setActiveMode("#drawTools","#drawMode");
-                    //drawTools();
                     var currentStroke = [];
                     var isDown = false;
                     var resumeWork;
