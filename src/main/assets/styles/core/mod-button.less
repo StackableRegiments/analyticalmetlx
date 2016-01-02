@@ -56,6 +56,15 @@
   font-weight: normal;
   text-decoration: inherit;
 }
+.btn-icon {
+  width:44px;
+  height:44px;
+  background-position:center center;
+  line-height:normal;
+}
+.btn-nm button {
+  .nm;
+}
 .button-toggle {
     width:92px;
     height:48px;
@@ -64,22 +73,24 @@
     border:2px solid #343434;
     button {
       .nm;
-      width:44px;
-      height:44px;
+      .btn-icon;
       background-color:@toggle-bg;
-      background-position:center center;
-      color:white;
+      color:@toggle-fg;
+      border-bottom:4px solid transparent;
       &.active {
           background-color:@toggle-active-bg;
-          border-bottom-width:4px;
-          border-bottom-style:solid;
-          color:@font-color;
+          color:@toggle-active-fg;
+          border-color:@highlight;
           -webkit-transition:border-bottom .5s;
              -moz-transition:border-bottom .5s;
               -ms-transition:border-bottom .5s;
                -o-transition:border-bottom .5s;
                   transition:border-bottom .5s;
       }
-      line-height:normal;
+      &.disabled {
+        background-color: @toggle-disabled-bg;
+        color:@toggle-disabled-fg;
+        border-color:transparent;
+      }
     }
 }
