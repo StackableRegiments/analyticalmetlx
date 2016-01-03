@@ -16,13 +16,13 @@ var Conversations = (function(){
         var fetchAndPaintThumb = function(slide,slideContainer){
             var currentSrc = slideContainer.attr("src");
             var slideImage = slideContainer.find("img");
-            var thumbUrl = sprintf("/thumbnailDataUri/%s/%s?nocache=%s",currentServerConfigName,slide.id,Date.now());
+            var thumbUrl = sprintf("/thumbnailDataUri/%s?nocache=%s",slide.id,Date.now());
             var storeThumb = function(data){
                 cache[slide.id] = data;
                 //then fire paint as normal, which paints from the cache
                 paintThumb(slide,slideContainer);
             };
-            cache[slide.id] = "data:image/jpeg;base64,"
+            //cache[slide.id] = "data:image/jpeg;base64,"
             $.ajax({
                 url:thumbUrl,
                 beforeSend: function ( xhr ) {
