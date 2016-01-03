@@ -47,24 +47,30 @@
           <div>
           </div>
           <label>Load slides at native zoom</label>
-          <input type="checkbox" id="loadSlidesAtNativeZoom" ></input>
+          <input type="checkbox" id="loadSlidesAtNativeZoom"></input>
         </div>
         <div id="preferencesContainerRight"></div>
       </div>
     </div>
     <div id="conversationsPopup" class="backstage">
       <div id="conversationsContainer">
+        <h2>Conversations</h2>
         <div id="search">
-          <div id="conversationCreationControls">
-            <div id="s2cConversationMessageContainer"/>
-            <div id="createConversationContainer"/>
-            <div id="importPowerpointContainer"/>
-          </div>
           <span>
-            <div class="lift:embed?what=_conversation-search-temp"></div>
+            <div class="lift:embed?what=_conversation-search-metlx"></div>
           </span>
+          <div id="conversationCreationControls" class="flex-container-row">
+            <div id="s2cConversationMessageContainer"></div>
+            <div id="createConversationContainer">
+              <button class="conversationSearchButton toolbar button-transparent-border" id="createConversationButton" name="createConversationButton" type="button">
+                <span>Create conversation</span>
+              </button>
+            </div>
+            <div id="importPowerpointContainer"></div>
+            <button id="myConversationsButton" class="conversationSearchButton toolbar button-transparent-border mlrh" type="button"><span>All my conversations</span></button>
+          </div>
         </div>
-        <div id="searchResults" />
+        <ul id="searchResults" class="no-list-style"></ul>
       </div>
     </div>
   </div>

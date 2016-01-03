@@ -476,10 +476,10 @@ var Conversations = (function(){
             return sprintf("%s_%s",name,conversation.jid);
         };
         var jidString = conversation.jid.toString();
-        var deleteSpan = $("<span>Delete</span>")
-        var renameSpan = $("<span>Rename</span>")
-        var sharingSpan = $("<span>Sharing</span>")
-        var newConv = $("<div/>",{
+        var deleteSpan = $("<div>Delete</div>").addClass("icon-txt");
+        var renameSpan = $("<div>Rename</div>").addClass("icon-txt");
+        var sharingSpan = $("<div>Sharing</div>").addClass("icon-txt");
+        var newConv = $("<li/>",{
             id: uniq("conversation"),
             class:"searchResult"
         }).on("click",bounceAnd(function(e){
@@ -493,17 +493,17 @@ var Conversations = (function(){
         }));
         var jidString = conversation.jid.toString();
         var row1 = $("<div/>");
-        var row2 = $("<div/>",{
-            class:"middleRow",
+        var row2 = $("<p/>",{
+            class:"middleRow nmt",
         });
         var row3 = $("<div/>",{
             id:uniq("extraConversationTools"),
             class: "extraConversationTools"
         });
 
-        var convTitle = $("<span/>",{
+        var convTitle = $("<h3/>",{
             id: uniq("conversationTitle"),
-            class: "conversationTitle",
+            class: "conversationTitle nmb",
             text: conversation.title
         });
         var convAuthor = $("<span/>",{
@@ -529,21 +529,21 @@ var Conversations = (function(){
             hideBackstage();
             doMoveToSlide(firstSlide.id.toString());
         })).append("<span>join</span>");
-        var renameConvButton = $("<div/>", {
+        var renameConvButton = $("<button/>", {
             id: uniq("conversationRenameSubmit"),
-            class: "conversationSearchButton toolbar conversationRenameButton",
+            class: "btn-icon fa fa-pencil-square-o conversationSearchButton toolbar conversationRenameButton",
             name: uniq("conversationRenameSubmit"),
             type: "button"
         }).on("click",bounceAnd(function(){requestRenameConversationDialogue(jidString);})).append(renameSpan);
-        var changeSharingButton = $("<div/>", {
+        var changeSharingButton = $("<button/>", {
             id: uniq("conversationChangeSubjectSubmit"),
             name: uniq("conversationChangeSubjectSubmit"),
-            class: "conversationSearchButton toolbar conversationSharingButton",
+            class: "conversationSearchButton toolbar conversationSharingButton btn-icon fa fa-users",
             type: "button"
         }).on("click",bounceAnd(function(){requestChangeSubjectOfConversationDialogue(jidString);})).append(sharingSpan);
-        var deleteConvButton = $("<div/>", {
+        var deleteConvButton = $("<button/>", {
             id: uniq("conversationDelete"),
-            class: "conversationSearchButton toolbar conversationDeleteButton",
+            class: "conversationSearchButton toolbar conversationDeleteButton btn-icon fa fa-trash",
             name: uniq("conversationDelete"),
             type: "button"
         }).on("click",bounceAnd(function(){
@@ -571,27 +571,13 @@ var Conversations = (function(){
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
-        $("<div />", {
-            id:"createConversationButton",
-            class: "conversationSearchButton toolbar",
-            name:"createConversationButton",
-            type:"button"
-        }).append($("<span/>",{text:"Create Conversation"})).on("click",bounceAnd(function(){
+        $("#createConversationButton").on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
-        })).appendTo("#createConversationContainer");
-        $("<div />", {
-            id:"myConversationsButton",
-            class: "conversationSearchButton toolbar",
-            type:"button",
-        }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
+        }));
+        $("#myConversationsButton").on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
-        })).appendTo("#createConversationContainer");
-        /*$("<div />", {
-            id:"searchButton",
-            class: "conversationSearchButton toolbar",
-            name:"searchButton",
-            type: "button"
-        }).append(*/$("#searchButton").on("click",bounceAnd(function(){
+        }));
+        $("#searchButton").on("click",bounceAnd(function(){
             getSearchResult(currentSearchTerm);
         }));
         var updateSearchTerm = function(e){
@@ -601,12 +587,9 @@ var Conversations = (function(){
                 getSearchResult(currentSearchTerm);
             }
         };
-        $("#searchForConversationBox").attr({
-            blur:updateSearchTerm,
-            change:updateSearchTerm,
-            focus:updateSearchTerm,
-            keydown:updateSearchTerm,
-            select:updateSearchTerm
+        var sfcb = $("#searchForConversationBox");
+        _.forEach(["blur","change","focus","keydown","select"],function(item){
+            sfcb.on(item,updateSearchTerm)
         });
         $("<span />",{
             text:"share",
