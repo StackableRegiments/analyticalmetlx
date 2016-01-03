@@ -320,19 +320,22 @@ var Conversations = (function(){
 			var isAuthor = shouldModifyConversationFunction(details);
 			var scpc = $("#studentsCanPublishCheckbox");
 			scpc.off("change");
-			scpc.val(details.permissions.studentCanPublish);
-			scpc.enabled = isAuthor;
-			scpc.on("change",function(){
-				setStudentsCanPublishFunction(scpc.is(":checked"));	
-			});
+			scpc.prop("checked",details.permissions.studentCanPublish);
+			scpc.prop("disabled",!isAuthor);
+			if (isAuthor){
+				scpc.on("change",function(){
+					setStudentsCanPublishFunction(scpc.is(":checked"));	
+				});
+			}
 			var smftc = $("#studentsMustFollowTeacherCheckbox");
 			smftc.off("change");
-			smftc.checked = details.usersAreCompulsorilySynced;	
-			smftc.enabled = isAuthor;
-			smftc.on("change",function(){
-				setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
-			});
-
+			smftc.prop("checked",details.permissions.usersAreCompulsorilySynced);	
+			smftc.prop("disabled",!isAuthor);
+			if (isAuthor){
+				smftc.on("change",function(){
+					setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
+				});
+			}
 		};
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){
