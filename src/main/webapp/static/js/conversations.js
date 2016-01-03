@@ -571,27 +571,14 @@ var Conversations = (function(){
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
-        $("<div />", {
-            id:"createConversationButton",
-            class: "conversationSearchButton toolbar",
-            name:"createConversationButton",
-            type:"button"
-        }).append($("<span/>",{text:"Create Conversation"})).on("click",bounceAnd(function(){
-            createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
+
+				$("#createConversationButton").on("click",bounceAnd(function(){
+					createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
         })).appendTo("#createConversationContainer");
-        $("<div />", {
-            id:"myConversationsButton",
-            class: "conversationSearchButton toolbar",
-            type:"button",
-        }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
+				$("#myConversationsButton").on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
-        })).appendTo("#createConversationContainer");
-        /*$("<div />", {
-            id:"searchButton",
-            class: "conversationSearchButton toolbar",
-            name:"searchButton",
-            type: "button"
-        }).append(*/$("#searchButton").on("click",bounceAnd(function(){
+        }));
+				$("#searchButton").on("click",bounceAnd(function(){
             getSearchResult(currentSearchTerm);
         }));
         var updateSearchTerm = function(e){
@@ -601,13 +588,10 @@ var Conversations = (function(){
                 getSearchResult(currentSearchTerm);
             }
         };
-        $("#searchForConversationBox").attr({
-            blur:updateSearchTerm,
-            change:updateSearchTerm,
-            focus:updateSearchTerm,
-            keydown:updateSearchTerm,
-            select:updateSearchTerm
-        });
+				var sfcb = $("#searchForConversationBox");
+				_.forEach(["blur","change","focus","keydown","select"],function(item){
+					sfcb.on(item,updateSearchTerm)
+				});
         $("<span />",{
             text:"share",
             id:"shareButton"
