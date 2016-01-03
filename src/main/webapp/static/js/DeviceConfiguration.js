@@ -173,13 +173,15 @@ var DeviceConfiguration = (function(){
 								var board = $("#board");
 								var bwidth = board.width();
 								var bheight = board.height();
+								var selectionAdorner = $("#selectionAdorner");
+								var radar = $("#radar");
+								var marquee = $("#marquee");									
+								var textAdorner = $("#textAdorner");
 								boardContext.canvas.width = bwidth;
 								boardContext.canvas.height = bheight;
-								board.width = bwidth;
-								board.height = bheight;
 								boardContext.width = bwidth;
 								boardContext.height = bheight;
-								boardWidth = bwidth;
+								boardWidth = bwidth; 
 								boardHeight = bheight;
             }
             performRemeasure();
