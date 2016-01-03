@@ -165,8 +165,8 @@ object MeTLStatefulRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLStatefulRestHelper.addQuizViewSlideToConversationAtIndex",() => StatelessHtml.addQuizViewSlideToConversationAtIndex(jid,index.toInt,quizId))
     case Req(List("addQuizResultsViewSlideToConversationAtIndex",jid,index,quizId),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.addQuizResultsViewSlideToConversationAtIndex",() => StatelessHtml.addQuizResultsViewSlideToConversationAtIndex(jid,index.toInt,quizId))
-    case Req(List("addSubmissionSlideToConversationAtIndex",jid,index,submissionId),_,_) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.addSubmissionSlideToConversationAtIndex",() => StatelessHtml.addSubmissionSlideToConversationAtIndex(jid,index.toInt,submissionId))
+    case Post(List("addSubmissionSlideToConversationAtIndex",jid,index), req) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.addSubmissionSlideToConversationAtIndex",() => StatelessHtml.addSubmissionSlideToConversationAtIndex(jid,index.toInt,req))
 
     case Req(List("duplicateSlide",slide,conversation),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
