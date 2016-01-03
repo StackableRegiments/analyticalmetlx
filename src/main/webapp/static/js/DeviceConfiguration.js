@@ -183,17 +183,6 @@ var DeviceConfiguration = (function(){
 								boardContext.height = bheight;
 								boardWidth = bwidth; 
 								boardHeight = bheight;
-								/*
-								selectionAdorner.css("Position","absolute");
-								selectionAdorner.width = bwidth;
-								selectionAdorner.height = bheight;
-								radar.width = bwidth;
-								radar.height = bheight;
-								marquee.width = bwidth;
-								marquee.height = bheight;
-								textAdorner.width = bwidth;
-								textAdorner.height = bheight;
-								*/
             }
             performRemeasure();
             IncludeView.default();

@@ -513,21 +513,21 @@ function prerenderText(text){
     var yOffset = 0;
     var runs = [];
     var breaking = false;
-    $.each(text.text,function(i,c){
-        if(c.match(newline)){
-            runs.push(""+run);
-            run = "";
-            return;
-        }
-        else if(breaking && c == " "){
-            runs.push(run);
-            run = "";
-            return;
-        }
-        var w = context.measureText(run).width;
-        breaking = w >= text.width - 80;
-        run += c;
-    });
+		$.each(text.text.split(''),function(i,c){
+				if(c.match(newline)){
+						runs.push(""+run);
+						run = "";
+						return;
+				}
+				else if(breaking && c == " "){
+						runs.push(run);
+						run = "";
+						return;
+				}
+				var w = context.measureText(run).width;
+				breaking = w >= text.width - 80;
+				run += c;
+		});
     runs.push(run);
     runs = runs.map(function(r){
         return r.trim();

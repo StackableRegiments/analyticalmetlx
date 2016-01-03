@@ -68,6 +68,9 @@
     padding:1em;
     background-color:lightgrey;
 }
+#imageInsertOptions{
+		position:absolute;
+}
 #textEditor{
     border:1px solid darkgrey;
     padding:1em;
