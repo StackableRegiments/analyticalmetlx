@@ -476,10 +476,10 @@ var Conversations = (function(){
             return sprintf("%s_%s",name,conversation.jid);
         };
         var jidString = conversation.jid.toString();
-        var deleteSpan = $("<span>Delete</span>")
-        var renameSpan = $("<span>Rename</span>")
-        var sharingSpan = $("<span>Sharing</span>")
-        var newConv = $("<div/>",{
+        var deleteSpan = $("<div>Delete</div>").addClass("icon-txt");
+        var renameSpan = $("<div>Rename</div>").addClass("icon-txt");
+        var sharingSpan = $("<div>Sharing</div>").addClass("icon-txt");
+        var newConv = $("<li/>",{
             id: uniq("conversation"),
             class:"searchResult"
         }).on("click",bounceAnd(function(e){
@@ -493,17 +493,17 @@ var Conversations = (function(){
         }));
         var jidString = conversation.jid.toString();
         var row1 = $("<div/>");
-        var row2 = $("<div/>",{
-            class:"middleRow",
+        var row2 = $("<p/>",{
+            class:"middleRow nmt",
         });
         var row3 = $("<div/>",{
             id:uniq("extraConversationTools"),
             class: "extraConversationTools"
         });
 
-        var convTitle = $("<span/>",{
+        var convTitle = $("<h3/>",{
             id: uniq("conversationTitle"),
-            class: "conversationTitle",
+            class: "conversationTitle nmb",
             text: conversation.title
         });
         var convAuthor = $("<span/>",{
@@ -529,21 +529,21 @@ var Conversations = (function(){
             hideBackstage();
             doMoveToSlide(firstSlide.id.toString());
         })).append("<span>join</span>");
-        var renameConvButton = $("<div/>", {
+        var renameConvButton = $("<button/>", {
             id: uniq("conversationRenameSubmit"),
-            class: "conversationSearchButton toolbar conversationRenameButton",
+            class: "btn-icon fa fa-pencil-square-o conversationSearchButton toolbar conversationRenameButton",
             name: uniq("conversationRenameSubmit"),
             type: "button"
         }).on("click",bounceAnd(function(){requestRenameConversationDialogue(jidString);})).append(renameSpan);
-        var changeSharingButton = $("<div/>", {
+        var changeSharingButton = $("<button/>", {
             id: uniq("conversationChangeSubjectSubmit"),
             name: uniq("conversationChangeSubjectSubmit"),
-            class: "conversationSearchButton toolbar conversationSharingButton",
+            class: "conversationSearchButton toolbar conversationSharingButton btn-icon fa fa-users",
             type: "button"
         }).on("click",bounceAnd(function(){requestChangeSubjectOfConversationDialogue(jidString);})).append(sharingSpan);
-        var deleteConvButton = $("<div/>", {
+        var deleteConvButton = $("<button/>", {
             id: uniq("conversationDelete"),
-            class: "conversationSearchButton toolbar conversationDeleteButton",
+            class: "conversationSearchButton toolbar conversationDeleteButton btn-icon fa fa-trash",
             name: uniq("conversationDelete"),
             type: "button"
         }).on("click",bounceAnd(function(){
