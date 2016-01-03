@@ -18,7 +18,7 @@ object SearchTemplates {
 }
 
 class SearchSnippet {
-  object server extends RequestVar[ServerConfiguration](Utils.prepareServerFromRequest)
+  object server extends RequestVar[ServerConfiguration](ServerConfiguration.default)
   object query extends RequestVar[String](S.param("q").openOr(""))
   object page extends RequestVar[Int](S.param("page").map(_.toInt).openOr(0))
 
@@ -39,10 +39,10 @@ class SearchSnippet {
               val pageResults = results.splitAt(first)._2.take(resultsPerPage)
               val countText = "Showing %d-%d of %d result%s".format(first+1, first+pageResults.length, results.length, if (results.length > 1) "s" else "")
               "#searchResultsMetaCount *" #> Text(countText) &
-              "#searchResultsMetaNavigationFirst [href]" #> "/?server=%s&q=%s".format(server.is.name,Helpers.urlEncode(query.is)) &
-              "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.max(page.is-1,0)) &
-              "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),Math.min(page.is+1,results.length/resultsPerPage)) &
-              "#searchResultsMetaNavigationPrevious [href]" #> "/?server=%s&q=%s&page=%d".format(server.is.name,Helpers.urlEncode(query.is),results.length/resultsPerPage) &
+              "#searchResultsMetaNavigationFirst [href]" #> "/?q=%s".format(Helpers.urlEncode(query.is)) &
+              "#searchResultsMetaNavigationPrevious [href]" #> "/?q=%s&page=%d".format(Helpers.urlEncode(query.is),Math.max(page.is-1,0)) &
+              "#searchResultsMetaNavigationPrevious [href]" #> "/?q=%s&page=%d".format(Helpers.urlEncode(query.is),Math.min(page.is+1,results.length/resultsPerPage)) &
+              "#searchResultsMetaNavigationPrevious [href]" #> "/?q=%s&page=%d".format(Helpers.urlEncode(query.is),results.length/resultsPerPage) &
               "#searchResults *" #> pageResults.foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderResult(server,item).apply(SearchTemplates.searchResult))
             }
           } }
@@ -52,7 +52,7 @@ class SearchSnippet {
   }
 
   private def renderResult(server:ServerConfiguration,result:Conversation):CssSel = {
-    ".searchResultAnchor [href]" #> "/slide?server=%s&conversation=%s".format(server.name,result.jid) &
+    ".searchResultAnchor [href]" #> "/slide?conversation=%s".format(result.jid) &
     ".searchResultTitle *" #> result.title &
     ".searchResultAuthor *" #> result.author &
     //              ".searchResultQuizLinks *" #> renderQuizLinks(server,result.jid.toString) &
@@ -67,11 +67,11 @@ class SearchSnippet {
     }
 
   private def renderQuizLink(quiz:MeTLQuiz,conversationId:String):CssSel =
-    ".searchResultQuizLinkAnchor [href]" #> "/quiz?server=%s&conversation=%s&quiz=%s".format(server.is.name,conversationId,quiz.id) &
+    ".searchResultQuizLinkAnchor [href]" #> "/quiz?conversation=%s&quiz=%s".format(conversationId,quiz.id) &
   ".searchResultQuizLinkText *" #> quiz.question
 
   private def renderAllQuizLinks(conversationId:String):CssSel =
-    ".searchResultQuizLinkAnchor [href]" #> "/quizzes?server=%s&conversation=%s".format(server.is.name,conversationId) &
+    ".searchResultQuizLinkAnchor [href]" #> "/quizzes?conversation=%s".format(conversationId) &
   ".searchResultQuizLinkText *" #> "Quizzes"
 
   private val numSlideLinks = 20
@@ -103,5 +103,5 @@ class SearchSnippet {
       case _ => NodeSeq.Empty
     }
   private def renderSlideLink(server:ServerConfiguration,conversationId:String,slide:Slide) =
-    <a class="slide-link" href={"/slide?server=%s&conversation=%s&slide=%s".format(server.name,conversationId,slide.id.toString)}>{slide.index+1}</a>
+    <a class="slide-link" href={"/slide?conversation=%s&slide=%s".format(conversationId,slide.id.toString)}>{slide.index+1}</a>
 }

@@ -13,7 +13,7 @@ import Helpers._
 import S._
 
 class SlideSnippet {
-  object server extends RequestVar[ServerConfiguration](Utils.prepareServerFromRequest)
+  object server extends RequestVar[ServerConfiguration](ServerConfiguration.default)
   object conversationId extends RequestVar[String](S.param("conversation").openOr(""))
   object slideId extends RequestVar[String](S.param("slide").openOr(""))
 
@@ -47,8 +47,8 @@ class SlideSnippet {
           case h:History if (h != History.empty) => {
             h.getQuizzes.length match {
               case 0 => NodeSeq.Empty
-              case 1 => Utils.navLinks(List(Link("quizLink","/quiz?server=%s&conversation=%s&slide=%s&quiz=%s".format(server.is.name,cid,sid,h.getQuizzes.head.id),"Quiz 1")))
-              case _ => Utils.navLinks(List(Link("quizzesLink","/quizzes?server=%s&conversation=%s&slide=%s".format(server.is.name,cid,sid),"Quizzes")))
+              case 1 => Utils.navLinks(List(Link("quizLink","/quiz?conversation=%s&slide=%s&quiz=%s".format(cid,sid,h.getQuizzes.head.id),"Quiz 1")))
+              case _ => Utils.navLinks(List(Link("quizzesLink","/quizzes?conversation=%s&slide=%s".format(cid,sid),"Quizzes")))
             }
           }
           case _ => NodeSeq.Empty
@@ -70,10 +70,10 @@ class SlideSnippet {
   }
 
   private def renderPrevious(previousId:String) =
-    "#slideNavigationPrevious *" #> <a href={"/slide?server=%s&conversation=%s&slide=%s".format(server.is.name,conversationId.is,previousId)}><span>Previous slide</span></a>
+    "#slideNavigationPrevious *" #> <a href={"/slide?conversation=%s&slide=%s".format(conversationId.is,previousId)}><span>Previous slide</span></a>
 
   private def renderNext(nextId:String) =
-    "#slideNavigationNext *" #> <a href={"/slide?server=%s&conversation=%s&slide=%s".format(server.is.name,conversationId.is,nextId)}><span>Next slide</span></a>
+    "#slideNavigationNext *" #> <a href={"/slide?conversation=%s&slide=%s".format(conversationId.is,nextId)}><span>Next slide</span></a>
 
   private def getNearbySlideId(offset:Int):Box[String] = (conversationId.is,slideId.is) match {
     case (cid,sid) if (cid.length>0 && sid.length>0) => {
@@ -107,7 +107,7 @@ class SlideSnippet {
 
   def slide = handleParamErrors.openOr(renderSlide)
 
-  private def renderSlide = "#slideImage *" #> <img src={"/%s/slide/%s/medium".format(server.is.name,slideId.is)}/>
+  private def renderSlide = "#slideImage *" #> <img src={"/slide/%s/medium".format(slideId.is)}/>
 
   private def renderSlideError(message:String) = "#slideError *" #> Text(message)
   private def handleParamErrors:Box[CssSel] ={
@@ -118,7 +118,7 @@ class SlideSnippet {
           case d:Conversation if (d == Conversation.empty) => Full(renderSlideError("couldn't get conversation"))
           case d:Conversation => {
             d.slides.sortBy(s => s.index).headOption match {
-              case Some(slide) => Full(S.redirectTo("/slide?server=%s&conversation=%s&slide=%s".format(server.is.name,cid,slide.asInstanceOf[Slide].id.toString)))
+              case Some(slide) => Full(S.redirectTo("/slide?conversation=%s&slide=%s".format(cid,slide.asInstanceOf[Slide].id.toString)))
               case _ => Full(renderSlideError("conversation has no slides"))
             }
           }

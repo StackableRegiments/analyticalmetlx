@@ -22,10 +22,4 @@ object Utils {
     ".navLinkAnchor [class+]" #> link.clazz &
   ".navLinkAnchor [href]" #> link.url &
   ".navLinkText *" #> Text(link.text)
-
-  def prepareServerFromRequest ={
-    val server = S.param("server").map(name => ServerConfiguration.configForName(name)).openOr(ServerConfiguration.default)
-    server
-  }
-
 }

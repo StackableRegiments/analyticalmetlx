@@ -125,28 +125,37 @@ object MeTLRestHelper extends RestHelper with Stemmer {
       val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
-
+/*
     case Req("render" :: configName :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render", () => {
       val server = ServerConfiguration.configForName(configName)
       val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
       val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
+*/
+    /*
     case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",() => {
       val server = ServerConfiguration.default
       val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
-    case Req("thumbnail" :: configName :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail", () => {
+    */
+    case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail", () => {
+      HttpResponder.snapshot(jid,"thumbnail")
+      /*
       val server = ServerConfiguration.configForName(configName)
       val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
+      */
     })
-    case Req("thumbnailDataUri" :: configName :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", () => {
+    case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", () => {
+      HttpResponder.snapshotDataUri(jid,"thumbnail")
+      /*
       val server = ServerConfiguration.configForName(configName)
       val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
       val dataUri = "data:image/jpeg;base64," + DatatypeConverter.printBase64Binary(image)
       Full(InMemoryResponse(IOUtils.toByteArray(dataUri),Nil,Nil,200))
+      */
     })
   }
 }
@@ -154,9 +163,9 @@ object WebMeTLRestHelper extends RestHelper {
   println("WebMeTLRestHelper inline")
   serve {
     case Req("application" :: "snapshot" :: Nil,_,_) => () => {
-      val server = S.param("server").openOr("")
       val slide = S.param("slide").openOr("")
-      Full(HttpResponder.snapshot(server,slide,"small"))
+      val size = S.param("size").openOr("small")
+      Full(HttpResponder.snapshot(slide,size))
     }
   }
 }
@@ -267,8 +276,8 @@ object MeTLStatefulRestHelper extends RestHelper {
 object WebMeTLStatefulRestHelper extends RestHelper {
   println("WebMeTLStatefulRestHelper inline")
   serve {
-    case Req(server :: "slide" :: jid :: size :: Nil,_,_) => () => Full(HttpResponder.snapshot(server,jid,size))
-    case Req(server :: "quizImage" :: jid :: id :: Nil,_,_) => () => Full(HttpResponder.quizImage(server,jid,id))
+    case Req("slide" :: jid :: size :: Nil,_,_) => () => Full(HttpResponder.snapshot(jid,size))
+    case Req("quizImage" :: jid :: id :: Nil,_,_) => () => Full(HttpResponder.quizImage(jid,id))
     case Req(server :: "quizResponse" :: conversation :: quiz :: response :: Nil,_,_)
         if (List(server,conversation,quiz,response).filter(_.length == 0).isEmpty) => () => {
           val slide = S.param("slide").openOr("")

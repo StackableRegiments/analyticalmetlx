@@ -3,10 +3,17 @@
         <button class="privacyButton fa fa-user" type="button" id="privateMode"><div class="icon-txt">Private</div></button>
         <button class="privacyButton fa fa-globe" type="button" id="publicMode"><div class="icon-txt">Public</div></button>
     </div>
+		<!-- hi Jodi - here're two things to style -->
+		<div>
+			<input type="checkbox" id="studentsCanPublishCheckbox"></input>
+			<input type="checkbox" id="studentsMustFollowTeacherCheckbox"></input>
+		</div>
+		<!--
     <div class="button-toggle">
         <button class="privacyButton fa fa-user" type="button" id="disableCollaboration"><div class="icon-txt">Present</div></button>
         <button class="privacyButton fa fa-users" type="button" id="enableCollaboration"><div class="icon-txt">Share</div></button>
     </div>
+-->
     <div class="button-toggle">
         <button class="privacyButton fa fa-chain-broken" type="button" id="disableSync"><div class="icon-txt">Desync</div></button>
         <button class="privacyButton fa fa-refresh" type="button" id="enableSync"><div class="icon-txt">Sync</div></button>
@@ -15,7 +22,9 @@
       <div id="majorModesColumn" class="flex-container-column">
         <button class="toolbar btn-icon fa fa-mouse-pointer" type="button" id="selectMode"><div class="icon-txt">Select</div></button>
         <button class="toolbar btn-icon fa fa-pencil" type="button" id="drawMode"><div class="icon-txt">Ink</div></button>
-        <button class="toolbar btn-icon fa fa-plus" type="button" id="insertMode"><div class="icon-txt">Insert</div></button>
+				<!--<button class="toolbar btn-icon fa fa-plus" type="button" id="insertMode"><div class="icon-txt">Insert</div></button>-->
+				<button id="insertText" type="button" insertMode="text" class="toolbar btn-icon fa fa-font"><div class="icon-txt">Text</div></button>
+				<button id="insertImage" type="button" insertMode="image" class="toolbar btn-icon fa fa-picture-o"><div class="icon-txt">Image</div></button>
         <button class="toolbar btn-icon fa fa-comment" type="button" id="feedbackMode"><div class="icon-txt">Feedback</div></button>
         <button class="toolbar btn-icon fa fa-search" type="button" id="zoomMode"><div class="icon-txt">Zoom</div></button>
         <button class="toolbar btn-icon fa fa-arrows" type="button" id="panMode"><div class="icon-txt">Pan</div></button>
@@ -28,18 +37,21 @@
           <button class="modeSpecificTool disabledButton btn-icon fa fa-eye-slash" type="button" id="privatize"><div class="icon-txt">Hide</div></button>
         </div>
         <div id="drawTools" class="inactiveMode flex-container-column">
-			<button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen1Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
-			<button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen2Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
-			<button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen3Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
-			<button class="modeSpecificTool btn-icon fa fa-eraser eraser" id="eraseTool"><div class="icon-txt">Erase</div></button>
-			<button class="modeSpecificTool btn-icon fa fa-angle-double-down advancedTools" id="penCustomizationButton"><div class="icon-txt">More</div></button>
+					<button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen1Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+					<button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen2Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+					<button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen3Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+					<button class="modeSpecificTool btn-icon fa fa-eraser eraser" id="eraseTool"><div class="icon-txt">Erase</div></button>
+					<button class="modeSpecificTool btn-icon fa fa-angle-double-down advancedTools" id="penCustomizationButton"><div class="icon-txt">More</div></button>
         </div>
-        <div id="insertTools" class="inactiveMode flex-container-column">
             <!-- Todo: hide in js on load and on open of other section -->
+				<!--
+        <div id="insertTools" class="inactiveMode flex-container-column">
           <button id="insertText" insertMode="text" class="modeSpecificTool btn-icon fa fa-font" style="display:none;"><div class="icon-txt">Text</div></button>
           <button id="insertImage" insertMode="image" class="modeSpecificTool btn-icon fa fa-picture-o" style="display:none;"><div class="icon-txt">Image</div></button>
-          <!--<div id="textTools"></div>-->
         </div>
+				-->
+				<div id="imageTools" class="inactiveMode flex-container-column"></div>
+				<div id="textTools" class="inactiveMode flex-container-column"></div>
 		<div id="feedbackTools" class="inactiveMode flex-container-column"></div>
         <div id="zoomTools" class="inactiveMode flex-container-column">
           <button id="zoomToOriginal" class="modeSpecificTool btn-icon fa fa-?"><div class="icon-txt">Reset</div></button>
