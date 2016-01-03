@@ -49,7 +49,7 @@ var DeviceConfiguration = (function(){
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
 				try {
-					if (UserSettings.getIsInteractive()){
+					if (UserSettings.getIsInteractive() && "jid" in Conversations.getCurrentConversation()){
 						DeviceConfiguration.setHeader(true);
 						DeviceConfiguration.setTools(true);
 						DeviceConfiguration.setSlides(true);
