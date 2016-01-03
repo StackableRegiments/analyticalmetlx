@@ -551,8 +551,9 @@ var Modes = (function(){
                         var necessaryActions = 4;//readLocal,upload,sendStanza,receiveStanza
                         var reader = new FileReader();
                         var pos = worldToScreen(worldPos.x,worldPos.y);
-                        var pkg = $("<div />").css({
-                            position:"relative",
+                        var pkg = $("<div />",{
+													id:"imageInsertOptions"
+												}).css({
                             left:px(pos.left),
                             top:px(pos.top)
                         });
@@ -1180,7 +1181,7 @@ var Modes = (function(){
                      }
                      });*/
                     $("#insertTools button").each(function(){
-                        var modeName = $(this).attr("id"),
+                        var modeName = $(this).attr("insertMode"),
                             tsButton = $(this)
                                 .on("click",function(){
                                     currentInsertMode = modeName;
