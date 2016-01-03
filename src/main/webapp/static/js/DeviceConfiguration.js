@@ -7,17 +7,28 @@ var DeviceConfiguration = (function(){
     };
     var allowedToHideHeader = false;
     // the default states of the various sections
+		var allowShowingChrome = function(){
+			var isInConversation = false;
+			try {
+				isInConversation = "jid" in Conversations.getCurrentConversation;
+			} catch(e) {
+				isInConversation = false;
+			}
+			return currentDevice != "projector" && isInConversation; 
+		}
     var sectionsVisible = {//All false because the application's start state is the search screen.  onHistory will restore them.
         tools:false,
         slides:false,
-        header:false
+        header:false,
     };
     var setSectionVisibility = function(section,visible){
+			if (allowShowingChrome){
         if (currentDevice != "projector"){
             if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
                 sectionsVisible[section] = visible;
             }
         }
+			}
     };
     var alterCurrentDeviceFunction = function(newDevice){
         currentDevice = newDevice;
@@ -37,6 +48,18 @@ var DeviceConfiguration = (function(){
         $("#absoluteCloseButton").removeClass("closeButton").text("").click(bounceAnd(function(){}));
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
+				try {
+					if (UserSettings.getIsInteractive() && "jid" in Conversations.getCurrentConversation()){
+						DeviceConfiguration.setHeader(true);
+						DeviceConfiguration.setTools(true);
+						DeviceConfiguration.setSlides(true);
+					} else {
+						DeviceConfiguration.setHeader(false);
+						DeviceConfiguration.setTools(false);
+						DeviceConfiguration.setSlides(false);
+					}
+				} catch(e){
+				}
         zoomToPage();
         fitFunction();
     };
@@ -47,11 +70,8 @@ var DeviceConfiguration = (function(){
         fitFunction = projectorFitFunction;
         zoomToFit();
         $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
-            UserSettings.setIsInteractive(true);
-            DeviceConfiguration.setHeader(true);
-            DeviceConfiguration.setTools(true);
-            DeviceConfiguration.setSlides(true);
-            setDefaultOptions();
+					UserSettings.setIsInteractive(true);
+					setDefaultOptions();
         }));
         $("#applicationMenuButton").hide();
         Modes.none.activate();
@@ -204,24 +224,23 @@ var DeviceConfiguration = (function(){
     };
     var initialized = false;
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
-    Progress.historyReceived.DeviceConfiguration_showChrome = function(){
+    Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
             if(UserSettings.getIsInteractive()){
-                DeviceConfiguration.setSlides(true);
-                DeviceConfiguration.setTools(true);
-                if(!initialized){
-                    Modes.draw.activate();
-                    if(DeviceConfiguration.getCurrentDevice() == "iPad"){
-                        $("#panMode").remove();
-                    }
-                }
-            }
-            else{
-                DeviceConfiguration.setSlides(false);
-                DeviceConfiguration.setTools(false);
-                if(!initialized){
-                    Modes.none.activate();
-                }
+							DeviceConfiguration.setSlides(true);
+							DeviceConfiguration.setTools(true);
+							if(!initialized){
+									Modes.draw.activate();
+									if(DeviceConfiguration.getCurrentDevice() == "iPad"){
+											$("#panMode").remove();
+									}
+							}
+            } else {
+							DeviceConfiguration.setSlides(false);
+							DeviceConfiguration.setTools(false);
+							if(!initialized){
+									Modes.none.activate();
+							}
             }
             initialized = true;
         }

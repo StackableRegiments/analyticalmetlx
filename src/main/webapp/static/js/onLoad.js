@@ -603,6 +603,7 @@ $(function(){
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
     $("#progress").hide();
     setLoadProgress(8);
+		/*
     var toggler = function(idFragment){
         var element = $(sprintf("#restore%s",idFragment));
         var toggleFuncField = sprintf("set%s",idFragment);
@@ -623,7 +624,9 @@ $(function(){
         }));
         setText();
     }
-    toggler("Tools");
-    toggler("Slides");
-    //DeviceConfiguration.applyFit();
+		*/
+
+//    toggler("Tools");
+//    toggler("Slides");
+//    DeviceConfiguration.applyFit();
 });
