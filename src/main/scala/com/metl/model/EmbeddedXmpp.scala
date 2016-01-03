@@ -457,6 +457,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
                   }
                 }
               } else {
+                /* //commenting out the relay to all occupants, because in our app that should happpen AFTER it comes back from the MeTL system, and not before.  This was resulting in double-messaging.
                 //println("Relaying message to all room occupants")
                 JavaListUtils.foreach(room.getOccupants(),(occupant:Occupant) => {
                   //println("Relaying message to %s".format(occupant))
@@ -466,6 +467,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
                   val finalStanza:Stanza = StanzaBuilder.createClone(stanza, true, replaceAttributes).build()
                   relayStanza(occupant.getJid(), finalStanza, serverRuntimeContext)
                 })
+                */
                 mucModule.getRoomAdaptor.map(ra => ra.relayMessageToMeTLRoom(stanza))
                 if (useXmppHistory)
                   room.getHistory().append(stanza, sendingOccupant)
