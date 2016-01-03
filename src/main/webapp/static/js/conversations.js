@@ -574,7 +574,6 @@ var Conversations = (function(){
         $("#createConversationButton").on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
         }));
-
         $("#myConversationsButton").on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
         }));
@@ -588,12 +587,9 @@ var Conversations = (function(){
                 getSearchResult(currentSearchTerm);
             }
         };
-        $("#searchForConversationBox").attr({
-            blur:updateSearchTerm,
-            change:updateSearchTerm,
-            focus:updateSearchTerm,
-            keydown:updateSearchTerm,
-            select:updateSearchTerm
+        var sfcb = $("#searchForConversationBox");
+        _.forEach(["blur","change","focus","keydown","select"],function(item){
+            sfcb.on(item,updateSearchTerm)
         });
         $("<span />",{
             text:"share",
