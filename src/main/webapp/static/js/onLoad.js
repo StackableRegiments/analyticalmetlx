@@ -464,12 +464,25 @@ $(function(){
             Modes.select.activate();
         }
     });
+    $("#insertText").click(function(){
+        if(Modes.currentMode != Modes.text){
+            Modes.text.activate();
+        }
+    });
+
+    $("#insertImage").click(function(){
+        if(Modes.currentMode != Modes.image){
+            Modes.image.activate();
+        }
+    });
+		/*
     $("#insertMode").click(function(){
         if(Modes.currentMode != Modes.insert){
             Modes.insert.activate();
         }
 
     });
+		*/
     $("#panMode").click(function(){
         if(Modes.currentMode != Modes.pan){
             Modes.pan.activate();
