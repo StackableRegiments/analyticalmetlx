@@ -125,37 +125,11 @@ object MeTLRestHelper extends RestHelper with Stemmer {
       val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
-/*
-    case Req("render" :: configName :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render", () => {
-      val server = ServerConfiguration.configForName(configName)
-      val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-      val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
-      Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
-    })
-*/
-    /*
-    case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",() => {
-      val server = ServerConfiguration.default
-      val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
-      Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
-    })
-    */
     case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail", () => {
       HttpResponder.snapshot(jid,"thumbnail")
-      /*
-      val server = ServerConfiguration.configForName(configName)
-      val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
-      Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
-      */
     })
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", () => {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
-      /*
-      val server = ServerConfiguration.configForName(configName)
-      val image = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getThumbnail
-      val dataUri = "data:image/jpeg;base64," + DatatypeConverter.printBase64Binary(image)
-      Full(InMemoryResponse(IOUtils.toByteArray(dataUri),Nil,Nil,200))
-      */
     })
   }
 }
@@ -186,6 +160,14 @@ object MeTLStatefulRestHelper extends RestHelper {
       () => Stopwatch.time("MeTLStatefulRestHelper.updateConversation",() => StatelessHtml.updateConversation(Globals.currentUser.is,jid,r))
     case Req(List("addSlideAtIndex",jid,index),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.addSlideAtIndex",() => StatelessHtml.addSlideAtIndex(Globals.currentUser.is,jid,index))
+
+    case Req(List("addQuizViewSlideToConversationAtIndex",jid,index,quizId),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.addQuizViewSlideToConversationAtIndex",() => StatelessHtml.addQuizViewSlideToConversationAtIndex(jid,index.toInt,quizId))
+    case Req(List("addQuizResultsViewSlideToConversationAtIndex",jid,index,quizId),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.addQuizResultsViewSlideToConversationAtIndex",() => StatelessHtml.addQuizResultsViewSlideToConversationAtIndex(jid,index.toInt,quizId))
+    case Req(List("addSubmissionSlideToConversationAtIndex",jid,index,submissionId),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.addSubmissionSlideToConversationAtIndex",() => StatelessHtml.addSubmissionSlideToConversationAtIndex(jid,index.toInt,submissionId))
+
     case Req(List("duplicateSlide",slide,conversation),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide",() => StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
     case Req(List("duplicateConversation",conversation),_,_) =>

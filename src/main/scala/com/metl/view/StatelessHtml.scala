@@ -374,6 +374,113 @@ object StatelessHtml extends Stemmer {
       Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
     }
   }
+  protected def shouldModifyConversation(c:Conversation):Boolean = {
+    Globals.currentUser.is == c.author
+  }
+  def addQuizViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = {
+    val username = Globals.currentUser.is
+    val server = config.name
+    val c = config.detailsOfConversation(jid)
+    serializer.fromConversation(shouldModifyConversation(c) match {
+      case true => {
+        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+        newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
+          val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
+          val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
+          convHistory.getQuizzes.filter(q => q.id == quizId && !q.isDeleted).sortBy(q => q.timestamp).reverse.headOption.map(quiz => {
+            val now = new java.util.Date().getTime
+            val identity = "%s%s".format(username,now.toString)
+            val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(config,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
+            val quizTitle = genText(quiz.question,16,0,"title")
+            val questionOffset = quiz.url match{
+              case Full(_) => 340
+              case _ => 100
+            };
+            val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
+              acc ::: List(genText("%s: %s".format(item.name,item.text),10,(acc.length * 10) + questionOffset,"option:"+item.name))
+            })
+            val allStanzas = quiz.url.map(u => List(MeTLImage(config,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
+            allStanzas.foreach(stanza => slideRoom ! LocalToServerMeTLStanza(stanza))
+          })
+        })
+        newC
+      }
+      case _ => c
+    }).headOption.map(n => XmlResponse(n))
+  }
+  def addQuizResultsViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = {
+    val username = Globals.currentUser.is
+    val server = config.name
+    val c = config.detailsOfConversation(jid)
+    serializer.fromConversation(shouldModifyConversation(c) match {
+      case true => {
+        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+        newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
+          val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
+          val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
+          convHistory.getQuizzes.filter(q => q.id == quizId && !q.isDeleted).sortBy(q => q.timestamp).reverse.headOption.map(quiz => {
+            val now = new java.util.Date().getTime
+            val answers = convHistory.getQuizResponses.filter(qr => qr.id == quiz.id).foldLeft(Map.empty[String,MeTLQuizResponse])((acc,item) => {
+              acc.get(item.answerer).map(qr => {
+                if (acc(item.answerer).timestamp < item.timestamp){
+                  acc.updated(item.answerer,item)
+                } else {
+                  acc
+                }
+              }).getOrElse(acc.updated(item.answerer,item))
+            }).foldLeft(Map(quiz.options.map(qo => (qo,List.empty[MeTLQuizResponse])):_*))((acc,item) => {
+              quiz.options.find(qo => qo.name == item._2.answer).map(qo => acc.updated(qo,item._2 :: acc(qo))).getOrElse(acc)
+            })
+            val identity = "%s%s".format(username,now.toString)
+            val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(config,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
+            val quizTitle = genText(quiz.question,32,0,"title")
+            val questionOffset = quiz.url match{
+              case Full(_) => 340
+              case _ => 100
+            };
+            val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
+              acc ::: List(genText(
+                "%s: %s (%s)".format(item.name,item.text,answers.get(item).map(as => as.length).getOrElse(0)),
+                24,
+                (acc.length * 30) + questionOffset,
+                "option:"+item.name))
+            })
+            val allStanzas = quiz.url.map(u => List(MeTLImage(config,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
+            allStanzas.foreach(stanza => {
+              slideRoom ! LocalToServerMeTLStanza(stanza)
+            })
+          })
+        })
+        newC
+      }
+      case _ => c
+    }).headOption.map(n => XmlResponse(n))
+  }
+  def addSubmissionSlideToConversationAtIndex(jid:String,index:Int,submissionId:String):Box[LiftResponse] = {
+    val username = Globals.currentUser.is
+    val server = config.name
+    val c = config.detailsOfConversation(jid)
+    serializer.fromConversation(shouldModifyConversation(c) match {
+      case true => {
+        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+        newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
+          val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
+          MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions.find(sub => sub.identity == submissionId).map(sub => {
+            val now = new java.util.Date().getTime
+            val identity = "%s%s".format(username,now.toString)
+            val tempSubImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+            val dimensions = com.metl.renderer.SlideRenderer.measureImage(tempSubImage)
+            val subImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+            slideRoom ! LocalToServerMeTLStanza(subImage)
+          })
+        })
+        newC
+      }
+      case _ => c
+    }).headOption.map(n => XmlResponse(n))
+  }
+
+
   def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
     val conv = config.detailsOfConversation(conversation)
     if (onBehalfOfUser == conv.author){
