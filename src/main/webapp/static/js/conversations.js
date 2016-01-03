@@ -16,13 +16,13 @@ var Conversations = (function(){
         var fetchAndPaintThumb = function(slide,slideContainer){
             var currentSrc = slideContainer.attr("src");
             var slideImage = slideContainer.find("img");
-            var thumbUrl = sprintf("/thumbnailDataUri/%s/%s?nocache=%s",currentServerConfigName,slide.id,Date.now());
+            var thumbUrl = sprintf("/thumbnailDataUri/%s?nocache=%s",slide.id,Date.now());
             var storeThumb = function(data){
                 cache[slide.id] = data;
                 //then fire paint as normal, which paints from the cache
                 paintThumb(slide,slideContainer);
             };
-            cache[slide.id] = "data:image/jpeg;base64,"
+            //cache[slide.id] = "data:image/jpeg;base64,"
             $.ajax({
                 url:thumbUrl,
                 beforeSend: function ( xhr ) {
@@ -87,6 +87,35 @@ var Conversations = (function(){
         slideContainer.on("scroll",lazyRepaint);
         Progress.call("onLayoutUpdated");
     }
+
+				var setStudentsCanPublishFunction = function(publishingAllowed){
+					var jid = currentConversation.jid.toString();
+					var oldPerms = currentConversation.permissions;
+					var newPermissions = {
+						"studentCanOpenFriends":oldPerms.studentCanOpenFriends,
+						"studentCanPublish":publishingAllowed,
+						"usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+					};
+					changePermissionsOfConversation(jid,newPermissions);
+				};
+
+				var getStudentsCanPublishFunction = function(){
+					return currentConversation.permissions.studentCanPublish;
+				};	
+				var setStudentsMustFollowTeacherFunction = function(mustFollowTeacher){
+					var jid = currentConversation.jid.toString();
+					var oldPerms = currentConversation.permissions;
+					var newPermissions = {
+						"studentCanOpenFriends":oldPerms.studentCanOpenFriends,
+						"studentCanPublish":oldPerms.studentCanPublish,
+						"usersAreCompulsorilySynced":mustFollowTeacher
+					};
+					changePermissionsOfConversation(jid,newPermissions);
+				};
+				var getStudentsMustFollowTeacherFunction = function(){
+					return currentConversation.permissions.usersAreCompulsorilySynced;
+				};
+
     var changeConvToLectureFunction = function(jid){
         if (!jid){
             jid = currentConversation.jid.toString();
@@ -287,8 +316,30 @@ var Conversations = (function(){
             return false;
         }));
     };
+		var updatePermissionButtons = function(details){
+			var isAuthor = shouldModifyConversationFunction(details);
+			var scpc = $("#studentsCanPublishCheckbox");
+			scpc.off("change");
+			scpc.prop("checked",details.permissions.studentCanPublish);
+			scpc.prop("disabled",!isAuthor);
+			if (isAuthor){
+				scpc.on("change",function(){
+					setStudentsCanPublishFunction(scpc.is(":checked"));	
+				});
+			}
+			var smftc = $("#studentsMustFollowTeacherCheckbox");
+			smftc.off("change");
+			smftc.prop("checked",details.permissions.usersAreCompulsorilySynced);	
+			smftc.prop("disabled",!isAuthor);
+			if (isAuthor){
+				smftc.on("change",function(){
+					setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
+				});
+			}
+		};
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){
+						updatePermissionButtons(details);
             updateConversationHeader();
             updateLinks();
             if (shouldRefreshSlideDisplay(details)){
@@ -582,6 +633,10 @@ var Conversations = (function(){
         toggleSyncMove : toggleSyncMoveFunction,
         changeConversationToTutorial : changeConvToTutorialFunction,
         changeConversationToLecture : changeConvToLectureFunction,
+				setStudentsCanPublish : setStudentsCanPublishFunction,
+				getStudentsCanPublish : getStudentsCanPublishFunction,
+				setStudentsMustFollowTeacher : setStudentsMustFollowTeacherFunction,
+				getStudentsMustFollowTeacher : getStudentsMustFollowTeacherFunction,
         shouldDisplayConversation : shouldDisplayConversationFunction,
         shouldPublishInConversation : shouldPublishInConversationFunction,
         shouldModifyConversation : shouldModifyConversationFunction,

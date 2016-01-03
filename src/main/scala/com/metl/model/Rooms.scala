@@ -369,8 +369,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     history
   }
   private def updateSnapshots = Stopwatch.time("HistoryCachingRoom.updateSnapshots", () => {
-    snapshots = makeSnapshots
-    lastRender = history.lastVisuallyModified
+    if (history.lastVisuallyModified > lastRender){
+      snapshots = makeSnapshots
+      lastRender = history.lastVisuallyModified
+    }
   })
   private def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName), () => {
     roomMetaData match {
@@ -379,6 +381,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
           case false => history
         }
+        println("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
         SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
       }
       case _ => {
