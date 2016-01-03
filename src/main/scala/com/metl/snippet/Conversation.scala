@@ -17,7 +17,7 @@ object ConversationTemplates {
 }
 
 class ConversationSnippet {
-  object server extends RequestVar[ServerConfiguration](Utils.prepareServerFromRequest)
+  object server extends RequestVar[ServerConfiguration](ServerConfiguration.default)
   object conversationId extends RequestVar[String](S.param("conversation").openOr(""))
 
   object conversation extends RequestVar[Conversation](server.detailsOfConversation(conversationId.is))
@@ -34,8 +34,8 @@ class ConversationSnippet {
   conversation.is.slides.sortBy(s => s.index).foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderConversationSlide(item).apply(ConversationTemplates.conversationSlide))
 
   private def renderConversationSlide(slide:Slide) =
-    ".conversationSlideImageAnchor [href]" #> "/slide?server=%s&conversation=%s&slide=%s".format(server.is.name,conversationId.is,slide.id) &
-  ".conversationSlideImage [src]" #> "/%s/slide/%s/small".format(server.is.name,slide.id)
+    ".conversationSlideImageAnchor [href]" #> "/slide?conversation=%s&slide=%s".format(conversationId.is,slide.id) &
+  ".conversationSlideImage [src]" #> "/slide/%s/small".format(slide.id)
 
   private def renderConversationError(message:String) = "#conversationError *" #> Text(message)
   private def handleParamErrors:Box[CssSel] ={
