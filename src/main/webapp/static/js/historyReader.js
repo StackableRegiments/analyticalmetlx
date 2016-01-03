@@ -70,20 +70,6 @@ function receiveHistory(json){
             clearBoard();
             render(boardContent);
             blitMark = Date.now();
-            /*
-             $("#timingLog").text(sprintf("receiveHistory %s timing:\n%s milis download\n%s milis prerender ink\n%s milis prerender highlighters\n%s milis prerender text\n%s milis imagesLoaded\n%s milis history decorators\n%s milis blit\n%s milis total\n%s milis bench",
-             Date.now(),
-             historyDownloadedMark - startMark,
-             prerenderInkMark - historyDownloadedMark,
-             prerenderHighlightersMark - prerenderInkMark,
-             prerenderTextMark - prerenderHighlightersMark,
-             imagesLoadedMark - prerenderTextMark,
-             historyDecoratorsMark - imagesLoadedMark,
-             blitMark - prerenderTextMark,
-             blitMark - startMark,
-             blitMark - historyDownloadedMark
-             ));
-             */
         }
         if(_.keys(boardContent.images).length == 0){
             _.defer(startRender);
