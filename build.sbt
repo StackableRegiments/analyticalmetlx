@@ -75,7 +75,7 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "metl2011" % "3.10.+",
-    "io.github.stackableregiments" %% "metl-h2" % "3.7.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.7.1",
 //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "io.github.stackableregiments" %% "lift-extensions" % "0.2.+"
   )

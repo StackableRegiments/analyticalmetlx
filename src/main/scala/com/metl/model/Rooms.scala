@@ -423,15 +423,15 @@ class XmppBridgingHistoryCachingRoom(configName:String,override val location:Str
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
     //stanzasToIgnore = stanzasToIgnore ::: List(s)
     //trace("xmppBridge, sending to server: %s".format(s))
-    trace("XMPPBRIDGE sendToServer: %s".format(s))
+    trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
     sendStanzaToServer(s)
   })
   protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge",{
-    trace("XMPPBRIDGE sendToBridge: %s".format(s))
+    trace("XMPPBRIDGE (%s) sendToBridge: %s".format(location,s))
     MeTLXConfiguration.xmppServer.foreach(_.relayMessageToXmppMuc(location,s))
   })
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendToChildren",{
-    trace("XMPPBRIDGE sendToChildren: %s".format(s))
+    trace("XMPPBRIDGE (%s) sendToChildren: %s".format(location,s))
     val (matches,remaining) = stanzasToIgnore.partition(sti => sti.equals(s))
     matches.length match {
       case 1 => stanzasToIgnore = remaining
