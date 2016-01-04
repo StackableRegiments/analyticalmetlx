@@ -27,7 +27,7 @@ object SlideRenderer extends Logger {
   protected val JAVA_DEFAULT_DPI = 72.0
   protected val WINDOWS_DEFAULT_DPI = 96.0
 
-  protected def makeBlankImage(width:Int,height:Int) = Stopwatch.time("SlideRenderer.makeBlankImage", () => {
+  protected def makeBlankImage(width:Int,height:Int) = Stopwatch.time("SlideRenderer.makeBlankImage",{
     val blankImage = new BufferedImage(width,height,BufferedImage.TYPE_3BYTE_BGR)
     val g = blankImage.createGraphics.asInstanceOf[Graphics2D]
     g.setPaint(AWTColor.white)
@@ -35,7 +35,7 @@ object SlideRenderer extends Logger {
     blankImage
   })
 
-  protected def imageToByteArray(image:BufferedImage):Array[Byte] = Stopwatch.time("SlideRenderer.imageToByteArray", () => {
+  protected def imageToByteArray(image:BufferedImage):Array[Byte] = Stopwatch.time("SlideRenderer.imageToByteArray",{
     val stream = new java.io.ByteArrayOutputStream
     ImageIO.write(image, "jpg", stream)
     stream.toByteArray
@@ -55,7 +55,7 @@ object SlideRenderer extends Logger {
       new AWTColor(c.red,c.green,c.blue,Math.max(0,Math.min(255,overrideAlpha)))
   }
   protected val emptyImage:Image = new BufferedImage(1,1,BufferedImage.TYPE_4BYTE_ABGR)
-  protected def getImageFor(metlImage:MeTLImage):Image = Stopwatch.time("SlideRenderer.getImageFor", () => {
+  protected def getImageFor(metlImage:MeTLImage):Image = Stopwatch.time("SlideRenderer.getImageFor",{
     metlImage.imageBytes.map(ib => {
       val stream = new ByteArrayInputStream(ib)
       val image = ImageIO.read(stream).asInstanceOf[Image]
@@ -68,7 +68,7 @@ object SlideRenderer extends Logger {
     tempImage.createGraphics.asInstanceOf[Graphics2D]
   }
   def measureImage(metlImage:MeTLImage):Dimensions = measureImage(metlImage,defaultObserver)
-  protected def measureImage(metlImage:MeTLImage,g:Graphics2D):Dimensions = Stopwatch.time("SlideRenderer.measureImage", () => {
+  protected def measureImage(metlImage:MeTLImage,g:Graphics2D):Dimensions = Stopwatch.time("SlideRenderer.measureImage",{
     val x = metlImage.x
     val y = metlImage.y
     val errorSize = Dimensions(x,y,x,y,0.0,0.0)
@@ -109,7 +109,7 @@ object SlideRenderer extends Logger {
       }
     }
   })
-  protected def renderImage(metlImage:MeTLImage,g:Graphics2D):Unit = Stopwatch.time("SlideRenderer.renderImage", () => {
+  protected def renderImage(metlImage:MeTLImage,g:Graphics2D):Unit = Stopwatch.time("SlideRenderer.renderImage",{
     try {
       val image:Image = getImageFor(metlImage)
       val dimensions = measureImage(metlImage,g)
@@ -129,7 +129,7 @@ object SlideRenderer extends Logger {
     }
   })
 
-  protected def renderInk(metlInk:MeTLInk,g:Graphics2D) = Stopwatch.time("SlideRenderer.renderInk", () => {
+  protected def renderInk(metlInk:MeTLInk,g:Graphics2D) = Stopwatch.time("SlideRenderer.renderInk",{
     try {
       val HIGHLIGHTER_ALPHA  = 55
       val PRESSURE = 0.22
@@ -150,7 +150,7 @@ object SlideRenderer extends Logger {
   case class PreparedTextLine(textRuns:List[PreparedTextRun],x:Float,y:Float,width:Float,height:Float)
   case class PreparedTextRun(text:String,layout:TextLayout,color:Color,x:Float,y:Float,width:Float,height:Float)
   def measureText(metlText:MeTLText):Dimensions = measureText(metlText,defaultObserver)
-  protected def measureText(metlText:MeTLText,g:Graphics2D):Dimensions = Stopwatch.time("SlideRenderer.measureText", () => {
+  protected def measureText(metlText:MeTLText,g:Graphics2D):Dimensions = Stopwatch.time("SlideRenderer.measureText",{
     val (l,r,t,b) = measureTextLines(metlText,g).foldLeft((metlText.x,metlText.y,metlText.x,metlText.y))((internalAcc,internalItem) => {
       val newLeft = Math.min(internalAcc._1,internalItem.x)
       val newRight = Math.max(internalAcc._2,internalItem.x+internalItem.width)
@@ -168,7 +168,7 @@ object SlideRenderer extends Logger {
       case e:Exception => false
     }
   }
-  protected def measureTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureTextLines", () => {
+  protected def measureTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureTextLines",{
     if (isRichText(metlText)){
       trace("richText: %s".format(metlText))
       measureRichTextLines(metlText,g)
@@ -178,7 +178,7 @@ object SlideRenderer extends Logger {
     }
   })
   case class TextRunDefinition(text:String,family:String,size:Double,color:Color,isUnderline:Boolean,isStrikethrough:Boolean,isBold:Boolean,isItalic:Boolean)
-  protected def measureRichTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureRichTextLines", () => {
+  protected def measureRichTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureRichTextLines",{
     metlText.text match {
       case t:String if (t.length > 0) => {
         val frc = g.getFontRenderContext()
@@ -373,7 +373,7 @@ object SlideRenderer extends Logger {
   })
 
 
-  protected def measurePoorTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measurePoorTextLines", () => {
+  protected def measurePoorTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measurePoorTextLines",{
     val frc = g.getFontRenderContext()
 
     val font = new Font(metlText.family, metlText.weight match{
@@ -448,7 +448,7 @@ object SlideRenderer extends Logger {
     }
   })
 
-  protected def renderText(lines:List[PreparedTextLine],g:Graphics2D) = Stopwatch.time("SlideRenderer.renderText", () => {
+  protected def renderText(lines:List[PreparedTextLine],g:Graphics2D) = Stopwatch.time("SlideRenderer.renderText",{
     lines.foreach(line => {
       line.textRuns.foreach(run => {
         try {
@@ -471,7 +471,7 @@ object SlideRenderer extends Logger {
       case _ => false
     }
   }).toList
-  def renderMultiple(h:History,requestedSizes:List[RenderDescription],target:String= "presentationSpace"):Map[RenderDescription,Array[Byte]] = Stopwatch.time("SlideRenderer.renderMultiple", () => {
+  def renderMultiple(h:History,requestedSizes:List[RenderDescription],target:String= "presentationSpace"):Map[RenderDescription,Array[Byte]] = Stopwatch.time("SlideRenderer.renderMultiple",{
     h.shouldRender match {
       case true => {
         val (texts,highlighters,inks,images) = h.getRenderableGrouped
@@ -491,7 +491,7 @@ object SlideRenderer extends Logger {
       }
     }
   })
-  def measureHistory(h:History, target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureHistory", () => {
+  def measureHistory(h:History, target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureHistory",{
     h.shouldRender match {
       case true => {
         val (texts,highlighters,inks,images) = h.getRenderableGrouped
@@ -500,7 +500,7 @@ object SlideRenderer extends Logger {
       case false => Dimensions(0.0,0.0,0.0,0.0,0.0,0.0)
     }
   })
-  def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems", () => {
+  def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems",{
     val nativeScaleTextBoxes = filterAccordingToTarget[MeTLText](target,texts).map(t => measureText(t))
     val td = nativeScaleTextBoxes.foldLeft(Dimensions(h.getLeft,h.getTop,h.getRight,h.getBottom,0.0,0.0))((acc,item) => {
       val newLeft = Math.min(acc.left,item.left)
@@ -511,7 +511,7 @@ object SlideRenderer extends Logger {
     })
     Dimensions(td.left,td.top,td.right,td.bottom,td.right - td.left,td.bottom - td.top)
   })
-  def renderImage(h:History,historyDimensions:Dimensions,width:Int,height:Int,target:String):Array[Byte] = Stopwatch.time("SlideRenderer.renderImage", () => {
+  def renderImage(h:History,historyDimensions:Dimensions,width:Int,height:Int,target:String):Array[Byte] = Stopwatch.time("SlideRenderer.renderImage",{
     val contentWidth = historyDimensions.width
     val contentHeight = historyDimensions.height
     val contentXOffset = historyDimensions.left * -1
@@ -560,11 +560,11 @@ object SlideRenderer extends Logger {
     filterAccordingToTarget[MeTLInk](target,scaledInks).foreach(renderInk(_,g))
     imageToByteArray(unscaledImage)
   })
-  def render(h:History,intWidth:Int,intHeight:Int,target:String = "presentationSpace"):Array[Byte] = Stopwatch.time("SlideRenderer.render", () => {
+  def render(h:History,intWidth:Int,intHeight:Int,target:String = "presentationSpace"):Array[Byte] = Stopwatch.time("SlideRenderer.render",{
     val renderDesc = new RenderDescription(intWidth,intHeight)
     render(h,renderDesc,target)
   })
-  def render(h:History,renderDesc:RenderDescription,target:String):Array[Byte] = Stopwatch.time("SlideRenderer.render", () => {
+  def render(h:History,renderDesc:RenderDescription,target:String):Array[Byte] = Stopwatch.time("SlideRenderer.render",{
     renderMultiple(h,List(renderDesc),target).get(renderDesc).getOrElse(Array.empty[Byte])
   })
 }

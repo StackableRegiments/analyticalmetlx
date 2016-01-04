@@ -25,9 +25,9 @@ case object StartingRepActor
 object ReputationServer extends LiftActor with ListenerManager with Logger {
   def createUpdate = StartingRepActor
   override def lowPriority = {
-    case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),()=> reps.foreach(rep => {}))//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
-    case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),()=> {})//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
-    case local:Standing => Stopwatch.time("ReputationServer:lowPriority:standing (%s)".format(local),()=> updateListeners(local) )
+    case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),reps.foreach(rep => {}))//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
+    case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),{})//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
+    case local:Standing => Stopwatch.time("ReputationServer:lowPriority:standing (%s)".format(local),updateListeners(local) )
     case other => {
       warn("Rep server received unknown message: %s".format(other.toString))
     }
@@ -46,8 +46,8 @@ class ReputationActor extends CometActor with CometListener with Logger {
     case StartingRepActor => {}
     case other => warn("ReputationActor received unknown message: %s".format(other.toString))
   }
-  def recieveStanding(s:Standing) = Stopwatch.time("ReputationActor:recieveStanding(%s)".format(s),()=>{partialUpdate(updatePersonalRep(s) & updateAll(s))})
-  def recieveRefreshAllStandings = Stopwatch.time("ReputationActor:recieveRefreshAllStandings", ()=>{
+  def recieveStanding(s:Standing) = Stopwatch.time("ReputationActor:recieveStanding(%s)".format(s),{partialUpdate(updatePersonalRep(s) & updateAll(s))})
+  def recieveRefreshAllStandings = Stopwatch.time("ReputationActor:recieveRefreshAllStandings", {
     val allStandings = com.metl.model.Reputation.allStandings
     debug("updating all standings with: %s".format(allStandings))
     partialUpdate(allStandings.foldLeft(Noop)((acc,item) => acc & updateAll(item)))
@@ -72,7 +72,7 @@ class ReputationActor extends CometActor with CometListener with Logger {
     }
   }
   override def render = NodeSeq.Empty
-  override def fixedRender = Stopwatch.time("ReputationActor:fixedRender",()=>{
+  override def fixedRender = Stopwatch.time("ReputationActor:fixedRender",{
     val totalScore = Reputation.standing(currentUser.is)
     "#formative *" #> totalScore.formative &
     "#summative *" #> totalScore.summative &

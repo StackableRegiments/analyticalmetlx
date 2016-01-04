@@ -29,7 +29,7 @@ import com.metl.model.Globals._
 case object Refresh
 
 object TopicManager extends Logger {
-  protected val cachedTopics = Stopwatch.time("TopicManager:cachedTopics",()=> new PeriodicallyRefreshingVar[List[Topic]](2 minutes,()=>{
+  protected val cachedTopics = Stopwatch.time("TopicManager:cachedTopics", new PeriodicallyRefreshingVar[List[Topic]](2 minutes,()=>{
     debug("TopicManager loading all topics")
     try {
       Topic.findAll
@@ -40,13 +40,13 @@ object TopicManager extends Logger {
       }
     }
   }))
-  def preloadAllTopics = Stopwatch.time("TopicManager:preloadAllTopics",()=> getAll.foreach(preloadTopic))
-  def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic),()=> com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.is).questions)
-  def getAll = Stopwatch.time("TopicManager:getAll",()=> cachedTopics.get match {
+  def preloadAllTopics = Stopwatch.time("TopicManager:preloadAllTopics", getAll.foreach(preloadTopic))
+  def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic), com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.is).questions)
+  def getAll = Stopwatch.time("TopicManager:getAll", cachedTopics.get match {
     case listOfTopics:List[Topic] => listOfTopics.filter(_.creator.is != "rob")
     case _ => List.empty[Topic]
   })
-  def get(dbId:String):Box[Topic] = Stopwatch.time("TopicManager:get(%s)".format(dbId),()=> {
+  def get(dbId:String):Box[Topic] = Stopwatch.time("TopicManager:get(%s)".format(dbId), {
     cachedTopics.get match {
       case listOfTopics:List[Topic] => {
         listOfTopics.find(t => t.teachingEventIdentity.is == dbId) match {
@@ -66,12 +66,12 @@ object TopicManager extends Logger {
     }
     topic.map(t => com.metl.comet.TopicServer ! com.metl.comet.NewTopic(t))
   }
-  def createTopic(location:String):Unit = Stopwatch.time("TopicManager:createTopic %s".format(location),()=>{
+  def createTopic(location:String):Unit = Stopwatch.time("TopicManager:createTopic %s".format(location),{
     val newTopic = Topic.createRecord.name(location).creator(currentUser.is).deleted(false)
     newTopic.teachingEventIdentity(newTopic.identity).save
     //XMPPQuestionSyncActor ! TopicSyncRequest(newTopic.identity)
   })
-  def renameTopic(topicId:String,newName:String):Unit = Stopwatch.time("TopicManager:renameTopic",()=>{
+  def renameTopic(topicId:String,newName:String):Unit = Stopwatch.time("TopicManager:renameTopic",{
     Topic.find("_id",new ObjectId(topicId)) match {
       case t:Topic => {
         t.rename(newName)
@@ -80,7 +80,7 @@ object TopicManager extends Logger {
       case _ => {}
     }
   })
-  def deleteTopic(topicId:String):Unit = Stopwatch.time("TopicManager:deleteTopic",()=>{
+  def deleteTopic(topicId:String):Unit = Stopwatch.time("TopicManager:deleteTopic",{
     Topic.find("_id",new ObjectId(topicId)) match {
       case t:Topic => {
         t.delete

@@ -90,16 +90,16 @@ object RoomMetaDataUtils {
 
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
   private lazy val metlRooms = new SynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
-  override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", () => metlRooms.keys.exists(k => k == room))
-  override def get(room:String) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
-  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get", () => metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
-  protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room), () => {
+  override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
+  override def get(room:String) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
+  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
+  protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
     //val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
     val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition)
     r.localSetup
     r
   })
-  override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room), () => {
+  override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room),{
     if (exists(room)){
       metlRooms(room).localShutdown
       metlRooms.remove(room)
@@ -209,17 +209,17 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   }
   override def lowPriority:PartialFunction[Any,Unit] = coreLowPriority orElse overrideableLowPriority orElse catchAll
   protected def coreLowPriority:PartialFunction[Any,Unit] = {
-    case j:JoinRoom => Stopwatch.time("MeTLRoom.lowPriority.JoinRoom", () => addConnection(j))
-    case l:LeaveRoom => Stopwatch.time("MeTLRoom.lowPriority.LeaveRoom", () => removeConnection(l))
-    case sl@ServerToLocalMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ServerToLocalMeTLStanza", () => sendToChildren(s))
-    case Ping => Stopwatch.time("MeTLRoom.ping", () => {
+    case j:JoinRoom => Stopwatch.time("MeTLRoom.lowPriority.JoinRoom",addConnection(j))
+    case l:LeaveRoom => Stopwatch.time("MeTLRoom.lowPriority.LeaveRoom",removeConnection(l))
+    case sl@ServerToLocalMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ServerToLocalMeTLStanza",sendToChildren(s))
+    case Ping => Stopwatch.time("MeTLRoom.ping",{
       if (possiblyCloseRoom){
 
       } else {
         heartbeat
       }
     })
-    case ls@LocalToServerMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.LocalToServerMeTLStanza", () => {
+    case ls@LocalToServerMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.LocalToServerMeTLStanza",{
       trace("received stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s)
     })
@@ -227,10 +227,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom recieved unknown message")
   }
-  def getChildren:List[Tuple3[String,String,LiftActor]] = Stopwatch.time("MeTLRoom.getChildren",() => {
+  def getChildren:List[Tuple3[String,String,LiftActor]] = Stopwatch.time("MeTLRoom.getChildren",{
     joinedUsers.toList
   })
-  protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",() => {
+  protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",{
     trace("stanza received: %s".format(a))
     (a,roomMetaData) match {
       case (m:Attendance,cr:ConversationRoom) => {
@@ -253,7 +253,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     trace("%s s->l %s".format(location,a))
     joinedUsers.foreach(j => j._3 ! a)
   })
-  protected def sendStanzaToServer(s:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer", () => {
+  protected def sendStanzaToServer(s:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
     trace("%s l->s %s".format(location,s))
     showInterest
     if (shouldBacklog) {
@@ -265,16 +265,16 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     }
   })
   private def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
-  private def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),() => {
+  private def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
     joinedUsers = ((j.username,j.cometId,j.actor) :: joinedUsers).distinct
     j.actor ! RoomJoinAcknowledged(configName,location)
     showInterest
   })
-  private def removeConnection(l:LeaveRoom):Unit = Stopwatch.time("MeTLRoom.removeConnection(%s)".format(l), () => {
+  private def removeConnection(l:LeaveRoom):Unit = Stopwatch.time("MeTLRoom.removeConnection(%s)".format(l),{
     joinedUsers = joinedUsers.filterNot(i => i._1 == l.username && i._2 == l.cometId)
     l.actor ! RoomLeaveAcknowledged(configName,location)
   })
-  private def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom", () => {
+  private def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom",{
     if (location != "global" && joinedUsers.length == 0 && !recentInterest) {
       debug("MeTLRoom(%s):heartbeat.closingRoom".format(location))
       creator.removeMeTLRoom(location)
@@ -284,7 +284,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     }
   })
   protected def showInterest:Unit = lastInterest = new Date().getTime
-  private def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest", () => {
+  private def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest",{
     (new Date().getTime - lastInterest) < interestTimeout
   })
   override def toString = "MeTLRoom(%s,%s,%s)".format(configName,location,creator)
@@ -347,7 +347,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   private var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
   private lazy val starting = new StartupInformation
   private def firstTime = initialize
-  override def initialize = Stopwatch.time("HistoryCachingRoom.initalize",() => {
+  override def initialize = Stopwatch.time("HistoryCachingRoom.initalize",{
     if (starting.getHasStarted) {
       starting.setHasStarted(false)
     } else {
@@ -366,13 +366,13 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     showInterest
     history
   }
-  private def updateSnapshots = Stopwatch.time("HistoryCachingRoom.updateSnapshots", () => {
+  private def updateSnapshots = Stopwatch.time("HistoryCachingRoom.updateSnapshots",{
     if (history.lastVisuallyModified > lastRender){
       snapshots = makeSnapshots
       lastRender = history.lastVisuallyModified
     }
   })
-  private def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName), () => {
+  private def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName),{
     roomMetaData match {
       case s:SlideRoom => {
         val thisHistory = isPublic match {
@@ -406,7 +406,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       }
     }
   }
-  override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",() => {
+  override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",{
     history.addStanza(s)
     s match {
       case c:MeTLCanvasContent if (history.lastVisuallyModified > lastRender) => {
@@ -420,15 +420,15 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
 
 class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends HistoryCachingRoom(configName,location,creator,roomMetaData) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
-  def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge", () => {
+  def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
     //stanzasToIgnore = stanzasToIgnore ::: List(s)
     trace("xmppBridge, sending to server: %s".format(s))
     sendStanzaToServer(s)
   })
-  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge", () => {
+  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge",{
     MeTLXConfiguration.xmppServer.foreach(_.relayMessageToXmppMuc(location,s))
   })
-  override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendToChildren", () => {
+  override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendToChildren",{
     val (matches,remaining) = stanzasToIgnore.partition(sti => sti.equals(s))
     matches.length match {
       case 1 => stanzasToIgnore = remaining

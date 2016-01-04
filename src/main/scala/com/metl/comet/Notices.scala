@@ -69,15 +69,15 @@ class Notices extends CometActor with CometListener with Logger{
   private var visibleMessages = List.empty[MeTLMessage]
   def registerWith = MeTLSpamServer
   private def removeMessage(message:MeTLMessage) = Hide(message.id) & Replace(message.id,NodeSeq.Empty)
-  private def remove(message:MeTLMessage) = Stopwatch.time("Notices:remove(%s)".format(message),()=>{
+  private def remove(message:MeTLMessage) = Stopwatch.time("Notices:remove(%s)".format(message),{
     visibleMessages = visibleMessages.filterNot(m => m == message)
     partialUpdate(removeMessage(message))
   })
-  private def doSpam(spam:MeTLSpam) = Stopwatch.time("Notices:doSpam(%s)".format(spam),()=>{
+  private def doSpam(spam:MeTLSpam) = Stopwatch.time("Notices:doSpam(%s)".format(spam),{
     (".spamMessage" #> ((n:NodeSeq) => a(()=>removeMessage(spam),(".noticeContent" #> spam.content).apply(n),("id",spam.id)))
     ).apply(StackTemplateHolder.spamTemplate)
   })
-  private def doInteractable(message:MeTLInteractableMessage) = Stopwatch.time("Notices:doInteractable(%s)".format(message),()=>{
+  private def doInteractable(message:MeTLInteractableMessage) = Stopwatch.time("Notices:doInteractable(%s)".format(message),{
     message.onDone(()=>remove(message))
       (".noticeLabel *" #> message.title.openOr("Response") &
         ".noticeContent" #> ajaxForm(message.seq) &
@@ -95,7 +95,7 @@ class Notices extends CometActor with CometListener with Logger{
   override def render = NodeSeq.Empty
   override def lowPriority = {
     case Clear => {}
-    case message:MeTLMessage=> Stopwatch.time("Notices:message",()=>{
+    case message:MeTLMessage=> Stopwatch.time("Notices:message",{
       val removalFunction = visibleMessages.find(m => m.uniqueId == message.uniqueId).map(em => removeMessage(em)).getOrElse(Noop)
       visibleMessages = message :: visibleMessages
       partialUpdate(removalFunction & PrependHtml(id,renderMessage(message)))

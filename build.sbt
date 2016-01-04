@@ -67,17 +67,17 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml" % "3.13",
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
-    "io.github.stackableregiments" %% "common-utils" % "0.2.+",
-    "io.github.stackableregiments" %% "metldata" % "3.4.+",
-    "io.github.stackableregiments" %% "lift-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "form-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "cas-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "openid-connect-authentication" % "0.2.+",
-    "io.github.stackableregiments" %% "metl2011" % "3.9.+",
-    "io.github.stackableregiments" %% "metl-h2" % "3.6.+",
+    "io.github.stackableregiments" %% "common-utils" % "0.3.+",
+    "io.github.stackableregiments" %% "metldata" % "3.6.+",
+    "io.github.stackableregiments" %% "lift-authentication" % "0.3.+",
+    "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
+    "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
+    "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
+    "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
+    "io.github.stackableregiments" %% "metl2011" % "3.10.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.7.+",
 //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
-    "io.github.stackableregiments" %% "lift-extensions" % "0.1.+"
+    "io.github.stackableregiments" %% "lift-extensions" % "0.2.+"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
