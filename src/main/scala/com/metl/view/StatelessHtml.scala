@@ -16,6 +16,7 @@ import java.util.zip.{ZipInputStream,ZipEntry}
 import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
+import net.liftweb.json._
 
 import java.util.zip._
 
@@ -229,14 +230,14 @@ object StatelessHtml extends Stemmer with Logger {
       zos.write(tup._2,0,tup._2.length)
     })
     zos.close()
-    val zipBytes = baos.toByteArray() 
+    val zipBytes = baos.toByteArray()
     baos.close()
     zipBytes
   }
   def yawsHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsHistory(%s)".format(jid),() => {
-      val xml = <history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>
-      val filename = "combined.xml"
-      val xmlBytes = xml.toString.getBytes("UTF-8")
+    val xml = <history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>
+    val filename = "combined.xml"
+    val xmlBytes = xml.toString.getBytes("UTF-8")
     Full(InMemoryResponse(constructZip(List((filename,xml.toString.getBytes("UTF-8")))),byteArrayHeaders("all.zip"),Nil,200))
   })
   def yawsPrimaryKey:Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsPrimaryKey",() => {
@@ -456,30 +457,44 @@ object StatelessHtml extends Stemmer with Logger {
       case _ => c
     }).headOption.map(n => XmlResponse(n))
   }
-  def addSubmissionSlideToConversationAtIndex(jid:String,index:Int,submissionId:String):Box[LiftResponse] = {
+  def addSubmissionSlideToConversationAtIndex(jid:String,index:Int,req:Req):Box[LiftResponse] = {
     val username = Globals.currentUser.is
     val server = config.name
     val c = config.detailsOfConversation(jid)
     serializer.fromConversation(shouldModifyConversation(c) match {
       case true => {
-        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
-        newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
-          val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
-          MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions.find(sub => sub.identity == submissionId).map(sub => {
-            val now = new java.util.Date().getTime
-            val identity = "%s%s".format(username,now.toString)
-            val tempSubImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-            val dimensions = com.metl.renderer.SlideRenderer.measureImage(tempSubImage)
-            val subImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-            slideRoom ! LocalToServerMeTLStanza(subImage)
-          })
-        })
-        newC
+        val json = req.body.map(bytes => net.liftweb.json.parse(IOUtils.toString(bytes)))
+        println("addSubmissionSlideToConversationAtIndex",json)
+        json match {
+          case Full(JArray(identities)) => {
+            println("addSubmissionSlideToConversationAtIndex",identities)
+            val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+            newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
+              val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
+              val existingSubmissions = MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions
+              println("addSubmissionSlideToConversationAtIndex: existing submissions",existingSubmissions)
+              var y:Double = 0.0
+              identities.map{ case JString(submissionId) => existingSubmissions.find(sub => sub.identity == submissionId).map(sub => {
+                println("Matching submission to be inserted",sub)
+                val now = new java.util.Date().getTime
+                val identity = nextFuncName
+                val tempSubImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+                val dimensions = com.metl.renderer.SlideRenderer.measureImage(tempSubImage)
+                val subImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top + y,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+                y += dimensions.height
+                slideRoom ! LocalToServerMeTLStanza(subImage)
+              })}
+            })
+            newC
+          }
+          case _ => {
+            c
+          }
+        }
       }
       case _ => c
     }).headOption.map(n => XmlResponse(n))
   }
-
 
   def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
     val conv = config.detailsOfConversation(conversation)
