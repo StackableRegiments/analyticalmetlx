@@ -11,11 +11,11 @@ import scala.collection.mutable.{Map=>MutableMap}
 
 case class ClientConfiguration(xmppDomain:String,xmppUsername:String,xmppPassword:String,imageUrl:String)
 
-abstract class ConfigurationProvider {
+abstract class ConfigurationProvider extends Logger {
   val keys:MutableMap[String,String] = MutableMap.empty[String,String]
   keys.update("t","ejPass")
   def checkPassword(username:String,password:String):Boolean = {
-    println("checking: %s %s in %s".format(username,password,keys))
+    debug("checking: %s %s in %s".format(username,password,keys))
     keys.get(username.trim.toLowerCase()).exists(_ == password)
   }
   def getPasswords(username:String):Option[Tuple4[String,String,String,String]] = {
@@ -104,7 +104,7 @@ class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPas
     keys.update(yu,yawsPassword)
   })
   override def checkPassword(username:String,password:String):Boolean = {
-    println("checking: %s %s in %s".format(username,password,keys))
+    debug("checking: %s %s in %s".format(username,password,keys))
     ejabberdUsername.filter(_ == username).map(_u => password == ejabberdPassword).getOrElse(false) || 
     yawsUsername.filter(_ == username).map(_u => password == yawsPassword).getOrElse(false) ||
     keys.get(username).exists(_ == password)

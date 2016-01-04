@@ -16,12 +16,12 @@ import com.metl.model._
 import Globals._
 
 object Metl extends Metl
-class Metl {
+class Metl extends Logger  {
   def specific = {
     val name = "%s".format(Globals.currentUser.is)
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz} />
-    println("generating comet html: %s".format(output))
+    debug("generating comet html: %s".format(output))
     output
   }
 }

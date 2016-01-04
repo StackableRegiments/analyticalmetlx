@@ -3,9 +3,10 @@ package com.metl.model
 import com.metl.utils.{Stopwatch,SynchronizedWriteMap}
 import com.metl.comet.ReputationServer
 import scala.collection.mutable.{HashMap, SynchronizedMap}
+import net.liftweb.common.Logger
 
 case class Standing(who:String,formative:Int,summative:Int)
-object Reputation{
+object Reputation extends Logger{
   private val standingMap = new SynchronizedWriteMap[String,Int]{
     override def default(who:String):Int = {
       syncWrite(()=>{
@@ -18,7 +19,7 @@ object Reputation{
   def allStandings:List[Standing] = Stopwatch.time("Reputation:allStandings",()=>standingMap.map(st => Standing(st._1,st._2,0)).filter(a => a.isInstanceOf[Standing]).map(a => a.asInstanceOf[Standing]).toList)
   def populateStandingMap:Unit = Stopwatch.time("Reputation:populateStandingMap",()=>{
     Informal.findAll.foreach(i => addStanding(i.protagonist.is,i.action.is))
-    println("populated standingMap: %s".format(standingMap))
+    debug("populated standingMap: %s".format(standingMap))
   })
   def standing(who:String):Standing = Standing(who,standingMap(who),0)
   def addStanding(who:String,what:GainAction.Value):Unit = Stopwatch.time("Reputation:addStanding(%s,%s)".format(who,what),()=>{

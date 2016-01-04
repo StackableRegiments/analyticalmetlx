@@ -17,7 +17,7 @@ object SearchTemplates {
   def searchResultQuizLink = Templates(List("_searchResultQuizLink")).openOr(NodeSeq.Empty)
 }
 
-class SearchSnippet {
+class SearchSnippet extends Logger {
   object server extends RequestVar[ServerConfiguration](ServerConfiguration.default)
   object query extends RequestVar[String](S.param("q").openOr(""))
   object page extends RequestVar[Int](S.param("page").map(_.toInt).openOr(0))
@@ -29,7 +29,7 @@ class SearchSnippet {
       case q:String if (q.length > 0) => {
         val rawResults = server.searchForConversation(q)
         val results = rawResults.filter(c => c.shouldDisplayFor(Globals.currentUser.is,Globals.getUserGroups.map(eg => eg._2)))
-        println("rawResults: %s\r\nfilteredResults: %s".format(rawResults,results))
+        trace("rawResults: %s\r\nfilteredResults: %s".format(rawResults,results))
         "#searchResultsMetaTerms *" #> Text(q) & {
           results.length match {
             case 0 =>

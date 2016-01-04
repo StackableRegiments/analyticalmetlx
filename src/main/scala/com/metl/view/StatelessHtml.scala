@@ -24,7 +24,7 @@ import com.metl.model._
 /**
   * Use Lift's templating without a session and without state
   */
-object StatelessHtml extends Stemmer {
+object StatelessHtml extends Stemmer with Logger {
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
@@ -62,10 +62,10 @@ object StatelessHtml extends Stemmer {
     S.request.flatMap(_.request match {
       case hrs: net.liftweb.http.provider.servlet.HTTPRequestServlet =>{
         val file = hrs.req.getRealPath("static/offline/analytics.appcache")
-        println(file)
+        debug(file)
         val reader = new FileReader(file)
         val content = IOUtils.toByteArray(reader)
-        println(IOUtils.toString(content))
+        trace(IOUtils.toString(content))
         reader.close
         Full(InMemoryResponse(content,List(("Content-Type","text/cache-manifest")),Nil,200))
       }
@@ -93,7 +93,7 @@ object StatelessHtml extends Stemmer {
   def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity), () =>
     Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
       image.imageBytes.map(bytes => {
-        println("found bytes: %s (%s)".format(bytes,bytes.length))
+        debug("found bytes: %s (%s)".format(bytes,bytes.length))
         val dataUri = "data:image/png;base64,"+net.liftweb.util.SecurityHelpers.base64Encode(bytes)
         InMemoryResponse(IOUtils.toByteArray(dataUri),Boot.cacheStrongly,Nil,200)
       }).openOr(NotFoundResponse("image bytes not available"))
@@ -103,11 +103,11 @@ object StatelessHtml extends Stemmer {
     val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
     val history = room.getHistory
     val images = history.getImages
-    println("room: %s\r\nhistory: %s\r\nimages: %s\r\nurl: %s".format(room,history,images,url))
+    trace("room: %s\r\nhistory: %s\r\nimages: %s\r\nurl: %s".format(room,history,images,url))
     Full(images.find(_.source.exists(_ == url)).map(image => {
-      println("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,images,image))
+      trace("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,images,image))
       image.imageBytes.map(bytes => {
-        println("found bytes: %s (%s)".format(bytes,bytes.length))
+        trace("found bytes: %s (%s)".format(bytes,bytes.length))
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
         InMemoryResponse(bytes,headers,Nil,200)
       }).openOr(NotFoundResponse("image bytes not available"))
@@ -120,10 +120,10 @@ object StatelessHtml extends Stemmer {
       val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
       val history = room.getHistory
       val imageOption = history.getImageByIdentity(identity)
-      println("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,history.getImages,imageOption))
+      trace("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,history.getImages,imageOption))
       imageOption.map(image => {
         image.imageBytes.map(bytes => {
-          println("found bytes: %s (%s)".format(bytes,bytes.length))
+          trace("found bytes: %s (%s)".format(bytes,bytes.length))
           val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
           InMemoryResponse(bytes,headers,Nil,200)
         }).openOr(NotFoundResponse("image bytes not available"))
@@ -174,7 +174,7 @@ object StatelessHtml extends Stemmer {
       history.getInks.groupBy(_.author).flatMap{
         case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
       }).flatten
-    println(themes)
+    debug(themes)
     val themesByUser = themes.groupBy(_.author).map(kv =>
       <userTheme>
         <user>{kv._1}</user>
@@ -209,13 +209,13 @@ object StatelessHtml extends Stemmer {
       }
       case "Resource" => {
         val originalPath = "/%s/%s/%s/%s.%s".format(rootPart,stem(room),room,item,suffix)
-        println("yaws looking for: %s".format(originalPath))
+        debug("yaws looking for: %s".format(originalPath))
         val bytes = Array.empty[Byte] //stil need to find the right resource
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
         Full(InMemoryResponse(bytes,byteArrayHeaders("%s.%s".format(item,suffix)),Nil,200))
       }
       case _ => {
-        println("did not find an appropriate downloadable")
+        debug("did not find an appropriate downloadable")
         Empty
       }
     }
@@ -248,13 +248,13 @@ object StatelessHtml extends Stemmer {
     val pathParts = path.split("/").toList
     pathParts match {
       case List("Structure",stemmed,jid) if stem(jid)._1 == stemmed && filename == "structure.xml" => {
-        println("conversationDetails updated detected: %s".format(jid))
+        debug("conversationDetails updated detected: %s".format(jid))
       }
       case List("Resource",stemmed,jid) if stem(jid)._1 == stemmed => {
-        println("resource update detected: %s".format(jid))
+        debug("resource update detected: %s".format(jid))
       }
       case other => {
-        println("other detected (no action taken): %s".format(other))
+        debug("other detected (no action taken): %s".format(other))
       }
     }
     val identity = "not-yet-implemented"
@@ -709,7 +709,7 @@ object StatelessHtml extends Stemmer {
       })
     } catch {
       case e:Exception => {
-        println("exception in foreignConversationImport: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        error("exception in foreignConversationImport",e)
         Empty
       }
     }
@@ -730,7 +730,7 @@ object StatelessHtml extends Stemmer {
       Full(newConvWithAllSlides)
     } catch {
       case e:Exception => {
-        println("exception in foreignConversationImport: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        error("exception in foreignConversationImport",e)
         Empty
       }
     }
@@ -739,7 +739,7 @@ object StatelessHtml extends Stemmer {
 case class CopyContent(server:ServerConfiguration,from:History,to:RoomMetaData)
 case class CopyLocation(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
 
-object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
+object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor with Logger {
   val thisDuplicatorId = nextFuncName
   override def messageHandler = {
     case RoomJoinAcknowledged(server,room) => {}
@@ -770,7 +770,7 @@ object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor {
   }
 }
 
-class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName){
+class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName) with Logger {
   override def toMeTLImage(input:NodeSeq):MeTLImage = {
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)

@@ -30,8 +30,8 @@ import net.liftweb.mongodb._
 
 import scala.xml._
 
-class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) {
-  println("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
+class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) with Logger {
+  debug("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
   override def constructResponseWithMessages(req:Req,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",() => {
       val loginPageNode = (
         "%s [method]".format(formSelector) #> "POST" &
@@ -47,7 +47,7 @@ class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSele
           ).apply(formNode) 
         }} 
       ).apply(loginPage)
-      println("constructed: %s".format(loginPageNode))
+      debug("constructed: %s".format(loginPageNode))
       LiftRules.convertResponse(
         (loginPageNode,200),
         S.getHeaders(LiftRules.defaultHeaders((loginPageNode,req))),
@@ -57,12 +57,12 @@ class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSele
   })
 }
 
-object MeTLXConfiguration extends PropertyReader {
+object MeTLXConfiguration extends PropertyReader with Logger {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
   var clientConfig:Option[ClientConfiguration] = None
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
-    println("serverSide updateGlobalFunc: %s".format(c))
+    debug("serverSide updateGlobalFunc: %s".format(c))
     getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String) = {
@@ -127,7 +127,7 @@ object MeTLXConfiguration extends PropertyReader {
       if ((in \\ element).theSeq != Nil){
         if (!oneIsConfigured){
           ifConfigured(in,element,(n:NodeSeq) => {
-            println("configuring: %s".format(element))
+            debug("configuring: %s".format(element))
             oneIsConfigured = true
             elementToAction(element)(n)
           })
@@ -231,30 +231,30 @@ object MeTLXConfiguration extends PropertyReader {
     ifConfiguredFromGroup(authenticationNodes,Map(
       "saml" -> {(n:NodeSeq) => {
         def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
-          println("saml step 1: %s".format(la))
+          trace("saml step 1: %s".format(la))
           if ( la.authenticated ) {
-          println("saml step 2: authed")
+          trace("saml step 2: authed")
             Globals.currentUser(la.username)
-          println("saml step 3: set user")
+          trace("saml step 3: set user")
             var existingGroups:List[Tuple2[String,String]] = Nil
             if (Globals.groupsProviders != null){
-            println("saml step 4: groupsProviders not null")
+            trace("saml step 4: groupsProviders not null")
               Globals.groupsProviders.foreach(gp => {
-                println("saml step 5: groupProvider: %s".format(gp))
+                trace("saml step 5: groupProvider: %s".format(gp))
                 val newGroups = gp.getGroupsFor(la.username)
                 if (newGroups != null){
-                  println("saml step 6: newGroups: %s".format(newGroups))
+                  trace("saml step 6: newGroups: %s".format(newGroups))
                   existingGroups = existingGroups ::: newGroups
                 }
               })
             }
-            println("saml step 7: allGroups %s".format(existingGroups))
+            trace("saml step 7: allGroups %s".format(existingGroups))
             Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
-          println("saml step 8: completed %s".format(Globals.casState.is))
+          trace("saml step 8: completed %s".format(Globals.casState.is))
           }
         }
         val samlConf = getSAMLconfiguration(n)
-        println("samlConf: %s".format(samlConf))
+        debug("samlConf: %s".format(samlConf))
         LiftAuthAuthentication.attachAuthenticator(
           new SAMLAuthenticationSystem(
             new SAMLAuthenticator(
@@ -391,7 +391,7 @@ object MeTLXConfiguration extends PropertyReader {
           cc <- configurationProvider;
           creds <- cc.getPasswords("metlxMessageBus_"+new java.util.Date().getTime.toString)
         ) yield {
-          println("vending msgBusCreds: %s".format(creds))
+          debug("vending msgBusCreds: %s".format(creds))
           (creds._1,creds._2)
         }).getOrElse(("",""))
       },
@@ -400,7 +400,7 @@ object MeTLXConfiguration extends PropertyReader {
           cc <- configurationProvider;
           creds <- cc.getPasswords("metlxConversationListener_"+new java.util.Date().getTime.toString)
         ) yield {
-          println("vending convCreds: %s".format(creds))
+          debug("vending convCreds: %s".format(creds))
           (creds._1,creds._2)
         }).getOrElse(("",""))
       },
@@ -409,7 +409,7 @@ object MeTLXConfiguration extends PropertyReader {
           cc <- configurationProvider;
           creds <- cc.getPasswords("metlxHttp_"+new java.util.Date().getTime.toString)
         ) yield {
-          println("vending httpCreds: %s".format(creds))
+          debug("vending httpCreds: %s".format(creds))
           (creds._3,creds._4)
         }).getOrElse(("",""))
       }
@@ -438,11 +438,11 @@ object MeTLXConfiguration extends PropertyReader {
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     configs.values.foreach(c => {
       getRoom("global",c._1.name,GlobalRoom(c._1.name))
-      println("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
+      debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
-    println(configs)
+    info(configs)
   }
   def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))
   def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = {

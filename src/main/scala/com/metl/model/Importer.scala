@@ -114,20 +114,20 @@ object PowerpointVersion extends Enumeration {
   type PowerpointVersion = Value
   val PptXml, PptOle, NotParseable = Value
 }
-class PowerpointParser {
+class PowerpointParser extends Logger {
   protected def detectPptVersion(in:Array[Byte]):PowerpointVersion.Value = {
     try {
         org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(new ByteArrayInputStream(in)))
         PowerpointVersion.PptOle
     } catch {
       case e:Exception => {
-        println("not an OLE slideshow: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        trace("not an OLE slideshow: %s".format(e.getMessage))
         try {
           org.apache.poi.xslf.usermodel.XSLFSlideShowFactory.createSlideShow(new ByteArrayInputStream(in))
           PowerpointVersion.PptXml
         } catch {
           case ex:Exception => {
-            println("not an XML slideshow: %s\r\n%s".format(ex.getMessage,ex.getStackTraceString))
+            trace("not an XML slideshow: %s".format(ex.getMessage))
             PowerpointVersion.NotParseable
           }
         }
@@ -137,15 +137,15 @@ class PowerpointParser {
   def importAsImages(jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
     detectPptVersion(in) match {
       case PowerpointVersion.PptXml => {
-        println("version 2007+")
+        debug("version 2007+")
         new XSLFPowerpointParser().importAsImages(jid,new ByteArrayInputStream(in),server,author,magnification)
       }
       case PowerpointVersion.PptOle => {
-        println("version 2003")
+        debug("version 2003")
         new HSLFPowerpointParser().importAsImages(jid,new ByteArrayInputStream(in),server,author,magnification)
       }
       case _ => {
-        println("not sure of version")
+        debug("not sure of version")
         Map.empty[Int,History]
       }
     }
@@ -153,15 +153,15 @@ class PowerpointParser {
   def importAsShapes(jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
     detectPptVersion(in) match {
       case PowerpointVersion.PptXml => {
-        println("version 2007+")
+        debug("version 2007+")
         new XSLFPowerpointParser().importAsShapes(jid,new ByteArrayInputStream(in),server,author)
       }
       case PowerpointVersion.PptOle => {
-        println("version 2003")
+        debug("version 2003")
         new HSLFPowerpointParser().importAsShapes(jid,new ByteArrayInputStream(in),server,author)
       }
       case _ => {
-        println("not sure of version")
+        debug("not sure of version")
         Map.empty[Int,History]
       }
     }

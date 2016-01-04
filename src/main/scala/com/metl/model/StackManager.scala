@@ -28,14 +28,14 @@ import com.metl.model.Globals._
 
 case object Refresh
 
-object TopicManager{
+object TopicManager extends Logger {
   protected val cachedTopics = Stopwatch.time("TopicManager:cachedTopics",()=> new PeriodicallyRefreshingVar[List[Topic]](2 minutes,()=>{
-    println("TopicManager loading all topics")
+    debug("TopicManager loading all topics")
     try {
       Topic.findAll
     } catch {
       case e:Throwable => {
-        println("failed to get topics: %s".format(e.getMessage))
+        error("failed to get topics",e)
         List.empty[Topic]
       }
     }

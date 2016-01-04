@@ -41,7 +41,7 @@ abstract class RefreshingFlatFileGroupsProvider(path:String,refreshPeriod:String
   }
 }
 
-abstract class FileWatchingComprehender[T](path:String,refreshPeriod:String) { 
+abstract class FileWatchingComprehender[T](path:String,refreshPeriod:String) extends Logger { 
   protected val timespan = 5 minutes
   protected var lastModified:Long = 0
   protected def startingValue:T
@@ -49,7 +49,7 @@ abstract class FileWatchingComprehender[T](path:String,refreshPeriod:String) {
   protected var cache = new PeriodicallyRefreshingVar[Unit](timespan,() => {
     val newCheck = new java.io.File(path).lastModified()
     if (newCheck > lastModified){
-      println("file modification detected: %s".format(path))
+      debug("file modification detected: %s".format(path))
       lastCache = comprehendFile
       lastModified = newCheck
     }
@@ -57,8 +57,8 @@ abstract class FileWatchingComprehender[T](path:String,refreshPeriod:String) {
   protected def comprehendFile:T
 }
 
-class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends FileWatchingComprehender[List[Tuple2[String,String]]](path,refreshPeriod) with GroupsProvider {
-  println("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
+class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends FileWatchingComprehender[List[Tuple2[String,String]]](path,refreshPeriod) with GroupsProvider with Logger {
+  info("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override def getGroupsFor(username:String) = lastCache
   override protected def startingValue = Nil
   override protected def comprehendFile:List[Tuple2[String,String]] = {
@@ -71,13 +71,13 @@ class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends Fi
         case _ => {}
       }
     })
-    println("loaded groupData for %s: %s".format(path,rawData))
+    debug("loaded groupData for %s: %s".format(path,rawData))
     rawData
   }
 }
 
-class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) {
-  println("created new specificGroupsProvider(%s,%s)".format(path,refreshPeriod))
+class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) with Logger {
+  info("created new specificGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override def comprehendFile:Map[String,List[Tuple2[String,String]]] = {
     var rawData = Map.empty[String,List[Tuple2[String,String]]]
     Source.fromFile(path).getLines.foreach(line => {
@@ -88,12 +88,13 @@ class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends 
         case _ => {}
       }
     })
-    println("loaded groupData for %s: %s".format(path,rawData))
+    debug("loaded groupData for %s: %s".format(path,rawData))
     rawData
   }
 }
 
-class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) {
+class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) with Logger {
+  info("created new stLeoFlatFileGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override def comprehendFile:Map[String,List[Tuple2[String,String]]] = {
     var rawData = Map.empty[String,List[Tuple2[String,String]]]
     Source.fromFile(path).getLines.foreach(line => {
@@ -110,7 +111,7 @@ class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:String) extends Refr
         case _ => {}
       }
     })
-    println("loaded groupData for %s: %s".format(path,rawData))
+    debug("loaded groupData for %s: %s".format(path,rawData))
     rawData
   }
 }

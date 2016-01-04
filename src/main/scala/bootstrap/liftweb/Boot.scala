@@ -24,9 +24,9 @@ object Boot{
   )
 }
 
-class Boot {
+class Boot extends Logger {
   def boot {
-    println("Boot begins")
+    trace("Boot begins")
     LiftRules.addToPackages("com.metl")
 
     LiftRules.allowParallelSnippets.session.set(true)
@@ -34,10 +34,10 @@ class Boot {
 
     LiftRules.cometRequestTimeout = Full(25)
 
-    println("Config begins")
+    trace("Config begins")
     // this starts up our system - populates serverConfigurations, attaches CAS, attaches RestHelpers, etc.
     MeTLXConfiguration.initializeSystem
-    println("Routing begins")
+    trace("Routing begins")
     val defaultHeaders = LiftRules.defaultHeaders
     LiftRules.defaultHeaders = {
       case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.noCache
@@ -57,7 +57,7 @@ class Boot {
     LiftRules.passNotFoundToChain = false
     LiftRules.uriNotFound.prepend {
       case (Req("static":: rest,_,_),failure) => {
-        println("staticResource uriNotFound: %s".format(rest))
+        debug("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
       case _ => NotFoundAsResponse(RedirectResponse("/"))
@@ -96,6 +96,6 @@ class Boot {
     LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
-    println("Boot ends")
+    trace("Boot ends")
   }
 }

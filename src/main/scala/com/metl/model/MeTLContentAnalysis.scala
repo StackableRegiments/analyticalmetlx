@@ -3,10 +3,11 @@ package com.metl.model
 import dispatch._, Defaults._
 import com.metl.data._
 import net.liftweb.json._
+import net.liftweb.common.Logger
 
 case class Theme(author:String,text:String)
 
-object CanvasContentAnalysis {
+object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
   val analysisThreshold = 5
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
@@ -39,11 +40,11 @@ object CanvasContentAnalysis {
     val response = for(
       s <- f.right
     ) yield {
-      println(s)
+      debug(s)
       (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
     }
     val r = response()
-    println(r)
+    debug(r)
     r match {
       case Right(rs) => rs
       case _ => Nil
@@ -51,11 +52,11 @@ object CanvasContentAnalysis {
   }
   def extract(inks:List[MeTLInk]):List[String] = {
     if(inks.size < analysisThreshold) {
-      println("Not analysing themes for %s strokes".format(inks.size))
+      debug("Not analysing themes for %s strokes".format(inks.size))
       Nil
     }
     else{
-      println("Loading themes for %s strokes".format(inks.size))
+      debug("Loading themes for %s strokes".format(inks.size))
       val myScriptKey = "1b822746-8aa1-4b9c-8437-419f15ba71b4"
       val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
 
@@ -82,7 +83,7 @@ object CanvasContentAnalysis {
         labels.collect{ case JField(_,JString(s)) => s }
       }
       val r = response()
-      println(r)
+      debug(r)
       r match {
         case Right(rs) => rs
         case _ => Nil
