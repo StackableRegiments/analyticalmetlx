@@ -82,7 +82,7 @@ class VysperClientXmlSerializer extends GenericXmlSerializer("vysper") with Lift
       }
     }
   }
-  override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
+  override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", {
     /*
     val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat")).foldLeft(scala.xml.Null.asInstanceOf[scala.xml.MetaData])((acc,item) => {
       item match {

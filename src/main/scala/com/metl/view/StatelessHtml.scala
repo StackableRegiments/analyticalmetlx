@@ -28,7 +28,7 @@ import com.metl.model._
 object StatelessHtml extends Stemmer with Logger {
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
-    override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml", () => {
+    override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml",  {
       val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))
       val attrs = (additionalAttributes ::: (rootName match {
         case "quizOption" => List(("xmlns","monash:metl"))
@@ -52,14 +52,14 @@ object StatelessHtml extends Stemmer with Logger {
   private val fakeSession = new LiftSession("/", "fakeSession", Empty)
   private val config = ServerConfiguration.default
 
-  def summaries(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.summaries", () => {
+  def summaries(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.summaries", {
     val xml: Box[NodeSeq] = S.init(req, fakeSession) {
       S.runTemplate(List("summaries"))
     }
     xml.map(ns => XhtmlResponse(ns(0), Empty, Nil, Nil, 200, false))
   })
 
-  def appCache(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.appCache", () => {
+  def appCache(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.appCache", {
     S.request.flatMap(_.request match {
       case hrs: net.liftweb.http.provider.servlet.HTTPRequestServlet =>{
         val file = hrs.req.getRealPath("static/offline/analytics.appcache")
@@ -74,24 +74,24 @@ object StatelessHtml extends Stemmer with Logger {
     })
   })
 
-  def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", () => {
+  def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", {
     <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
   })
 
-  def search(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.search", () => {
+  def search(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.search", {
     req.param("query").map(q=>XmlResponse(loadSearch(q)))
   })
 
-  def setUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.setUserOptions", () => {
+  def setUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.setUserOptions", {
     req.body.map(bytes => {
       InMemoryResponse(Array.empty[Byte],Nil,Nil,200)
     })
   })
-  def getUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getUserOptions", () => {
+  def getUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getUserOptions",{
     Full(InMemoryResponse(config.getResource("userOptionsFor_%s".format(Globals.currentUser)),Nil,Nil,200))
   })
 
-  def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity), () =>
+  def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity), 
     Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
       image.imageBytes.map(bytes => {
         debug("found bytes: %s (%s)".format(bytes,bytes.length))
@@ -100,7 +100,7 @@ object StatelessHtml extends Stemmer with Logger {
       }).openOr(NotFoundResponse("image bytes not available"))
     }).getOrElse(NotFoundResponse("image not available"))))
 
-  def proxyImageUrl(slideJid:String,url:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyImageUrl(%s)".format(url),() => {
+  def proxyImageUrl(slideJid:String,url:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyImageUrl(%s)".format(url),{
     val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
     val history = room.getHistory
     val images = history.getImages
@@ -116,7 +116,7 @@ object StatelessHtml extends Stemmer with Logger {
       NotFoundResponse("image not available")
     }))
   })
-  def proxy(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxy(%s)".format(identity), () => {
+  def proxy(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxy(%s)".format(identity), {
     Full({
       val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
       val history = room.getHistory
@@ -131,7 +131,7 @@ object StatelessHtml extends Stemmer with Logger {
       }).getOrElse(NotFoundResponse("image not available"))
     })
   })
-  def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), () => {
+  def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), {
     Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getQuizByIdentity(identity).map(quiz => {
       quiz.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
@@ -139,11 +139,11 @@ object StatelessHtml extends Stemmer with Logger {
       }).openOr(NotFoundResponse("quiz image bytes not available"))
     }).getOrElse(NotFoundResponse("quiz not available")))
   })
-  def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), () => {
+  def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), {
     val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
   })
-  def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy()".format(conversationJid,identity), () => {
+  def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy()".format(conversationJid,identity), {
     Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
       sub.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
@@ -151,24 +151,24 @@ object StatelessHtml extends Stemmer with Logger {
       }).openOr(NotFoundResponse("submission image bytes not available"))
     }).getOrElse(NotFoundResponse("submission not available")))
   })
-  def loadDetails(jid:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadDetails", () => {
+  def loadDetails(jid:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadDetails", {
     serializer.fromConversation(config.detailsOfConversation(jid)).head
   })
-  def details(jid:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.details", () => {
+  def details(jid:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.details", {
     Full(XmlResponse(loadDetails(jid)))
   })
 
-  def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), () => {
+  def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
-  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), () => {
+  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
     val phrases = List(
       history.collect{case t:MeTLText => t.text}.map(txt => tryo((xml.XML.loadString(txt) \\ "Run").text).openOr("")),
       CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
     <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
   })
-  def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), () => {
+  def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
     val themes = List(
       history.getTexts.map(t => Theme(t.author,t.text)).toList,
@@ -183,16 +183,16 @@ object StatelessHtml extends Stemmer with Logger {
         </userTheme>)
     <userThemes>{themesByUser}</userThemes>
   })
-  def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),() => {
+  def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),{
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
   })
-  def themes(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(req.param("source")), () => {
+  def themes(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(req.param("source")), {
     req.param("source").map(jid=> XmlResponse(nouns(jid)))
   })
-  def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
+  def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), {
     req.param("source").map(jid=> XmlResponse(loadHistory(jid)))
   })
-  def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
+  def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), {
     req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
   })
 
@@ -203,7 +203,7 @@ object StatelessHtml extends Stemmer with Logger {
       "Content-Disposition" -> "attachment; filename=%s".format(filename)
     )
   }
-  def yawsResource(rootPart:String,room:String,item:String,suffix:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsResource(%s/%s)".format(rootPart,room,item,suffix),() => {
+  def yawsResource(rootPart:String,room:String,item:String,suffix:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsResource(%s/%s)".format(rootPart,room,item,suffix),{
     rootPart match {
       case "Structure" if item == "structure" && suffix == "xml" => {
         Full(XmlResponse(serializer.fromConversation(config.detailsOfConversation(room)).head))
@@ -234,18 +234,18 @@ object StatelessHtml extends Stemmer with Logger {
     baos.close()
     zipBytes
   }
-  def yawsHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsHistory(%s)".format(jid),() => {
+  def yawsHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsHistory(%s)".format(jid),{
     val xml = <history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>
     val filename = "combined.xml"
     val xmlBytes = xml.toString.getBytes("UTF-8")
     Full(InMemoryResponse(constructZip(List((filename,xml.toString.getBytes("UTF-8")))),byteArrayHeaders("all.zip"),Nil,200))
   })
-  def yawsPrimaryKey:Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsPrimaryKey",() => {
+  def yawsPrimaryKey:Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsPrimaryKey",{
     val newConv = config.createConversation("createdForTheKey-%s".format(new java.util.Date().getTime.toString),Globals.currentUser.is)
     config.deleteConversation(newConv.jid.toString)
     Full(PlainTextResponse("{id,%s}.".format(newConv.jid),Nil,200))
   })
-  def yawsUploadNested(path:String,filename:String,overwrite:Boolean,bytes:Array[Byte])():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsUploadNested(%s,%s,%s,%s)".format(path,filename,overwrite,bytes.length),() => {
+  def yawsUploadNested(path:String,filename:String,overwrite:Boolean,bytes:Array[Byte])():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsUploadNested(%s,%s,%s,%s)".format(path,filename,overwrite,bytes.length),{
     val pathParts = path.split("/").toList
     pathParts match {
       case List("Structure",stemmed,jid) if stem(jid)._1 == stemmed && filename == "structure.xml" => {
@@ -262,17 +262,17 @@ object StatelessHtml extends Stemmer with Logger {
     Full(XmlResponse(<resource url={identity}/>))
   })
 
-  def fullClientHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), () => {
+  def fullClientHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), {
     req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>))
   })
-  def mergedHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), () => {
+  def mergedHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), {
     req.param("source").map(jid=> {
       req.param("username").map(user => {
         XmlResponse(loadMergedHistory(jid,user))
       }).getOrElse(NotFoundResponse("username not provided"))
     })
   })
-  def describeHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(req.param("source")),() => {
+  def describeHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(req.param("source")),{
     req.param("source").map(jid=>{
       val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
       val history = room.getHistory
@@ -337,7 +337,7 @@ object StatelessHtml extends Stemmer with Logger {
       }
     })
   })
-  def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),() => {
+  def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),{
     val conv = config.detailsOfConversation(conversation)
     for (
       slide <- conv.slides.find(_.id.toString == slideId);
@@ -349,7 +349,7 @@ object StatelessHtml extends Stemmer with Logger {
       XmlResponse(node)
     }
   })
-  def updateConversation(onBehalfOfUser:String,conversationJid:String,req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.updateConversation(%s)".format(conversationJid),() => {
+  def updateConversation(onBehalfOfUser:String,conversationJid:String,req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.updateConversation(%s)".format(conversationJid),{
     val conv = config.detailsOfConversation(conversationJid)
     for (
       newConvBytes <- req.body;
@@ -616,7 +616,7 @@ object StatelessHtml extends Stemmer with Logger {
     })
     histories
   }
-  def importConversation(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",() => {
+  def importConversation(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
     (for (
       xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
@@ -630,7 +630,7 @@ object StatelessHtml extends Stemmer with Logger {
       XmlResponse(node)
     })
   })
-  def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",() => {
+  def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
     (for (
       xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
@@ -800,7 +800,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     val y = getDoubleByName(input,"y")
     MeTLImage(config,m.author,m.timestamp,tag,source,Full(imageBytes),pngBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
   }
-  override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",() => {
+  override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",{
     canvasContentToXml("image",input,List(
       <tag>{input.tag}</tag>,
       <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
@@ -810,7 +810,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
       <y>{input.y}</y>
     ))
   })
-  override def toMeTLQuiz(input:NodeSeq):MeTLQuiz = Stopwatch.time("GenericXmlSerializer.toMeTLQuiz", () => {
+  override def toMeTLQuiz(input:NodeSeq):MeTLQuiz = Stopwatch.time("GenericXmlSerializer.toMeTLQuiz", {
     val m = parseMeTLContent(input,config)
     val created = getLongByName(input,"created")
     val question = getStringByName(input,"question") match {
@@ -824,7 +824,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     val options = getXmlByName(input,"quizOption").map(qo => toQuizOption(qo)).toList
     MeTLQuiz(config,m.author,m.timestamp,created,question,id,newUrl,quizImage,isDeleted,options,m.audiences)
   })
-  override def fromMeTLQuiz(input:MeTLQuiz):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLQuiz", () => {
+  override def fromMeTLQuiz(input:MeTLQuiz):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLQuiz", {
     metlContentToXml("quiz",input,List(
       <created>{input.created}</created>,
       <question>{input.question}</question>,
@@ -833,7 +833,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
       <options>{input.options.map(o => fromQuizOption(o))}</options>
     ) ::: input.imageBytes.map(ib => List(<imageBytes>{base64Encode(ib)}</imageBytes>)).openOr(List.empty[Node]))
   })
-  override def toSubmission(input:NodeSeq):MeTLSubmission = Stopwatch.time("GenericXmlSerializer.toSubmission", () => {
+  override def toSubmission(input:NodeSeq):MeTLSubmission = Stopwatch.time("GenericXmlSerializer.toSubmission", {
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)
     val title = getStringByName(input,"title")
@@ -846,14 +846,14 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     }).toList
     MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
   })
-  override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", () => {
+  override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
     canvasContentToXml("screenshotSubmission",input,List(
       <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
       <title>{input.title}</title>,
       <time>{input.timestamp.toString}</time>
     ) ::: input.blacklist.map(bl => <blacklist><username>{bl.username}</username><highlight>{ColorConverter.toRGBAString(bl.highlight)}</highlight></blacklist> ).toList)
   })
-  override def toMeTLFile(input:NodeSeq):MeTLFile = Stopwatch.time("GenericXmlSerializer.toMeTLFile",() => {
+  override def toMeTLFile(input:NodeSeq):MeTLFile = Stopwatch.time("GenericXmlSerializer.toMeTLFile",{
     val m = parseMeTLContent(input,config)
     val name = getStringByName(input,"name")
     val id = getStringByName(input,"id")
@@ -861,7 +861,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
     MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
   })
-  override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",() => {
+  override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",{
     metlContentToXml("file",input,List(
       <name>{input.name}</name>,
       <id>{input.id}</id>

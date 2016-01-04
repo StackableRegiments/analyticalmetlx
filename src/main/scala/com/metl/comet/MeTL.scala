@@ -650,34 +650,34 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     }
   )
   override def lowPriority = {
-    case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", () => updateRooms(roomInfo))
-    case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", () => sendMeTLStanzaToPage(metlStanza))
+    case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
+    case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
     case c:ClientMessage => clientMessageBroker.processMessage(c)
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
   override def autoIncludeJsonCode = true
-  override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), () => {
+  override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
     debug("created metlactor")
     //joinRoomByJid(username)
     joinRoomByJid("global")
     // joinRoomByJid("global","loopback")
   })
-  private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),() => {
+  private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
     rooms.get((serverName,jid)) match {
       case None => RoomJoiner ! RoomJoinRequest(jid,username,serverName,userUniqueId,this)
       case _ => {}
     }
   })
-  private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.leaveRoomByJid(%s)".format(jid),() => {
+  private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.leaveRoomByJid(%s)".format(jid),{
     rooms.get((serverName,jid)) match {
       case Some(s) => RoomJoiner ! RoomLeaveRequest(jid,username,serverName,userUniqueId,this)
       case _ => {}
     }
   })
-  override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId), () => {
+  override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
     leaveAllRooms(true)
     super.localShutdown()
   })
@@ -817,7 +817,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   }
   override def lifespan = Full(5 minutes)
 
-  private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms", () => {
+  private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
     debug("roomInfo received: %s".format(roomInfo))
     debug("updateRooms: %s".format(roomInfo))
     roomInfo match {
@@ -862,13 +862,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       case _ => {}
     }
   })
-  private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName), () => {
+  private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
     serializer.toMeTLData(jVal) match {
       case m:MeTLStanza => sendStanzaToServer(m,serverName)
       case _ => {}
     }
   })
-  private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName), () => {
+  private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName),{
     trace("OUT -> %s".format(stanza))
     stanza match {
       case m:MeTLMoveDelta => {
@@ -975,7 +975,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       }
     }
   })
-  private def sendMeTLStanzaToPage(metlStanza:MeTLStanza):Unit = Stopwatch.time("MeTLActor.sendMeTLStanzaToPage", () => {
+  private def sendMeTLStanzaToPage(metlStanza:MeTLStanza):Unit = Stopwatch.time("MeTLActor.sendMeTLStanzaToPage",{
     trace("IN -> %s".format(metlStanza))
     metlStanza match {
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
