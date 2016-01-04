@@ -464,18 +464,18 @@ object StatelessHtml extends Stemmer with Logger {
     serializer.fromConversation(shouldModifyConversation(c) match {
       case true => {
         val json = req.body.map(bytes => net.liftweb.json.parse(IOUtils.toString(bytes)))
-        println("addSubmissionSlideToConversationAtIndex",json)
+        debug("addSubmissionSlideToConversationAtIndex",json)
         json match {
           case Full(JArray(identities)) => {
-            println("addSubmissionSlideToConversationAtIndex",identities)
+            debug("addSubmissionSlideToConversationAtIndex: %s".format(identities))
             val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
             newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
               val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
               val existingSubmissions = MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions
-              println("addSubmissionSlideToConversationAtIndex: existing submissions",existingSubmissions)
+              trace("addSubmissionSlideToConversationAtIndex: existing submissions",existingSubmissions)
               var y:Double = 0.0
               identities.map{ case JString(submissionId) => existingSubmissions.find(sub => sub.identity == submissionId).map(sub => {
-                println("Matching submission to be inserted",sub)
+                trace("Matching submission to be inserted",sub)
                 val now = new java.util.Date().getTime
                 val identity = nextFuncName
                 val tempSubImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
