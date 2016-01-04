@@ -22,8 +22,8 @@ trait Stemmer {
   }
 }
 
-object MeTLRestHelper extends RestHelper with Stemmer {
-  println("MeTLRestHelper inline")
+object MeTLRestHelper extends RestHelper with Stemmer with Logger{
+  debug("MeTLRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   val crossDomainPolicy = {
     <cross-domain-policy>
@@ -133,8 +133,8 @@ object MeTLRestHelper extends RestHelper with Stemmer {
     })
   }
 }
-object WebMeTLRestHelper extends RestHelper {
-  println("WebMeTLRestHelper inline")
+object WebMeTLRestHelper extends RestHelper with Logger{
+  debug("WebMeTLRestHelper inline")
   serve {
     case Req("application" :: "snapshot" :: Nil,_,_) => () => {
       val slide = S.param("slide").openOr("")
@@ -143,8 +143,8 @@ object WebMeTLRestHelper extends RestHelper {
     }
   }
 }
-object MeTLStatefulRestHelper extends RestHelper {
-  println("MeTLStatefulRestHelper inline")
+object MeTLStatefulRestHelper extends RestHelper with Logger {
+  debug("MeTLStatefulRestHelper inline")
   val DEMO_TEACHER = "Mr Roboto"
   val serializer = new GenericXmlSerializer("rest")
   serve {
@@ -196,10 +196,10 @@ object MeTLStatefulRestHelper extends RestHelper {
       } yield {
         val serverConfig = ServerConfiguration.default
         val c = serverConfig.detailsOfConversation(conversationJid)
-        println("Forced to join conversation %s".format(conversationJid))
+        debug("Forced to join conversation %s".format(conversationJid))
         CurrentConversation(Full(c))
         if (c.slides.exists(s => slide.toLowerCase.trim == s.id.toString.toLowerCase.trim)){
-          println("Forced move to slide %s".format(slide))
+          debug("Forced move to slide %s".format(slide))
           CurrentSlide(Full(slide))
         }
       }
@@ -221,8 +221,8 @@ object MeTLStatefulRestHelper extends RestHelper {
       RedirectResponse("/board")
     }
     case r @ Req(List("upload"),_,_) =>{
-      println("Upload registered in MeTLStatefulRestHelper")
-      println(r.body)
+      debug("Upload registered in MeTLStatefulRestHelper")
+      trace(r.body)
         () => Stopwatch.time("MeTLStatefulRestHelper.upload",() => {
           r.body.map(bytes => {
             val filename = S.params("filename").head
@@ -233,8 +233,8 @@ object MeTLStatefulRestHelper extends RestHelper {
         })
     }
     case r @ Req(List("uploadDataUri"),_,_) =>{
-      println("UploadDataUri registered in MeTLStatefulRestHelper")
-      println(r.body)
+      debug("UploadDataUri registered in MeTLStatefulRestHelper")
+      trace(r.body)
         () => Stopwatch.time("MeTLStatefulRestHelper.upload",() => {
           r.body.map(dataUriBytes => {
             val dataUriString = IOUtils.toString(dataUriBytes)
@@ -249,14 +249,14 @@ object MeTLStatefulRestHelper extends RestHelper {
     }
     case r @ Req(List("logDevice"),_,_) => () => {
       r.userAgent.map(ua => {
-        println("UserAgent:"+ua)
+        debug("UserAgent:"+ua)
         PlainTextResponse("loggedUserAgent")
       })
     }
   }
 }
-object WebMeTLStatefulRestHelper extends RestHelper {
-  println("WebMeTLStatefulRestHelper inline")
+object WebMeTLStatefulRestHelper extends RestHelper with Logger{
+  debug("WebMeTLStatefulRestHelper inline")
   serve {
     case Req("slide" :: jid :: size :: Nil,_,_) => () => Full(HttpResponder.snapshot(jid,size))
     case Req("quizImage" :: jid :: id :: Nil,_,_) => () => Full(HttpResponder.quizImage(jid,id))

@@ -16,12 +16,13 @@ import net.liftweb.util.Helpers._
 import java.awt.Shape
 import java.awt.geom._
 import net.liftweb.util.Helpers._
+import net.liftweb.common.Logger
 
 case class Dimensions(left:Double,top:Double,right:Double,bottom:Double,width:Double,height:Double)
 
 class RenderDescription(val width:Int,val height:Int)
 
-object SlideRenderer {
+object SlideRenderer extends Logger {
 
   protected val JAVA_DEFAULT_DPI = 72.0
   protected val WINDOWS_DEFAULT_DPI = 96.0
@@ -103,8 +104,7 @@ object SlideRenderer {
       }
     } catch {
       case e:Throwable => {
-        e.printStackTrace
-        println("failed to measure image: %s with exception %s".format(metlImage,e.getMessage))
+        error("failed to measure image: %s",e)
         errorSize
       }
     }
@@ -124,8 +124,7 @@ object SlideRenderer {
       }
     } catch {
       case e:Throwable => {
-        e.printStackTrace
-        println("failed to render image: %s with exception %s".format(metlImage, e.getMessage))
+        error("failed to render image: %s",e)
       }
     }
   })
@@ -142,8 +141,7 @@ object SlideRenderer {
       g.fill(new Stroke(metlInk.points,metlInk.thickness))
     } catch {
       case e:Throwable => {
-        e.printStackTrace
-        println("failed to render ink: %s with exception %s".format(metlInk, e.getMessage))
+        error("failed to render ink: %s",e)
       }
     }
   })
@@ -172,10 +170,10 @@ object SlideRenderer {
   }
   protected def measureTextLines(metlText:MeTLText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureTextLines", () => {
     if (isRichText(metlText)){
-      //println("richText: %s".format(metlText))
+      trace("richText: %s".format(metlText))
       measureRichTextLines(metlText,g)
     } else {
-      //println("poorText: %s".format(metlText))
+      trace("poorText: %s".format(metlText))
       measurePoorTextLines(metlText,g)
     }
   })
@@ -240,7 +238,7 @@ object SlideRenderer {
             })
         }).toList}
 
-        //println("runsByLine: %s".format(runsByLine))
+        trace("runsByLine: %s".format(runsByLine))
 
         val baseFont:Font = new Font(metlText.family, metlText.weight match{
           case "Normal" => metlText.style match {
@@ -261,7 +259,7 @@ object SlideRenderer {
           if (listOfRuns.length > 0) {
             val runs:List[TextRunDefinition] = listOfRuns.head
             if (runs.map(_.text.length).sum == 0){
-              //println("empty line, so dropping it by blankLineHeight and fetching the next: %s".format(blankLineHeight))
+              trace("empty line, so dropping it by blankLineHeight and fetching the next: %s".format(blankLineHeight))
               drawLines(preparedLines,listOfRuns.drop(1),y + blankLineHeight)
             } else if (runs.length > 0){
               val (nextPreparedLines,nextY) = metlText.width match {
@@ -295,7 +293,7 @@ object SlideRenderer {
                 case _ =>{
                   var runOffsetX:Double = 0.0
                   def renderLine(internalPreparedLines:List[PreparedTextLine],textRuns:List[TextRunDefinition],lineY:Float,freshLine:Boolean = true,wraps:Int = 0):Tuple2[List[PreparedTextLine],Float] = {
-                    //println("renderLine(%s,%s,%s,%s,%s)".format(internalPreparedLines,textRuns,lineY,freshLine,wraps))
+                    trace("renderLine(%s,%s,%s,%s,%s)".format(internalPreparedLines,textRuns,lineY,freshLine,wraps))
                     if (freshLine)
                       runOffsetX = 0
                     textRuns.filterNot(_.text.length == 0).headOption.map(run => {
@@ -335,18 +333,18 @@ object SlideRenderer {
                           val originalRun = run.copy(text = run.text.take(measurer.getPosition()))
                           val newRun = run.copy(text = run.text.drop(measurer.getPosition())) 
                           val newRuns = newRun :: textRuns.drop(1)
-                          //println("textRun split across lines\r\noriginalRun: %s\r\nnewRun: %s".format(originalRun,newRun))
+                          trace("textRun split across lines\r\noriginalRun: %s\r\nnewRun: %s".format(originalRun,newRun))
                           renderLine(newLines,newRuns,currentY + totalHeight, true, wraps + 1)
                         } else {
-                          //println("finished the run, getting another run")
+                          trace("finished the run, getting another run")
                           renderLine(newLines,textRuns.drop(1),lineY, false, wraps + 1)
                         }
                       } else {
                         if (freshLine){
-                          //println("run didn't fit at all on the line, so retrying it on a new line, dropping by blankHeight: %s".format(blankLineHeight))
+                          trace("run didn't fit at all on the line, so retrying it on a new line, dropping by blankHeight: %s".format(blankLineHeight))
                           renderLine(internalPreparedLines,textRuns,lineY + blankLineHeight,true,wraps) // I think this meant no layout fit, so we have to drop a line and try to layout again.
                         } else {
-                          //println("run didn't measure, so dropping it and continuing on this line")
+                          trace("run didn't measure, so dropping it and continuing on this line")
                           renderLine(internalPreparedLines,textRuns.drop(1),lineY,false,wraps)
                         }
                       }
@@ -359,12 +357,12 @@ object SlideRenderer {
               drawLines(nextPreparedLines ::: preparedLines,listOfRuns.drop(1),nextY)
             }
             else {
-              //println("empty line, so dropping it by blankLineHeight and fetching the next: %s".format(blankLineHeight))
+              trace("empty line, so dropping it by blankLineHeight and fetching the next: %s".format(blankLineHeight))
               drawLines(preparedLines,listOfRuns.drop(1),y + blankLineHeight)
             }
           }
           else {
-            //println("finished with the following list of prepared lines: \r\n%s".format(preparedLines))
+            trace("finished with the following list of prepared lines: \r\n%s".format(preparedLines))
             preparedLines
           }
         }
@@ -458,8 +456,7 @@ object SlideRenderer {
           run.layout.draw(g,run.x,run.y)
         } catch {
           case e:Throwable => {
-            e.printStackTrace
-            println("failed to render text: %s with exception %s".format(lines, e.getMessage))
+            error("failed to render text: %s",e)
           }
         }
       })

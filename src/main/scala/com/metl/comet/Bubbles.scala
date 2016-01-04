@@ -44,7 +44,7 @@ case object HideAll
 case class RemoteSilentQuestionRecieved(questionId:String)
 case class RemoteQuestionRecieved(questionId:String)
 
-object BubbleConstants{
+object BubbleConstants extends Logger{
   //spec change has decided that it's not possible to vote a discussion point lower than zero
   setDefaultAdmins
   def setDefaultAdmins = {
@@ -120,7 +120,7 @@ object StackTemplateHolder{
   def clientMessageTemplate = if (Globals.isDevMode) getClientMessageTemplate else useClientMessageTemplate
 }
 
-class QuestionPresenter(val context:StackQuestion) extends Discussable(context,context) {
+class QuestionPresenter(val context:StackQuestion) extends Discussable(context,context) with Logger {
   override val id = context._id.is.toString
   val summaryId = "q%s".format(id)
   val about = context.about.is
@@ -253,7 +253,7 @@ class QuestionPresenter(val context:StackQuestion) extends Discussable(context,c
   }
 }
 
-case class Answer(parent:StackQuestion,context:StackAnswer) extends Discussable(parent,context) {
+case class Answer(parent:StackQuestion,context:StackAnswer) extends Discussable(parent,context) with Logger {
   lazy val about = context.about
   override val id = context.id.toString
   def update(discussionPoint:DiscussionPoint) = stackWorker ! WorkUpdateAnswer(parent,context,discussionPoint,timeticks)
@@ -375,7 +375,7 @@ case class Answer(parent:StackQuestion,context:StackAnswer) extends Discussable(
       "Link"
   }</a>)
 }
-case class Comment(parent:StackQuestion, context:StackComment) extends Discussable(parent,context) {
+case class Comment(parent:StackQuestion, context:StackComment) extends Discussable(parent,context) with Logger {
   private var commentsElement = nextFuncName
   override val id = context.id.toString
   lazy val about = context.about
@@ -509,7 +509,7 @@ object Discussable {
   val dateFormat = new SimpleDateFormat("""EEEE d/M, HH:mm""")
 }
 
-abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) extends Rated{
+abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) extends Rated with Logger {
   def activateNewInputBox(inputId:String,submitButtonId:String) = StackHelpers.activateNewInputBox(inputId,submitButtonId)
   def stackServer = StackServerManager.get(saveContext.teachingEvent.is)
   def stackWorker = StackServerManager.getWorker(saveContext.teachingEvent.is)
@@ -637,7 +637,7 @@ abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) ex
       })).apply(StackTemplateHolder.votingTemplate)
   }
 }
-trait StackRouter extends LiftActor with ListenerManager{
+trait StackRouter extends LiftActor with ListenerManager with Logger {
   def createUpdate = questions
   def questions:List[QuestionPresenter]
   def addQuestion(question:QuestionPresenter)
@@ -649,7 +649,7 @@ trait StackRouter extends LiftActor with ListenerManager{
         updateListeners(Silently(qp))
       })
     } catch {
-      case e:Throwable => println("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
+      case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
     }
   }
   def possiblyUpdateQuestionById(id:String) = {
@@ -660,7 +660,7 @@ trait StackRouter extends LiftActor with ListenerManager{
         updateListeners(qp)
       })
     } catch {
-      case e:Throwable => println("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
+      case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
     }
   }
   override def lowPriority = {
@@ -675,10 +675,10 @@ trait StackRouter extends LiftActor with ListenerManager{
     case d:Detail => Stopwatch.time("StackRouter:detail",()=>updateListeners(d))
     case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",()=>{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
     case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter",()=> {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
-    case other => println("StackRouter received unknown: %s".format(other))
+    case other => warn("StackRouter received unknown: %s".format(other))
   }
 }
-class StackServer(location:String) extends StackRouter {
+class StackServer(location:String) extends StackRouter with Logger{
   private var hasFetched = false
   private var evaluatedQuestions:List[QuestionPresenter] = List.empty[QuestionPresenter]
   override def addQuestion(question:QuestionPresenter) = Stopwatch.time("StackServer:addQuestion",()=>{
@@ -720,7 +720,7 @@ case class WorkOpenQuestion(context:StackQuestion,who:String,session:Box[LiftSes
 case class WorkOpenAnswer(parentContext:StackQuestion,context:StackAnswer,who:String,session:Box[LiftSession],when:Long) extends OpenRequest
 case class WorkOpenComment(parentContext:StackQuestion,context:StackComment,who:String,session:Box[LiftSession],when:Long) extends OpenRequest
 
-class StackWorker(location:String) extends LiftActor {
+class StackWorker(location:String) extends LiftActor with Logger {
   private lazy val stackServer = StackServerManager.get(location)
   override def messageHandler = {
     case WorkCreateQuestion(author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateQuestion",()=>{
@@ -835,7 +835,7 @@ class StackWorker(location:String) extends LiftActor {
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.DeletedCommentOnStack).conversation(location)
       Reputation.accrue(rep)
     })
-    case other => println("stackWorker received unknown message: %s".format(other.toString))
+    case other => warn("stackWorker received unknown message: %s".format(other.toString))
   }
 }
 
@@ -893,7 +893,7 @@ object StackOverflow extends StackOverflow {
       val newState = !currentState
       setCommentState(location,parentId,contextId,newState,who,session)
     })
-    case other => println("StackOverflow:localOpenAction received unknown message: %s".format(other))
+    case other => warn("StackOverflow:localOpenAction received unknown message: %s".format(other))
   }
   private lazy val openedComments = new SynchronizedWriteMap[Tuple2[String,String],List[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],List[String]],true,(k:Tuple2[String,String]) => List.empty[String])
   def getOpenedComments(location:Tuple2[String,String]) = {
@@ -948,7 +948,7 @@ object StackOverflow extends StackOverflow {
   }
 }
 
-class StackOverflow extends CometActor with CometListener{
+class StackOverflow extends CometActor with CometListener with Logger {
   private var starting:Boolean = true
   private lazy val location = currentStack.is.teachingEventIdentity.is
   lazy val stackServer = StackServerManager.get(location)
@@ -964,8 +964,7 @@ class StackOverflow extends CometActor with CometListener{
   private var detailedQuestion:Box[QuestionPresenter] = Empty
   override def exceptionHandler = {
     case e => {
-      println("StackOverflow threw exception: %s".format(e))
-      e.printStackTrace
+      error("StackOverflow threw exception: %s".format(e))
     }
   }
 
@@ -1040,7 +1039,7 @@ class StackOverflow extends CometActor with CometListener{
       StackOverflow.setRequestedDetailedQuestion((currentUser.is,location),newDetailedQuestionId)
       partialUpdate(updateDetailedQuestion & setDefaultClientSideExpansionState)
     })
-    case unknown => println("StackOverflow: I do not know what to do with -> %s".format(unknown))
+    case unknown => warn("StackOverflow: I do not know what to do with -> %s".format(unknown))
   }
   def updateDetailedQuestion = {
     Call("$('#questionDetail').slideUp",
@@ -1107,7 +1106,7 @@ class StackOverflow extends CometActor with CometListener{
     case JObject(List(JField("command",JString(PING_LATENCY)), JField("params",(JInt(start))))) =>{
       partialUpdate(Call("pongLatency",JInt(start)))
     }
-    case other => println("Stack did not understand: %s".format(other))
+    case other => warn("Stack did not understand: %s".format(other))
   }
   def pingLatency = Script(Function(PING_LATENCY,List.empty[String],jsonSend(PING_LATENCY,JsRaw("new Date().getTime()"))) & OnLoad(Call(PING_LATENCY)))
   def latencyGauge(x:NodeSeq) = {

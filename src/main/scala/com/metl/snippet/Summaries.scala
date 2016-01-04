@@ -21,7 +21,7 @@ import com.metl.model.Globals._
 import com.metl.model._
 import com.metl.comet._
 
-class Summaries {
+class Summaries extends Logger {
   private var topicNames = Map.empty[String,String]
   private def allQuestions ={
     def allQuestionsForTopic(topic:Topic) = {
@@ -76,7 +76,7 @@ class Summaries {
   }
   def render(x:NodeSeq):NodeSeq = {
     val items = allQuestions
-    println("Immediately rendering for %s stack items".format(items.length))
+    debug("Immediately rendering for %s stack items".format(items.length))
     Script(OnLoad(
       Call("updateStandings",JObject(List(Reputation.allStandings.map{
         case Standing(who,formative,_)=> JField(who,JInt(formative))

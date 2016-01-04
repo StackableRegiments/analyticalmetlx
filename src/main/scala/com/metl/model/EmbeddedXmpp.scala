@@ -1,10 +1,9 @@
 package com.metl.model
 
-import
-  _root_.net.liftweb._
+import _root_.net.liftweb._
 import util._
 import Helpers._
-import common._
+import common.{Logger=>LiftLogger,_}
 import http._
 import provider.servlet._
 import com.metl.utils._
@@ -65,39 +64,20 @@ import org.apache.vysper.xml.fragment.{Renderer => vXmlRenderer}
 import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.metl2011._
 
-class VysperClientXmlSerializer extends GenericXmlSerializer("vysper"){
+class VysperClientXmlSerializer extends GenericXmlSerializer("vysper") with LiftLogger {
   override def getValueOfNode(content:NodeSeq,name:String):String = {
-//    val result = super.getValueOfNode(content,name)
-    //println("getValueOfNode: %s %s".format(content,name))
+    trace("getValueOfNode: %s %s".format(content,name))
     (content \\ name).headOption.map(_.text).getOrElse("")
-    /*
-    val result = try{ 
-      val rn = (content \\ name)
-      //println("rn: "+rn)
-      val rnh = rn.head
-      //println("rnh: "+rn)
-      val res = rnh.text
-      //println("res: "+rn)
-      res
-    } catch {
-      case e:Exception => {
-        println("exception in getValueOfNode: %s %s".format(e.getMessage,e.getStackTraceString))
-        throw e       
-      }
-    }
-    //println("getValueOfNode: %s %s (%s)".format(name,result,content))
-    result
-    */
   }
   override def toMeTLData(in:NodeSeq):MeTLData = {
     try {
-    //println("toMeTLData started: %s".format(in))
+    trace("toMeTLData started: %s".format(in))
     val result = super.toMeTLData(in)
-    println("toMeTLData: %s => %s".format(in,result))
+    trace("toMeTLData: %s => %s".format(in,result))
     result
     } catch {
       case e:Exception => {
-        println("EXCEPTION in super.toMeTLData: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        error("EXCEPTION in super.toMeTLData",e)
         throw e
       }
     }
@@ -128,7 +108,7 @@ class VysperClientXmlSerializer extends GenericXmlSerializer("vysper"){
   })
 }
 
-class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,conference:Conference) {
+class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,conference:Conference) extends LiftLogger {
   val domainString = "local.temp"
   val conferenceString = "conference.%s".format(domainString)
   lazy val config = ServerConfiguration.default
@@ -137,39 +117,37 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
   val converter = new VysperXMLUtils
   protected val xmppMessageDeliveryStrategy = new IgnoreFailureStrategy()
   def relayMessageToMeTLRoom(message:Stanza):Unit = {
-    println("relaying message to room: %s".format(message))
+    trace("relaying message to room: %s".format(message))
     val to:Entity = message.getTo()
     val location:String = to.getNode()
     val payloads:JavaList[XMLFragment] = message.getInnerFragments()
-    //this is about to be a problem - how do I choose the appropriate serverConfiguration, I wonder?
-    //println("room chosen: %s %s".format(location,configName))
+    debug("room chosen: %s %s".format(location,configName))
     MeTLXConfiguration.getRoom(location,configName) match {
       case r:XmppBridgingHistoryCachingRoom => {
         JavaListUtils.foreach(payloads,(payload:XMLFragment) => {
           val nodes:NodeSeq = <message>{converter.toScala(payload)}</message>
-          //println("nodes: %s".format(nodes))
+          debug("nodes: %s".format(nodes))
           val md = serializer.toMeTLData(nodes) 
-          //println("ink? %s".format((nodes \ "ink")))
-          //println("metlData: %s".format(md))
+          trace("metlData: %s".format(md))
           md match {
             case m:MeTLStanza => {
-              //println("sending metlStanza from bridge: %s %s".format(r,m))
+              trace("sending metlStanza from bridge: %s %s".format(r,m))
               r.sendMessageFromBridge(m)
             }
             case unknownMessage => {
-              println("unknownMessage received: %s".format(unknownMessage))
+              warn("unknownMessage received: %s".format(unknownMessage))
             }
           }
         })
       }
       case otherRoom => {
-        println("room found but not an XmppBridingRoom: %s".format(otherRoom))
+        error("room found but not an XmppBridingRoom: %s".format(otherRoom))
       }
     }
   }
   def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = serializer.fromMeTLData(message) match {
     case n:Node => {
-      println("relaying message to xmppMuc: %s\r\n%s\r\n%s".format(location,message.toString,n.toString))
+      trace("relaying message to xmppMuc: %s\r\n%s\r\n%s".format(location,message.toString,n.toString))
       relayMessageNodeToXmppMuc(location,n)
     }
     case _ => {}
@@ -191,7 +169,7 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
           serverRuntimeContext.getStanzaRelay().relay(to, request, xmppMessageDeliveryStrategy)
         } catch {
           case e:DeliveryException => {
-            println("presence relaying failed %s".format(e))
+            warn("presence relaying failed %s".format(e))
           }
           case other => throw other
         }
@@ -200,27 +178,27 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
   }
 }
 
-class MeTLXAccountManagement extends AccountManagement {
+class MeTLXAccountManagement extends AccountManagement with LiftLogger {
   override def addUser(entity:Entity,password:String):Unit = addUser(entity.getNode,password)
   def addUser(username:String,password:String):Unit = {
-    //println("adding xmpp user: %s %s".format(username,password))
+    debug("adding xmpp user: %s %s".format(username,password))
     MeTLXConfiguration.configurationProvider.map(cp => cp.keys.update(username,password))
   }
   override def changePassword(entity:Entity,password:String):Unit = changePassword(entity.getNode,password)
   def changePassword(username:String,password:String):Unit = {
-    //println("changing xmpp password for: %s %s".format(username,password))
+    debug("changing xmpp password for: %s %s".format(username,password))
     MeTLXConfiguration.configurationProvider.map(cp => cp.keys.update(username,password))
   }
   override def verifyAccountExists(entity:Entity):Boolean = verifyAccountExists(entity.getNode)
   def verifyAccountExists(username:String):Boolean = {
     val result = MeTLXConfiguration.configurationProvider.map(cp => cp.keys.get(username).map(_ => true).getOrElse(false)).getOrElse(false)
-    //println("checking xmpp existence of: %s %s".format(username,result))
+    debug("checking xmpp existence of: %s %s".format(username,result))
     result
   }
 }
-class MeTLXAuthentication extends UserAuthorization  {
+class MeTLXAuthentication extends UserAuthorization with LiftLogger {
   override def verifyCredentials(jid:Entity,passwordCleartext:String,credentials:Object):Boolean = {
-    //println("jid: %s\r\nnode: %s".format(jid,jid.getNode()))
+    debug("jid: %s\r\nnode: %s".format(jid,jid.getNode()))
     verifyCredentials(jid.getNode(),passwordCleartext,credentials)
   }
   override def verifyCredentials(username:String,passwordCleartext:String,credentials:Object):Boolean = {
@@ -229,20 +207,20 @@ class MeTLXAuthentication extends UserAuthorization  {
     } else {
       MeTLXConfiguration.configurationProvider.map(cp => {
         val result = cp.checkPassword(username,passwordCleartext)
-          //println("checked credentials: %s %s => %s".format(username,passwordCleartext,result))
+        debug("checked credentials: %s => %s".format(username,/*passwordCleartext,*/result))
         result
       }).getOrElse(false)
     }
   }
 }
 
-class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:String) {
+class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:String) extends LiftLogger {
   protected var privateServer:Box[XMPPServer] = Empty
   protected var mucModule:Box[MeTLMucModule] = Empty
   protected var roomAdaptor:Box[EmbeddedXmppServerRoomAdaptor] = Empty
 
   def initialize = {
-    println("embedded xmpp server start handler")
+    info("embedded xmpp server start handler")
     //val providerRegistry = new MemoryStorageProviderRegistry()
     val providerRegistry = new OpenStorageProviderRegistry()
 
@@ -264,9 +242,9 @@ class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:
         }
         val supportedParams = describeSslParams(p.getServerRuntimeContext().getSslContext().getSupportedSSLParameters())
         val defaultParams = describeSslParams(p.getServerRuntimeContext().getSslContext().getDefaultSSLParameters())
-        println("initializing Vysper SSL\r\nsupportedParams: %s\r\ndefaultParams: %s".format(supportedParams,defaultParams))
+        info("initializing Vysper SSL\r\nsupportedParams: %s\r\ndefaultParams: %s".format(supportedParams,defaultParams))
 
-        println("embedded xmpp server started")
+        info("embedded xmpp server started")
         val metlMuc = new MeTLMucModule()
         p.addModule(new SoftwareVersionModule())
         p.addModule(new EntityTimeModule())
@@ -276,7 +254,7 @@ class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:
         p.addModule(metlMuc)
         mucModule = Full(metlMuc)
         roomAdaptor = metlMuc.getRoomAdaptor
-        println("embedded xmpp default modules loaded")
+        info("embedded xmpp default modules loaded")
       } catch {
         case e:Throwable => {
           throw e
@@ -288,9 +266,8 @@ class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:
   def relayMessageToXmppMuc(location:String,message:MeTLStanza):Unit = roomAdaptor.map(ra => ra.relayMessageToXmppMuc(location,message))
 }
 
-class MeTLMucModule(subdomain:String = "conference",conference:Conference = new Conference("Conference")) extends DefaultDiscoAwareModule with Component with ComponentInfoRequestListener with ItemRequestListener {
+class MeTLMucModule(subdomain:String = "conference",conference:Conference = new Conference("Conference")) extends DefaultDiscoAwareModule with Component with ComponentInfoRequestListener with ItemRequestListener with LiftLogger {
   protected var fullDomain:Entity = null
-  //      override final val logger:Logger = LoggerFactory.getLogger(classOf[MUCModule])
   protected var serverRuntimeContext:ServerRuntimeContext = null
   protected var stanzaProcessor:ComponentStanzaProcessor = null
 
@@ -309,13 +286,13 @@ class MeTLMucModule(subdomain:String = "conference",conference:Conference = new 
     val occupantStorageProvider:OccupantStorageProvider = serverRuntimeContext.getStorageProvider(classOf[OccupantStorageProvider]).asInstanceOf[OccupantStorageProvider]
     if (roomStorageProvider == null) {
       //logger.warn("No room storage provider found, using the default (in memory)");
-      println("No room storage provider found, using the default (in memory)");
+      debug("No room storage provider found, using the default (in memory)");
     } else {
       conference.setRoomStorageProvider(roomStorageProvider);
     }
     if (occupantStorageProvider == null) {
       //logger.warn("No occupant storage provider found, using the default (in memory)");
-      println("No occupant storage provider found, using the default (in memory)");
+      debug("No occupant storage provider found, using the default (in memory)");
     } else {
       conference.setOccupantStorageProvider(occupantStorageProvider);
     }
@@ -411,16 +388,13 @@ class MeTLMucModule(subdomain:String = "conference",conference:Conference = new 
   def getStanzaProcessor:StanzaProcessor = stanzaProcessor
 }
 
-class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:MeTLMucModule,useXmppHistory:Boolean = false) extends DefaultMessageHandler {
-
-  //final Logger logger = LoggerFactory.getLogger(MUCMessageHandler.class);
-
+class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:MeTLMucModule,useXmppHistory:Boolean = false) extends DefaultMessageHandler with LiftLogger {
   override protected def verifyNamespace(stanza:Stanza):Boolean = true
   private def createMessageErrorStanza(from:Entity,to:Entity,id:String, typeName:StanzaErrorType, errorCondition:StanzaErrorCondition, stanza:Stanza):Stanza = {
     MUCHandlerHelper.createErrorStanza("message", NamespaceURIs.JABBER_CLIENT, from, to, id, typeName.value(), errorCondition.value(), stanza.getInnerElements())
   }
   override protected def executeMessageLogic(stanza:MessageStanza, serverRuntimeContext:ServerRuntimeContext, sessionContext:SessionContext) = {
-    //println("Received message for MUC")
+    trace("Received message for MUC")
     val from:Entity = stanza.getFrom()
     val roomWithNickJid:Entity = stanza.getTo()
     val roomJid:Entity = roomWithNickJid.getBareJID()
@@ -432,7 +406,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
       if (roomWithNickJid.getResource() != null) {
         createMessageErrorStanza(roomJid, from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.BAD_REQUEST, stanza)
       } else {
-        //println("Received groupchat message to %s".format(roomJid))
+        trace("Received groupchat message to %s".format(roomJid))
         val room:Room = conference.findRoom(roomJid)
         if (room != null) {
           val sendingOccupant:Occupant = room.findOccupantByJID(from)
@@ -458,9 +432,9 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
                 }
               } else {
                 /* //commenting out the relay to all occupants, because in our app that should happpen AFTER it comes back from the MeTL system, and not before.  This was resulting in double-messaging.
-                //println("Relaying message to all room occupants")
+                trace("Relaying message to all room occupants")
                 JavaListUtils.foreach(room.getOccupants(),(occupant:Occupant) => {
-                  //println("Relaying message to %s".format(occupant))
+                  trace("Relaying message to %s".format(occupant))
                   val replaceAttributes:JavaList[Attribute] = new JavaArrayList[Attribute]()
                   replaceAttributes.add(new Attribute("from", roomAndSendingNick.getFullQualifiedName()))
                   replaceAttributes.add(new Attribute("to",occupant.getJid().getFullQualifiedName()))
@@ -474,21 +448,21 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
                 null
               }
             } else {
-              println("sending occupant doesn't have voice: %s".format(stanza))
+              warn("sending occupant doesn't have voice: %s".format(stanza))
               createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY,StanzaErrorCondition.FORBIDDEN, stanza)
             }
           } else {
-            println("sending occupant is null - I think that means it's not in the room: %s".format(stanza))
+            warn("sending occupant is null - I think that means it's not in the room: %s".format(stanza))
             createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.NOT_ACCEPTABLE, stanza)
           }
         } else {
-          println("room is null: %s".format(stanza))
+          warn("room is null: %s".format(stanza))
           createMessageErrorStanza(moduleDomain, from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.ITEM_NOT_FOUND, stanza)
         }
       }
     } else if (typeName == null || typeName == MessageStanzaType.CHAT || typeName == MessageStanzaType.NORMAL) {
       //private message
-      println("Received direct message to %s".format(roomWithNickJid))
+      debug("Received direct message to %s".format(roomWithNickJid))
       val room:Room = conference.findRoom(roomJid)
       if (room != null) {
         val sendingOccupant:Occupant = room.findOccupantByJID(from)
@@ -497,7 +471,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
           // check x element
           if (stanza.getVerifier().onlySubelementEquals("x", NamespaceURIs.JABBER_X_DATA)) {
             // void requests
-            //println("Received voice request for room %s".format(roomJid))
+            debug("Received voice request for room %s".format(roomJid))
             handleVoiceRequest(from, sendingOccupant, room, stanza, serverRuntimeContext)
             null
           } else if (stanza.getVerifier().onlySubelementEquals("x", NamespaceURIs.XEP0045_MUC_USER)){
@@ -514,7 +488,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
             // must be sent to an existing occupant in the room
             if (receivingOccupant != null) {
               val roomAndSendingNick:Entity = new EntityImpl(room.getJID(), sendingOccupant.getNick())
-              //println("Relaying message to %s".format(receivingOccupant))
+              trace("Relaying message to %s".format(receivingOccupant))
               val replaceAttributes:JavaList[Attribute] = new JavaArrayList[Attribute]()
               replaceAttributes.add(new Attribute("from", roomAndSendingNick.getFullQualifiedName()))
               replaceAttributes.add(new Attribute("to", receivingOccupant.getJid().getFullQualifiedName()))
@@ -624,17 +598,14 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
       serverRuntimeContext.getStanzaRelay().relay(receiver, stanza, new IgnoreFailureStrategy())
     } catch {
       case e:DeliveryException => {
-        println("presence relaying failed %s".format(e))
+        error("presence relaying failed",e)
       }
       case other => throw other
     }
   }
 }
 
-class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXmppHistory:Boolean = false) extends DefaultPresenceHandler {
-
-  //    final Logger logger = LoggerFactory.getLogger(MUCPresenceHandler.class);
-
+class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXmppHistory:Boolean = false) extends DefaultPresenceHandler with LiftLogger {
   override protected def verifyNamespace(stanza:Stanza):Boolean = true
 
   protected def createPresenceErrorStanza(from:Entity, to:Entity, id:String, typeName:String, errorName:String):Stanza = {
@@ -689,7 +660,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
     }
     if (room.isInRoom(newOccupantJid)) {
       // user is already in room, change nick
-      println("%s has requested to change nick in room %s".format(newOccupantJid, roomJid))
+      debug("%s has requested to change nick in room %s".format(newOccupantJid, roomJid))
       // occupant is already in room/
       val occupant:Occupant = room.findOccupantByJID(newOccupantJid)
       //                              val occupants:List[Occupant] = room.getOccupants().toArray().toList
@@ -723,7 +694,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
         }
       }
     } else {
-      println("%s has requested to enter room %s".format(newOccupantJid, roomJid))
+      debug("%s has requested to enter room %s".format(newOccupantJid, roomJid))
       var nickConflict:Boolean = room.isInRoom(nick)
       var nickRewritten:Boolean = false
       var counter:Int = 1
@@ -796,7 +767,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
         val history:JavaList[Stanza] = room.getHistory().createStanzas(newOccupant,includeJid,History.fromStanza(stanza))
         relayStanzas(newOccupantJid,history,serverRuntimeContext)
       }
-      println("%s successfully entered room %s".format(newOccupantJid, roomJid))
+      debug("%s successfully entered room %s".format(newOccupantJid, roomJid))
     }
     return null;
   }
@@ -846,7 +817,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
     }
     val roomAndOccupantNick:Entity = new EntityImpl(room.getJID(), existingOccupant.getNick())
     val presenceToNewOccupant:Stanza = MUCStanzaBuilder.createPresenceStanza(roomAndOccupantNick, newOccupant.getJid(), null, NamespaceURIs.XEP0045_MUC_USER, new MucUserItem(existingOccupant.getAffiliation(), existingOccupant.getRole()))
-    //println("Room presence from %s sent to %s".format(newOccupant,roomAndOccupantNick))
+    debug("Room presence from %s sent to %s".format(newOccupant,roomAndOccupantNick))
     relayStanza(newOccupant.getJid(), presenceToNewOccupant, serverRuntimeContext)
   }
   protected def sendNewOccupantPresenceToExisting(newOccupant:Occupant,existingOccupant:Occupant,room:Room,serverRuntimeContext:ServerRuntimeContext,nickRewritten:Boolean):Unit = {
@@ -866,7 +837,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
         inner.add(new Status(StatusCode.NICK_MODIFIED))
     }
     val presenceToExisting:Stanza = MUCStanzaBuilder.createPresenceStanza(roomAndNewUserNick, existingOccupant.getJid(), null, NamespaceURIs.XEP0045_MUC_USER, inner)
-    //println("Room presence from %s sent to %s".format(roomAndNewUserNick, existingOccupant))
+    debug("Room presence from %s sent to %s".format(roomAndNewUserNick, existingOccupant))
     relayStanza(existingOccupant.getJid(), presenceToExisting, serverRuntimeContext)
   }
   protected def sendChangeNickUnavailable(changer:Occupant, oldNick:String, receiver:Occupant, room:Room, serverRuntimeContext:ServerRuntimeContext):Unit = {
@@ -880,7 +851,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
       inner.add(new Status(StatusCode.OWN_PRESENCE))
     }
     val presenceToReceiver:Stanza = MUCStanzaBuilder.createPresenceStanza(roomAndOldNick, receiver.getJid(), PresenceStanzaType.UNAVAILABLE, NamespaceURIs.XEP0045_MUC_USER, inner)
-    //println("Room presence from %s sent to %s".format(roomAndOldNick, receiver))
+    debug("Room presence from %s sent to %s".format(roomAndOldNick, receiver))
     relayStanza(receiver.getJid(), presenceToReceiver, serverRuntimeContext)
   }
   protected def sendChangeShowStatus(changer:Occupant, receiver:Occupant, room:Room, show:String, status:String, serverRuntimeContext:ServerRuntimeContext):Unit = {
@@ -892,7 +863,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
     //            new Status(StatusCode.OWN_PRESENCE).insertElement(builder);
     //        }
     builder.addPreparedElement(new X(NamespaceURIs.XEP0045_MUC_USER, new MucUserItem(changer, includeJid, true)))
-    //println("Room presence from %s sent to %s".format(roomAndNick, receiver))
+    debug("Room presence from %s sent to %s".format(roomAndNick, receiver))
     relayStanza(receiver.getJid(), builder.build(), serverRuntimeContext)
   }
 
@@ -940,7 +911,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
       serverRuntimeContext.getStanzaRelay().relay(receiver, stanza, new IgnoreFailureStrategy())
     } catch {
       case e:DeliveryException => {
-        println("presence relaying failed %s".format(e))
+        error("presence relaying failed",e)
       }
       case other => throw other
     }
@@ -986,14 +957,14 @@ object JavaListUtils {
   }
 }
 
-class VysperXMLUtils {
+class VysperXMLUtils extends LiftLogger {
   def vRender(input:XMLFragment):String = {
     val result = input match {
       case t:XMLText => t.getText
       case e:XMLElement => new vXmlRenderer(e).getComplete()
       case other => "unable to render: %s".format(other)
     }
-    //println("vRender: %s".format(input.toString,result))
+    trace("vRender: %s".format(input.toString,result))
     result
   }
   def toVysper(scalaNode:Node):XMLFragment = {
@@ -1021,17 +992,17 @@ class VysperXMLUtils {
         new XMLElement(namespace,label,prefix,attributes,children)
       }
       case other => {
-        println("other found: %s (%s)".format(other, other.getClass.toString))
+        warn("other found: %s (%s)".format(other, other.getClass.toString))
         null.asInstanceOf[XMLFragment]
       }
     }
-    //println("toVysper: %s -> %s".format(scalaNode,vRender(output)))
+    trace("toVysper: %s -> %s".format(scalaNode,vRender(output)))
     output
   }
   def toScala(vysperNode:XMLFragment):Node = {
     val output = vysperNode match {
       case t:XMLText => {
-        //println("toScala found text: %s".format(t.getText))
+        trace("toScala found text: %s".format(t.getText))
         Text(t.getText)
       }
       case e:XMLElement => {
@@ -1053,11 +1024,11 @@ class VysperXMLUtils {
         Elem(prefix,label,scalaAttributes,scope,child:_*)
       }
       case other => {
-        println("other found: %s (%s)".format(other, other.getClass.toString))
+        warn("other found: %s (%s)".format(other, other.getClass.toString))
         null.asInstanceOf[Node]
       }
     }
-    //println("toScala: %s -> %s".format(vRender(vysperNode),output))
+    trace("toScala: %s -> %s".format(vRender(vysperNode),output))
     output
   }
   protected def toMetaData(attributes:JavaList[Attribute]):MetaData = toMetaDataFromIterator(attributes.iterator)
@@ -1078,12 +1049,12 @@ class VysperXMLUtils {
   }
   protected def toAttributes(metaData:MetaData):JavaList[Attribute] = {
     val result = JavaListUtils.toJavaList(toAttributesList(metaData))
-    //println("toAttributes: %s".format(metaData))
+    trace("toAttributes: %s".format(metaData))
     result
   }
   protected def toAttributesList(metaData:MetaData):List[Attribute] = {
     val result = toAttributeTupleList(metaData).map(a => new Attribute(a._1,a._2))
-    //println("toAttributeList: %s => %s".format(metaData,result))
+    trace("toAttributeList: %s => %s".format(metaData,result))
     result
   }
   protected def toAttributeTupleList(metaData:MetaData):List[Tuple2[String,String]] = {
@@ -1092,7 +1063,7 @@ class VysperXMLUtils {
       case p:PrefixedAttribute => ((p.key, scalaAttributeValue(p.value)) :: toAttributeTupleList(metaData.next))
       case _ => List.empty[Tuple2[String,String]]
     }
-    //println("toAttributeTupleList: %s => %s".format(metaData,result))
+    trace("toAttributeTupleList: %s => %s".format(metaData,result))
     result
 
   }

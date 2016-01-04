@@ -19,7 +19,7 @@ import ElemAttr._
 import com.metl.model.Globals._
 import com.metl.model._
 
-object MeTLSpamServer extends LiftActor with ListenerManager{
+object MeTLSpamServer extends LiftActor with ListenerManager with Logger{
   private var latestNotice:MeTLMessage = Clear
   def createUpdate = latestNotice
   override def lowPriority = {
@@ -27,7 +27,7 @@ object MeTLSpamServer extends LiftActor with ListenerManager{
       latestNotice = notice
       updateListeners()
     }
-    case other => println("MeTLSpamServer received unknown message: %s".format(other))
+    case other => warn("MeTLSpamServer received unknown message: %s".format(other))
   }
 }
 trait MeTLMessage{
@@ -63,7 +63,7 @@ object Notices{
       session.sendCometActorMessage("Notices", Box(noticesName(currentUser.is)), message)
   }
 }
-class Notices extends CometActor with CometListener{
+class Notices extends CometActor with CometListener with Logger{
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   private val id = nextFuncName
   private var visibleMessages = List.empty[MeTLMessage]
@@ -100,6 +100,6 @@ class Notices extends CometActor with CometListener{
       visibleMessages = message :: visibleMessages
       partialUpdate(removalFunction & PrependHtml(id,renderMessage(message)))
     })
-    case other => println("Notices received unknown message: %s".format(other))
+    case other => warn("Notices received unknown message: %s".format(other))
   }
 }

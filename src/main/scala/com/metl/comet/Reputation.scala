@@ -22,21 +22,21 @@ import net.liftweb.json.JsonAST._
 case object RefreshAllStandings
 case object StartingRepActor
 
-object ReputationServer extends LiftActor with ListenerManager{
+object ReputationServer extends LiftActor with ListenerManager with Logger {
   def createUpdate = StartingRepActor
   override def lowPriority = {
     case reps:List[Informal] => Stopwatch.time("ReputationServer:lowPriority:list[Informal] (%s)".format(reps),()=> reps.foreach(rep => {}))//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0))))
     case rep:Informal => Stopwatch.time("ReputationServer:lowPriority:informal (%s)".format(rep),()=> {})//XMPPRepSyncActor ! ReputationSyncRequest(rep.protagonist.is,rep.action.toInt.openOr(0)))
     case local:Standing => Stopwatch.time("ReputationServer:lowPriority:standing (%s)".format(local),()=> updateListeners(local) )
     case other => {
-      println("Rep server received unknown message: %s".format(other.toString))
+      warn("Rep server received unknown message: %s".format(other.toString))
     }
   }
 }
 object ReputationActor{
   def local(message:Any, session:Box[LiftSession]):Unit = session.map(s => s.sendCometActorMessage("ReputationActor", Box(currentUser.is), message))
 }
-class ReputationActor extends CometActor with CometListener{
+class ReputationActor extends CometActor with CometListener with Logger {
   def registerWith = ReputationServer
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   private var currentStanding:Int = Reputation.standing(currentUser.is).formative
@@ -44,12 +44,12 @@ class ReputationActor extends CometActor with CometListener{
     case s:Standing => recieveStanding(s)
     case RefreshAllStandings => recieveRefreshAllStandings
     case StartingRepActor => {}
-    case other => println("ReputationActor received unknown message: %s".format(other.toString))
+    case other => warn("ReputationActor received unknown message: %s".format(other.toString))
   }
   def recieveStanding(s:Standing) = Stopwatch.time("ReputationActor:recieveStanding(%s)".format(s),()=>{partialUpdate(updatePersonalRep(s) & updateAll(s))})
   def recieveRefreshAllStandings = Stopwatch.time("ReputationActor:recieveRefreshAllStandings", ()=>{
     val allStandings = com.metl.model.Reputation.allStandings
-    println("updating all standings with: %s".format(allStandings))
+    debug("updating all standings with: %s".format(allStandings))
     partialUpdate(allStandings.foldLeft(Noop)((acc,item) => acc & updateAll(item)))
   })
   private def fadeOutAndRemove(id:String):JsCmd = Call("fadeOutAndRemove", "#%s".format(id))

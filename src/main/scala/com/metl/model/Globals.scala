@@ -42,7 +42,7 @@ trait PropertyReader {
   }
 }
 
-object Globals extends PropertyReader {
+object Globals extends PropertyReader with Logger {
   val configurationFileLocation = System.getProperty("metlx.configurationFile")
   List(configurationFileLocation).filter(prop => prop match {
     case null => true
@@ -51,8 +51,9 @@ object Globals extends PropertyReader {
   }) match {
     case Nil => {}
     case any => {
-      println("please ensure that the following properties are set on the command-line when starting the WAR: %s".format(any))
-      throw new Exception("properties not provided, server cannot start")
+      val e = new Exception("properties not provided, server cannot start")
+      error("please ensure that the following properties are set on the command-line when starting the WAR: %s".format(any),e)
+      throw e
     }
   }
   var isDevMode:Boolean = true

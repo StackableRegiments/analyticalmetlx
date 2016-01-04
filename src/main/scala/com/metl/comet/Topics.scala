@@ -19,7 +19,7 @@ import net.liftweb.http.SHtml._
 case class TopicActivity(topicIdentity:String)
 case class NewTopic(topic:Topic)
 
-object TopicServer extends LiftActor with ListenerManager{
+object TopicServer extends LiftActor with ListenerManager with Logger{
   def fetchFromDB = TopicManager.getAll
   var topics = fetchFromDB
   def getTopics = topics
@@ -33,11 +33,11 @@ object TopicServer extends LiftActor with ListenerManager{
       updateListeners(topics)
       updateListeners(topic)
     }
-    case other => println("TopicServer received unknown message: %s".format(other))
+    case other => warn("TopicServer received unknown message: %s".format(other))
   }
 }
 
-class TopicActor extends CometActor with CometListener{
+class TopicActor extends CometActor with CometListener with Logger {
   def registerWith = TopicServer
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   def namesHtmlCssBind(topics:List[Topic]) =
@@ -81,7 +81,7 @@ class TopicActor extends CometActor with CometListener{
   override def lowPriority = {
     case names:List[Topic] => Stopwatch.time("Topics:list[string]",()=>updateNames(names))
     case topic:Topic => Stopwatch.time("Topics:topicActivity",()=>indicateActivity(topic.identity))
-    case other => println("TopicActor received unknown message: %s".format(other))
+    case other => warn("TopicActor received unknown message: %s".format(other))
   }
   override def fixedRender = Stopwatch.time("Topics:fixedRender",()=>((BubbleConstants.fullAdmins(Globals.currentUser.is) match {
     case true => "#topicAddButton *" #> createTopicLink
