@@ -11,8 +11,8 @@ val scalaVersionString = "2.11.5"
 scalaVersion := scalaVersionString
 
 resolvers ++= Seq(
-  "snapshots"     at "http://oss.sonatype.org/content/repositories/snapshots",
-  "releases"        at "http://oss.sonatype.org/content/repositories/releases"
+  "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",
+  "releases"        at "https://oss.sonatype.org/content/repositories/releases"
 )
 
 seq(webSettings :_*)
@@ -68,7 +68,7 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "io.github.stackableregiments" %% "common-utils" % "0.3.+",
-    "io.github.stackableregiments" %% "metldata" % "3.6.+",
+    "io.github.stackableregiments" %% "metldata" % "3.6.1",
     "io.github.stackableregiments" %% "lift-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
