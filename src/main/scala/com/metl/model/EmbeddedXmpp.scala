@@ -678,7 +678,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
           val oldNick:String = occupant.getNick();
           // update the nick
           occupant.setNick(nick);
-
+          /* //not using presence, so disabling to improve traffic and reduce latency.
           // send out unavailable presences to all existing occupants
           val occupants = room.getOccupants()
           JavaListUtils.foreach(occupants,(receiver:Occupant) => {
@@ -691,6 +691,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
             //                                              for (val receiver:Occupant <- room.getOccupants()) {
             sendChangeNickAvailable(occupant, receiver, room, serverRuntimeContext);
           })
+          */
         }
       }
     } else {
@@ -750,6 +751,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
           newOccupant.setRole(Role.Moderator)
         }
       }
+      /* // we're not using presence, so let's turn it off entirely to improve performance and reduce traffic.
       // relay presence of all existing room occupants to the now joined occupant
       val occupants = room.getOccupants()
       JavaListUtils.foreach(occupants,(occupant:Occupant) => {
@@ -761,12 +763,16 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
         //                                      for (occupant:Occupant <- occupants) {
         sendNewOccupantPresenceToExisting(newOccupant, occupant, room, serverRuntimeContext, nickRewritten)
       })
+      */
+      /*
+       // never send discussion history to user
       // send discussion history to user
       if (useXmppHistory){
         val includeJid:Boolean = room.isRoomType(RoomType.NonAnonymous)
         val history:JavaList[Stanza] = room.getHistory().createStanzas(newOccupant,includeJid,History.fromStanza(stanza))
         relayStanzas(newOccupantJid,history,serverRuntimeContext)
       }
+      */
       debug("%s successfully entered room %s".format(newOccupantJid, roomJid))
     }
     return null;
@@ -790,11 +796,13 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
         } catch {
           case e:XMLSemanticError => {}
         }
+        /* // we're not using presences, so disable this for improved traffic.
         // relay presence of the newly added occupant to all existing occupants
         JavaListUtils.foreach(allOccupants,(occupant:Occupant) => {
           //                                      for (occupant:Occupant <= allOccupants) {
           sendExitRoomPresenceToExisting(exitingOccupant, occupant, room, statusMessage, serverRuntimeContext)
         })
+        */
         if (room.isRoomType(RoomType.Temporary) && room.isEmpty()) {
           conference.deleteRoom(roomJid)
         }
