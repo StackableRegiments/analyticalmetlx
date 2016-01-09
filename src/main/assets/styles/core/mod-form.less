@@ -251,13 +251,13 @@ input[type="checkbox"]+label+label, input[type="radio"]+label+label {clear:both;
 }*/
 .form-input-with-icon {
     .add-on {
-        border:2px solid #eee;
+        border:2px solid @form-borders;
         border-right:none;
         order:1;
     }
     .icon-search {
         background-color: transparent;
-        color: #eee;
+        color: @form-borders;
     }
     .input-search {
         border-left:none;
@@ -275,7 +275,7 @@ input[type="checkbox"]+label+label, input[type="radio"]+label+label {clear:both;
     }
     .btn-search {
         margin: 0;
-        background: #eee;
+        background: @form-borders;
         order:3;
         &:focus {
             background-color: @form-borders-highlight;
