@@ -16,7 +16,7 @@
         <button class="privacyButton fa fa-users" type="button" id="enableCollaboration"><div class="icon-txt">Share</div></button>
     </div>
 -->
-    <div class="button-toggle">
+    <div class="button-toggle" id="syncButtons">
         <button class="privacyButton fa fa-chain-broken" type="button" id="disableSync"><div class="icon-txt">Desync</div></button>
         <button class="privacyButton fa fa-refresh" type="button" id="enableSync"><div class="icon-txt">Sync</div></button>
     </div>
@@ -54,7 +54,11 @@
 				-->
 				<div id="imageTools" class="inactiveMode flex-container-column"></div>
 				<div id="textTools" class="inactiveMode flex-container-column"></div>
-		<div id="feedbackTools" class="inactiveMode flex-container-column"></div>
+				<div id="feedbackTools" class="inactiveMode flex-container-column">
+					<button id="submitScreenshotButton" class="modeSpecificTool btn-icon fa fa-submit-screenshot"><div class="icon-txt">Submit Screenshot</div></button>
+					<button id="submissionsButton" class="modeSpecificTool btn-icon fa fa-submissions"><div class="icon-txt">Submissions</div></button>
+					<button id="quizzesButton" class="modeSpecificTool btn-icon fa fa-quizzes"><div class="icon-txt">Quizzes</div></button>
+				</div>
         <div id="zoomTools" class="inactiveMode flex-container-column">
           <button id="zoomToOriginal" class="modeSpecificTool btn-icon fa fa-?"><div class="icon-txt">Reset</div></button>
           <button id="zoomToFull" class="modeSpecificTool btn-icon fa fa-arrows-alt"><div class="icon-txt">Auto fit</div></button>

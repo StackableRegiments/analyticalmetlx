@@ -3297,63 +3297,10 @@ var Modes = (function(){
         },
         feedback:(function(){
             var applyStateStyling = function(){
-                $("#feedbackTools").empty().append(roleAppropriateTools());
-                var currentConversation = Conversations.getCurrentConversation();
-                var enabled = currentConversation.permissions && currentConversation.permissions.studentCanPublish;
-                var enable = $("#enableCollaboration").unbind("click").on("click",function(){
-                    currentConversation = Conversations.getCurrentConversation();
-                    enabled = currentConversation.permissions.studentCanPublish;
-                    if(!enabled){
-                        Conversations.changeConversationToTutorial();
-                        enable.addClass("activePrivacy active");
-                    }
-                });
-                var disable = $("#disableCollaboration").unbind("click").on("click",function(){
-                    currentConversation = Conversations.getCurrentConversation();
-                    enabled = currentConversation.permissions.studentCanPublish;
-                    if(enabled){
-                        Conversations.changeConversationToLecture();
-                        disable.addClass("activePrivacy active");
-                    }
-                });
-                var sync = $("#enableSync").unbind("click").on("click",Conversations.enableSyncMove);
-                var desync = $("#disableSync").unbind("click").on("click",Conversations.disableSyncMove);
-                enable.removeClass("activePrivacy active");
-                disable.removeClass("activePrivacy active");
-                if(enabled){
-                    enable.addClass("activePrivacy active");
-                }
-                else{
-                    disable.addClass("activePrivacy active");
-                }
-                if(Conversations.isAuthor()){
-                    /*enable.show();
-                     disable.show();
-                     sync.hide();
-                     desync.hide();*/
-                    enable.removeClass('disabled');
-                    disable.removeClass('disabled');
-                    sync.addClass('disabled');
-                    desync.addClass('disabled');
-
-                }
-                else{
-                    /*
-                     enable.hide();
-                     disable.hide();
-                     sync.show();
-                     desync.show();
-                     */
-                    enable.addClass('disabled');
-                    disable.addClass('disabled');
-                    sync.removeClass('disabled');
-                    desync.removeClass('disabled');
-                }
-                $(".modeSpecificTool").removeClass(active);
                 switch(currentBackstage){
-                case "quizzes":$(".modeSpecificTool.quizzes").addClass(active);
+                case "quizzes":$("#quizzesButton").addClass(active);
                     break;
-                case "submissions":$(".modeSpecificTool.submissions").addClass(active);
+                case "submissions":$("#submissionButton").addClass(active);
                     break;
                 default:
                     break;
@@ -3361,81 +3308,8 @@ var Modes = (function(){
             };
             Progress.onConversationJoin["setConversationRole"] = function(){
                 applyStateStyling();
-                if(!Conversations.isAuthor()){
-                    Conversations.enableSyncMove();
-                }
             }
             Progress.conversationDetailsReceived["respectNewPermissions"] = applyStateStyling;
-
-            var teacherTools=function(){
-                var tools = $("<div />");
-                $("<div/>",{
-                    id:"submitScreenshotButton",
-                    class:"modeSpecificTool",
-                    text:"Submit screenshot"
-                }).on("click",bounceAnd(function(){
-                    var currentConversation = Conversations.getCurrentConversation();
-                    var currentSlide = Conversations.getCurrentSlideJid();
-                    if("jid" in currentConversation){
-                        submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
-                    }
-                    bounceButton(this);
-                })).appendTo(tools);
-                $("<div/>",{
-                    class:"modeSpecificTool quizzes",
-                    text:"Quizzes"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("quizzes");
-                })).appendTo(tools);
-                $("<div/>",{
-                    class:"modeSpecificTool submissions",
-                    text:"Submissions"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("submissions");
-                })).appendTo(tools);
-                return tools;
-            };
-            var studentTools=function(){
-                var tools = $("<div />");
-                $("<div/>",{
-                    id:"submitScreenshotButton",
-                    class:"modeSpecificTool",
-                    text:"Submit screenshot"
-                }).on("click",bounceAnd(function(){
-                    var currentConversation = Conversations.getCurrentConversation();
-                    var currentSlide = Conversations.getCurrentSlideJid();
-                    if("jid" in currentConversation){
-                        submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
-                    }
-                    bounceButton(this);
-                })).appendTo(tools);
-                /*
-                 $("<div/>",{
-                 id:"syncToTeacherButton",
-                 class:"modeSpecificTool",
-                 text:Conversations.getIsSyncedToTeacherDescriptor()
-                 }).on("click",function(){
-                 Conversations.toggleSyncMove();
-                 applyStateStyling();
-                 }).appendTo(tools);
-                 */
-                $("<div/>",{
-                    class:"modeSpecificTool quizzes",
-                    text:"Quizzes"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("quizzes");
-                })).appendTo(tools);
-                $("<div/>",{
-                    class:"modeSpecificTool submissions",
-                    text:"Submissions"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("submissions");
-                })).appendTo(tools);
-                return tools;
-            };
-            var roleAppropriateTools = function(){
-                return Conversations.shouldModifyConversation() ? teacherTools() : studentTools();
-            };
             return {
                 name:"feedback",
                 activate:function(){

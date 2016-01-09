@@ -336,6 +336,11 @@ var Conversations = (function(){
 					setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
 				});
 			}
+			if (isAuthor){
+				$("#syncButtons").hide();
+			} else {
+				$("#syncButtons").show();
+			}
 		};
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){

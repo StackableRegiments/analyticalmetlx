@@ -597,36 +597,25 @@ $(function(){
         }));
     });
     $("#toggleHighlighter").click(function(){
-        Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
+			Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
     });
+		$("#submissionsButton").on("click",function(){
+			showBackstage("submissions");
+		});
+		$("#quizzesButton").on("click",function(){
+			showBackstage("quizzes");
+		});
+		$("#submitScreenshotButton").on("click",function(){
+			var currentConversation = Conversations.getCurrentConversation();
+			var currentSlide = Conversations.getCurrentSlideJid();
+			if("jid" in currentConversation){
+					submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
+			}
+		});
+		$("#enableSync").on("click",Conversations.enableSyncMove);
+		$("#disableSync").on("click",Conversations.disableSyncMove);
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
     $("#progress").hide();
     setLoadProgress(8);
-		/*
-    var toggler = function(idFragment){
-        var element = $(sprintf("#restore%s",idFragment));
-        var toggleFuncField = sprintf("set%s",idFragment);
-        var toggled = false;
-        var setText = function(){
-            if(toggled){
-                element.text(sprintf("Restore %s",idFragment.toLowerCase()));
-            }
-            else{
-                element.text(sprintf("Hide %s",idFragment.toLowerCase()));
-            }
-        }
-        element.click(bounceAnd(function(){
-            //DeviceConfiguration[toggleFuncField](toggled);
-            //DeviceConfiguration.applyFit();
-            toggled = !toggled;
-            setText();
-        }));
-        setText();
-    }
-		*/
-
-//    toggler("Tools");
-//    toggler("Slides");
-//    DeviceConfiguration.applyFit();
 });
