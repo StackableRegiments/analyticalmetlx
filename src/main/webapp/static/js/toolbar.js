@@ -3336,25 +3336,27 @@ var Modes = (function(){
         })(),
         draw:(function(){
             var originalBrushes = Brushes.getDefaultBrushes();
-            var currentBrush;
+						var theseBrushes = _.map(originalBrushes,function(i){return _.clone(i);});
+            var currentBrush = theseBrushes[0];
             var erasing = false;
             var hasActivated = false;
 						var penSizeTemplate = undefined;
 						var penColorTemplate = undefined;
             return {
                 name:"draw",
-                brushes:_.map(originalBrushes,function(i){return _.clone(i);}),
+                brushes:theseBrushes,
                 activate:function(){
                     if(Modes.currentMode == Modes.draw){
                         return;
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
+                    $(".activeBrush").removeClass("activeBrush");
 										var drawTools = function(){
                         var container = $("#drawTools");
                         _.each(container.find(".pen"),function(button,i){
                             var brush = Modes.draw.brushes[i];
-                            $(button)
+                            var thisButton = $(button)
                                 .css({color:brush.color})
                                 .click(function(){
                                     $(".activeBrush").removeClass("activeBrush");
@@ -3362,9 +3364,11 @@ var Modes = (function(){
                                     currentBrush = brush;
                                     Modes.draw.drawingAttributes = currentBrush;
                                     erasing = false;
-                                })
-                                .find(".widthIndicator")
-                                .text(brush.width);
+                                });
+                            thisButton.find(".widthIndicator").text(brush.width);
+														if (brush == currentBrush){
+															thisButton.addClass("activeBrush");
+														}
                         });
 										};
                     if(!hasActivated){
