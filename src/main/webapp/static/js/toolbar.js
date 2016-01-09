@@ -3351,6 +3351,7 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
+										var drawAdvancedTools = function(){};
                     $(".activeBrush").removeClass("activeBrush");
 										var drawTools = function(){
                         var container = $("#drawTools");
@@ -3361,6 +3362,7 @@ var Modes = (function(){
                                 .click(function(){
                                     $(".activeBrush").removeClass("activeBrush");
                                     $(this).addClass("activeBrush");
+																		drawAdvancedTools(brush);
                                     currentBrush = brush;
                                     Modes.draw.drawingAttributes = currentBrush;
                                     erasing = false;
@@ -3389,7 +3391,7 @@ var Modes = (function(){
 													showBackstage("customizeBrush");
 												});
                     }
-                    var drawAdvancedTools = function(brush){
+                    drawAdvancedTools = function(brush){
                         var dots = $("#colors .dots");
                         var bars = $("#sizes .dots");
 												var updateOriginalBrush = function(){
