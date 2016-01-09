@@ -3339,6 +3339,8 @@ var Modes = (function(){
             var currentBrush;
             var erasing = false;
             var hasActivated = false;
+						var penSizeTemplate = undefined;
+						var penColorTemplate = undefined;
             return {
                 name:"draw",
                 brushes:_.map(originalBrushes,function(i){return _.clone(i);}),
@@ -3348,11 +3350,7 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-                    if(!hasActivated){
-                        hasActivated = true;
-                        currentBrush = Modes.draw.brushes[0];
-                        Modes.draw.drawingAttributes = currentBrush;
-
+										var drawTools = function(){
                         var container = $("#drawTools");
                         _.each(container.find(".pen"),function(button,i){
                             var brush = Modes.draw.brushes[i];
@@ -3368,74 +3366,79 @@ var Modes = (function(){
                                 .find(".widthIndicator")
                                 .text(brush.width);
                         });
+										};
+                    if(!hasActivated){
+												penSizeTemplate = $("#penSize .sizeDot").clone();
+												penColorTemplate = $("#penColor .colorDot").clone();
+                        hasActivated = true;
+                        currentBrush = Modes.draw.brushes[0];
+                        Modes.draw.drawingAttributes = currentBrush;
+												drawTools();
+                        var container = $("#drawTools");
                         container.find(".eraser").click(function(button){
                             $(".activeBrush").removeClass("activeBrush");
                             $(this).addClass("activeBrush");
                             erasing = true;
                         });
-                        container.find(".advancedTools").click(drawAdvancedTools);
+                        container.find(".advancedTools").on("click",function(){
+													drawAdvancedTools(currentBrush);
+													showBackstage("customizeBrush");
+												});
                     }
-
                     var drawAdvancedTools = function(brush){
-                        var dots = $("<div />",{
-                            class:"dots"
-                        });
-                        var bars = $("<div />",{
-                            class:"bars"
-                        });
+                        var dots = $("#colors .dots");
+                        var bars = $("#sizes .dots");
+												var updateOriginalBrush = function(){
+													Modes.draw.brushes[brush.index] = brush;
+												};
                         var colors = Colors.getAllNamedColors();
                         var widths = Brushes.getAllBrushSizes();
+												bars.empty();
                         widths.map(function(width){
-                            var sizeDot = $("<div />", {
-                                class: "sizeDot"
-                            }).css({
-                                "text-align":"center"
-                            }).click(function(){
-                                brush.width = width;
-                                currentBrush = brush;
-                                drawAdvancedTools(brush);
-                            })
-                            var bar = Canvas.circle(brush.color,width,60);
-                            console.log(width,brush.width);
-                            if (width == brush.width){
-                                sizeDot.addClass("activeTool");
-                            }
-                            sizeDot.append(bar)
-                            bars.append(sizeDot);
+													var sizeDot = penSizeTemplate.clone();
+													bars.append(sizeDot);
+													sizeDot.click(function(){
+														brush.width = width;
+														updateOriginalBrush();
+														currentBrush = brush;
+														drawTools();
+														drawAdvancedTools(brush);
+													});
+													var bar = Canvas.circle(brush.color,width,60);
+													console.log(width,brush.width);
+													if (width == brush.width){
+														sizeDot.addClass("activeTool");
+													}
+													sizeDot.append(bar)
                         });
-                        colors.map(function(color){
-                            var colorDot = $("<div />").css({
-                                "vertical-align":"middle"
-                            }).click(function(){
-                                brush.color = color.rgb;
-                                currentBrush = brush;
-                                drawAdvancedTools(brush);
-                            });
-                            var dot = Canvas.circle(color.rgb,50,50);
-                            if (color == brush.color){
-                                colorDot.addClass("activeTool");
-                            }
-                            colorDot.append(dot);
-                            dots.append(colorDot);
+                        dots.empty();
+												colors.map(function(color){
+													var colorDot = penColorTemplate.clone();
+													dots.append(colorDot);
+                          colorDot.on("click",function(){
+															brush.color = color.rgb;
+															currentBrush = brush;
+															updateOriginalBrush();
+															drawTools();
+															drawAdvancedTools(brush);
+													});
+													var dot = Canvas.circle(color.rgb,50,50);
+													if (color == brush.color){
+															colorDot.addClass("activeTool");
+													}
+													colorDot.append(dot);
                         });
-                        var offset = widths[widths.length-1];
-                        var highlighterModeText = brush.isHighlighter ? "highlighter" : "pen";
-                        var penModeControl = $("<div/>");
-                        var hlButton = $("<span/>",{
-                            text:"highlighter",
-                            class:"toolbar"
-
-                        }).on("click",function(){
+                        //var offset = widths[widths.length-1];
+                        var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
                             brush.isHighlighter = true;
                             currentBrush = brush;
+														updateOriginalBrush();
                             drawTools();
                             drawAdvancedTools(brush);
                         });
-                        var penButton = $("<span/>",{
-                            text:"pen",
-                            class:"toolbar"
-                        }).on("click",function(){
+												var penButton = $("#setPenToPen").unbind("click").on("click",function(){
                             brush.isHighlighter = false;
+														updateOriginalBrush();
                             currentBrush = brush;
                             drawTools();
                             drawAdvancedTools(brush);
@@ -3447,13 +3450,16 @@ var Modes = (function(){
                             penButton.addClass("activeTool");
                             hlButton.removeClass("activeTool");
                         }
+												/*
                         $("#colors").html(dots);
                         $("#sizes").html(bars);
-                        $("#penMode").html(penModeControl.append(penButton).append(hlButton));
+												*/
+												/*
                         $("#colors td").css({
                             width:px(offset*3),
                             height:px(offset*3)
                         });
+												*/
                         Progress.call("onLayoutUpdated");
                     }
                     $("#resetPenButton").empty().text("reset pen").click(function(){
