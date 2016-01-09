@@ -3529,7 +3529,7 @@ var Modes = (function(){
                             strokeCollected(currentStroke.join(" "));
                         }
                     };
-
+										drawTools();
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
