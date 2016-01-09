@@ -3447,11 +3447,11 @@ var Modes = (function(){
                             drawAdvancedTools(brush);
                         });
                         if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-                            hlButton.addClass("activeTool");
-                            penButton.removeClass("activeTool");
+                            hlButton.addClass("activeTool active");
+                            penButton.removeClass("activeTool active");
                         } else {
-                            penButton.addClass("activeTool");
-                            hlButton.removeClass("activeTool");
+                            penButton.addClass("activeTool active");
+                            hlButton.removeClass("activeTool active");
                         }
                         Progress.call("onLayoutUpdated");
                     }
