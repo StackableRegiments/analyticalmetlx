@@ -3336,25 +3336,27 @@ var Modes = (function(){
         })(),
         draw:(function(){
             var originalBrushes = Brushes.getDefaultBrushes();
-            var currentBrush;
+						var theseBrushes = _.map(originalBrushes,function(i){return _.clone(i);});
+            var currentBrush = theseBrushes[0];
             var erasing = false;
             var hasActivated = false;
 						var penSizeTemplate = undefined;
 						var penColorTemplate = undefined;
             return {
                 name:"draw",
-                brushes:_.map(originalBrushes,function(i){return _.clone(i);}),
+                brushes:theseBrushes,
                 activate:function(){
                     if(Modes.currentMode == Modes.draw){
                         return;
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
+                    $(".activeBrush").removeClass("activeBrush");
 										var drawTools = function(){
                         var container = $("#drawTools");
                         _.each(container.find(".pen"),function(button,i){
                             var brush = Modes.draw.brushes[i];
-                            $(button)
+                            var thisButton = $(button)
                                 .css({color:brush.color})
                                 .click(function(){
                                     $(".activeBrush").removeClass("activeBrush");
@@ -3362,9 +3364,11 @@ var Modes = (function(){
                                     currentBrush = brush;
                                     Modes.draw.drawingAttributes = currentBrush;
                                     erasing = false;
-                                })
-                                .find(".widthIndicator")
-                                .text(brush.width);
+                                });
+                            thisButton.find(".widthIndicator").text(brush.width);
+														if (brush == currentBrush){
+															thisButton.addClass("activeBrush");
+														}
                         });
 										};
                     if(!hasActivated){
@@ -3423,12 +3427,11 @@ var Modes = (function(){
 															drawAdvancedTools(brush);
 													});
 													var dot = Canvas.circle(color.rgb,50,50);
-													if (color == brush.color){
+													if ("rgb" in color && color.rgb == brush.color){
 															colorDot.addClass("activeTool");
 													}
 													colorDot.append(dot);
                         });
-                        //var offset = widths[widths.length-1];
                         var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
                             brush.isHighlighter = true;
                             currentBrush = brush;
@@ -3450,16 +3453,6 @@ var Modes = (function(){
                             penButton.addClass("activeTool");
                             hlButton.removeClass("activeTool");
                         }
-												/*
-                        $("#colors").html(dots);
-                        $("#sizes").html(bars);
-												*/
-												/*
-                        $("#colors td").css({
-                            width:px(offset*3),
-                            height:px(offset*3)
-                        });
-												*/
                         Progress.call("onLayoutUpdated");
                     }
                     $("#resetPenButton").empty().text("reset pen").click(function(){
@@ -3536,7 +3529,7 @@ var Modes = (function(){
                             strokeCollected(currentStroke.join(" "));
                         }
                     };
-
+										drawTools();
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
