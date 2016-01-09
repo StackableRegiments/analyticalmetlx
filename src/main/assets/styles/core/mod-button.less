@@ -8,15 +8,16 @@
   color: @button-fg;
 }
 
-.button-round {    
-    height: 50px;
-    width: 50px;
-    border-radius: 3em;
-    padding: 0;
-    border:2px solid @menu-button-border;
-    text-align: center;
-    display: inline-block;
-    text-decoration: none;
+.button-round {
+  .fa-btn;
+  height: 50px;
+  width: 50px;
+  border-radius: 3em;
+  padding: 0;
+  border:2px solid @menu-button-border;
+  text-align: center;
+  display: inline-block;
+  text-decoration: none;
 }
 .button-round-small {
   .button-round;
@@ -33,7 +34,7 @@
     border-color:@menu-button-hover;
   }
 }
-.fa {
+.fa-btn {
   .button;
   text-decoration:none;
   font-size: @icon-font-size;
@@ -63,6 +64,7 @@
   text-decoration: inherit;
 }
 .btn-icon {
+  .fa-btn;
   width:@toolbar-btn-width;
   height:@toolbar-btn-height;
   background-position:center center;
