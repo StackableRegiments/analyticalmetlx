@@ -3423,12 +3423,11 @@ var Modes = (function(){
 															drawAdvancedTools(brush);
 													});
 													var dot = Canvas.circle(color.rgb,50,50);
-													if (color == brush.color){
+													if ("rgb" in color && color.rgb == brush.color){
 															colorDot.addClass("activeTool");
 													}
 													colorDot.append(dot);
                         });
-                        //var offset = widths[widths.length-1];
                         var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
                             brush.isHighlighter = true;
                             currentBrush = brush;
@@ -3450,16 +3449,6 @@ var Modes = (function(){
                             penButton.addClass("activeTool");
                             hlButton.removeClass("activeTool");
                         }
-												/*
-                        $("#colors").html(dots);
-                        $("#sizes").html(bars);
-												*/
-												/*
-                        $("#colors td").css({
-                            width:px(offset*3),
-                            height:px(offset*3)
-                        });
-												*/
                         Progress.call("onLayoutUpdated");
                     }
                     $("#resetPenButton").empty().text("reset pen").click(function(){
