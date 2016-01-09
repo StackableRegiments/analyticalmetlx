@@ -12,6 +12,7 @@ var UserSettings = (function(){
     var setUsernameFunction = function(newName){
         username = newName;
         $("#username").text(username);
+        $("#currentUsername").text(username);
     };
     var setUserGroupsFunction = function(newGroups){
         userGroups = newGroups;
