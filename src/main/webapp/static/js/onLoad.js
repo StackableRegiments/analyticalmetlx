@@ -577,6 +577,7 @@ $(function(){
         blit();
     });
     setLoadProgress(3);
+		/*
     $.each({
         red:"#FF0000",
         green:"#00FF00",
@@ -599,6 +600,7 @@ $(function(){
     $("#toggleHighlighter").click(function(){
 			Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
     });
+		*/
 		$("#submissionsButton").on("click",function(){
 			showBackstage("submissions");
 		});
@@ -614,7 +616,6 @@ $(function(){
 		});
 		$("#enableSync").on("click",Conversations.enableSyncMove);
 		$("#disableSync").on("click",Conversations.disableSyncMove);
-//		Conversations.disableSyncMove();
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
     $("#progress").hide();
