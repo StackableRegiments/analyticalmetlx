@@ -1958,8 +1958,9 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.insert;
-                    setActiveMode("#insertTools","#insertMode");
+                    setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
+
                     /*$("#textTools").empty();
                      _.forEach(insertModes,function(modeName){
                      var tsButton = $("<div/>",{
@@ -3374,6 +3375,7 @@ var Modes = (function(){
                         });
                         container.find(".advancedTools").click(drawAdvancedTools);
                     }
+
                     var drawAdvancedTools = function(brush){
                         var dots = $("<div />",{
                             class:"dots"
