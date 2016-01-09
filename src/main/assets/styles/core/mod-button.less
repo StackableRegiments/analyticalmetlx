@@ -71,32 +71,44 @@
 .btn-nm button {
   .nm;
 }
+.btn-active {
+  background-color:@toggle-bg;
+  color:@toggle-fg;
+  border-bottom:4px solid transparent;
+  &.active {
+      background-color:@toggle-active-bg;
+      color:@toggle-active-fg;
+      border-color:@toggle-active-border;
+      -webkit-transition:border-bottom .5s;
+         -moz-transition:border-bottom .5s;
+          -ms-transition:border-bottom .5s;
+           -o-transition:border-bottom .5s;
+              transition:border-bottom .5s;
+  }
+  &.disabled {
+    background-color: @toggle-disabled-bg;
+    color:@toggle-disabled-fg;
+    border-color:transparent;
+  }
+}
+.btn-subtool {
+  .btn-active;
+  color:@subtool-fg;
+  &.active {
+    background-color:@subtool-active-bg;
+    color:@subtool-fg;
+    border-color:@subtool-fg;
+  }
+}
 .button-toggle {
     width:92px;
     height:48px;
     display:-webkit-flex;
     display:flex;
-    border:2px solid #343434;
+    border:2px solid @toggle-border;
     button {
       .nm;
       .btn-icon;
-      background-color:@toggle-bg;
-      color:@toggle-fg;
-      border-bottom:4px solid transparent;
-      &.active {
-          background-color:@toggle-active-bg;
-          color:@toggle-active-fg;
-          border-color:@highlight;
-          -webkit-transition:border-bottom .5s;
-             -moz-transition:border-bottom .5s;
-              -ms-transition:border-bottom .5s;
-               -o-transition:border-bottom .5s;
-                  transition:border-bottom .5s;
-      }
-      &.disabled {
-        background-color: @toggle-disabled-bg;
-        color:@toggle-disabled-fg;
-        border-color:transparent;
-      }
+      .btn-active;
     }
 }

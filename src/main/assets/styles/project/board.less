@@ -31,9 +31,25 @@
 .inactiveMode {
     display:none;
 }
-.activeMode {
-    display:flex;
+#ribbon .button-toggle {
+    margin-left:2px;
+}
+.tools {
+    button {
+        margin:2px;
+        .btn-active;
+    }
+    .activeMode button {
+        .btn-subtool;
+        &.activeBrush {
+            .btn-subtool.active;
+        }
+    }
+    .activeTool {
+        display:flex;
+        .btn-active.active;
+    }
 }
 .pen .icon-txt {
-    color:@text-std;
+    color:@subtool-fg;
 }
