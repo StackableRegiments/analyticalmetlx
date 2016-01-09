@@ -9,8 +9,25 @@
       <div class="lift:embed?what=_futureApplicationButton" ></div>
     </div>-->
 		<div id="submissionsPopup" class="backstage">
-			<div id="submissionListing"></div>
-			<div id="currentSubmission"></div>
+			<div id="submissionListing">
+				<!-- many ".submissionSummary"s are cloned from JS -->
+				<div class="submissionSummary">
+					<span class="submissionDescription"></span>
+					<div type="button" class="viewSubmissionButton">
+						<image class="submissionImageThumb"></image>
+					</div>
+				</div>
+			</div>
+			<div id="currentSubmission">
+				<!-- one ".currentSubmissionItem" will be visible at any time, but it will be cloned and replaced by JS -->
+				<div class="submissionContainer">
+					<span class="submissionDescription"></span>
+					<image class="submissionImage"></image>
+					<span class="submissionTeacherControls">
+						<input type="button" class="toolbar displaySubmissionOnNextSlide" value="Display Submission on next slide"></input>
+					</span>
+				</div>
+			</div>
 		</div>
 		<div id="quizzesPopup" class="backstage">
 			<div id="quizListing"></div>
