@@ -30,8 +30,58 @@
 			</div>
 		</div>
 		<div id="quizzesPopup" class="backstage">
-			<div id="quizListing"></div>
-			<div id="currentQuiz"></div>
+			<div id="quizCreateButtonContainer">
+				<a id="quizCreationButton" class="quizCreationButton">
+					<span>Create quiz</span>
+				</a>
+			</div>
+			<div id="unansweredQuizListing">
+				<!-- many ".quizItem"s are cloned from JS -->
+				<div class="quizItem">
+					<a class="quizSummary">
+						<div class="quizSummaryQuestion"></div>
+						<div class="quizSummaryAnswerCount"></div>
+						<div class="quizTeacherControls">
+							<input class="quizSummaryEditButton" value="Edit Quiz" type="button"></input>
+						</div>
+					</a>
+				</div>
+			</div>
+			<div id="answeredQuizListing">
+				<!-- many ".quizItem"s are cloned from JS -->
+				<div class="quizItem">
+					<a class="quizSummary">
+						<div class="quizSummaryQuestion"></div>
+						<div class="quizSummaryAnswerCount"></div>
+						<div class="quizTeacherControls">
+							<input class="quizSummaryEditButton" value="Edit Quiz" type="button"></input>
+						</div>
+					</a>
+				</div>
+			</div>
+			<div id="currentQuiz">
+				<!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
+				<div class="currentQuizItem">
+					<div class="quizQuestion"></div>
+					<canvas class="quizResultsGraph"></canvas>
+					<img class="quizImagePreview"></img>
+					<div class="quizOptionContainer">
+					<!-- many ".quizOption"s are cloned from JS -->
+						<div class="quizOption">
+							<span class="quizOptionName"></span>
+							<span class="quizOptionText"></span>
+							<span class="quizOptionCountContainer">
+								<span class="quizOptionAnswerCount"></span>
+							</span>
+						</div>
+					</div>
+					<div class="currentQuizTeacherControls">
+						<input class="quizShouldDisplayOnNextSlide" value="Display Quiz on next slide" type="button"></input>
+						<input class="quizResultsShouldDisplayOnNextSlide" value="Display Quiz with results on next slide" type="button"></input>
+						<input class="deleteQuiz" value="Delete this quiz" type="button"></input>
+					</div>
+				</div>
+			</div>
 		</div>
     <div id="customizeBrushPopup" class="backstage">
       <div id="penColor">
