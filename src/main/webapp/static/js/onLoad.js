@@ -618,6 +618,9 @@ $(function(){
 		$("#disableSync").on("click",Conversations.disableSyncMove);
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
+
+		Modes.draw.activate();
+
     $("#progress").hide();
     setLoadProgress(8);
 });
