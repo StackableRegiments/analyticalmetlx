@@ -102,6 +102,18 @@ var Brushes = (function(){
 		},
 		{
 			id:3,
+			width:8.0,
+			color:"#00FF00",
+			isHighlighter:false
+		},
+		{
+			id:4,
+			width:10.0,
+			color:"#666666",
+			isHighlighter:false
+		},
+		{
+			id:5,
 			width:30.0,
 			color:"#FFFF00",
 			isHighlighter:true
