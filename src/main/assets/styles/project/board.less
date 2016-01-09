@@ -53,3 +53,21 @@
 .pen .icon-txt {
     color:@subtool-fg;
 }
+.permission-states {
+    input[type="checkbox"], input[type="radio"]{
+        & + label {
+            padding: 0.5em 2px;
+            max-width: (@toolbar-btn-width * 2) + 4;
+            margin:2px;
+            background-color: @toggle-bg;
+            color: @toggle-fg;
+        }
+    }
+    input[type="checkbox"]:checked +label, input[type="radio"]:checked +label {
+        background:@toggle-active-bg;
+        color:@toggle-active-fg;
+        &:before {
+            content:"\f00c";
+        }
+    }
+}

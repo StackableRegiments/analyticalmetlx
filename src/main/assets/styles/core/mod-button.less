@@ -8,15 +8,16 @@
   color: @button-fg;
 }
 
-.button-round {    
-    height: 50px;
-    width: 50px;
-    border-radius: 3em;
-    padding: 0;
-    border:2px solid @menu-button-border;
-    text-align: center;
-    display: inline-block;
-    text-decoration: none;
+.button-round {
+  .fa-btn;
+  height: 50px;
+  width: 50px;
+  border-radius: 3em;
+  padding: 0;
+  border:2px solid @menu-button-border;
+  text-align: center;
+  display: inline-block;
+  text-decoration: none;
 }
 .button-round-small {
   .button-round;
@@ -33,15 +34,15 @@
     border-color:@menu-button-hover;
   }
 }
-.fa {
+.fa-btn {
   .button;
   text-decoration:none;
   font-size: @icon-font-size;
   .np;
-  height:44px;
-  width:44px;
+  height:@toolbar-btn-height;
+  width:@toolbar-btn-width;
   text-align:center;
-  line-height:44px;
+  line-height:@toolbar-btn-height;
   &:hover {
     text-decoration: none;
     .icon-txt {
@@ -63,8 +64,9 @@
   text-decoration: inherit;
 }
 .btn-icon {
-  width:44px;
-  height:44px;
+  .fa-btn;
+  width:@toolbar-btn-width;
+  height:@toolbar-btn-height;
   background-position:center center;
   line-height:normal;
 }
@@ -101,8 +103,8 @@
   }
 }
 .button-toggle {
-    width:92px;
-    height:48px;
+    width:(@toolbar-btn-width * 2) + 4;
+    height:@toolbar-btn-height + 4;
     display:-webkit-flex;
     display:flex;
     border:2px solid @toggle-border;
