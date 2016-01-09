@@ -3348,11 +3348,7 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-                    if(!hasActivated){
-                        hasActivated = true;
-                        currentBrush = Modes.draw.brushes[0];
-                        Modes.draw.drawingAttributes = currentBrush;
-
+										var drawTools = function(){
                         var container = $("#drawTools");
                         _.each(container.find(".pen"),function(button,i){
                             var brush = Modes.draw.brushes[i];
@@ -3368,14 +3364,23 @@ var Modes = (function(){
                                 .find(".widthIndicator")
                                 .text(brush.width);
                         });
+										};
+                    if(!hasActivated){
+                        hasActivated = true;
+                        currentBrush = Modes.draw.brushes[0];
+                        Modes.draw.drawingAttributes = currentBrush;
+												drawTools();
+                        var container = $("#drawTools");
                         container.find(".eraser").click(function(button){
                             $(".activeBrush").removeClass("activeBrush");
                             $(this).addClass("activeBrush");
                             erasing = true;
                         });
-                        container.find(".advancedTools").click(drawAdvancedTools);
+                        container.find(".advancedTools").on("click",function(){
+													drawAdvancedTools(currentBrush);
+													showBackstage("customizeBrush");
+												});
                     }
-
                     var drawAdvancedTools = function(brush){
                         var dots = $("<div />",{
                             class:"dots"
@@ -3383,6 +3388,9 @@ var Modes = (function(){
                         var bars = $("<div />",{
                             class:"bars"
                         });
+												var updateOriginalBrush = function(){
+													Modes.draw.brushes[brush.index] = brush;
+												};
                         var colors = Colors.getAllNamedColors();
                         var widths = Brushes.getAllBrushSizes();
                         widths.map(function(width){
@@ -3392,7 +3400,9 @@ var Modes = (function(){
                                 "text-align":"center"
                             }).click(function(){
                                 brush.width = width;
+																updateOriginalBrush();
                                 currentBrush = brush;
+																drawTools();
                                 drawAdvancedTools(brush);
                             })
                             var bar = Canvas.circle(brush.color,width,60);
@@ -3409,6 +3419,8 @@ var Modes = (function(){
                             }).click(function(){
                                 brush.color = color.rgb;
                                 currentBrush = brush;
+																updateOriginalBrush();
+																drawTools();
                                 drawAdvancedTools(brush);
                             });
                             var dot = Canvas.circle(color.rgb,50,50);
@@ -3428,6 +3440,7 @@ var Modes = (function(){
                         }).on("click",function(){
                             brush.isHighlighter = true;
                             currentBrush = brush;
+														updateOriginalBrush();
                             drawTools();
                             drawAdvancedTools(brush);
                         });
@@ -3436,6 +3449,7 @@ var Modes = (function(){
                             class:"toolbar"
                         }).on("click",function(){
                             brush.isHighlighter = false;
+														updateOriginalBrush();
                             currentBrush = brush;
                             drawTools();
                             drawAdvancedTools(brush);
