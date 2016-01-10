@@ -7,9 +7,9 @@
     left:5px;
     display:none;
 }*/
-.hidden {
+/*.hidden {
     display:none;
-}
+}*/
 /*.backstage{
     width:85%;
     height:70%;
@@ -30,7 +30,7 @@
     position:absolute;
     pointer-events:none;
 }
-#s2cMessageContainer {
+/*#s2cMessageContainer {
     top:10%;
     width:75%;
     left:12%;
@@ -46,7 +46,7 @@
     font-weight:bold;
     font-size:x-large;
     padding-bottom: 1em;
-}
+}*/
 #s2cConversationMessageContainer{
     margin-bottom: 5px;
 }
