@@ -472,6 +472,7 @@ var Modes = (function(){
             var changeToTextBoxMade = false;
             var currentCaretPos = undefined;
             var currentScrollTop = 0;
+            var lineWithSeparatorRatio = 1.3; //magic number?
             var oldText = "";
             var newText = "";
 						var currentFamily = Fonts.getAllFamilies()[0];
@@ -743,11 +744,13 @@ var Modes = (function(){
 							currentText = {};
 							$("#textEditor").hide();
             };
+						/*
             var noop = function(){};
             var color = "Black";
             var updateTextFont = function(t){
                 t.font = sprintf("%spx %s",t.size,t.family);
             }
+						*/
             var createBlankText = function(worldPos){
 							var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
 							var currentSlide = Conversations.getCurrentSlideJid();
@@ -787,7 +790,6 @@ var Modes = (function(){
 							checkTyping();
 							return t;
             };
-            var lineWithSeparatorRatio = 1.3;
 
             var editText = function(text){
 							oldText = text.text;
@@ -838,12 +840,13 @@ var Modes = (function(){
             Progress.onSelectionChanged["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.historyReceived["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.onViewboxChanged["Modes.text"] = possiblyClearEditBoxesFunction;
+						var noop = function(){};
             return {
 							activate:function(){
 								marquee = $("#textMarquee");
 								Modes.currentMode.deactivate();
 								Modes.currentMode = Modes.text;
-								setActiveMode("#textTools","#textMode");
+								setActiveMode("#textTools","#insertText");
 								$(".activeBrush").removeClass("activeBrush");
 								Progress.call("onLayoutUpdated");
 								$("#minorText").click(function(){});
@@ -881,6 +884,7 @@ var Modes = (function(){
 									} else {
 										editText(createBlankText(worldPos));
 									}
+									progress.call("onSelectionChanged");
 								}
 								registerPositionHandlers(board,noop,noop,up);
 							},
