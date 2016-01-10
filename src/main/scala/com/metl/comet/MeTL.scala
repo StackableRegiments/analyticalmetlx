@@ -479,7 +479,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       var answerProvided = false
       var errorMessages = List.empty[SpamMessage]
       <div id="createQuizForm">
-      <div>Question</div>
+      <label for="quizQuestion">Question</label>
       <div>
       {
         textarea(quiz.question,(input:String) => {
@@ -502,11 +502,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         quiz.options.sortBy(o => o.name).map(qo => {
           val cssColorString = "background-color:%s;".format(ColorConverter.toRGBHexString(qo.color))
           <div class="quizOption">
-          <span class="quizName" style={cssColorString}>
+          <label class="quizName" style={cssColorString}>
           {
             qo.name
           }
-          </span>
+          </label>
           {
             textarea(qo.text, (input:String) => {
               if (input.length > 0){
@@ -525,7 +525,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
               } else {
                 this ! SpamMessage(Text("Please ensure that this quiz has at least two options"),Full("quizzes"))
               }
-            },("class","quizRemoveOptionButton toolbar"))
+            },("class","quizRemoveOptionButton toolbar btn-icon fa fa-trash np"))
           }
           </div>
         })
@@ -535,7 +535,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         ajaxSubmit("Add an option", ()=>{
           this ! editableQuizNodeSeq(tempQuiz.addOption(QuizOption("","")))
           i.done
-        },("class","quizAddOptionButton toolbar"))
+        },("class","quizAddOptionButton toolbar btn-icon fa fa-plus np"))
       }
       </div>
       <div class="quizCreationControls">
@@ -565,14 +565,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
             i.done
           }
           Noop
-        },("class","quizAttachImageButton toolbar"))
+        },("class","quizAttachImageButton toolbar btn-icon fa fa-paperclip"))
       }
       {
         ajaxSubmit("Delete this quiz", ()=>{
           var deletedQuiz = tempQuiz.delete
           sendStanzaToServer(deletedQuiz,server)
           i.done
-        },("class","quizDeleteButton toolbar"))
+        },("class","quizDeleteButton toolbar btn-icon fa fa-trash"))
       }
       {ajaxSubmit("Submit", ()=>{
         if (errorMessages.length > 0){
@@ -583,7 +583,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           sendStanzaToServer(tempQuiz,server)
           i.done
         }
-      },("class","quizSubmitButton toolbar"))}
+      },("class","quizSubmitButton toolbar button-transparent-border"))}
       </div>
     },Full("quizzes"),Full("Define this quiz"))
   }
