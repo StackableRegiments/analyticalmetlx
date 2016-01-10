@@ -3,7 +3,7 @@
   <div id="selectionAdorner" ></div>
   <div id="radar" ></div>
   <div id="marquee" ></div>
-  <div id="textAdorner" ></div>
+  <div id="textAdorner"></div>
   <div id="backstageContainer">
     <!--<div id="applicationMenuPopup" class="backstageHeader">
       <div class="lift:embed?what=_futureApplicationButton" ></div>
@@ -13,9 +13,9 @@
 				<!-- many ".submissionSummary"s are cloned from JS -->
 				<div class="submissionSummary">
 					<span class="submissionDescription"></span>
-					<div type="button" class="viewSubmissionButton">
+					<button type="button" class="viewSubmissionButton">
 						<image class="submissionImageThumb"></image>
-					</div>
+					</button>
 				</div>
 			</div>
 			<div id="currentSubmission">
@@ -31,9 +31,9 @@
 		</div>
 		<div id="quizzesPopup" class="backstage">
 			<div id="quizCreateButtonContainer">
-				<a id="quizCreationButton" class="quizCreationButton">
-					<span>Create quiz</span>
-				</a>
+				<button id="quizCreationButton" class="quizCreationButton button-transparent-border">
+					<span>Create poll</span>
+				</button>
 			</div>
 			<div id="unansweredQuizListing">
 				<!-- many ".quizItem"s are cloned from JS -->
@@ -42,7 +42,7 @@
 						<div class="quizSummaryQuestion"></div>
 						<div class="quizSummaryAnswerCount"></div>
 						<div class="quizTeacherControls">
-							<input class="quizSummaryEditButton" value="Edit Quiz" type="button"></input>
+							<input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
 						</div>
 					</a>
 				</div>
@@ -51,7 +51,7 @@
 				<!-- many ".quizItem"s are cloned from JS -->
 				<div class="quizItem">
 					<a class="quizSummary">
-						<div class="quizSummaryQuestion"></div>
+						<h2 class="quizSummaryQuestion"></h2>
 						<div class="quizSummaryAnswerCount"></div>
 						<div class="quizTeacherControls">
 							<input class="quizSummaryEditButton" value="Edit Quiz" type="button"></input>
@@ -76,9 +76,9 @@
 						</div>
 					</div>
 					<div class="currentQuizTeacherControls">
-						<input class="quizShouldDisplayOnNextSlide" value="Display Quiz on next slide" type="button"></input>
-						<input class="quizResultsShouldDisplayOnNextSlide" value="Display Quiz with results on next slide" type="button"></input>
-						<input class="deleteQuiz" value="Delete this quiz" type="button"></input>
+						<input class="quizShouldDisplayOnNextSlide button-transparent-border" value="Display poll on next slide" type="button"></input>
+						<input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on next slide" type="button"></input>
+						<input class="deleteQuiz button-transparent-border" value="Delete this poll" type="button"></input>
 					</div>
 				</div>
 			</div>

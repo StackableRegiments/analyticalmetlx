@@ -1181,7 +1181,7 @@ var Modes = (function(){
                      }
                      });*/
                     $("#insertTools button").each(function(){
-                        var modeName = $(this).attr("insertMode"),
+                        var modeName = $(this).attr("data-insertMode"),
                             tsButton = $(this)
                                 .on("click",function(){
                                     currentInsertMode = modeName;
@@ -2644,14 +2644,14 @@ var Modes = (function(){
                 });
                 $("#textEditorCustomizationOptionsContainer").html(textCustomizationOptions(text));
                 textEditor.find("#closeTextEditor").remove();
-                textEditor.prepend($("<div />",{
+                textEditor.prepend($("<button />",{
                     id:"closeTextEditor",
-                    class:"closeButton",
-                    text:"X"
-                }).css({
-                    "float":"right"
+                    class:"closeButton"
                 }).click(bounceAnd(function(){
                     textEditor.remove();
+                })).append($("<span/>", {
+                    class:"hidden",
+                    text:"close"
                 })));
 
                 var inputArea = $("#textEditorInputArea");
