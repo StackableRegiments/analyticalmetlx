@@ -19,7 +19,7 @@
     display:none;
 
 }*/
-#boardContainer{
+/*#boardContainer{
     position:relative;
 }
 #marquee,#zoomMarquee,#selectMarquee{
@@ -30,7 +30,7 @@
     position:absolute;
     pointer-events:none;
 }
-/*#s2cMessageContainer {
+#s2cMessageContainer {
     top:10%;
     width:75%;
     left:12%;
@@ -46,10 +46,10 @@
     font-weight:bold;
     font-size:x-large;
     padding-bottom: 1em;
-}*/
+}
 #s2cConversationMessageContainer{
     margin-bottom: 5px;
-}
+}  */
 .simpleMultipleButtonInteractableMessageButton a{
     padding: 2px;
 }
@@ -71,7 +71,7 @@
 }
 .textOptionsContainer{
     color:black;
-} */
+} 
 .textOptionsDropdown{
 }
 .textOptionsToggleContainer{
@@ -79,7 +79,7 @@
 .textOptionsToggleLabel{
 }
 .textOptionsToggleButton{
-}
+}*/
 .simpleTextAreaInteractableMessageTextarea{
     width:80%;
 }
@@ -89,7 +89,7 @@
 }
 .simpleDropdownInteractableMessageDropdown{
 }
-#sharingLinks {
+/*#sharingLinks {
     float: left;
     clear:right;
 }
@@ -110,7 +110,7 @@
     border-radius: 15px;
     color:black;
 		background-color:white;
-}
+}*/
 #absoluteCloseButton{
     position:absolute;
     right:0px;

@@ -18,8 +18,9 @@ var Quizzes = (function(){
 			$("#quizzes").click(function(){
 					showBackstage("quizzes");
 			});
-			var quizCount = $("<span />",{
-					id:"quizCount"
+			var quizCount = $("<div />",{
+					id:"quizCount",
+					class:"icon-txt"
 			});
 			$("#feedbackStatus").prepend(quizCount);
 			quizCount.click(function(){

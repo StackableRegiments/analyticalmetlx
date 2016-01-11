@@ -568,9 +568,10 @@ var Conversations = (function(){
         _.forEach(["blur","change","focus","keydown","select"],function(item){
             sfcb.on(item,updateSearchTerm)
         });
-        $("<span />",{
+        $("<div />",{
             text:"share",
-            id:"shareButton"
+            id:"shareButton",
+            class:"icon-txt"
         }).on("click",bounceAnd(function(){
             $("#shareContainer").toggle();
             updateLinks();
