@@ -67,7 +67,7 @@ var Submissions = (function(){
 			if ("type" in submission && submission.type == "submission"){
 				var rootElem = submissionSummaryTemplate.clone();
 				submissionSummaryListing.append(rootElem);
-				rootElem.find(".submissionDescription").text(sprintf("submitted at %s %s", new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()));
+				rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s %s", submission.author, new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()));
 				rootElem.find(".submissionImageThumb").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
 				rootElem.find(".viewSubmissionButton").attr("id",sprintf("viewSubmissionButton_%s",submission.identity)).on("click",function(){
 					currentSubmission = submission;
@@ -80,7 +80,7 @@ var Submissions = (function(){
         if ("type" in submission && submission.type == "submission"){
 					rootElem = currentSubmissionTemplate.clone();
 					rootElem.attr("id",sprintf("submission_%s",submission.identity))
-					rootElem.find(".submissionDescription").text(sprintf("submitted at %s",submission.timestamp));
+					rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s",submission.author, submission.timestamp));
 					rootElem.find(".submissionImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
 					if (Conversations.shouldModifyConversation()){
 						rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
