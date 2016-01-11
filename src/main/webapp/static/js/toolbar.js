@@ -567,6 +567,7 @@ var Modes = (function(){
 									h = px(text.size);
 									textEditorInput.val(currentText.text);
 								}
+								// there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
                 textEditor.css({
 									position:"absolute",
 									left:px(possiblyAdjustedX),
@@ -924,6 +925,7 @@ var Modes = (function(){
 						];
 						var updateImageEditor = function(){
 							if ("type" in currentImage && currentImage.type == "imageDefinition"){
+								// there is now only one place that the imageOptions dialog gets positioned, and it's here, so if you want to move it about, etc, do it right here.
 								insertOptions.css({
 									position:"absolute",
 									left:px(currentImage.screenX - 30),
