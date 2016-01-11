@@ -81,40 +81,45 @@
 				</div>
 			</div>
 		</div>
-		<div id="quizzesPopup" class="backstage">
+		<section id="quizzesPopup" class="backstage">
+			<h2>Polls</h2>
 			<div id="quizCreateButtonContainer">
 				<button id="quizCreationButton" class="quizCreationButton button-transparent-border">
 					<span>Create poll</span>
 				</button>
 			</div>
-			<div id="unansweredQuizListing">
-				<!-- many ".quizItem"s are cloned from JS -->
-				<div class="quizItem">
-					<a class="quizSummary">
-						<div class="quizSummaryQuestion"></div>
-						<div class="quizSummaryAnswerCount"></div>
-						<div class="quizTeacherControls">
-							<input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
-						</div>
-					</a>
+			<div class="quiz-listing align-left mrt">
+				<div id="unansweredQuizListing" class="clear box-model-block">
+					<h3 class="nmb">Unanswered polls</h3>
+					<!-- many ".quizItem"s are cloned from JS -->
+					<div class="quizItem">
+						<a class="quizSummary">
+							<h4 class="quizSummaryQuestion nmb"></h4>
+							<button class="quizSummaryAnswerCount button-transparent-border inline-input"></button>
+							<div class="quizTeacherControls inline-input">
+								<input class="quizSummaryEditButton button-transparent-border" value="Edit poll" type="button"></input>
+							</div>
+						</a>
+					</div>
+				</div>
+				<div id="answeredQuizListing" class="clear box-model-block">
+					<h3 class="nmb">Answered polls</h3>
+					<!-- many ".quizItem"s are cloned from JS -->
+					<div class="quizItem">
+						<a class="quizSummary">
+							<h4 class="quizSummaryQuestion nmb"></h4>
+							<button class="quizSummaryAnswerCount button-transparent-border inline-input"></button>
+							<div class="quizTeacherControls inline-input">
+								<input class="quizSummaryEditButton button-transparent-border" value="Edit poll" type="button"></input>
+							</div>
+						</a>
+					</div>
 				</div>
 			</div>
-			<div id="answeredQuizListing">
-				<!-- many ".quizItem"s are cloned from JS -->
-				<div class="quizItem">
-					<a class="quizSummary">
-						<h2 class="quizSummaryQuestion"></h2>
-						<div class="quizSummaryAnswerCount"></div>
-						<div class="quizTeacherControls">
-							<input class="quizSummaryEditButton" value="Edit Quiz" type="button"></input>
-						</div>
-					</a>
-				</div>
-			</div>
-			<div id="currentQuiz">
+			<div id="currentQuiz" class="box-model-block align-left">
 				<!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
 				<div class="currentQuizItem">
-					<div class="quizQuestion"></div>
+					<h3 class="nmb">Results for <span class="quizQuestion"></span></h3>
 					<canvas class="quizResultsGraph"></canvas>
 					<img class="quizImagePreview"></img>
 					<div class="quizOptionContainer">
@@ -134,7 +139,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
+		</section>
     <div id="customizeBrushPopup" class="backstage">
       <div id="penColor">
         <h2>Choose Pen Color</h2>
