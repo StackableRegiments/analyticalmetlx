@@ -197,6 +197,7 @@ var DeviceConfiguration = (function(){
 								var radar = $("#radar");
 								var marquee = $("#marquee");									
 								var textAdorner = $("#textAdorner");
+								var imageAdorner = $("#imageAdorner");
 								boardContext.canvas.width = bwidth;
 								boardContext.canvas.height = bheight;
 								boardContext.width = bwidth;

@@ -3,6 +3,26 @@
   <div id="selectionAdorner" ></div>
   <div id="radar" ></div>
   <div id="marquee" ></div>
+	<div id="imageAdorner" > 
+		<div id="imageMarquee"></div>
+		<div id="imageInsertOptions">
+			<button id="imageInsertOptionsClose" style="float:right;"></button>
+			<input type="file" id="imageFileChoice"></input>
+			<div id="imageSizeControls">
+				<div id="imageSizeChoiceSelector">
+					<button class="imageSizeChoice"></button>
+				</div>
+				<button id="imageUploadButton" value="Upload">Upload</button>
+				<div id="imageUploadDescription">
+					<span>X: <span id="imageUploadX"></span>, </span>
+					<span>Y: <span id="imageUploadY"></span>, </span>
+					<span>Width: <span id="imageUploadWidth"></span>, </span>
+					<span>Height: <span id="imageUploadHeight"></span></span>
+					<canvas id="imageUploadThumbnail"></canvas>
+				</div>
+			</div>
+		</div>
+	</div>
   <div id="textAdorner" >
 		<div id="textMarquee"></div>
 		<div id="textEditor">
