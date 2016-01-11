@@ -18,6 +18,7 @@ var Conversations = (function(){
 			conversationSearchListing.empty();
 		});
     var ThumbCache = (function(){
+				var cacheRefreshTime = 10 * 1000; // 10 seconds
         var cache = {};
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
@@ -25,9 +26,13 @@ var Conversations = (function(){
         var fetchAndPaintThumb = function(slide,slideContainer){
             var currentSrc = slideContainer.attr("src");
             var slideImage = slideContainer.find("img");
-            var thumbUrl = sprintf("/thumbnailDataUri/%s?nocache=%s",slide.id,Date.now());
+            //var thumbUrl = sprintf("/thumbnailDataUri/%s?nocache=%s",slide.id,Date.now());
+            var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
             var storeThumb = function(data){
-                cache[slide.id] = data;
+                cache[slide.id] = {
+									data:data,
+									when:Date.now()
+								};
                 //then fire paint as normal, which paints from the cache
                 paintThumb(slide,slideContainer);
             };
@@ -42,8 +47,8 @@ var Conversations = (function(){
         };
         var paintThumb = function(slide,slideContainer){
             var slideImage = slideContainer.find("img");
-            if (slide.id in cache){
-                slideImage.attr("src",cache[slide.id]);
+            if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                slideImage.attr("src",cache[slide.id].data);
             } else {
                 fetchAndPaintThumb(slide,slideContainer);
             }
@@ -52,13 +57,18 @@ var Conversations = (function(){
             var slidesTop = 0;
             var slidesBottom = slidesTop + slideContainerHeight;
             var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
-            var slideTop = slideContainer.position().top + 10; //10 pixel margin for the top, which appears to be being ignored.
-            var slideBottom = slideTop + slideContainer.height();
-            var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-            var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
-            if (isEntirelyVisible){
-                paintThumb(slide,slideContainer);
-            }
+						try {
+							var slideTop = slideContainer.position().top + 10; //10 pixel margin for the top, which appears to be being ignored.
+							var slideBottom = slideTop + slideContainer.height();
+							var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+							var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
+							if (isEntirelyVisible){
+									paintThumb(slide,slideContainer);
+							}
+						} catch(e) {
+							console.log("exception while painting thumb: ",e);
+							//couldn't find the slideContainer at this time.
+						}
         }
         var clearCacheFunction = function(){
             cache = {};
@@ -532,7 +542,9 @@ var Conversations = (function(){
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
     Progress.onLayoutUpdated["Conversations"] = paintThumbs;
+		Progress.historyReceived["Conversations"] = paintThumbs;
     $(function(){
+				$("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
