@@ -436,12 +436,12 @@ var Conversations = (function(){
     };
     var constructAddSlideButton = function(){
         if (shouldModifyConversationFunction()){
-            return $("<div/>",{
+            return $("<button/>",{
                 id: "addSlideButton",
-                class:"toolbar",
+                class:"toolbar fa fa-plus btn-icon nmt",
                 name: "addSlideButton",
                 type: "button"
-            }).append($("<span>Add Slide</span>")).on("click",bounceAnd(function(){
+            }).append($("<div class='icon-txt'>Add Slide</div>")).on("click",bounceAnd(function(){
                 var currentJid = currentConversation.jid;
                 var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
                 var newIndex = currentSlideIndex + 1;
