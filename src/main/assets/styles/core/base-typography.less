@@ -49,6 +49,8 @@ h4 {
     font-size: 10px;
     font-size: 1rem;
     word-wrap: break-word;
+    line-height: 1em;
+    padding-top: 3px;
 }
 h1, h2, .largest-txt, .large-txt, .font-weight-light { font-weight: @font-weight-light; .font-heading; }
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { font-weight: inherit; }
@@ -63,8 +65,11 @@ code {
     font-size:15px; /* rem in chrome for 'code' tags doesn't work */
 }
 .fa {
-  font-family: FontAwesome;
-  font-style: normal;
-  font-weight: normal;
-  text-decoration: inherit;
+    font-family: FontAwesome;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: inherit;
+    .icon-txt {
+        .font-std;
+    }
 }

@@ -462,824 +462,9 @@ var Modes = (function(){
     return {
         currentMode:noneMode,
         none:noneMode,
-        insert:(function(){
-            var marquee = undefined;
-            var typingTimer = undefined;
-            var textStyles = [
-                {
-                    size:20,
-                    family:"Arial"
-                },
-                {
-                    size:10,
-                    family:"Arial"
-                }
-            ];
-            var insertModes = [
-                "Text",
-                "Image"
-            ];
-            var textEditor = undefined;
-            var currentInsertMode = "text";
-            var currentStyle = undefined;
-            var selectedTexts = [];
-            var typingDelay = 1000;
-            var typingTicks = 100;
-            var startTime = Date.now();
-            var changeToTextBoxMade = false;
-            var currentCaretPos = undefined;
-            var currentScrollTop = 0;
-            var oldText = "";
-            var newText = "";
-            var typingTimerElapsed = function(){
-                WorkQueue.gracefullyResume();
-                clearTimeout(typingTimer);
-                typingTimer = undefined;
-                var subject = $.extend({},selectedTexts[0]);
-                subject.text = oldText;
-                delete subject.canvas;
-                sendStanza(subject);
-            }
-            var checkTyping = function(){
-                WorkQueue.pause();
-                var oldTextTest = oldText;
-                oldText = newText;
-                var el = $("#textEditorInputArea").get(0);
-                if ("selectionStart" in el){
-                    currentCaretPos = el.selectionStart;
-                    currentScrollTop = el.scrollTop;
-                }
-
-                var t = Date.now();
-                var elapsed = t - startTime;
-                if(oldTextTest == newText || changeToTextBoxMade){
-                    if(elapsed > typingDelay){
-                        changeToTextBoxMade = false;
-                        typingTimerElapsed();
-                    }
-                    else{
-                        clearTimeout(typingTimer);
-                        typingTimer = setTimeout(checkTyping,typingTicks);
-                    }
-                }
-                else{
-                    startTime = Date.now();
-                    clearTimeout(typingTimer);
-                    typingTimer = setTimeout(checkTyping,typingTicks);
-                }
-            };
-            var removeTextEditor = function(){
-                if(typingTimer){
-                    typingTimerElapsed();
-                }
-                $("#insertOptions").remove();
-                $("#textEditor").remove();
-            };
-            var noop = function(){};
-            var handleFilesSelected = function(worldPos){
-                return function(e){
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var files = e.target.files || e.dataTransfer.files;
-                    var limit = files.length;
-                    var file = files[0];
-                    if (file.type.indexOf("image") == 0) {
-                        WorkQueue.pause();
-                        var t = Date.now();
-                        var identity = sprintf("%s%s",UserSettings.getUsername(),t);
-                        var actionsCompleted = 0;
-                        var necessaryActions = 4;//readLocal,upload,sendStanza,receiveStanza
-                        var reader = new FileReader();
-                        var pos = worldToScreen(worldPos.x,worldPos.y);
-                        var pkg = $("<div />",{
-													id:"imageInsertOptions"
-												}).css({
-                            left:px(pos.left),
-                            top:px(pos.top)
-                        });
-                        if (marquee){
-                            var selectionAdorner = $("#textAdorner");
-                            selectionAdorner.empty();
-                            selectionAdorner.append(marquee);
-                            pkg.insertAfter(marquee);
-                        }
-                        var imageSizeControls = $("<div/>", {
-                            id:"imageSizeControls"
-                        }).css({
-                            height:px("80")
-                        }).appendTo(pkg);
-                        var thumbnail = $("<canvas />",{id:"imageUploadThumbnail"}).appendTo(pkg);
-                        var p = progress().value(actionsCompleted).max(necessaryActions);
-                        p.element.css({
-                            margin:"auto"
-                        });
-                        var progressContainer = $("<div />").css({
-                            position:"absolute",
-                            top:90,
-                            left:0,
-                            width:"100%",
-                            "text-align":"center"
-                        }).appendTo(pkg).append(p.element);
-                        var statusMesage = $("<div />").appendTo(pkg);
-                        updateTracking(identity,function(){
-                            actionsCompleted++;
-                            p.value(actionsCompleted);
-                            if(actionsCompleted >= necessaryActions){
-                                WorkQueue.gracefullyResume();
-                                stopTracking(identity);
-                            }
-                        },function(){
-                            WorkQueue.gracefullyResume();
-                            pkg.remove();
-                        });
-                        reader.onload = function(e){
-                            updateTracking(identity);
-                            var img = new Image();
-                            img.onload = function(e){
-                                var onComplete = function(){
-                                    var scale = viewboxWidth / boardWidth;
-                                    var screenWidth = img.width / scale;
-                                    var screenHeight = img.height / scale;
-                                    var centerX = worldPos.x + img.width / 2;
-                                    var centerY = worldPos.y + img.height / 2;
-                                    Extend.center(centerX,centerY);
-                                    p.element.css({
-                                        top:px(centerY / 2)
-                                    });
-                                    pkg.css({
-                                        left:px((boardWidth - screenWidth) / 2),
-                                        top:px((boardHeight - screenHeight) / 2),
-                                        "background-color":"lightgray",
-                                        border:"2px dotted blue"
-                                    });
-                                    var thumbnailDrawer = function(w,h){
-                                        return function(){
-                                            thumbnail.attr("width",w);
-                                            thumbnail.attr("height",h);
-                                            thumbnail.css({
-                                                width:px(w),
-                                                height: px(h)
-                                            });
-                                            thumbnail[0].getContext("2d").drawImage(img,0,0,w,h);
-                                        }
-                                    }
-                                    thumbnailDrawer(img.width,img.height)();
-                                    var scaleByProportion = function(scaleFactor, buttonName) {
-                                        return $("<div/>", {
-                                            class:"imageUploadSizeChoice"
-                                        })
-                                            .on("click",bounceAnd(thumbnailDrawer(img.width * scaleFactor, img.height * scaleFactor)))
-                                            .append($("<span/>",{text:buttonName}));
-                                    };
-                                    var scaleAtFixedSize = function(size, buttonName) {
-                                        return scaleByProportion(size/ Math.max(img.width,img.height),buttonName);
-                                    };
-                                    var thumbSize = scaleAtFixedSize(120, "120px");
-                                    var miniature = scaleAtFixedSize(320, "320px");
-                                    var nativeImage = scaleByProportion(1, "Native Size");
-                                    var mediumImage = scaleByProportion(0.75, "3/4 of Size");
-                                    var smallImage = scaleByProportion(0.5, "1/2 of Size");
-                                    var currentSlide = Conversations.getCurrentSlideJid();
-                                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(file.name.split(".")[0]));
-                                    var uploadImage = $("<div/>", {
-                                        class:"imageUploadSizeChoice",
-                                        text:"Upload"
-                                    }).on("click", bounceAnd(function() {
-                                        $.ajax({
-                                            url: url,
-                                            type: 'POST',
-                                            success: function(e){
-                                                updateTracking(identity);
-                                                var newIdentity = $(e).find("resourceUrl").text();
-                                                //                                                var thumbnail = $(thumbnail);
-                                                var thumbnail = $("#imageUploadThumbnail");
-                                                var loader = $("#upload");
-                                                var imageStanza = {
-                                                    type:"image",
-                                                    author:UserSettings.getUsername(),
-                                                    timestamp:t,
-                                                    tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-                                                    //identity,
-                                                    //identity:identity,
-                                                    identity:newIdentity,
-                                                    slide:currentSlide.toString(),
-                                                    source:$(e).text(),
-                                                    width:parseFloat(thumbnail.width()),
-                                                    height:parseFloat(thumbnail.height()),
-                                                    target:"presentationSpace",
-                                                    privacy:Privacy.getCurrentPrivacy(),
-                                                    x:worldPos.x,
-                                                    y:worldPos.y
-                                                };
-                                                console.log("Sending image stanza",imageStanza);
-                                                sendStanza(imageStanza);
-                                                updateTracking(identity);
-                                            },
-                                            error: function(e){
-                                                pkg.addClass("fail");
-                                            },
-                                            data:thumbnail[0].toDataURL(),
-                                            cache: false,
-                                            contentType: false,
-                                            processData: false
-                                        });
-                                    }));
-                                    imageSizeControls.append(thumbSize).append(miniature).append(smallImage).append(mediumImage).append(nativeImage);
-                                    uploadImage.appendTo(pkg);
-                                }
-                                var sx = viewboxWidth / img.width;
-                                var sy = viewboxHeight / img.height;
-                                var shift = 1 / Math.min(sx,sy);
-                                var scale = viewboxWidth / boardWidth;
-                                if(shift > 1){
-                                    Zoom.zoom(shift,true,onComplete);
-                                }
-                                else{
-                                    onComplete();
-                                }
-                            }
-                            img.src=e.target.result;
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                }
-            };
-            var newInsertOptions = function(x,y,worldPos,onText,onImage){
-                var clearOptions = function(){
-                    $("#insertOptions").remove();
-
-                }
-                var clearBefore = function(func){
-                    return function(){
-                        clearOptions();
-                        func();
-                    }
-                }
-                onText = clearBefore(onText);
-                onImage = clearBefore(onImage);
-                clearOptions();
-                var options = $("<div />",{
-                    id:"insertOptions",
-                    class:"insertOptionsContainer"
-                }).css({
-                    position:"absolute",
-                    left:px(x - 30),
-                    top:px(y)
-                });
-                options.append($("<div />",{
-                    text:"X",
-                    class:"closeButton"
-                }).click(bounceAnd(function(){
-                    options.remove();
-                })));
-                if(currentInsertMode.toLowerCase() == "image"){
-                    var insertImage = $("<input />",{
-                        type:"file",
-                        accept:"image/*",
-                        class:"fileUploadControl"
-                    }).appendTo(options);
-                    if (options){
-                        insertImage[0].addEventListener("change",function(e){
-                            clearOptions();
-                            handleFilesSelected(worldPos)(e);
-                        },false)
-                    }
-                    return options;
-                } else if (currentInsertMode.toLowerCase() == "text"){
-                    onText();
-                    return false;
-                } else {
-                    return false;
-                }
-            }
-            var color = "Black";
-            var updateTextFont = function(t){
-                t.font = sprintf("%spx %s",t.size,t.family);
-            }
-            var createBlankText = function(worldPos){
-                var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
-                var style = currentStyle;
-                var currentSlide = Conversations.getCurrentSlideJid();
-                var text = {
-                    author:UserSettings.getUsername(),
-                    color:Colors.getColorForName("black"),
-                    decoration:"None",
-                    identity:id,
-                    privacy:Privacy.getCurrentPrivacy(),
-                    family:style.family,
-                    size:style.size,
-                    slide:currentSlide,
-                    style:"Normal",
-                    tag:id,
-                    width:200,
-                    caret:0,
-                    height:60,
-                    x:worldPos.x,
-                    y:worldPos.y,
-                    target:"presentationSpace",
-                    text:"",
-                    timestamp:Date.now(),
-                    type:"text",
-                    weight:"Normal"
-                };
-                updateTextFont(text);
-                prerenderText(text);
-                selectedTexts = [];
-                selectedTexts.push(text);
-                return text;
-            };
-            var alteredText = function(t){
-                changeToTextBoxMade = true;
-                updateTextFont(t);
-                prerenderText(t);
-                checkTyping();
-                return t;
-            };
-            var textCustomizationOptions = function(text){
-                var options = $("<div />",{
-                    class:"textOptionsContainer"
-                });
-                var combobox = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var cont = $("<span/>").css({
-                        position:"relative"
-                    });
-                    var setTextPropValue = function(t){
-                        var newVal = transform ? transform(t) : t;
-                        var oldVal = text[property];
-                        if (newVal != oldVal){
-                            text[property] = newVal;
-                            alteredText(text);
-                            editText(text);
-                        }
-                    };
-                    var topRow = $("<div/>");
-                    var textArea = $("<input/>",{
-                        type:"text",
-                        class: "comboBoxTextfield",
-                        value:transformedValue
-                    }).on("blur",function(){
-                        var v = $(this).val();
-                        setTextPropValue(v);
-                    }).keydown(function(e){
-                    }).keyup(function(e){
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (e.keyCode == 13){
-                            var v = $(this).val();
-                            setTextPropValue(v);
-                        }
-                    });
-                    var toggleButton = $("<input/>",{
-                        class: "comboBoxButton ",
-                        type: "button",
-                        value:"More"
-                    });
-                    var bottomRow = $("<div/>").css({
-                        position:"absolute",
-                        "z-index":100
-                    });
-                    var listOfOptions = $("<div/>",{
-                        class:"comboBoxList"
-                    }).html(unwrap(opts.map(function(opt){
-                        return $("<div/>",{
-                            class:"comboBoxListItem",
-                            text:opt
-                        }).click(bounceAnd(function(){setTextPropValue(opt);}));
-                    })));
-                    var listContainer = $("<span/>",{
-                        class:"comboBoxListContainer"
-                    }).append(listOfOptions).hide();
-                    toggleButton.click(bounceAnd(function(){
-                        var isOpen = listOfOptions.is(":visible");
-                        $(".comboBoxListContainer").hide();
-                        if (!isOpen){
-                            listContainer.show();
-                        }
-                    }));
-                    topRow.append(textArea,toggleButton);
-                    bottomRow.append(listContainer);
-                    cont.append(topRow,bottomRow);
-                    options.append(cont);
-                }
-                var dropdown = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    if (!(_.contains(opts,transformedValue))){
-                        opts.push(transformedValue);
-                    }
-                    var cont = $("<select />",{
-                        class:"textOptionsDropdown"
-                    }).html(unwrap(opts.map(function(opt){
-                        var o = $("<option />",{
-                            value:opt,
-                            text:opt
-                        });
-                        if(transformedValue == opt){
-                            o.prop("selected",true);
-                        }
-                        return o;
-                    }))).change(function(){
-                        var v = $(this).val();
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    });
-                    options.append(cont);
-                }
-                var toggle = function(name,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var el = $("<span />",{
-                        class:"textOptionsToggleContainer"
-                    });
-                    $("<label />",{
-                        text:name,
-                        class:"textOptionsToggleLabel",
-                        for:name
-                    }).appendTo(el);
-                    var cb = $("<input />",{
-                        type:"checkbox",
-                        class:"textOptionsToggleButton",
-                        name:name
-                    }).change(function(change){
-                        var v = $(this).prop("checked");
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    }).appendTo(el);
-                    if (transformedValue){
-                        cb.prop("checked",true);
-                    } else {
-                        cb.prop("checked",false);
-                    }
-                    options.append(el);
-
-                }
-                dropdown(Fonts.getAllFamilies(),"family");
-                combobox(Fonts.getAllSizes(),"size",parseInt);
-                combobox(_.map(Colors.getAllNamedColors(),function(c){return c.name;}),"color",Colors.getColorForName,Colors.getNameForColor);
-                toggle("Bold","weight",function(bool){if (bool){ return "bold";} else {return "Normal";}},function(string){return string == "bold";});
-                toggle("Italic", "style", function(bool){if(bool){return "italic";} else { return "Normal";}}, function(string){return string=="italic"});
-                toggle("Underline","decoration",function(bool){if (bool) {return "underline";} else {return "Normal";}}, function(string){return string == "underline";});
-                return options;
-            }
-            var openingEditBox = false;
-            var lineWithSeparatorRatio = 1.3;
-            var createTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var input = $("<textarea />",{
-                    id:"textEditorInputArea"
-                }).css({
-                    "font-family":text.family,
-                    "font-size":px(text.size),
-                    width:px(text.width),
-                    height:px(text.runs.length * text.size * lineWithSeparatorRatio)
-                });
-                input.keyup(function(e){
-                    e.stopPropagation();
-                    var el = $(this).get(0);
-                    if ("selectionStart" in el && currentCaretPos != undefined){
-                        currentCaretPos = el.selectionStart;
-                        currentScrollTop = el.scrollTop;
-                    }
-                    if (e.ctrlKey){
-                        if(e.keyCode == 73) {
-                            if(text.style == "Normal"){
-                                text["style"] = "italic";
-                            }
-                            else {
-                                text["style"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                        if (e.keyCode == 66){
-                            if (text.weight == "Normal"){
-                                text["weight"] = "bold";
-                            } else {
-                                text["weight"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                    } else {
-                        newText = $(this).val();
-                        checkTyping();
-                    }
-                }).keydown(function(e){
-                    e.stopPropagation();
-                });
-                input.bind("paste",function(e){
-                    var thisBox = $(this);
-                    if ("type" in e && e.type == "paste"){
-                        window.setTimeout(function(){
-                            newText = thisBox.val();
-                            checkTyping();
-                        },0);
-                    }
-                });
-                $("#textEditorCustomizationOptionsContainer").remove();
-                var customizationOptionsContainer = $("<div />",{
-                    id:"textEditorCustomizationOptionsContainer"
-                }).html(textCustomizationOptions(text));
-                var textEditor = $("<div />",{
-                    id:"textEditor"
-                }).css({
-                    position:"absolute",
-                    left:px(newPos.x),
-                    top:px(newPos.y)
-                }).append(input).append(customizationOptionsContainer);
-                if (marquee){
-                    var selectionAdorner = $("#textAdorner");
-                    selectionAdorner.empty();
-                    selectionAdorner.append(marquee);
-                    textEditor.insertAfter(marquee);
-                }
-                input.val(text.runs.join("\n"));
-                updateTextEditor(text);
-                input.focus();
-            }
-            var updateTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var possiblyAdjustedHeight = text.height;
-                var possiblyAdjustedWidth = text.width * 1.1;
-                var possiblyAdjustedX = newPos.x;
-                var possiblyAdjustedY = newPos.y;
-                var acceptableMaxHeight = boardHeight * 0.7;
-                var acceptableMaxWidth = boardWidth * 0.7;
-                var acceptableMinX = 30;
-                var acceptableMinY = 30;
-                var acceptableMaxX = boardWidth - 100;
-                var acceptableMaxY = boardHeight - 100;
-
-                if (possiblyAdjustedWidth > acceptableMaxWidth){
-                    possiblyAdjustedWidth = acceptableMaxWidth;
-                }
-                if (possiblyAdjustedHeight > acceptableMaxHeight){
-                    possiblyAdjustedHeight = acceptableMaxHeight;
-                }
-                if (possiblyAdjustedX < acceptableMinX){
-                    possiblyAdjustedX = acceptableMinX;
-                }
-                if ((possiblyAdjustedX + possiblyAdjustedWidth) > acceptableMaxX){
-                    possiblyAdjustedX = acceptableMaxX - possiblyAdjustedWidth;
-                }
-                if (possiblyAdjustedY < acceptableMinY){
-                    possiblyAdjustedY = acceptableMinY;
-                }
-                if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
-                    possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
-                }
-                var textEditor = $("#textEditor");
-                var h = px(text.runs.length * text.size * lineWithSeparatorRatio);
-                textEditor.css({
-                    position:"absolute",
-                    left:px(possiblyAdjustedX),
-                    top:px(possiblyAdjustedY),
-                    width:px(possiblyAdjustedWidth),
-                    "min-width":px(240)
-                });
-                $("#textEditorCustomizationOptionsContainer").html(textCustomizationOptions(text));
-                textEditor.find("#closeTextEditor").remove();
-                textEditor.prepend($("<div />",{
-                    id:"closeTextEditor",
-                    class:"closeButton",
-                    text:"X"
-                }).css({
-                    "float":"right"
-                }).click(bounceAnd(function(){
-                    textEditor.remove();
-                })));
-
-                var inputArea = $("#textEditorInputArea");
-                inputArea.css({
-                    width:px(possiblyAdjustedWidth),
-                    "font-weight": text.weight,
-                    "font-style": text.style,
-                    "text-decoration": text.decoration,
-                    "color": text.color[0],
-                    "height":h,
-                    "font-family":text.family,
-                    "font-size":px(text.size)
-                });
-                var el = inputArea;
-                if ("setSelectionRange" in el){
-                    el.setSelectionRange(currentCaretPos,currentCaretPos);
-                    $(el).scrollTop(currentScrollTop);
-                }
-                inputArea.focus();
-            }
-            var editText = function(text,shouldNotPan){
-                var innerCreateTextboxFunction = undefined;
-                if (openingEditBox == true){
-                    oldText = text.text;
-                    openingEditBox = false;
-                    innerCreateTextboxFunction = createTextEditor;
-                } else {
-                    innerCreateTextboxFunction = updateTextEditor;
-                }
-                var inputContents = "";
-                if (oldText.runs != undefined){
-                    inputContents = oldText.runs.join("\n");
-                } else {
-                    inputContents = oldText;
-                }
-                newText = inputContents;
-                startTime = Date.now();
-                var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
-                var xInset = (boardWidth / 2 - text.width / 2);
-                var yInset = (boardHeight / 2 - text.height / 2);
-                var xDelta = text.bounds[0] - viewboxX - xInset;
-                var yDelta = text.bounds[1] - viewboxY - yInset;
-                if (shouldNotPan){
-                    innerCreateTextboxFunction(text);
-                } else {
-                    innerCreateTextboxFunction(text);
-                    //Extend.shift(xDelta,yDelta,innerCreateTextboxFunction(text));
-                }
-            }
-            var possiblyClearEditBoxesFunction = _.debounce(function(){
-                var newSelectedTexts = [];
-                _.forEach(selectedTexts,function(st){
-                    if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-                        newSelectedTexts.push(st);
-                    } else if ("runs" in st && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-                        newSelectedTexts.push(st);
-                    }
-                });
-                var selectionAdorner = $("#selectionAdorner");
-                selectedTexts = newSelectedTexts;
-                if (Modes.currentMode == Modes.insert && currentInsertMode.toLowerCase() == "text"){
-                    selectionAdorner.empty();
-                    if (_.size(selectedTexts) > 0){
-                        var text = selectedTexts[0];
-                        if (Modes.currentMode == Modes.insert && currentInsertMode.toLowerCase() == "text"){
-                            var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
-                            if (intersectRect(text.bounds,view)){
-                                if (!($("#textEditorInputArea").val())){
-                                    openingEditBox = true;
-                                }
-                                editText(text,true);
-                                drawSelectionBounds(text);
-                            } else {
-                                removeTextEditor();
-                            }
-                        } else {
-                            removeTextEditor();
-                        }
-                    } else {
-                        removeTextEditor();
-                    }
-                }
-            },200);
-
-            Progress.onBoardContentChanged["Modes.insert"] = possiblyClearEditBoxesFunction;
-            Progress.onSelectionChanged["Modes.insert"] = possiblyClearEditBoxesFunction;
-            Progress.historyReceived["Modes.insert"] = possiblyClearEditBoxesFunction;
-            Progress.onViewboxChanged["Modes.insert"] = possiblyClearEditBoxesFunction;
-            return {
-                activate:function(){
-                    marquee = $("<div />",{
-                        id:"textMarquee"
-                    });
-                    var adorner = $("#textAdorner");
-                    adorner.empty();
-                    if(!currentStyle){
-                        currentStyle = textStyles[0];
-                    }
-                    var uploadKey = "fileUploadSupported";
-                    if(uploadKey in Modes.insert){}
-                    else{
-                        Modes.insert[uploadKey] = !($("<input />",{
-                            type:"file"
-                        })[0].disabled);
-                    }
-                    Modes.currentMode.deactivate();
-                    Modes.currentMode = Modes.insert;
-                    setActiveMode("#insertTools","#insertMode");
-                    $(".activeBrush").removeClass("activeBrush");
-                    /*$("#textTools").empty();
-                     _.forEach(insertModes,function(modeName){
-                     var tsButton = $("<div/>",{
-                     class:"modeSpecificTool",
-                     text:modeName
-                     }).on("click",function(){
-                     currentInsertMode = modeName;
-                     $(".activeBrush").removeClass("activeBrush");
-                     $(this).addClass("activeBrush");
-                     }).appendTo("#textTools");
-                     if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                     tsButton.addClass("activeBrush");
-                     }
-                     });*/
-                    $("#insertTools button").each(function(){
-                        var modeName = $(this).attr("data-insertMode"),
-                            tsButton = $(this)
-                                .on("click",function(){
-                                    currentInsertMode = modeName;
-                                    $(".activeBrush").removeClass("activeBrush");
-                                    $(this).addClass("activeBrush");
-                                });
-                        if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                            tsButton.addClass("activeBrush");
-                        }
-                    });
-                    Progress.call("onLayoutUpdated");
-                    $("#minorText").click(function(){});
-                    $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
-                        deletedStanza = selectedTexts[0];
-                        updateStatus(sprintf("Deleted %s",deletedStanza.identity));
-                        var deleteTransform = batchTransform();
-                        deleteTransform.isDeleted = true;
-                        deleteTransform.textIds = [deletedStanza.identity];
-                        sendStanza(deleteTransform);
-                        upload.hide();
-                    }));
-                    updateStatus("Text input mode");
-                    var up = function(x,y,worldPos){
-                        if(typingTimer){
-                            typingTimerElapsed();
-                        }
-                        adorner.append(marquee);
-                        marquee.show();
-                        marquee.css({
-                            left:px(x),
-                            top:px(y)
-                        });
-                        oldText = "";
-                        newText = "";
-                        $("#insertOptions").remove();
-                        $("#textEditor").remove();
-                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
-                        var threshold = 10;
-                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        currentCaretPos = 0;
-                        currentScrollTop = 0;
-                        selectedTexts  = _.values(boardContent.texts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-                        });
-                        var text = selectedTexts[0];
-                        if(currentInsertMode.toLowerCase() != "text" || !text){
-                            var options = newInsertOptions(
-                                newScreenPos.x,newScreenPos.y,worldPos,
-                                function(){
-                                    openingEditBox = true;
-                                    text = createBlankText(worldPos);
-                                    selectedTexts[0] = text;
-                                    editText(text);
-                                },
-                                function(){
-                                });
-                            if(options){
-                                $(marquee).after(options);
-                            }
-                        }
-                        else{
-                            openingEditBox = true;
-                            editText(text);
-                        }
-                    }
-                    registerPositionHandlers(board,noop,noop,up);
-                },
-                deactivate:function(){
-                    removeTextEditor();
-                    selectedTexts = [];
-                    $("#selectionAdorner").empty();
-                    $("#textTools .modeSpecificTool").unbind("click");
-                    unregisterPositionHandlers(board);
-                    removeActiveMode();
-                }
-            };
-        })(),
-
         text:(function(){
             var marquee = undefined;
             var typingTimer = undefined;
-            var textStyles = [
-                {
-                    size:20,
-                    family:"Arial"
-                },
-                {
-                    size:10,
-                    family:"Arial"
-                }
-            ];
-            var insertModes = [
-                "Text"
-//                "Image"
-            ];
-            var textEditor = undefined;
-            var currentInsertMode = "text";
-            var currentStyle = undefined;
             var selectedTexts = [];
             var typingDelay = 1000;
             var typingTicks = 100;
@@ -1287,530 +472,68 @@ var Modes = (function(){
             var changeToTextBoxMade = false;
             var currentCaretPos = undefined;
             var currentScrollTop = 0;
+            var lineWithSeparatorRatio = 1.3; //magic number?
             var oldText = "";
             var newText = "";
+						var currentFamily = Fonts.getAllFamilies()[0];
+						var currentSize = Fonts.getAllSizes()[0];
             var typingTimerElapsed = function(){
-                WorkQueue.gracefullyResume();
-                clearTimeout(typingTimer);
-                typingTimer = undefined;
-                var subject = $.extend({},selectedTexts[0]);
-                subject.text = oldText;
-                delete subject.canvas;
-                sendStanza(subject);
+							WorkQueue.gracefullyResume();
+							clearTimeout(typingTimer);
+							typingTimer = undefined;
+							var subject = $.extend({},currentText);
+							subject.text = oldText;
+							delete subject.canvas;
+							sendStanza(subject);
             }
             var checkTyping = function(){
-                WorkQueue.pause();
-                var oldTextTest = oldText;
-                oldText = newText;
-                var el = $("#textEditorInputArea").get(0);
-                if ("selectionStart" in el){
-                    currentCaretPos = el.selectionStart;
-                    currentScrollTop = el.scrollTop;
-                }
+							WorkQueue.pause();
+							var oldTextTest = oldText;
+							oldText = newText;
+							var el = $("#textEditorInputArea").get(0);
+							if ("selectionStart" in el){
+								currentCaretPos = el.selectionStart;
+								currentScrollTop = el.scrollTop;
+							}
+							var t = Date.now();
+							var elapsed = t - startTime;
+							if(oldTextTest == newText || changeToTextBoxMade){
+								if(elapsed > typingDelay){
+									changeToTextBoxMade = false;
+									typingTimerElapsed();
+								}
+								else{
+									clearTimeout(typingTimer);
+									typingTimer = setTimeout(checkTyping,typingTicks);
+								}
+							}
+							else{
+								startTime = Date.now();
+								clearTimeout(typingTimer);
+								typingTimer = setTimeout(checkTyping,typingTicks);
+							}
+            };
+						var hasInitialized = false;
+						var currentText = {};	
 
-                var t = Date.now();
-                var elapsed = t - startTime;
-                if(oldTextTest == newText || changeToTextBoxMade){
-                    if(elapsed > typingDelay){
-                        changeToTextBoxMade = false;
-                        typingTimerElapsed();
-                    }
-                    else{
-                        clearTimeout(typingTimer);
-                        typingTimer = setTimeout(checkTyping,typingTicks);
-                    }
-                }
-                else{
-                    startTime = Date.now();
-                    clearTimeout(typingTimer);
-                    typingTimer = setTimeout(checkTyping,typingTicks);
-                }
-            };
-            var removeTextEditor = function(){
-                if(typingTimer){
-                    typingTimerElapsed();
-                }
-                $("#insertOptions").remove();
-                $("#textEditor").remove();
-            };
-            var noop = function(){};
-            var handleFilesSelected = function(worldPos){
-                return function(e){
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var files = e.target.files || e.dataTransfer.files;
-                    var limit = files.length;
-                    var file = files[0];
-                    if (file.type.indexOf("image") == 0) {
-                        WorkQueue.pause();
-                        var t = Date.now();
-                        var identity = sprintf("%s%s",UserSettings.getUsername(),t);
-                        var actionsCompleted = 0;
-                        var necessaryActions = 4;//readLocal,upload,sendStanza,receiveStanza
-                        var reader = new FileReader();
-                        var pos = worldToScreen(worldPos.x,worldPos.y);
-                        var pkg = $("<div />",{
-													id:"imageInsertOptions"
-												}).css({
-                            left:px(pos.left),
-                            top:px(pos.top)
-                        });
-                        if (marquee){
-                            var selectionAdorner = $("#textAdorner");
-                            selectionAdorner.empty();
-                            selectionAdorner.append(marquee);
-                            pkg.insertAfter(marquee);
-                        }
-                        var imageSizeControls = $("<div/>", {
-                            id:"imageSizeControls"
-                        }).css({
-                            height:px("80")
-                        }).appendTo(pkg);
-                        var thumbnail = $("<canvas />",{id:"imageUploadThumbnail"}).appendTo(pkg);
-                        var p = progress().value(actionsCompleted).max(necessaryActions);
-                        p.element.css({
-                            margin:"auto"
-                        });
-                        var progressContainer = $("<div />").css({
-                            position:"absolute",
-                            top:90,
-                            left:0,
-                            width:"100%",
-                            "text-align":"center"
-                        }).appendTo(pkg).append(p.element);
-                        var statusMesage = $("<div />").appendTo(pkg);
-                        updateTracking(identity,function(){
-                            actionsCompleted++;
-                            p.value(actionsCompleted);
-                            if(actionsCompleted >= necessaryActions){
-                                WorkQueue.gracefullyResume();
-                                stopTracking(identity);
-                            }
-                        },function(){
-                            WorkQueue.gracefullyResume();
-                            pkg.remove();
-                        });
-                        reader.onload = function(e){
-                            updateTracking(identity);
-                            var img = new Image();
-                            img.onload = function(e){
-                                var onComplete = function(){
-                                    var scale = viewboxWidth / boardWidth;
-                                    var screenWidth = img.width / scale;
-                                    var screenHeight = img.height / scale;
-                                    var centerX = worldPos.x + img.width / 2;
-                                    var centerY = worldPos.y + img.height / 2;
-                                    Extend.center(centerX,centerY);
-                                    p.element.css({
-                                        top:px(centerY / 2)
-                                    });
-                                    pkg.css({
-                                        left:px((boardWidth - screenWidth) / 2),
-                                        top:px((boardHeight - screenHeight) / 2),
-                                        "background-color":"lightgray",
-                                        border:"2px dotted blue"
-                                    });
-                                    var thumbnailDrawer = function(w,h){
-                                        return function(){
-                                            thumbnail.attr("width",w);
-                                            thumbnail.attr("height",h);
-                                            thumbnail.css({
-                                                width:px(w),
-                                                height: px(h)
-                                            });
-                                            thumbnail[0].getContext("2d").drawImage(img,0,0,w,h);
-                                        }
-                                    }
-                                    thumbnailDrawer(img.width,img.height)();
-                                    var scaleByProportion = function(scaleFactor, buttonName) {
-                                        return $("<div/>", {
-                                            class:"imageUploadSizeChoice"
-                                        })
-                                            .on("click",bounceAnd(thumbnailDrawer(img.width * scaleFactor, img.height * scaleFactor)))
-                                            .append($("<span/>",{text:buttonName}));
-                                    };
-                                    var scaleAtFixedSize = function(size, buttonName) {
-                                        return scaleByProportion(size/ Math.max(img.width,img.height),buttonName);
-                                    };
-                                    var thumbSize = scaleAtFixedSize(120, "120px");
-                                    var miniature = scaleAtFixedSize(320, "320px");
-                                    var nativeImage = scaleByProportion(1, "Native Size");
-                                    var mediumImage = scaleByProportion(0.75, "3/4 of Size");
-                                    var smallImage = scaleByProportion(0.5, "1/2 of Size");
-                                    var currentSlide = Conversations.getCurrentSlideJid();
-                                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(file.name.split(".")[0]));
-                                    var uploadImage = $("<div/>", {
-                                        class:"imageUploadSizeChoice",
-                                        text:"Upload"
-                                    }).on("click", bounceAnd(function() {
-                                        $.ajax({
-                                            url: url,
-                                            type: 'POST',
-                                            success: function(e){
-                                                updateTracking(identity);
-                                                var newIdentity = $(e).find("resourceUrl").text();
-                                                //                                                var thumbnail = $(thumbnail);
-                                                var thumbnail = $("#imageUploadThumbnail");
-                                                var loader = $("#upload");
-                                                var imageStanza = {
-                                                    type:"image",
-                                                    author:UserSettings.getUsername(),
-                                                    timestamp:t,
-                                                    tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-                                                    //identity,
-                                                    //identity:identity,
-                                                    identity:newIdentity,
-                                                    slide:currentSlide.toString(),
-                                                    source:$(e).text(),
-                                                    width:parseFloat(thumbnail.width()),
-                                                    height:parseFloat(thumbnail.height()),
-                                                    target:"presentationSpace",
-                                                    privacy:Privacy.getCurrentPrivacy(),
-                                                    x:worldPos.x,
-                                                    y:worldPos.y
-                                                };
-                                                console.log("Sending image stanza",imageStanza);
-                                                sendStanza(imageStanza);
-                                                updateTracking(identity);
-                                            },
-                                            error: function(e){
-                                                pkg.addClass("fail");
-                                            },
-                                            data:thumbnail[0].toDataURL(),
-                                            cache: false,
-                                            contentType: false,
-                                            processData: false
-                                        });
-                                    }));
-                                    imageSizeControls.append(thumbSize).append(miniature).append(smallImage).append(mediumImage).append(nativeImage);
-                                    uploadImage.appendTo(pkg);
-                                }
-                                var sx = viewboxWidth / img.width;
-                                var sy = viewboxHeight / img.height;
-                                var shift = 1 / Math.min(sx,sy);
-                                var scale = viewboxWidth / boardWidth;
-                                if(shift > 1){
-                                    Zoom.zoom(shift,true,onComplete);
-                                }
-                                else{
-                                    onComplete();
-                                }
-                            }
-                            img.src=e.target.result;
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                }
-            };
-            var newInsertOptions = function(x,y,worldPos,onText,onImage){
-                var clearOptions = function(){
-                    $("#insertOptions").remove();
-
-                }
-                var clearBefore = function(func){
-                    return function(){
-                        clearOptions();
-                        func();
-                    }
-                }
-                onText = clearBefore(onText);
-                onImage = clearBefore(onImage);
-                clearOptions();
-                var options = $("<div />",{
-                    id:"insertOptions",
-                    class:"insertOptionsContainer"
-                }).css({
-                    position:"absolute",
-                    left:px(x - 30),
-                    top:px(y)
-                });
-                options.append($("<div />",{
-                    text:"X",
-                    class:"closeButton"
-                }).click(bounceAnd(function(){
-                    options.remove();
-                })));
-                if(currentInsertMode.toLowerCase() == "image"){
-                    var insertImage = $("<input />",{
-                        type:"file",
-                        accept:"image/*",
-                        class:"fileUploadControl"
-                    }).appendTo(options);
-                    if (options){
-                        insertImage[0].addEventListener("change",function(e){
-                            clearOptions();
-                            handleFilesSelected(worldPos)(e);
-                        },false)
-                    }
-                    return options;
-                } else if (currentInsertMode.toLowerCase() == "text"){
-                    onText();
-                    return false;
-                } else {
-                    return false;
-                }
-            }
-            var color = "Black";
-            var updateTextFont = function(t){
+						var textEditor = undefined;
+						var textEditorInput = undefined;
+						var fontFamilySelector = undefined;
+						var fontSizeSelector = undefined;
+						var fontColorSelector = undefined;
+						var fontBoldSelector = undefined;
+						var fontItalicSelector = undefined;
+						var fontUnderlineSelector = undefined;
+            
+						var updateTextFont = function(t){
                 t.font = sprintf("%spx %s",t.size,t.family);
             }
-            var createBlankText = function(worldPos){
-                var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
-                var style = currentStyle;
-                var currentSlide = Conversations.getCurrentSlideJid();
-                var text = {
-                    author:UserSettings.getUsername(),
-                    color:Colors.getColorForName("black"),
-                    decoration:"None",
-                    identity:id,
-                    privacy:Privacy.getCurrentPrivacy(),
-                    family:style.family,
-                    size:style.size,
-                    slide:currentSlide,
-                    style:"Normal",
-                    tag:id,
-                    width:200,
-                    caret:0,
-                    height:60,
-                    x:worldPos.x,
-                    y:worldPos.y,
-                    target:"presentationSpace",
-                    text:"",
-                    timestamp:Date.now(),
-                    type:"text",
-                    weight:"Normal"
-                };
-                updateTextFont(text);
-                prerenderText(text);
-                selectedTexts = [];
-                selectedTexts.push(text);
-                return text;
-            };
-            var alteredText = function(t){
-                changeToTextBoxMade = true;
-                updateTextFont(t);
-                prerenderText(t);
-                checkTyping();
-                return t;
-            };
-            var textCustomizationOptions = function(text){
-                var options = $("<div />",{
-                    class:"textOptionsContainer"
-                });
-                var combobox = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var cont = $("<span/>").css({
-                        position:"relative"
-                    });
-                    var setTextPropValue = function(t){
-                        var newVal = transform ? transform(t) : t;
-                        var oldVal = text[property];
-                        if (newVal != oldVal){
-                            text[property] = newVal;
-                            alteredText(text);
-                            editText(text);
-                        }
-                    };
-                    var topRow = $("<div/>");
-                    var textArea = $("<input/>",{
-                        type:"text",
-                        class: "comboBoxTextfield",
-                        value:transformedValue
-                    }).on("blur",function(){
-                        var v = $(this).val();
-                        setTextPropValue(v);
-                    }).keydown(function(e){
-                    }).keyup(function(e){
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (e.keyCode == 13){
-                            var v = $(this).val();
-                            setTextPropValue(v);
-                        }
-                    });
-                    var toggleButton = $("<input/>",{
-                        class: "comboBoxButton ",
-                        type: "button",
-                        value:"More"
-                    });
-                    var bottomRow = $("<div/>").css({
-                        position:"absolute",
-                        "z-index":100
-                    });
-                    var listOfOptions = $("<div/>",{
-                        class:"comboBoxList"
-                    }).html(unwrap(opts.map(function(opt){
-                        return $("<div/>",{
-                            class:"comboBoxListItem",
-                            text:opt
-                        }).click(bounceAnd(function(){setTextPropValue(opt);}));
-                    })));
-                    var listContainer = $("<span/>",{
-                        class:"comboBoxListContainer"
-                    }).append(listOfOptions).hide();
-                    toggleButton.click(bounceAnd(function(){
-                        var isOpen = listOfOptions.is(":visible");
-                        $(".comboBoxListContainer").hide();
-                        if (!isOpen){
-                            listContainer.show();
-                        }
-                    }));
-                    topRow.append(textArea,toggleButton);
-                    bottomRow.append(listContainer);
-                    cont.append(topRow,bottomRow);
-                    options.append(cont);
-                }
-                var dropdown = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    if (!(_.contains(opts,transformedValue))){
-                        opts.push(transformedValue);
-                    }
-                    var cont = $("<select />",{
-                        class:"textOptionsDropdown"
-                    }).html(unwrap(opts.map(function(opt){
-                        var o = $("<option />",{
-                            value:opt,
-                            text:opt
-                        });
-                        if(transformedValue == opt){
-                            o.prop("selected",true);
-                        }
-                        return o;
-                    }))).change(function(){
-                        var v = $(this).val();
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    });
-                    options.append(cont);
-                }
-                var toggle = function(name,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var el = $("<span />",{
-                        class:"textOptionsToggleContainer"
-                    });
-                    $("<label />",{
-                        text:name,
-                        class:"textOptionsToggleLabel",
-                        for:name
-                    }).appendTo(el);
-                    var cb = $("<input />",{
-                        type:"checkbox",
-                        class:"textOptionsToggleButton",
-                        name:name
-                    }).change(function(change){
-                        var v = $(this).prop("checked");
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    }).appendTo(el);
-                    if (transformedValue){
-                        cb.prop("checked",true);
-                    } else {
-                        cb.prop("checked",false);
-                    }
-                    options.append(el);
-
-                }
-                dropdown(Fonts.getAllFamilies(),"family");
-                combobox(Fonts.getAllSizes(),"size",parseInt);
-                combobox(_.map(Colors.getAllNamedColors(),function(c){return c.name;}),"color",Colors.getColorForName,Colors.getNameForColor);
-                toggle("Bold","weight",function(bool){if (bool){ return "bold";} else {return "Normal";}},function(string){return string == "bold";});
-                toggle("Italic", "style", function(bool){if(bool){return "italic";} else { return "Normal";}}, function(string){return string=="italic"});
-                toggle("Underline","decoration",function(bool){if (bool) {return "underline";} else {return "Normal";}}, function(string){return string == "underline";});
-                return options;
-            }
-            var openingEditBox = false;
-            var lineWithSeparatorRatio = 1.3;
-            var createTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var input = $("<textarea />",{
-                    id:"textEditorInputArea"
-                }).css({
-                    "font-family":text.family,
-                    "font-size":px(text.size),
-                    width:px(text.width),
-                    height:px(text.runs.length * text.size * lineWithSeparatorRatio)
-                });
-                input.keyup(function(e){
-                    e.stopPropagation();
-                    var el = $(this).get(0);
-                    if ("selectionStart" in el && currentCaretPos != undefined){
-                        currentCaretPos = el.selectionStart;
-                        currentScrollTop = el.scrollTop;
-                    }
-                    if (e.ctrlKey){
-                        if(e.keyCode == 73) {
-                            if(text.style == "Normal"){
-                                text["style"] = "italic";
-                            }
-                            else {
-                                text["style"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                        if (e.keyCode == 66){
-                            if (text.weight == "Normal"){
-                                text["weight"] = "bold";
-                            } else {
-                                text["weight"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                    } else {
-                        newText = $(this).val();
-                        checkTyping();
-                    }
-                }).keydown(function(e){
-                    e.stopPropagation();
-                });
-                input.bind("paste",function(e){
-                    var thisBox = $(this);
-                    if ("type" in e && e.type == "paste"){
-                        window.setTimeout(function(){
-                            newText = thisBox.val();
-                            checkTyping();
-                        },0);
-                    }
-                });
-                $("#textEditorCustomizationOptionsContainer").remove();
-                var customizationOptionsContainer = $("<div />",{
-                    id:"textEditorCustomizationOptionsContainer"
-                }).html(textCustomizationOptions(text));
-                var textEditor = $("<div />",{
-                    id:"textEditor"
-                }).css({
-                    position:"absolute",
-                    left:px(newPos.x),
-                    top:px(newPos.y)
-                }).append(input).append(customizationOptionsContainer);
-                if (marquee){
-                    var selectionAdorner = $("#textAdorner");
-                    selectionAdorner.empty();
-                    selectionAdorner.append(marquee);
-                    textEditor.insertAfter(marquee);
-                }
-                input.val(text.runs.join("\n"));
-                updateTextEditor(text);
-                input.focus();
-            }
-            var updateTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var possiblyAdjustedHeight = text.height;
-                var possiblyAdjustedWidth = text.width * 1.1;
-                var possiblyAdjustedX = newPos.x;
-                var possiblyAdjustedY = newPos.y;
+						var updateTextEditor = function(){
+							if ("type" in currentText && currentText.type == "text"){
+                var possiblyAdjustedHeight = currentText.height;
+                var possiblyAdjustedWidth = currentText.width * 1.1;
+                var possiblyAdjustedX = currentText.x;
+                var possiblyAdjustedY = currentText.y;
                 var acceptableMaxHeight = boardHeight * 0.7;
                 var acceptableMaxWidth = boardWidth * 0.7;
                 var acceptableMinX = 30;
@@ -1836,996 +559,573 @@ var Modes = (function(){
                 if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
                     possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
                 }
-                var textEditor = $("#textEditor");
-                var h = px(text.runs.length * text.size * lineWithSeparatorRatio);
+								var h = undefined;
+								if ("runs" in currentText){
+									h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
+									textEditorInput.val(currentText.runs.join("\n"));
+								} else {
+									h = px(text.size);
+									textEditorInput.val(currentText.text);
+								}
+								// there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
                 textEditor.css({
-                    position:"absolute",
-                    left:px(possiblyAdjustedX),
-                    top:px(possiblyAdjustedY),
-                    width:px(possiblyAdjustedWidth),
-                    "min-width":px(240)
+									position:"absolute",
+									left:px(possiblyAdjustedX),
+									top:px(possiblyAdjustedY),
+									width:px(possiblyAdjustedWidth),
+									"min-width":px(240)
                 });
-                $("#textEditorCustomizationOptionsContainer").html(textCustomizationOptions(text));
-                textEditor.find("#closeTextEditor").remove();
-                textEditor.prepend($("<div />",{
-                    id:"closeTextEditor",
-                    class:"closeButton",
-                    text:"X"
-                }).css({
-                    "float":"right"
-                }).click(bounceAnd(function(){
-                    textEditor.remove();
-                })));
+								updateTextFont(currentText);
+                textEditorInput.css({
+									width:px(possiblyAdjustedWidth),
+									"font-weight": currentText.weight,
+									"font-style": currentText.style,
+									"text-decoration": currentText.decoration,
+									"color": currentText.color[0],
+									"height":h,
+									"font-family":currentText.family,
+									"font-size":px(currentText.size)
+                });
+                if ("setSelectionRange" in textEditorInput){
+									textEditorInput.setSelectionRange(currentCaretPos,currentCaretPos);
+									$(textEditorInput).scrollTop(currentScrollTop);
+                }
+								$("#textEditorClose").on("click",function(){
+									textEditor.hide();
+								});
+								fontFamilySelector.value = currentText["family"];
+								fontSizeSelector.value = currentText["size"];
+								fontColorSelector.value = currentText["color"];
+								if (currentText.weight == "bold"){
+									fontBoldSelector.addClass("active");
+								} else {
+									fontBoldSelector.removeClass("active");
+								}
+								if (currentText.style == "italic"){
+									fontItalicSelector.addClass("active");
+								} else {
+									fontItalicSelector.removeClass("active");
+								}
+								if (currentText.decoration == "underline"){
+									fontUnderlineSelector.addClass("active");
+								} else {
+									fontUnderlineSelector.removeClass("active");
+								}
+								textEditor.show();
+								textEditorInput.focus();
+							} else {
+								textEditor.hide();
+							}
+						};
+						if (!hasInitialized){
+							$(function(){
+								hasInitialized = true;
+								textEditor = $("#textEditor");
+								textEditorInput = $("#textEditorInputArea");
+								fontFamilySelector = $("#fontFamilySelector");
+								fontSizeSelector = $("#fontSizeSelector");
+								fontColorSelector = $("#fontColorSelector");
+								fontBoldSelector = $("#fontBoldSelector");
+								fontItalicSelector = $("#fontItalicSelector");
+								fontUnderlineSelector = $("#fontUnderlineSelector");
+								textEditor.hide();
+								var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
+								fontFamilySelector.empty();
+								Fonts.getAllFamilies().map(function(family){
+									fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
+								});
+								fontFamilySelector.on("change",function(e){
+									var newFamily = $(this).val();
+									currentFamily = newFamily;
+									if ("family" in currentText){
+										currentText["family"] = newFamily;
+										typingTimerElapsed();
+									}
+									updateTextEditor();
+								});
+								var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
+								fontSizeSelector.empty();
+								Fonts.getAllSizes().map(function(size){
+									fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
+								});
+								fontSizeSelector.on("change",function(e){
+									var newSizeInt = parseInt($(this).val());
+									currentSize = newSizeInt;
+									if ("size" in currentText){
+										currentText["size"] = newSizeInt;
+										typingTimerElapsed();
+									}
+									updateTextEditor();
+								});
+								var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
+								fontColorSelector.empty();
+								Colors.getAllNamedColors().map(function(color){
+									fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
+								});
+								fontColorSelector.on("change",function(e){
+									var newColor = $(this).val();
+									if ("color" in currentText){
+										currentText["color"] = Colors.getColorForName(newColor);
+										typingTimerElapsed();
+									}
+									updateTextEditor();
+								});
+								fontBoldSelector.on("click",function(){
+									if ("weight" in currentText){
+										currentText["weight"] = !fontBoldSelector.hasClass("active") ? "bold" : "Normal";
+										typingTimerElapsed();
+									}
+									updateTextEditor();
+								});
+								fontItalicSelector.on("click",function(){
+									if ("style" in currentText){
+										currentText["style"] = !fontItalicSelector.hasClass("active") ? "italic" : "Normal";
+										typingTimerElapsed();
+									}
+									updateTextEditor();
+								});
+								fontUnderlineSelector.on("click",function(){
+									if ("decoration" in currentText){
+										currentText["decoration"] = !fontUnderlineSelector.hasClass("active") ? "underline" : "Normal";
+									}
+									updateTextEditor();
+									typingTimerElapsed();
+								});
+								textEditorInput.keyup(function(e){
+									if ("type" in currentText && currentText.type == "text"){
+										e.stopPropagation();
+										var el = $(this).get(0);
+										if ("selectionStart" in el && currentCaretPos != undefined){
+												currentCaretPos = el.selectionStart;
+												currentScrollTop = el.scrollTop;
+										}
+										if (e.ctrlKey){
+											if(e.keyCode == 73) {
+												if(currentText.style == "Normal"){
+														currentText["style"] = "italic";
+												}
+												else {
+														currentText["style"] = "Normal";
+												}
+												updateTextEditor();
+												sendText();
+											}
+											if (e.keyCode == 66){
+												if (currentText.weight == "Normal"){
+														currentText["weight"] = "bold";
+												} else {
+														currentText["weight"] = "Normal";
+												}
+												updateTextEditor();
+												typingTimerElapsed();
+											}
+										} else {
+											newText = $(this).val();
+											checkTyping();
+										}
+									}
+								}).keydown(function(e){
+									if ("type" in currentText && currentText.type == "text"){
+										e.stopPropagation();
+									}
+								});
+								textEditorInput.bind("paste",function(e){
+									if ("type" in currentText && currentText.type == "text"){
+										var thisBox = $(this);
+										if ("type" in e && e.type == "paste"){
+											window.setTimeout(function(){
+												newText = thisBox.val();
+												checkTyping();
+											},0);
+										}
+									}
+								});
+							});
+						}
+            var removeTextEditor = function(){
+							if(typingTimer){
+								typingTimerElapsed();
+							}
+							currentText = {};
+							$("#textEditor").hide();
+            };
+            var createBlankText = function(worldPos){
+							var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
+							var currentSlide = Conversations.getCurrentSlideJid();
+							var text = {
+								author:UserSettings.getUsername(),
+								color:Colors.getColorForName("black"),
+								decoration:"None",
+								identity:id,
+								privacy:Privacy.getCurrentPrivacy(),
+								family:currentFamily,
+								size:currentSize,
+								slide:currentSlide,
+								style:"Normal",
+								tag:id,
+								width:200,
+								caret:0,
+								height:60,
+								x:worldPos.x,
+								y:worldPos.y,
+								target:"presentationSpace",
+								text:"",
+								timestamp:Date.now(),
+								type:"text",
+								weight:"Normal"
+							};
+							prerenderText(text);
+							selectedTexts = [];
+							selectedTexts.push(text);
+							currentText = text;
+							updateTextEditor();
+							return text;
+            };
+            var alteredText = function(t){
+							changeToTextBoxMade = true;
+							updateTextFont(t);
+							prerenderText(t);
+							checkTyping();
+							return t;
+            };
 
-                var inputArea = $("#textEditorInputArea");
-                inputArea.css({
-                    width:px(possiblyAdjustedWidth),
-                    "font-weight": text.weight,
-                    "font-style": text.style,
-                    "text-decoration": text.decoration,
-                    "color": text.color[0],
-                    "height":h,
-                    "font-family":text.family,
-                    "font-size":px(text.size)
-                });
-                var el = inputArea;
-                if ("setSelectionRange" in el){
-                    el.setSelectionRange(currentCaretPos,currentCaretPos);
-                    $(el).scrollTop(currentScrollTop);
-                }
-                inputArea.focus();
-            }
-            var editText = function(text,shouldNotPan){
-                var innerCreateTextboxFunction = undefined;
-                if (openingEditBox == true){
-                    oldText = text.text;
-                    openingEditBox = false;
-                    innerCreateTextboxFunction = createTextEditor;
-                } else {
-                    innerCreateTextboxFunction = updateTextEditor;
-                }
-                var inputContents = "";
-                if (oldText.runs != undefined){
-                    inputContents = oldText.runs.join("\n");
-                } else {
-                    inputContents = oldText;
-                }
-                newText = inputContents;
-                startTime = Date.now();
-                var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
-                var xInset = (boardWidth / 2 - text.width / 2);
-                var yInset = (boardHeight / 2 - text.height / 2);
-                var xDelta = text.bounds[0] - viewboxX - xInset;
-                var yDelta = text.bounds[1] - viewboxY - yInset;
-                if (shouldNotPan){
-                    innerCreateTextboxFunction(text);
-                } else {
-                    innerCreateTextboxFunction(text);
-                    //Extend.shift(xDelta,yDelta,innerCreateTextboxFunction(text));
-                }
+            var editText = function(text){
+							oldText = text.text;
+							var inputContents = "";
+							if (oldText.runs != undefined){
+								inputContents = oldText.runs.join("\n");
+							} else {
+								inputContents = oldText;
+							}
+							newText = inputContents;
+							startTime = Date.now();
+							var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
+							var xInset = (boardWidth / 2 - text.width / 2);
+							var yInset = (boardHeight / 2 - text.height / 2);
+							var xDelta = text.bounds[0] - viewboxX - xInset;
+							var yDelta = text.bounds[1] - viewboxY - yInset;
+							updateTextEditor();
             }
             var possiblyClearEditBoxesFunction = _.debounce(function(){
-                var newSelectedTexts = [];
-                _.forEach(selectedTexts,function(st){
-                    if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-                        newSelectedTexts.push(st);
-                    } else if ("runs" in st && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-                        newSelectedTexts.push(st);
-                    }
-                });
-                var selectionAdorner = $("#selectionAdorner");
-                selectedTexts = newSelectedTexts;
-                if (Modes.currentMode == Modes.text){
-                    selectionAdorner.empty();
-                    if (_.size(selectedTexts) > 0){
-                        var text = selectedTexts[0];
-												var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
-												if (intersectRect(text.bounds,view)){
-														if (!($("#textEditorInputArea").val())){
-																openingEditBox = true;
-														}
-														editText(text,true);
-														drawSelectionBounds(text);
-												} else {
-														removeTextEditor();
-												}
-                    } else {
-                        removeTextEditor();
-                    }
-                }
+							var newSelectedTexts = [];
+							_.forEach(selectedTexts,function(st){
+								if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
+									newSelectedTexts.push(st);
+								} else if ("runs" in st && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
+									newSelectedTexts.push(st);
+								}
+							});
+							selectedTexts = newSelectedTexts;
+							if (Modes.currentMode == Modes.text){
+								if (!("type" in currentText) && (currentText.type != "text")){
+									currentText = selectedTexts[0];
+								}
+								selectedTexts[0] = currentText;
+								if (_.size(selectedTexts) > 0 ){
+									var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
+									if (intersectRect(currentText.bounds,view)){
+										editText(currentText);
+										drawSelectionBounds(currentText);
+									} else {
+										removeTextEditor();
+									}
+								} else {
+									removeTextEditor();
+								}
+							}
             },200);
-
             Progress.onBoardContentChanged["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.onSelectionChanged["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.historyReceived["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.onViewboxChanged["Modes.text"] = possiblyClearEditBoxesFunction;
+						var noop = function(){};
             return {
-                activate:function(){
-                    marquee = $("<div />",{
-                        id:"textMarquee"
-                    });
-                    var adorner = $("#textAdorner");
-                    adorner.empty();
-                    if(!currentStyle){
-                        currentStyle = textStyles[0];
-                    }
-                    var uploadKey = "fileUploadSupported";
-                    if(uploadKey in Modes.insert){}
-                    else{
-                        Modes.insert[uploadKey] = !($("<input />",{
-                            type:"file"
-                        })[0].disabled);
-                    }
-                    Modes.currentMode.deactivate();
-                    Modes.currentMode = Modes.insert;
-                    setActiveMode("#textTools","#insertText");
-                    $(".activeBrush").removeClass("activeBrush");
-
-                    /*$("#textTools").empty();
-                     _.forEach(insertModes,function(modeName){
-                     var tsButton = $("<div/>",{
-                     class:"modeSpecificTool",
-                     text:modeName
-                     }).on("click",function(){
-                     currentInsertMode = modeName;
-                     $(".activeBrush").removeClass("activeBrush");
-                     $(this).addClass("activeBrush");
-                     }).appendTo("#textTools");
-                     if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                     tsButton.addClass("activeBrush");
-                     }
-                     });*/
-										/*
-                    $("#insertTools button").each(function(){
-                        var modeName = $(this).attr("insertMode"),
-                            tsButton = $(this)
-                                .on("click",function(){
-                                    currentInsertMode = modeName;
-                                    $(".activeBrush").removeClass("activeBrush");
-                                    $(this).addClass("activeBrush");
-                                });
-                        if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                            tsButton.addClass("activeBrush");
-                        }
-                    });
-										*/
-                    Progress.call("onLayoutUpdated");
-                    $("#minorText").click(function(){});
-                    $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
-                        deletedStanza = selectedTexts[0];
-                        updateStatus(sprintf("Deleted %s",deletedStanza.identity));
-                        var deleteTransform = batchTransform();
-                        deleteTransform.isDeleted = true;
-                        deleteTransform.textIds = [deletedStanza.identity];
-                        sendStanza(deleteTransform);
-                        upload.hide();
-                    }));
-                    updateStatus("Text input mode");
-                    var up = function(x,y,worldPos){
-                        if(typingTimer){
-                            typingTimerElapsed();
-                        }
-                        adorner.append(marquee);
-                        marquee.show();
-                        marquee.css({
-                            left:px(x),
-                            top:px(y)
-                        });
-                        oldText = "";
-                        newText = "";
-                        $("#insertOptions").remove();
-                        $("#textEditor").remove();
-                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
-                        var threshold = 10;
-                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        currentCaretPos = 0;
-                        currentScrollTop = 0;
-                        selectedTexts  = _.values(boardContent.texts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-                        });
-                        var text = selectedTexts[0];
-                        if(currentInsertMode.toLowerCase() != "text" || !text){
-                            var options = newInsertOptions(
-                                newScreenPos.x,newScreenPos.y,worldPos,
-                                function(){
-                                    openingEditBox = true;
-                                    text = createBlankText(worldPos);
-                                    selectedTexts[0] = text;
-                                    editText(text);
-                                },
-                                function(){
-                                });
-                            if(options){
-                                $(marquee).after(options);
-                            }
-                        }
-                        else{
-                            openingEditBox = true;
-                            editText(text);
-                        }
-                    }
-                    registerPositionHandlers(board,noop,noop,up);
-                },
-                deactivate:function(){
-                    removeTextEditor();
-                    selectedTexts = [];
-                    $("#selectionAdorner").empty();
-                    $("#textTools .modeSpecificTool").unbind("click");
-                    unregisterPositionHandlers(board);
-                    removeActiveMode();
-                }
+							activate:function(){
+								marquee = $("#textMarquee");
+								Modes.currentMode.deactivate();
+								Modes.currentMode = Modes.text;
+								setActiveMode("#textTools","#insertText");
+								$(".activeBrush").removeClass("activeBrush");
+								Progress.call("onLayoutUpdated");
+								$("#minorText").click(function(){});
+								$("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
+									deletedStanza = selectedTexts[0];
+									updateStatus(sprintf("Deleted %s",deletedStanza.identity));
+									var deleteTransform = batchTransform();
+									deleteTransform.isDeleted = true;
+									deleteTransform.textIds = [deletedStanza.identity];
+									sendStanza(deleteTransform);
+								}));
+								updateStatus("Text input mode");
+								var up = function(x,y,worldPos){
+									if(typingTimer){
+										typingTimerElapsed();
+									}
+									marquee.show();
+									marquee.css({
+										left:px(x),
+										top:px(y)
+									});
+									oldText = "";
+									newText = "";
+									var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
+									var threshold = 10;
+									var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+									currentCaretPos = 0;
+									currentScrollTop = 0;
+									selectedTexts = _.values(boardContent.texts).filter(function(text){
+										return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
+									});
+									if (selectedTexts.length > 0){
+										currentText = selectedTexts[0];
+										editText(currentText);
+									} else {
+										var newText = createBlankText(worldPos);
+										currentText = newText;
+										selectedTexts.push(newText);
+										editText(newText);
+									}
+									Modes.select.texts = [currentText];
+									progress.call("onSelectionChanged");
+								}
+								registerPositionHandlers(board,noop,noop,up);
+							},
+							deactivate:function(){
+								removeTextEditor();
+								selectedTexts = [];
+								unregisterPositionHandlers(board);
+								removeActiveMode();
+							}
             };
         })(),
 
         image:(function(){
             var marquee = undefined;
-            var typingTimer = undefined;
-            var textStyles = [
-                {
-                    size:20,
-                    family:"Arial"
-                },
-                {
-                    size:10,
-                    family:"Arial"
-                }
-            ];
-            var insertModes = [
-//                "Text",
-                "Image"
-            ];
-            var textEditor = undefined;
-            var currentInsertMode = "image";
-            var currentStyle = undefined;
-            var selectedTexts = [];
-            var typingDelay = 1000;
-            var typingTicks = 100;
-            var startTime = Date.now();
-            var changeToTextBoxMade = false;
-            var currentCaretPos = undefined;
-            var currentScrollTop = 0;
-            var oldText = "";
-            var newText = "";
-            var typingTimerElapsed = function(){
-                WorkQueue.gracefullyResume();
-                clearTimeout(typingTimer);
-                typingTimer = undefined;
-                var subject = $.extend({},selectedTexts[0]);
-                subject.text = oldText;
-                delete subject.canvas;
-                sendStanza(subject);
+						var noop = function(){};
+						var currentImage = {};
+						var insertOptions = undefined;
+						var imageInsertOptionsClose = undefined;
+						var imageFileChoice = undefined;
+						var imageSizeControls = undefined;
+						var imageSizeChoiceSelector = undefined;
+						var imageUploadThumbnail = undefined;
+						var imageProgressContainer = undefined;
+						var imageUploadButton = undefined;
+						var	imageUploadX = undefined;
+						var	imageUploadY = undefined;
+						var	imageUploadWidth = undefined;
+						var	imageUploadHeight = undefined;
+						var imageSizeChoices = [
+							{name:"160*120",func:function(w,h){return {w:160,h:120}}},
+							{name:"320*240",func:function(w,h){return {w:320,h:240}}},
+							{name:"25%",func:function(w,h){return {w:w / 4, h:h / 4}}},
+							{name:"50%",func:function(w,h){return {w:w / 2, h:h / 2}}},
+							{name:"75%",func:function(w,h){return {w:(w / 4) * 3, h:(h / 4) * 3}}},
+							{name:"Native",func:function(w,h){return {w:w,h:h}}}
+						];
+						var updateImageEditor = function(){
+							if ("type" in currentImage && currentImage.type == "imageDefinition"){
+								// there is now only one place that the imageOptions dialog gets positioned, and it's here, so if you want to move it about, etc, do it right here.
+								insertOptions.css({
+									position:"absolute",
+									left:px(currentImage.screenX - 30),
+									top:px(currentImage.screenY)
+								});
+								if ("fileUpload" in currentImage){
+									imageFileChoice.hide();
+									imageSizeControls.show();
+									$.map(imageSizeChoiceSelector.find(".imageSizeChoice"),function(elem){
+										if ("thumbnailSize" in currentImage && currentImage.thumbnailSize.name == $(elem).text()){
+											$(elem).addClass("active");
+										} else {
+											$(elem).removeClass("active");
+										}
+									});
+									var reader = new FileReader();
+									reader.onload = function(e){
+										if (!("thumbnailSize" in currentImage)){
+											currentImage.thumbnailSize = imageSizeChoices[0];
+										}
+										imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+										var img = new Image();
+										img.onload = function(e){
+											var resizedDimensions = currentImage.thumbnailSize.func(img.width,img.height);
+											var w = resizedDimensions.w;
+											var h = resizedDimensions.h;
+											imageUploadThumbnail.attr("width",w);
+											imageUploadThumbnail.attr("height",h);
+											imageUploadThumbnail.css({
+													width:px(w),
+													height: px(h)
+											});
+											imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,w,h);
+											imageUploadX.text(currentImage.x);
+											imageUploadY.text(currentImage.y);
+											imageUploadWidth.text(w);
+											imageUploadHeight.text(h);
+											currentImage.width = w;
+											currentImage.height = h;
+											currentImage.resizedImage = imageUploadThumbnail[0].toDataURL();
+											if ("resizedImage" in currentImage){
+												imageUploadButton.show();
+											}
+										};
+										img.src = e.target.result;				
+									};
+									reader.readAsDataURL(currentImage.fileUpload);
+									if ("resizedImage" in currentImage){
+										imageUploadButton.show();
+									} else {
+										imageUploadButton.hide();
+									}
+								} else {
+									imageFileChoice.show();
+									imageSizeControls.hide();
+								}
+								insertOptions.show();
+							} else {
+								resetImageUpload();
+							}
+						};
+            var newInsertOptions = function(x,y,worldPos,onImage){
+							currentImage = {
+								"type":"imageDefinition",
+								"screenX":x,
+								"screenY":y,
+								"x":worldPos.x,
+								"y":worldPos.y
+							}
+							updateImageEditor();
             }
-            var checkTyping = function(){
-                WorkQueue.pause();
-                var oldTextTest = oldText;
-                oldText = newText;
-                var el = $("#textEditorInputArea").get(0);
-                if ("selectionStart" in el){
-                    currentCaretPos = el.selectionStart;
-                    currentScrollTop = el.scrollTop;
-                }
-
-                var t = Date.now();
-                var elapsed = t - startTime;
-                if(oldTextTest == newText || changeToTextBoxMade){
-                    if(elapsed > typingDelay){
-                        changeToTextBoxMade = false;
-                        typingTimerElapsed();
-                    }
-                    else{
-                        clearTimeout(typingTimer);
-                        typingTimer = setTimeout(checkTyping,typingTicks);
-                    }
-                }
-                else{
-                    startTime = Date.now();
-                    clearTimeout(typingTimer);
-                    typingTimer = setTimeout(checkTyping,typingTicks);
-                }
-            };
-            var removeTextEditor = function(){
-                if(typingTimer){
-                    typingTimerElapsed();
-                }
-                $("#insertOptions").remove();
-                $("#textEditor").remove();
-            };
-            var noop = function(){};
-            var handleFilesSelected = function(worldPos){
-                return function(e){
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var files = e.target.files || e.dataTransfer.files;
-                    var limit = files.length;
-                    var file = files[0];
-                    if (file.type.indexOf("image") == 0) {
-                        WorkQueue.pause();
-                        var t = Date.now();
-                        var identity = sprintf("%s%s",UserSettings.getUsername(),t);
-                        var actionsCompleted = 0;
-                        var necessaryActions = 4;//readLocal,upload,sendStanza,receiveStanza
-                        var reader = new FileReader();
-                        var pos = worldToScreen(worldPos.x,worldPos.y);
-                        var pkg = $("<div />",{
-													id:"imageInsertOptions"
-												}).css({
-                            left:px(pos.left),
-                            top:px(pos.top)
-                        });
-                        if (marquee){
-                            var selectionAdorner = $("#textAdorner");
-                            selectionAdorner.empty();
-                            selectionAdorner.append(marquee);
-                            pkg.insertAfter(marquee);
-                        }
-                        var imageSizeControls = $("<div/>", {
-                            id:"imageSizeControls"
-                        }).css({
-                            height:px("80")
-                        }).appendTo(pkg);
-                        var thumbnail = $("<canvas />",{id:"imageUploadThumbnail"}).appendTo(pkg);
-                        var p = progress().value(actionsCompleted).max(necessaryActions);
-                        p.element.css({
-                            margin:"auto"
-                        });
-                        var progressContainer = $("<div />").css({
-                            position:"absolute",
-                            top:90,
-                            left:0,
-                            width:"100%",
-                            "text-align":"center"
-                        }).appendTo(pkg).append(p.element);
-                        var statusMesage = $("<div />").appendTo(pkg);
-                        updateTracking(identity,function(){
-                            actionsCompleted++;
-                            p.value(actionsCompleted);
-                            if(actionsCompleted >= necessaryActions){
-                                WorkQueue.gracefullyResume();
-                                stopTracking(identity);
-                            }
-                        },function(){
-                            WorkQueue.gracefullyResume();
-                            pkg.remove();
-                        });
-                        reader.onload = function(e){
-                            updateTracking(identity);
-                            var img = new Image();
-                            img.onload = function(e){
-                                var onComplete = function(){
-                                    var scale = viewboxWidth / boardWidth;
-                                    var screenWidth = img.width / scale;
-                                    var screenHeight = img.height / scale;
-                                    var centerX = worldPos.x + img.width / 2;
-                                    var centerY = worldPos.y + img.height / 2;
-                                    Extend.center(centerX,centerY);
-                                    p.element.css({
-                                        top:px(centerY / 2)
-                                    });
-                                    pkg.css({
-                                        left:px((boardWidth - screenWidth) / 2),
-                                        top:px((boardHeight - screenHeight) / 2),
-                                        "background-color":"lightgray",
-                                        border:"2px dotted blue"
-                                    });
-                                    var thumbnailDrawer = function(w,h){
-                                        return function(){
-                                            thumbnail.attr("width",w);
-                                            thumbnail.attr("height",h);
-                                            thumbnail.css({
-                                                width:px(w),
-                                                height: px(h)
-                                            });
-                                            thumbnail[0].getContext("2d").drawImage(img,0,0,w,h);
-                                        }
-                                    }
-                                    thumbnailDrawer(img.width,img.height)();
-                                    var scaleByProportion = function(scaleFactor, buttonName) {
-                                        return $("<div/>", {
-                                            class:"imageUploadSizeChoice"
-                                        })
-                                            .on("click",bounceAnd(thumbnailDrawer(img.width * scaleFactor, img.height * scaleFactor)))
-                                            .append($("<span/>",{text:buttonName}));
-                                    };
-                                    var scaleAtFixedSize = function(size, buttonName) {
-                                        return scaleByProportion(size/ Math.max(img.width,img.height),buttonName);
-                                    };
-                                    var thumbSize = scaleAtFixedSize(120, "120px");
-                                    var miniature = scaleAtFixedSize(320, "320px");
-                                    var nativeImage = scaleByProportion(1, "Native Size");
-                                    var mediumImage = scaleByProportion(0.75, "3/4 of Size");
-                                    var smallImage = scaleByProportion(0.5, "1/2 of Size");
-                                    var currentSlide = Conversations.getCurrentSlideJid();
-                                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(file.name.split(".")[0]));
-                                    var uploadImage = $("<div/>", {
-                                        class:"imageUploadSizeChoice",
-                                        text:"Upload"
-                                    }).on("click", bounceAnd(function() {
-                                        $.ajax({
-                                            url: url,
-                                            type: 'POST',
-                                            success: function(e){
-                                                updateTracking(identity);
-                                                var newIdentity = $(e).find("resourceUrl").text();
-                                                //                                                var thumbnail = $(thumbnail);
-                                                var thumbnail = $("#imageUploadThumbnail");
-                                                var loader = $("#upload");
-                                                var imageStanza = {
-                                                    type:"image",
-                                                    author:UserSettings.getUsername(),
-                                                    timestamp:t,
-                                                    tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-                                                    //identity,
-                                                    //identity:identity,
-                                                    identity:newIdentity,
-                                                    slide:currentSlide.toString(),
-                                                    source:$(e).text(),
-                                                    width:parseFloat(thumbnail.width()),
-                                                    height:parseFloat(thumbnail.height()),
-                                                    target:"presentationSpace",
-                                                    privacy:Privacy.getCurrentPrivacy(),
-                                                    x:worldPos.x,
-                                                    y:worldPos.y
-                                                };
-                                                console.log("Sending image stanza",imageStanza);
-                                                sendStanza(imageStanza);
-                                                updateTracking(identity);
-                                            },
-                                            error: function(e){
-                                                pkg.addClass("fail");
-                                            },
-                                            data:thumbnail[0].toDataURL(),
-                                            cache: false,
-                                            contentType: false,
-                                            processData: false
-                                        });
-                                    }));
-                                    imageSizeControls.append(thumbSize).append(miniature).append(smallImage).append(mediumImage).append(nativeImage);
-                                    uploadImage.appendTo(pkg);
-                                }
-                                var sx = viewboxWidth / img.width;
-                                var sy = viewboxHeight / img.height;
-                                var shift = 1 / Math.min(sx,sy);
-                                var scale = viewboxWidth / boardWidth;
-                                if(shift > 1){
-                                    Zoom.zoom(shift,true,onComplete);
-                                }
-                                else{
-                                    onComplete();
-                                }
-                            }
-                            img.src=e.target.result;
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                }
-            };
-            var newInsertOptions = function(x,y,worldPos,onText,onImage){
-                var clearOptions = function(){
-                    $("#insertOptions").remove();
-
-                }
-                var clearBefore = function(func){
-                    return function(){
-                        clearOptions();
-                        func();
-                    }
-                }
-                onText = clearBefore(onText);
-                onImage = clearBefore(onImage);
-                clearOptions();
-                var options = $("<div />",{
-                    id:"insertOptions",
-                    class:"insertOptionsContainer"
-                }).css({
-                    position:"absolute",
-                    left:px(x - 30),
-                    top:px(y)
-                });
-                options.append($("<div />",{
-                    text:"X",
-                    class:"closeButton"
-                }).click(bounceAnd(function(){
-                    options.remove();
-                })));
-                if(currentInsertMode.toLowerCase() == "image"){
-                    var insertImage = $("<input />",{
-                        type:"file",
-                        accept:"image/*",
-                        class:"fileUploadControl"
-                    }).appendTo(options);
-                    if (options){
-                        insertImage[0].addEventListener("change",function(e){
-                            clearOptions();
-                            handleFilesSelected(worldPos)(e);
-                        },false)
-                    }
-                    return options;
-                } else if (currentInsertMode.toLowerCase() == "text"){
-                    onText();
-                    return false;
-                } else {
-                    return false;
-                }
-            }
-            var color = "Black";
-            var updateTextFont = function(t){
-                t.font = sprintf("%spx %s",t.size,t.family);
-            }
-            var createBlankText = function(worldPos){
-                var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
-                var style = currentStyle;
-                var currentSlide = Conversations.getCurrentSlideJid();
-                var text = {
-                    author:UserSettings.getUsername(),
-                    color:Colors.getColorForName("black"),
-                    decoration:"None",
-                    identity:id,
-                    privacy:Privacy.getCurrentPrivacy(),
-                    family:style.family,
-                    size:style.size,
-                    slide:currentSlide,
-                    style:"Normal",
-                    tag:id,
-                    width:200,
-                    caret:0,
-                    height:60,
-                    x:worldPos.x,
-                    y:worldPos.y,
-                    target:"presentationSpace",
-                    text:"",
-                    timestamp:Date.now(),
-                    type:"text",
-                    weight:"Normal"
-                };
-                updateTextFont(text);
-                prerenderText(text);
-                selectedTexts = [];
-                selectedTexts.push(text);
-                return text;
-            };
-            var alteredText = function(t){
-                changeToTextBoxMade = true;
-                updateTextFont(t);
-                prerenderText(t);
-                checkTyping();
-                return t;
-            };
-            var textCustomizationOptions = function(text){
-                var options = $("<div />",{
-                    class:"textOptionsContainer"
-                });
-                var combobox = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var cont = $("<span/>").css({
-                        position:"relative"
-                    });
-                    var setTextPropValue = function(t){
-                        var newVal = transform ? transform(t) : t;
-                        var oldVal = text[property];
-                        if (newVal != oldVal){
-                            text[property] = newVal;
-                            alteredText(text);
-                            editText(text);
-                        }
-                    };
-                    var topRow = $("<div/>");
-                    var textArea = $("<input/>",{
-                        type:"text",
-                        class: "comboBoxTextfield",
-                        value:transformedValue
-                    }).on("blur",function(){
-                        var v = $(this).val();
-                        setTextPropValue(v);
-                    }).keydown(function(e){
-                    }).keyup(function(e){
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (e.keyCode == 13){
-                            var v = $(this).val();
-                            setTextPropValue(v);
-                        }
-                    });
-                    var toggleButton = $("<input/>",{
-                        class: "comboBoxButton ",
-                        type: "button",
-                        value:"More"
-                    });
-                    var bottomRow = $("<div/>").css({
-                        position:"absolute",
-                        "z-index":100
-                    });
-                    var listOfOptions = $("<div/>",{
-                        class:"comboBoxList"
-                    }).html(unwrap(opts.map(function(opt){
-                        return $("<div/>",{
-                            class:"comboBoxListItem",
-                            text:opt
-                        }).click(bounceAnd(function(){setTextPropValue(opt);}));
-                    })));
-                    var listContainer = $("<span/>",{
-                        class:"comboBoxListContainer"
-                    }).append(listOfOptions).hide();
-                    toggleButton.click(bounceAnd(function(){
-                        var isOpen = listOfOptions.is(":visible");
-                        $(".comboBoxListContainer").hide();
-                        if (!isOpen){
-                            listContainer.show();
-                        }
-                    }));
-                    topRow.append(textArea,toggleButton);
-                    bottomRow.append(listContainer);
-                    cont.append(topRow,bottomRow);
-                    options.append(cont);
-                }
-                var dropdown = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    if (!(_.contains(opts,transformedValue))){
-                        opts.push(transformedValue);
-                    }
-                    var cont = $("<select />",{
-                        class:"textOptionsDropdown"
-                    }).html(unwrap(opts.map(function(opt){
-                        var o = $("<option />",{
-                            value:opt,
-                            text:opt
-                        });
-                        if(transformedValue == opt){
-                            o.prop("selected",true);
-                        }
-                        return o;
-                    }))).change(function(){
-                        var v = $(this).val();
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    });
-                    options.append(cont);
-                }
-                var toggle = function(name,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var el = $("<span />",{
-                        class:"textOptionsToggleContainer"
-                    });
-                    $("<label />",{
-                        text:name,
-                        class:"textOptionsToggleLabel",
-                        for:name
-                    }).appendTo(el);
-                    var cb = $("<input />",{
-                        type:"checkbox",
-                        class:"textOptionsToggleButton",
-                        name:name
-                    }).change(function(change){
-                        var v = $(this).prop("checked");
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    }).appendTo(el);
-                    if (transformedValue){
-                        cb.prop("checked",true);
-                    } else {
-                        cb.prop("checked",false);
-                    }
-                    options.append(el);
-
-                }
-                dropdown(Fonts.getAllFamilies(),"family");
-                combobox(Fonts.getAllSizes(),"size",parseInt);
-                combobox(_.map(Colors.getAllNamedColors(),function(c){return c.name;}),"color",Colors.getColorForName,Colors.getNameForColor);
-                toggle("Bold","weight",function(bool){if (bool){ return "bold";} else {return "Normal";}},function(string){return string == "bold";});
-                toggle("Italic", "style", function(bool){if(bool){return "italic";} else { return "Normal";}}, function(string){return string=="italic"});
-                toggle("Underline","decoration",function(bool){if (bool) {return "underline";} else {return "Normal";}}, function(string){return string == "underline";});
-                return options;
-            }
-            var openingEditBox = false;
-            var lineWithSeparatorRatio = 1.3;
-            var createTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var input = $("<textarea />",{
-                    id:"textEditorInputArea"
-                }).css({
-                    "font-family":text.family,
-                    "font-size":px(text.size),
-                    width:px(text.width),
-                    height:px(text.runs.length * text.size * lineWithSeparatorRatio)
-                });
-                input.keyup(function(e){
-                    e.stopPropagation();
-                    var el = $(this).get(0);
-                    if ("selectionStart" in el && currentCaretPos != undefined){
-                        currentCaretPos = el.selectionStart;
-                        currentScrollTop = el.scrollTop;
-                    }
-                    if (e.ctrlKey){
-                        if(e.keyCode == 73) {
-                            if(text.style == "Normal"){
-                                text["style"] = "italic";
-                            }
-                            else {
-                                text["style"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                        if (e.keyCode == 66){
-                            if (text.weight == "Normal"){
-                                text["weight"] = "bold";
-                            } else {
-                                text["weight"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                    } else {
-                        newText = $(this).val();
-                        checkTyping();
-                    }
-                }).keydown(function(e){
-                    e.stopPropagation();
-                });
-                input.bind("paste",function(e){
-                    var thisBox = $(this);
-                    if ("type" in e && e.type == "paste"){
-                        window.setTimeout(function(){
-                            newText = thisBox.val();
-                            checkTyping();
-                        },0);
-                    }
-                });
-                $("#textEditorCustomizationOptionsContainer").remove();
-                var customizationOptionsContainer = $("<div />",{
-                    id:"textEditorCustomizationOptionsContainer"
-                }).html(textCustomizationOptions(text));
-                var textEditor = $("<div />",{
-                    id:"textEditor"
-                }).css({
-                    position:"absolute",
-                    left:px(newPos.x),
-                    top:px(newPos.y)
-                }).append(input).append(customizationOptionsContainer);
-                if (marquee){
-                    var selectionAdorner = $("#textAdorner");
-                    selectionAdorner.empty();
-                    selectionAdorner.append(marquee);
-                    textEditor.insertAfter(marquee);
-                }
-                input.val(text.runs.join("\n"));
-                updateTextEditor(text);
-                input.focus();
-            }
-            var updateTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var possiblyAdjustedHeight = text.height;
-                var possiblyAdjustedWidth = text.width * 1.1;
-                var possiblyAdjustedX = newPos.x;
-                var possiblyAdjustedY = newPos.y;
-                var acceptableMaxHeight = boardHeight * 0.7;
-                var acceptableMaxWidth = boardWidth * 0.7;
-                var acceptableMinX = 30;
-                var acceptableMinY = 30;
-                var acceptableMaxX = boardWidth - 100;
-                var acceptableMaxY = boardHeight - 100;
-
-                if (possiblyAdjustedWidth > acceptableMaxWidth){
-                    possiblyAdjustedWidth = acceptableMaxWidth;
-                }
-                if (possiblyAdjustedHeight > acceptableMaxHeight){
-                    possiblyAdjustedHeight = acceptableMaxHeight;
-                }
-                if (possiblyAdjustedX < acceptableMinX){
-                    possiblyAdjustedX = acceptableMinX;
-                }
-                if ((possiblyAdjustedX + possiblyAdjustedWidth) > acceptableMaxX){
-                    possiblyAdjustedX = acceptableMaxX - possiblyAdjustedWidth;
-                }
-                if (possiblyAdjustedY < acceptableMinY){
-                    possiblyAdjustedY = acceptableMinY;
-                }
-                if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
-                    possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
-                }
-                var textEditor = $("#textEditor");
-                var h = px(text.runs.length * text.size * lineWithSeparatorRatio);
-                textEditor.css({
-                    position:"absolute",
-                    left:px(possiblyAdjustedX),
-                    top:px(possiblyAdjustedY),
-                    width:px(possiblyAdjustedWidth),
-                    "min-width":px(240)
-                });
-                $("#textEditorCustomizationOptionsContainer").html(textCustomizationOptions(text));
-                textEditor.find("#closeTextEditor").remove();
-                textEditor.prepend($("<button />",{
-                    id:"closeTextEditor",
-                    class:"closeButton"
-                }).click(bounceAnd(function(){
-                    textEditor.remove();
-                })).append($("<span/>", {
-                    class:"hidden",
-                    text:"close"
-                })));
-
-                var inputArea = $("#textEditorInputArea");
-                inputArea.css({
-                    width:px(possiblyAdjustedWidth),
-                    "font-weight": text.weight,
-                    "font-style": text.style,
-                    "text-decoration": text.decoration,
-                    "color": text.color[0],
-                    "height":h,
-                    "font-family":text.family,
-                    "font-size":px(text.size)
-                });
-                var el = inputArea;
-                if ("setSelectionRange" in el){
-                    el.setSelectionRange(currentCaretPos,currentCaretPos);
-                    $(el).scrollTop(currentScrollTop);
-                }
-                inputArea.focus();
-            }
-            var editText = function(text,shouldNotPan){
-                var innerCreateTextboxFunction = undefined;
-                if (openingEditBox == true){
-                    oldText = text.text;
-                    openingEditBox = false;
-                    innerCreateTextboxFunction = createTextEditor;
-                } else {
-                    innerCreateTextboxFunction = updateTextEditor;
-                }
-                var inputContents = "";
-                if (oldText.runs != undefined){
-                    inputContents = oldText.runs.join("\n");
-                } else {
-                    inputContents = oldText;
-                }
-                newText = inputContents;
-                startTime = Date.now();
-                var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
-                var xInset = (boardWidth / 2 - text.width / 2);
-                var yInset = (boardHeight / 2 - text.height / 2);
-                var xDelta = text.bounds[0] - viewboxX - xInset;
-                var yDelta = text.bounds[1] - viewboxY - yInset;
-                if (shouldNotPan){
-                    innerCreateTextboxFunction(text);
-                } else {
-                    innerCreateTextboxFunction(text);
-                    //Extend.shift(xDelta,yDelta,innerCreateTextboxFunction(text));
-                }
-            }
-            var possiblyClearEditBoxesFunction = _.debounce(function(){
-                var selectionAdorner = $("#selectionAdorner");
-                if (Modes.currentMode == Modes.image){
-									removeTextEditor();
-                }
-            },200);
-
-            Progress.onBoardContentChanged["Modes.image"] = possiblyClearEditBoxesFunction;
-            Progress.onSelectionChanged["Modes.image"] = possiblyClearEditBoxesFunction;
-            Progress.historyReceived["Modes.image"] = possiblyClearEditBoxesFunction;
-            Progress.onViewboxChanged["Modes.image"] = possiblyClearEditBoxesFunction;
+						var resetImageUpload = function(){
+							insertOptions.hide();
+							imageFileChoice.wrap("<form>").closest("form").get(0).reset();
+							imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+							imageUploadX.text("");
+							imageUploadY.text("");
+							imageUploadWidth.text("");
+							imageUploadHeight.text("");
+							imageFileChoice.unwrap();
+							purrentImage = {};
+						};
+						var hasInitialized = false;
+						$(function(){
+							if (!hasInitialized){
+								hasInitialized = true;
+								marquee = $("imageMarquee");
+								insertOptions = $("#imageInsertOptions");
+								imageInsertOptionsClose = $("#imageInsertOptionsClose");
+								imageFileChoice = $("#imageFileChoice");
+								imageSizeControls = $("#imageSizeControls");
+								imageSizeChoiceSelector = $("#imageSizeChoiceSelector");
+								imageUploadThumbnail = $("#imageUploadThumbnail");
+								imageProgressContainer = $("#imageProgressContainer");
+								imageUploadButton = $("#imageUploadButton");
+								imageUploadX = $("#imageUploadX");
+								imageUploadY = $("#imageUploadY");
+								imageUploadWidth = $("#imageUploadWidth");
+								imageUploadHeight = $("#imageUploadHeight");
+								imageInsertOptionsClose.on("click",resetImageUpload);
+								imageFileChoice.attr("accept","image/*");
+								imageFileChoice[0].addEventListener("change",function(e){
+									if ("type" in currentImage && currentImage.type == "imageDefinition"){
+										var files = e.target.files || e.dataTransfer.files;
+										var limit = files.length;
+										var file = files[0];
+										if (file.type.indexOf("image") == 0) {
+											currentImage.fileUpload = file;
+											currentImage.thumbnailSize = imageSizeChoices[0];
+											updateImageEditor();
+										}
+									}
+								},false);
+								var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
+								imageSizeChoiceSelector.empty();
+								imageSizeChoices.map(function(isc){
+									var thisChoice = imageSizeOptionTemplate.clone().text(isc.name).on("click",function(){
+										if ("type" in currentImage && currentImage.type == "imageDefinition"){
+											currentImage.thumbnailSize = isc;
+											updateImageEditor();
+										}
+									});
+									imageSizeChoiceSelector.append(thisChoice);
+								});
+								imageUploadButton.on("click",function(){
+									if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
+										var worldPos = {x:currentImage.x,y:currentImage.y};
+										var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+										WorkQueue.pause();
+										var t = Date.now();
+										var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+										var currentSlide = Conversations.getCurrentSlideJid();
+										var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
+										$.ajax({
+											url: url,
+											type: 'POST',
+											success: function(e){
+												resetImageUpload();
+												updateTracking(identity);
+												var newIdentity = $(e).find("resourceUrl").text();
+												var imageStanza = {
+														type:"image",
+														author:UserSettings.getUsername(),
+														timestamp:t,
+														tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
+														identity:newIdentity,
+														slide:currentSlide.toString(),
+														source:$(e).text(),
+														width:currentImage.width,
+														height:currentImage.height,
+														target:"presentationSpace",
+														privacy:Privacy.getCurrentPrivacy(),
+														x:currentImage.x,
+														y:currentImage.y
+												};
+												console.log("Sending image stanza",imageStanza);
+												sendStanza(imageStanza);
+												WorkQueue.gracefullyResume();
+											},
+											error: function(e){
+												resetImageUpload();
+												alert("upload failed");
+												console.log("image upload failed",e);
+												WorkQueue.gracefullyResume();
+											},
+											data:currentImage.resizedImage,
+											cache: false,
+											contentType: false,
+											processData: false
+										});
+									}
+								});
+								resetImageUpload();
+							}
+						});
             return {
-                activate:function(){
-                    marquee = $("<div />",{
-                        id:"textMarquee"
-                    });
-                    var adorner = $("#textAdorner");
-                    adorner.empty();
-                    if(!currentStyle){
-                        currentStyle = textStyles[0];
-                    }
-                    var uploadKey = "fileUploadSupported";
-                    if(uploadKey in Modes.insert){}
-                    else{
-                        Modes.insert[uploadKey] = !($("<input />",{
-                            type:"file"
-                        })[0].disabled);
-                    }
-                    Modes.currentMode.deactivate();
-                    Modes.currentMode = Modes.image;
-                    setActiveMode("#imageTools","#insertImage");
-                    $(".activeBrush").removeClass("activeBrush");
-                    /*$("#textTools").empty();
-                     _.forEach(insertModes,function(modeName){
-                     var tsButton = $("<div/>",{
-                     class:"modeSpecificTool",
-                     text:modeName
-                     }).on("click",function(){
-                     currentInsertMode = modeName;
-                     $(".activeBrush").removeClass("activeBrush");
-                     $(this).addClass("activeBrush");
-                     }).appendTo("#textTools");
-                     if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                     tsButton.addClass("activeBrush");
-                     }
-                     });*/
-										/*
-                    $("#insertTools button").each(function(){
-                        var modeName = $(this).attr("insertMode"),
-                            tsButton = $(this)
-                                .on("click",function(){
-                                    currentInsertMode = modeName;
-                                    $(".activeBrush").removeClass("activeBrush");
-                                    $(this).addClass("activeBrush");
-                                });
-                        if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                            tsButton.addClass("activeBrush");
-                        }
-                    });
-										*/
-                    Progress.call("onLayoutUpdated");
-                    $("#minorText").click(function(){});
-                    $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
-                        deletedStanza = selectedTexts[0];
-                        updateStatus(sprintf("Deleted %s",deletedStanza.identity));
-                        var deleteTransform = batchTransform();
-                        deleteTransform.isDeleted = true;
-                        deleteTransform.textIds = [deletedStanza.identity];
-                        sendStanza(deleteTransform);
-                        upload.hide();
-                    }));
-                    updateStatus("Text input mode");
-                    var up = function(x,y,worldPos){
-                        if(typingTimer){
-                            typingTimerElapsed();
-                        }
-                        adorner.append(marquee);
-                        marquee.show();
-                        marquee.css({
-                            left:px(x),
-                            top:px(y)
-                        });
-                        oldText = "";
-                        newText = "";
-                        $("#insertOptions").remove();
-                        $("#textEditor").remove();
-                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
-                        var threshold = 10;
-                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        currentCaretPos = 0;
-                        currentScrollTop = 0;
-                        selectedTexts  = _.values(boardContent.texts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-                        });
-                        var text = selectedTexts[0];
-                        if(currentInsertMode.toLowerCase() != "text" || !text){
-                            var options = newInsertOptions(
-                                newScreenPos.x,newScreenPos.y,worldPos,
-                                function(){
-                                    openingEditBox = true;
-                                    text = createBlankText(worldPos);
-                                    selectedTexts[0] = text;
-                                    editText(text);
-                                },
-                                function(){
-                                });
-                            if(options){
-                                $(marquee).after(options);
-                            }
-                        }
-                        else{
-                            openingEditBox = true;
-                            editText(text);
-                        }
-                    }
-                    registerPositionHandlers(board,noop,noop,up);
-                },
-                deactivate:function(){
-                    removeTextEditor();
-                    selectedTexts = [];
-                    $("#selectionAdorner").empty();
-                    $("#imageTools .modeSpecificTool").unbind("click");
-                    unregisterPositionHandlers(board);
-                    removeActiveMode();
-                }
+							activate:function(){
+								Modes.currentMode.deactivate();
+								Modes.currentMode = Modes.image;
+								setActiveMode("#imageTools","#insertImage");
+								resetImageUpload();
+								Progress.call("onLayoutUpdated");
+								var up = function(x,y,worldPos){
+										marquee.show();
+										marquee.css({
+												left:px(x),
+												top:px(y)
+										});
+										resetImageUpload();
+										var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
+										var threshold = 10;
+										var options = newInsertOptions(newScreenPos.x,newScreenPos.y,worldPos);
+								}
+								registerPositionHandlers(board,noop,noop,up);
+							},
+							deactivate:function(){
+								resetImageUpload();
+								unregisterPositionHandlers(board);
+								removeActiveMode();
+							}
             };
         })(),
         pan:{
@@ -3000,6 +1300,7 @@ var Modes = (function(){
                                 left:px(resizeLeft),
                                 top:px(resizeTop)
                             }));
+														
                         }
                     });
                     var categories = function(func){
@@ -3336,125 +1637,124 @@ var Modes = (function(){
         })(),
         draw:(function(){
             var originalBrushes = Brushes.getDefaultBrushes();
-						var theseBrushes = _.map(originalBrushes,function(i){return _.clone(i);});
-            var currentBrush = theseBrushes[0];
+            var currentBrush;
             var erasing = false;
             var hasActivated = false;
-						var penSizeTemplate = undefined;
-						var penColorTemplate = undefined;
             return {
                 name:"draw",
-                brushes:theseBrushes,
+                brushes:_.map(originalBrushes,function(i){return _.clone(i);}),
                 activate:function(){
                     if(Modes.currentMode == Modes.draw){
                         return;
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-										var drawAdvancedTools = function(){};
-                    $(".activeBrush").removeClass("activeBrush");
-										var drawTools = function(){
+                    if(!hasActivated){
+                        hasActivated = true;
+                        currentBrush = Modes.draw.brushes[0];
+                        Modes.draw.drawingAttributes = currentBrush;
+
                         var container = $("#drawTools");
                         _.each(container.find(".pen"),function(button,i){
                             var brush = Modes.draw.brushes[i];
-                            var thisButton = $(button)
+                            $(button)
                                 .css({color:brush.color})
                                 .click(function(){
                                     $(".activeBrush").removeClass("activeBrush");
                                     $(this).addClass("activeBrush");
-																		drawAdvancedTools(brush);
                                     currentBrush = brush;
                                     Modes.draw.drawingAttributes = currentBrush;
                                     erasing = false;
-                                });
-                            thisButton.find(".widthIndicator").text(brush.width);
-														if (brush == currentBrush){
-															thisButton.addClass("activeBrush");
-														}
+                                })
+                                .find(".widthIndicator")
+                                .text(brush.width);
                         });
-										};
-                    if(!hasActivated){
-												penSizeTemplate = $("#penSize .sizeDot").clone();
-												penColorTemplate = $("#penColor .colorDot").clone();
-                        hasActivated = true;
-                        currentBrush = Modes.draw.brushes[0];
-                        Modes.draw.drawingAttributes = currentBrush;
-												drawTools();
-                        var container = $("#drawTools");
                         container.find(".eraser").click(function(button){
                             $(".activeBrush").removeClass("activeBrush");
                             $(this).addClass("activeBrush");
                             erasing = true;
                         });
-                        container.find(".advancedTools").on("click",function(){
-													drawAdvancedTools(currentBrush);
-													showBackstage("customizeBrush");
-												});
+                        container.find("#penCustomizationButton").click(drawAdvancedTools);
                     }
-                    drawAdvancedTools = function(brush){
-                        var dots = $("#colors .dots");
-                        var bars = $("#sizes .dots");
-												var updateOriginalBrush = function(){
-													Modes.draw.brushes[brush.index] = brush;
-												};
+
+                    var drawAdvancedTools = function(brush){
+                        var dots = $("<div />",{
+                            class:"dots"
+                        });
+                        var bars = $("<div />",{
+                            class:"bars"
+                        });
                         var colors = Colors.getAllNamedColors();
                         var widths = Brushes.getAllBrushSizes();
-												bars.empty();
                         widths.map(function(width){
-													var sizeDot = penSizeTemplate.clone();
-													bars.append(sizeDot);
-													sizeDot.click(function(){
-														brush.width = width;
-														updateOriginalBrush();
-														currentBrush = brush;
-														drawTools();
-														drawAdvancedTools(brush);
-													});
-													var bar = Canvas.circle(brush.color,width,60);
-													console.log(width,brush.width);
-													if (width == brush.width){
-														sizeDot.addClass("activeTool");
-													}
-													sizeDot.append(bar)
+                            var sizeDot = $("<div />", {
+                                class: "sizeDot"
+                            }).css({
+                                "text-align":"center"
+                            }).click(function(){
+                                brush.width = width;
+                                currentBrush = brush;
+                                drawAdvancedTools(brush);
+                            })
+                            var bar = Canvas.circle(brush.color,width,60);
+                            console.log(width,brush.width);
+                            if (width == brush.width){
+                                sizeDot.addClass("activeTool");
+                            }
+                            sizeDot.append(bar)
+                            bars.append(sizeDot);
                         });
-                        dots.empty();
-												colors.map(function(color){
-													var colorDot = penColorTemplate.clone();
-													dots.append(colorDot);
-                          colorDot.on("click",function(){
-															brush.color = color.rgb;
-															currentBrush = brush;
-															updateOriginalBrush();
-															drawTools();
-															drawAdvancedTools(brush);
-													});
-													var dot = Canvas.circle(color.rgb,50,50);
-													if ("rgb" in color && color.rgb == brush.color){
-															colorDot.addClass("activeTool");
-													}
-													colorDot.append(dot);
+                        colors.map(function(color){
+                            var colorDot = $("<div />").css({
+                                "vertical-align":"middle"
+                            }).click(function(){
+                                brush.color = color.rgb;
+                                currentBrush = brush;
+                                drawAdvancedTools(brush);
+                            });
+                            var dot = Canvas.circle(color.rgb,50,50);
+                            if (color == brush.color){
+                                colorDot.addClass("activeTool");
+                            }
+                            colorDot.append(dot);
+                            dots.append(colorDot);
                         });
-                        var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
+                        var offset = widths[widths.length-1];
+                        var highlighterModeText = brush.isHighlighter ? "highlighter" : "pen";
+                        var penModeControl = $("<div/>");
+                        var hlButton = $("<span/>",{
+                            text:"highlighter",
+                            class:"toolbar"
+
+                        }).on("click",function(){
                             brush.isHighlighter = true;
                             currentBrush = brush;
-														updateOriginalBrush();
                             drawTools();
                             drawAdvancedTools(brush);
                         });
-												var penButton = $("#setPenToPen").unbind("click").on("click",function(){
+                        var penButton = $("<span/>",{
+                            text:"pen",
+                            class:"toolbar"
+                        }).on("click",function(){
                             brush.isHighlighter = false;
-														updateOriginalBrush();
                             currentBrush = brush;
                             drawTools();
                             drawAdvancedTools(brush);
                         });
                         if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-                            hlButton.addClass("activeTool active");
-                            penButton.removeClass("activeTool active");
+                            hlButton.addClass("activeTool");
+                            penButton.removeClass("activeTool");
                         } else {
-                            penButton.addClass("activeTool active");
-                            hlButton.removeClass("activeTool active");
+                            penButton.addClass("activeTool");
+                            hlButton.removeClass("activeTool");
                         }
+                        $("#colors").html(dots);
+                        $("#sizes").html(bars);
+                        $("#penMode").html(penModeControl.append(penButton).append(hlButton));
+                        $("#colors td").css({
+                            width:px(offset*3),
+                            height:px(offset*3)
+                        });
                         Progress.call("onLayoutUpdated");
                     }
                     $("#resetPenButton").empty().text("reset pen").click(function(){
@@ -3531,7 +1831,7 @@ var Modes = (function(){
                             strokeCollected(currentStroke.join(" "));
                         }
                     };
-										drawTools();
+
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
