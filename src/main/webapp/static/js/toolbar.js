@@ -952,20 +952,45 @@ var Modes = (function(){
 											var resizedDimensions = currentImage.thumbnailSize.func(img.width,img.height);
 											var w = resizedDimensions.w;
 											var h = resizedDimensions.h;
-											imageUploadThumbnail.attr("width",w);
-											imageUploadThumbnail.attr("height",h);
+
+											var scaledHeight = h;
+											var scaledWidth = w;
+											if (w < h){
+												//height is larger
+												var scaleFactor = h / 300;
+												scaledHeight = 300;
+												scaledWidth = w / scaleFactor;
+											} else {
+												var scaleFactor = w / 300;
+												scaledWidth = 300;
+												scaledHeight = h / scaleFactor;
+											}
+											imageUploadThumbnail.attr("width",scaledWidth);
+											imageUploadThumbnail.attr("height",scaledHeight);
 											imageUploadThumbnail.css({
-													width:px(w),
-													height: px(h)
+													width:px(scaledWidth),
+													height: px(scaledHeight)
 											});
-											imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,w,h);
+
+											imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,scaledWidth,scaledHeight);
+
 											imageUploadX.text(currentImage.x);
 											imageUploadY.text(currentImage.y);
 											imageUploadWidth.text(w);
 											imageUploadHeight.text(h);
+
 											currentImage.width = w;
 											currentImage.height = h;
-											currentImage.resizedImage = imageUploadThumbnail[0].toDataURL();
+											//render canvas is responsible for the resizing.  The other canvas is a thumbnail.
+											var renderCanvas = $("<canvas/>");
+											renderCanvas.attr("width",w);
+											renderCanvas.attr("height",h);
+											renderCanvas.css({
+													width:px(w),
+													height: px(h)
+											});
+											renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+											currentImage.resizedImage = renderCanvas[0].toDataURL();
 											if ("resizedImage" in currentImage){
 												imageUploadButton.show();
 											}
