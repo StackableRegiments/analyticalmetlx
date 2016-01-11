@@ -61,7 +61,7 @@
 #imageInsertOptions{
 		position:absolute;
 }
-#textEditor{
+/*#textEditor{
     border:1px solid darkgrey;
     padding:1em;
     background-color:lightgrey;
@@ -71,7 +71,7 @@
 }
 .textOptionsContainer{
     color:black;
-}
+} */
 .textOptionsDropdown{
 }
 .textOptionsToggleContainer{

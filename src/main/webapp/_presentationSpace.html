@@ -5,20 +5,26 @@
   <div id="marquee" ></div>
 	<div id="imageAdorner" > 
 		<div id="imageMarquee"></div>
-		<div id="imageInsertOptions">
-			<button id="imageInsertOptionsClose">X</button>
+		<div id="imageInsertOptions" class="block with-border input-full-width">
+			<h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert image</label></strong></h2>
+			<button id="imageInsertOptionsClose" class=" btn-close fa fa-times nmt"><span class="hidden">Close</span></button>
 			<input type="file" id="imageFileChoice"></input>
 			<div id="imageSizeControls">
-				<div id="imageSizeChoiceSelector">
+				<h3>Select size</h3>
+				<div id="imageSizeChoiceSelector" class="flex-container-row tools bg-tools">
 					<button class="imageSizeChoice"></button>
 				</div>
-				<button id="imageUploadButton" value="Upload">Upload</button>
+				<button id="imageUploadButton" value="Upload" class="button-transparent-border">Upload</button>
+				<h3>Preview</h3>
+				<div class="smallest-txt">(Max preview size of 300px)</div>
 				<div id="imageUploadDescription">
-					<span>X: <span id="imageUploadX"></span>, </span>
-					<span>Y: <span id="imageUploadY"></span>, </span>
-					<span>Width: <span id="imageUploadWidth"></span>, </span>
-					<span>Height: <span id="imageUploadHeight"></span></span>
-					<!-- this canvas never gets bigger than 300px square, and represents the image in the aspect ratio of the eventaully pasted image -->
+					<div>
+						<span>X: <span id="imageUploadX"></span>, </span>
+						<span>Y: <span id="imageUploadY"></span>, </span>
+						<span>Width: <span id="imageUploadWidth"></span>, </span>
+						<span>Height: <span id="imageUploadHeight"></span></span>
+					</div>
+					<!-- this canvas never gets bigger than 300px square, and represents the image in the aspect ratio of the eventually pasted image -->
 					<canvas id="imageUploadThumbnail"></canvas>
 				</div>
 			</div>
@@ -26,9 +32,10 @@
 	</div>
   <div id="textAdorner" >
 		<div id="textMarquee"></div>
-		<div id="textEditor">
-			<button id="textEditorClose" class="closeButton">X</button>
-			<textarea id="textEditorInputArea" ></textarea>
+		<div id="textEditor" class="block with-border input-full-width">
+			<h2 class="med-txt nmt"><strong><label for="textEditorInputArea" class="nm">Insert text</label></strong></h2>
+			<button id="textEditorClose" class="closeButton btn-close  fa fa-times nmt"><span class="hidden">Close</span></button>
+			<textarea id="textEditorInputArea"></textarea>
 			<div id="textEditorCustomizationOptionsContainer">
 				<div id="textOptionsContainer">
 					<label for="fontFamilySelector">Family</label>
@@ -45,13 +52,15 @@
 					<select id="fontColorSelector">
 						<option class="fontColorOption"></option>
 					</select>
-						<!-- color = getColorForName(value) -->
-					<button type="button" id="fontBoldSelector">Bold</button>
-						<!-- weight = bold | Normal -->
-					<button type="button" id="fontItalicSelector">italic</button>
-						<!-- style = italic | Normal -->
-					<button type="button" id="fontUnderlineSelector">underline</button>
-						<!-- decoration = underline | Normal -->
+					<div class="flex-container-row">
+							<!-- color = getColorForName(value) -->
+						<button type="button" id="fontBoldSelector" class="btn-icon fa fa-bold"><div class="icon-txt">Bold</div></button>
+							<!-- weight = bold | Normal -->
+						<button type="button" id="fontItalicSelector" class="btn-icon fa fa-italic"><div class="icon-txt">Italic</div></button>
+							<!-- style = italic | Normal -->
+						<button type="button" id="fontUnderlineSelector" class="btn-icon fa fa-underline"><div class="icon-txt">Underline</div></button>
+							<!-- decoration = underline | Normal -->
+					</div>
 				</div>
 			</div>
 		</div>
