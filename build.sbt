@@ -68,7 +68,7 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "io.github.stackableregiments" %% "common-utils" % "0.3.+",
-    "io.github.stackableregiments" %% "metldata" % "3.6.1",
+    "io.github.stackableregiments" %% "metldata" % "3.6.2",
     "io.github.stackableregiments" %% "lift-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
