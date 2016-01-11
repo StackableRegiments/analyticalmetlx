@@ -30,6 +30,18 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     <allow-access-from domain="*" />
     </cross-domain-policy>
   }
+  val browserconfig = {
+    <browserconfig>
+      <msapplication>
+        <tile>
+          <square70x70logo src="/ms-icon-70x70.png"/>
+          <square150x150logo src="/ms-icon-150x150.png"/>
+          <square310x310logo src="/ms-icon-310x310.png"/>
+          <TileColor>#ffffff</TileColor>
+        </tile>
+      </msapplication>
+    </browserconfig>
+  }
   protected var id = 1000;
   serve {
     //yaws endpoints 1188
@@ -87,6 +99,8 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.serverStatus", Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
     case Req(List("probe","index"),"html",_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
+    case Req(List("browserconfig"),"xml",_) => 
+      () => Stopwatch.time("MeTLRestHelper.browserconfig.xml", Full(XmlResponse(browserconfig,200)))
     case Req(List("crossdomain"),"xml",_) =>
       () => Stopwatch.time("MeTLRestHelper.crossDomainPolicy", Full(XmlResponse(crossDomainPolicy,200)))
     case r @ Req(List("summaries"),_,_) =>
