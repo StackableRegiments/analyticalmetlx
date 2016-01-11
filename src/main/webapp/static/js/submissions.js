@@ -14,8 +14,9 @@ var Submissions = (function(){
         $("#submissions").click(function(){
             showBackstage("submissions");
         });
-        var submissionsCount = $("<span />",{
-            id:"submissionCount"
+        var submissionsCount = $("<div />",{
+            id:"submissionCount",
+            class:"icon-txt"
         });
         $("#feedbackStatus").prepend(submissionsCount);
         submissionsCount.click(function(){

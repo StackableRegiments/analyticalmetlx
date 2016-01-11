@@ -100,3 +100,14 @@
 input[type=submit]{
     .button-transparent-border;
 }
+#boardContainer{
+    position:relative;
+}
+#marquee,#zoomMarquee,#selectMarquee{
+    display:none;
+}
+#marquee,.selectionAdorner,.resizeHandle,#zoomMarquee,#selectMarquee{
+    border:1px dashed red;
+    position:absolute;
+    pointer-events:none;
+}
