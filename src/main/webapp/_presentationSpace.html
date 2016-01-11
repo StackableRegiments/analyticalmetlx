@@ -3,7 +3,58 @@
   <div id="selectionAdorner" ></div>
   <div id="radar" ></div>
   <div id="marquee" ></div>
-  <div id="textAdorner"></div>
+	<div id="imageAdorner" > 
+		<div id="imageMarquee"></div>
+		<div id="imageInsertOptions">
+			<button id="imageInsertOptionsClose">X</button>
+			<input type="file" id="imageFileChoice"></input>
+			<div id="imageSizeControls">
+				<div id="imageSizeChoiceSelector">
+					<button class="imageSizeChoice"></button>
+				</div>
+				<button id="imageUploadButton" value="Upload">Upload</button>
+				<div id="imageUploadDescription">
+					<span>X: <span id="imageUploadX"></span>, </span>
+					<span>Y: <span id="imageUploadY"></span>, </span>
+					<span>Width: <span id="imageUploadWidth"></span>, </span>
+					<span>Height: <span id="imageUploadHeight"></span></span>
+					<canvas id="imageUploadThumbnail"></canvas>
+				</div>
+			</div>
+		</div>
+	</div>
+  <div id="textAdorner" >
+		<div id="textMarquee"></div>
+		<div id="textEditor">
+			<button id="textEditorClose" class="closeButton">X</button>
+			<textarea id="textEditorInputArea" ></textarea>
+			<div id="textEditorCustomizationOptionsContainer">
+				<div id="textOptionsContainer">
+					<label for="fontFamilySelector">Family</label>
+					<select id="fontFamilySelector">
+						<option class="fontFamilyOption"></option>
+					</select>
+						<!-- family = value -->
+					<label for="fontSizeSelector">Size</label>
+					<select id="fontSizeSelector">
+						<option class="fontSizeOption"></option>
+					</select>
+						<!-- size = value -->
+					<label for="fontColorSelector">Color</label>
+					<select id="fontColorSelector">
+						<option class="fontColorOption"></option>
+					</select>
+						<!-- color = getColorForName(value) -->
+					<button type="button" id="fontBoldSelector">Bold</button>
+						<!-- weight = bold | Normal -->
+					<button type="button" id="fontItalicSelector">italic</button>
+						<!-- style = italic | Normal -->
+					<button type="button" id="fontUnderlineSelector">underline</button>
+						<!-- decoration = underline | Normal -->
+				</div>
+			</div>
+		</div>
+	</div>
   <div id="backstageContainer">
     <!--<div id="applicationMenuPopup" class="backstageHeader">
       <div class="lift:embed?what=_futureApplicationButton" ></div>
