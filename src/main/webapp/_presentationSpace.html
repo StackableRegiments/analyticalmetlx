@@ -61,23 +61,26 @@
       <div class="lift:embed?what=_futureApplicationButton" ></div>
     </div>-->
 		<div id="submissionsPopup" class="backstage">
-			<div id="submissionListing">
-				<!-- many ".submissionSummary"s are cloned from JS -->
-				<div class="submissionSummary">
-					<button type="button" class="viewSubmissionButton">
-						<span class="submissionDescription"></span>
-						<image class="submissionImageThumb"></image>
-					</button>
+			<h2>Submissions</h2>
+			<div class="flex-container-row img-resp">
+				<div id="submissionListing" class="mr quarter">
+					<!-- many ".submissionSummary"s are cloned from JS -->
+					<div class="submissionSummary">
+						<button type="button" class="viewSubmissionButton block with-border clickable nmt">
+							<div class="submissionDescription"></div>
+							<image class="submissionImageThumb"></image>
+						</button>
+					</div>
 				</div>
-			</div>
-			<div id="currentSubmission">
-				<!-- one ".currentSubmissionItem" will be visible at any time, but it will be cloned and replaced by JS -->
-				<div class="submissionContainer">
-					<span class="submissionDescription"></span>
-					<image class="submissionImage"></image>
-					<span class="submissionTeacherControls">
-						<input type="button" class="toolbar displaySubmissionOnNextSlide" value="Display Submission on next slide"></input>
-					</span>
+				<div id="currentSubmission" class="three-quarters">
+					<!-- one ".currentSubmissionItem" will be visible at any time, but it will be cloned and replaced by JS -->
+					<div class="submissionContainer">
+						<div class="submissionDescription"></div>
+						<image class="submissionImage"></image>
+						<span class="submissionTeacherControls">
+							<input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
+						</span>
+					</div>
 				</div>
 			</div>
 		</div>
