@@ -572,7 +572,7 @@ var Modes = (function(){
 									position:"absolute",
 									left:px(possiblyAdjustedX),
 									top:px(possiblyAdjustedY),
-									width:px(possiblyAdjustedWidth),
+									/*width:px(possiblyAdjustedWidth),*/
 									"min-width":px(240)
                 });
 								updateTextFont(currentText);
@@ -582,7 +582,7 @@ var Modes = (function(){
 									"font-style": currentText.style,
 									"text-decoration": currentText.decoration,
 									"color": currentText.color[0],
-									"height":h,
+									"min-height":h,
 									"font-family":currentText.family,
 									"font-size":px(currentText.size)
                 });
