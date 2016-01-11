@@ -210,7 +210,24 @@
             <button id="myConversationsButton" class="conversationSearchButton toolbar button-transparent-border mlrh" type="button"><span>All my conversations</span></button>
           </div>
         </div>
-        <ul id="searchResults" class="no-list-style"></ul>
+        <ul id="searchResults" class="no-list-style">
+					<!-- many "searchResultItem"s are cloned by JS -->
+					<li class="searchResultItem">
+						<div class="searchResultTopRow">
+							<h3 class="conversationTitle nmb"></h3>
+						</div>
+						<p class="searchResultMiddleRow middleRow nmt">
+							<span>by <span class="conversationAuthor"></span></span>
+							<span>Restricted to <span class="conversationSubject"></span></span>
+							<span>Created on <span class="conversationCreated"></span></span>
+						</p>
+						<div class="extraConversationTools teacherConversationTools">
+							<button class="conversationRename btn-icon fa fa-pencil-square-o conversationSearchButton toolbar conversationRenameButton"><div class="icon-txt">Rename</div></button>
+							<button class="conversationShare conversationSearchButton toolbar conversationSharingButton btn-icon fa fa-users"><div class="icon-txt">Sharing</div></button>
+							<button class="conversationDelete conversationSearchButton toolbar conversationDeleteButton btn-icon fa fa-trash"><div class="icon-txt">Delete</div></button>
+						</div>
+					</li>
+				</ul>
       </div>
     </div>
   </div>

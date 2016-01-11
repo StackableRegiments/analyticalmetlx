@@ -8,6 +8,15 @@ var Conversations = (function(){
     var currentTeacherSlide = 0;
     var isSyncedToTeacher = false;
 
+		var conversationTemplate = undefined;
+		var conversationSearchListing = undefined;
+
+		$(function(){
+			//take a template of the html for the searchResultItem
+			conversationSearchListing = $("#searchResults");
+			conversationTemplate = conversationSearchListing.find(".searchResultItem").clone();
+			conversationSearchListing.empty();
+		});
     var ThumbCache = (function(){
         var cache = {};
         /*
@@ -477,90 +486,41 @@ var Conversations = (function(){
         return newSlide;
     }
     var constructConversation = function(conversation){
+
         var uniq = function(name){
             return sprintf("%s_%s",name,conversation.jid);
         };
         var jidString = conversation.jid.toString();
-        var deleteSpan = $("<div>Delete</div>").addClass("icon-txt");
-        var renameSpan = $("<div>Rename</div>").addClass("icon-txt");
-        var sharingSpan = $("<div>Sharing</div>").addClass("icon-txt");
-        var newConv = $("<li/>",{
-            id: uniq("conversation"),
-            class:"searchResult"
-        }).on("click",bounceAnd(function(e){
-            var id1 = e.target.parentElement.id;
-            var id2 = e.target.parentElement.parentElement.id;
-            if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
-            targetConversationJid = jidString;
-            var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-            hideBackstage();
-            doMoveToSlide(firstSlide.id.toString());
+				var newConv = conversationTemplate.clone();
+				newConv.attr("id",uniq("conversation")).on("click",bounceAnd(function(e){
+					var id1 = e.target.parentElement.id;
+					var id2 = e.target.parentElement.parentElement.id;
+					if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
+					targetConversationJid = jidString;
+					var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
+					hideBackstage();
+					doMoveToSlide(firstSlide.id.toString());
         }));
         var jidString = conversation.jid.toString();
-        var row1 = $("<div/>");
-        var row2 = $("<p/>",{
-            class:"middleRow nmt",
-        });
-        var row3 = $("<div/>",{
-            id:uniq("extraConversationTools"),
-            class: "extraConversationTools"
-        });
-
-        var convTitle = $("<h3/>",{
-            id: uniq("conversationTitle"),
-            class: "conversationTitle nmb",
-            text: conversation.title
-        });
-        var convAuthor = $("<span/>",{
-            class:"conversationAuthor",
-            text: sprintf("by %s",conversation.author)
-        });
-        var convSubject = $("<span/>",{
-            class:"conversationSubject",
-            text:sprintf("Restricted to %s",conversation.subject)
-        });
-        var convCreated = $("<span/>",{
-            class:"conversationCreated",
-            text:sprintf("Created on %s",conversation.created)
-        });
-        var joinConvButton = $("<div/>", {
-            id: uniq("conversationJoin"),
-            class: "conversationJoinButton conversationSearchButton",
-            name: uniq("conversationJoin"),
-            type: "button"
-        }).on("click",bounceAnd(function(){
-            targetConversationJid = jidString;
-            var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-            hideBackstage();
-            doMoveToSlide(firstSlide.id.toString());
-        })).append("<span>join</span>");
-        var renameConvButton = $("<button/>", {
-            id: uniq("conversationRenameSubmit"),
-            class: "btn-icon fa fa-pencil-square-o conversationSearchButton toolbar conversationRenameButton",
-            name: uniq("conversationRenameSubmit"),
-            type: "button"
-        }).on("click",bounceAnd(function(){requestRenameConversationDialogue(jidString);})).append(renameSpan);
-        var changeSharingButton = $("<button/>", {
-            id: uniq("conversationChangeSubjectSubmit"),
-            name: uniq("conversationChangeSubjectSubmit"),
-            class: "conversationSearchButton toolbar conversationSharingButton btn-icon fa fa-users",
-            type: "button"
-        }).on("click",bounceAnd(function(){requestChangeSubjectOfConversationDialogue(jidString);})).append(sharingSpan);
-        var deleteConvButton = $("<button/>", {
-            id: uniq("conversationDelete"),
-            class: "conversationSearchButton toolbar conversationDeleteButton btn-icon fa fa-trash",
-            name: uniq("conversationDelete"),
-            type: "button"
-        }).on("click",bounceAnd(function(){
-            requestDeleteConversationDialogue(jidString);
-        })).append(deleteSpan);
-        newConv.append(row1.append(convTitle));
-        newConv.append(row2.append(convAuthor).append(convSubject).append(convCreated));
+        var row1 = newConv.find(".searchResultTopRow");
+        var row2 = newConv.find(".searchResultMiddleRow");
+        var row3 = newConv.find(".teacherConversationTools");
+				row3.attr("id",uniq("extraConversationTools"));
+				newConv.find(".conversationTitle").attr("id",uniq("conversationTitle")).text(conversation.title);
+        newConv.find(".conversationAuthor").text(conversation.author);
+        newConv.find(".conversationSubject").text(conversation.subject);
+        newConv.find(".conversationCreated").text(conversation.created);
+				
         if (shouldModifyConversationFunction(conversation)){
-            newConv.append(row3.append(renameConvButton).append(changeSharingButton).append(deleteConvButton));
-        }
+
+					newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
+					newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
+					newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
+        } else {
+					newConv.find(".teacherConversationTools").remove()
+				}
         if ("jid" in conversation && targetConversationJid.trim().toLowerCase() == conversation.jid.toString().trim().toLowerCase()){
-            newConv.addClass("activeConversation");
+					newConv.addClass("activeConversation");
         }
         return newConv;
     }
