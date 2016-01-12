@@ -180,18 +180,18 @@ var Quizzes = (function(){
         if ("url" in quiz){
 					rootElem.find(".quizImagePreview").attr("src",sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quiz.id));
         }
-        var generateColorClass = function(color) {return sprintf("background-color:%s", color.toString().split(",")[0])}
+        var generateColorClass = function(color) {return sprintf("border-color:%s", color.toString().split(",")[0])}
 				var quizOptionContainer = rootElem.find(".quizOptionContainer");
 				var quizOptionTemplate = quizOptionContainer.find(".quizOption").clone();
 				quizOptionContainer.empty();
         $.each(quiz.options,function(i,qo){
 					var optionRootElem = quizOptionTemplate.clone();
 					quizOptionContainer.append(optionRootElem);
-					optionRootElem.attr("id",uniq("option_"+qo.name)).addClass(quizOptionClass(quiz,qo)).on("click",function(){
+					optionRootElem.attr("id",uniq("option_"+qo.name)).addClass(quizOptionClass(quiz,qo)).attr("style",generateColorClass(qo.color)).on("click",function(){
 						answerQuiz(Conversations.getCurrentConversationJid(),quiz.id,qo.name);
 					});	
 					optionRootElem.find(".quizOptionText").text(qo.text);
-					optionRootElem.find(".quizOptionName").attr("style",generateColorClass(qo.color)).text(qo.name);
+					optionRootElem.find(".quizOptionName").text(qo.name);
 					if(Conversations.shouldModifyConversation()){
 						optionRootElem.find(".quizOptionAnswerCount").text(quizOptionAnswerCount(quiz,qo));
 					} else {
