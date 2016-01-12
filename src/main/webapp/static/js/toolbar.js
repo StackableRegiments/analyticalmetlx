@@ -532,8 +532,18 @@ var Modes = (function(){
             }
 						var updateTextEditor = function(){
 							if ("type" in currentText && currentText.type == "text"){
+								var h = undefined;
+								prerenderText(currentText);
+								if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
+									h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
+									textEditorInput.val(currentText.runs.join("\n"));
+								} else {
+									h = px(currentText.size);
+									textEditorInput.val(currentText.text);
+								}
+
 								var screenPos = worldToScreen(currentText.x,currentText.y);
-                var possiblyAdjustedHeight = currentText.height;
+                var possiblyAdjustedHeight = Math.max(currentText.height,h);
                 var possiblyAdjustedWidth = currentText.width * 1.1;
                 var possiblyAdjustedX = screenPos.x;
                 var possiblyAdjustedY = screenPos.y;
@@ -562,15 +572,6 @@ var Modes = (function(){
                 if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
                     possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
                 }
-								var h = undefined;
-								prerenderText(currentText);
-								if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
-									h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
-									textEditorInput.val(currentText.runs.join("\n"));
-								} else {
-									h = px(currentText.size);
-									textEditorInput.val(currentText.text);
-								}
 								// there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
                 textEditor.css({
 									position:"absolute",

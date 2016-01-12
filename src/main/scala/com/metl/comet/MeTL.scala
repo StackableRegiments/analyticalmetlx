@@ -25,6 +25,33 @@ import com.metl.renderer.SlideRenderer
 
 import json.JsonAST._
 
+case class StylableRadioButtonInteractableMessage(messageTitle:String,body:String,radioOptions:Map[String,()=>Boolean],defaultOption:Box[String] = Empty, customError:Box[()=>Unit] = Empty,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
+	var answerProvided = false
+	<div>
+		<div>{body}</div>
+		<div>
+			{
+				radio(radioOptions.toList.map(optTuple => optTuple._1),defaultOption,(chosen:String) => {
+					if (!answerProvided && radioOptions(chosen)()){
+						answerProvided = true
+						i.done
+					} else {
+						customError.map(ce => ce())
+					}
+        },("class","simpleRadioButtonInteractableMessageButton")).items.foldLeft(NodeSeq.Empty)((acc,choiceItem) => {
+          val inputElem = choiceItem.xhtml
+          val id = nextFuncName
+          acc ++ ("input [id]" #> id).apply((choiceItem.xhtml \\ "input")) ++ <label for={id}>{Text(choiceItem.key.toString)}</label> 
+        })
+			}		
+			<div>
+				{submit("Submit", ()=> Noop) }
+			</div>
+		</div>
+	</div>	
+},role,Full(messageTitle))
+
+
 object TemplateHolder{
   val useClientMessageTemplate = getClientMessageTemplate
   def getClientMessageTemplate = Templates(List("_s2cMessage")).openOr(NodeSeq.Empty)
@@ -219,7 +246,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     ClientSideFunctionDefinition("requestChangeSubjectOfConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      this ! SimpleRadioButtonInteractableMessage("Change sharing","How would you like to share this conversation?",
+      this ! StylableRadioButtonInteractableMessage("Change sharing","How would you like to share this conversation?",
         Map(Globals.getUserGroups.map(eg => (eg._2.toLowerCase, ()=>{
           if (shouldModifyConversation(c)){
             serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,eg._2)
