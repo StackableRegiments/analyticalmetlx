@@ -116,8 +116,10 @@
     <!-- as many groupsProviders can be used at a time -->
 		<selfGroups/>
 		<flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
-		<!--
-		<flatFileGroups format="stLeo" location="" refreshPeriod=""/>-->
+		<flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
+			<wantsSubgroups username="jeff.borden"/>
+			<wantsSubgroups username="greg.kunzweiler"/>
+		</flatFileGroups>
 		<flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
 	</groupsProvider>
 	<!--
