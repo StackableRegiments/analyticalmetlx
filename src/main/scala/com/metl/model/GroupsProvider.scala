@@ -16,7 +16,7 @@ import scala.xml.{Source=>XmlSource,_}
 object GroupsProvider {
   def createFlatFileGroups(in:NodeSeq):GroupsProvider = {
     (in \\ "@format").text match {
-      case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text)
+      case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text,(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
       case "globalOverrides" => new GlobalOverridesGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text)
       case "specificOverrides" => new SpecificOverridesGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text)
       case _ => throw new Exception("unrecognized flatfile format")
@@ -93,20 +93,22 @@ class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends 
   }
 }
 
-class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) with Logger {
+class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:String, facultyWhoWantSubgroups:List[String] = List.empty[String]) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) with Logger {
   info("created new stLeoFlatFileGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override def comprehendFile:Map[String,List[Tuple2[String,String]]] = {
     var rawData = Map.empty[String,List[Tuple2[String,String]]]
     Source.fromFile(path).getLines.foreach(line => {
-      line.split("\t") match {
+      //sometimes it comes as a csv and other times as a tsv, so converting commas into tabs to begin with
+      line.replace(",","\t").split("\t") match {
         case Array(facId,_facFirstName,_facSurname,facUsername,course,section,studentId,studentFirstName,studentSurname,studentUsername,studentStatus) => {
+          val subgroups:List[Tuple2[String,String]] = facultyWhoWantSubgroups.find(f => f == facUsername).map(f => ("ou","%s and %s".format(f,studentUsername))).toList
           studentStatus match {
             case "ACTIVE" => {
-              rawData = rawData.updated(studentUsername,(List(("ou",section),("ou",course)) ::: rawData.get(studentUsername).toList.flatten).distinct)
+              rawData = rawData.updated(studentUsername,(List(("ou",section),("ou",course),("ou","%s_%s".format(course,section))) ::: subgroups ::: rawData.get(studentUsername).toList.flatten).distinct)
             }
             case _ =>  {}
           }
-          rawData = rawData.updated(facUsername,(List(("ou",section),("ou",course)) ::: rawData.get(facUsername).toList.flatten).distinct)
+          rawData = rawData.updated(facUsername,(List(("ou",section),("ou",course),("ou","%s_%s".format(course,section))) ::: subgroups ::: rawData.get(facUsername).toList.flatten).distinct)
         }
         case _ => {}
       }
