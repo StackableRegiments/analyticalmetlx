@@ -2,6 +2,8 @@
 
   <head>
     <style>
+
+
       /* <![CDATA[ */
 
 .myAnswer {
@@ -126,15 +128,15 @@ $(function () {
   <lift:bind-at name="titleText">
     <h1 id="titleText" class="large-txt mrh"><span class="lift:SlideSnippet.title"></span></h1>
   </lift:bind-at>
-  <lift:bind-at name="headTitle">
+  <!--<lift:bind-at name="headTitle">
     <title><span class="lift:SlideSnippet.title"></span> - MeTL Viewer</title>
-  </lift:bind-at>
+  </lift:bind-at>-->
 
   <lift:bind-at name="navLinkContainer">
     <span class="lift:SlideSnippet.navigation"></span>
   </lift:bind-at>
 
-  <div id="slideNavigation">
+  <div id="slideNavigation" class="flex-container-row">
     <div id="prevContainer">
       <div class="lift:embed?what=slidePrev"></div>
     </div>
