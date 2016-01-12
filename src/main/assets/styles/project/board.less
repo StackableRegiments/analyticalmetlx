@@ -113,8 +113,25 @@ input[type=submit]{
 }
 
 /* fix this jodi! */
+
 .navigationNext, .navigationPrevious {
+    a {
+        .fa;
+        .button-round;
+        height:50px;
+        width:50px;
+    }
     span {
         .hidden;
+    }
+}
+.navigationNext a {
+    &:before {
+        content:"\f105";
+    }
+}
+.navigationPrevious a {
+    &:before {
+        content:"\f104";
     }
 }
