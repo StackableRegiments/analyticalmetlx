@@ -95,6 +95,18 @@ input[type="search"] {
 		-webkit-flex-direction:row;
 		flex-direction:row;
 }
+.flex-container-responsive {
+    .flex-container-row;
+    @media only screen and(max-width:@width-mobile) {
+        .flex-container-column;
+    }
+}
+.flex-container-responsive-rev {
+    .flex-container-column;
+    @media only screen and(max-width:@width-mobile) {
+        .flex-container-row;
+    }
+}
 .grow {
     flex-grow:1;
 }
