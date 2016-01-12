@@ -532,16 +532,17 @@ var Modes = (function(){
             }
 						var updateTextEditor = function(){
 							if ("type" in currentText && currentText.type == "text"){
+								var screenPos = worldToScreen(currentText.x,currentText.y);
                 var possiblyAdjustedHeight = currentText.height;
                 var possiblyAdjustedWidth = currentText.width * 1.1;
-                var possiblyAdjustedX = currentText.x;
-                var possiblyAdjustedY = currentText.y;
+                var possiblyAdjustedX = screenPos.x;
+                var possiblyAdjustedY = screenPos.y;
                 var acceptableMaxHeight = boardHeight * 0.7;
                 var acceptableMaxWidth = boardWidth * 0.7;
                 var acceptableMinX = 30;
                 var acceptableMinY = 30;
                 var acceptableMaxX = boardWidth - 100;
-                var acceptableMaxY = boardHeight - 100;
+                var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
 
                 if (possiblyAdjustedWidth > acceptableMaxWidth){
                     possiblyAdjustedWidth = acceptableMaxWidth;
@@ -820,11 +821,13 @@ var Modes = (function(){
 							});
 							selectedTexts = newSelectedTexts;
 							if (Modes.currentMode == Modes.text){
+								/*
 								if (!("type" in currentText) && (currentText.type != "text")){
 									currentText = selectedTexts[0];
 								}
-								selectedTexts[0] = currentText;
+								*/
 								if (_.size(selectedTexts) > 0 ){
+									selectedTexts[0] = currentText;
 									var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
 									if (intersectRect(currentText.bounds,view)){
 										editText(currentText);
