@@ -130,7 +130,7 @@ var Quizzes = (function(){
             var count = 0;
             if (quiz.id in quizAnswers){
                 $.each(theseQuizAnswerers,function(name,answerer){
-                    if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == username.toLowerCase())){
+                    if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == UserSettings.getUsername().toLowerCase())){
                         count = count +1;
                     }
                 });
@@ -209,7 +209,7 @@ var Quizzes = (function(){
 							requestDeleteQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
 					});
         } else {
-					rootElem.find(".currentQuizTeacherControls");
+					rootElem.find(".currentQuizTeacherControls").hide();
 				}
         return rootElem;
     };
