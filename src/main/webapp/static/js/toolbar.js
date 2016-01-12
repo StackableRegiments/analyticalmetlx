@@ -463,6 +463,7 @@ var Modes = (function(){
         currentMode:noneMode,
         none:noneMode,
         text:(function(){
+						var currentText = {};	
             var marquee = undefined;
             var typingTimer = undefined;
             var selectedTexts = [];
@@ -490,6 +491,8 @@ var Modes = (function(){
 							WorkQueue.pause();
 							var oldTextTest = oldText;
 							oldText = newText;
+							currentText.text = newText;
+							selectedTexts = [currentText];
 							var el = $("#textEditorInputArea").get(0);
 							if ("selectionStart" in el){
 								currentCaretPos = el.selectionStart;
@@ -514,7 +517,6 @@ var Modes = (function(){
 							}
             };
 						var hasInitialized = false;
-						var currentText = {};	
 
 						var textEditor = undefined;
 						var textEditorInput = undefined;
@@ -560,11 +562,12 @@ var Modes = (function(){
                     possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
                 }
 								var h = undefined;
-								if ("runs" in currentText){
+								prerenderText(currentText);
+								if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
 									h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
 									textEditorInput.val(currentText.runs.join("\n"));
 								} else {
-									h = px(text.size);
+									h = px(currentText.size);
 									textEditorInput.val(currentText.text);
 								}
 								// there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
@@ -811,7 +814,7 @@ var Modes = (function(){
 							_.forEach(selectedTexts,function(st){
 								if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
 									newSelectedTexts.push(st);
-								} else if ("runs" in st && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
+								} else if ("runs" in st && _.size(st.runs) == 1 && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
 									newSelectedTexts.push(st);
 								}
 							});
