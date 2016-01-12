@@ -131,17 +131,21 @@
 			<div id="currentQuiz" class="box-model-block align-left">
 				<!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
 				<div class="currentQuizItem">
-					<h3 class="nmb">Results for <span class="quizQuestion"></span></h3>
-					<canvas class="quizResultsGraph"></canvas>
-					<img class="quizImagePreview"></img>
-					<div class="quizOptionContainer">
-					<!-- many ".quizOption"s are cloned from JS -->
-						<div class="quizOption">
-							<span class="quizOptionName"></span>
-							<span class="quizOptionText"></span>
-							<span class="quizOptionCountContainer">
-								<span class="quizOptionAnswerCount"></span>
-							</span>
+					<div class="voting-block block">
+						<h3 class="nmb">Results for <span class="quizQuestion"></span></h3>
+						<canvas class="quizResultsGraph"></canvas>
+						<img class="quizImagePreview"></img>
+						<h4 class="nmb">Vote</h4>
+						<div class="quizOptionContainer flex-container-column">
+						<!-- many ".quizOption"s are cloned from JS -->
+							<button class="quizOption button-transparent-border">
+								<span class="quizOptionName"></span>
+								<span class="quizOptionText"></span>
+								<span class="quizOptionCountContainer">
+									<span class="quizOptionAnswerCount"></span>
+								</span>
+								<span class="fa fa-thumbs-up align-right mlh"></span>
+							</button>
 						</div>
 					</div>
 					<div class="currentQuizTeacherControls">
