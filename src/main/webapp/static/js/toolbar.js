@@ -1863,10 +1863,20 @@ var Modes = (function(){
                             strokeCollected(currentStroke.join(" "));
                         }
                     };
-
+										$(".activeBrush").removeClass("activeBrush");
+										if (erasing){
+											$("#drawTools").find(".eraser").addClass("activeBrush");
+										} else {
+											_.each($("#drawTools").find(".pen"),function(button,i){
+												if ((i + 1) == currentBrush.id){
+													$(button).addClass("activeBrush");
+												}
+											});
+										}
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
+										$(".activeBrush").removeClass("activeBrush");
                     removeActiveMode();
                     WorkQueue.gracefullyResume();
                     unregisterPositionHandlers(board);
