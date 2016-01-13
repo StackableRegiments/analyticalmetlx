@@ -1,10 +1,10 @@
-.clickable {
+.clickable, a {
   cursor: pointer;
   &:hover {
     border-color:@highlight;
   }
 }
-.button, button, input[type=submit] {
+.button, button, input[type=submit], input[type=button] {
   cursor: pointer;
   .ptbh;
   .plr;
@@ -126,4 +126,25 @@
 .btn-search-result {
   text-align: left;
   .nmt;
+}
+.btn-list {
+  margin-bottom:1px;
+  .btn-item {
+    background-color: @btn-list-bg;
+    padding:10px;
+    margin-right:1px;
+    button, input {
+      .nmt;
+      .np;
+    }
+    &:hover {
+      background-color:darken(@btn-list-bg, 5%)
+    }
+    &.active, &.active {
+      .btn-active.active;
+    }
+  }
+  &.flex-container-row, .flex-container-row {
+    justify-content: space-between;
+  }
 }

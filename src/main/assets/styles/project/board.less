@@ -121,8 +121,16 @@ input[type=submit]{
             text-decoration: none;
         }
     }
+    &.active {
+        .btn-active.active;
+    }
 }
-
+.quizSummary.active + .quizTeacherControls {
+    .btn-active.active;
+    .quizSummaryEditButton {
+        color:@toggle-active-fg;
+    }
+}
 /* fix this jodi! */
 
 .navigationNext, .navigationPrevious {
