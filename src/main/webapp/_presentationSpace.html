@@ -94,56 +94,57 @@
 			</div>
 		</div>
 		<section id="quizzesPopup" class="backstage">
-			<h2>Polls</h2>
-			<div id="quizCreateButtonContainer">
-				<button id="quizCreationButton" class="quizCreationButton button-transparent-border">
+			<h2 class="align-left mrh nmt">Polls</h2>
+			<div id="quizCreateButtonContainer" class="align-left">
+				<button id="quizCreationButton" class="quizCreationButton button-transparent-border mth">
 					<span>Create poll</span>
 				</button>
 			</div>
-			<div class="quiz-listing align-left mrt">
+			<div class="quiz-listing align-left half mrh clear">
 				<div id="unansweredQuizListing" class="clear box-model-block">
 					<h3 class="nmb">Unanswered polls</h3>
 					<!-- many ".quizItem"s are cloned from JS -->
-					<div class="quizItem">
-						<a class="quizSummary">
-							<h4 class="quizSummaryQuestion nmb"></h4>
-							<button class="quizSummaryAnswerCount button-transparent-border inline-input"></button>
-							<div class="quizTeacherControls inline-input">
-								<input class="quizSummaryEditButton button-transparent-border" value="Edit poll" type="button"></input>
-							</div>
+					<div class="quizItem flex-container-row btn-list">
+						<a class="quizSummary btn-item flex-container-row full">
+							<div class="quizSummaryQuestion mrh"></div>
+							<div class="fa fa-thumbs-up btn-icon"><span class="hidden">Activity: </span><div class="quizSummaryAnswerCount"></div></div>
 						</a>
+						<div class="quizTeacherControls btn-item">
+							<input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
+						</div>
 					</div>
 				</div>
 				<div id="answeredQuizListing" class="clear box-model-block">
 					<h3 class="nmb">Answered polls</h3>
 					<!-- many ".quizItem"s are cloned from JS -->
-					<div class="quizItem">
-						<a class="quizSummary">
-							<h4 class="quizSummaryQuestion nmb"></h4>
-							<button class="quizSummaryAnswerCount button-transparent-border inline-input"></button>
-							<div class="quizTeacherControls inline-input">
-								<input class="quizSummaryEditButton button-transparent-border" value="Edit poll" type="button"></input>
-							</div>
+					<div class="quizItem flex-container-row btn-list">
+						<a class="quizSummary btn-item flex-container-row full">
+							<div class="quizSummaryQuestion mrh"></div>
+							<div class="fa fa-thumbs-up btn-icon"><span class="hidden">Activity: </span><div class="quizSummaryAnswerCount"></div></div>
 						</a>
+						<div class="quizTeacherControls btn-item">
+							<input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
+						</div>
 					</div>
 				</div>
 			</div>
-			<div id="currentQuiz" class="box-model-block align-left">
+			<div id="currentQuiz" class="box-model-block align-left half">
 				<!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
 				<div class="currentQuizItem">
-					<div class="voting-block block">
-						<h3 class="nmb">Results for <span class="quizQuestion"></span></h3>
-						<canvas class="quizResultsGraph"></canvas>
+					<div class="voting-block block img-resp">
+						<!--<h3 class="nmb">Results for <span class="quizQuestion"></span></h3>
+						<canvas class="quizResultsGraph"></canvas>-->
+						<h3 class="nmt mbh">Vote</h3>
 						<img class="quizImagePreview"></img>
-						<h4 class="nmb">Vote</h4>
+						<p class="quizQuestion"></p>
 						<div class="quizOptionContainer flex-container-column">
 						<!-- many ".quizOption"s are cloned from JS -->
-							<button class="quizOption button-transparent-border">
-								<span class="quizOptionName"></span>
+							<button class="quizOption button-transparent-border flex-container-row space-between">
+								<span class="quizOptionName mrh"></span>
 								<span class="quizOptionText"></span>
-								<span class="quizOptionCountContainer">
+								<!--<span class="quizOptionCountContainer">
 									<span class="quizOptionAnswerCount"></span>
-								</span>
+								</span>-->
 								<span class="fa fa-thumbs-up align-right mlh"></span>
 							</button>
 						</div>
