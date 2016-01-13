@@ -78,7 +78,7 @@ object Globals extends PropertyReader with Logger {
   val ThumbnailSize = new RenderDescription(320,240)
   val SmallSize = new RenderDescription(640,480)
   val MediumSize = new RenderDescription(1024,768)
-  val LargeSize = new RenderDescription(2560,1600)
+  val LargeSize = new RenderDescription(1920,1080)
   val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize)
 }
 

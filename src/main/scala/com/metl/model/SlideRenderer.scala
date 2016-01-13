@@ -36,9 +36,16 @@ object SlideRenderer extends Logger {
   })
 
   protected def imageToByteArray(image:BufferedImage):Array[Byte] = Stopwatch.time("SlideRenderer.imageToByteArray",{
+    try {
     val stream = new java.io.ByteArrayOutputStream
     ImageIO.write(image, "jpg", stream)
     stream.toByteArray
+    } catch {
+      case e:Exception => {
+        error("couldn't serialize image",e)
+        Array.empty[Byte]
+      }
+    }
   })
 
   //We assume it came from windows, and that any headful dev env is Windows.
