@@ -154,29 +154,37 @@ var Quizzes = (function(){
 				var rootElem = currentQuizTemplate.clone();
 				rootElem.attr("id",uniq("container"));
 				rootElem.find(".quizQuestion").text(quiz.question).attr("id",uniq("title"));
-				var graph = rootElem.find(".quizResultsGraph");
-        _.defer(function(){
-            var data = {
-                labels:_.pluck(quiz.options,"name"),
-                datasets:[
-                    {
-                        fillColor:"gray",
-                        strokeColor:"black",
-                        data:quiz.options.map(function(qo){
-                            return quizOptionAnswerCount(quiz,qo);
-                        })
-                    }
-                ]
-            };
-            var options = {
-                scaleOverride:true,
-                scaleStepWidth:1,
-                scaleSteps:Math.max.apply(Math,data.datasets[0].data),
-                scaleStartValue:0
-            }
-            console.log(data,options);
-            //new Chart(graph[0].getContext("2d")).Bar(data,options);
-        });
+        if (Conversations.isAuthor()){
+            rootElem.find(".resultsTitle").show();
+            var graph = rootElem.find(".quizResultsGraph");
+            graph.show();
+            _.defer(function(){
+                var data = {
+                    labels:_.pluck(quiz.options,"name"),
+                    datasets:[
+                        {
+                            fillColor:"gray",
+                            strokeColor:"black",
+                            data:quiz.options.map(function(qo){
+                                return quizOptionAnswerCount(quiz,qo);
+                            })
+                        }
+                    ]
+                };
+                var options = {
+                    scaleOverride:true,
+                    scaleStepWidth:1,
+                    scaleSteps:Math.max.apply(Math,data.datasets[0].data),
+                    scaleStartValue:0
+                }
+                console.log(data,options);
+                new Chart(graph[0].getContext("2d")).Bar(data,options);
+            });
+        }
+        else {
+            rootElem.find(".resultsTitle").hide();
+            rootElem.find(".quizResultsGraph").hide();
+        }
 
         var theseQuizAnswerers = quizAnswersFunction(quiz);
         if ("url" in quiz){
