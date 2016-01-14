@@ -34,7 +34,7 @@ var Conversations = (function(){
 									when:Date.now()
 								};
                 //then fire paint as normal, which paints from the cache
-                paintThumb(slide,slideContainer);
+                _.defer(paintThumb,slide,slideContainer);
             };
             //cache[slide.id] = "data:image/jpeg;base64,"
             $.ajax({
@@ -53,17 +53,43 @@ var Conversations = (function(){
                 fetchAndPaintThumb(slide,slideContainer);
             }
         };
-        var possiblyUpdateThumbnail = function(slide,slidesContainer,slideContainerHeight){
+				var makeBlankCanvas = function(w,h){
+					var c = $("<canvas />");
+					c.width = w;
+					c.height = h;
+					c.attr("width",w);
+					c.attr("height",h);
+					var ctx = c[0].getContext("2d"); 
+					ctx.rect(0,0,w,h);
+					ctx.fillStyle="white";
+					ctx.fill();
+					return c[0].toDataURL();
+				}
+				var blank4to3Canvas = makeBlankCanvas(320,240);
+        var possiblyUpdateThumbnail = function(slide){
+						var thumbScroller = $("#thumbScrollContainer");
+						var slideContainerHeight = thumbScroller.height();
             var slidesTop = 0;
-            var slidesBottom = slidesTop + slideContainerHeight;
+            var slidesBottom = thumbScroller.height();
             var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
 						try {
-							var slideTop = slideContainer.position().top + 10; //10 pixel margin for the top, which appears to be being ignored.
+							var slideImage = slideContainer.find("img");
+							var slideTop = slideContainer.position().top;
 							var slideBottom = slideTop + slideContainer.height();
+							if (slideTop == slideBottom){
+								var slideImage = slideContainer.find("img");
+								slideImage.attr("src",blank4to3Canvas);
+								return;
+							}
 							var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-							var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
-							if (isEntirelyVisible){
-									paintThumb(slide,slideContainer);
+							//var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
+							if (isVisible){
+								console.log("visible, so rendering:",slide,slidesTop, slideTop, slideBottom, slidesBottom);
+								paintThumb(slide,slideContainer);
+							} else {
+								//console.log("not visible, so not rendering:",slide, slidesTop, slideTop, slideBottom, slidesBottom);
+								//var slideImage = slideContainer.find("img");
+								//slideImage.attr("src",blank4to3Canvas);
 							}
 						} catch(e) {
 							console.log("exception while painting thumb: ",e);
@@ -73,8 +99,52 @@ var Conversations = (function(){
         var clearCacheFunction = function(){
             cache = {};
         };
+				var paintAllThumbsFunc = function(){
+					//console.log("firing paintThumbs");
+				/*	
+					_.forEach(currentConversation.slides,function(slide){
+						if (slide == undefined || !("id" in slide)){ return; }
+						try {
+							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
+							var slideImage = slideContainer.find("img");
+							slideImage.on("load",function(){
+								slideImage.off("load");
+								possiblyUpdateThumbnail(slide);
+							});
+							if (slide.id in cache){
+								slideImage.attr("src",cache[slide.id].data);
+							} else {	
+								slideImage.attr("src",blank4to3Canvas);
+							}
+						} catch(e){
+							console.log("exception while slide thumbnailing",e);
+						}
+					});	
+					*/
+					var paintAThumb = function(thisSlideInt,after){ 
+						var slide = currentConversation.slides[thisSlideInt];
+						if (slide != undefined){
+							possiblyUpdateThumbnail(slide);
+							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
+							var img = slideContainer.find("img");
+							if (img.height() == 0 || img.height() == undefined){
+								img.on("load",function(){_.defer(after,thisSlideInt + 1,after)});
+							} else {
+								_.defer(after,thisSlideInt + 1,after);
+							}
+						}
+					}
+					paintAThumb(0,paintAThumb);
+					/*
+					_.forEach(currentConversation.slides,function(slide){
+							possiblyUpdateThumbnail(slide);
+							//ThumbCache.paintThumb(slide,slidesContainer,containerHeight);
+					});
+					*/
+				};
         return {
             paintThumb:possiblyUpdateThumbnail,
+						paintAllThumbs:paintAllThumbsFunc,	
             clearCache:clearCacheFunction
         };
     })();
@@ -90,12 +160,7 @@ var Conversations = (function(){
         }));
     }
     var paintThumbs = function(){
-        console.log("firing paintThumbs");
-        var slidesContainer = $("#slideContainer");
-        var containerHeight = slidesContainer.height();
-        _.forEach(currentConversation.slides,function(slide){
-            ThumbCache.paintThumb(slide,slidesContainer,containerHeight);
-        })
+				ThumbCache.paintAllThumbs();
     }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");

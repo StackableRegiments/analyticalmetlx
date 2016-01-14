@@ -153,7 +153,8 @@ function commandReceived(c){
                 TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
             };
             if(UserSettings.getIsInteractive()){
-                WorkQueue.enqueue(f);
+						// interactive users don't chase the teacher's viewbox, only projectors do.	
+            //    WorkQueue.enqueue(f);
             }
             else{
                 f();
@@ -622,6 +623,10 @@ function inkReceived(ink){
         });
     }
 }
+function takeControlOfViewbox(){
+    delete Progress.onBoardContentChanged.autoZooming;
+		UserSettings.setUserPref("followingTeacherViewbox",true);
+}
 function zoomToFit(){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
     requestedViewboxWidth = boardContent.width;
@@ -629,7 +634,7 @@ function zoomToFit(){
     IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height);
 }
 function zoomToOriginal(){
-    delete Progress.onBoardContentChanged.autoZooming;
+		takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
@@ -637,7 +642,7 @@ function zoomToOriginal(){
     IncludeView.specific(0,0,boardWidth,boardHeight);
 }
 function zoomToPage(){
-    delete Progress.onBoardContentChanged.autoZooming;
+		takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;

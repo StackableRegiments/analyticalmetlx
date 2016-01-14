@@ -36,7 +36,8 @@ var UserSettings = (function(){
         toolModeSize:60,
         subModeSize:30,
         thumbnailSize:100,
-        loadSlidesAtNativeZoom:false
+        loadSlidesAtNativeZoom:false,
+				followingTeacherViewbox:false
     };
     var setUserPrefFunction = function(prefKey,prefValue){
         if(localStorage){

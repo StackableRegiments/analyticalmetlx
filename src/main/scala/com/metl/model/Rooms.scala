@@ -380,7 +380,9 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           case false => history
         }
         debug("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
-        SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
+        val result = SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
+        debug("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
+        result
       }
       case _ => {
         Map.empty[RenderDescription,Array[Byte]]
@@ -403,7 +405,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       } else if (!renderInProgress){
         renderInProgress = true
         ActorPing.schedule(this,ThumbnailRenderRequest,acceptableRenderStaleness)
-      }
+      } 
     }
   }
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",{
