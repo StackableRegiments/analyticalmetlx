@@ -9,7 +9,7 @@
 	<serverConfigurations>
     <server>
       <type>localH2</type>
-			<name>localDev</name>
+			<name>localH2</name>
 			<filename>./testdb.h2</filename>
     </server>
     <server>

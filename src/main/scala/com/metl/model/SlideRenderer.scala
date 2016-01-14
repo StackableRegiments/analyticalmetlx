@@ -492,6 +492,7 @@ class SlideRenderer extends Logger {
         }):_*)
       }
       case false => {
+        debug("renderMultiple(%s,%s,%s) didn't render because h.shouldRender returned false".format(h,requestedSizes,target))
         Map(requestedSizes.map(rs => {
           val width = rs.width
           val height = rs.height

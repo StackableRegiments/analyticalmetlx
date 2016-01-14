@@ -152,15 +152,19 @@ function registerPositionHandlers(contexts,down,move,up){
             var worldX = worldPos.x;
             var worldY = worldPos.y;
             if(worldX < viewboxX){
+							takeControlOfViewbox();
                 Extend.left();
             }
             else if(worldX >= (viewboxX + viewboxWidth)){
+							takeControlOfViewbox();
                 Extend.right();
             }
             else if(worldY < viewboxY){
+							takeControlOfViewbox();
                 Extend.up();
             }
             else if(worldY >= (viewboxY + viewboxHeight)){
+							takeControlOfViewbox();
                 Extend.down();
             }
             isDown = false;
@@ -233,6 +237,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 var xDelta = pos.x - prevPos.x;
                 var yDelta =  pos.y - prevPos.y;
                 prevPos = pos;
+								takeControlOfViewbox();
                 Pan.translate(-1 * xDelta,-1 * yDelta);
                 break;
             }
@@ -263,6 +268,7 @@ function registerPositionHandlers(contexts,down,move,up){
             var scale = e.originalEvent.scale;
             //Zoom.scale(previousScale / scale,true);
             // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
+						takeControlOfViewbox();
             Zoom.scale(previousScale / scale);
             previousScale = scale;
         });
@@ -1170,6 +1176,7 @@ var Modes = (function(){
                 var originX;
                 var originY;
                 var down = function(x,y){
+										takeControlOfViewbox();
                     originX = x;
                     originY = y;
                 }
@@ -1577,6 +1584,8 @@ var Modes = (function(){
                 var proportion;
                 var originPoint = {x:0,y:0};
                 var down = function(x,y,worldPos){
+									//adding this so that using the zoom marquee results in the autofit being turned off.
+										takeControlOfViewbox();
                     proportion = boardHeight / boardWidth;
                     startX = x;
                     startY = y;

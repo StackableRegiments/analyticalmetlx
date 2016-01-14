@@ -12,18 +12,22 @@ import java.text.SimpleDateFormat
 import org.apache.commons.io._
 import javax.xml.bind.DatatypeConverter
 
-object HttpResponder extends HttpCacher{
+object HttpResponder extends HttpCacher with Logger {
   private val snapshotExpiry = 10 seconds
   private val quizImageExpiry = 30 seconds
   protected val server = ServerConfiguration.default
+  debug("HttpResponder for server: %s".format(server))
   protected def getSnapshot(jid:String,size:String) = {
-    MeTLXConfiguration.getRoom(jid,server.name).getSnapshot(size.trim.toLowerCase match {
+    val room = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
+    val snap = room.getSnapshot(size.trim.toLowerCase match {
       case "thumbnail" => Globals.ThumbnailSize
       case "small" => Globals.SmallSize
       case "medium" => Globals.MediumSize
       case "large" => Globals.LargeSize
       case _ => Globals.ThumbnailSize
     })
+    debug("getSnapshot: (%s => %s, %s) => %s".format(jid, room, size,snap))
+    snap
   }
   def snapshot(jid:String,size:String) ={
     val cachedBinary = CachedBinary(getSnapshot(jid,size),new Date().getTime)
@@ -35,7 +39,7 @@ object HttpResponder extends HttpCacher{
   }
   def quizImage(jid:String,id:String) = {
     //val serverConfig = ServerConfiguration.configForName(server)
-    val binary = MeTLXConfiguration.getRoom(jid,server.name).getHistory.getQuizByIdentity(id).map(q => q.imageBytes.getOrElse(Array.empty[Byte]))
+    val binary = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getQuizByIdentity(id).map(q => q.imageBytes.getOrElse(Array.empty[Byte]))
     val cachedBinary = binary.map(b => CachedBinary(b,new Date().getTime)).getOrElse(CachedBinary(Array.empty[Byte],new Date(0).getTime))
     constructResponse(cachedBinary,"image/jpg",quizImageExpiry)
   }
