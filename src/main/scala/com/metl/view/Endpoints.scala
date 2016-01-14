@@ -198,6 +198,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", StatelessHtml.proxyImageUrl(slide,r.param("source").getOrElse("")))
     case Req(List("quizProxy",conversation,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", StatelessHtml.quizProxy(conversation,identity))
+    case Req(List("quizResultsGraphProxy",conversation,identity,width,height),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.quizResultsGraphProxy", StatelessHtml.quizResultsGraphProxy(conversation,identity,width.toInt,height.toInt))
     case Req(List("submissionProxy",conversation,author,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.submissionProxy", StatelessHtml.submissionProxy(conversation,author,identity))
     case r @ Req(List("resourceProxy",identity),_,_) =>

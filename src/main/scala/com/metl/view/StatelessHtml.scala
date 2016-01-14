@@ -139,6 +139,15 @@ object StatelessHtml extends Stemmer with Logger {
       }).openOr(NotFoundResponse("quiz image bytes not available"))
     }).getOrElse(NotFoundResponse("quiz not available")))
   })
+  def quizResultsGraphProxy(conversationJid:String,identity:String,width:Int,height:Int)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), {
+    val history = MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory
+    val responses = history.getQuizResponses.filter(qr => qr.id == identity)
+    Full(history.getQuizByIdentity(identity).map(quiz => {
+      val bytes = com.metl.renderer.QuizRenderer.renderQuiz(quiz,responses,new com.metl.renderer.RenderDescription(width,height))
+      val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
+      InMemoryResponse(bytes,headers,Nil,200)
+    }).getOrElse(NotFoundResponse("quiz not available")))
+  })
   def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), {
     val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
