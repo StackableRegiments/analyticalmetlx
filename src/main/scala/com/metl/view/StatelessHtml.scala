@@ -444,6 +444,12 @@ object StatelessHtml extends Stemmer with Logger {
             val identity = "%s%s".format(username,now.toString)
             val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(config,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
             val quizTitle = genText(quiz.question,32,0,"title")
+
+            val graphWidth = 640
+            val graphHeight = 480
+            val bytes = com.metl.renderer.QuizRenderer.renderQuiz(quiz,answers.flatMap(_._2).toList,new com.metl.renderer.RenderDescription(graphWidth,graphHeight))
+            val quizGraphIdentity = config.postResource(jid,"graphResults_%s_%s".format(quizId,now),bytes)
+            val quizGraph = MeTLImage(config,username,now,identity+"resultsGraph",Full(quizGraphIdentity),Empty,Empty,graphWidth,graphHeight,330,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"resultsGraph")
             val questionOffset = quiz.url match{
               case Full(_) => 340
               case _ => 100
@@ -455,7 +461,7 @@ object StatelessHtml extends Stemmer with Logger {
                 (acc.length * 30) + questionOffset,
                 "option:"+item.name))
             })
-            val allStanzas = quiz.url.map(u => List(MeTLImage(config,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
+            val allStanzas = quiz.url.map(u => List(MeTLImage(config,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle,quizGraph)
             allStanzas.foreach(stanza => {
               slideRoom ! LocalToServerMeTLStanza(stanza)
             })
