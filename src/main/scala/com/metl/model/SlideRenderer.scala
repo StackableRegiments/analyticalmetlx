@@ -22,7 +22,9 @@ case class Dimensions(left:Double,top:Double,right:Double,bottom:Double,width:Do
 
 class RenderDescription(val width:Int,val height:Int)
 
-object SlideRenderer extends Logger {
+object SlideRenderer extends SlideRenderer
+
+class SlideRenderer extends Logger {
 
   protected val JAVA_DEFAULT_DPI = 72.0
   protected val WINDOWS_DEFAULT_DPI = 96.0
