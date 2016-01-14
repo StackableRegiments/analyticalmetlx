@@ -1,6 +1,10 @@
 <serverConfiguration>
-	<!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
-	<!--  -->
+	<metl2011InstallUrl>http://setup.stackableregiments.com/windowsClients/sluBeta/</metl2011InstallUrl>
+	<serverAddress>
+		<scheme>http</scheme>
+		<hostname>localhost</hostname>
+		<port>8080</port>
+	</serverAddress>
   <defaultServerConfiguration>localH2</defaultServerConfiguration>
 	<serverConfigurations>
     <server>

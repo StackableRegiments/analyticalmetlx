@@ -25,6 +25,9 @@ trait Stemmer {
 object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   debug("MeTLRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
+  val host = Globals.host
+  val scheme = Globals.scheme
+  val port = Globals.port
   val crossDomainPolicy = {
     <cross-domain-policy>
     <allow-access-from domain="*" />
@@ -44,6 +47,13 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   }
   protected var id = 1000;
   serve {
+    //security enforced security
+    case r:Req if scheme.map(_ != r.request.scheme).getOrElse(false) => () => {
+      val uri = r.request.url
+      val transformed = "%s://%s:%s%s%s".format(scheme.getOrElse("http"),host.getOrElse(r.request.serverName),port.getOrElse(r.request.serverPort),r.uri,r.request.queryString.map(qs => "?%s".format(qs)).getOrElse(""))
+      println("insecure: %s, redirecting to: %s".format(uri,transformed))
+      Full(RedirectResponse(transformed,r))
+    }
     //yaws endpoints 1188
     case r@Req(List("upload_nested"),"yaws",PostRequest) => () => {
       for (

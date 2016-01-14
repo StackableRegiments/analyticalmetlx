@@ -56,6 +56,10 @@ object Globals extends PropertyReader with Logger {
       throw e
     }
   }
+  val propFile = XML.load(configurationFileLocation)
+  val scheme = Some(readText((propFile \\ "serverAddress"),"scheme")).filterNot(_ == "")
+  val host = Some(readText((propFile \\ "serverAddress"),"hostname")).filterNot(_ == "")
+  val port = Some(readText((propFile \\ "serverAddress"),"port")).filterNot(_ == "").map(_.toInt)
   var isDevMode:Boolean = true
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
