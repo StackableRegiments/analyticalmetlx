@@ -177,16 +177,24 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       case cr:ConversationRoom => {
         debug("updating conversationRoom: %s".format(cr))
         val details = cr.cd
+        var shouldUpdateConversation = false;
         val a = getAttendances.map(_.author)
         val newSlides = details.slides.map(slide => {
           slide.copy(groupSet = slide.groupSet.map(gs => {
             val grouped = gs.groups.flatMap(g => g.members)
             val ungrouped = a.filterNot(m => grouped.contains(m))
+            if (ungrouped.length > 0){
+              shouldUpdateConversation = true
+            }
             ungrouped.foldLeft(gs.copy())((groupSet,person) => groupSet.groupingStrategy.addNewPerson(groupSet,person))
           }))
         })
         debug("newSlides: %s".format(newSlides))
-        Some(cr.cd.copy(slides = newSlides))
+        if (shouldUpdateConversation){
+          Some(cr.cd.copy(slides = newSlides))
+        } else {
+          None
+        }
       }
       case _ => None
     }

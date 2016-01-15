@@ -24,6 +24,7 @@
 	<logger name="com.metl.model.VysperClientXmlSerializer" level="TRACE"/>
 -->
 	<logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
+	<!--	<logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
   <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>

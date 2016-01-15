@@ -160,7 +160,11 @@ var Conversations = (function(){
         }));
     }
     var paintThumbs = function(){
+			try {
 				ThumbCache.paintAllThumbs();
+			}	catch(e){
+				console.log("exception while painting thumbs",e);
+			}
     }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
@@ -200,30 +204,26 @@ var Conversations = (function(){
 					return currentConversation.permissions.usersAreCompulsorilySynced;
 				};
 
-    var changeConvToLectureFunction = function(jid){
-        if (!jid){
-            jid = currentConversation.jid.toString();
-        }
-        var newPermissions = {"studentCanOpenFriends":false,"studentCanPublish":false,"usersAreCompulsorilySynced":true};
-        changePermissionsOfConversation(jid,newPermissions);
-    };
-    var changeConvToTutorialFunction = function(jid){
-        if (!jid){
-            jid = currentConversation.jid.toString();
-        }
-        var newPermissions = {"studentCanOpenFriends":false,"studentCanPublish":true,"usersAreCompulsorilySynced":false};
-        changePermissionsOfConversation(jid,newPermissions);
-    };
     var enableSyncMoveFunction = function(){
         isSyncedToTeacher = true;
-        $("#enableSync").addClass("activePrivacy active");
-        $("#disableSync").removeClass("activePrivacy active");
+				redrawSyncState();
     };
     var disableSyncMoveFunction = function(){
+				if ("permissions" in currentConversation && !shouldModifyConversationFunction(currentConversation) && currentConversation.permissions.usersAreCompulsorilySynced) {
+					return;
+				}
         isSyncedToTeacher = false;
+				redrawSyncState();
+    };
+		var redrawSyncState = function(){
+			if (isSyncedToTeacher){
+        $("#enableSync").addClass("activePrivacy active");
+        $("#disableSync").removeClass("activePrivacy active");
+			} else {
         $("#enableSync").removeClass("activePrivacy active");
         $("#disableSync").addClass("activePrivacy active");
-    };
+			}
+		}
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
             disableSyncMoveFunction();
@@ -428,9 +428,13 @@ var Conversations = (function(){
 		};
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){
+					if (!shouldModifyConversationFunction(details) && details.permissions.usersAreCompulsorilySynced){
+						enableSyncMoveFunction();
+					}
 						updatePermissionButtons(details);
             updateConversationHeader();
             updateLinks();
+						redrawSyncState();
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
@@ -670,8 +674,6 @@ var Conversations = (function(){
         enableSyncMove : enableSyncMoveFunction,
         disableSyncMove : disableSyncMoveFunction,
         toggleSyncMove : toggleSyncMoveFunction,
-        changeConversationToTutorial : changeConvToTutorialFunction,
-        changeConversationToLecture : changeConvToLectureFunction,
 				setStudentsCanPublish : setStudentsCanPublishFunction,
 				getStudentsCanPublish : getStudentsCanPublishFunction,
 				setStudentsMustFollowTeacher : setStudentsMustFollowTeacherFunction,
