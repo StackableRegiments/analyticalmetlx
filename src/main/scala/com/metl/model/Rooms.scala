@@ -22,6 +22,7 @@ abstract class RoomProvider {
   def get(jid:String,roomMetaData:RoomMetaData):MeTLRoom
   def removeMeTLRoom(room:String):Unit
   def exists(room:String):Boolean
+  def list:List[String]
 }
 
 object EmptyRoomProvider extends RoomProvider {
@@ -29,6 +30,7 @@ object EmptyRoomProvider extends RoomProvider {
   override def get(jid:String,roomDefinition:RoomMetaData) = EmptyRoom
   override def removeMeTLRoom(room:String) = {}
   override def exists(room:String) = false
+  override def list = Nil
 }
 
 object MeTLRoomType extends Enumeration {
@@ -90,6 +92,7 @@ object RoomMetaDataUtils {
 
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
   private lazy val metlRooms = new SynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
+  override def list = metlRooms.keys.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
   override def get(room:String) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
   override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))

@@ -1693,7 +1693,10 @@ var Modes = (function(){
 										var drawAdvancedTools = function(){};
 										var penSizeTemplate = undefined;
 										var penColorTemplate = undefined;
-										                    $(".activeBrush").removeClass("activeBrush");
+										var updateOriginalBrush = function(brush){
+											Modes.draw.brushes[brush.index] = brush;
+										};
+										$(".activeBrush").removeClass("activeBrush");
 										var drawTools = function(){
 											var container = $("#drawTools");
 											_.each(container.find(".pen"),function(button,i){
@@ -1703,10 +1706,11 @@ var Modes = (function(){
 													.click(function(){
 														$(".activeBrush").removeClass("activeBrush");
 														$(this).addClass("activeBrush");
-														drawAdvancedTools(brush);
 														currentBrush = brush;
+														updateOriginalBrush(brush);
 														Modes.draw.drawingAttributes = currentBrush;
 														erasing = false;
+														drawAdvancedTools(brush);
 													});
 												thisButton.find(".widthIndicator").text(brush.width);
 												if (brush == currentBrush){
@@ -1717,9 +1721,6 @@ var Modes = (function(){
                     drawAdvancedTools = function(brush){
 											var dots = $("#colors .dots");
 											var bars = $("#sizes .dots");
-											var updateOriginalBrush = function(){
-												Modes.draw.brushes[brush.index] = brush;
-											};
 											var colors = Colors.getAllNamedColors();
 											var widths = Brushes.getAllBrushSizes();
 											bars.empty();
@@ -1728,7 +1729,7 @@ var Modes = (function(){
 												bars.append(sizeDot);
 												sizeDot.click(function(){
 													brush.width = width;
-													updateOriginalBrush();
+													updateOriginalBrush(brush);
 													currentBrush = brush;
 													drawTools();
 													drawAdvancedTools(brush);
@@ -1747,7 +1748,7 @@ var Modes = (function(){
 												colorDot.on("click",function(){
 														brush.color = color.rgb;
 														currentBrush = brush;
-														updateOriginalBrush();
+														updateOriginalBrush(brush);
 														drawTools();
 														drawAdvancedTools(brush);
 												});
@@ -1760,23 +1761,23 @@ var Modes = (function(){
 											var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
 													brush.isHighlighter = true;
 													currentBrush = brush;
-													updateOriginalBrush();
+													updateOriginalBrush(brush);
 													drawTools();
 													drawAdvancedTools(brush);
 											});
 											var penButton = $("#setPenToPen").unbind("click").on("click",function(){
 													brush.isHighlighter = false;
-													updateOriginalBrush();
 													currentBrush = brush;
+													updateOriginalBrush(brush);
 													drawTools();
 													drawAdvancedTools(brush);
 											});
 											if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-													hlButton.addClass("activeTool");
-													penButton.removeClass("activeTool");
+													hlButton.addClass("activeTool").addClass("active");
+													penButton.removeClass("activeTool").removeClass("active");
 											} else {
-													penButton.addClass("activeTool");
-													hlButton.removeClass("activeTool");
+													penButton.addClass("activeTool").addClass("active");
+													hlButton.removeClass("activeTool").removeClass("active");
 											}
 											Progress.call("onLayoutUpdated");
                     }
@@ -1798,6 +1799,7 @@ var Modes = (function(){
 											penColorTemplate = $("#penColor .colorDot").clone();
 											currentBrush = Modes.draw.brushes[0];
 											drawTools();
+											drawAdvancedTools(currentBrush);
 											Modes.draw.drawingAttributes = currentBrush;
 											var container = $("#drawTools");
 											container.find(".eraser").click(function(button){
