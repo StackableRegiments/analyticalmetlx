@@ -829,11 +829,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         }
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
+        /*
         debug("looking for attendance room")
         rooms.get((server,cc.jid.toString)).foreach(r => {
           debug("sending command")
 //          r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
         })
+      */
         //joinRoomByJid(jid,"loopback")
       }
     })
