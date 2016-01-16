@@ -84,7 +84,7 @@ var Conversations = (function(){
 							var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
 							//var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
 							if (isVisible){
-								console.log("visible, so rendering:",slide,slidesTop, slideTop, slideBottom, slidesBottom);
+								//console.log("visible, so rendering:",slide,slidesTop, slideTop, slideBottom, slidesBottom);
 								paintThumb(slide,slideContainer);
 							} else {
 								//console.log("not visible, so not rendering:",slide, slidesTop, slideTop, slideBottom, slidesBottom);
