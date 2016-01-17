@@ -552,25 +552,31 @@ var Modes = (function(){
                 var possiblyAdjustedHeight = Math.max(currentText.height,h);
                 var possiblyAdjustedWidth = currentText.width * 1.1;
                 var possiblyAdjustedX = screenPos.x;
+                var possiblyAdjustedX = worldToScreen(currentText.x + currentText.width,currentText.y).x;
                 var possiblyAdjustedY = screenPos.y;
                 var acceptableMaxHeight = boardHeight * 0.7;
                 var acceptableMaxWidth = boardWidth * 0.7;
                 var acceptableMinX = 30;
                 var acceptableMinY = 30;
                 var acceptableMaxX = boardWidth - 100;
-                var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
-
+                //var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
+                var acceptableMaxY = boardHeight - textEditor.height();//boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
+/*
                 if (possiblyAdjustedWidth > acceptableMaxWidth){
                     possiblyAdjustedWidth = acceptableMaxWidth;
                 }
                 if (possiblyAdjustedHeight > acceptableMaxHeight){
                     possiblyAdjustedHeight = acceptableMaxHeight;
                 }
+								*/
+								/*
                 if (possiblyAdjustedX < acceptableMinX){
                     possiblyAdjustedX = acceptableMinX;
                 }
-                if ((possiblyAdjustedX + possiblyAdjustedWidth) > acceptableMaxX){
-                    possiblyAdjustedX = acceptableMaxX - possiblyAdjustedWidth;
+								*/
+                if (possiblyAdjustedX > acceptableMaxX){
+									possiblyAdjustedX = screenPos.x - textEditor.width();
+//                    possiblyAdjustedX = acceptableMaxX - possiblyAdjustedWidth;
                 }
                 if (possiblyAdjustedY < acceptableMinY){
                     possiblyAdjustedY = acceptableMinY;
@@ -785,9 +791,9 @@ var Modes = (function(){
 								type:"text",
 								weight:"Normal"
 							};
-							prerenderText(text);
 							selectedTexts = [];
 							selectedTexts.push(text);
+							prerenderText(text);
 							currentText = text;
 							updateTextEditor();
 							return text;
@@ -810,11 +816,14 @@ var Modes = (function(){
 							}
 							newText = inputContents;
 							startTime = Date.now();
+							/*
 							var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
 							var xInset = (boardWidth / 2 - text.width / 2);
 							var yInset = (boardHeight / 2 - text.height / 2);
 							var xDelta = text.bounds[0] - viewboxX - xInset;
 							var yDelta = text.bounds[1] - viewboxY - yInset;
+							*/
+							prerenderText(text);
 							updateTextEditor();
             }
             var possiblyClearEditBoxesFunction = _.debounce(function(){
@@ -899,7 +908,7 @@ var Modes = (function(){
 										editText(newText);
 									}
 									Modes.select.texts = [currentText];
-									progress.call("onSelectionChanged");
+									Progress.call("onSelectionChanged",[Modes.select.selected]);
 								}
 								registerPositionHandlers(board,noop,noop,up);
 							},
