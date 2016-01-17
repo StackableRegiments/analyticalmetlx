@@ -7,7 +7,7 @@ var UserSettings = (function(){
     // userPrefs come from the browser
     // maybe we'll have them interact at some point down the line
 
-    var isInteractiveUser = "unset";
+    var isInteractiveUser = true;
 
     var setUsernameFunction = function(newName){
         username = newName;
