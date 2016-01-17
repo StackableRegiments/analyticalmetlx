@@ -238,6 +238,7 @@ var Conversations = (function(){
         $("#enableSync").removeClass("activePrivacy active");
         $("#disableSync").addClass("activePrivacy active");
 			}
+			$("#followTeacherCheckbox").prop("checked",isSyncedToTeacher);
 		}
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
@@ -430,15 +431,33 @@ var Conversations = (function(){
 			smftc.off("change");
 			smftc.prop("checked",details.permissions.usersAreCompulsorilySynced);	
 			smftc.prop("disabled",!isAuthor);
+			var ftc = $("#followTeacherCheckbox");
+			ftc.off("change");
+			ftc.prop("checked",isSyncedToTeacher);
 			if (isAuthor){
 				smftc.on("change",function(){
 					setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
 				});
+			} else {
+				ftc.on("change",function(){
+					var previousState = isSyncedToTeacher;
+					var currentState = ftc.is(":checked");
+					if (previousState != currentState){
+						if (currentState){
+							enableSyncMoveFunction();
+						} else {
+							disableSyncMoveFunction();
+						}
+					}
+				});
 			}
+			ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
 			if (isAuthor){
 				$("#syncButtons").hide();
+				$("#syncCheckbox").hide();
 			} else {
 				$("#syncButtons").show();
+				$("#syncCheckbox").show();
 			}
 		};
     var updateCurrentConversation = function(details){
