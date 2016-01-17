@@ -84,7 +84,7 @@ var Conversations = (function(){
 							var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
 							//var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
 							if (isVisible){
-								//console.log("visible, so rendering:",slide,slidesTop, slideTop, slideBottom, slidesBottom);
+								//console.log("visible slide, so rendering:",slide,slidesTop, slideTop, slideBottom, slidesBottom);
 								paintThumb(slide,slideContainer);
 							} else {
 								//console.log("not visible, so not rendering:",slide, slidesTop, slideTop, slideBottom, slidesBottom);
@@ -121,6 +121,7 @@ var Conversations = (function(){
 						}
 					});	
 					*/
+					/*
 					var paintAThumb = function(thisSlideInt,after){ 
 						var slide = currentConversation.slides[thisSlideInt];
 						if (slide != undefined){
@@ -128,19 +129,33 @@ var Conversations = (function(){
 							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
 							var img = slideContainer.find("img");
 							if (img.height() == 0 || img.height() == undefined){
-								img.on("load",function(){_.defer(after,thisSlideInt + 1,after)});
+								img.on("load",function(){
+									img.off("load");
+									_.defer(function(){
+										after(thisSlideInt + 1,after);
+									});
+								});
 							} else {
 								_.defer(after,thisSlideInt + 1,after);
 							}
 						}
 					}
 					paintAThumb(0,paintAThumb);
-					/*
+					*/
 					_.forEach(currentConversation.slides,function(slide){
-							possiblyUpdateThumbnail(slide);
+							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
+							var img = slideContainer.find("img");
+							if (img.height() == 0 || img.height() == undefined){
+								img.on("load",function(){
+									img.off("load");
+									possiblyUpdateThumbnail(slide);
+								});
+								img.attr("src",blank4to3Canvas);
+							} else {		
+								possiblyUpdateThumbnail(slide);
+							}
 							//ThumbCache.paintThumb(slide,slidesContainer,containerHeight);
 					});
-					*/
 				};
         return {
             paintThumb:possiblyUpdateThumbnail,
