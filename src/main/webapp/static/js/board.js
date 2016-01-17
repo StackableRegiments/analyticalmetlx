@@ -128,8 +128,12 @@ var stanzaHandlers = {
     image:imageReceived,
     text:textReceived,
     command:commandReceived,
-    submission:submissionReceived
+    submission:submissionReceived,
+		attendance:attendanceReceived
 };
+function attendanceReceived(attendance){
+	//doing nothing with attendances for the moment.
+}
 function submissionReceived(submission){
     Submissions.processSubmission(submission);
 }
@@ -274,7 +278,7 @@ function transformReceived(transform){
             "incorporateBoardBounds":incBoardBounds
         };
     })();
-    if(transform.newPrivacy != "not_set"){
+    if(transform.newPrivacy != "not_set" && !transform.isDeleted){
         var p = transform.newPrivacy;
         op += "Became "+p;
         var setPrivacy = function(ink){
