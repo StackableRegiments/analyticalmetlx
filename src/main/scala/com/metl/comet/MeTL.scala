@@ -547,13 +547,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
             },("class","quizText"))
           }
           {
-            ajaxSubmit("Delete this option", () => {
+            ajaxButton(<span>{Text("Delete this option")}</span>, () => {
               if (tempQuiz.options.length > 2){
                 tempQuiz = tempQuiz.removeOption(qo.name)
                 this ! editableQuizNodeSeq(tempQuiz)
                 i.done
               } else {
                 this ! SpamMessage(Text("Please ensure that this quiz has at least two options"),Full("quizzes"))
+                Noop
               }
             },("class","quizRemoveOptionButton toolbar btn-icon fa fa-trash np"))
           }
@@ -562,7 +563,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       }
       </div>
       {
-        ajaxSubmit("Add an option", ()=>{
+        ajaxButton(<span>{Text("Add an option")}</span>, ()=>{
           this ! editableQuizNodeSeq(tempQuiz.addOption(QuizOption("","")))
           i.done
         },("class","quizAddOptionButton toolbar btn-icon fa fa-plus np"))
@@ -571,7 +572,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       <div class="quizCreationControls">
       {
         val quizImageButtonText = tempQuiz.url.map(u => "update quiz image with current slide").openOr("attach current slide")
-        ajaxSubmit(quizImageButtonText, () => {
+        ajaxButton(<span>{Text(quizImageButtonText)}</span>, () => {
           for (
             conversation <- CurrentConversation;
             slideJid <- CurrentSlide
@@ -598,13 +599,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         },("class","quizAttachImageButton toolbar btn-icon fa fa-paperclip"))
       }
       {
-        ajaxSubmit("Delete this quiz", ()=>{
+        ajaxButton(<span>{Text("Delete this quiz")}</span>, ()=>{
           var deletedQuiz = tempQuiz.delete
           sendStanzaToServer(deletedQuiz,server)
           i.done
         },("class","quizDeleteButton toolbar btn-icon fa fa-trash"))
       }
-      {ajaxSubmit("Submit", ()=>{
+      {ajaxButton(<span>{Text("Submit")}</span>, ()=>{
         if (errorMessages.length > 0){
           errorMessages.foreach(em => this ! em)
           errorMessages = List.empty[SpamMessage]
