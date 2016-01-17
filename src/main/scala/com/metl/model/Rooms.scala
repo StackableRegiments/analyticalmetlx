@@ -66,7 +66,7 @@ case object UnknownRoom extends RoomMetaData(EmptyBackendAdaptor.name,MeTLRoomTy
   override def getJid = ""
 }
 object RoomMetaDataUtils {
-  protected val numerics = Range('0','9').toList
+  protected val numerics = Range.inclusive('0','9').toList
   protected def splitJid(in:String):Tuple2[Int,String] = {
     val first = in.takeWhile(i => numerics.contains(i)).toString
     val second = in.dropWhile(i => numerics.contains(i)).toString
@@ -360,8 +360,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   private def firstTime = initialize
   override def initialize = Stopwatch.time("HistoryCachingRoom.initalize",{
     if (starting.getHasStarted) {
+      debug("initialize: %s (first time)".format(roomMetaData))
       starting.setHasStarted(false)
     } else {
+      debug("initialize: %s (subsequent time)".format(roomMetaData))
       showInterest
       history = config.getHistory(location).attachRealtimeHook((s) => {
         trace("ROOM %s sending %s to children %s".format(location,s,joinedUsers))

@@ -304,11 +304,14 @@ object StatelessHtml extends Stemmer with Logger {
       val uniqueOccupants = occupants.groupBy(occ => occ.author)
       val xResponse = <historyDescription>
       <bounds>
-      <left>{Text(history.getLeft.toString)}</left>
-      <right>{Text(history.getRight.toString)}</right>
-      <top>{Text(history.getTop.toString)}</top>
-      <bottom>{Text(history.getBottom.toString)}</bottom>
+        <left>{Text(history.getLeft.toString)}</left>
+        <right>{Text(history.getRight.toString)}</right>
+        <top>{Text(history.getTop.toString)}</top>
+        <bottom>{Text(history.getBottom.toString)}</bottom>
       </bounds>
+      <lastModified>{history.lastModified}</lastModified>
+      <lastVisuallyModified>{history.lastVisuallyModified}</lastVisuallyModified>
+      <roomType>{Text(room.roomMetaData.toString)}</roomType>
       <jid>{Text(jid)}</jid>
       <stanzaCount>{Text(allContent.toString)}</stanzaCount>
       <canvasContentCount>{Text(canvasContent.toString)}</canvasContentCount>

@@ -74,10 +74,12 @@ var Privacy = (function(){
                         republished.imageIds = _.pluck(Modes.select.selected.images,"identity");
                         republished.textIds = _.pluck(Modes.select.selected.texts,"identity");
                         republished.inkIds = _.pluck(Modes.select.selected.inks,"identity");
-                        sendStanza(republished);
+												if (_.size(republished.imageIds) > 0 || _.size(republished.textIds) > 0 || _.size(republished.inkIds) > 0){
+													sendStanza(republished);
+												}
                     }
                 }
-            });
+            }).addClass("disabledButton");
         });
         adjustPrivacyForConversation();
         setPrivacyIndicators();
