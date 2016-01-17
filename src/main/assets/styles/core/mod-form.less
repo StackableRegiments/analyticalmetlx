@@ -169,9 +169,7 @@ button {
 	text-decoration: underline;
     }
 }
-input[type="checkbox"], input[type="radio"], .checkbox-hidden-sim {
-	.hidden;
-}
+
 /*input[type="radio"] {
     padding-left:0.5em;
 }*/
@@ -202,6 +200,12 @@ input[type="radio"] {
     }
     &:checked + label::before {
         content: "\f192";
+    }
+}
+input[type="checkbox"], input[type="radio"], .checkbox-hidden-sim {
+	.hidden;
+    &[disabled] + label {
+        .btn-active.disabled;
     }
 }
 /*.separate-field input[type="checkbox"] + label, .separate-field input[type="radio"] + label {

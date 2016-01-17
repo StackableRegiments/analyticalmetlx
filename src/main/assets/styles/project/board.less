@@ -9,10 +9,10 @@
     width:100%;
     /*position:absolute;
     top:0px;
-    left:0px;*/
+    left:0px;
     background-color:@block-bg;
     .plr;
-    .ptb;
+    .ptb;*/
 }
 #slideContainer {
     max-width: @slide-container-width;
@@ -22,8 +22,8 @@
 }
 .slide-count {
     text-align:right;
-    .font-weight-light;
-    color:@subtle;
+    font-weight:400;
+    margin-top:-15px;
 }
 .thumbnail {
     width:100%;
@@ -67,7 +67,7 @@
     color:@subtool-fg;
 }
 .permission-states {
-    input[type="checkbox"], input[type="radio"]{
+    input[type="checkbox"]{
         & + label {
             padding: 0.5em 2px;
             max-width: (@toolbar-btn-width * 2) + 4;
@@ -76,12 +76,16 @@
             color: @toggle-fg;
             .btn-raised;
         }
-    }
-    input[type="checkbox"]:checked +label, input[type="radio"]:checked +label {
-        background:@toggle-active-bg;
-        color:@toggle-active-fg;
-        &:before {
-            content:"\f00c";
+        &:checked +label {
+            background:@toggle-active-bg;
+            color:@toggle-active-fg;
+            &:before {
+                content:"\f00c";
+            }
+        }
+        &[disabled] + label {
+            .btn-active.disabled;
+            .btn-raised.disabled;
         }
     }
 }
