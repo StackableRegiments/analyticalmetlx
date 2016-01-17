@@ -1,9 +1,11 @@
-<div id="boardContainer">
-  <canvas id="board" class="fill" ></canvas>
-  <div id="selectionAdorner" ></div>
-  <div id="radar" ></div>
-  <div id="marquee" ></div>
-	<div id="imageAdorner" > 
+<div class="page">
+	<div id="boardContainer">
+	  <canvas id="board" class="fill" ></canvas>
+	</div>
+	<div id="selectionAdorner" ></div>
+	<div id="radar" ></div>
+	<div id="marquee" ></div>
+	<div id="imageAdorner" >
 		<div id="imageMarquee"></div>
 		<div id="imageInsertOptions" class="block with-border input-full-width">
 			<h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert image</label></strong></h2>
@@ -30,7 +32,7 @@
 			</div>
 		</div>
 	</div>
-  <div id="textAdorner" >
+	<div id="textAdorner" >
 		<div id="textMarquee"></div>
 		<div id="textEditor" class="block with-border input-full-width">
 			<h2 class="med-txt nmt"><strong><label for="textEditorInputArea" class="nm">Insert text</label></strong></h2>
@@ -42,33 +44,33 @@
 					<select id="fontFamilySelector">
 						<option class="fontFamilyOption"></option>
 					</select>
-						<!-- family = value -->
+					<!-- family = value -->
 					<label for="fontSizeSelector">Size</label>
 					<select id="fontSizeSelector">
 						<option class="fontSizeOption"></option>
 					</select>
-						<!-- size = value -->
+					<!-- size = value -->
 					<label for="fontColorSelector">Color</label>
 					<select id="fontColorSelector">
 						<option class="fontColorOption"></option>
 					</select>
 					<div class="flex-container-row tools mth">
-							<!-- color = getColorForName(value) -->
+						<!-- color = getColorForName(value) -->
 						<button type="button" id="fontBoldSelector" class="btn-icon fa fa-bold"><div class="icon-txt">Bold</div></button>
-							<!-- weight = bold | Normal -->
+						<!-- weight = bold | Normal -->
 						<button type="button" id="fontItalicSelector" class="btn-icon fa fa-italic"><div class="icon-txt">Italic</div></button>
-							<!-- style = italic | Normal -->
+						<!-- style = italic | Normal -->
 						<button type="button" id="fontUnderlineSelector" class="btn-icon fa fa-underline"><div class="icon-txt">Underline</div></button>
-							<!-- decoration = underline | Normal -->
+						<!-- decoration = underline | Normal -->
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-  <div id="backstageContainer">
-    <!--<div id="applicationMenuPopup" class="backstageHeader">
-      <div class="lift:embed?what=_futureApplicationButton" ></div>
-    </div>-->
+	<div id="backstageContainer">
+		<!--<div id="applicationMenuPopup" class="backstageHeader">
+		  <div class="lift:embed?what=_futureApplicationButton" ></div>
+		</div>-->
 		<div id="submissionsPopup" class="backstage">
 			<h2>Submissions</h2>
 			<div class="flex-container-row img-resp">
@@ -86,9 +88,9 @@
 					<div class="submissionContainer">
 						<div class="submissionDescription"></div>
 						<image class="submissionImage"></image>
-						<span class="submissionTeacherControls">
-							<input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
-						</span>
+							<span class="submissionTeacherControls">
+								<input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
+							</span>
 					</div>
 				</div>
 			</div>
@@ -138,13 +140,13 @@
 						<img class="quizImagePreview"></img>
 						<p class="quizQuestion"></p>
 						<div class="quizOptionContainer flex-container-column">
-						<!-- many ".quizOption"s are cloned from JS -->
+							<!-- many ".quizOption"s are cloned from JS -->
 							<button class="quizOption button-transparent-border flex-container-row space-between">
 								<span class="quizOptionName mrh"></span>
 								<span class="quizOptionText"></span>
 								<!--<span class="quizOptionCountContainer">
-									<span class="quizOptionAnswerCount"></span>
-								</span>-->
+                                    <span class="quizOptionAnswerCount"></span>
+                                </span>-->
 								<span class="fa fa-thumbs-up align-right mlh"></span>
 							</button>
 						</div>
@@ -157,82 +159,82 @@
 				</div>
 			</div>
 		</section>
-    <div id="customizeBrushPopup" class="backstage">
-      <div id="penColor">
-        <h2>Choose Pen Color</h2>
-        <div id="colors" >
+		<div id="customizeBrushPopup" class="backstage">
+			<div id="penColor">
+				<h2>Choose Pen Color</h2>
+				<div id="colors" >
 					<div class="dots flex-container-row">
 						<button class="colorDot nm np mrh" style="vertical-align:middle;"></button>
 					</div>
-        </div>
-      </div>
-      <div id="penSize">
-        <h2>Choose Pen Size </h2>
-        <div id="sizes" >
+				</div>
+			</div>
+			<div id="penSize">
+				<h2>Choose Pen Size </h2>
+				<div id="sizes" >
 					<div class="dots flex-container-row">
 						<button class="sizeDot nm np mrh" style="vertical-align:middle;"></button>
 					</div>
-        </div>
-      </div>
-      <div id="penModes">
-        <h2>Choose Pen Mode</h2>
-        <div id="penMode" >
+				</div>
+			</div>
+			<div id="penModes">
+				<h2>Choose Pen Mode</h2>
+				<div id="penMode" >
 					<div class="button-toggle">
 						<button class="toolbar fa fa-highlight btn-icon" id="setPenToHighlighter"><div class="icon-txt">highlight</div></button>
 						<button class="toolbar fa fa-pencil btn-icon" id="setPenToPen"><div class="icon-txt">pen</div></button>
 					</div>
-        </div>
-      </div>
-      <button class="toolbar button-transparent-border" id="resetPenButton" ></button>
-    </div>
-    <div id="preferencesPopup" class="backstage">
-      <div id="preferencesContainer">
-        <div id="preferencesContainerLeft">
-          <div>
-            <label for="showGrid">Show grid</label>
-          </div>
-          <input type="checkbox" id="showGrid" ></input>
-          <div>
-            <label for="implicitlyExpanding">Implicit expansion</label>
-          </div>
-          <input type="checkbox" id="implicitlyExpanding" ></input>
-          <div>
-            <label for="toggleHighQualityInk">High quality stylus</label>
-          </div>
-          <input type="checkbox" id="toggleHighQualityInk" ></input>
-          <div>
-            <label>Ink render quality</label>(<span id="opCount" ></span>)
-          </div>
-          <input type="radio" name="renderQuality" value="8">High</input><br />
-          <input type="radio" name="renderQuality"  checked="true" value="32">Medium</input><br />
-          <input type="radio" name="renderQuality" value="127">Low</input><br />
-          <div>
-          </div>
-          <label>Load slides at native zoom</label>
-          <input type="checkbox" id="loadSlidesAtNativeZoom"></input>
-        </div>
-        <div id="preferencesContainerRight"></div>
-      </div>
-    </div>
-    <div id="conversationsPopup" class="backstage">
-      <div id="conversationsContainer">
-        <h2>Conversations</h2>
-        <div id="search">
-          <span>
-            <div class="lift:embed?what=_conversation-search-metlx"></div>
-          </span>
-          <div id="conversationCreationControls" class="flex-container-row">
-            <div id="s2cConversationMessageContainer"></div>
-            <div id="createConversationContainer">
-              <button class="conversationSearchButton toolbar button-transparent-border" id="createConversationButton" name="createConversationButton" type="button">
-                <span>Create conversation</span>
-              </button>
-            </div>
-            <div id="importPowerpointContainer"></div>
-            <button id="myConversationsButton" class="conversationSearchButton toolbar button-transparent-border mlrh" type="button"><span>All my conversations</span></button>
-          </div>
-        </div>
-        <ul id="searchResults" class="no-list-style">
+				</div>
+			</div>
+			<button class="toolbar button-transparent-border" id="resetPenButton" ></button>
+		</div>
+		<div id="preferencesPopup" class="backstage">
+			<div id="preferencesContainer">
+				<div id="preferencesContainerLeft">
+					<div>
+						<label for="showGrid">Show grid</label>
+					</div>
+					<input type="checkbox" id="showGrid" ></input>
+					<div>
+						<label for="implicitlyExpanding">Implicit expansion</label>
+					</div>
+					<input type="checkbox" id="implicitlyExpanding" ></input>
+					<div>
+						<label for="toggleHighQualityInk">High quality stylus</label>
+					</div>
+					<input type="checkbox" id="toggleHighQualityInk" ></input>
+					<div>
+						<label>Ink render quality</label>(<span id="opCount" ></span>)
+					</div>
+					<input type="radio" name="renderQuality" value="8">High</input><br />
+					<input type="radio" name="renderQuality"  checked="true" value="32">Medium</input><br />
+					<input type="radio" name="renderQuality" value="127">Low</input><br />
+					<div>
+					</div>
+					<label>Load slides at native zoom</label>
+					<input type="checkbox" id="loadSlidesAtNativeZoom"></input>
+				</div>
+				<div id="preferencesContainerRight"></div>
+			</div>
+		</div>
+		<div id="conversationsPopup" class="backstage">
+			<div id="conversationsContainer">
+				<h2>Conversations</h2>
+				<div id="search">
+			  <span>
+				<div class="lift:embed?what=_conversation-search-metlx"></div>
+			  </span>
+					<div id="conversationCreationControls" class="flex-container-row">
+						<div id="s2cConversationMessageContainer"></div>
+						<div id="createConversationContainer">
+							<button class="conversationSearchButton toolbar button-transparent-border" id="createConversationButton" name="createConversationButton" type="button">
+								<span>Create conversation</span>
+							</button>
+						</div>
+						<div id="importPowerpointContainer"></div>
+						<button id="myConversationsButton" class="conversationSearchButton toolbar button-transparent-border mlrh" type="button"><span>All my conversations</span></button>
+					</div>
+				</div>
+				<ul id="searchResults" class="no-list-style">
 					<!-- many "searchResultItem"s are cloned by JS -->
 					<li class="searchResultItem flex-container-row border-bottom">
 						<button class="btn-search-result">
@@ -252,13 +254,13 @@
 						</div>
 					</li>
 				</ul>
-      </div>
-    </div>
-  </div>
-  <div id="loadingSlidePopup" class="backstage loading-spinner">
-    <div><span id="targetSlide"></span></div>
-	  <span class="icon-spinner">
-    	<img class="slideLoading" src="static/images/ajax-loader.gif" alt="Loading..."/>
-	  </span>
-  </div>
+			</div>
+		</div>
+	</div>
+	<div id="loadingSlidePopup" class="backstage loading-spinner">
+		<div><span id="targetSlide"></span></div>
+		  <span class="icon-spinner">
+			<img class="slideLoading" src="static/images/ajax-loader.gif" alt="Loading..."/>
+		  </span>
+	</div>
 </div>
