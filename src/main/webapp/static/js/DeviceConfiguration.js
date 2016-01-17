@@ -10,7 +10,7 @@ var DeviceConfiguration = (function(){
 		var allowShowingChrome = function(){
 			var isInConversation = false;
 			try {
-				isInConversation = "jid" in Conversations.getCurrentConversation;
+				isInConversation = "jid" in Conversations.getCurrentConversation();
 			} catch(e) {
 				isInConversation = false;
 			}
@@ -23,11 +23,9 @@ var DeviceConfiguration = (function(){
     };
     var setSectionVisibility = function(section,visible){
 			if (allowShowingChrome){
-        if (currentDevice != "projector"){
-            if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
-                sectionsVisible[section] = visible;
-            }
-        }
+					if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
+							sectionsVisible[section] = visible;
+					}
 			}
     };
     var alterCurrentDeviceFunction = function(newDevice){
