@@ -390,8 +390,9 @@ var Extend = (function(){
     }
 })();
 
-var active = "activeBackstageTab";
+var active = "activeBackstageTab active";
 function showBackstage(id){
+    $(".backstage-menu").addClass('active');
     $(".backstage").hide();
     $(".backstageTabHeader").removeClass(active);
     $(".backstage").removeClass(active);
@@ -418,6 +419,7 @@ function showBackstage(id){
 }
 function hideBackstage(){
     window.currentBackstage = noActiveBackstage;
+    $(".backstage-menu").removeClass('active');
     $(".backstage").hide();
     $(".backstageTabHeader").removeClass(active);
     $(".backstage").removeClass(active);
@@ -623,4 +625,21 @@ $(function(){
 
     $("#progress").hide();
     setLoadProgress(8);
+
+    function updateActiveMenu(menuItem) {
+        $(".activeBackstageTab").removeClass(".activeBackstageTab active");
+        $(menuItem).addClass(".activeBackstageTab active");
+    }
+    $('#updatePens').click(function(){
+        showBackstage("customizeBrush");
+        updateActiveMenu(this);
+    });
+    $('#menuSubmissions').click(function(){
+        showBackstage("submissions");
+        updateActiveMenu(this);
+    });
+    $('#menuPolls').click(function(){
+        showBackstage("quizzes");
+        updateActiveMenu(this);
+    });
 });
