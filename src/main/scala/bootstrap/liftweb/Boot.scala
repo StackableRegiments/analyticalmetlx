@@ -39,6 +39,12 @@ class Boot extends Logger {
     MeTLXConfiguration.initializeSystem
     trace("Routing begins")
     val defaultHeaders = LiftRules.defaultHeaders
+    val isDebug = Props.mode match {
+      case Props.RunModes.Production => false
+      case Props.RunModes.Staging => false
+      case Props.RunModes.Pilot => false
+      case _ => true
+    }
     LiftRules.defaultHeaders = {
       case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.noCache
       case (_, Req("proxyDataUri"::_, _, _)) => Boot.cacheStrongly
@@ -52,8 +58,14 @@ class Boot extends Logger {
         ("Access-Control-Allow-Methods", "GET, OPTIONS"),
         ("Access-Control-Allow-Headers", "WWW-Authenticate,Keep-Alive,User-Agent,X-Requested-With,Cache-Control,Content-Type")
       ))
-
-    LiftRules.attachResourceId = s => "%s?%s".format(s,nextFuncName)
+    LiftRules.attachResourceId = {
+      if (isDebug){
+        s => "%s?%s".format(s,nextFuncName)
+      } else {
+        val prodRunId = nextFuncName
+        s => "%s?%s".format(s,prodRunId)
+      }
+    }
     LiftRules.passNotFoundToChain = false
     LiftRules.uriNotFound.prepend {
       case (Req("static":: rest,_,_),failure) => {
