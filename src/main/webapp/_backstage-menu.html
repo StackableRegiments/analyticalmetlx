@@ -1,0 +1,178 @@
+<div>
+    <div id="floatingToggleContainer" class="main-menu">
+        <button class="floatingToolbar btn-menu fa fa-bars" id="applicationMenuButton">
+            <span class="hidden">Menu</span>
+        </button>
+    </div>
+    <div class="backstage-menu box-model-block flex-container-row">
+        <span id="absoluteCloseButton"></span>
+        <div id="applicationMenuPopup" class="backstageHeader mtb mlr">
+            <div class="lift:embed?what=_futureApplicationButton"></div>
+        </div>
+        <div class="backstage-content mtb mlr grow">
+            <div id="backstageContainer" class="box-model-block">
+                <!--<div id="applicationMenuPopup" class="backstageHeader">
+                  <div class="lift:embed?what=_futureApplicationButton" ></div>
+                </div>-->
+                <div id="submissionsPopup" class="backstage">
+                    <h2 class="nmt">Submissions</h2>
+                    <div class="flex-container-row img-resp">
+                        <div id="submissionListing" class="mr quarter">
+                            <!-- many ".submissionSummary"s are cloned from JS -->
+                            <div class="submissionSummary">
+                                <button type="button" class="viewSubmissionButton block with-border clickable nmt">
+                                    <div class="submissionDescription"></div>
+                                    <image class="submissionImageThumb"></image>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="currentSubmission" class="three-quarters">
+                            <!-- one ".currentSubmissionItem" will be visible at any time, but it will be cloned and replaced by JS -->
+                            <div class="submissionContainer">
+                                <div class="submissionDescription"></div>
+                                <image class="submissionImage"></image>
+                                        <span class="submissionTeacherControls">
+                                            <input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
+                                        </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <section id="quizzesPopup" class="backstage">
+                    <h2 class="align-left mrh nmt">Polls</h2>
+                    <div id="quizCreateButtonContainer" class="align-left">
+                        <button id="quizCreationButton" class="quizCreationButton button-transparent-border mth">
+                            <span>Create poll</span>
+                        </button>
+                    </div>
+                    <div class="quiz-listing align-left half mrh clear">
+                        <div id="unansweredQuizListing" class="clear box-model-block">
+                            <h3 class="nmb">Unanswered polls</h3>
+                            <!-- many ".quizItem"s are cloned from JS -->
+                            <div class="quizItem flex-container-row btn-list">
+                                <a class="quizSummary btn-item flex-container-row full">
+                                    <div class="quizSummaryQuestion mrh"></div>
+                                    <div class="fa fa-thumbs-up btn-icon"><span class="hidden">Activity: </span><div class="quizSummaryAnswerCount"></div></div>
+                                </a>
+                                <div class="quizTeacherControls btn-item">
+                                    <input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="answeredQuizListing" class="clear box-model-block">
+                            <h3 class="nmb">Answered polls</h3>
+                            <!-- many ".quizItem"s are cloned from JS -->
+                            <div class="quizItem flex-container-row btn-list">
+                                <a class="quizSummary btn-item flex-container-row full">
+                                    <div class="quizSummaryQuestion mrh"></div>
+                                    <div class="fa fa-thumbs-up btn-icon"><span class="hidden">Activity: </span><div class="quizSummaryAnswerCount"></div></div>
+                                </a>
+                                <div class="quizTeacherControls btn-item">
+                                    <input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="currentQuiz" class="box-model-block align-left half">
+                        <!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
+                        <div class="currentQuizItem">
+                            <div class="voting-block block img-resp">
+                                <h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
+                                <canvas class="quizResultsGraph"></canvas>
+                                <h3 class="quizQuestion"></h3>
+                                <img class="quizImagePreview"></img>
+                                <div class="quizOptionContainer flex-container-column">
+                                    <!-- many ".quizOption"s are cloned from JS -->
+                                    <button class="quizOption button-transparent-border flex-container-row space-between">
+                                        <span class="quizOptionName mrh"></span>
+                                        <span class="quizOptionText"></span>
+                                        <!--<span class="quizOptionCountContainer">
+                                            <span class="quizOptionAnswerCount"></span>
+                                        </span>-->
+                                        <span class="fa fa-thumbs-up align-right mlh"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="currentQuizTeacherControls">
+                                <input class="quizShouldDisplayOnNextSlide button-transparent-border" value="Display poll on next slide" type="button"></input>
+                                <input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on next slide" type="button"></input>
+                                <input class="deleteQuiz button-transparent-border" value="Delete this poll" type="button"></input>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <div id="customizeBrushPopup" class="backstage">
+                    <div id="penColor">
+                        <h2 class="nmt">Choose Pen Color</h2>
+                        <div id="colors" >
+                            <div class="dots flex-container-row">
+                                <button class="colorDot nm np mrh" style="vertical-align:middle;"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="penSize">
+                        <h2>Choose Pen Size </h2>
+                        <div id="sizes" >
+                            <div class="dots flex-container-row">
+                                <button class="sizeDot nm np mrh" style="vertical-align:middle;"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="penModes">
+                        <h2>Choose Pen Mode</h2>
+                        <div id="penMode" >
+                            <div class="button-toggle">
+                                <button class="toolbar fa fa-highlight btn-icon" id="setPenToHighlighter"><div class="icon-txt">highlight</div></button>
+                                <button class="toolbar fa fa-pencil btn-icon" id="setPenToPen"><div class="icon-txt">pen</div></button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="toolbar button-transparent-border" id="resetPenButton" ></button>
+                </div>
+                <div id="conversationsPopup" class="backstage">
+                    <div id="conversationsContainer">
+                        <h2 class="nmt">Conversations</h2>
+                        <div id="search">
+                          <span>
+                            <div class="lift:embed?what=_conversation-search-metlx"></div>
+                          </span>
+                            <div id="conversationCreationControls" class="flex-container-row">
+                                <div id="s2cConversationMessageContainer"></div>
+                                <div id="createConversationContainer">
+                                    <button class="conversationSearchButton toolbar button-transparent-border" id="createConversationButton" name="createConversationButton" type="button">
+                                        <span>Create conversation</span>
+                                    </button>
+                                </div>
+                                <div id="importPowerpointContainer"></div>
+                                <button id="myConversationsButton" class="conversationSearchButton toolbar button-transparent-border mlrh" type="button"><span>All my conversations</span></button>
+                            </div>
+                        </div>
+                        <ul id="searchResults" class="no-list-style">
+                            <!-- many "searchResultItem"s are cloned by JS -->
+                            <li class="searchResultItem flex-container-row border-bottom">
+                                <button class="btn-search-result">
+                                    <div class="searchResultTopRow">
+                                        <h3 class="conversationTitle nmb"></h3>
+                                    </div>
+                                    <p class="searchResultMiddleRow middleRow nmt">
+                                        <span>by <span class="conversationAuthor"></span></span>
+                                        <span>Restricted to <span class="conversationSubject"></span></span>
+                                        <span>Created on <span class="conversationCreated"></span></span>
+                                    </p>
+                                </button>
+                                <div class="extraConversationTools teacherConversationTools">
+                                    <button class="conversationRename btn-icon fa fa-pencil-square-o conversationSearchButton toolbar conversationRenameButton"><div class="icon-txt">Rename</div></button>
+                                    <button class="conversationShare conversationSearchButton toolbar conversationSharingButton btn-icon fa fa-users"><div class="icon-txt">Sharing</div></button>
+                                    <button class="conversationDelete conversationSearchButton toolbar conversationDeleteButton btn-icon fa fa-trash"><div class="icon-txt">Delete</div></button>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="close-section mtb mlr">
+            <button class="toolbar backstageTabHeader closeButton fa fa-times nm btn-icon" type="button" id="hideBackstage"><span class="hidden">Close</span></button>
+        </div>
+    </div>
+</div>

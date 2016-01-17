@@ -1,3 +1,18 @@
+.backstage-menu {
+    position: relative;
+    top: -500px;
+    left: 0;
+    width: 100%;
+    z-index: 3;
+    transition-property: top;
+	transition-duration: .5s;
+	transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+    background-color:@menu-bg;
+    box-shadow:  0 1px 1px rgba(0,0,0,0.3);
+}
+.backstage-menu.active {
+    top:0;
+}
 .main-menu {
     position:absolute;
     top:0;
@@ -7,18 +22,7 @@
 .btn-menu {
     .nm;
 }
-.backstageHeader {
-    margin-left:-200px;
-    transition:margin-left 0.5s;
-    &.active {
-        margin-left:0;
-    }
-}
 .main-menu-container {
-    max-width:200px;
-    background-color:black;
-    padding:3px;
-    z-index:2;
     button {
         background-color:@block-bg;
         .nm;
@@ -27,4 +31,8 @@
         text-align:left;
         z-index:3;
     }
+}
+.closeButton {
+    .btn-raised;
+    background-color:@subtool-bg;
 }
