@@ -124,7 +124,7 @@ var Quizzes = (function(){
 				requestUpdateQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
 			});
         } else {
-			rootElem.find(".quizTeacherControls").remove();
+			rootElem.closest(".quizItem").find(".quizTeacherControls").remove();
 		}
 		targetContainer.append(template);
     };
