@@ -64,8 +64,9 @@ var Quizzes = (function(){
             var haveAnsweredQuiz = function(quiz) {
                 return quizAnswersFunction(quiz)[UserSettings.getUsername()] != undefined;
             }
-            var answeredQuizzes = $.map(quizzes, function(quiz, id){ if(haveAnsweredQuiz(quiz)) return quiz; });
-            var unansweredQuizzes = $.map(quizzes, function(quiz, id){ if(!haveAnsweredQuiz(quiz)) return quiz; });
+						var sortedQuizzes = _.sortBy(quizzes,function(quiz){return quiz.created});
+            var answeredQuizzes = $.map(sortedQuizzes, function(quiz, id){ if(haveAnsweredQuiz(quiz)) return quiz; });
+            var unansweredQuizzes = $.map(sortedQuizzes, function(quiz, id){ if(!haveAnsweredQuiz(quiz)) return quiz; });
 
 						answeredQuizSummaryContainer.empty();
             if(answeredQuizzes.length > 0) {
