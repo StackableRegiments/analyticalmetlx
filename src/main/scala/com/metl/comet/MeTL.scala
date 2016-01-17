@@ -346,19 +346,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
                 quiz.options.find(qo => qo.name == item._2.answer).map(qo => acc.updated(qo,item._2 :: acc(qo))).getOrElse(acc)
               })
               val identity = "%s%s".format(username,now.toString)
-              val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(serverConfig,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
-              val quizTitle = genText(quiz.question,32,0,"title")
+              def genText(text:String,size:Double,offset:Double,identityModifier:String,maxHeight:Option[Double] = None) = MeTLText(serverConfig,username,now,text,maxHeight.getOrElse(size * 2),640,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
+              val quizTitle = genText(quiz.question,32,0,"title",Some(100))
 
               val graphWidth = 640
               val graphHeight = 480
               val bytes = com.metl.renderer.QuizRenderer.renderQuiz(quiz,answers.flatMap(_._2).toList,new com.metl.renderer.RenderDescription(graphWidth,graphHeight))
               val quizGraphIdentity = serverConfig.postResource(jid,"graphResults_%s_%s".format(quizId,now),bytes)
-              val quizGraph = MeTLImage(serverConfig,username,now,identity+"resultsGraph",Full(quizGraphIdentity),Empty,Empty,graphWidth,graphHeight,330,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"resultsGraph")
-
-              val questionOffset = quiz.url match{
-                case Full(_) => 340
-                case _ => 100
-              };
+              val quizGraph = MeTLImage(serverConfig,username,now,identity+"resultsGraph",Full(quizGraphIdentity),Empty,Empty,graphWidth,graphHeight,10,100,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"resultsGraph")
+              val questionOffset = graphHeight + 100
               val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
                 acc ::: List(genText(
                   "%s: %s (%s)".format(item.name,item.text,answers.get(item).map(as => as.length).getOrElse(0)),
@@ -366,7 +362,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
                   (acc.length * 30) + questionOffset,
                   "option:"+item.name))
               })
-              val allStanzas = quiz.url.map(u => List(MeTLImage(serverConfig,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle,quizGraph)
+              val allStanzas = quiz.url.map(u => List(MeTLImage(serverConfig,username,now,identity+"image",Full(u),Empty,Empty,320,240,330,100,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle,quizGraph)
               allStanzas.foreach(stanza => {
                 slideRoom ! LocalToServerMeTLStanza(stanza)
               })
