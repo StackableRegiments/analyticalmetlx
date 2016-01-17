@@ -451,6 +451,7 @@ var Conversations = (function(){
 					}
 				});
 			}
+			ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
 			if (isAuthor){
 				$("#syncButtons").hide();
 				$("#syncCheckbox").hide();
