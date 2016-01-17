@@ -57,6 +57,7 @@ var DeviceConfiguration = (function(){
 						DeviceConfiguration.setSlides(false);
 					}
 				} catch(e){
+					console.log("error while trying to fix the layout:",e);
 				}
         zoomToPage();
         fitFunction();
@@ -144,7 +145,9 @@ var DeviceConfiguration = (function(){
         }
         return {height:deviceHeight,width:deviceWidth};
     };
-    var defaultFitFunction = function(){customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);};
+    var defaultFitFunction = function(){
+			customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);
+		};
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
     var customizableFitFunction = function(showHeader,showTools,showSlides){
@@ -246,6 +249,8 @@ var DeviceConfiguration = (function(){
         catch(e){
             console.log("Progress.historyRedceived.DeviceConfiguration_showChrome",e);
         }
+				tryToDetermineCurrentDevice();
+				actOnCurrentDevice();
     }
 
     $(function(){
