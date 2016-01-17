@@ -107,7 +107,8 @@ class QuizRenderer extends Logger {
 
     val frc = g.getFontRenderContext()
     val fontSize = (textHeight * 0.7).toInt
-    val font = new Font("Arial",Font.BOLD,fontSize)
+    val boldFont = new Font("Arial",Font.BOLD,fontSize)
+    val font = new Font("Arial",Font.PLAIN,fontSize)
     val totalFinalResponses = answersInColumns.map(_._2.toList.length).sum
     if (yMax > 0){
       var columnStartX = axisSpace
@@ -131,20 +132,29 @@ class QuizRenderer extends Logger {
           val answerCountDouble = answerCount.toFloat
           val totalFinalResponsesDouble = totalFinalResponses.toFloat
           val result = (answerCountDouble / totalFinalResponsesDouble) * 100
-          "%3.0f".format(result)
+          "%1.0f".format(result)
         }
-        val styledText = new AttributedString("%s".format(option.name))
-        styledText.addAttribute(TextAttribute.FONT, font)
+        val textRow1Text = option.name
+        val textRow1Length:Double = boldFont.getStringBounds(textRow1Text,frc).getWidth()
+        val textRow1Offset:Int = ((columnSpace - textRow1Length) / 2).toInt
+        val styledText = new AttributedString(textRow1Text)
+        styledText.addAttribute(TextAttribute.FONT, boldFont)
         val layout = new TextLayout(styledText.getIterator(),frc)
-        layout.draw(g, columnStartX + columnSeparator, textRow1 - columnSeparator)
-        val styledText2 = new AttributedString("%s%%".format(answerPercentage))
-//        styledText2.addAttribute(TextAttribute.FONT, font)
+        layout.draw(g, columnStartX + textRow1Offset, textRow1 - columnSeparator)
+        val textRow2Text = "%s%%".format(answerPercentage)
+        val textRow2Length:Double = font.getStringBounds(textRow2Text,frc).getWidth()
+        val textRow2Offset:Int = ((columnSpace - textRow2Length) / 2).toInt
+        val styledText2 = new AttributedString(textRow2Text)
+        styledText2.addAttribute(TextAttribute.FONT, font)
         val layout2 = new TextLayout(styledText2.getIterator(),frc)
-        layout2.draw(g, columnStartX + columnSeparator, textRow2 - columnSeparator)
-        val styledText3 = new AttributedString("(%s)".format(answerCount.toInt))
-//        styledText3.addAttribute(TextAttribute.FONT, font)
+        layout2.draw(g, columnStartX + textRow2Offset, textRow2 - columnSeparator)
+        val textRow3Text = "(%s)".format(answerCount.toInt)
+        val textRow3Length:Double = font.getStringBounds(textRow3Text,frc).getWidth()
+        val textRow3Offset:Int = ((columnSpace - textRow3Length) / 2).toInt
+        val styledText3 = new AttributedString(textRow3Text)
+        styledText3.addAttribute(TextAttribute.FONT, font)
         val layout3 = new TextLayout(styledText3.getIterator(),frc)
-        layout3.draw(g, columnStartX + columnSeparator, textRow3 - columnSeparator)
+        layout3.draw(g, columnStartX + textRow3Offset, textRow3 - columnSeparator)
 
         println("rendering column: %s : (%s,%s,%s,%s)".format(option.name,x,y,w,h))
         columnStartX += columnSpace
