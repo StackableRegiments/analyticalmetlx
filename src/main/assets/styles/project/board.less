@@ -67,7 +67,7 @@
     color:@subtool-fg;
 }
 .permission-states {
-    input[type="checkbox"], input[type="radio"]{
+    input[type="checkbox"]{
         & + label {
             padding: 0.5em 2px;
             max-width: (@toolbar-btn-width * 2) + 4;
@@ -76,12 +76,16 @@
             color: @toggle-fg;
             .btn-raised;
         }
-    }
-    input[type="checkbox"]:checked +label, input[type="radio"]:checked +label {
-        background:@toggle-active-bg;
-        color:@toggle-active-fg;
-        &:before {
-            content:"\f00c";
+        &:checked +label {
+            background:@toggle-active-bg;
+            color:@toggle-active-fg;
+            &:before {
+                content:"\f00c";
+            }
+        }
+        &[disabled] + label {
+            .btn-active.disabled;
+            .btn-raised.disabled;
         }
     }
 }
