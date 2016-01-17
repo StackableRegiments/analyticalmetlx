@@ -3,7 +3,7 @@ package com.metl.renderer
 import com.metl.data._
 import com.metl.utils._
 
-import java.awt.{Color=>AWTColor,List=>AWTList,Point=>AWTPoint,_}
+import java.awt.{Color=>AWTColor,List=>AWTList,Point=>AWTPoint,Panel=>AwtPanel,LinearGradientPaint=>AwtLinearGradientPaint,_}
 import java.awt.image._
 import java.awt.font._
 import java.awt.geom.AffineTransform
@@ -21,6 +21,36 @@ import net.liftweb.common.Logger
 object QuizRenderer extends QuizRenderer
 
 class QuizRenderer extends Logger {
+  protected val gradientPaintPot = {
+    val start = new Point2D.Float(0, 0);
+    val end = new Point2D.Float(100,0);
+    val colorsAndDists = List(
+      (new AWTColor(255,255,255,255),0.0f),
+      (new AWTColor(220,237,200,255),0.25f),
+      (new AWTColor(66,179,213,255),0.45f),
+      (new AWTColor(26,35,126,255),0.75f),
+      (new AWTColor(0,0,0,255),1.0f)
+    ).toArray
+    val colors = colorsAndDists.map(_._1).toArray
+    val dist = colorsAndDists.map(_._2).toArray
+    val p = new AwtLinearGradientPaint(start, end, dist, colors)
+    val paintPot = new BufferedImage(100,1,BufferedImage.TYPE_INT_RGB)
+    val g = paintPot.createGraphics()
+    g.setPaint(p)
+    g.fill(new Rectangle(0,0,100,1))
+    val panel = new AwtPanel()
+    panel.print(g)
+    paintPot
+  }
+  protected def getColorFromGradient(position:Int,max:Int):AWTColor = {
+    val x = ((100/max) * position)
+    val rgb = gradientPaintPot.getRGB(x,0)
+    val r = (rgb >> 16) & 0xFF
+    val g = (rgb >> 8) & 0xFF
+    val b = rgb & 0xFF
+    println("getting color from gradient: %s %s (%s,%s,%s)".format(position,max,r,g,b))
+    new AWTColor(r,g,b,255)
+  }
   protected def makeBlankImage(width:Int,height:Int) = Stopwatch.time("SlideRenderer.makeBlankImage",{
     val blankImage = new BufferedImage(width,height,BufferedImage.TYPE_3BYTE_BGR)
     val g = blankImage.createGraphics.asInstanceOf[Graphics2D]
@@ -49,7 +79,6 @@ class QuizRenderer extends Logger {
       new AWTColor(c.red,c.green,c.blue,Math.max(0,Math.min(255,overrideAlpha)))
   }
   val awtBlack = new AWTColor(0,0,0,255)
-  val columnSeparator = 3
   def renderQuiz(quiz:MeTLQuiz,quizResponses:List[MeTLQuizResponse],dimensions:RenderDescription):Array[Byte] = {
     val answersInColumns = quizResponses.groupBy(qr => qr.answerer).flatMap(qrl => qrl._2.sortBy(qr => qr.timestamp).reverse.headOption).groupBy(qr => qr.answer)
 
@@ -60,30 +89,62 @@ class QuizRenderer extends Logger {
     g.setPaint(AWTColor.white)
     g.fill(new Rectangle(0,0,dimensions.width,dimensions.height))
 
-    val yMax = answersInColumns.map(_.length).max
+    val yMax:Double = answersInColumns.map(_._2.toList.length).max
     val xMax = quiz.options.length
 
-    val graphSpaceY = dimensions.height - 20
+    val totalTextHeight:Int = dimensions.height / 6
+    val textHeight:Int = totalTextHeight / 3
+    val columnSeparator:Int = Math.max(textHeight * 0.1,3).toInt
+    val graphSpaceY = dimensions.height - totalTextHeight 
     val graphBase = graphSpaceY
-    val columnSpace = dimensions.width / xMax
+    val axisSpace = dimensions.width / 16
+    val graphSpaceX = dimensions.width - axisSpace
+    val textRow1 = graphSpaceY + textHeight
+    val textRow2 = graphSpaceY + (textHeight * 2)
+    val textRow3 = graphSpaceY + (textHeight * 3)
+    val columnSpace = graphSpaceX / xMax
     val columnWidth = columnSpace - columnSeparator
 
     val frc = g.getFontRenderContext()
-    val font = new Font("Arial",Font.PLAIN,12)
+    val fontSize = (textHeight * 0.7).toInt
+    val font = new Font("Arial",Font.BOLD,fontSize)
+    val totalFinalResponses = answersInColumns.map(_._2.toList.length).sum
     if (yMax > 0){
-      var columnStartX = 0
-      quiz.options.foreach(option => {
-        val answerCount = answersInColumns.find(a => a._1 == option.name).map(_._2.toList.length).getOrElse(0)
-        val height = graphSpaceY * (answerCount / yMax)
+      var columnStartX = axisSpace
+      quiz.options.zipWithIndex.foreach(optionTup => {
+        val option = optionTup._1
+        val index = optionTup._2
+        val answerCount:Double = answersInColumns.get(option.name).map(_.toList.length.toDouble).getOrElse(0.0)
+        val height:Int = (graphSpaceY * (answerCount / yMax)).toInt
         val (x,y,w,h) = (columnStartX, graphSpaceY - height, columnWidth, height)
-        g.setPaint(awtBlack)
-        g.fill(new Rectangle(x,y,w,h))
-        g.setPaint(toAwtColor(option.color))
+        //removing the black outline
+        //g.setPaint(awtBlack)
+        //g.fill(new Rectangle(x,y,w,h))
+        //
+        //g.setPaint(toAwtColor(option.color))
+        //painting the colours with a cool blue gradient
+        val columnColor = getColorFromGradient(index + 1, quiz.options.length + 2)
+        g.setPaint(columnColor)
         g.fill(new Rectangle(x + (columnSeparator / 2), y + (columnSeparator / 2), w - columnSeparator, h - columnSeparator))
         g.setPaint(awtBlack)
-        val styledText = new AttributedString("%s: (%s)".format(option.name,answerCount))
+        val answerPercentage = {
+          val answerCountDouble = answerCount.toFloat
+          val totalFinalResponsesDouble = totalFinalResponses.toFloat
+          val result = (answerCountDouble / totalFinalResponsesDouble) * 100
+          "%3.0f".format(result)
+        }
+        val styledText = new AttributedString("%s".format(option.name))
+        styledText.addAttribute(TextAttribute.FONT, font)
         val layout = new TextLayout(styledText.getIterator(),frc)
-        layout.draw(g, columnStartX + ((columnWidth / 2) - columnSeparator), dimensions.height - columnSeparator)
+        layout.draw(g, columnStartX + columnSeparator, textRow1 - columnSeparator)
+        val styledText2 = new AttributedString("%s%%".format(answerPercentage))
+//        styledText2.addAttribute(TextAttribute.FONT, font)
+        val layout2 = new TextLayout(styledText2.getIterator(),frc)
+        layout2.draw(g, columnStartX + columnSeparator, textRow2 - columnSeparator)
+        val styledText3 = new AttributedString("(%s)".format(answerCount.toInt))
+//        styledText3.addAttribute(TextAttribute.FONT, font)
+        val layout3 = new TextLayout(styledText3.getIterator(),frc)
+        layout3.draw(g, columnStartX + columnSeparator, textRow3 - columnSeparator)
 
         println("rendering column: %s : (%s,%s,%s,%s)".format(option.name,x,y,w,h))
         columnStartX += columnSpace

@@ -222,6 +222,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     ) yield {
       val exs = new EmbeddedXmppServer(cc.xmppDomain,keystorePath,keystorePassword)
       exs.initialize
+      LiftRules.unloadHooks.append( () => exs.shutdown)
       exs
     })
   }
