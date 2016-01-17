@@ -219,6 +219,11 @@ class EmbeddedXmppServer(val domain:String,keystorePath:String,keystorePassword:
   protected var mucModule:Box[MeTLMucModule] = Empty
   protected var roomAdaptor:Box[EmbeddedXmppServerRoomAdaptor] = Empty
 
+  def shutdown = {
+    privateServer.map(p => {
+      p.stop()
+    })
+  }
   def initialize = {
     info("embedded xmpp server start handler")
     //val providerRegistry = new MemoryStorageProviderRegistry()
