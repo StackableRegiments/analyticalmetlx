@@ -184,8 +184,8 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
-        $("#addSlideButton").remove();
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).closest("#thumbScrollContainer").append(constructAddSlideButton());
+        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).closest("#thumbScrollContainer");
+				constructAddSlideButton();
         var lazyRepaint = _.debounce(paintThumbs,200);
         slideContainer.off("scroll");
         slideContainer.on("scroll",lazyRepaint);
@@ -539,31 +539,27 @@ var Conversations = (function(){
         }
     };
     var constructAddSlideButton = function(){
-        if (shouldModifyConversationFunction()){
-            return $("<button/>",{
-                id: "addSlideButton",
-                class:"toolbar fa fa-plus btn-icon nmt",
-                name: "addSlideButton",
-                type: "button"
-            }).append($("<div class='icon-txt'>Add Slide</div>")).on("click",bounceAnd(function(){
-                var currentJid = currentConversation.jid;
-                var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
-                var newIndex = currentSlideIndex + 1;
-                addSlideToConversationAtIndex(currentConversation.jid,newIndex);
-                Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
-                    if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
-                        if ("slides" in incomingDetails){
-                            var newSlide = _.find(incomingDetails.slides,function(s){
-                                return s.index == newIndex && s.id != currentSlide;
-                            });
-                            doMoveToSlide(newSlide.id.toString());
-                        }
-                    }
-                };
-            }));
-        } else {
-            return $("<div/>");
-        }
+			var addSlideButton = $("#addSlideButton");
+			if (shouldModifyConversationFunction()){
+				addSlideButton.off("click").on("click",function(){
+					var currentJid = currentConversation.jid;
+					var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
+					var newIndex = currentSlideIndex + 1;
+					addSlideToConversationAtIndex(currentConversation.jid,newIndex);
+					Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+							if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
+									if ("slides" in incomingDetails){
+											var newSlide = _.find(incomingDetails.slides,function(s){
+													return s.index == newIndex && s.id != currentSlide;
+											});
+											doMoveToSlide(newSlide.id.toString());
+									}
+							}
+					};
+				}).show();
+			} else {
+				addSlideButton.off("click").hide();
+			}
     }
     var doMoveToSlide = function(slideId){
         delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
