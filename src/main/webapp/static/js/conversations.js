@@ -184,7 +184,8 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).append(constructAddSlideButton());
+        $("#addSlideButton").remove();
+        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).closest("#thumbScrollContainer").append(constructAddSlideButton());
         var lazyRepaint = _.debounce(paintThumbs,200);
         slideContainer.off("scroll");
         slideContainer.on("scroll",lazyRepaint);
@@ -579,9 +580,9 @@ var Conversations = (function(){
     };
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
-        var newSlide = $("<div/>",{
+        var newSlide = $("<button />",{
             id: sprintf("slideContainer_%s",slide.id),
-            class:"slideButtonContainer"
+            class:"slideButtonContainer nmt np"
         });
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
