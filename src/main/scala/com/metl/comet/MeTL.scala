@@ -516,7 +516,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           if (input.length > 0){
             tempQuiz = tempQuiz.replaceQuestion(input)
           } else {
-            errorMessages = SpamMessage(Text("Please ensure this quiz has a question"),Full("quizzes")) :: errorMessages
+            errorMessages = SpamMessage(Text("Please ensure this poll has a question"),Full("quizzes")) :: errorMessages
           }
         },("class","quizQuestion"))
       }
@@ -524,19 +524,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       {
         tempQuiz.url.map(quizUrl => {
           val imageUrl = "/resourceProxy/%s".format(Helpers.urlEncode(quizUrl))
-          <img class="quizImagePreview" src={imageUrl}>This quiz has an image</img>
+          <img class="quizImagePreview" src={imageUrl}>This poll has an image</img>
         }).openOr(NodeSeq.Empty)
       }
       <div>
       {
         quiz.options.sortBy(o => o.name).map(qo => {
-          val cssColorString = "background-color:%s;".format(ColorConverter.toRGBHexString(qo.color))
+          //val cssColorString = "background-color:%s;".format(ColorConverter.toRGBHexString(qo.color))
           <div class="quizOption">
-          <label class="quizName" style={cssColorString}>
+          <label class="quizName">
           {
             qo.name
           }
           </label>
+          <div class="flex-container-responsive">
           {
             textarea(qo.text, (input:String) => {
               if (input.length > 0){
@@ -553,11 +554,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
                 this ! editableQuizNodeSeq(tempQuiz)
                 i.done
               } else {
-                this ! SpamMessage(Text("Please ensure that this quiz has at least two options"),Full("quizzes"))
+                this ! SpamMessage(Text("Please ensure that this poll has at least two options"),Full("quizzes"))
                 Noop
               }
             },("class","quizRemoveOptionButton toolbar btn-icon fa fa-trash np"))
           }
+          </div>
           </div>
         })
       }
@@ -571,7 +573,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       </div>
       <div class="quizCreationControls">
       {
-        val quizImageButtonText = tempQuiz.url.map(u => "update quiz image with current slide").openOr("attach current slide")
+        val quizImageButtonText = tempQuiz.url.map(u => "Update poll image with current slide").openOr("Attach current slide")
         ajaxButton(<span>{Text(quizImageButtonText)}</span>, () => {
           for (
             conversation <- CurrentConversation;
@@ -599,7 +601,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         },("class","quizAttachImageButton toolbar btn-icon fa fa-paperclip"))
       }
       {
-        ajaxButton(<span>{Text("Delete this quiz")}</span>, ()=>{
+        ajaxButton(<span>{Text("Delete this poll")}</span>, ()=>{
           var deletedQuiz = tempQuiz.delete
           sendStanzaToServer(deletedQuiz,server)
           i.done
@@ -616,7 +618,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         }
       },("class","quizSubmitButton toolbar button-transparent-border"))}
       </div>
-    },Full("quizzes"),Full("Define this quiz"))
+    },Full("quizzes"),Full("Define this poll"))
   }
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r.getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
