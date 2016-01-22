@@ -23,6 +23,7 @@
         };
 }());
 var reapplyStylingToServerGeneratedContent = function(contentId){
+    $("#" + contentId).find('.simpleMultipleButtonInteractableMessageButton a').addClass('button-transparent-border button');
 };
 var bounceAnd = function(func){
     return function(e){
