@@ -49,10 +49,10 @@
 }
 #s2cConversationMessageContainer{
     margin-bottom: 5px;
-}  */
+}  
 .simpleMultipleButtonInteractableMessageButton a{
     padding: 2px;
-}
+}  
 #insertOptions{
     border:1px solid darkgrey;
     padding:1em;
@@ -60,7 +60,7 @@
 }
 #imageInsertOptions{
 		position:absolute;
-}
+}    */
 /*#textEditor{
     border:1px solid darkgrey;
     padding:1em;
@@ -110,12 +110,12 @@
     border-radius: 15px;
     color:black;
 		background-color:white;
-}*/
+}
 #absoluteCloseButton{
     position:absolute;
     right:0px;
     top:0px;
-}
+}  */
 #upload{
     z-index:1;
     position:absolute;
