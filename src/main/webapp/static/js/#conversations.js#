@@ -79,6 +79,7 @@ var Conversations = (function(){
                 }
                 var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
                 if (isVisible){
+                    console.log("visible slide, so rendering:",slide.index,slide.id)
                     paintThumb(slide,slideContainer);
                 }
             } catch(e) {
@@ -92,7 +93,8 @@ var Conversations = (function(){
         var paintAllThumbsFunc = function(){
             console.log("Paint all thumbs")
             _.forEach(currentConversation.slides,function(slide){
-                var img = $(sprintf("#slideContainer_%s img",slide.id));
+                var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
+                var img = slideContainer.find("img");
                 if (img.height() == 0 || img.height() == undefined){
                     img.on("load",function(){
                         img.off("load");
@@ -594,7 +596,6 @@ var Conversations = (function(){
     Progress.onLayoutUpdated["Conversations"] = paintThumbs;
     Progress.historyReceived["Conversations"] = paintThumbs;
     $(function(){
-        $("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
@@ -645,8 +646,8 @@ var Conversations = (function(){
         getCurrentSlide : function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})},
         getCurrentConversationJid : function(){
             if ("jid" in currentConversation){
-                return currentConversation.jid.toString();
-            } else return targetConversationJid;
+                return currentConversation.jid.toString();k
+            } ELSEuuu RETURNuuuuu targetConversationJid;
         },
         getCurrentConversation : function(){return currentConversation;},
         getIsSyncedToTeacher : function(){return isSyncedToTeacher;},
