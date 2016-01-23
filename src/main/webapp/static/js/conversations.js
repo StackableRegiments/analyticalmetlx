@@ -8,35 +8,32 @@ var Conversations = (function(){
     var currentTeacherSlide = 0;
     var isSyncedToTeacher = false;
 
-		var conversationTemplate = undefined;
-		var conversationSearchListing = undefined;
+    var conversationTemplate = undefined;
+    var conversationSearchListing = undefined;
 
-		$(function(){
-			//take a template of the html for the searchResultItem
-			conversationSearchListing = $("#searchResults");
-			conversationTemplate = conversationSearchListing.find(".searchResultItem").clone();
-			conversationSearchListing.empty();
-		});
+    $(function(){
+        //take a template of the html for the searchResultItem
+        conversationSearchListing = $("#searchResults");
+        conversationTemplate = conversationSearchListing.find(".searchResultItem").clone();
+        conversationSearchListing.empty();
+    });
     var ThumbCache = (function(){
-				var cacheRefreshTime = 10 * 1000; // 10 seconds
+        var cacheRefreshTime = 10 * 1000; // 10 seconds
         var cache = {};
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
-        var fetchAndPaintThumb = function(slide,slideContainer){
-            var currentSrc = slideContainer.attr("src");
-            var slideImage = slideContainer.find("img");
-            //var thumbUrl = sprintf("/thumbnailDataUri/%s?nocache=%s",slide.id,Date.now());
+        var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
+            console.log("fetching",slide.id)
             var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
             var storeThumb = function(data){
                 cache[slide.id] = {
-									data:data,
-									when:Date.now()
-								};
-                //then fire paint as normal, which paints from the cache
-                _.defer(paintThumb,slide,slideContainer);
+                    data:data,
+                    when:Date.now()
+                };
+                //Use the data straight away instead of recursing
+                slideImage.attr("src",data);
             };
-            //cache[slide.id] = "data:image/jpeg;base64,"
             $.ajax({
                 url:thumbUrl,
                 beforeSend: function ( xhr ) {
@@ -48,118 +45,69 @@ var Conversations = (function(){
         var paintThumb = function(slide,slideContainer){
             var slideImage = slideContainer.find("img");
             if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                console.log("cached",slide.id)
                 slideImage.attr("src",cache[slide.id].data);
             } else {
-                fetchAndPaintThumb(slide,slideContainer);
+                fetchAndPaintThumb(slide,slideContainer,slideImage);
             }
         };
-				var makeBlankCanvas = function(w,h){
-					var c = $("<canvas />");
-					c.width = w;
-					c.height = h;
-					c.attr("width",w);
-					c.attr("height",h);
-					var ctx = c[0].getContext("2d"); 
-					ctx.rect(0,0,w,h);
-					ctx.fillStyle="white";
-					ctx.fill();
-					return c[0].toDataURL();
-				}
-				var blank4to3Canvas = makeBlankCanvas(320,240);
+        var makeBlankCanvas = function(w,h){
+            var c = $("<canvas />");
+            c.width = w;
+            c.height = h;
+            c.attr("width",w);
+            c.attr("height",h);
+            var ctx = c[0].getContext("2d");
+            ctx.rect(0,0,w,h);
+            ctx.fillStyle="white";
+            ctx.fill();
+            return c[0].toDataURL();
+        }
+        var blank4to3Canvas = makeBlankCanvas(320,240);
         var possiblyUpdateThumbnail = function(slide){
-						var thumbScroller = $("#thumbScrollContainer");
-						var slideContainerHeight = thumbScroller.height();
+            var thumbScroller = $("#thumbScrollContainer");
             var slidesTop = 0;
             var slidesBottom = thumbScroller.height();
-            var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
-						try {
-							var slideImage = slideContainer.find("img");
-							var slideTop = slideContainer.position().top;
-							var slideBottom = slideTop + slideContainer.height();
-							if (slideTop == slideBottom){
-								var slideImage = slideContainer.find("img");
-								slideImage.attr("src",blank4to3Canvas);
-								return;
-							}
-							var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-							//var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
-							if (isVisible){
-								//console.log("visible slide, so rendering:",slide,slidesTop, slideTop, slideBottom, slidesBottom);
-								paintThumb(slide,slideContainer);
-							} else {
-								//console.log("not visible, so not rendering:",slide, slidesTop, slideTop, slideBottom, slidesBottom);
-								//var slideImage = slideContainer.find("img");
-								//slideImage.attr("src",blank4to3Canvas);
-							}
-						} catch(e) {
-							console.log("exception while painting thumb: ",e);
-							//couldn't find the slideContainer at this time.
-						}
+            var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
+            try {
+                var slideImage = slideContainer.find("img");
+                var slideTop = slideContainer.position().top;
+                var slideBottom = slideTop + slideContainer.height();
+                if (slideTop == slideBottom){
+                    slideImage.attr("src",blank4to3Canvas);
+                    return;
+                }
+                var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+                if (isVisible){
+                    console.log("visible slide, so rendering:",slide.index,slide.id)
+                    paintThumb(slide,slideContainer);
+                }
+            } catch(e) {
+                console.log("exception while painting thumb: ",e);
+                //couldn't find the slideContainer at this time.
+            }
         }
         var clearCacheFunction = function(){
             cache = {};
         };
-				var paintAllThumbsFunc = function(){
-					//console.log("firing paintThumbs");
-				/*	
-					_.forEach(currentConversation.slides,function(slide){
-						if (slide == undefined || !("id" in slide)){ return; }
-						try {
-							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
-							var slideImage = slideContainer.find("img");
-							slideImage.on("load",function(){
-								slideImage.off("load");
-								possiblyUpdateThumbnail(slide);
-							});
-							if (slide.id in cache){
-								slideImage.attr("src",cache[slide.id].data);
-							} else {	
-								slideImage.attr("src",blank4to3Canvas);
-							}
-						} catch(e){
-							console.log("exception while slide thumbnailing",e);
-						}
-					});	
-					*/
-					/*
-					var paintAThumb = function(thisSlideInt,after){ 
-						var slide = currentConversation.slides[thisSlideInt];
-						if (slide != undefined){
-							possiblyUpdateThumbnail(slide);
-							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
-							var img = slideContainer.find("img");
-							if (img.height() == 0 || img.height() == undefined){
-								img.on("load",function(){
-									img.off("load");
-									_.defer(function(){
-										after(thisSlideInt + 1,after);
-									});
-								});
-							} else {
-								_.defer(after,thisSlideInt + 1,after);
-							}
-						}
-					}
-					paintAThumb(0,paintAThumb);
-					*/
-					_.forEach(currentConversation.slides,function(slide){
-							var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
-							var img = slideContainer.find("img");
-							if (img.height() == 0 || img.height() == undefined){
-								img.on("load",function(){
-									img.off("load");
-									possiblyUpdateThumbnail(slide);
-								});
-								img.attr("src",blank4to3Canvas);
-							} else {		
-								possiblyUpdateThumbnail(slide);
-							}
-							//ThumbCache.paintThumb(slide,slidesContainer,containerHeight);
-					});
-				};
+        var paintAllThumbsFunc = function(){
+            console.log("Paint all thumbs")
+            _.forEach(currentConversation.slides,function(slide){
+                var img = $(sprintf("#slideContainer_%s img",slide.id));
+                if (img.height() == 0 || img.height() == undefined){
+                    img.on("load",function(){
+                        img.off("load");
+                        possiblyUpdateThumbnail(slide);
+                    });
+                    img.attr("src",blank4to3Canvas);
+                } else {
+                    possiblyUpdateThumbnail(slide);
+                }
+            });
+        };
         return {
             paintThumb:possiblyUpdateThumbnail,
-						paintAllThumbs:paintAllThumbsFunc,	
+            paintAllThumbs:_.debounce(paintAllThumbsFunc,500),
             clearCache:clearCacheFunction
         };
     })();
@@ -175,71 +123,71 @@ var Conversations = (function(){
         }));
     }
     var paintThumbs = function(){
-			try {
-				ThumbCache.paintAllThumbs();
-			}	catch(e){
-				console.log("exception while painting thumbs",e);
-			}
+        try {
+            ThumbCache.paintAllThumbs();
+        }
+        catch(e){
+            console.log("exception while painting thumbs",e);
+        }
     }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
         slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).append(constructAddSlideButton());
-        var lazyRepaint = _.debounce(paintThumbs,200);
         slideContainer.off("scroll");
-        slideContainer.on("scroll",lazyRepaint);
+        slideContainer.on("scroll",paintThumbs);
         Progress.call("onLayoutUpdated");
     }
 
-				var setStudentsCanPublishFunction = function(publishingAllowed){
-					var jid = currentConversation.jid.toString();
-					var oldPerms = currentConversation.permissions;
-					var newPermissions = {
-						"studentCanOpenFriends":oldPerms.studentCanOpenFriends,
-						"studentCanPublish":publishingAllowed,
-						"usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
-					};
-					changePermissionsOfConversation(jid,newPermissions);
-				};
+    var setStudentsCanPublishFunction = function(publishingAllowed){
+        var jid = currentConversation.jid.toString();
+        var oldPerms = currentConversation.permissions;
+        var newPermissions = {
+            "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
+            "studentCanPublish":publishingAllowed,
+            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+        };
+        changePermissionsOfConversation(jid,newPermissions);
+    };
 
-				var getStudentsCanPublishFunction = function(){
-					return currentConversation.permissions.studentCanPublish;
-				};	
-				var setStudentsMustFollowTeacherFunction = function(mustFollowTeacher){
-					var jid = currentConversation.jid.toString();
-					var oldPerms = currentConversation.permissions;
-					var newPermissions = {
-						"studentCanOpenFriends":oldPerms.studentCanOpenFriends,
-						"studentCanPublish":oldPerms.studentCanPublish,
-						"usersAreCompulsorilySynced":mustFollowTeacher
-					};
-					changePermissionsOfConversation(jid,newPermissions);
-				};
-				var getStudentsMustFollowTeacherFunction = function(){
-					return currentConversation.permissions.usersAreCompulsorilySynced;
-				};
+    var getStudentsCanPublishFunction = function(){
+        return currentConversation.permissions.studentCanPublish;
+    };
+    var setStudentsMustFollowTeacherFunction = function(mustFollowTeacher){
+        var jid = currentConversation.jid.toString();
+        var oldPerms = currentConversation.permissions;
+        var newPermissions = {
+            "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
+            "studentCanPublish":oldPerms.studentCanPublish,
+            "usersAreCompulsorilySynced":mustFollowTeacher
+        };
+        changePermissionsOfConversation(jid,newPermissions);
+    };
+    var getStudentsMustFollowTeacherFunction = function(){
+        return currentConversation.permissions.usersAreCompulsorilySynced;
+    };
 
     var enableSyncMoveFunction = function(){
         isSyncedToTeacher = true;
-				redrawSyncState();
+        redrawSyncState();
     };
     var disableSyncMoveFunction = function(){
-				if ("permissions" in currentConversation && !shouldModifyConversationFunction(currentConversation) && currentConversation.permissions.usersAreCompulsorilySynced) {
-					return;
-				}
+        if ("permissions" in currentConversation && !shouldModifyConversationFunction(currentConversation) && currentConversation.permissions.usersAreCompulsorilySynced) {
+            return;
+        }
         isSyncedToTeacher = false;
-				redrawSyncState();
+        redrawSyncState();
     };
-		var redrawSyncState = function(){
-			if (isSyncedToTeacher){
-        $("#enableSync").addClass("activePrivacy active");
-        $("#disableSync").removeClass("activePrivacy active");
-			} else {
-        $("#enableSync").removeClass("activePrivacy active");
-        $("#disableSync").addClass("activePrivacy active");
-			}
-			$("#followTeacherCheckbox").prop("checked",isSyncedToTeacher);
-		}
+    var redrawSyncState = function(){
+        if (isSyncedToTeacher){
+            $("#enableSync").addClass("activePrivacy active");
+            $("#disableSync").removeClass("activePrivacy active");
+        } else {
+            $("#enableSync").removeClass("activePrivacy active");
+            $("#disableSync").addClass("activePrivacy active");
+        }
+        $("#followTeacherCheckbox").prop("checked",isSyncedToTeacher);
+    }
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
             disableSyncMoveFunction();
@@ -416,59 +364,59 @@ var Conversations = (function(){
             return false;
         }));
     };
-		var updatePermissionButtons = function(details){
-			var isAuthor = shouldModifyConversationFunction(details);
-			var scpc = $("#studentsCanPublishCheckbox");
-			scpc.off("change");
-			scpc.prop("checked",details.permissions.studentCanPublish);
-			scpc.prop("disabled",!isAuthor);
-			if (isAuthor){
-				scpc.on("change",function(){
-					setStudentsCanPublishFunction(scpc.is(":checked"));	
-				});
-			}
-			var smftc = $("#studentsMustFollowTeacherCheckbox");
-			smftc.off("change");
-			smftc.prop("checked",details.permissions.usersAreCompulsorilySynced);	
-			smftc.prop("disabled",!isAuthor);
-			var ftc = $("#followTeacherCheckbox");
-			ftc.off("change");
-			ftc.prop("checked",isSyncedToTeacher);
-			if (isAuthor){
-				smftc.on("change",function(){
-					setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
-				});
-			} else {
-				ftc.on("change",function(){
-					var previousState = isSyncedToTeacher;
-					var currentState = ftc.is(":checked");
-					if (previousState != currentState){
-						if (currentState){
-							enableSyncMoveFunction();
-						} else {
-							disableSyncMoveFunction();
-						}
-					}
-				});
-			}
-			ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
-			if (isAuthor){
-				$("#syncButtons").hide();
-				$("#syncCheckbox").hide();
-			} else {
-				$("#syncButtons").show();
-				$("#syncCheckbox").show();
-			}
-		};
+    var updatePermissionButtons = function(details){
+        var isAuthor = shouldModifyConversationFunction(details);
+        var scpc = $("#studentsCanPublishCheckbox");
+        scpc.off("change");
+        scpc.prop("checked",details.permissions.studentCanPublish);
+        scpc.prop("disabled",!isAuthor);
+        if (isAuthor){
+            scpc.on("change",function(){
+                setStudentsCanPublishFunction(scpc.is(":checked"));
+            });
+        }
+        var smftc = $("#studentsMustFollowTeacherCheckbox");
+        smftc.off("change");
+        smftc.prop("checked",details.permissions.usersAreCompulsorilySynced);
+        smftc.prop("disabled",!isAuthor);
+        var ftc = $("#followTeacherCheckbox");
+        ftc.off("change");
+        ftc.prop("checked",isSyncedToTeacher);
+        if (isAuthor){
+            smftc.on("change",function(){
+                setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
+            });
+        } else {
+            ftc.on("change",function(){
+                var previousState = isSyncedToTeacher;
+                var currentState = ftc.is(":checked");
+                if (previousState != currentState){
+                    if (currentState){
+                        enableSyncMoveFunction();
+                    } else {
+                        disableSyncMoveFunction();
+                    }
+                }
+            });
+        }
+        ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
+        if (isAuthor){
+            $("#syncButtons").hide();
+            $("#syncCheckbox").hide();
+        } else {
+            $("#syncButtons").show();
+            $("#syncCheckbox").show();
+        }
+    };
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){
-					if (!shouldModifyConversationFunction(details) && details.permissions.usersAreCompulsorilySynced){
-						enableSyncMoveFunction();
-					}
-						updatePermissionButtons(details);
+            if (!shouldModifyConversationFunction(details) && details.permissions.usersAreCompulsorilySynced){
+                enableSyncMoveFunction();
+            }
+            updatePermissionButtons(details);
             updateConversationHeader();
             updateLinks();
-						redrawSyncState();
+            redrawSyncState();
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
@@ -604,36 +552,36 @@ var Conversations = (function(){
             return sprintf("%s_%s",name,conversation.jid);
         };
         var jidString = conversation.jid.toString();
-				var newConv = conversationTemplate.clone();
-				newConv.attr("id",uniq("conversation")).on("click",bounceAnd(function(e){
-					var id1 = e.target.parentElement.id;
-					var id2 = e.target.parentElement.parentElement.id;
-					if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
-					targetConversationJid = jidString;
-					var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-					hideBackstage();
-					doMoveToSlide(firstSlide.id.toString());
+        var newConv = conversationTemplate.clone();
+        newConv.attr("id",uniq("conversation")).on("click",bounceAnd(function(e){
+            var id1 = e.target.parentElement.id;
+            var id2 = e.target.parentElement.parentElement.id;
+            if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
+            targetConversationJid = jidString;
+            var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
+            hideBackstage();
+            doMoveToSlide(firstSlide.id.toString());
         }));
         var jidString = conversation.jid.toString();
         var row1 = newConv.find(".searchResultTopRow");
         var row2 = newConv.find(".searchResultMiddleRow");
         var row3 = newConv.find(".teacherConversationTools");
-				row3.attr("id",uniq("extraConversationTools"));
-				newConv.find(".conversationTitle").attr("id",uniq("conversationTitle")).text(conversation.title);
+        row3.attr("id",uniq("extraConversationTools"));
+        newConv.find(".conversationTitle").attr("id",uniq("conversationTitle")).text(conversation.title);
         newConv.find(".conversationAuthor").text(conversation.author);
         newConv.find(".conversationSubject").text(conversation.subject);
         newConv.find(".conversationCreated").text(conversation.created);
-				
+
         if (shouldModifyConversationFunction(conversation)){
 
-					newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
-					newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
-					newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
+            newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
+            newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
+            newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
         } else {
-					newConv.find(".teacherConversationTools").remove()
-				}
+            newConv.find(".teacherConversationTools").remove()
+        }
         if ("jid" in conversation && targetConversationJid.trim().toLowerCase() == conversation.jid.toString().trim().toLowerCase()){
-					newConv.addClass("activeConversation");
+            newConv.addClass("activeConversation");
         }
         return newConv;
     }
@@ -645,9 +593,9 @@ var Conversations = (function(){
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
     Progress.onLayoutUpdated["Conversations"] = paintThumbs;
-		Progress.historyReceived["Conversations"] = paintThumbs;
+    Progress.historyReceived["Conversations"] = paintThumbs;
     $(function(){
-				$("#thumbScrollContainer").on("scroll",paintThumbs);
+        $("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
@@ -708,10 +656,10 @@ var Conversations = (function(){
         enableSyncMove : enableSyncMoveFunction,
         disableSyncMove : disableSyncMoveFunction,
         toggleSyncMove : toggleSyncMoveFunction,
-				setStudentsCanPublish : setStudentsCanPublishFunction,
-				getStudentsCanPublish : getStudentsCanPublishFunction,
-				setStudentsMustFollowTeacher : setStudentsMustFollowTeacherFunction,
-				getStudentsMustFollowTeacher : getStudentsMustFollowTeacherFunction,
+        setStudentsCanPublish : setStudentsCanPublishFunction,
+        getStudentsCanPublish : getStudentsCanPublishFunction,
+        setStudentsMustFollowTeacher : setStudentsMustFollowTeacherFunction,
+        getStudentsMustFollowTeacher : getStudentsMustFollowTeacherFunction,
         shouldDisplayConversation : shouldDisplayConversationFunction,
         shouldPublishInConversation : shouldPublishInConversationFunction,
         shouldModifyConversation : shouldModifyConversationFunction,
