@@ -607,7 +607,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           i.done
         },("class","quizDeleteButton toolbar btn-icon fa fa-trash"))
       }
-      {ajaxButton(<span>{Text("Submit")}</span>, ()=>{
+      {ajaxSubmit("Submit", ()=>{
         if (errorMessages.length > 0){
           errorMessages.foreach(em => this ! em)
           errorMessages = List.empty[SpamMessage]
