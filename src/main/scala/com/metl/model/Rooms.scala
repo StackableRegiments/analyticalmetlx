@@ -17,6 +17,79 @@ import com.metl.renderer.RenderDescription
 
 import scala.collection.mutable.Queue
 
+class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap[A,B] = scala.collection.mutable.HashMap.empty[A,B],updateOnDefault:Boolean = false,defaultFunction:Function[A,B] = (k:A) => null.asInstanceOf[B]) extends Synched{
+	private var coll = collection
+	private var defaultFunc:Function[A,B] = defaultFunction
+	def += (kv: (A,B)):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+		coll.+=(kv)
+		this
+	})
+	def -= (k:A):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+		coll.-=(k)
+		this
+	})
+	def put(k:A,v:B):Option[B] = syncWrite[Option[B]](()=>coll.put(k,v))
+	def update(k:A,v:B):Unit = syncWrite(()=>coll.update(k,v))
+	def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+		val newColl = this.clone
+		newColl.update(k,v)
+		newColl
+	})
+	def default(k:A):B = {
+		val newValue = defaultFunc(k)
+    syncWrite(()=>{
+      if (updateOnDefault)
+        coll += ((k,newValue))
+      newValue
+    })
+  }
+	def remove(k:A):Option[B] = syncWrite(()=>coll.remove(k))
+	def clear:Unit = syncWrite(()=>coll.clear)
+	def getOrElseUpdate(k:A, default: => B):B = {
+    syncRead(() => coll.get(k)) match {
+      case Some(v) => v
+      case None => {
+        val newVal = default
+        syncWrite(()=> coll.getOrElseUpdate(k,newVal))
+      }
+    }
+    //syncWrite(()=>coll.getOrElseUpdate(k,default))
+  }
+	def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+		coll.transform(f)
+		this
+	})
+	def retain(p: (A,B) => Boolean):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+		coll.retain(p)
+		this
+	})
+	def iterator: Iterator[(A, B)] = syncRead(()=>coll.iterator)
+	def values: scala.collection.Iterable[B] = syncRead(()=>coll.map(kv => kv._2))
+	def valuesIterator: Iterator[B] = syncRead(()=>coll.valuesIterator)
+	def foreach[U](f:((A, B)) => U) = syncRead(()=>coll.foreach(f))
+	def apply(k: A): B = syncReadUnlessPredicateThenWrite(()=>isDefinedAt(k),()=>coll.apply(k),()=>default(k))
+	def withDefault(f:(A) => B):RoomsSynchronizedWriteMap[A,B] = {
+		this.defaultFunc = f
+    syncWrite(()=>{
+      this
+    })
+  }
+	def keySet: scala.collection.Set[A] = syncRead(()=>coll.keySet)
+	def keys: scala.collection.Iterable[A] = syncRead(()=>coll.map(kv => kv._1)) 
+	def keysIterator: Iterator[A] = syncRead(()=>coll.keysIterator)
+	def isDefinedAt(k: A) = syncRead(()=>coll.isDefinedAt(k))
+    def size:Int = syncRead(()=>coll.size)
+    def isEmpty: Boolean = syncRead(()=>coll.isEmpty)
+	def toList:List[(A,B)] = syncRead(()=>coll.toList)
+	def toArray:Array[(A,B)] = syncRead(()=>coll.toArray)
+	def map(f:((A, B)) => Any):scala.collection.mutable.Iterable[Any] = syncRead(()=>coll.map(f))
+	override def clone: RoomsSynchronizedWriteMap[A,B] = syncRead(()=>new RoomsSynchronizedWriteMap[A,B](coll.clone,updateOnDefault,defaultFunction))
+	override def toString = "RoomsSynchronizedWriteMap("+coll.map(kv => "(%s -> %s)".format(kv._1,kv._2)).mkString(", ")+")"
+	override def equals(other:Any) = (other.isInstanceOf[RoomsSynchronizedWriteMap[A,B]] && other.asInstanceOf[RoomsSynchronizedWriteMap[A,B]].toList == this.toList)
+}
+
+
+
 abstract class RoomProvider {
   def get(jid:String):MeTLRoom
   def get(jid:String,roomMetaData:RoomMetaData):MeTLRoom
@@ -91,7 +164,7 @@ object RoomMetaDataUtils {
 }
 
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
-  private lazy val metlRooms = new SynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
+  private lazy val metlRooms = new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
   override def list = metlRooms.keys.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
   override def get(room:String) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
