@@ -30,18 +30,18 @@ class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap
 	})
 	def put(k:A,v:B):Option[B] = syncWrite[Option[B]](()=>coll.put(k,v))
 	def update(k:A,v:B):Unit = syncWrite(()=>coll.update(k,v))
-	def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+	def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncRead[RoomsSynchronizedWriteMap[A,B]](()=>{
 		val newColl = this.clone
 		newColl.update(k,v)
 		newColl
 	})
 	def default(k:A):B = {
 		val newValue = defaultFunc(k)
-    syncWrite(()=>{
-      if (updateOnDefault)
+    if (updateOnDefault)
+      syncWrite(()=>{
         coll += ((k,newValue))
-      newValue
-    })
+      })
+    newValue
   }
 	def remove(k:A):Option[B] = syncWrite(()=>coll.remove(k))
 	def clear:Unit = syncWrite(()=>coll.clear)
@@ -163,7 +163,7 @@ object RoomMetaDataUtils {
   }
 }
 
-class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
+class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Logger {
   private lazy val metlRooms = new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
   override def list = metlRooms.keys.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
@@ -171,8 +171,13 @@ class HistoryCachingRoomProvider(configName:String) extends RoomProvider {
   override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
   protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
     //val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
+    val start = new java.util.Date().getTime
+    val a = new java.util.Date().getTime - start
     val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition)
+    val b = new java.util.Date().getTime - start
     r.localSetup
+    val c = new java.util.Date().getTime - start
+    info("created room %s (%s, %s, %s) %s".format(room,a,b,c,roomDefinition))
     r
   })
   override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room),{
@@ -272,11 +277,12 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       case _ => None
     }
   }
-  protected val pollInterval = new TimeSpan(120000)
+  protected val pollInterval = new TimeSpan(2 * 60 * 1000)  // 2 minutes
   protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
   protected var lastInterest:Long = new Date().getTime
-  protected var interestTimeout:Long = 60000
+  //protected var interestTimeout:Long = 60000
+  protected var interestTimeout:Long = 30 * 60 * 1000 // 30 minutes -- rooms are shutting down too quickly, and they're too costly to start up
   protected def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))

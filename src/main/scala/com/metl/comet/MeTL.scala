@@ -108,7 +108,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     },Full(RECEIVE_HISTORY)),
     /*
      ClientSideFunctionDefinition("getRoomPopulations",List.empty[String],(args) => {
-     JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString)),JField("population",JArray(kv._2.getChildren.map(cu => JString(cu._1)).toList))))).toList)
+     JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString)),JField("population",JArray(kv._2().getChildren.map(cu => JString(cu._1)).toList))))).toList)
      },Full("receiveRoomPopulations")),
      */
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
@@ -402,7 +402,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       val quizId = getArgAsString(args(1))
       val chosenOptionName = getArgAsString(args(2))
       val response = MeTLQuizResponse(serverConfig,username,new Date().getTime,chosenOptionName,username,quizId)
-      rooms.get((server,conversationJid)).map(r => r ! LocalToServerMeTLStanza(response))
+      rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       JNull
     },Empty),
     /*
@@ -427,12 +427,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       if (shouldModifyConversation(c)){
         val quizId = getArgAsString(args(1))
         rooms.get((server,conversationJid.toString)).map(room => {
-          room.getHistory.getQuizByIdentity(quizId).map(quiz => {
+          room().getHistory.getQuizByIdentity(quizId).map(quiz => {
             this ! SimpleMultipleButtonInteractableMessage("Delete quiz","Are you sure you would like to delete this quiz? \r\n(%s)".format(quiz.question),
               Map(
                 "yes" -> {() => {
                   if (shouldModifyConversation(c)){
-                    rooms.get((server,conversationJid.toString)).map(r => {
+                    rooms.get((server,conversationJid.toString)).map(rf => {
+                      val r = rf()
                       r.getHistory.getQuizByIdentity(quizId).map(q => {
                         val deletedQuiz = q.delete
                         r ! LocalToServerMeTLStanza(deletedQuiz)
@@ -456,7 +457,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       if (shouldModifyConversation(c)){
         val quizId = getArgAsString(args(1))
         val newQuizJValue = getArgAsJValue(args(2))
-        rooms.get((server,conversationJid.toString)).map(r => {
+        rooms.get((server,conversationJid.toString)).map(rf => {
+          val r = rf()
           r.getHistory.getQuizByIdentity(quizId).map(oq => {
             val newQuiz = serializer.toMeTLQuiz(newQuizJValue)
             val deletedOldQuiz = oq.delete
@@ -472,15 +474,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     ClientSideFunctionDefinition("requestUpdateQuizDialogue",List("conversationJid","quizId"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val quizId = getArgAsString(args(1))
-      rooms.get((server,conversationJid)).map(r => r.getHistory.getQuizByIdentity(quizId).map(q => this ! editableQuizNodeSeq(q))).getOrElse({this ! SpamMessage(Text("The quiz you've requested cannot be found at this time"),Full("quizzes"))})
+      rooms.get((server,conversationJid)).map(r => r().getHistory.getQuizByIdentity(quizId).map(q => this ! editableQuizNodeSeq(q))).getOrElse({this ! SpamMessage(Text("The quiz you've requested cannot be found at this time"),Full("quizzes"))})
       JNull
     },Empty),
     ClientSideFunctionDefinition("submitScreenshotSubmission",List("conversationJid","slideJid"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsInt(args(1))
       val now = new Date().getTime
-      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r.getHistory).getOrElse(History.empty)
-      val privHistory = rooms.get((server,slideJid.toString+username)).map(r => r.getHistory).getOrElse(History.empty)
+      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
+      val privHistory = rooms.get((server,slideJid.toString+username)).map(r => r().getHistory).getOrElse(History.empty)
       val mergedHistory = pubHistory.merge(privHistory)
       val title = "submission%s%s.jpg".format(username,now.toString)
 
@@ -492,7 +494,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           val uri = serverConfig.postResource(conversationJid,title,imageBytes)
           val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri)
           rooms.get((server,conversationJid)).map(r =>{
-            r ! LocalToServerMeTLStanza(submission)
+            r() ! LocalToServerMeTLStanza(submission)
           });
           this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot submitted"))
         }
@@ -578,7 +580,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           ) yield {
             val conversationJid = conversation.jid.toString
             val now = new Date().getTime
-            val mergedHistory = rooms.get((server,slideJid.toString)).map(r => r.getHistory).getOrElse(History.empty)
+            val mergedHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
             val title = "submission%s%s.jpg".format(username,now.toString)
             val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
             val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
@@ -618,7 +620,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     },Full("quizzes"),Full("Define this quiz"))
   }
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
-    rooms.get((server,jid)).map(r => r.getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
+    rooms.get((server,jid)).map(r => r().getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
       val conversation = serverConfig.detailsOfConversation(jid)
       shouldModifyConversation(conversation) match {
         case true => allQuizResponses
@@ -628,7 +630,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   }
   private def getQuizzesForConversation(jid:String):List[MeTLQuiz] = {
     val roomOption = rooms.get((server,jid))
-    val res = roomOption.map(r => r.getHistory.getQuizzes).getOrElse(List.empty[MeTLQuiz])
+    val res = roomOption.map(r => r().getHistory.getQuizzes).getOrElse(List.empty[MeTLQuiz])
     res
   }
   private def getArgAsBool(input:Any):Boolean = input match {
@@ -660,7 +662,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     case other => JArray(List.empty[JValue])
   }
 
-  private var rooms = Map.empty[Tuple2[String,String],MeTLRoom]
+  private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
   private lazy val serverConfig = ServerConfiguration.default
   private lazy val server = serverConfig.name
   debug("serverConfig: %s -> %s".format(server,serverConfig))
@@ -821,7 +823,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         CurrentSlide(Full(jid))
         if (cc.author.trim.toLowerCase == username.trim.toLowerCase && IsInteractiveUser.map(iu => iu == true).getOrElse(true)){
           val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid))
-          rooms.get((server,cc.jid.toString)).map(r => r ! LocalToServerMeTLStanza(syncMove))
+          rooms.get((server,cc.jid.toString)).map(r => r() ! LocalToServerMeTLStanza(syncMove))
         }
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
@@ -829,7 +831,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         debug("looking for attendance room")
         rooms.get((server,cc.jid.toString)).foreach(r => {
           debug("sending command")
-//          r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
+//          r() ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
         })
       */
         //joinRoomByJid(jid,"loopback")
@@ -843,7 +845,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       if (shuttingDown || (r._1._2 != username && r._1._2 != "global")){
 //        CurrentConversation.filter(cc => cc.jid.toString == r._1._2).foreach(cc => r._2 ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cc.jid.toString,false,Nil)))
         debug("leaving room: %s".format(r))
-        r._2 ! LeaveRoom(username,userUniqueId,this)
+        r._2() ! LeaveRoom(username,userUniqueId,this)
       }
     })
   }
@@ -855,7 +857,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     roomInfo match {
       case RoomJoinAcknowledged(s,r) => {
         debug("joining room: %s".format(r))
-        rooms = rooms.updated((s,r),MeTLXConfiguration.getRoom(r,s))
+        rooms = rooms.updated((s,r),() => MeTLXConfiguration.getRoom(r,s))
         try {
           val slideNum = r.toInt
           val conv = serverConfig.getConversationForSlide(r)
@@ -904,9 +906,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     trace("OUT -> %s".format(stanza))
     stanza match {
       case m:MeTLMoveDelta => {
-        val publicRoom = rooms.getOrElse((serverName,m.slide),EmptyRoom)
+        val publicRoom = rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
         val publicHistory = publicRoom.getHistory
-        val privateRoom = rooms.getOrElse((serverName,m.slide+username),EmptyRoom)
+        val privateRoom = rooms.getOrElse((serverName,m.slide+username),() => EmptyRoom)()
         val privateHistory = privateRoom.getHistory
         val (sendToPublic,sendToPrivate) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
         sendToPublic.map(pub => {
@@ -924,7 +926,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
             val roomId = cc.jid.toString
             rooms.get((serverName,roomId)).map(r =>{
               debug("sendStanzaToServer sending submission: "+r)
-              r ! LocalToServerMeTLStanza(s)
+              r() ! LocalToServerMeTLStanza(s)
             })
           })
         }
@@ -933,7 +935,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         if (qr.author == username) {
           CurrentConversation.map(cc => {
             val roomId = cc.jid.toString
-            rooms.get((serverName,roomId)).map(r => r ! LocalToServerMeTLStanza(qr))
+            rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(qr))
           })
         }
       }
@@ -943,7 +945,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
             if (shouldModifyConversation(cc)){
               debug("sending quiz: %s".format(q))
               val roomId = cc.jid.toString
-              rooms.get((serverName,roomId)).map(r => r ! LocalToServerMeTLStanza(q))
+              rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(q))
             } else this ! SpamMessage(Text("You are not permitted to create quizzes in this conversation"),Full("quizzes"))
           })
         }
@@ -975,7 +977,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
               }
             }
             if (shouldSend){
-              rooms.get((serverName,roomId)).map(targetRoom => targetRoom ! LocalToServerMeTLStanza(finalItem))
+              rooms.get((serverName,roomId)).map(targetRoom => targetRoom() ! LocalToServerMeTLStanza(finalItem))
             }
           })
         } else warn("attemped to send a stanza to the server which wasn't yours: %s".format(c))
@@ -991,14 +993,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           }
           rooms.get((serverName,roomTarget)).map(r => {
             trace("sending MeTLStanza to room: %s <- %s".format(r,c))
-            r ! LocalToServerMeTLStanza(c)
+            r() ! LocalToServerMeTLStanza(c)
           })
         }
       }
       /*
        case s:MeTLStanza => {
        if (s.author == username){
-       rooms.get((serverName,"global")).map(r => r ! LocalToServerMeTLStanza(s))
+       rooms.get((serverName,"global")).map(r => r() ! LocalToServerMeTLStanza(s))
        }
        }
        */
