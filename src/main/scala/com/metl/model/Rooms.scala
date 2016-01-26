@@ -15,7 +15,7 @@ import Helpers._
 import java.util.Date
 import com.metl.renderer.RenderDescription
 
-import scala.collection.JavaConversions._
+import collection.JavaConverters._
 import scala.collection.mutable.Queue
 
 trait IndividuallySynched[A] {
@@ -102,7 +102,7 @@ class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap
      */
     syncWrite(k,()=>coll.getOrElseUpdate(k,default))
   }
- def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+  def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
     coll.transform(f)
     this
   })
@@ -211,10 +211,14 @@ object RoomMetaDataUtils {
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Logger {
   private lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
   //new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
-  override def list = metlRooms.keys.toList
-  override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
-  override def get(room:String) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
-  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
+  override def list = metlRooms.keys.asScala.toList
+  override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", list.contains(room))
+
+  override def get(room:String) = get(room,RoomMetaDataUtils.fromJid(room,configName))
+
+  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.computeIfAbsent(room, new java.util.function.Function[String,MeTLRoom]{
+    override def apply(r:String) = createNewMeTLRoom(room,roomDefinition)
+  }))
   protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
     //val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
     val start = new java.util.Date().getTime
@@ -227,8 +231,9 @@ class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Lo
     r
   })
   override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room),{
-    if (exists(room)){
-      metlRooms(room).localShutdown
+    val r = metlRooms.get(room)
+    if (r != null){
+      r.localShutdown
       metlRooms.remove(room)
     }
   })
