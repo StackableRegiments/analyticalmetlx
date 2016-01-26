@@ -18,78 +18,122 @@ import com.metl.renderer.RenderDescription
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Queue
 
-class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap[A,B] = scala.collection.mutable.HashMap.empty[A,B],updateOnDefault:Boolean = false,defaultFunction:Function[A,B] = (k:A) => null.asInstanceOf[B]) extends Synched{
+trait IndividuallySynched[A] {
+  import java.util.concurrent.locks.ReentrantReadWriteLock
+  protected val lockMap = new SynchronizedWriteMap[A,ReentrantReadWriteLock](scala.collection.mutable.HashMap.empty[A,ReentrantReadWriteLock],true,(k:A) => new ReentrantReadWriteLock)
+
+  def syncWrite[C](k:A,f:()=>C):C       = {
+    val rwl = lockMap(k)
+    rwl.writeLock.lock
+    val ret = f()
+    rwl.writeLock.unlock
+    ret
+  }
+  def syncRead[C](k:A,f:()=>C):C = {
+    val rwl = lockMap(k)
+    rwl.readLock.lock
+    val ret = f()
+    rwl.readLock.unlock
+    ret
+  }
+  def syncAllRead[C](f:()=>C):C = {
+    f()
+  }
+  def syncAllWrite[C](f:()=>C):C = {
+    f()
+  }
+  def syncReadUnlessPredicateThenWrite[C](k:A,pred:()=>Boolean,fr:()=>C,fw:()=>C):C = {
+    val rwl = lockMap(k)
+    rwl.readLock.lock
+    val ret = if (pred()){
+      val rRet = fr()
+      rwl.readLock.unlock
+      rRet
+    } else {
+      rwl.readLock.unlock
+      rwl.writeLock.lock
+      val wRet = fw()
+      rwl.writeLock.unlock
+      wRet
+    }
+    ret
+  }
+}
+
+class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap[A,B] = scala.collection.mutable.HashMap.empty[A,B],updateOnDefault:Boolean = false,defaultFunction:Function[A,B] = (k:A) => null.asInstanceOf[B]) extends IndividuallySynched[A]{
   private var coll = collection
   private var defaultFunc:Function[A,B] = defaultFunction
-  def += (kv: (A,B)):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+  def += (kv: (A,B)):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](kv._1,()=>{
     coll.+=(kv)
     this
   })
-  def -= (k:A):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+  def -= (k:A):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](k,()=>{
     coll.-=(k)
     this
   })
-  def put(k:A,v:B):Option[B] = syncWrite[Option[B]](()=>coll.put(k,v))
-  def update(k:A,v:B):Unit = syncWrite(()=>coll.update(k,v))
-  def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncRead[RoomsSynchronizedWriteMap[A,B]](()=>{
+  def put(k:A,v:B):Option[B] = syncWrite[Option[B]](k,()=>coll.put(k,v))
+  def update(k:A,v:B):Unit = syncWrite(k,()=>coll.update(k,v))
+  def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncRead[RoomsSynchronizedWriteMap[A,B]](k,()=>{
     val newColl = this.clone
     newColl.update(k,v)
     newColl
   })
   def default(k:A):B = {
-    val newValue = defaultFunc(k)
-    if (updateOnDefault)
-      syncWrite(()=>{
+    if (updateOnDefault){
+      syncWrite(k,()=>{
+        val newValue = defaultFunc(k)
         coll += ((k,newValue))
+        newValue
       })
-    newValue
-  }
-  def remove(k:A):Option[B] = syncWrite(()=>coll.remove(k))
-  def clear:Unit = syncWrite(()=>coll.clear)
-  def getOrElseUpdate(k:A, default: => B):B = {
-    syncRead(() => coll.get(k)) match {
-      case Some(v) => v
-      case None => {
-        val newVal = default
-        syncWrite(()=> coll.getOrElseUpdate(k,newVal))
-      }
+    } else {
+      defaultFunc(k)
     }
-    //syncWrite(()=>coll.getOrElseUpdate(k,default))
   }
-  def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+  def remove(k:A):Option[B] = syncWrite(k,()=>coll.remove(k))
+  def clear:Unit = syncAllWrite(()=>coll.clear)
+  def getOrElseUpdate(k:A, default: => B):B = {
+    /*
+     syncRead(k,() => coll.get(k)) match {
+     case Some(v) => v
+     case None => {
+     syncWrite(k,()=> coll.getOrElseUpdate(k,default))
+     }
+     }
+     */
+    syncWrite(k,()=>coll.getOrElseUpdate(k,default))
+  }
+ def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
     coll.transform(f)
     this
   })
-  def retain(p: (A,B) => Boolean):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+  def retain(p: (A,B) => Boolean):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
     coll.retain(p)
     this
   })
-  def iterator: Iterator[(A, B)] = syncRead(()=>coll.iterator)
-  def values: scala.collection.Iterable[B] = syncRead(()=>coll.map(kv => kv._2))
-  def valuesIterator: Iterator[B] = syncRead(()=>coll.valuesIterator)
-  def foreach[U](f:((A, B)) => U) = syncRead(()=>coll.foreach(f))
-  def apply(k: A): B = syncReadUnlessPredicateThenWrite(()=>isDefinedAt(k),()=>coll.apply(k),()=>default(k))
+  def iterator: Iterator[(A, B)] = syncAllRead(()=>coll.iterator)
+  def values: scala.collection.Iterable[B] = syncAllRead(()=>coll.map(kv => kv._2))
+  def valuesIterator: Iterator[B] = syncAllRead(()=>coll.valuesIterator)
+  def foreach[U](f:((A, B)) => U) = syncAllRead(()=>coll.foreach(f))
+  def apply(k: A): B = syncReadUnlessPredicateThenWrite(k,()=>isDefinedAt(k),()=>coll.apply(k),()=>default(k))
   def withDefault(f:(A) => B):RoomsSynchronizedWriteMap[A,B] = {
-    this.defaultFunc = f
-    syncWrite(()=>{
+    syncAllWrite(()=>{
+      this.defaultFunc = f
       this
     })
   }
-  def keySet: scala.collection.Set[A] = syncRead(()=>coll.keySet)
-  def keys: scala.collection.Iterable[A] = syncRead(()=>coll.map(kv => kv._1))
-  def keysIterator: Iterator[A] = syncRead(()=>coll.keysIterator)
-  def isDefinedAt(k: A) = syncRead(()=>coll.isDefinedAt(k))
-  def size:Int = syncRead(()=>coll.size)
-  def isEmpty: Boolean = syncRead(()=>coll.isEmpty)
-  def toList:List[(A,B)] = syncRead(()=>coll.toList)
-  def toArray:Array[(A,B)] = syncRead(()=>coll.toArray)
-  def map(f:((A, B)) => Any):scala.collection.mutable.Iterable[Any] = syncRead(()=>coll.map(f))
-  override def clone: RoomsSynchronizedWriteMap[A,B] = syncRead(()=>new RoomsSynchronizedWriteMap[A,B](coll.clone,updateOnDefault,defaultFunction))
+  def keySet: scala.collection.Set[A] = syncAllRead(()=>coll.keySet)
+  def keys: scala.collection.Iterable[A] = syncAllRead(()=>coll.map(kv => kv._1))
+  def keysIterator: Iterator[A] = syncAllRead(()=>coll.keysIterator)
+  def isDefinedAt(k: A) = syncAllRead(()=>coll.isDefinedAt(k))
+  def size:Int = syncAllRead(()=>coll.size)
+  def isEmpty: Boolean = syncAllRead(()=>coll.isEmpty)
+  def toList:List[(A,B)] = syncAllRead(()=>coll.toList)
+  def toArray:Array[(A,B)] = syncAllRead(()=>coll.toArray)
+  def map(f:((A, B)) => Any):scala.collection.mutable.Iterable[Any] = syncAllRead(()=>coll.map(f))
+  override def clone: RoomsSynchronizedWriteMap[A,B] = syncAllRead(()=>new RoomsSynchronizedWriteMap[A,B](coll.clone,updateOnDefault,defaultFunction))
   override def toString = "RoomsSynchronizedWriteMap("+coll.map(kv => "(%s -> %s)".format(kv._1,kv._2)).mkString(", ")+")"
   override def equals(other:Any) = (other.isInstanceOf[RoomsSynchronizedWriteMap[A,B]] && other.asInstanceOf[RoomsSynchronizedWriteMap[A,B]].toList == this.toList)
 }
-
-
 
 abstract class RoomProvider {
   def get(jid:String):MeTLRoom
@@ -166,7 +210,7 @@ object RoomMetaDataUtils {
 
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Logger {
   private lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
-    //new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
+  //new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
   override def list = metlRooms.keys.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
   override def get(room:String) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
