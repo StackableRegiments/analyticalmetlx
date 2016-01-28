@@ -15,69 +15,70 @@ import Helpers._
 import java.util.Date
 import com.metl.renderer.RenderDescription
 
+import collection.JavaConverters._
 import scala.collection.mutable.Queue
 
 trait IndividuallySynched[A] {
-	import java.util.concurrent.locks.ReentrantReadWriteLock
+  import java.util.concurrent.locks.ReentrantReadWriteLock
   protected val lockMap = new SynchronizedWriteMap[A,ReentrantReadWriteLock](scala.collection.mutable.HashMap.empty[A,ReentrantReadWriteLock],true,(k:A) => new ReentrantReadWriteLock)
-	
-	def syncWrite[C](k:A,f:()=>C):C	= {
+
+  def syncWrite[C](k:A,f:()=>C):C       = {
     val rwl = lockMap(k)
-		rwl.writeLock.lock
-        val ret = f()
-        rwl.writeLock.unlock
-		ret	
-	}
-	def syncRead[C](k:A,f:()=>C):C = {
+    rwl.writeLock.lock
+    val ret = f()
+    rwl.writeLock.unlock
+    ret
+  }
+  def syncRead[C](k:A,f:()=>C):C = {
     val rwl = lockMap(k)
-		rwl.readLock.lock
-		val ret = f()
-		rwl.readLock.unlock
-		ret
-	}
+    rwl.readLock.lock
+    val ret = f()
+    rwl.readLock.unlock
+    ret
+  }
   def syncAllRead[C](f:()=>C):C = {
     f()
   }
   def syncAllWrite[C](f:()=>C):C = {
     f()
   }
-	def syncReadUnlessPredicateThenWrite[C](k:A,pred:()=>Boolean,fr:()=>C,fw:()=>C):C = {
+  def syncReadUnlessPredicateThenWrite[C](k:A,pred:()=>Boolean,fr:()=>C,fw:()=>C):C = {
     val rwl = lockMap(k)
-		rwl.readLock.lock
-		val ret = if (pred()){
-			val rRet = fr()
-			rwl.readLock.unlock
-			rRet
-		} else {
-			rwl.readLock.unlock
-			rwl.writeLock.lock
-			val wRet = fw()
-			rwl.writeLock.unlock
-			wRet
-		}
-		ret
-	}
+    rwl.readLock.lock
+    val ret = if (pred()){
+      val rRet = fr()
+      rwl.readLock.unlock
+      rRet
+    } else {
+      rwl.readLock.unlock
+      rwl.writeLock.lock
+      val wRet = fw()
+      rwl.writeLock.unlock
+      wRet
+    }
+    ret
+  }
 }
 
 class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap[A,B] = scala.collection.mutable.HashMap.empty[A,B],updateOnDefault:Boolean = false,defaultFunction:Function[A,B] = (k:A) => null.asInstanceOf[B]) extends IndividuallySynched[A]{
-	private var coll = collection
-	private var defaultFunc:Function[A,B] = defaultFunction
-	def += (kv: (A,B)):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](kv._1,()=>{
-		coll.+=(kv)
-		this
-	})
-	def -= (k:A):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](k,()=>{
-		coll.-=(k)
-		this
-	})
-	def put(k:A,v:B):Option[B] = syncWrite[Option[B]](k,()=>coll.put(k,v))
-	def update(k:A,v:B):Unit = syncWrite(k,()=>coll.update(k,v))
-	def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncRead[RoomsSynchronizedWriteMap[A,B]](k,()=>{
-		val newColl = this.clone
-		newColl.update(k,v)
-		newColl
-	})
-	def default(k:A):B = {
+  private var coll = collection
+  private var defaultFunc:Function[A,B] = defaultFunction
+  def += (kv: (A,B)):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](kv._1,()=>{
+    coll.+=(kv)
+    this
+  })
+  def -= (k:A):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](k,()=>{
+    coll.-=(k)
+    this
+  })
+  def put(k:A,v:B):Option[B] = syncWrite[Option[B]](k,()=>coll.put(k,v))
+  def update(k:A,v:B):Unit = syncWrite(k,()=>coll.update(k,v))
+  def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncRead[RoomsSynchronizedWriteMap[A,B]](k,()=>{
+    val newColl = this.clone
+    newColl.update(k,v)
+    newColl
+  })
+  def default(k:A):B = {
     if (updateOnDefault){
       syncWrite(k,()=>{
         val newValue = defaultFunc(k)
@@ -88,53 +89,51 @@ class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap
       defaultFunc(k)
     }
   }
-	def remove(k:A):Option[B] = syncWrite(k,()=>coll.remove(k))
-	def clear:Unit = syncAllWrite(()=>coll.clear)
-	def getOrElseUpdate(k:A, default: => B):B = {
+  def remove(k:A):Option[B] = syncWrite(k,()=>coll.remove(k))
+  def clear:Unit = syncAllWrite(()=>coll.clear)
+  def getOrElseUpdate(k:A, default: => B):B = {
     /*
-    syncRead(k,() => coll.get(k)) match {
-      case Some(v) => v
-      case None => {
-        syncWrite(k,()=> coll.getOrElseUpdate(k,default))
-      }
-    }
-    */
+     syncRead(k,() => coll.get(k)) match {
+     case Some(v) => v
+     case None => {
+     syncWrite(k,()=> coll.getOrElseUpdate(k,default))
+     }
+     }
+     */
     syncWrite(k,()=>coll.getOrElseUpdate(k,default))
   }
-	def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
-		coll.transform(f)
-		this
-	})
-	def retain(p: (A,B) => Boolean):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
-		coll.retain(p)
-		this
-	})
-	def iterator: Iterator[(A, B)] = syncAllRead(()=>coll.iterator)
-	def values: scala.collection.Iterable[B] = syncAllRead(()=>coll.map(kv => kv._2))
-	def valuesIterator: Iterator[B] = syncAllRead(()=>coll.valuesIterator)
-	def foreach[U](f:((A, B)) => U) = syncAllRead(()=>coll.foreach(f))
-	def apply(k: A): B = syncReadUnlessPredicateThenWrite(k,()=>isDefinedAt(k),()=>coll.apply(k),()=>default(k))
-	def withDefault(f:(A) => B):RoomsSynchronizedWriteMap[A,B] = {
+  def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+    coll.transform(f)
+    this
+  })
+  def retain(p: (A,B) => Boolean):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
+    coll.retain(p)
+    this
+  })
+  def iterator: Iterator[(A, B)] = syncAllRead(()=>coll.iterator)
+  def values: scala.collection.Iterable[B] = syncAllRead(()=>coll.map(kv => kv._2))
+  def valuesIterator: Iterator[B] = syncAllRead(()=>coll.valuesIterator)
+  def foreach[U](f:((A, B)) => U) = syncAllRead(()=>coll.foreach(f))
+  def apply(k: A): B = syncReadUnlessPredicateThenWrite(k,()=>isDefinedAt(k),()=>coll.apply(k),()=>default(k))
+  def withDefault(f:(A) => B):RoomsSynchronizedWriteMap[A,B] = {
     syncAllWrite(()=>{
       this.defaultFunc = f
       this
     })
   }
-	def keySet: scala.collection.Set[A] = syncAllRead(()=>coll.keySet)
-	def keys: scala.collection.Iterable[A] = syncAllRead(()=>coll.map(kv => kv._1)) 
-	def keysIterator: Iterator[A] = syncAllRead(()=>coll.keysIterator)
-	def isDefinedAt(k: A) = syncAllRead(()=>coll.isDefinedAt(k))
+  def keySet: scala.collection.Set[A] = syncAllRead(()=>coll.keySet)
+  def keys: scala.collection.Iterable[A] = syncAllRead(()=>coll.map(kv => kv._1))
+  def keysIterator: Iterator[A] = syncAllRead(()=>coll.keysIterator)
+  def isDefinedAt(k: A) = syncAllRead(()=>coll.isDefinedAt(k))
   def size:Int = syncAllRead(()=>coll.size)
   def isEmpty: Boolean = syncAllRead(()=>coll.isEmpty)
-	def toList:List[(A,B)] = syncAllRead(()=>coll.toList)
-	def toArray:Array[(A,B)] = syncAllRead(()=>coll.toArray)
-	def map(f:((A, B)) => Any):scala.collection.mutable.Iterable[Any] = syncAllRead(()=>coll.map(f))
-	override def clone: RoomsSynchronizedWriteMap[A,B] = syncAllRead(()=>new RoomsSynchronizedWriteMap[A,B](coll.clone,updateOnDefault,defaultFunction))
-	override def toString = "RoomsSynchronizedWriteMap("+coll.map(kv => "(%s -> %s)".format(kv._1,kv._2)).mkString(", ")+")"
-	override def equals(other:Any) = (other.isInstanceOf[RoomsSynchronizedWriteMap[A,B]] && other.asInstanceOf[RoomsSynchronizedWriteMap[A,B]].toList == this.toList)
+  def toList:List[(A,B)] = syncAllRead(()=>coll.toList)
+  def toArray:Array[(A,B)] = syncAllRead(()=>coll.toArray)
+  def map(f:((A, B)) => Any):scala.collection.mutable.Iterable[Any] = syncAllRead(()=>coll.map(f))
+  override def clone: RoomsSynchronizedWriteMap[A,B] = syncAllRead(()=>new RoomsSynchronizedWriteMap[A,B](coll.clone,updateOnDefault,defaultFunction))
+  override def toString = "RoomsSynchronizedWriteMap("+coll.map(kv => "(%s -> %s)".format(kv._1,kv._2)).mkString(", ")+")"
+  override def equals(other:Any) = (other.isInstanceOf[RoomsSynchronizedWriteMap[A,B]] && other.asInstanceOf[RoomsSynchronizedWriteMap[A,B]].toList == this.toList)
 }
-
-
 
 abstract class RoomProvider {
   def get(jid:String):MeTLRoom
@@ -210,12 +209,16 @@ object RoomMetaDataUtils {
 }
 
 class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Logger {
-  private lazy val metlRooms = new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
-//  private lazy val metlRooms = new java.util.ConcurrentHashMap[String,MeTLRoom](RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
-  override def list = metlRooms.keys.toList
-  override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", metlRooms.keys.exists(k => k == room))
-  override def get(room:String) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,UnknownRoom)))
-  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.getOrElseUpdate(room, createNewMeTLRoom(room,roomDefinition)))
+  private lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
+  //new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
+  override def list = metlRooms.keys.asScala.toList
+  override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", list.contains(room))
+
+  override def get(room:String) = get(room,RoomMetaDataUtils.fromJid(room,configName))
+
+  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.computeIfAbsent(room, new java.util.function.Function[String,MeTLRoom]{
+    override def apply(r:String) = createNewMeTLRoom(room,roomDefinition)
+  }))
   protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
     //val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
     val start = new java.util.Date().getTime
@@ -228,8 +231,9 @@ class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Lo
     r
   })
   override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room),{
-    if (exists(room)){
-      metlRooms(room).localShutdown
+    val r = metlRooms.get(room)
+    if (r != null){
+      r.localShutdown
       metlRooms.remove(room)
     }
   })
@@ -369,22 +373,22 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",{
     trace("stanza received: %s".format(a))
-    (a,roomMetaData) match {
+      (a,roomMetaData) match {
       case (m:Attendance,cr:ConversationRoom) => {
         trace("attendance received: %s".format(m))
-  //      if (!getAttendance.exists(_ == m.author)){
-          updateGroupSets.foreach(c => {
-            trace("updated conversation postGroupsUpdate: %s".format(c))
-            config.updateConversation(c.jid.toString,c)
-          })
-  //      }
+        //      if (!getAttendance.exists(_ == m.author)){
+        updateGroupSets.foreach(c => {
+          trace("updated conversation postGroupsUpdate: %s".format(c))
+          config.updateConversation(c.jid.toString,c)
+        })
+        //      }
       }
       /*
-      case (m:MeTLCommand,cr:GlobalRoom) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
-        trace("updating conversation details")
-        cr.cd = config.detailsOfConversation(cr.jid)
-      }
-      */
+       case (m:MeTLCommand,cr:GlobalRoom) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
+       trace("updating conversation details")
+       cr.cd = config.detailsOfConversation(cr.jid)
+       }
+       */
       case _ => {}
     }
     trace("%s s->l %s".format(location,a))
@@ -544,7 +548,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       } else if (!renderInProgress){
         renderInProgress = true
         ActorPing.schedule(this,ThumbnailRenderRequest,acceptableRenderStaleness)
-      } 
+      }
     }
   }
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",{
