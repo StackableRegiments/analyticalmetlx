@@ -129,8 +129,12 @@ var stanzaHandlers = {
     text:textReceived,
     command:commandReceived,
     submission:submissionReceived,
-		attendance:attendanceReceived
+		attendance:attendanceReceived,
+		file:fileReceived
 };
+function fileReceived(file){
+	//doing nothing with files yet.
+}
 function attendanceReceived(attendance){
 	//doing nothing with attendances for the moment.
 }

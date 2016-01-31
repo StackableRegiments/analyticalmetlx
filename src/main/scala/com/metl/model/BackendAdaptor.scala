@@ -63,6 +63,9 @@ import javax.security.auth._
 case class MeTLPrincipal(name:String) extends UserPrincipal{
   override def getName = name
 }
+case class MeTLRolePrincipal(name:String) extends java.security.Principal{
+  override def getName = name
+}
 
 object MeTLXConfiguration extends PropertyReader with Logger {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
@@ -237,18 +240,44 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     val propFile = XML.load(filePath)
     val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
     def setUserPrincipal(username:String):Unit = {
-      val authSubjectAttr = "javax.security.auth.subject" 
       try {
         S.containerRequest.foreach{
+          case sr:org.eclipse.jetty.server.Request => {
+            println("jetty request")
+            if (sr.getUserPrincipal() == null){
+              val principal = new MeTLPrincipal(username)
+              val s1 = new Subject()
+              val principalSet = s1.getPrincipals()
+              principalSet.add(principal)
+              val s2 = new Subject(true,principalSet,new java.util.HashSet[Object](),new java.util.HashSet[Object]())
+              val roles = List("USER").toArray
+              val authMethod = ""
+              val authentication = new org.eclipse.jetty.security.UserAuthentication(authMethod,
+                new org.eclipse.jetty.security.DefaultUserIdentity(
+                  s2,
+                  principal,
+                  roles
+                )
+              )
+              sr.setAuthentication(authentication)
+            }
+            println("authenticated: %s\r\n%s".format(sr.getUserPrincipal()))
+          }
           case sr:net.liftweb.http.provider.servlet.HTTPRequestServlet => {
+            val authSubjectAttr = "javax.security.auth.subject" 
+            println("generic request")
             val session:net.liftweb.http.provider.servlet.HTTPServletSession = sr.session
             var subject:Subject = session.attribute(authSubjectAttr).asInstanceOf[Subject]
             if (subject == null){
               subject = new Subject()
             }
-            subject.getPrincipals().add(new MeTLPrincipal(username))
+            val principals = subject.getPrincipals()
+            principals.add(new MeTLPrincipal(username))
+            principals.add(new MeTLRolePrincipal("USER"))
             session.setAttribute(authSubjectAttr,subject)
-            //warn("authenticated: %s".format(subject))
+            //val req:javax.servlet.http.HttpServletRequest = sr.req
+            //req.login(username,"no password")
+            println("authenticated: %s\r\n%s".format(subject,sr.req.getUserPrincipal()))
           }
           case other => {
             warn("type of containerRequest not of the type expected: %s".format(other))

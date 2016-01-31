@@ -997,6 +997,17 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           })
         }
       }
+      case f:MeTLFile => {
+        if (f.author == username){
+          CurrentConversation.map(cc => {
+            val roomTarget = cc.jid.toString
+            rooms.get((serverName,roomTarget)).map(r => {
+              trace("sending MeTLFile to conversation room: %s <- %s".format(r,f))
+              r() ! LocalToServerMeTLStanza(f)
+            })
+          })
+        }
+      }
       /*
        case s:MeTLStanza => {
        if (s.author == username){
