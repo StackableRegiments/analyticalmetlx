@@ -57,6 +57,13 @@ class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSele
   })
 }
 
+
+import java.nio.file.attribute.UserPrincipal
+import javax.security.auth._
+case class MeTLPrincipal(name:String) extends UserPrincipal{
+  override def getName = name
+}
+
 object MeTLXConfiguration extends PropertyReader with Logger {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
   var clientConfig:Option[ClientConfiguration] = None
@@ -229,14 +236,39 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   def setupAuthenticatorsFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
+    def setUserPrincipal(username:String):Unit = {
+      val authSubjectAttr = "javax.security.auth.subject" 
+      try {
+        S.containerRequest.foreach{
+          case sr:net.liftweb.http.provider.servlet.HTTPRequestServlet => {
+            val session:net.liftweb.http.provider.servlet.HTTPServletSession = sr.session
+            var subject:Subject = session.attribute(authSubjectAttr).asInstanceOf[Subject]
+            if (subject == null){
+              subject = new Subject()
+            }
+            subject.getPrincipals().add(new MeTLPrincipal(username))
+            session.setAttribute(authSubjectAttr,subject)
+            //warn("authenticated: %s".format(subject))
+          }
+          case other => {
+            warn("type of containerRequest not of the type expected: %s".format(other))
+          }
+        }
+      } catch {
+        case e:Throwable => {
+          error("exception while setting userPrincipal",e)
+        }
+      }
+    }
     ifConfiguredFromGroup(authenticationNodes,Map(
       "saml" -> {(n:NodeSeq) => {
         def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
           trace("saml step 1: %s".format(la))
           if ( la.authenticated ) {
-          trace("saml step 2: authed")
+            trace("saml step 2: authed")
+            setUserPrincipal(la.username)
             Globals.currentUser(la.username)
-          trace("saml step 3: set user")
+            trace("saml step 3: set user")
             var existingGroups:List[Tuple2[String,String]] = Nil
             if (Globals.groupsProviders != null){
             trace("saml step 4: groupsProviders not null")
@@ -287,6 +319,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
               },
               alreadyLoggedIn = () => Globals.casState.authenticated,
               onSuccess = (la:LiftAuthStateData) => {
+                setUserPrincipal(la.username)
                 Globals.currentUser(la.username)
                 var existingGroups:List[Tuple2[String,String]] = Nil
                 if (Globals.groupsProviders != null){
@@ -311,6 +344,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
             alreadyLoggedIn = () => Globals.casState.authenticated,
             onSuccess = (la:LiftAuthStateData) => {
               if ( la.authenticated ) {
+                setUserPrincipal(la.username)
                 Globals.currentUser(la.username)
                 var existingGroups:List[Tuple2[String,String]] = Nil
                 if (Globals.groupsProviders != null){
@@ -337,6 +371,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
               alreadyLoggedIn = () => Globals.casState.authenticated,
               onSuccess = (la:LiftAuthStateData) => {
                 if ( la.authenticated ) {
+                  setUserPrincipal(la.username)
                   Globals.currentUser(la.username)
                   var existingGroups:List[Tuple2[String,String]] = Nil
                   if (Globals.groupsProviders != null){
