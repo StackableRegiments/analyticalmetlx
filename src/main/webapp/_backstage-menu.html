@@ -38,24 +38,25 @@
                         </div>
                     </div>
                 </div>
-								<section id="attachmentsPopup" class="backstage box-model-block">
-									<h2 class="align-left mrh nmt">Attachments</h2>
-									<div id="attachmentCreateButtonContainer" class="align-left">
-										<button id="attachmentCreationButton" class="attachmentCreationButton button-transparent-border mth">
-											<span>Create attachment</span>
-										</button>
-										<div id="attachmentUploadFormContainer">
-											<input type="file" id="attachmentFileChoice"></input>
-										</div>
-									</div>
-									<div class="attachment-listing align-left half mrh clear">
-										<div id="attachmentListing" class="clear box-model-block">
-											<div class="attachmentItem flex-container-row btn-list">
-												<a class="attachmentDownloadLink"><span class="attachmentDownloadLinkText"></span></a>
-											</div>
-										</div>
-									</div>
-								</section>
+                <section id="attachmentsPopup" class="backstage box-model-block">
+                    <h2 class="align-left mrh nmt">Attachments</h2>
+                    <div id="attachmentCreateButtonContainer" class="align-left">
+                        <button id="attachmentCreationButton" class="attachmentCreationButton button-transparent-border mth">
+                            <span>Add attachment</span>
+                        </button>
+                    </div>
+                    <div id="attachmentUploadFormContainer" class="clear mt">
+                        <label for="attachmentFileChoice">Select file to attach</label>
+                        <input type="file" id="attachmentFileChoice"></input>
+                    </div>
+                    <div class="attachment-listing align-left half mrh mt clear">
+                        <ul id="attachmentListing" class="clear box-model-block no-list-style">
+                            <li class="attachmentItem flex-container-row btn-list pbh">
+                                <a class="attachmentDownloadLink" href="#"><span class="attachmentDownloadLinkText"></span></a>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
                 <section id="quizzesPopup" class="backstage box-model-block">
                     <h2 class="align-left mrh nmt">Polls</h2>
                     <div id="quizCreateButtonContainer" class="align-left">
@@ -134,7 +135,7 @@
 								</section>
                 <div id="customizeBrushPopup" class="backstage">
                     <div id="penColor">
-                        <h2 class="nmt">Choose Pen Color</h2>
+                        <h2 class="nmt">Choose pen color</h2>
                         <div id="colors" >
                             <div class="dots flex-container-row">
                                 <button class="colorDot nm np mrh" style="vertical-align:middle;"></button>
@@ -142,7 +143,7 @@
                         </div>
                     </div>
                     <div id="penSize">
-                        <h2>Choose Pen Size </h2>
+                        <h2>Choose pen size </h2>
                         <div id="sizes" >
                             <div class="dots flex-container-row">
                                 <button class="sizeDot nm np mrh" style="vertical-align:middle;"></button>
@@ -150,7 +151,7 @@
                         </div>
                     </div>
                     <div id="penModes">
-                        <h2>Choose Pen Mode</h2>
+                        <h2>Choose pen mode</h2>
                         <div id="penMode" >
                             <div class="button-toggle">
                                 <button class="toolbar fa fa-highlight btn-icon" id="setPenToHighlighter"><div class="icon-txt">highlight</div></button>
