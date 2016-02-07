@@ -7,18 +7,21 @@ var Attachments = (function(){
 			attachmentTemplate = attachmentContainer.find(".attachmentItem").clone();
 			attachmentContainer.empty();
 			$("#attachments").click(function(){
-					showBackstage("attachments");
+                showBackstage("attachments");
+                updateActiveMenu(this);
 			});
 			var attachmentCount = $("<div />",{
-					id:"attachmentCount",
-					class:"icon-txt"
+                id:"attachmentCount",
+                class:"icon-txt"
 			});
 			$("#feedbackStatus").prepend(attachmentCount);
 			attachmentCount.click(function(){
-					showBackstage("attachments");
+                showBackstage("attachments");
+                updateActiveMenu(this);
 			});
 			$("#menuAttachments").on("click",function(){
 				showBackstage("attachments");
+				updateActiveMenu(this);
 			});
 			refreshAttachmentCount();
     });
@@ -38,13 +41,14 @@ var Attachments = (function(){
         }
     };
 		var resetUpload = function(){
-			var attachmentFileChoice = $("#attachmentFileChoice");
+			var attachmentFileChoice = $("#attachmentFileChoice"),
+			    attachmentUploadFormContainer = $("#attachmentUploadFormContainer");
 			attachmentFileChoice.wrap("<form>").closest("form").get(0).reset();
 			attachmentFileChoice.unwrap();
-			attachmentFileChoice.hide();
+			attachmentUploadFormContainer.hide();
 			if (Conversations.shouldModifyConversation()){
 				$("#attachmentCreationButton").unbind("click").on("click",function(){
-					attachmentFileChoice.show();
+					attachmentUploadFormContainer.show();
 				}).show();
 				attachmentFileChoice.unbind("change").on("change",function(eventArgs){
 					WorkQueue.pause();

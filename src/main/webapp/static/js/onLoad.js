@@ -42,6 +42,10 @@ var flash = function(el){
     var t = 100;
     el.fadeOut(t).fadeIn(t);
 }
+function updateActiveMenu(menuItem) {
+    $(".activeBackstageTab").removeClass("activeBackstageTab active");
+    $(menuItem).addClass("activeBackstageTab active");
+}
 var WorkQueue = (function(){
     var isAbleToWork = true;
     var work = [];
@@ -627,10 +631,6 @@ $(function(){
     $("#progress").hide();
     setLoadProgress(8);
 
-    function updateActiveMenu(menuItem) {
-        $(".activeBackstageTab").removeClass(".activeBackstageTab active");
-        $(menuItem).addClass(".activeBackstageTab active");
-    }
     $('#updatePens').click(function(){
         showBackstage("customizeBrush");
         updateActiveMenu(this);
