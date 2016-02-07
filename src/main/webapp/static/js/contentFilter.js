@@ -9,7 +9,7 @@ var ContentFilter = (function(){
 	};
 	var myPrivate = {
 		id:"myPrivate",
-		name:"my private",
+		name:"My private content",
 		filterStanza:function(stanza){
 			return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PRIVATE";
 		},
@@ -17,7 +17,7 @@ var ContentFilter = (function(){
 	};
 	var myPublic = {
 		id:"myPublic",
-		name:"my public",
+		name:"My public content",
 		filterStanza:function(stanza){
 			return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PUBLIC";
 		},
@@ -25,7 +25,7 @@ var ContentFilter = (function(){
 	};
 	var myPeers = {
 		id:"peer",
-		name:"my peers'",
+		name:"My peers' content",
 		filterStanza:function(stanza){
 			return "author" in stanza && stanza.author != Conversations.getCurrentConversation().author && stanza.author != UserSettings.getUsername();
 		},
@@ -72,6 +72,7 @@ var ContentFilter = (function(){
 	
 		$("#menuContentFilter").on("click",function(){
 			showBackstage("contentFilter");
+			updateActiveMenu(this);
 		});
 		contentFilterContainer = $("#contentFilterListing");
 		contentFilterTemplate = contentFilterContainer.find(".contentFilterItem").clone();
