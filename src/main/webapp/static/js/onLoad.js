@@ -436,7 +436,15 @@ function hideBackstage(){
     $("#hideBackstage").hide();
     $("#notices").show();
     $(".modeSpecificTool").removeClass(active);
+    hideSpinner();
 };
+function showSpinner() {
+    $("#loadingSlidePopup").show();
+};
+function hideSpinner() {
+    $("#loadingSlidePopup").hide();
+}
+
 $(function(){
     var heading = $("#heading");
     heading.text("Loading MeTLX...");

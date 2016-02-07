@@ -10,9 +10,11 @@ var requestedViewboxHeight = 240;
 function loadSlide(jid){
     startMark = Date.now();
     $("#targetSlide").text(sprintf("Loading slide %s",jid));
-    showBackstage("loadingSlide");
+    //showBackstage("loadingSlide");
+    showSpinner();
     moveToSlide(jid.toString());
 }
+
 function receiveHistory(json){
     try{
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark, historyDecoratorsMark, blitMark;
