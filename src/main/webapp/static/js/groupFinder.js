@@ -88,7 +88,8 @@ var GroupFinder = (function(){
     }
     var delay = function(message,func){
         $("#targetSlide").text(message);
-        showBackstage("loadingSlide");
+        //showBackstage("loadingSlide");
+        showSpinner();
         setTimeout(func,2500);
     }
     var ensureUserInCohort = function(name){
