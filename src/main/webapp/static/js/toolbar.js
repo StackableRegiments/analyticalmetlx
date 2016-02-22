@@ -152,19 +152,19 @@ function registerPositionHandlers(contexts,down,move,up){
             var worldX = worldPos.x;
             var worldY = worldPos.y;
             if(worldX < viewboxX){
-							takeControlOfViewbox();
+                takeControlOfViewbox();
                 Extend.left();
             }
             else if(worldX >= (viewboxX + viewboxWidth)){
-							takeControlOfViewbox();
+                takeControlOfViewbox();
                 Extend.right();
             }
             else if(worldY < viewboxY){
-							takeControlOfViewbox();
+                takeControlOfViewbox();
                 Extend.up();
             }
             else if(worldY >= (viewboxY + viewboxHeight)){
-							takeControlOfViewbox();
+                takeControlOfViewbox();
                 Extend.down();
             }
             isDown = false;
@@ -237,7 +237,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 var xDelta = pos.x - prevPos.x;
                 var yDelta =  pos.y - prevPos.y;
                 prevPos = pos;
-								takeControlOfViewbox();
+                takeControlOfViewbox();
                 Pan.translate(-1 * xDelta,-1 * yDelta);
                 break;
             }
@@ -268,7 +268,7 @@ function registerPositionHandlers(contexts,down,move,up){
             var scale = e.originalEvent.scale;
             //Zoom.scale(previousScale / scale,true);
             // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
-						takeControlOfViewbox();
+            takeControlOfViewbox();
             Zoom.scale(previousScale / scale);
             previousScale = scale;
         });
@@ -469,7 +469,7 @@ var Modes = (function(){
         currentMode:noneMode,
         none:noneMode,
         text:(function(){
-						var currentText = {};	
+            var currentText = {};
             var marquee = undefined;
             var typingTimer = undefined;
             var selectedTexts = [];
@@ -482,697 +482,681 @@ var Modes = (function(){
             var lineWithSeparatorRatio = 1.3; //magic number?
             var oldText = "";
             var newText = "";
-						var currentFamily = Fonts.getAllFamilies()[0];
-						var currentSize = Fonts.getAllSizes()[0];
+            var currentFamily = Fonts.getAllFamilies()[0];
+            var currentSize = Fonts.getAllSizes()[0];
             var typingTimerElapsed = function(){
-							WorkQueue.gracefullyResume();
-							clearTimeout(typingTimer);
-							typingTimer = undefined;
-							var subject = $.extend({},currentText);
-							subject.text = oldText;
-							delete subject.canvas;
-							sendStanza(subject);
+                WorkQueue.gracefullyResume();
+                clearTimeout(typingTimer);
+                typingTimer = undefined;
+                var subject = $.extend({},currentText);
+                subject.text = oldText;
+                delete subject.canvas;
+                sendStanza(subject);
             }
             var checkTyping = function(){
-							WorkQueue.pause();
-							var oldTextTest = oldText;
-							oldText = newText;
-							currentText.text = newText;
-							selectedTexts = [currentText];
-							var el = $("#textEditorInputArea").get(0);
-							if ("selectionStart" in el){
-								currentCaretPos = el.selectionStart;
-								currentScrollTop = el.scrollTop;
-							}
-							var t = Date.now();
-							var elapsed = t - startTime;
-							if(oldTextTest == newText || changeToTextBoxMade){
-								if(elapsed > typingDelay){
-									changeToTextBoxMade = false;
-									typingTimerElapsed();
-								}
-								else{
-									clearTimeout(typingTimer);
-									typingTimer = setTimeout(checkTyping,typingTicks);
-								}
-							}
-							else{
-								startTime = Date.now();
-								clearTimeout(typingTimer);
-								typingTimer = setTimeout(checkTyping,typingTicks);
-							}
+                WorkQueue.pause();
+                var oldTextTest = oldText;
+                oldText = newText;
+                currentText.text = newText;
+                selectedTexts = [currentText];
+                Progress.call("onSelectionChanged",[Modes.select.text]);
+                var el = $("#textEditorInputArea").get(0);
+                if ("selectionStart" in el){
+                    currentCaretPos = el.selectionStart;
+                    currentScrollTop = el.scrollTop;
+                }
+                var t = Date.now();
+                var elapsed = t - startTime;
+                if(oldTextTest == newText || changeToTextBoxMade){
+                    if(elapsed > typingDelay){
+                        changeToTextBoxMade = false;
+                        typingTimerElapsed();
+                    }
+                    else{
+                        clearTimeout(typingTimer);
+                        typingTimer = setTimeout(checkTyping,typingTicks);
+                    }
+                }
+                else{
+                    startTime = Date.now();
+                    clearTimeout(typingTimer);
+                    typingTimer = setTimeout(checkTyping,typingTicks);
+                }
             };
-						var hasInitialized = false;
+            var hasInitialized = false;
 
-						var textEditor = undefined;
-						var textEditorInput = undefined;
-						var fontFamilySelector = undefined;
-						var fontSizeSelector = undefined;
-						var fontColorSelector = undefined;
-						var fontBoldSelector = undefined;
-						var fontItalicSelector = undefined;
-						var fontUnderlineSelector = undefined;
-            
-						var updateTextFont = function(t){
+            var textEditor = undefined;
+            var textEditorInput = undefined;
+            var fontFamilySelector = undefined;
+            var fontSizeSelector = undefined;
+            var fontColorSelector = undefined;
+            var fontBoldSelector = undefined;
+            var fontItalicSelector = undefined;
+            var fontUnderlineSelector = undefined;
+
+            var updateTextFont = function(t){
                 t.font = sprintf("%spx %s",t.size,t.family);
             }
-						var updateTextEditor = function(){
-							if ("type" in currentText && currentText.type == "text"){
-								var h = undefined;
-								prerenderText(currentText);
-								if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
-									h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
-									textEditorInput.val(currentText.runs.join("\n"));
-								} else {
-									h = px(currentText.size);
-									textEditorInput.val(currentText.text);
-								}
+            var updateTextEditor = function(){
+                if ("type" in currentText && currentText.type == "text"){
+                    var h = undefined;
+                    prerenderText(currentText);
+                    if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
+                        h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
+                        textEditorInput.val(currentText.runs.join("\n"));
+                    } else {
+                        h = px(currentText.size);
+                        textEditorInput.val(currentText.text);
+                    }
 
-								var screenPos = worldToScreen(currentText.x,currentText.y);
-                var possiblyAdjustedHeight = Math.max(currentText.height,h);
-                var possiblyAdjustedWidth = currentText.width * 1.1;
-                var possiblyAdjustedX = screenPos.x;
-                var possiblyAdjustedX = worldToScreen(currentText.x + currentText.width,currentText.y).x;
-                var possiblyAdjustedY = screenPos.y;
-                var acceptableMaxHeight = boardHeight * 0.7;
-                var acceptableMaxWidth = boardWidth * 0.7;
-                var acceptableMinX = 30;
-                var acceptableMinY = 30;
-                var acceptableMaxX = boardWidth - 100;
-                //var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
-                var acceptableMaxY = boardHeight - textEditor.height();//boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
-/*
-                if (possiblyAdjustedWidth > acceptableMaxWidth){
-                    possiblyAdjustedWidth = acceptableMaxWidth;
+                    var screenPos = worldToScreen(currentText.x,currentText.y);
+                    var possiblyAdjustedHeight = Math.max(currentText.height,h);
+                    var possiblyAdjustedWidth = currentText.width * 1.1;
+                    var possiblyAdjustedX = screenPos.x;
+                    var possiblyAdjustedY = screenPos.y;
+                    var acceptableMinY = 30;
+                    var acceptableMaxX = boardWidth - 100;
+                    //var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
+                    var acceptableMaxY = boardHeight - textEditor.height();//boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
+                    if (possiblyAdjustedX > acceptableMaxX){
+                        /*The screen should move, not the box*/
+                        possiblyAdjustedX = screenPos.x - textEditor.width();
+                    }
+                    if (possiblyAdjustedY < acceptableMinY){
+                        possiblyAdjustedY = acceptableMinY;
+                    }
+                    if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
+                        possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
+                    }
+                    // there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
+                    textEditorInput.css({
+                        width:px(possiblyAdjustedWidth),
+                        "font-weight": currentText.weight,
+                        "font-style": currentText.style,
+                        "text-decoration": currentText.decoration,
+                        "color": currentText.color[0],
+                        "min-height":h,
+                        "font-family":currentText.family,
+                        "font-size":px(currentText.size),
+                        position:"absolute",
+                        left:px(possiblyAdjustedX),
+                        top:px(possiblyAdjustedY),
+                        padding:0,
+                        border:0,
+                        background:"white"
+                        /*width:px(possiblyAdjustedWidth),*/
+                        /*"min-width":px(240)*/
+                    });
+                    updateTextFont(currentText);
+                    if ("setSelectionRange" in textEditorInput){
+                        textEditorInput.setSelectionRange(currentCaretPos,currentCaretPos);
+                        $(textEditorInput).scrollTop(currentScrollTop);
+                    }
+                    $("#textEditorClose").on("click",function(){
+                        textEditor.hide();
+                    });
+                    fontFamilySelector.value = currentText["family"];
+                    fontSizeSelector.value = currentText["size"];
+                    fontColorSelector.value = currentText["color"];
+                    if (currentText.weight == "bold"){
+                        fontBoldSelector.addClass("active");
+                    } else {
+                        fontBoldSelector.removeClass("active");
+                    }
+                    if (currentText.style == "italic"){
+                        fontItalicSelector.addClass("active");
+                    } else {
+                        fontItalicSelector.removeClass("active");
+                    }
+                    if (currentText.decoration == "underline"){
+                        fontUnderlineSelector.addClass("active");
+                    } else {
+                        fontUnderlineSelector.removeClass("active");
+                    }
+                    textEditor.show();
+                    textEditorInput.focus();
+                } else {
+                    textEditor.hide();
+                    textEditorInput.hide();
                 }
-                if (possiblyAdjustedHeight > acceptableMaxHeight){
-                    possiblyAdjustedHeight = acceptableMaxHeight;
-                }
-								*/
-								/*
-                if (possiblyAdjustedX < acceptableMinX){
-                    possiblyAdjustedX = acceptableMinX;
-                }
-								*/
-                if (possiblyAdjustedX > acceptableMaxX){
-									possiblyAdjustedX = screenPos.x - textEditor.width();
-//                    possiblyAdjustedX = acceptableMaxX - possiblyAdjustedWidth;
-                }
-                if (possiblyAdjustedY < acceptableMinY){
-                    possiblyAdjustedY = acceptableMinY;
-                }
-                if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
-                    possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
-                }
-								// there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
-                textEditor.css({
-									position:"absolute",
-									left:px(possiblyAdjustedX),
-									top:px(possiblyAdjustedY),
-									/*width:px(possiblyAdjustedWidth),*/
-									"min-width":px(240)
+            };
+            if (!hasInitialized){
+                $(function(){
+                    hasInitialized = true;
+                    textEditor = $("#textEditor");
+                    textEditorInput = $("#textEditorInputArea");
+                    fontFamilySelector = $("#fontFamilySelector");
+                    fontSizeSelector = $("#fontSizeSelector");
+                    fontColorSelector = $("#fontColorSelector");
+                    fontBoldSelector = $("#fontBoldSelector");
+                    fontItalicSelector = $("#fontItalicSelector");
+                    fontUnderlineSelector = $("#fontUnderlineSelector");
+                    textEditor.hide();
+                    var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
+                    fontFamilySelector.empty();
+                    Fonts.getAllFamilies().map(function(family){
+                        fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
+                    });
+                    fontFamilySelector.on("change",function(e){
+                        var newFamily = $(this).val();
+                        currentFamily = newFamily;
+                        if ("family" in currentText){
+                            currentText["family"] = newFamily;
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
+                    fontSizeSelector.empty();
+                    Fonts.getAllSizes().map(function(size){
+                        fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
+                    });
+                    fontSizeSelector.on("change",function(e){
+                        var newSizeInt = parseInt($(this).val());
+                        currentSize = newSizeInt;
+                        if ("size" in currentText){
+                            currentText["size"] = newSizeInt;
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
+                    fontColorSelector.empty();
+                    Colors.getAllNamedColors().map(function(color){
+                        fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
+                    });
+                    fontColorSelector.on("change",function(e){
+                        var newColor = $(this).val();
+                        if ("color" in currentText){
+                            currentText["color"] = Colors.getColorForName(newColor);
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    fontBoldSelector.on("click",function(){
+                        if ("weight" in currentText){
+                            currentText["weight"] = !fontBoldSelector.hasClass("active") ? "bold" : "Normal";
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    fontItalicSelector.on("click",function(){
+                        if ("style" in currentText){
+                            currentText["style"] = !fontItalicSelector.hasClass("active") ? "italic" : "Normal";
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    fontUnderlineSelector.on("click",function(){
+                        if ("decoration" in currentText){
+                            currentText["decoration"] = !fontUnderlineSelector.hasClass("active") ? "underline" : "Normal";
+                        }
+                        updateTextEditor();
+                        typingTimerElapsed();
+                    });
+                    textEditorInput.keyup(function(e){
+                        if ("type" in currentText && currentText.type == "text"){
+                            e.stopPropagation();
+                            var el = $(this).get(0);
+                            if ("selectionStart" in el && currentCaretPos != undefined){
+                                currentCaretPos = el.selectionStart;
+                                currentScrollTop = el.scrollTop;
+                            }
+                            if (e.ctrlKey){
+                                if(e.keyCode == 73) {
+                                    if(currentText.style == "Normal"){
+                                        currentText["style"] = "italic";
+                                    }
+                                    else {
+                                        currentText["style"] = "Normal";
+                                    }
+                                    updateTextEditor();
+                                    sendText();
+                                }
+                                if (e.keyCode == 66){
+                                    if (currentText.weight == "Normal"){
+                                        currentText["weight"] = "bold";
+                                    } else {
+                                        currentText["weight"] = "Normal";
+                                    }
+                                    updateTextEditor();
+                                    typingTimerElapsed();
+                                }
+                            } else {
+                                newText = $(this).val();
+                                checkTyping();
+                            }
+                        }
+                    }).keydown(function(e){
+                        if ("type" in currentText && currentText.type == "text"){
+                            e.stopPropagation();
+                        }
+                    });
+                    textEditorInput.bind("paste",function(e){
+                        if ("type" in currentText && currentText.type == "text"){
+                            var thisBox = $(this);
+                            if ("type" in e && e.type == "paste"){
+                                window.setTimeout(function(){
+                                    newText = thisBox.val();
+                                    checkTyping();
+                                },0);
+                            }
+                        }
+                    });
                 });
-								updateTextFont(currentText);
-                textEditorInput.css({
-									width:px(possiblyAdjustedWidth),
-									"font-weight": currentText.weight,
-									"font-style": currentText.style,
-									"text-decoration": currentText.decoration,
-									"color": currentText.color[0],
-									"min-height":h,
-									"font-family":currentText.family,
-									"font-size":px(currentText.size)
-                });
-                if ("setSelectionRange" in textEditorInput){
-									textEditorInput.setSelectionRange(currentCaretPos,currentCaretPos);
-									$(textEditorInput).scrollTop(currentScrollTop);
-                }
-								$("#textEditorClose").on("click",function(){
-									textEditor.hide();
-								});
-								fontFamilySelector.value = currentText["family"];
-								fontSizeSelector.value = currentText["size"];
-								fontColorSelector.value = currentText["color"];
-								if (currentText.weight == "bold"){
-									fontBoldSelector.addClass("active");
-								} else {
-									fontBoldSelector.removeClass("active");
-								}
-								if (currentText.style == "italic"){
-									fontItalicSelector.addClass("active");
-								} else {
-									fontItalicSelector.removeClass("active");
-								}
-								if (currentText.decoration == "underline"){
-									fontUnderlineSelector.addClass("active");
-								} else {
-									fontUnderlineSelector.removeClass("active");
-								}
-								textEditor.show();
-								textEditorInput.focus();
-							} else {
-								textEditor.hide();
-							}
-						};
-						if (!hasInitialized){
-							$(function(){
-								hasInitialized = true;
-								textEditor = $("#textEditor");
-								textEditorInput = $("#textEditorInputArea");
-								fontFamilySelector = $("#fontFamilySelector");
-								fontSizeSelector = $("#fontSizeSelector");
-								fontColorSelector = $("#fontColorSelector");
-								fontBoldSelector = $("#fontBoldSelector");
-								fontItalicSelector = $("#fontItalicSelector");
-								fontUnderlineSelector = $("#fontUnderlineSelector");
-								textEditor.hide();
-								var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
-								fontFamilySelector.empty();
-								Fonts.getAllFamilies().map(function(family){
-									fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
-								});
-								fontFamilySelector.on("change",function(e){
-									var newFamily = $(this).val();
-									currentFamily = newFamily;
-									if ("family" in currentText){
-										currentText["family"] = newFamily;
-										typingTimerElapsed();
-									}
-									updateTextEditor();
-								});
-								var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
-								fontSizeSelector.empty();
-								Fonts.getAllSizes().map(function(size){
-									fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
-								});
-								fontSizeSelector.on("change",function(e){
-									var newSizeInt = parseInt($(this).val());
-									currentSize = newSizeInt;
-									if ("size" in currentText){
-										currentText["size"] = newSizeInt;
-										typingTimerElapsed();
-									}
-									updateTextEditor();
-								});
-								var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
-								fontColorSelector.empty();
-								Colors.getAllNamedColors().map(function(color){
-									fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
-								});
-								fontColorSelector.on("change",function(e){
-									var newColor = $(this).val();
-									if ("color" in currentText){
-										currentText["color"] = Colors.getColorForName(newColor);
-										typingTimerElapsed();
-									}
-									updateTextEditor();
-								});
-								fontBoldSelector.on("click",function(){
-									if ("weight" in currentText){
-										currentText["weight"] = !fontBoldSelector.hasClass("active") ? "bold" : "Normal";
-										typingTimerElapsed();
-									}
-									updateTextEditor();
-								});
-								fontItalicSelector.on("click",function(){
-									if ("style" in currentText){
-										currentText["style"] = !fontItalicSelector.hasClass("active") ? "italic" : "Normal";
-										typingTimerElapsed();
-									}
-									updateTextEditor();
-								});
-								fontUnderlineSelector.on("click",function(){
-									if ("decoration" in currentText){
-										currentText["decoration"] = !fontUnderlineSelector.hasClass("active") ? "underline" : "Normal";
-									}
-									updateTextEditor();
-									typingTimerElapsed();
-								});
-								textEditorInput.keyup(function(e){
-									if ("type" in currentText && currentText.type == "text"){
-										e.stopPropagation();
-										var el = $(this).get(0);
-										if ("selectionStart" in el && currentCaretPos != undefined){
-												currentCaretPos = el.selectionStart;
-												currentScrollTop = el.scrollTop;
-										}
-										if (e.ctrlKey){
-											if(e.keyCode == 73) {
-												if(currentText.style == "Normal"){
-														currentText["style"] = "italic";
-												}
-												else {
-														currentText["style"] = "Normal";
-												}
-												updateTextEditor();
-												sendText();
-											}
-											if (e.keyCode == 66){
-												if (currentText.weight == "Normal"){
-														currentText["weight"] = "bold";
-												} else {
-														currentText["weight"] = "Normal";
-												}
-												updateTextEditor();
-												typingTimerElapsed();
-											}
-										} else {
-											newText = $(this).val();
-											checkTyping();
-										}
-									}
-								}).keydown(function(e){
-									if ("type" in currentText && currentText.type == "text"){
-										e.stopPropagation();
-									}
-								});
-								textEditorInput.bind("paste",function(e){
-									if ("type" in currentText && currentText.type == "text"){
-										var thisBox = $(this);
-										if ("type" in e && e.type == "paste"){
-											window.setTimeout(function(){
-												newText = thisBox.val();
-												checkTyping();
-											},0);
-										}
-									}
-								});
-							});
-						}
+            }
             var removeTextEditor = function(){
-							if(typingTimer){
-								typingTimerElapsed();
-							}
-							currentText = {};
-							$("#textEditor").hide();
+                if(typingTimer){
+                    typingTimerElapsed();
+                }
+                currentText = {};
+                $("#textEditor").hide();
             };
             var createBlankText = function(worldPos){
-							var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
-							var currentSlide = Conversations.getCurrentSlideJid();
-							var text = {
-								author:UserSettings.getUsername(),
-								color:Colors.getColorForName("black"),
-								decoration:"None",
-								identity:id,
-								privacy:Privacy.getCurrentPrivacy(),
-								family:currentFamily,
-								size:currentSize,
-								slide:currentSlide,
-								style:"Normal",
-								tag:id,
-								width:200,
-								caret:0,
-								height:60,
-								x:worldPos.x,
-								y:worldPos.y,
-								target:"presentationSpace",
-								text:"",
-								timestamp:Date.now(),
-								type:"text",
-								weight:"Normal"
-							};
-							selectedTexts = [];
-							selectedTexts.push(text);
-							prerenderText(text);
-							currentText = text;
-							updateTextEditor();
-							return text;
+                var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
+                var currentSlide = Conversations.getCurrentSlideJid();
+                var text = {
+                    author:UserSettings.getUsername(),
+                    color:Colors.getColorForName("black"),
+                    decoration:"None",
+                    identity:id,
+                    privacy:Privacy.getCurrentPrivacy(),
+                    family:currentFamily,
+                    size:currentSize,
+                    slide:currentSlide,
+                    style:"Normal",
+                    tag:id,
+                    width:200,
+                    caret:0,
+                    height:60,
+                    x:worldPos.x,
+                    y:worldPos.y,
+                    target:"presentationSpace",
+                    text:"",
+                    timestamp:Date.now(),
+                    type:"text",
+                    weight:"Normal"
+                };
+                selectedTexts = [text];
+                prerenderText(text);
+                currentText = text;
+                updateTextEditor();
+                return text;
             };
             var alteredText = function(t){
-							changeToTextBoxMade = true;
-							updateTextFont(t);
-							prerenderText(t);
-							checkTyping();
-							return t;
+                changeToTextBoxMade = true;
+                updateTextFont(t);
+                prerenderText(t);
+                checkTyping();
+                return t;
             };
 
             var editText = function(text){
-							oldText = text.text;
-							var inputContents = "";
-							if (oldText.runs != undefined){
-								inputContents = oldText.runs.join("\n");
-							} else {
-								inputContents = oldText;
-							}
-							newText = inputContents;
-							startTime = Date.now();
-							/*
-							var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
-							var xInset = (boardWidth / 2 - text.width / 2);
-							var yInset = (boardHeight / 2 - text.height / 2);
-							var xDelta = text.bounds[0] - viewboxX - xInset;
-							var yDelta = text.bounds[1] - viewboxY - yInset;
-							*/
-							prerenderText(text);
-							updateTextEditor();
+                oldText = text.text;
+                var inputContents = "";
+                if (oldText.runs != undefined){
+                    inputContents = oldText.runs.join("\n");
+                } else {
+                    inputContents = oldText;
+                }
+                newText = inputContents;
+                startTime = Date.now();
+                /*
+                 var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
+                 var xInset = (boardWidth / 2 - text.width / 2);
+                 var yInset = (boardHeight / 2 - text.height / 2);
+                 var xDelta = text.bounds[0] - viewboxX - xInset;
+                 var yDelta = text.bounds[1] - viewboxY - yInset;
+                 */
+                prerenderText(text);
+                updateTextEditor();
             }
             var possiblyClearEditBoxesFunction = _.debounce(function(){
-							var newSelectedTexts = [];
-							_.forEach(selectedTexts,function(st){
-								if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-									newSelectedTexts.push(st);
-								} else if ("runs" in st && _.size(st.runs) == 1 && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-									newSelectedTexts.push(st);
-								}
-							});
-							selectedTexts = newSelectedTexts;
-							if (Modes.currentMode == Modes.text){
-								/*
-								if (!("type" in currentText) && (currentText.type != "text")){
-									currentText = selectedTexts[0];
-								}
-								*/
-								if (_.size(selectedTexts) > 0 ){
-									selectedTexts[0] = currentText;
-									var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
-									if (intersectRect(currentText.bounds,view)){
-										editText(currentText);
-										drawSelectionBounds(currentText);
-									} else {
-										removeTextEditor();
-									}
-								} else {
-									removeTextEditor();
-								}
-							}
+                var newSelectedTexts = [];
+                _.forEach(selectedTexts,function(st){
+                    if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
+                        newSelectedTexts.push(st);
+                    } else if ("runs" in st && _.size(st.runs) == 1 && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
+                        newSelectedTexts.push(st);
+                    }
+                });
+                selectedTexts = newSelectedTexts;
+                if (Modes.currentMode == Modes.text){
+                    if (_.size(selectedTexts) > 0 ){
+                        $("#selectionAdorner").empty();
+                        selectedTexts[0] = currentText;
+                        var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
+                        if (intersectRect(currentText.bounds,view)){
+                            editText(currentText);
+                            drawSelectionBounds(currentText);
+                        } else {
+                            removeTextEditor();
+                        }
+                    } else {
+                        removeTextEditor();
+                    }
+                }
             },200);
             Progress.onBoardContentChanged["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.onSelectionChanged["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.historyReceived["Modes.text"] = possiblyClearEditBoxesFunction;
             Progress.onViewboxChanged["Modes.text"] = possiblyClearEditBoxesFunction;
-						var noop = function(){};
+            var noop = function(){};
             return {
-							activate:function(){
-								marquee = $("#textMarquee");
-								Modes.currentMode.deactivate();
-								Modes.currentMode = Modes.text;
-								setActiveMode("#textTools","#insertText");
-								$(".activeBrush").removeClass("activeBrush");
-								Progress.call("onLayoutUpdated");
-								$("#minorText").click(function(){});
-								$("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
-									deletedStanza = selectedTexts[0];
-									updateStatus(sprintf("Deleted %s",deletedStanza.identity));
-									var deleteTransform = batchTransform();
-									deleteTransform.isDeleted = true;
-									deleteTransform.textIds = [deletedStanza.identity];
-									sendStanza(deleteTransform);
-								}));
-								updateStatus("Text input mode");
-								var up = function(x,y,worldPos){
-									if(typingTimer){
-										typingTimerElapsed();
-									}
-									marquee.show();
-									marquee.css({
-										left:px(x),
-										top:px(y)
-									});
-									oldText = "";
-									newText = "";
-									var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
-									var threshold = 10;
-									var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-									currentCaretPos = 0;
-									currentScrollTop = 0;
-									selectedTexts = _.values(boardContent.texts).filter(function(text){
-										return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-									});
-									if (selectedTexts.length > 0){
-										currentText = selectedTexts[0];
-										editText(currentText);
-									} else {
-										var newText = createBlankText(worldPos);
-										currentText = newText;
-										selectedTexts.push(newText);
-										editText(newText);
-									}
-									Modes.select.texts = [currentText];
-									Progress.call("onSelectionChanged",[Modes.select.selected]);
-								}
-								registerPositionHandlers(board,noop,noop,up);
-							},
-							deactivate:function(){
-								removeTextEditor();
-								selectedTexts = [];
-								unregisterPositionHandlers(board);
-								removeActiveMode();
-							}
+                activate:function(){
+                    marquee = $("#textMarquee");
+                    Modes.currentMode.deactivate();
+                    Modes.currentMode = Modes.text;
+                    setActiveMode("#textTools","#insertText");
+                    $(".activeBrush").removeClass("activeBrush");
+                    Progress.call("onLayoutUpdated");
+                    $("#minorText").click(function(){});
+                    $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
+                        deletedStanza = selectedTexts[0];
+                        updateStatus(sprintf("Deleted %s",deletedStanza.identity));
+                        var deleteTransform = batchTransform();
+                        deleteTransform.isDeleted = true;
+                        deleteTransform.textIds = [deletedStanza.identity];
+                        sendStanza(deleteTransform);
+                    }));
+                    updateStatus("Text input mode");
+                    var up = function(x,y,worldPos){
+                        if(typingTimer){
+                            typingTimerElapsed();
+                        }
+                        textEditorInput.show();
+                        marquee.show();
+                        marquee.css({
+                            left:px(x),
+                            top:px(y)
+                        });
+                        oldText = "";
+                        newText = "";
+                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
+                        var threshold = 10;
+                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+                        currentCaretPos = 0;
+                        currentScrollTop = 0;
+                        selectedTexts = _.values(boardContent.texts).filter(function(text){
+                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
+                        });
+                        if (selectedTexts.length > 0){
+                            currentText = selectedTexts[0];
+                            editText(currentText);
+                        } else {
+                            var newText = createBlankText(worldPos);
+                            currentText = newText;
+                            selectedTexts.push(newText);
+                            editText(newText);
+                        }
+                        Modes.select.texts = [currentText];
+                        Progress.call("onSelectionChanged",[Modes.select.selected]);
+                    }
+                    registerPositionHandlers(board,noop,noop,up);
+                },
+                deactivate:function(){
+                    removeTextEditor();
+                    textEditorInput.hide();
+                    selectedTexts = [];
+                    $("#selectionAdorner").empty();
+                    unregisterPositionHandlers(board);
+                    removeActiveMode();
+                }
             };
         })(),
 
         image:(function(){
             var marquee = undefined;
-						var noop = function(){};
-						var currentImage = {};
-						var insertOptions = undefined;
-						var imageInsertOptionsClose = undefined;
-						var imageFileChoice = undefined;
-						var imageSizeControls = undefined;
-						var imageSizeChoiceSelector = undefined;
-						var imageUploadThumbnail = undefined;
-						var imageProgressContainer = undefined;
-						var imageUploadButton = undefined;
-						var	imageUploadX = undefined;
-						var	imageUploadY = undefined;
-						var	imageUploadWidth = undefined;
-						var	imageUploadHeight = undefined;
-						var imageSizeChoices = [
-							{name:"160*120",func:function(w,h){return {w:160,h:120}}},
-							{name:"320*240",func:function(w,h){return {w:320,h:240}}},
-							{name:"25%",func:function(w,h){return {w:w / 4, h:h / 4}}},
-							{name:"50%",func:function(w,h){return {w:w / 2, h:h / 2}}},
-							{name:"75%",func:function(w,h){return {w:(w / 4) * 3, h:(h / 4) * 3}}},
-							{name:"Native",func:function(w,h){return {w:w,h:h}}}
-						];
-						var updateImageEditor = function(){
-							if ("type" in currentImage && currentImage.type == "imageDefinition"){
-								// there is now only one place that the imageOptions dialog gets positioned, and it's here, so if you want to move it about, etc, do it right here.
-								insertOptions.css({
-									position:"absolute",
-									left:px(currentImage.screenX - 30),
-									top:px(currentImage.screenY)
-								});
-								if ("fileUpload" in currentImage){
-									imageFileChoice.hide();
-									imageSizeControls.show();
-									$.map(imageSizeChoiceSelector.find(".imageSizeChoice"),function(elem){
-										if ("thumbnailSize" in currentImage && currentImage.thumbnailSize.name == $(elem).text()){
-											$(elem).addClass("active");
-										} else {
-											$(elem).removeClass("active");
-										}
-									});
-									var reader = new FileReader();
-									reader.onload = function(e){
-										if (!("thumbnailSize" in currentImage)){
-											currentImage.thumbnailSize = imageSizeChoices[0];
-										}
-										imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
-										var img = new Image();
-										img.onload = function(e){
-											var resizedDimensions = currentImage.thumbnailSize.func(img.width,img.height);
-											var w = resizedDimensions.w;
-											var h = resizedDimensions.h;
+            var noop = function(){};
+            var currentImage = {};
+            var insertOptions = undefined;
+            var imageInsertOptionsClose = undefined;
+            var imageFileChoice = undefined;
+            var imageSizeControls = undefined;
+            var imageSizeChoiceSelector = undefined;
+            var imageUploadThumbnail = undefined;
+            var imageProgressContainer = undefined;
+            var imageUploadButton = undefined;
+            var imageUploadX = undefined;
+            var imageUploadY = undefined;
+            var imageUploadWidth = undefined;
+            var imageUploadHeight = undefined;
+            var imageSizeChoices = [
+                {name:"160*120",func:function(w,h){return {w:160,h:120}}},
+                {name:"320*240",func:function(w,h){return {w:320,h:240}}},
+                {name:"25%",func:function(w,h){return {w:w / 4, h:h / 4}}},
+                {name:"50%",func:function(w,h){return {w:w / 2, h:h / 2}}},
+                {name:"75%",func:function(w,h){return {w:(w / 4) * 3, h:(h / 4) * 3}}},
+                {name:"Native",func:function(w,h){return {w:w,h:h}}}
+            ];
+            var updateImageEditor = function(){
+                if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                    // there is now only one place that the imageOptions dialog gets positioned, and it's here, so if you want to move it about, etc, do it right here.
+                    insertOptions.css({
+                        position:"absolute",
+                        left:px(currentImage.screenX - 30),
+                        top:px(currentImage.screenY)
+                    });
+                    if ("fileUpload" in currentImage){
+                        imageFileChoice.hide();
+                        imageSizeControls.show();
+                        $.map(imageSizeChoiceSelector.find(".imageSizeChoice"),function(elem){
+                            if ("thumbnailSize" in currentImage && currentImage.thumbnailSize.name == $(elem).text()){
+                                $(elem).addClass("active");
+                            } else {
+                                $(elem).removeClass("active");
+                            }
+                        });
+                        var reader = new FileReader();
+                        reader.onload = function(e){
+                            if (!("thumbnailSize" in currentImage)){
+                                currentImage.thumbnailSize = imageSizeChoices[0];
+                            }
+                            imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+                            var img = new Image();
+                            img.onload = function(e){
+                                var resizedDimensions = currentImage.thumbnailSize.func(img.width,img.height);
+                                var w = resizedDimensions.w;
+                                var h = resizedDimensions.h;
 
-											var scaledHeight = h;
-											var scaledWidth = w;
-											if (w < h){
-												//height is larger
-												var scaleFactor = h / 300;
-												scaledHeight = 300;
-												scaledWidth = w / scaleFactor;
-											} else {
-												var scaleFactor = w / 300;
-												scaledWidth = 300;
-												scaledHeight = h / scaleFactor;
-											}
-											imageUploadThumbnail.attr("width",scaledWidth);
-											imageUploadThumbnail.attr("height",scaledHeight);
-											imageUploadThumbnail.css({
-													width:px(scaledWidth),
-													height: px(scaledHeight)
-											});
+                                var scaledHeight = h;
+                                var scaledWidth = w;
+                                if (w < h){
+                                    //height is larger
+                                    var scaleFactor = h / 300;
+                                    scaledHeight = 300;
+                                    scaledWidth = w / scaleFactor;
+                                } else {
+                                    var scaleFactor = w / 300;
+                                    scaledWidth = 300;
+                                    scaledHeight = h / scaleFactor;
+                                }
+                                imageUploadThumbnail.attr("width",scaledWidth);
+                                imageUploadThumbnail.attr("height",scaledHeight);
+                                imageUploadThumbnail.css({
+                                    width:px(scaledWidth),
+                                    height: px(scaledHeight)
+                                });
 
-											imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,scaledWidth,scaledHeight);
+                                imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,scaledWidth,scaledHeight);
 
-											imageUploadX.text(currentImage.x);
-											imageUploadY.text(currentImage.y);
-											imageUploadWidth.text(w);
-											imageUploadHeight.text(h);
+                                imageUploadX.text(currentImage.x);
+                                imageUploadY.text(currentImage.y);
+                                imageUploadWidth.text(w);
+                                imageUploadHeight.text(h);
 
-											currentImage.width = w;
-											currentImage.height = h;
-											//render canvas is responsible for the resizing.  The other canvas is a thumbnail.
-											var renderCanvas = $("<canvas/>");
-											renderCanvas.attr("width",w);
-											renderCanvas.attr("height",h);
-											renderCanvas.css({
-													width:px(w),
-													height: px(h)
-											});
-											renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-											currentImage.resizedImage = renderCanvas[0].toDataURL();
-											if ("resizedImage" in currentImage){
-												imageUploadButton.show();
-											}
-										};
-										img.src = e.target.result;				
-									};
-									reader.readAsDataURL(currentImage.fileUpload);
-									if ("resizedImage" in currentImage){
-										imageUploadButton.show();
-									} else {
-										imageUploadButton.hide();
-									}
-								} else {
-									imageFileChoice.show();
-									imageSizeControls.hide();
-								}
-								insertOptions.show();
-							} else {
-								resetImageUpload();
-							}
-						};
+                                currentImage.width = w;
+                                currentImage.height = h;
+                                //render canvas is responsible for the resizing.  The other canvas is a thumbnail.
+                                var renderCanvas = $("<canvas/>");
+                                renderCanvas.attr("width",w);
+                                renderCanvas.attr("height",h);
+                                renderCanvas.css({
+                                    width:px(w),
+                                    height: px(h)
+                                });
+                                renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                                currentImage.resizedImage = renderCanvas[0].toDataURL();
+                                if ("resizedImage" in currentImage){
+                                    imageUploadButton.show();
+                                }
+                            };
+                            img.src = e.target.result;
+                        };
+                        reader.readAsDataURL(currentImage.fileUpload);
+                        if ("resizedImage" in currentImage){
+                            imageUploadButton.show();
+                        } else {
+                            imageUploadButton.hide();
+                        }
+                    } else {
+                        imageFileChoice.show();
+                        imageSizeControls.hide();
+                    }
+                    insertOptions.show();
+                } else {
+                    resetImageUpload();
+                }
+            };
             var newInsertOptions = function(x,y,worldPos,onImage){
-							currentImage = {
-								"type":"imageDefinition",
-								"screenX":x,
-								"screenY":y,
-								"x":worldPos.x,
-								"y":worldPos.y
-							}
-							updateImageEditor();
+                currentImage = {
+                    "type":"imageDefinition",
+                    "screenX":x,
+                    "screenY":y,
+                    "x":worldPos.x,
+                    "y":worldPos.y
+                }
+                updateImageEditor();
             }
-						var resetImageUpload = function(){
-							insertOptions.hide();
-							imageFileChoice.wrap("<form>").closest("form").get(0).reset();
-							imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
-							imageUploadX.text("");
-							imageUploadY.text("");
-							imageUploadWidth.text("");
-							imageUploadHeight.text("");
-							imageFileChoice.unwrap();
-							purrentImage = {};
-						};
-						var hasInitialized = false;
-						$(function(){
-							if (!hasInitialized){
-								hasInitialized = true;
-								marquee = $("imageMarquee");
-								insertOptions = $("#imageInsertOptions");
-								imageInsertOptionsClose = $("#imageInsertOptionsClose");
-								imageFileChoice = $("#imageFileChoice");
-								imageSizeControls = $("#imageSizeControls");
-								imageSizeChoiceSelector = $("#imageSizeChoiceSelector");
-								imageUploadThumbnail = $("#imageUploadThumbnail");
-								imageProgressContainer = $("#imageProgressContainer");
-								imageUploadButton = $("#imageUploadButton");
-								imageUploadX = $("#imageUploadX");
-								imageUploadY = $("#imageUploadY");
-								imageUploadWidth = $("#imageUploadWidth");
-								imageUploadHeight = $("#imageUploadHeight");
-								imageInsertOptionsClose.on("click",resetImageUpload);
-								imageFileChoice.attr("accept","image/*");
-								imageFileChoice[0].addEventListener("change",function(e){
-									if ("type" in currentImage && currentImage.type == "imageDefinition"){
-										var files = e.target.files || e.dataTransfer.files;
-										var limit = files.length;
-										var file = files[0];
-										if (file.type.indexOf("image") == 0) {
-											currentImage.fileUpload = file;
-											currentImage.thumbnailSize = imageSizeChoices[0];
-											updateImageEditor();
-										}
-									}
-								},false);
-								var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
-								imageSizeChoiceSelector.empty();
-								imageSizeChoices.map(function(isc){
-									var thisChoice = imageSizeOptionTemplate.clone().text(isc.name).on("click",function(){
-										if ("type" in currentImage && currentImage.type == "imageDefinition"){
-											currentImage.thumbnailSize = isc;
-											updateImageEditor();
-										}
-									});
-									imageSizeChoiceSelector.append(thisChoice);
-								});
-								imageUploadButton.on("click",function(){
-									if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
-										var worldPos = {x:currentImage.x,y:currentImage.y};
-										var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
-										WorkQueue.pause();
-										var t = Date.now();
-										var identity = sprintf("%s%s",UserSettings.getUsername(),t);
-										var currentSlide = Conversations.getCurrentSlideJid();
-										var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
-										$.ajax({
-											url: url,
-											type: 'POST',
-											success: function(e){
-												resetImageUpload();
-												updateTracking(identity);
-												var newIdentity = $(e).find("resourceUrl").text();
-												var imageStanza = {
-														type:"image",
-														author:UserSettings.getUsername(),
-														timestamp:t,
-														tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-														identity:newIdentity,
-														slide:currentSlide.toString(),
-														source:$(e).text(),
-														width:currentImage.width,
-														height:currentImage.height,
-														target:"presentationSpace",
-														privacy:Privacy.getCurrentPrivacy(),
-														x:currentImage.x,
-														y:currentImage.y
-												};
-												console.log("Sending image stanza",imageStanza);
-												sendStanza(imageStanza);
-												WorkQueue.gracefullyResume();
-											},
-											error: function(e){
-												resetImageUpload();
-												alert("upload failed");
-												console.log("image upload failed",e);
-												WorkQueue.gracefullyResume();
-											},
-											data:currentImage.resizedImage,
-											cache: false,
-											contentType: false,
-											processData: false
-										});
-									}
-								});
-								resetImageUpload();
-							}
-						});
+            var resetImageUpload = function(){
+                insertOptions.hide();
+                imageFileChoice.wrap("<form>").closest("form").get(0).reset();
+                imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+                imageUploadX.text("");
+                imageUploadY.text("");
+                imageUploadWidth.text("");
+                imageUploadHeight.text("");
+                imageFileChoice.unwrap();
+                purrentImage = {};
+            };
+            var hasInitialized = false;
+            $(function(){
+                if (!hasInitialized){
+                    hasInitialized = true;
+                    marquee = $("imageMarquee");
+                    insertOptions = $("#imageInsertOptions");
+                    imageInsertOptionsClose = $("#imageInsertOptionsClose");
+                    imageFileChoice = $("#imageFileChoice");
+                    imageSizeControls = $("#imageSizeControls");
+                    imageSizeChoiceSelector = $("#imageSizeChoiceSelector");
+                    imageUploadThumbnail = $("#imageUploadThumbnail");
+                    imageProgressContainer = $("#imageProgressContainer");
+                    imageUploadButton = $("#imageUploadButton");
+                    imageUploadX = $("#imageUploadX");
+                    imageUploadY = $("#imageUploadY");
+                    imageUploadWidth = $("#imageUploadWidth");
+                    imageUploadHeight = $("#imageUploadHeight");
+                    imageInsertOptionsClose.on("click",resetImageUpload);
+                    imageFileChoice.attr("accept","image/*");
+                    imageFileChoice[0].addEventListener("change",function(e){
+                        if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                            var files = e.target.files || e.dataTransfer.files;
+                            var limit = files.length;
+                            var file = files[0];
+                            if (file.type.indexOf("image") == 0) {
+                                currentImage.fileUpload = file;
+                                currentImage.thumbnailSize = imageSizeChoices[0];
+                                updateImageEditor();
+                            }
+                        }
+                    },false);
+                    var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
+                    imageSizeChoiceSelector.empty();
+                    imageSizeChoices.map(function(isc){
+                        var thisChoice = imageSizeOptionTemplate.clone().text(isc.name).on("click",function(){
+                            if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                                currentImage.thumbnailSize = isc;
+                                updateImageEditor();
+                            }
+                        });
+                        imageSizeChoiceSelector.append(thisChoice);
+                    });
+                    imageUploadButton.on("click",function(){
+                        if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
+                            var worldPos = {x:currentImage.x,y:currentImage.y};
+                            var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+                            WorkQueue.pause();
+                            var t = Date.now();
+                            var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                            var currentSlide = Conversations.getCurrentSlideJid();
+                            var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
+                            $.ajax({
+                                url: url,
+                                type: 'POST',
+                                success: function(e){
+                                    resetImageUpload();
+                                    updateTracking(identity);
+                                    var newIdentity = $(e).find("resourceUrl").text();
+                                    var imageStanza = {
+                                        type:"image",
+                                        author:UserSettings.getUsername(),
+                                        timestamp:t,
+                                        tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
+                                        identity:newIdentity,
+                                        slide:currentSlide.toString(),
+                                        source:$(e).text(),
+                                        width:currentImage.width,
+                                        height:currentImage.height,
+                                        target:"presentationSpace",
+                                        privacy:Privacy.getCurrentPrivacy(),
+                                        x:currentImage.x,
+                                        y:currentImage.y
+                                    };
+                                    console.log("Sending image stanza",imageStanza);
+                                    sendStanza(imageStanza);
+                                    WorkQueue.gracefullyResume();
+                                },
+                                error: function(e){
+                                    resetImageUpload();
+                                    alert("upload failed");
+                                    console.log("image upload failed",e);
+                                    WorkQueue.gracefullyResume();
+                                },
+                                data:currentImage.resizedImage,
+                                cache: false,
+                                contentType: false,
+                                processData: false
+                            });
+                        }
+                    });
+                    resetImageUpload();
+                }
+            });
             return {
-							activate:function(){
-								Modes.currentMode.deactivate();
-								Modes.currentMode = Modes.image;
-								setActiveMode("#imageTools","#insertImage");
-								resetImageUpload();
-								Progress.call("onLayoutUpdated");
-								var up = function(x,y,worldPos){
-										marquee.show();
-										marquee.css({
-												left:px(x),
-												top:px(y)
-										});
-										resetImageUpload();
-										var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
-										var threshold = 10;
-										var options = newInsertOptions(newScreenPos.x,newScreenPos.y,worldPos);
-								}
-								registerPositionHandlers(board,noop,noop,up);
-							},
-							deactivate:function(){
-								resetImageUpload();
-								unregisterPositionHandlers(board);
-								removeActiveMode();
-							}
+                activate:function(){
+                    Modes.currentMode.deactivate();
+                    Modes.currentMode = Modes.image;
+                    setActiveMode("#imageTools","#insertImage");
+                    resetImageUpload();
+                    Progress.call("onLayoutUpdated");
+                    var up = function(x,y,worldPos){
+                        marquee.show();
+                        marquee.css({
+                            left:px(x),
+                            top:px(y)
+                        });
+                        resetImageUpload();
+                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
+                        var threshold = 10;
+                        var options = newInsertOptions(newScreenPos.x,newScreenPos.y,worldPos);
+                    }
+                    registerPositionHandlers(board,noop,noop,up);
+                },
+                deactivate:function(){
+                    resetImageUpload();
+                    unregisterPositionHandlers(board);
+                    removeActiveMode();
+                }
             };
         })(),
         pan:{
@@ -1185,7 +1169,7 @@ var Modes = (function(){
                 var originX;
                 var originY;
                 var down = function(x,y){
-										takeControlOfViewbox();
+                    takeControlOfViewbox();
                     originX = x;
                     originY = y;
                 }
@@ -1348,7 +1332,7 @@ var Modes = (function(){
                                 left:px(resizeLeft),
                                 top:px(resizeTop)
                             }));
-														
+
                         }
                     });
                     var categories = function(func){
@@ -1593,8 +1577,8 @@ var Modes = (function(){
                 var proportion;
                 var originPoint = {x:0,y:0};
                 var down = function(x,y,worldPos){
-									//adding this so that using the zoom marquee results in the autofit being turned off.
-										takeControlOfViewbox();
+                    //adding this so that using the zoom marquee results in the autofit being turned off.
+                    takeControlOfViewbox();
                     proportion = boardHeight / boardWidth;
                     startX = x;
                     startY = y;
@@ -1699,96 +1683,96 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-										var drawAdvancedTools = function(){};
-										var penSizeTemplate = undefined;
-										var penColorTemplate = undefined;
-										var updateOriginalBrush = function(brush){
-											Modes.draw.brushes[brush.index] = brush;
-										};
-										$(".activeBrush").removeClass("activeBrush");
-										var drawTools = function(){
-											var container = $("#drawTools");
-											_.each(container.find(".pen"),function(button,i){
-												var brush = Modes.draw.brushes[i];
-												var thisButton = $(button)
-													.css({color:brush.color})
-													.click(function(){
-														$(".activeBrush").removeClass("activeBrush");
-														$(this).addClass("activeBrush");
-														currentBrush = brush;
-														updateOriginalBrush(brush);
-														Modes.draw.drawingAttributes = currentBrush;
-														erasing = false;
-														drawAdvancedTools(brush);
-													});
-												thisButton.find(".widthIndicator").text(brush.width);
-												if (brush == currentBrush){
-													thisButton.addClass("activeBrush");
-												}
-											});
-										};
+                    var drawAdvancedTools = function(){};
+                    var penSizeTemplate = undefined;
+                    var penColorTemplate = undefined;
+                    var updateOriginalBrush = function(brush){
+                        Modes.draw.brushes[brush.index] = brush;
+                    };
+                    $(".activeBrush").removeClass("activeBrush");
+                    var drawTools = function(){
+                        var container = $("#drawTools");
+                        _.each(container.find(".pen"),function(button,i){
+                            var brush = Modes.draw.brushes[i];
+                            var thisButton = $(button)
+                                    .css({color:brush.color})
+                                    .click(function(){
+                                        $(".activeBrush").removeClass("activeBrush");
+                                        $(this).addClass("activeBrush");
+                                        currentBrush = brush;
+                                        updateOriginalBrush(brush);
+                                        Modes.draw.drawingAttributes = currentBrush;
+                                        erasing = false;
+                                        drawAdvancedTools(brush);
+                                    });
+                            thisButton.find(".widthIndicator").text(brush.width);
+                            if (brush == currentBrush){
+                                thisButton.addClass("activeBrush");
+                            }
+                        });
+                    };
                     drawAdvancedTools = function(brush){
-											var dots = $("#colors .dots");
-											var bars = $("#sizes .dots");
-											var colors = Colors.getAllNamedColors();
-											var widths = Brushes.getAllBrushSizes();
-											bars.empty();
-											widths.map(function(width){
-												var sizeDot = penSizeTemplate.clone();
-												bars.append(sizeDot);
-												sizeDot.click(function(){
-													brush.width = width;
-													updateOriginalBrush(brush);
-													currentBrush = brush;
-													drawTools();
-													drawAdvancedTools(brush);
-												});
-												var bar = Canvas.circle(brush.color,width,60);
-												//console.log(width,brush.width);
-												if (width == brush.width){
-													sizeDot.addClass("activeTool");
-												}
-												sizeDot.append(bar)
-											});
-											dots.empty();
-											colors.map(function(color){
-												var colorDot = penColorTemplate.clone();
-												dots.append(colorDot);
-												colorDot.on("click",function(){
-														brush.color = color.rgb;
-														currentBrush = brush;
-														updateOriginalBrush(brush);
-														drawTools();
-														drawAdvancedTools(brush);
-												});
-												var dot = Canvas.circle(color.rgb,50,50);
-												if ("rgb" in color && color.rgb == brush.color){
-														colorDot.addClass("activeTool");
-												}
-												colorDot.append(dot);
-											});
-											var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
-													brush.isHighlighter = true;
-													currentBrush = brush;
-													updateOriginalBrush(brush);
-													drawTools();
-													drawAdvancedTools(brush);
-											});
-											var penButton = $("#setPenToPen").unbind("click").on("click",function(){
-													brush.isHighlighter = false;
-													currentBrush = brush;
-													updateOriginalBrush(brush);
-													drawTools();
-													drawAdvancedTools(brush);
-											});
-											if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-													hlButton.addClass("activeTool").addClass("active");
-													penButton.removeClass("activeTool").removeClass("active");
-											} else {
-													penButton.addClass("activeTool").addClass("active");
-													hlButton.removeClass("activeTool").removeClass("active");
-											}
-											Progress.call("onLayoutUpdated");
+                        var dots = $("#colors .dots");
+                        var bars = $("#sizes .dots");
+                        var colors = Colors.getAllNamedColors();
+                        var widths = Brushes.getAllBrushSizes();
+                        bars.empty();
+                        widths.map(function(width){
+                            var sizeDot = penSizeTemplate.clone();
+                            bars.append(sizeDot);
+                            sizeDot.click(function(){
+                                brush.width = width;
+                                updateOriginalBrush(brush);
+                                currentBrush = brush;
+                                drawTools();
+                                drawAdvancedTools(brush);
+                            });
+                            var bar = Canvas.circle(brush.color,width,60);
+                            //console.log(width,brush.width);
+                            if (width == brush.width){
+                                sizeDot.addClass("activeTool");
+                            }
+                            sizeDot.append(bar)
+                        });
+                        dots.empty();
+                        colors.map(function(color){
+                            var colorDot = penColorTemplate.clone();
+                            dots.append(colorDot);
+                            colorDot.on("click",function(){
+                                brush.color = color.rgb;
+                                currentBrush = brush;
+                                updateOriginalBrush(brush);
+                                drawTools();
+                                drawAdvancedTools(brush);
+                            });
+                            var dot = Canvas.circle(color.rgb,50,50);
+                            if ("rgb" in color && color.rgb == brush.color){
+                                colorDot.addClass("activeTool");
+                            }
+                            colorDot.append(dot);
+                        });
+                        var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
+                            brush.isHighlighter = true;
+                            currentBrush = brush;
+                            updateOriginalBrush(brush);
+                            drawTools();
+                            drawAdvancedTools(brush);
+                        });
+                        var penButton = $("#setPenToPen").unbind("click").on("click",function(){
+                            brush.isHighlighter = false;
+                            currentBrush = brush;
+                            updateOriginalBrush(brush);
+                            drawTools();
+                            drawAdvancedTools(brush);
+                        });
+                        if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
+                            hlButton.addClass("activeTool").addClass("active");
+                            penButton.removeClass("activeTool").removeClass("active");
+                        } else {
+                            penButton.addClass("activeTool").addClass("active");
+                            hlButton.removeClass("activeTool").removeClass("active");
+                        }
+                        Progress.call("onLayoutUpdated");
                     }
                     $("#resetPenButton").empty().text("reset pen").click(function(){
                         var originalBrush = _.find(originalBrushes,function(i){
@@ -1801,27 +1785,27 @@ var Modes = (function(){
                             drawTools();
                             drawAdvancedTools(currentBrush);
                         }
-                    }); 
+                    });
                     if(!hasActivated){
-											hasActivated = true;
-											penSizeTemplate = $("#penSize .sizeDot").clone();
-											penColorTemplate = $("#penColor .colorDot").clone();
-											currentBrush = Modes.draw.brushes[0];
-											drawTools();
-											drawAdvancedTools(currentBrush);
-											Modes.draw.drawingAttributes = currentBrush;
-											var container = $("#drawTools");
-											container.find(".eraser").click(function(button){
-													$(".activeBrush").removeClass("activeBrush");
-													$(this).addClass("activeBrush");
-													erasing = true;
-											});
-											container.find(".advancedTools").on("click",function(){
-												drawAdvancedTools(currentBrush);
-												showBackstage("customizeBrush");
-											});
+                        hasActivated = true;
+                        penSizeTemplate = $("#penSize .sizeDot").clone();
+                        penColorTemplate = $("#penColor .colorDot").clone();
+                        currentBrush = Modes.draw.brushes[0];
+                        drawTools();
+                        drawAdvancedTools(currentBrush);
+                        Modes.draw.drawingAttributes = currentBrush;
+                        var container = $("#drawTools");
+                        container.find(".eraser").click(function(button){
+                            $(".activeBrush").removeClass("activeBrush");
+                            $(this).addClass("activeBrush");
+                            erasing = true;
+                        });
+                        container.find(".advancedTools").on("click",function(){
+                            drawAdvancedTools(currentBrush);
+                            showBackstage("customizeBrush");
+                        });
                     }
- 										setActiveMode("#drawTools","#drawMode");
+                    setActiveMode("#drawTools","#drawMode");
                     var currentStroke = [];
                     var isDown = false;
                     var resumeWork;
@@ -1883,20 +1867,20 @@ var Modes = (function(){
                             strokeCollected(currentStroke.join(" "));
                         }
                     };
-										$(".activeBrush").removeClass("activeBrush");
-										if (erasing){
-											$("#drawTools").find(".eraser").addClass("activeBrush");
-										} else {
-											_.each($("#drawTools").find(".pen"),function(button,i){
-												if ((i + 1) == currentBrush.id){
-													$(button).addClass("activeBrush");
-												}
-											});
-										}
+                    $(".activeBrush").removeClass("activeBrush");
+                    if (erasing){
+                        $("#drawTools").find(".eraser").addClass("activeBrush");
+                    } else {
+                        _.each($("#drawTools").find(".pen"),function(button,i){
+                            if ((i + 1) == currentBrush.id){
+                                $(button).addClass("activeBrush");
+                            }
+                        });
+                    }
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
-										$(".activeBrush").removeClass("activeBrush");
+                    $(".activeBrush").removeClass("activeBrush");
                     removeActiveMode();
                     WorkQueue.gracefullyResume();
                     unregisterPositionHandlers(board);
