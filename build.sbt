@@ -75,10 +75,11 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "metl2011" % "3.10.+",
-//    "io.github.stackableregiments" %% "metl-h2" % "3.7.4",
+    "io.github.stackableregiments" %% "metl-h2" % "3.8.+",
 //    until sonatype lets us publish again, the following two lines replace the h2 dependency
-    "com.h2database" % "h2" % "1.4.189",
-    "io.github.stackableregiments" %% "persisted-metl" % "3.5.+",
+//    "com.h2database" % "h2" % "1.4.189",
+//    "io.github.stackableregiments" %% "persisted-metl" % "3.5.+",
+    "mysql" % "mysql-connector-java" % "5.1.38",
 //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "io.github.stackableregiments" %% "lift-extensions" % "0.2.+"
   )
