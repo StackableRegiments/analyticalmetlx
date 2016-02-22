@@ -17,14 +17,17 @@
       <appender-ref ref="FILE"/>
       </logger>
   -->
-	<!--
-	<logger name="net.liftweb" level="INFO"/>
-	<logger name="org.apache.vysper" level="DEBUG"/>
-	<logger name="org.apache.vysper.xmpp.protocol.ProtocolWorker" level="DEBUG"/>
-	<logger name="com.metl.model.VysperClientXmlSerializer" level="TRACE"/>
--->
-	<logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
-	<!--	<logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
+  <!--
+      <logger name="net.liftweb" level="INFO"/>
+      <logger name="org.apache.vysper" level="DEBUG"/>
+      <logger name="org.apache.vysper.xmpp.protocol.ProtocolWorker" level="DEBUG"/>
+      <logger name="com.metl.model.VysperClientXmlSerializer" level="TRACE"/>
+  -->
+  <!--
+  <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
+  <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
+  -->
+  <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
   <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
