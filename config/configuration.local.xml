@@ -5,13 +5,21 @@
 		<hostname>localhost</hostname>
 		<port>8080</port>
 	</serverAddress>
-  <defaultServerConfiguration>localH2</defaultServerConfiguration>
+  <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
 	<serverConfigurations>
+    <server>
+      <type>sql</type>
+			<name>sqlAdaptor</name>
+			<driver>org.h2.Driver</driver>
+			<url>jdbc:h2:file:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
+    </server>
+		<!--
     <server>
       <type>localH2</type>
 			<name>localH2</name>
 			<filename>./testdb.h2</filename>
-    </server>
+		</server>
+-->
     <server>
       <type>transientLoopback</type>
     </server>
