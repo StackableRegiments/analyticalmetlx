@@ -75,7 +75,7 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "metl2011" % "3.10.+",
-    "io.github.stackableregiments" %% "metl-h2" % "3.13.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.18.+",
 //    until sonatype lets us publish again, the following two lines replace the h2 dependency
 //    "com.h2database" % "h2" % "1.4.189",
 //    "io.github.stackableregiments" %% "persisted-metl" % "3.5.+",
