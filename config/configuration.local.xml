@@ -11,7 +11,7 @@
       <type>sql</type>
 			<name>sqlAdaptor</name>
 			<driver>org.h2.Driver</driver>
-			<url>jdbc:h2:file:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
+			<url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
     </server>
 		<!--
     <server>
