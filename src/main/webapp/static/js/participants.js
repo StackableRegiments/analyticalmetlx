@@ -5,9 +5,12 @@ var Participants = (function(){
             updateActiveMenu(this);
             var participantsList = $("#participantsListingContainer")
             var p = participantsList.find(".participation")
-            _.each(_.groupBy(boardContent.attendances,"author"),function(attendancesByAuthor){
+            var attendees = boardContent.attendances;
+            _.each(_.groupBy(attendees,"author"),function(attendancesByAuthor){
                 p.clone()
                     .find(".user").text(attendancesByAuthor[0].author)
+                    .find(".attendanceCount").text(attendancesByAuthor.length)
+		    .addClass(_.last(attendancesByAuthor).present ? "presentAttendee" : "absentAttendee")
                     .appendTo(participantsList);
             });
         });
