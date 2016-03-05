@@ -498,9 +498,12 @@ var Modes = (function(){
                 var oldTextTest = oldText;
                 oldText = newText;
                 currentText.text = newText;
+		currentText.width = textEditorInput.width();
+		currentText.height = textEditorInput.height();
                 selectedTexts = [currentText];
                 Progress.call("onSelectionChanged",[Modes.select.text]);
-                var el = $("#textEditorInputArea").get(0);
+                var el = textEditorInput;
+                if(!el){return;}
                 if ("selectionStart" in el){
                     currentCaretPos = el.selectionStart;
                     currentScrollTop = el.scrollTop;
@@ -526,6 +529,7 @@ var Modes = (function(){
             var hasInitialized = false;
 
             var textEditor = undefined;
+            var textDropdowns = undefined;
             var textEditorInput = undefined;
             var fontFamilySelector = undefined;
             var fontSizeSelector = undefined;
@@ -548,6 +552,8 @@ var Modes = (function(){
                         h = px(currentText.size);
                         textEditorInput.val(currentText.text);
                     }
+		    textEditorInput.width(currentText.width);
+		    textEditorInput.height(currentText.height);
 
                     var screenPos = worldToScreen(currentText.x,currentText.y);
                     var possiblyAdjustedHeight = Math.max(currentText.height,h);
@@ -595,9 +601,9 @@ var Modes = (function(){
                     $("#textEditorClose").on("click",function(){
                         textEditor.hide();
                     });
-                    fontFamilySelector.value = currentText["family"];
-                    fontSizeSelector.value = currentText["size"];
-                    fontColorSelector.value = currentText["color"];
+                    fontFamilySelector.val(currentText["family"]);
+                    fontSizeSelector.val(currentText["size"]);
+                    fontColorSelector.val(currentText["color"]);
                     if (currentText.weight == "bold"){
                         fontBoldSelector.addClass("active");
                     } else {
@@ -614,9 +620,11 @@ var Modes = (function(){
                         fontUnderlineSelector.removeClass("active");
                     }
                     textEditor.show();
+                    textDropdowns.show();
                     textEditorInput.focus();
                 } else {
                     textEditor.hide();
+                    textDropdowns.hide();
                     textEditorInput.hide();
                 }
             };
@@ -624,6 +632,7 @@ var Modes = (function(){
                 $(function(){
                     hasInitialized = true;
                     textEditor = $("#textEditor");
+                    textDropdowns = $("#textDropdowns");
                     textEditorInput = $("#textEditorInputArea");
                     fontFamilySelector = $("#fontFamilySelector");
                     fontSizeSelector = $("#fontSizeSelector");
@@ -631,7 +640,19 @@ var Modes = (function(){
                     fontBoldSelector = $("#fontBoldSelector");
                     fontItalicSelector = $("#fontItalicSelector");
                     fontUnderlineSelector = $("#fontUnderlineSelector");
+		    /*
+                    textEditorInput.resizable({
+			handles:"ne se nw sw",
+                        stop:function(event,ui){
+                            currentText.width = ui.width;
+                            currentText.height = ui.height;
+                            prerenderText(currentText);
+                        }
+                    });
+		     */
+                    textEditorInput.hide();
                     textEditor.hide();
+                    textDropdowns.hide();
                     var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
                     fontFamilySelector.empty();
                     Fonts.getAllFamilies().map(function(family){
@@ -750,7 +771,8 @@ var Modes = (function(){
                     typingTimerElapsed();
                 }
                 currentText = {};
-                $("#textEditor").hide();
+                textEditor.hide();
+                textDropdowns.hide();
             };
             var createBlankText = function(worldPos){
                 var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
@@ -865,6 +887,7 @@ var Modes = (function(){
                             typingTimerElapsed();
                         }
                         textEditorInput.show();
+                        textDropdowns.show();
                         marquee.show();
                         marquee.css({
                             left:px(x),
