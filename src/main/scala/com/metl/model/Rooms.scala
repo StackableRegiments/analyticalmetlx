@@ -488,7 +488,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   private var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
   private lazy val starting = new StartupInformation
   private def firstTime = initialize
-  override def initialize = Stopwatch.time("HistoryCachingRoom.initalize",{
+  override def initialize = Stopwatch.time("HistoryCachingRoom.initialize",{
     if (starting.getHasStarted) {
       debug("initialize: %s (first time)".format(roomMetaData))
       starting.setHasStarted(false)
