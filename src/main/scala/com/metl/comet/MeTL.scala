@@ -26,29 +26,29 @@ import com.metl.renderer.SlideRenderer
 import json.JsonAST._
 
 case class StylableRadioButtonInteractableMessage(messageTitle:String,body:String,radioOptions:Map[String,()=>Boolean],defaultOption:Box[String] = Empty, customError:Box[()=>Unit] = Empty,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
-	var answerProvided = false
-	<div>
-		<div>{body}</div>
-		<div>
-			{
-				radio(radioOptions.toList.map(optTuple => optTuple._1),defaultOption,(chosen:String) => {
-					if (!answerProvided && radioOptions(chosen)()){
-						answerProvided = true
-						i.done
-					} else {
-						customError.map(ce => ce())
-					}
-        },("class","simpleRadioButtonInteractableMessageButton")).items.foldLeft(NodeSeq.Empty)((acc,choiceItem) => {
-          val inputElem = choiceItem.xhtml
-          val id = nextFuncName
-          acc ++ ("input [id]" #> id).apply((choiceItem.xhtml \\ "input")) ++ <label for={id}>{Text(choiceItem.key.toString)}</label> 
-        })
-			}		
-			<div>
-				{submit("Submit", ()=> Noop) }
-			</div>
-		</div>
-	</div>	
+  var answerProvided = false
+  <div>
+  <div>{body}</div>
+  <div>
+  {
+    radio(radioOptions.toList.map(optTuple => optTuple._1),defaultOption,(chosen:String) => {
+      if (!answerProvided && radioOptions(chosen)()){
+        answerProvided = true
+        i.done
+      } else {
+        customError.map(ce => ce())
+      }
+    },("class","simpleRadioButtonInteractableMessageButton")).items.foldLeft(NodeSeq.Empty)((acc,choiceItem) => {
+      val inputElem = choiceItem.xhtml
+      val id = nextFuncName
+      acc ++ ("input [id]" #> id).apply((choiceItem.xhtml \\ "input")) ++ <label for={id}>{Text(choiceItem.key.toString)}</label>
+    })
+  }
+  <div>
+  {submit("Submit", ()=> Noop) }
+  </div>
+  </div>
+  </div>
 },role,Full(messageTitle))
 
 
@@ -774,7 +774,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       CurrentConversation(Full(details))
       val conversationJid = details.jid.toString
       joinRoomByJid(conversationJid)
-//      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
+      //      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
       //joinRoomByJid(conversationJid,"loopback")
       CurrentConversation
     } else{
@@ -807,7 +807,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     CurrentSlide.filterNot(_ == jid).map(cs => {
       CurrentConversation.filter(cc => conversationContainsSlideId(cc,slideId)).map(cc => {
         debug("Don't have to leave conversation, current slide is in it")
-//        rooms.get((server,cc.jid.toString)).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cs,false,Nil)))
+        //        rooms.get((server,cc.jid.toString)).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cs,false,Nil)))
       }).getOrElse({
         debug("Joining conversation for: %s".format(slideId))
         joinConversation(serverConfig.getConversationForSlide(jid))
@@ -831,12 +831,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
         /*
-        debug("looking for attendance room")
-        rooms.get((server,cc.jid.toString)).foreach(r => {
-          debug("sending command")
-//          r() ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
-        })
-      */
+         debug("looking for attendance room")
+         rooms.get((server,cc.jid.toString)).foreach(r => {
+         debug("sending command")
+         //          r() ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,jid,true,Nil))
+         })
+         */
         //joinRoomByJid(jid,"loopback")
       }
     })
@@ -846,7 +846,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     debug("leaving all rooms: %s".format(rooms))
     rooms.foreach(r => {
       if (shuttingDown || (r._1._2 != username && r._1._2 != "global")){
-//        CurrentConversation.filter(cc => cc.jid.toString == r._1._2).foreach(cc => r._2 ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cc.jid.toString,false,Nil)))
+        //        CurrentConversation.filter(cc => cc.jid.toString == r._1._2).foreach(cc => r._2 ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cc.jid.toString,false,Nil)))
         debug("leaving room: %s".format(r))
         r._2() ! LeaveRoom(username,userUniqueId,this)
       }
@@ -884,10 +884,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           val conv = serverConfig.getConversationForSlide(r)
           debug("trying to send falsePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString)) 
+            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,false,Nil))
           } else {
-            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server)) 
+            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
             room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,false,Nil))
           }
         } catch {
