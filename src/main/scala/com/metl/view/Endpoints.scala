@@ -105,12 +105,13 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
         PlainTextResponse(cp.checkPassword(u,p).toString,Nil,200)
       }
     }
-    case Req("serverStatus" :: latency :: Nil,_,_) =>
+    case r@Req("serverStatus" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
-        info("[%s] miliseconds clientReportedLatency".format(latency))
-        Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))})
-    case Req("serverStatus" :: Nil,_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.serverStatus", Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
+        println("serverStatus")
+        println(r.param("latency"))
+        r.param("latency").foreach(latency => info("[%s] miliseconds clientReportedLatency".format(latency)))
+        Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
+      })
     case Req(List("probe","index"),"html",_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
     case Req(List("browserconfig"),"xml",_) =>

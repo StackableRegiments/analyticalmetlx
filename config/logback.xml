@@ -28,7 +28,7 @@
   -->
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
   <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
-  <root level="WARN">
+  <root level="INFO">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>
