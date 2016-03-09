@@ -35,14 +35,14 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   }
   val browserconfig = {
     <browserconfig>
-      <msapplication>
-        <tile>
-          <square70x70logo src="/ms-icon-70x70.png"/>
-          <square150x150logo src="/ms-icon-150x150.png"/>
-          <square310x310logo src="/ms-icon-310x310.png"/>
-          <TileColor>#ffffff</TileColor>
-        </tile>
-      </msapplication>
+    <msapplication>
+    <tile>
+    <square70x70logo src="/ms-icon-70x70.png"/>
+    <square150x150logo src="/ms-icon-150x150.png"/>
+    <square310x310logo src="/ms-icon-310x310.png"/>
+    <TileColor>#ffffff</TileColor>
+    </tile>
+    </msapplication>
     </browserconfig>
   }
   protected var id = 1000;
@@ -67,7 +67,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       }
     }
     case Req(List("primarykey"),"yaws",GetRequest) => () => {
-      StatelessHtml.yawsPrimaryKey  
+      StatelessHtml.yawsPrimaryKey
     }
     case Req(List(rootElem,stemmedRoom,room,item),itemSuffix,GetRequest) if List("Structure","Resource").contains(rootElem) && stem(room)._1 == stemmedRoom => () => {
       StatelessHtml.yawsResource(rootElem,room,item,itemSuffix)
@@ -105,11 +105,16 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
         PlainTextResponse(cp.checkPassword(u,p).toString,Nil,200)
       }
     }
-    case Req("serverStatus" :: Nil,_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.serverStatus", Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
+    case r@Req("serverStatus" :: Nil,_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.serverStatus", {
+        println("serverStatus")
+        println(r.param("latency"))
+        r.param("latency").foreach(latency => info("[%s] miliseconds clientReportedLatency".format(latency)))
+        Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
+      })
     case Req(List("probe","index"),"html",_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200)))
-    case Req(List("browserconfig"),"xml",_) => 
+    case Req(List("browserconfig"),"xml",_) =>
       () => Stopwatch.time("MeTLRestHelper.browserconfig.xml", Full(XmlResponse(browserconfig,200)))
     case Req(List("crossdomain"),"xml",_) =>
       () => Stopwatch.time("MeTLRestHelper.crossDomainPolicy", Full(XmlResponse(crossDomainPolicy,200)))
@@ -125,7 +130,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.fullHistory", StatelessHtml.fullHistory(r))
     case r @ Req(List("fullClientHistory"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.fullClientHistory", StatelessHtml.fullClientHistory(r))
-    case r @ Req("describeHistory" :: _,_,_) => 
+    case r @ Req("describeHistory" :: _,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.describeHistory", StatelessHtml.describeHistory(r))
     case r @ Req(List("themes"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.themes", StatelessHtml.themes(r))
