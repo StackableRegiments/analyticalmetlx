@@ -448,6 +448,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
+    ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc))
     ServerConfiguration.loadServerConfigsFromFile(
       path = filePath,
       onConversationDetailsUpdated = updateGlobalFunc,
@@ -538,4 +539,88 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getResource(jid:String,identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(jid:String,data:Array[Byte]):String = ""
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
+}
+
+class ResourceCachingAdaptor(sc:ServerConfiguration) extends PassThroughAdaptor(sc){
+  val cache = new scala.collection.mutable.HashMap[String,Array[Byte]]()
+  val jidAffineCache = new scala.collection.mutable.HashMap[Tuple2[String,String],Array[Byte]]()
+  val imageCache = new scala.collection.mutable.HashMap[String,MeTLImage]()
+  val jidAffineImageCache = new scala.collection.mutable.HashMap[Tuple2[String,String],MeTLImage]()
+  override def getImage(jid:String,identity:String) = {
+    jidAffineImageCache.get((jid,identity)).map(r => {
+      println("IMAGE HIT: %s %s".format(jid,identity))
+      r
+    }).getOrElse({
+      println("IMAGE MISS: %s %s".format(jid,identity))
+      val data = super.getImage(jid,identity)
+      jidAffineImageCache += ((jid,identity) -> data)
+      data
+    })
+  }
+  override def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = {
+    val res = super.postResource(jid,userProposedId,data)
+    jidAffineCache += ((jid,res) -> data)
+    res
+  }
+  override def getResource(jid:String,identifier:String):Array[Byte] = {
+    jidAffineCache.get((jid,identifier)).map(r => {
+      println("RESOURCE HIT: %s %s".format(jid,identifier))
+      r
+    }).getOrElse({
+      println("RESOURCE MISS: %s %s".format(jid,identifier))
+      val data = super.getResource(jid,identifier)
+      jidAffineCache += ((jid,identifier) -> data)
+      data
+    })
+  }
+  override def insertResource(jid:String,data:Array[Byte]):String = {
+    val res = super.insertResource(jid,data)
+    jidAffineCache += ((jid,res) -> data)
+    res
+  }
+  override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = {
+    val res = super.upsertResource(jid,identifier,data)
+    jidAffineCache += ((jid,res) -> data)
+    res
+  }
+  override def getImage(identity:String) = {
+    imageCache.get(identity).map(r => {
+      println("IMAGE HIT: %s".format(identity))
+      r
+    }).getOrElse({
+      println("IMAGE MISS: %s".format(identity))
+      val data = super.getImage(identity)
+      imageCache += (identity -> data)
+      data
+    })
+  }
+  override def getResource(identifier:String):Array[Byte] = {
+    cache.get(identifier).map(r => {
+      println("RESOURCE HIT: %s".format(identifier))
+      r
+    }).getOrElse({
+      println("RESOURCE MISS: %s".format(identifier))
+      val data = super.getResource(identifier)
+      cache += (identifier -> data)
+      data
+    })
+  }
+  override def insertResource(data:Array[Byte]):String = {
+    val res = super.insertResource(data)
+    cache += (res -> data)
+    res
+  }
+  override def upsertResource(identifier:String,data:Array[Byte]):String = {
+    val res = super.upsertResource(identifier,data)
+    cache += (res -> data)
+    res
+  }
+  override def shutdown:Unit = {
+    super.shutdown
+    //shut down the cache
+  }
+  override def isReady:Boolean = {
+    //setup the cache
+    super.isReady
+  }
 }
