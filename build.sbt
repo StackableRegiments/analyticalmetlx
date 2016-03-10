@@ -97,6 +97,8 @@ publishTo := Some("sonatype" at "https://oss.sonatype.org/service/local/staging/
 // set Ivy logging to be at the highest level
 ivyLoggingLevel := UpdateLogging.Full
 
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := false
 
