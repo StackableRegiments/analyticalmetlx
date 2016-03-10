@@ -75,8 +75,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     debug("serverSide updateGlobalFunc: %s".format(c))
     getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
-  def getRoomProvider(name:String) = {
-    new HistoryCachingRoomProvider(name)
+  def getRoomProvider(name:String,filePath:String) = {
+    val idleTimeout:Option[Long] = Some(30L * 60L * 1000L)
+    new HistoryCachingRoomProvider(name,idleTimeout)
   }
 
   def getSAMLconfiguration(propertySAML:NodeSeq) = {
@@ -444,11 +445,14 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       */
     ))
   }
+  def setupCachesFromFile(filePath:String) = {
+    ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc))
+  }
   def setupServersFromFile(filePath:String) = {
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
-    ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc))
+    setupCachesFromFile(filePath)
     ServerConfiguration.loadServerConfigsFromFile(
       path = filePath,
       onConversationDetailsUpdated = updateGlobalFunc,
@@ -481,7 +485,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     )
     val servers = ServerConfiguration.getServerConfigurations
-    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
+    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name,filePath)))):_*)
   }
   var xmppServer:Option[EmbeddedXmppServer] = None
   def initializeSystem = {
@@ -503,17 +507,18 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     configs.values.foreach(c => {
-      getRoom("global",c._1.name,GlobalRoom(c._1.name))
+      getRoom("global",c._1.name,GlobalRoom(c._1.name),true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
     info(configs)
   }
-  def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))
   def listRooms(configName:String):List[String] = configs(configName)._2.list
-  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = {
-    configs(configName)._2.get(jid,roomMetaData)
+  def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid),false)
+  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = getRoom(jid,configName,roomMetaData,false)
+  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom = {
+    configs(configName)._2.get(jid,roomMetaData,eternal)
   }
 }
 
