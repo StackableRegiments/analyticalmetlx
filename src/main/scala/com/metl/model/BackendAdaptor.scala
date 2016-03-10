@@ -76,8 +76,10 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String,filePath:String) = {
-    val idleTimeout:Option[Long] = Some(30L * 60L * 1000L)
-    new HistoryCachingRoomProvider(name,idleTimeout)
+    val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
+    val safetiedIdleTimeout = Some(idleTimeout.getOrElse(30 * 60 * 1000L))
+    println("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
+    new HistoryCachingRoomProvider(name,safetiedIdleTimeout)
   }
 
   def getSAMLconfiguration(propertySAML:NodeSeq) = {
@@ -446,7 +448,30 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     ))
   }
   def setupCachesFromFile(filePath:String) = {
-    ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc))
+    import net.sf.ehcache.config.{MemoryUnit}
+    import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
+    for (
+      scn <- (XML.load(filePath) \\ "caches" \\ "resourceCache").headOption;
+      heapSize <- (scn \\ "@heapSize").headOption.map(_.text.toLowerCase.trim.toInt);
+      heapUnits <- (scn \\ "@heapUnits").headOption.map(_.text.toLowerCase.trim match {
+        case "bytes" => MemoryUnit.BYTES
+        case "kilobytes" => MemoryUnit.KILOBYTES
+        case "megabytes" => MemoryUnit.MEGABYTES
+        case "gigabytes" => MemoryUnit.GIGABYTES
+        case _ => MemoryUnit.MEGABYTES
+      });
+      evictionPolicy <- (scn \\ "@evictionPolicy").headOption.map(_.text.toLowerCase.trim match {
+        case "clock" => MemoryStoreEvictionPolicy.CLOCK
+        case "fifo" => MemoryStoreEvictionPolicy.FIFO
+        case "lfu" => MemoryStoreEvictionPolicy.LFU
+        case "lru" => MemoryStoreEvictionPolicy.LRU
+        case _ => MemoryStoreEvictionPolicy.LRU
+      })
+    ) yield {
+      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy)
+      println("setting up resourceCaches with config: %s".format(cacheConfig))
+      ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
+    }
   }
   def setupServersFromFile(filePath:String) = {
     MeTL2011ServerConfiguration.initialize
@@ -546,7 +571,9 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
 }
 
-class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheSizeInMB:Int = 100) {
+case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
+
+class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){//cacheSizeInMB:Int = 100) {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
   import net.sf.ehcache.loader.{CacheLoader}
   import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
@@ -555,7 +582,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheS
   import scala.collection.JavaConversions._
   protected val cm = CacheManager.getInstance()
   val cacheName = "%s_%s".format(name,nextFuncName)
-  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheSizeInMB,MemoryUnit.MEGABYTES).eternal(false).memoryStoreEvictionPolicy(MemoryStoreEvictionPolicy.LRU).diskPersistent(false).logging(true)
+  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits/*MemoryUnit.MEGABYTES*/).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy/*MemoryStoreEvictionPolicy.LRU*/).diskPersistent(false).logging(false)
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {
@@ -586,11 +613,11 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheS
   def shutdown = cache.dispose()
 }
 
-class ResourceCachingAdaptor(sc:ServerConfiguration) extends PassThroughAdaptor(sc){
-  val imageCache = new ManagedCache[String,MeTLImage]("imageByIdentiity",((i:String)) => super.getImage(i))
-  val imageWithJidCache = new ManagedCache[Tuple2[String,String],MeTLImage]("imageByIdentityAndJid",(ji) => super.getImage(ji._1,ji._2))
-  val resourceCache = new ManagedCache[String,Array[Byte]]("resourceByIdentity",(i:String) => super.getResource(i))
-  val resourceWithJidCache = new ManagedCache[Tuple2[String,String],Array[Byte]]("resourceByIdentityAndJid",(ji) => super.getResource(ji._1,ji._2))
+class ResourceCachingAdaptor(sc:ServerConfiguration,cacheConfig:CacheConfig) extends PassThroughAdaptor(sc){
+  val imageCache = new ManagedCache[String,MeTLImage]("imageByIdentiity",((i:String)) => super.getImage(i),cacheConfig)
+  val imageWithJidCache = new ManagedCache[Tuple2[String,String],MeTLImage]("imageByIdentityAndJid",(ji) => super.getImage(ji._1,ji._2),cacheConfig)
+  val resourceCache = new ManagedCache[String,Array[Byte]]("resourceByIdentity",(i:String) => super.getResource(i),cacheConfig)
+  val resourceWithJidCache = new ManagedCache[Tuple2[String,String],Array[Byte]]("resourceByIdentityAndJid",(ji) => super.getResource(ji._1,ji._2),cacheConfig)
   override def getImage(jid:String,identity:String) = {
     imageWithJidCache.get((jid,identity))
   }
