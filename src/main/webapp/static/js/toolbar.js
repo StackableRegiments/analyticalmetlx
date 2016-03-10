@@ -497,6 +497,10 @@ var Modes = (function(){
                 WorkQueue.pause();
                 var oldTextTest = oldText;
                 oldText = newText;
+		var scrollHeight = textEditorInput.prop("scrollHeight");
+		if(scrollHeight > textEditorInput.height()){
+		    textEditorInput.height(scrollHeight);
+		}
                 currentText.text = newText;
 		currentText.width = textEditorInput.width();
 		currentText.height = textEditorInput.height();
