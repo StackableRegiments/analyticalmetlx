@@ -18,134 +18,18 @@ import com.metl.renderer.RenderDescription
 import collection.JavaConverters._
 import scala.collection.mutable.Queue
 
-trait IndividuallySynched[A] {
-  import java.util.concurrent.locks.ReentrantReadWriteLock
-  protected val lockMap = new SynchronizedWriteMap[A,ReentrantReadWriteLock](scala.collection.mutable.HashMap.empty[A,ReentrantReadWriteLock],true,(k:A) => new ReentrantReadWriteLock)
-
-  def syncWrite[C](k:A,f:()=>C):C       = {
-    val rwl = lockMap(k)
-    rwl.writeLock.lock
-    val ret = f()
-    rwl.writeLock.unlock
-    ret
-  }
-  def syncRead[C](k:A,f:()=>C):C = {
-    val rwl = lockMap(k)
-    rwl.readLock.lock
-    val ret = f()
-    rwl.readLock.unlock
-    ret
-  }
-  def syncAllRead[C](f:()=>C):C = {
-    f()
-  }
-  def syncAllWrite[C](f:()=>C):C = {
-    f()
-  }
-  def syncReadUnlessPredicateThenWrite[C](k:A,pred:()=>Boolean,fr:()=>C,fw:()=>C):C = {
-    val rwl = lockMap(k)
-    rwl.readLock.lock
-    val ret = if (pred()){
-      val rRet = fr()
-      rwl.readLock.unlock
-      rRet
-    } else {
-      rwl.readLock.unlock
-      rwl.writeLock.lock
-      val wRet = fw()
-      rwl.writeLock.unlock
-      wRet
-    }
-    ret
-  }
-}
-
-class RoomsSynchronizedWriteMap[A,B](collection:scala.collection.mutable.HashMap[A,B] = scala.collection.mutable.HashMap.empty[A,B],updateOnDefault:Boolean = false,defaultFunction:Function[A,B] = (k:A) => null.asInstanceOf[B]) extends IndividuallySynched[A]{
-  private var coll = collection
-  private var defaultFunc:Function[A,B] = defaultFunction
-  def += (kv: (A,B)):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](kv._1,()=>{
-    coll.+=(kv)
-    this
-  })
-  def -= (k:A):RoomsSynchronizedWriteMap[A,B] = syncWrite[RoomsSynchronizedWriteMap[A,B]](k,()=>{
-    coll.-=(k)
-    this
-  })
-  def put(k:A,v:B):Option[B] = syncWrite[Option[B]](k,()=>coll.put(k,v))
-  def update(k:A,v:B):Unit = syncWrite(k,()=>coll.update(k,v))
-  def updated(k:A,v:B):RoomsSynchronizedWriteMap[A,B] = syncRead[RoomsSynchronizedWriteMap[A,B]](k,()=>{
-    val newColl = this.clone
-    newColl.update(k,v)
-    newColl
-  })
-  def default(k:A):B = {
-    if (updateOnDefault){
-      syncWrite(k,()=>{
-        val newValue = defaultFunc(k)
-        coll += ((k,newValue))
-        newValue
-      })
-    } else {
-      defaultFunc(k)
-    }
-  }
-  def remove(k:A):Option[B] = syncWrite(k,()=>coll.remove(k))
-  def clear:Unit = syncAllWrite(()=>coll.clear)
-  def getOrElseUpdate(k:A, default: => B):B = {
-    /*
-     syncRead(k,() => coll.get(k)) match {
-     case Some(v) => v
-     case None => {
-     syncWrite(k,()=> coll.getOrElseUpdate(k,default))
-     }
-     }
-     */
-    syncWrite(k,()=>coll.getOrElseUpdate(k,default))
-  }
-  def transform(f: (A,B) => B):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
-    coll.transform(f)
-    this
-  })
-  def retain(p: (A,B) => Boolean):RoomsSynchronizedWriteMap[A,B] = syncAllWrite[RoomsSynchronizedWriteMap[A,B]](()=>{
-    coll.retain(p)
-    this
-  })
-  def iterator: Iterator[(A, B)] = syncAllRead(()=>coll.iterator)
-  def values: scala.collection.Iterable[B] = syncAllRead(()=>coll.map(kv => kv._2))
-  def valuesIterator: Iterator[B] = syncAllRead(()=>coll.valuesIterator)
-  def foreach[U](f:((A, B)) => U) = syncAllRead(()=>coll.foreach(f))
-  def apply(k: A): B = syncReadUnlessPredicateThenWrite(k,()=>isDefinedAt(k),()=>coll.apply(k),()=>default(k))
-  def withDefault(f:(A) => B):RoomsSynchronizedWriteMap[A,B] = {
-    syncAllWrite(()=>{
-      this.defaultFunc = f
-      this
-    })
-  }
-  def keySet: scala.collection.Set[A] = syncAllRead(()=>coll.keySet)
-  def keys: scala.collection.Iterable[A] = syncAllRead(()=>coll.map(kv => kv._1))
-  def keysIterator: Iterator[A] = syncAllRead(()=>coll.keysIterator)
-  def isDefinedAt(k: A) = syncAllRead(()=>coll.isDefinedAt(k))
-  def size:Int = syncAllRead(()=>coll.size)
-  def isEmpty: Boolean = syncAllRead(()=>coll.isEmpty)
-  def toList:List[(A,B)] = syncAllRead(()=>coll.toList)
-  def toArray:Array[(A,B)] = syncAllRead(()=>coll.toArray)
-  def map(f:((A, B)) => Any):scala.collection.mutable.Iterable[Any] = syncAllRead(()=>coll.map(f))
-  override def clone: RoomsSynchronizedWriteMap[A,B] = syncAllRead(()=>new RoomsSynchronizedWriteMap[A,B](coll.clone,updateOnDefault,defaultFunction))
-  override def toString = "RoomsSynchronizedWriteMap("+coll.map(kv => "(%s -> %s)".format(kv._1,kv._2)).mkString(", ")+")"
-  override def equals(other:Any) = (other.isInstanceOf[RoomsSynchronizedWriteMap[A,B]] && other.asInstanceOf[RoomsSynchronizedWriteMap[A,B]].toList == this.toList)
-}
-
-abstract class RoomProvider {
-  def get(jid:String):MeTLRoom
-  def get(jid:String,roomMetaData:RoomMetaData):MeTLRoom
+abstract class RoomProvider(configName:String) {
+  def get(room:String):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,configName),false)
+  def get(room:String,eternal:Boolean):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,configName),false)
+  def get(room:String,roomDefinition:RoomMetaData):MeTLRoom = get(room,roomDefinition,false)
+  def get(jid:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom
   def removeMeTLRoom(room:String):Unit
   def exists(room:String):Boolean
   def list:List[String]
 }
 
-object EmptyRoomProvider extends RoomProvider {
-  override def get(jid:String) = EmptyRoom
-  override def get(jid:String,roomDefinition:RoomMetaData) = EmptyRoom
+object EmptyRoomProvider extends RoomProvider("empty") {
+  override def get(jid:String,roomDefinition:RoomMetaData,eternal:Boolean) = EmptyRoom
   override def removeMeTLRoom(room:String) = {}
   override def exists(room:String) = false
   override def list = Nil
@@ -208,22 +92,18 @@ object RoomMetaDataUtils {
   }
 }
 
-class HistoryCachingRoomProvider(configName:String) extends RoomProvider with Logger {
-  private lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
-  //new RoomsSynchronizedWriteMap[String,MeTLRoom](scala.collection.mutable.HashMap.empty[String,MeTLRoom],true,(k:String) => createNewMeTLRoom(k,UnknownRoom))
+class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) extends RoomProvider(configName) with Logger {
+  protected lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
   override def list = metlRooms.keys.asScala.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", list.contains(room))
-
-  override def get(room:String) = get(room,RoomMetaDataUtils.fromJid(room,configName))
-
-  override def get(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.get",metlRooms.computeIfAbsent(room, new java.util.function.Function[String,MeTLRoom]{
-    override def apply(r:String) = createNewMeTLRoom(room,roomDefinition)
+  override def get(room:String,roomDefinition:RoomMetaData,eternal:Boolean) = Stopwatch.time("Rooms.get",metlRooms.computeIfAbsent(room, new java.util.function.Function[String,MeTLRoom]{
+    override def apply(r:String) = createNewMeTLRoom(room,roomDefinition,eternal)
   }))
-  protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
-    //val r = new HistoryCachingRoom(configName,room,this,roomDefinition)
+  protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData,eternal:Boolean = false) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
+    //val r = new HistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val start = new java.util.Date().getTime
     val a = new java.util.Date().getTime - start
-    val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition)
+    val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val b = new java.util.Date().getTime - start
     r.localSetup
     val c = new java.util.Date().getTime - start
@@ -251,7 +131,7 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 case object HealthyWelcomeFromRoom
 case object Ping
 
-abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData) extends LiftActor with ListenerManager with Logger {
+abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long]) extends LiftActor with ListenerManager with Logger {
   lazy val config = ServerConfiguration.configForName(configName)
   private var shouldBacklog = false
   private var backlog = Queue.empty[MeTLStanza]
@@ -332,8 +212,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
   protected var lastInterest:Long = new Date().getTime
-  //protected var interestTimeout:Long = 60000
-  protected var interestTimeout:Long = 30 * 60 * 1000 // 30 minutes -- rooms are shutting down too quickly, and they're too costly to start up
   protected def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))
@@ -426,12 +304,12 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   })
   protected def showInterest:Unit = lastInterest = new Date().getTime
   private def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest",{
-    (new Date().getTime - lastInterest) < interestTimeout
+    idleTimeout.map(it => (new Date().getTime - lastInterest) < it).getOrElse(true) // if no interest timeout is specified, then don't expire the room 
   })
   override def toString = "MeTLRoom(%s,%s,%s)".format(configName,location,creator)
 }
 
-object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider,UnknownRoom) {
+object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider,UnknownRoom,None) {
   override def getHistory = History.empty
   override def getThumbnail = Array.empty[Byte]
   override def getSnapshot(size:RenderDescription) = Array.empty[Byte]
@@ -444,7 +322,7 @@ object ThumbnailSpecification {
   val width = 320
 }
 
-class NoCacheRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends MeTLRoom(configName,location,creator,roomMetaData) {
+class NoCacheRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(configName,location,creator,roomMetaData,idleTimeout) {
   override def getHistory = config.getHistory(location)
   override def getThumbnail = {
     roomMetaData match {
@@ -482,7 +360,7 @@ class StartupInformation {
   }
 }
 
-class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends MeTLRoom(configName,location,creator,roomMetaData) {
+class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(configName,location,creator,roomMetaData,idleTimeout) {
   private var history:History = History.empty
   private val isPublic = tryo(location.toInt).map(l => true).openOr(false)
   private var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
@@ -563,7 +441,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   override def toString = "HistoryCachingRoom(%s,%s,%s)".format(configName,location,creator)
 }
 
-class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData) extends HistoryCachingRoom(configName,location,creator,roomMetaData) {
+class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends HistoryCachingRoom(configName,location,creator,roomMetaData,idleTimeout) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
     //stanzasToIgnore = stanzasToIgnore ::: List(s)
