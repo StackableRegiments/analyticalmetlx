@@ -800,7 +800,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)
   private def moveToSlide(jid:String):Unit = {
-    debug("moveToSlide".format(jid))
+    debug("moveToSlide {0}".format(jid))
     debug("CurrentConversation".format(CurrentConversation.is))
     debug("CurrentSlide".format(CurrentSlide.is))
     val slideId = jid.toInt

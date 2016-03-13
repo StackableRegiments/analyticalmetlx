@@ -254,7 +254,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     }
     case r @ Req(List("upload"),_,_) =>{
       debug("Upload registered in MeTLStatefulRestHelper")
-      trace(r.body)
+      //trace(r.body)
         () => Stopwatch.time("MeTLStatefulRestHelper.upload", {
           r.body.map(bytes => {
             val filename = S.params("filename").head
@@ -266,7 +266,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     }
     case r @ Req(List("uploadDataUri"),_,_) =>{
       debug("UploadDataUri registered in MeTLStatefulRestHelper")
-      trace(r.body)
+      //trace(r.body)
         () => Stopwatch.time("MeTLStatefulRestHelper.upload", {
           r.body.map(dataUriBytes => {
             val dataUriString = IOUtils.toString(dataUriBytes)

@@ -75,8 +75,11 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     debug("serverSide updateGlobalFunc: %s".format(c))
     getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
-  def getRoomProvider(name:String) = {
-    new HistoryCachingRoomProvider(name)
+  def getRoomProvider(name:String,filePath:String) = {
+    val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
+    val safetiedIdleTimeout = Some(idleTimeout.getOrElse(30 * 60 * 1000L))
+    println("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
+    new HistoryCachingRoomProvider(name,safetiedIdleTimeout)
   }
 
   def getSAMLconfiguration(propertySAML:NodeSeq) = {
@@ -444,10 +447,37 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       */
     ))
   }
+  def setupCachesFromFile(filePath:String) = {
+    import net.sf.ehcache.config.{MemoryUnit}
+    import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
+    for (
+      scn <- (XML.load(filePath) \\ "caches" \\ "resourceCache").headOption;
+      heapSize <- (scn \\ "@heapSize").headOption.map(_.text.toLowerCase.trim.toInt);
+      heapUnits <- (scn \\ "@heapUnits").headOption.map(_.text.toLowerCase.trim match {
+        case "bytes" => MemoryUnit.BYTES
+        case "kilobytes" => MemoryUnit.KILOBYTES
+        case "megabytes" => MemoryUnit.MEGABYTES
+        case "gigabytes" => MemoryUnit.GIGABYTES
+        case _ => MemoryUnit.MEGABYTES
+      });
+      evictionPolicy <- (scn \\ "@evictionPolicy").headOption.map(_.text.toLowerCase.trim match {
+        case "clock" => MemoryStoreEvictionPolicy.CLOCK
+        case "fifo" => MemoryStoreEvictionPolicy.FIFO
+        case "lfu" => MemoryStoreEvictionPolicy.LFU
+        case "lru" => MemoryStoreEvictionPolicy.LRU
+        case _ => MemoryStoreEvictionPolicy.LRU
+      })
+    ) yield {
+      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy)
+      println("setting up resourceCaches with config: %s".format(cacheConfig))
+      ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
+    }
+  }
   def setupServersFromFile(filePath:String) = {
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
+    setupCachesFromFile(filePath)
     ServerConfiguration.loadServerConfigsFromFile(
       path = filePath,
       onConversationDetailsUpdated = updateGlobalFunc,
@@ -480,7 +510,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     )
     val servers = ServerConfiguration.getServerConfigurations
-    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name)))):_*)
+    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name,filePath)))):_*)
   }
   var xmppServer:Option[EmbeddedXmppServer] = None
   def initializeSystem = {
@@ -502,17 +532,18 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
     configs.values.foreach(c => {
-      getRoom("global",c._1.name,GlobalRoom(c._1.name))
+      getRoom("global",c._1.name,GlobalRoom(c._1.name),true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
     info(configs)
   }
-  def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid))
   def listRooms(configName:String):List[String] = configs(configName)._2.list
-  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = {
-    configs(configName)._2.get(jid,roomMetaData)
+  def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid),false)
+  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = getRoom(jid,configName,roomMetaData,false)
+  def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom = {
+    configs(configName)._2.get(jid,roomMetaData,eternal)
   }
 }
 
@@ -538,4 +569,107 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getResource(jid:String,identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(jid:String,data:Array[Byte]):String = ""
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
+}
+
+case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
+
+class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){//cacheSizeInMB:Int = 100) {
+  import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
+  import net.sf.ehcache.loader.{CacheLoader}
+  import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
+  import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
+  import java.util.Collection
+  import scala.collection.JavaConversions._
+  protected val cm = CacheManager.getInstance()
+  val cacheName = "%s_%s".format(name,nextFuncName)
+  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits/*MemoryUnit.MEGABYTES*/).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy/*MemoryStoreEvictionPolicy.LRU*/).diskPersistent(false).logging(false)
+  val cache = new Cache(cacheConfiguration)
+  cm.addCache(cache)
+  class FuncCacheLoader extends CacheLoader {
+    override def clone(cache:Ehcache):CacheLoader = new FuncCacheLoader 
+    def dispose:Unit = {}
+    def getName:String = getClass.getSimpleName
+    def getStatus:Status = cache.getStatus
+    def init:Unit = {}
+    def load(key:Object):Object = key match {
+      case k:A => {
+        println("%s MISS %s".format(cacheName,key))
+        creationFunc(k).asInstanceOf[Object]
+      }
+      case _ => null
+    }
+    def load(key:Object,arg:Object):Object = load(key) // not yet sure what to do with this argument in this case
+    def loadAll(keys:Collection[_]):java.util.Map[Object,Object] = Map(keys.toArray.toList.map(k => (k,load(k))):_*)
+    def loadAll(keys:Collection[_],argument:Object):java.util.Map[Object,Object] = Map(keys.toArray.toList.map(k => (k,load(k,argument))):_*)
+  }
+  val loader = new FuncCacheLoader
+  def get(key:A):B = {
+    cache.getWithLoader(key,loader,null).getObjectValue.asInstanceOf[B]
+  }
+  def update(key:A,value:B):Unit = {
+    cache.put(new Element(key,value))
+  }
+  def startup = cache.initialise
+  def shutdown = cache.dispose()
+}
+
+class ResourceCachingAdaptor(sc:ServerConfiguration,cacheConfig:CacheConfig) extends PassThroughAdaptor(sc){
+  val imageCache = new ManagedCache[String,MeTLImage]("imageByIdentiity",((i:String)) => super.getImage(i),cacheConfig)
+  val imageWithJidCache = new ManagedCache[Tuple2[String,String],MeTLImage]("imageByIdentityAndJid",(ji) => super.getImage(ji._1,ji._2),cacheConfig)
+  val resourceCache = new ManagedCache[String,Array[Byte]]("resourceByIdentity",(i:String) => super.getResource(i),cacheConfig)
+  val resourceWithJidCache = new ManagedCache[Tuple2[String,String],Array[Byte]]("resourceByIdentityAndJid",(ji) => super.getResource(ji._1,ji._2),cacheConfig)
+  override def getImage(jid:String,identity:String) = {
+    imageWithJidCache.get((jid,identity))
+  }
+  override def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = {
+    val res = super.postResource(jid,userProposedId,data)
+    resourceWithJidCache.update((jid,res),data)
+    res
+  }
+  override def getResource(jid:String,identifier:String):Array[Byte] = {
+    resourceWithJidCache.get((jid,identifier))
+  }
+  override def insertResource(jid:String,data:Array[Byte]):String = {
+    val res = super.insertResource(jid,data)
+    resourceWithJidCache.update((jid,res),data)
+    res
+  }
+  override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = {
+    val res = super.upsertResource(jid,identifier,data)
+    resourceWithJidCache.update((jid,res),data)
+    res
+  }
+  override def getImage(identity:String) = {
+    imageCache.get(identity)
+  }
+  override def getResource(identifier:String):Array[Byte] = {
+    resourceCache.get(identifier)
+  }
+  override def insertResource(data:Array[Byte]):String = {
+    val res = super.insertResource(data)
+    resourceCache.update(res,data)
+    res
+  }
+  override def upsertResource(identifier:String,data:Array[Byte]):String = {
+    val res = super.upsertResource(identifier,data)
+    resourceCache.update(res,data)
+    res
+  }
+  override def shutdown:Unit = {
+    super.shutdown
+    imageCache.shutdown
+    imageWithJidCache.shutdown
+    resourceCache.shutdown
+    resourceWithJidCache.shutdown
+  }
+  protected lazy val initialize = {
+    resourceWithJidCache.startup
+    resourceCache.startup
+    imageWithJidCache.startup
+    imageCache.startup
+  }
+  override def isReady:Boolean = {
+    initialize
+    super.isReady
+  }
 }

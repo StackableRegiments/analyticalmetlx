@@ -67,8 +67,9 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml" % "3.13",
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
+    "net.sf.ehcache" % "ehcache" % "2.10.1",
     "io.github.stackableregiments" %% "common-utils" % "0.3.+",
-    "io.github.stackableregiments" %% "metldata" % "3.6.2",
+    "io.github.stackableregiments" %% "metldata" % "3.7.+",
     "io.github.stackableregiments" %% "lift-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
@@ -95,6 +96,8 @@ publishTo := Some("sonatype" at "https://oss.sonatype.org/service/local/staging/
 
 // set Ivy logging to be at the highest level
 ivyLoggingLevel := UpdateLogging.Full
+
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
 
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := false
