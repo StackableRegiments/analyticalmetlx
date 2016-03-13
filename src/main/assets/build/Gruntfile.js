@@ -24,9 +24,10 @@ module.exports = function( grunt ) {
             },
             dist: {
               src: [
-                    '../js/vendor/modernizr.2.8.3.min.js'
+                    '../js/vendor/modernizr.2.8.3.min.js',
+                    '../js/mod-popout.js'
                     ],
-              dest: 'source/js/minimal-core.js'
+              dest: 'source/js/metl-front-end-core.js'
             },
         },
         
@@ -36,7 +37,7 @@ module.exports = function( grunt ) {
             },
             my_target: {
                 files: {
-                  '../../webapp/static/assets/js/minimal-core.min.js': ['source/js/minimal-core.js']
+                  '../../webapp/static/assets/js/metl-front-end-core.min.js': ['source/js/metl-front-end-core.js']
                 }
               }
             },

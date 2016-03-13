@@ -620,11 +620,11 @@ var Modes = (function(){
                         fontUnderlineSelector.removeClass("active");
                     }
                     textEditor.show();
-                    textDropdowns.show();
+                    //textDropdowns.show();
                     textEditorInput.focus();
                 } else {
                     textEditor.hide();
-                    textDropdowns.hide();
+                    //textDropdowns.hide();
                     textEditorInput.hide();
                 }
             };
@@ -652,7 +652,7 @@ var Modes = (function(){
 		     */
                     textEditorInput.hide();
                     textEditor.hide();
-                    textDropdowns.hide();
+                    //textDropdowns.hide();
                     var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
                     fontFamilySelector.empty();
                     Fonts.getAllFamilies().map(function(family){
@@ -772,7 +772,7 @@ var Modes = (function(){
                 }
                 currentText = {};
                 textEditor.hide();
-                textDropdowns.hide();
+                //textDropdowns.hide();
             };
             var createBlankText = function(worldPos){
                 var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
@@ -887,7 +887,7 @@ var Modes = (function(){
                             typingTimerElapsed();
                         }
                         textEditorInput.show();
-                        textDropdowns.show();
+                        //textDropdowns.show();
                         marquee.show();
                         marquee.css({
                             left:px(x),
