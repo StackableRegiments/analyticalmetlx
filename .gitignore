@@ -5,3 +5,5 @@ debug.log
 testdb*
 .DS_Store
 node_modules
+src/main/assets/build/source/
+.idea
