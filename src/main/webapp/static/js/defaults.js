@@ -79,7 +79,7 @@ var Fonts = (function(){
         "Helvetica",
         "Times New Roman"
     ];
-    var sizes = [8,10,14,20,30];
+    var sizes = [12,14,16,18,20,30,42,60];
     return {
         getAllFamilies:function(){return _.map(families,function(f){return f;})},
         getAllSizes:function(){return _.map(sizes,function(s){return s;})}
