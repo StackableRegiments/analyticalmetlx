@@ -1,0 +1,19 @@
+.popout-container {
+    position:relative
+}
+.popout {
+    position: absolute;
+    top: 0;
+    width: auto;
+    min-width: @popout-width;
+    z-index: 1;
+    .plrh;
+    .pbh;
+    background: @subtool-bg;
+    border: 1px solid @block-borders;
+    border-left:4px solid @toggle-border;
+    margin-left: @toolbar-btn-width;
+    select, input {
+        width:100%;
+    }
+}

@@ -64,13 +64,26 @@
           -->
       <div id="imageTools" class="inactiveMode flex-container-responsive-rev"></div>
       <div id="textTools" class="inactiveMode flex-container-responsive-rev">
-                <!-- color = getColorForName(value) -->
+        <div class="popout-container">
+          <button type="button" id="fontOptions" class="modeSpecificTool btn-icon fa fa-font popout-open"><div class="icon-txt">Options</div></button>
+          <div id="textDropdowns" class="popout compact-form" style="display:none">
+            <label for="fontFamilySelector">Font</label>
+            <select id="fontFamilySelector">
+              <option class="fontFamilyOption"></option>
+            </select>
+            <label for="fontSizeSelector">Font size</label>
+            <select id="fontSizeSelector">
+              <option class="fontSizeOption"></option>
+            </select>
+            <label for="fontColorSelector">Font colour</label>
+            <select id="fontColorSelector">
+              <option class="fontColorOption"></option>
+            </select>
+          </div>
+        </div>
         <button type="button" id="fontBoldSelector" class="modeSpecificTool btn-icon fa fa-bold"><div class="icon-txt">Bold</div></button>
-        <!-- weight = bold | Normal -->
         <button type="button" id="fontItalicSelector" class="modeSpecificTool btn-icon fa fa-italic"><div class="icon-txt">Italic</div></button>
-        <!-- style = italic | Normal -->
         <button type="button" id="fontUnderlineSelector" class="modeSpecificTool btn-icon fa fa-underline"><div class="icon-txt">Underline</div></button>
-        <!-- decoration = underline | Normal -->
       </div>
       <div id="feedbackTools" class="inactiveMode flex-container-responsive-rev">
         <button id="submitScreenshotButton" class="modeSpecificTool btn-icon fa fa-share-square"><div class="icon-txt">Submit screen</div></button>
