@@ -27,6 +27,7 @@
   <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
   -->
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
+  <logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
   <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
   <root level="INFO">
     <appender-ref ref="STDOUT"/>
