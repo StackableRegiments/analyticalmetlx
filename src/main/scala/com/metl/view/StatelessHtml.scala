@@ -94,7 +94,7 @@ object StatelessHtml extends Stemmer with Logger {
     Full(InMemoryResponse(config.getResource("userOptionsFor_%s".format(Globals.currentUser)),Nil,Nil,200))
   })
 
-  def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity), 
+  def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity),
     Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getImageByIdentity(identity).map(image => {
       image.imageBytes.map(bytes => {
         debug("found bytes: %s (%s)".format(bytes,bytes.length))
@@ -179,6 +179,19 @@ object StatelessHtml extends Stemmer with Logger {
       history.collect{case t:MeTLText => t.text},
       CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
     <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
+  })
+  def handwriting(jid:String):Node = Stopwatch.time("StatelessHtml.handwriting(%s)".format(jid), {
+    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+    val themes = List(
+      history.getInks.groupBy(_.author).flatMap{
+        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
+      }).flatten
+    val themesByUser = themes.groupBy(_.author).map(kv =>
+      <userTheme>
+        <user>{kv._1}</user>
+        <themes>{kv._2.map(t => <theme>{t.text}</theme>)}</themes>
+        </userTheme>)
+    <userThemes>{themesByUser}</userThemes>
   })
   def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
@@ -304,10 +317,10 @@ object StatelessHtml extends Stemmer with Logger {
       val uniqueOccupants = occupants.groupBy(occ => occ.author)
       val xResponse = <historyDescription>
       <bounds>
-        <left>{Text(history.getLeft.toString)}</left>
-        <right>{Text(history.getRight.toString)}</right>
-        <top>{Text(history.getTop.toString)}</top>
-        <bottom>{Text(history.getBottom.toString)}</bottom>
+      <left>{Text(history.getLeft.toString)}</left>
+      <right>{Text(history.getRight.toString)}</right>
+      <top>{Text(history.getTop.toString)}</top>
+      <bottom>{Text(history.getBottom.toString)}</bottom>
       </bounds>
       <lastModified>{history.lastModified}</lastModified>
       <lastVisuallyModified>{history.lastVisuallyModified}</lastVisuallyModified>

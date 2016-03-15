@@ -76,6 +76,7 @@ object CanvasContentAnalysis extends Logger {
       req.setContentType("application/x-www-form-urlencoded","UTF-8")
 
       val f = Http(req OK as.String).either
+      debug(f)
       val response = for(
         s <- f.right
       ) yield {
