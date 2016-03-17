@@ -483,7 +483,7 @@ var Modes = (function(){
             var oldText = "";
             var newText = "";
             var currentFamily = Fonts.getAllFamilies()[0];
-            var currentSize = Fonts.getAllSizes()[0];
+            var currentSize = Fonts.getAllSizes()[2];
             var typingTimerElapsed = function(){
                 WorkQueue.gracefullyResume();
                 clearTimeout(typingTimer);
