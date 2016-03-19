@@ -6,7 +6,7 @@ var Colors = (function(){
         ["Cyan","#00ffff",255],
         ["Green","#00ff00",255],
         ["White","#ffffff",255],
-        ["Dark Grey","#666666",255]
+        ["Dark grey","#666666",255]
     ];
     var defaultColor = colors[0];
     var toHex = function(inputNumber){
