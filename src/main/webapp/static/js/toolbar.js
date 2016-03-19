@@ -1774,11 +1774,12 @@ var Modes = (function(){
                                 drawTools();
                                 drawAdvancedTools(brush);
                             });
-                            var dot = Canvas.circle(color.rgb,50,50);
+                            //var dot = Canvas.circle(color.rgb,50,50);
+                            colorDot.css("color",color.rgb);
                             if ("rgb" in color && color.rgb == brush.color){
                                 colorDot.addClass("activeTool");
                             }
-                            colorDot.prepend(dot);
+                            //colorDot.prepend(dot);
                             var colorDotName = color.name;
                             colorDot.find('.colorDotName').append(colorDotName);
                         });

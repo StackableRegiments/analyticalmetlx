@@ -68,6 +68,10 @@
 }
 .pen .icon-txt {
     color:@subtool-fg;
+    text-shadow:none;
+}
+.colorDot {
+    text-shadow:1px 1px #ccc;
 }
 .permission-states {
     input[type="checkbox"]{
@@ -168,6 +172,14 @@ input[type=submit]{
 .quizImagePreview {
     max-width:100%;
     border: 4px solid @slide-active;
+}
+#customizeBrushPopup {
+    .dots button{
+        .btn-subtool;
+        &.activeTool {
+            .btn-subtool.active;
+        }
+    }
 }
 /* fix this jodi! */
 
