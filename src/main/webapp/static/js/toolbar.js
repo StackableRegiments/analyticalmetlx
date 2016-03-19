@@ -1759,7 +1759,9 @@ var Modes = (function(){
                             if (width == brush.width){
                                 sizeDot.addClass("activeTool");
                             }
-                            sizeDot.append(bar)
+                            sizeDot.prepend(bar)
+                            var sizeName = width.toString() + 'px';
+                            sizeDot.find('.sizeDotName').append(sizeName);
                         });
                         dots.empty();
                         colors.map(function(color){
@@ -1776,7 +1778,9 @@ var Modes = (function(){
                             if ("rgb" in color && color.rgb == brush.color){
                                 colorDot.addClass("activeTool");
                             }
-                            colorDot.append(dot);
+                            colorDot.prepend(dot);
+                            var colorDotName = color.name;
+                            colorDot.find('.colorDotName').append(colorDotName);
                         });
                         var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
                             brush.isHighlighter = true;
