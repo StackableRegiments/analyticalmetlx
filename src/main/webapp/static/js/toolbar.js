@@ -1754,7 +1754,7 @@ var Modes = (function(){
                                 drawTools();
                                 drawAdvancedTools(brush);
                             });
-                            var bar = Canvas.circle(brush.color,width,60);
+                            var bar = Canvas.circle(brush.color,width,50);
                             //console.log(width,brush.width);
                             if (width == brush.width){
                                 sizeDot.addClass("activeTool");
