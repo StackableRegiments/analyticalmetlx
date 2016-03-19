@@ -308,13 +308,12 @@ object StatelessHtml extends Stemmer with Logger {
       val strokes = history.getInks.length
       val texts = history.getTexts.length
       val images = history.getImages.length
-      val attendances = history.getAttendances.length
-      val files = history.getAttendances.length
+      val files = history.getFiles.length
       val quizzes = history.getQuizzes.length
       val highlighters = history.getHighlighters.length
-      val occupants = history.getAttendances
-      val occupantCount = occupants.length
-      val uniqueOccupants = occupants.groupBy(occ => occ.author)
+      val attendances = history.getAttendances
+      val uniqueOccupants = attendances.groupBy(_.author)
+      val occupantCount = uniqueOccupants.keys.size
       val xResponse = <historyDescription>
       <bounds>
       <left>{Text(history.getLeft.toString)}</left>
