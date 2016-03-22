@@ -134,6 +134,8 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.describeHistory", StatelessHtml.describeHistory(r))
     case r @ Req(List("themes"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.themes", StatelessHtml.themes(r))
+    case r @ Req(List("chunks"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.chunks", StatelessHtml.chunks(r))
     case r @ Req(List("words",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
     case r @ Req(List("handwriting",jid),_,_) =>

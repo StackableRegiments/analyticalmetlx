@@ -214,6 +214,29 @@ object StatelessHtml extends Stemmer with Logger {
   def themes(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(req.param("source")), {
     req.param("source").map(jid=> XmlResponse(nouns(jid)))
   })
+  def chunks(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.chunks(%s)".format(req.param("source")), {
+    req.param("source").map(jid=> {
+      val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+      val elements = history.getCanvasContents
+      val chunked = CanvasContentAnalysis.chunk(elements)
+      XmlResponse(
+        <contentRuns>
+          <slide>jid</slide>
+          <timeThreshold>{chunked.timeThreshold.toString}</timeThreshold>
+          {
+            chunked.chunksets.map(chunkset =>
+              {
+                <runs author={chunkset.author}>
+                {
+                  chunkset.chunks.map(chunk => <run start={chunk.start.toString} end={chunk.end.toString} activity={chunk.activity.size.toString} miliseconds={chunk.milis.toString} />)
+                }
+                </runs>
+              })
+          }
+          </contentRuns>
+      )
+    })
+  })
   def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), {
     req.param("source").map(jid=> XmlResponse(loadHistory(jid)))
   })
