@@ -7,25 +7,37 @@ import net.liftweb.common.Logger
 
 case class Theme(author:String,text:String)
 
+case class Chunked(timeThreshold:Int, distanceThreshold:Int, chunksets:Seq[Chunkset])
+case class Chunkset(author:String,chunks:Seq[Chunk]){
+  val start = chunks.map(_.start).min
+  val end = chunks.map(_.end).max
+}
+case class Chunk(activity:Seq[MeTLCanvasContent]){
+  val start = activity.headOption.map(_.timestamp).getOrElse(0L)
+  val end = activity.reverse.headOption.map(_.timestamp).getOrElse(0L)
+  val milis = end - start
+}
+
 object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
   val analysisThreshold = 5
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
-  def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = es.sortBy(_.timestamp).groupBy(_.author).map {
-    case (author,items) => {
-      items.foldLeft((0L,List.empty[List[MeTLCanvasContent]])){
-        case ((last,runs@(head :: tail)),item) => {
-          if((item.timestamp - last) < timeThreshold){
-            (item.timestamp, (item :: head) :: tail)
+  def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
+    es.sortBy(_.timestamp).groupBy(_.author).map {
+      case (author,items) => {
+        Chunkset(author, items.foldLeft((0L,List.empty[List[MeTLCanvasContent]])){
+          case ((last,runs@(head :: tail)),item) => {
+            if((item.timestamp - last) < timeThreshold){
+              (item.timestamp, (item :: head) :: tail)
+            }
+            else{
+              (item.timestamp, List(item) :: runs)
+            }
           }
-          else{
-            (item.timestamp, List(item) :: runs)
-          }
-        }
-        case ((last,runs),item) => (item.timestamp, List(item) :: runs)
+          case ((last,runs),item) => (item.timestamp, List(item) :: runs)
+        }._2.map(run => Chunk(run.reverse)))
       }
-    }._2.map(_.reverse)
-  }
+    }.toList)
   def thematize(phrases:List[String]) = {
     val api = "textanalysis.p.mashape.com/textblob-noun-phrase-extraction"
     val keyValue = "exampleApiKey"
@@ -41,7 +53,7 @@ object CanvasContentAnalysis extends Logger {
       s <- f.right
     ) yield {
       debug(s)
-      (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
+        (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
     }
     val r = response()
     debug(r)
