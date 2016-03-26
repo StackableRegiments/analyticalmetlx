@@ -1,0 +1,8 @@
+.tile{
+    background:darkslategray;
+    border:1px solid gray;
+    color:white;
+    width:15%;
+    font-size:small;
+    margin:1em;
+}

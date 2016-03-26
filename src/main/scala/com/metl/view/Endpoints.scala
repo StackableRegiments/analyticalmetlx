@@ -150,7 +150,11 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLStatefulRestHelper.search", {
         val query = S.params("query").head
         val server = ServerConfiguration.default
-        Full(XmlResponse(<conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>))
+        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
+        Full(S.params("format") match {
+          case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
+          case _ => XmlResponse(x)
+        })
       })
     case Req("render" :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render",  {
       val server = ServerConfiguration.default
