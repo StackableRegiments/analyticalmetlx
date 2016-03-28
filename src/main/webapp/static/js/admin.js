@@ -31,6 +31,8 @@ var Admin = (function(){
 					 "d/M/YYYY H:m:s a",
                                          "ddd MMM D H:m:s YYYY"
                                      ]);
+		//Override supplied created date for later consistency on sorting and range filtering
+		conversation.created = created;
                 c.find(".creation").text(created.format("DD MMM YYYY, h:mm a"));
             });
             container.isotope({
