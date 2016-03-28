@@ -26,10 +26,10 @@ var Admin = (function(){
                 c.find(".title").text(conversation.title);
                 c.find(".activityCount").text(100000);
                 var created = moment(conversation.created,
-                                     [//Try American format first
-					 "M/d/YYYY H:m:s a",
-					 "d/M/YYYY H:m:s a",
-                                         "ddd MMM D H:m:s YYYY"
+                                     [
+                                         "dd/mm/YYYY HH:m:s a",
+                                         "ddd MMM D H:m:s YYYY",
+					 "23/01/2016 4:56:05 PM"
                                      ]);
                 c.find(".creation").text(created.format("DD MMM YYYY, h:mm a"));
             });
