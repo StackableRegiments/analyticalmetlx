@@ -1,3 +1,6 @@
+.template{
+    display:none;
+}
 .tile{
     background:darkslategray;
     border:1px solid gray;
@@ -5,4 +8,7 @@
     width:15%;
     font-size:small;
     margin:1em;
+}
+.tile .author{
+    font-size:large;
 }
