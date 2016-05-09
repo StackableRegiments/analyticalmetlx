@@ -522,10 +522,13 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     }
     */
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
+    LiftRules.statelessDispatchTable.prepend(SystemRestHelper)
     LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
-    LiftRules.dispatch.append(MeTLStatefulRestHelper)
     LiftRules.statelessDispatchTable.prepend(WebMeTLRestHelper)
+
+    LiftRules.dispatch.append(MeTLStatefulRestHelper)
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
+
     setupAuthorizersFromFile(Globals.configurationFileLocation)
     setupAuthenticatorsFromFile(Globals.configurationFileLocation)
     setupClientConfigFromFile(Globals.configurationFileLocation)

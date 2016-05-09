@@ -25,7 +25,7 @@ object Boot{
 }
 
 class Boot extends Logger {
-  def boot {
+   def boot {
     trace("Boot begins")
     LiftRules.addToPackages("com.metl")
 
@@ -53,11 +53,11 @@ class Boot extends Logger {
       case any => defaultHeaders(any)
     }
     LiftRules.supplementalHeaders.default.set(List(
-        ("Access-Control-Allow-Origin", "*"),
-        ("Access-Control-Allow-Credentials", "true"),
-        ("Access-Control-Allow-Methods", "GET, OPTIONS"),
-        ("Access-Control-Allow-Headers", "WWW-Authenticate,Keep-Alive,User-Agent,X-Requested-With,Cache-Control,Content-Type")
-      ))
+      ("Access-Control-Allow-Origin", "*"),
+      ("Access-Control-Allow-Credentials", "true"),
+      ("Access-Control-Allow-Methods", "GET, OPTIONS"),
+      ("Access-Control-Allow-Headers", "WWW-Authenticate,Keep-Alive,User-Agent,X-Requested-With,Cache-Control,Content-Type")
+    ))
     LiftRules.attachResourceId = {
       if (isDebug){
         s => "%s?%s".format(s,nextFuncName)

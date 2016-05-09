@@ -8,7 +8,7 @@ import _root_.net.liftweb._
 import http._
 import common._
 import util.Helpers._
-import java.io.{ByteArrayOutputStream,ByteArrayInputStream,BufferedInputStream,FileReader,BufferedOutputStream}
+import java.io.{ByteArrayOutputStream,ByteArrayInputStream,BufferedInputStream,FileReader,BufferedOutputStream,File}
 import javax.imageio._
 import org.apache.commons.io.IOUtils
 import scala.xml._
@@ -92,6 +92,29 @@ object StatelessHtml extends Stemmer with Logger {
   })
   def getUserOptions(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getUserOptions",{
     Full(InMemoryResponse(config.getResource("userOptionsFor_%s".format(Globals.currentUser)),Nil,Nil,200))
+  })
+  def externalSlides = {
+    XML.load("https://metl.saintleo.edu/search?query=") \\ "slide" \ "id"
+  }
+  def externalSlideSummary(slide:String):Box[Tuple2[String,Elem]] = Stopwatch.time("StatelessHtml.externalSlideSummary",{
+    println("externalSlideSummary %s".format(slide))
+    try{
+      val outfile = "/stackable/samples/slides/%s.xml".format(slide)
+      Full((slide, if(new File(outfile).exists){
+        XML.loadFile(outfile)
+      }
+      else{
+        val x = XML.load("https://metl.saintleo.edu/describeHistory?source=%s".format(slide))
+        XML.save(outfile,x)
+        x
+      }))
+    }
+    catch{
+      case e => {
+        println("externalSlideSummary exception for %s: %s".format(slide,e.getMessage))
+        Empty
+      }
+    }
   })
 
   def proxyDataUri(slideJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.proxyDataUri(%s)".format(identity),
@@ -211,38 +234,30 @@ object StatelessHtml extends Stemmer with Logger {
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),{
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
   })
-  def themes(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(req.param("source")), {
-    req.param("source").map(jid=> XmlResponse(nouns(jid)))
-  })
-  def chunks(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.chunks(%s)".format(req.param("source")), {
-    req.param("source").map(jid=> {
-      val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-      val elements = history.getCanvasContents
-      val chunked = CanvasContentAnalysis.chunk(elements)
-      XmlResponse(
-        <contentRuns>
-          <slide>jid</slide>
-          <timeThreshold>{chunked.timeThreshold.toString}</timeThreshold>
-          {
-            chunked.chunksets.map(chunkset =>
+  def themes(slide:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(slide), Full(XmlResponse(nouns(slide))))
+  def chunks(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.chunks(%s)".format(jid), {
+    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
+    val elements = history.getCanvasContents
+    val chunked = CanvasContentAnalysis.chunk(elements)
+    Full(XmlResponse(
+      <contentRuns>
+        <slide>jid</slide>
+        <timeThreshold>{chunked.timeThreshold.toString}</timeThreshold>
+        {
+          chunked.chunksets.map(chunkset =>
+            {
+              <runs author={chunkset.author}>
               {
-                <runs author={chunkset.author}>
-                {
-                  chunkset.chunks.map(chunk => <run start={chunk.start.toString} end={chunk.end.toString} activity={chunk.activity.size.toString} miliseconds={chunk.milis.toString} />)
-                }
-                </runs>
-              })
-          }
-          </contentRuns>
-      )
-    })
+                chunkset.chunks.map(chunk => <run start={chunk.start.toString} end={chunk.end.toString} activity={chunk.activity.size.toString} miliseconds={chunk.milis.toString} />)
+              }
+              </runs>
+            })
+        }
+        </contentRuns>
+    ))
   })
-  def history(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), {
-    req.param("source").map(jid=> XmlResponse(loadHistory(jid)))
-  })
-  def fullHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), {
-    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>))
-  })
+  def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
+  def fullHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>)))
 
 
   def byteArrayHeaders(filename:String):List[Tuple2[String,String]] = {
@@ -310,81 +325,73 @@ object StatelessHtml extends Stemmer with Logger {
     Full(XmlResponse(<resource url={identity}/>))
   })
 
-  def fullClientHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(req.param("source")), {
-    req.param("source").map(jid => XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>))
-  })
-  def mergedHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(req.param("source")), {
-    req.param("source").map(jid=> {
-      req.param("username").map(user => {
-        XmlResponse(loadMergedHistory(jid,user))
-      }).getOrElse(NotFoundResponse("username not provided"))
-    })
-  })
-  def describeHistory(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(req.param("source")),{
-    req.param("source").map(jid=>{
-      val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
-      val history = room.getHistory
-      val stanzas = history.getAll
-      val allContent = stanzas.length
-      val publishers = stanzas.groupBy(_.author)
-      val canvasContent = history.getCanvasContents.length
-      val strokes = history.getInks.length
-      val texts = history.getTexts.length
-      val images = history.getImages.length
-      val files = history.getFiles.length
-      val quizzes = history.getQuizzes.length
-      val highlighters = history.getHighlighters.length
-      val attendances = history.getAttendances
-      val uniqueOccupants = attendances.groupBy(_.author)
-      val occupantCount = uniqueOccupants.keys.size
-      val xResponse = <historyDescription>
-      <bounds>
-      <left>{Text(history.getLeft.toString)}</left>
-      <right>{Text(history.getRight.toString)}</right>
-      <top>{Text(history.getTop.toString)}</top>
-      <bottom>{Text(history.getBottom.toString)}</bottom>
-      </bounds>
-      <lastModified>{history.lastModified}</lastModified>
-      <lastVisuallyModified>{history.lastVisuallyModified}</lastVisuallyModified>
-      <roomType>{Text(room.roomMetaData.toString)}</roomType>
-      <jid>{Text(jid)}</jid>
-      <stanzaCount>{Text(allContent.toString)}</stanzaCount>
-      <canvasContentCount>{Text(canvasContent.toString)}</canvasContentCount>
-      <imageCount>{Text(images.toString)}</imageCount>
-      <strokeCount>{Text(strokes.toString)}</strokeCount>
-      <highlighterCount>{Text(highlighters.toString)}</highlighterCount>
-      <textCount>{Text(texts.toString)}</textCount>
-      <quizzes>{Text(quizzes.toString)}</quizzes>
-      <files>{Text(files.toString)}</files>
-      <uniquePublishers>{publishers.map(pub => {
-        <publisher>
-        <name>{pub._1}</name>
-        <activityCount>{pub._2.length}</activityCount>
-        </publisher>
-      })}</uniquePublishers>
-      <uniqueOccupants>{uniqueOccupants.map(occ => {
-        <occupant>
-        <name>{occ._1}</name>
-        <activity>{
-          occ._2.map(action => {
-            <action>
-            <location>{Text(action.location)}</location>
-            <timestamp>{Text(action.timestamp.toString)}</timestamp>
-            <present>{Text(action.present.toString)}</present>
-            </action>
-          })
-        }</activity>
-        </occupant>
-      })}</uniqueOccupants>
-      <occupants>{Text(occupantCount.toString)}</occupants>
-      <snapshot>{
-        Text(base64Encode(room.getThumbnail))
-      }</snapshot>
-      </historyDescription>
-      req.param("format").openOr("xml") match {
-        case "json" => JsonResponse(json.Xml.toJson(xResponse))
-        case "xml" => XmlResponse(xResponse)
-      }
+  def fullClientHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>)))
+
+  def mergedHistory(jid:String,onBehalfOf:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.mergedHistory(%s)".format(jid), Full(XmlResponse(loadMergedHistory(jid,onBehalfOf))))
+
+  def describeHistory(jid:String,format:String="xml")():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(jid),{
+    val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
+    val history = room.getHistory
+    val stanzas = history.getAll
+    val allContent = stanzas.length
+    val publishers = stanzas.groupBy(_.author)
+    val canvasContent = history.getCanvasContents.length
+    val strokes = history.getInks.length
+    val texts = history.getTexts.length
+    val images = history.getImages.length
+    val files = history.getFiles.length
+    val quizzes = history.getQuizzes.length
+    val highlighters = history.getHighlighters.length
+    val attendances = history.getAttendances
+    val uniqueOccupants = attendances.groupBy(_.author)
+    val occupantCount = uniqueOccupants.keys.size
+    val xResponse = <historyDescription>
+    <bounds>
+    <left>{Text(history.getLeft.toString)}</left>
+    <right>{Text(history.getRight.toString)}</right>
+    <top>{Text(history.getTop.toString)}</top>
+    <bottom>{Text(history.getBottom.toString)}</bottom>
+    </bounds>
+    <lastModified>{history.lastModified}</lastModified>
+    <lastVisuallyModified>{history.lastVisuallyModified}</lastVisuallyModified>
+    <roomType>{Text(room.roomMetaData.toString)}</roomType>
+    <jid>{Text(jid)}</jid>
+    <stanzaCount>{Text(allContent.toString)}</stanzaCount>
+    <canvasContentCount>{Text(canvasContent.toString)}</canvasContentCount>
+    <imageCount>{Text(images.toString)}</imageCount>
+    <strokeCount>{Text(strokes.toString)}</strokeCount>
+    <highlighterCount>{Text(highlighters.toString)}</highlighterCount>
+    <textCount>{Text(texts.toString)}</textCount>
+    <quizzes>{Text(quizzes.toString)}</quizzes>
+    <files>{Text(files.toString)}</files>
+    <uniquePublishers>{publishers.map(pub => {
+      <publisher>
+      <name>{pub._1}</name>
+      <activityCount>{pub._2.length}</activityCount>
+      </publisher>
+    })}</uniquePublishers>
+    <uniqueOccupants>{uniqueOccupants.map(occ => {
+      <occupant>
+      <name>{occ._1}</name>
+      <activity>{
+        occ._2.map(action => {
+          <action>
+          <location>{Text(action.location)}</location>
+          <timestamp>{Text(action.timestamp.toString)}</timestamp>
+          <present>{Text(action.present.toString)}</present>
+          </action>
+        })
+      }</activity>
+      </occupant>
+    })}</uniqueOccupants>
+    <occupants>{Text(occupantCount.toString)}</occupants>
+    <snapshot>{
+      Text(base64Encode(room.getThumbnail))
+    }</snapshot>
+    </historyDescription>
+    Full(format match {
+      case "json" => JsonResponse(json.Xml.toJson(xResponse))
+      case "xml" => XmlResponse(xResponse)
     })
   })
   def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),{

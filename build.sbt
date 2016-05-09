@@ -43,7 +43,7 @@ libraryDependencies ++= {
   val liftVersion = "2.6.2"
   Seq(
     "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-  "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
+    "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
     "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
@@ -70,18 +70,19 @@ libraryDependencies ++= {
     "net.sf.ehcache" % "ehcache" % "2.10.1",
     "io.github.stackableregiments" %% "common-utils" % "0.3.+",
     "io.github.stackableregiments" %% "metldata" % "3.7.+",
-    "io.github.stackableregiments" %% "lift-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
     "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "metl2011" % "3.10.+",
     "io.github.stackableregiments" %% "metl-h2" % "3.19.+",
-//    until sonatype lets us publish again, the following two lines replace the h2 dependency
-//    "com.h2database" % "h2" % "1.4.189",
-//    "io.github.stackableregiments" %% "persisted-metl" % "3.5.+",
+    //    until sonatype lets us publish again, the following two lines replace the h2 dependency
+    //    "com.h2database" % "h2" % "1.4.189",
+    //    "io.github.stackableregiments" %% "persisted-metl" % "3.5.+",
     "mysql" % "mysql-connector-java" % "5.1.38",
-//    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
+    //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
+    "org.apache.shiro" % "shiro-core" % "1.2.4",
+    "org.apache.shiro" % "shiro-web" % "1.2.4",
     "io.github.stackableregiments" %% "lift-extensions" % "0.2.+"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))

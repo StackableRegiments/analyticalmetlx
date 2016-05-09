@@ -5,22 +5,22 @@
   <script src="static/js/stable/moment.min.js"></script>
   <script src="static/js/stable/d3.min.js"></script>
   <script src="static/js/stable/metricsgraphics.js"></script>
+  <script src="static/js/stable/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="static/css/bootstrap.min.css"></link>
   <link rel="stylesheet" href="static/css/admin.css"></link>
   <link rel="stylesheet" href="static/css/metricsgraphics.css"></link>
   <script data-lift="with-resource-id" src="static/js/admin.js"></script>
+
   <div class="inset">
-    <div id="conversationFilters">
+    <div id="conversationFilters" class="col-md-4">
       <div class="author">
-        <input placeholder="Filter to a single author" />
+        <input placeholder="Author search" />
+      </div>
+      <div class="fragment">
+        <input placeholder="Text fragment" />
       </div>
     </div>
-    <div id="conversationSort">
-      <div class="lastWorked sortOption">Last work done</div>
-      <div class="publication sortOption">Creation date</div>
-      <div class="slideCount sortOption">Slide count</div>
-      <div class="activityCount sortOption">Activity count</div>
-    </div>
-    <div id="conversations">
+    <div id="conversations" class="col-md-8">
       <div class="tile conversationTemplate template gridLines gridMedium">
         <div class="expandedTemplate template ">
           <div><a class="inspect"><span class="label">Activity</span><span class="activityCount">0</span></a></div>

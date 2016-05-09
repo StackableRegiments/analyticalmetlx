@@ -1,0 +1,2 @@
+#main
+securityManager.credentialsMatcher = SimpleCredentialsMatcher
