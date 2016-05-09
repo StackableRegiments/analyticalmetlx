@@ -22,6 +22,45 @@ trait Stemmer {
   }
 }
 
+object SystemRestHelper extends RestHelper with Stemmer with Logger {
+  warn("SystemRestHelper inline")
+  val serializer = new GenericXmlSerializer("rest")
+  serve {
+    case r@Req(List("api","v1","serverStatus"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.serverStatus", {
+        Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
+      })
+    case r @ Req(List("api","v1","history","public",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.history", StatelessHtml.history(jid))
+    case r @ Req(List("api","v1","history","includePrivate",jid,onBehalfOf),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.mergedHistory", StatelessHtml.mergedHistory(jid,onBehalfOf))
+    case r @ Req(List("api","v1","history","description",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.describeHistory", StatelessHtml.describeHistory(jid))
+    case r @ Req(List("api","v1","analysis","themes",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.themes", StatelessHtml.themes(jid))
+    case r @ Req(List("api","v1","analysis","chunks",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.chunks", StatelessHtml.chunks(jid))
+    case r @ Req(List("api","v1","analysis","words",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
+    case r @ Req(List("api","v1","analysis","handwriting",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.handwriting", Full(XmlResponse(StatelessHtml.handwriting(jid))))
+    case r @ Req(List("api","v1","conversation","details",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.details", StatelessHtml.details(jid))
+    case Req(List("api","v1","conversation","search",query),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.search", {
+        val server = ServerConfiguration.default
+        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
+        Full(S.params("format") match {
+          case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
+          case _ => XmlResponse(x)
+        })
+      })
+    case Req(List("api","v1","slide","thumbnail",jid),_,_) => Stopwatch.time("SystemRestHelper.thumbnail",  {
+      HttpResponder.snapshot(jid,"thumbnail")
+    })
+  }
+}
+
 object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   debug("MeTLRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
@@ -123,19 +162,22 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case r @ Req(List("appcache"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.appcache", StatelessHtml.appCache(r))
     case r @ Req(List("history"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.history", StatelessHtml.history(r))
+      () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))
     case r @ Req(List("mergedHistory"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.mergedHistory", StatelessHtml.mergedHistory(r))
+      () => Stopwatch.time("MeTLRestHelper.mergedHistory", for(
+        source <- r.param("source");
+        user <- r.param("username");
+        resp <- StatelessHtml.mergedHistory(source,user)) yield resp)
     case r @ Req(List("fullHistory"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.fullHistory", StatelessHtml.fullHistory(r))
+      () => Stopwatch.time("MeTLRestHelper.fullHistory", r.param("source").flatMap(jid => StatelessHtml.fullHistory(jid)))
     case r @ Req(List("fullClientHistory"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.fullClientHistory", StatelessHtml.fullClientHistory(r))
+      () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
     case r @ Req("describeHistory" :: _,_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.describeHistory", StatelessHtml.describeHistory(r))
-    case r @ Req(List("themes"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.themes", StatelessHtml.themes(r))
-    case r @ Req(List("chunks"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.chunks", StatelessHtml.chunks(r))
+      () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
+    case r @ Req(List("themes",jid),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.themes", StatelessHtml.themes(jid))
+    case r @ Req(List("chunks",jid),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.chunks", StatelessHtml.chunks(jid))
     case r @ Req(List("words",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
     case r @ Req(List("handwriting",jid),_,_) =>
@@ -182,7 +224,6 @@ object WebMeTLRestHelper extends RestHelper with Logger{
 }
 object MeTLStatefulRestHelper extends RestHelper with Logger {
   debug("MeTLStatefulRestHelper inline")
-  val DEMO_TEACHER = "Mr Roboto"
   val serializer = new GenericXmlSerializer("rest")
   serve {
     case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
