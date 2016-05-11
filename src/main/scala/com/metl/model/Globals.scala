@@ -60,6 +60,7 @@ object Globals extends PropertyReader with Logger {
   val scheme = Some(readText((propFile \\ "serverAddress"),"scheme")).filterNot(_ == "")
   val host = Some(readText((propFile \\ "serverAddress"),"hostname")).filterNot(_ == "")
   val port = Some(readText((propFile \\ "serverAddress"),"port")).filterNot(_ == "").map(_.toInt)
+  val importerParallelism = (propFile \\ "importerPerformance").headOption.map(ipn => readAttribute(ipn,"parallelism").toInt).filter(_ > 0).getOrElse(1)
   var isDevMode:Boolean = true
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)

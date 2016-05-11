@@ -816,6 +816,27 @@ case class CopyContent(server:ServerConfiguration,from:History,to:RoomMetaData)
 case class CopyLocation(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
 
 object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor with Logger {
+  protected val pool = Range(0,Globals.importerParallelism).map(i => new ServerSideBackgroundWorkerChild()).toArray
+  protected var position = 0
+  override def messageHandler = {
+    case message => {
+      try {
+        position += 1
+        if (position >= Globals.importerParallelism)
+          position = 0
+        val worker = pool(position)
+        trace("worker(%s : %s) doing job: %s".format(position,worker,message))
+        worker ! message
+      } catch {
+        case e:Exception => {
+          error("error in ServerSideBackgroundWorker - (%s) job %s".format(position,message),e)
+        }
+      }
+    }
+  }
+}
+
+class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with Logger {
   val thisDuplicatorId = nextFuncName
   override def messageHandler = {
     case RoomJoinAcknowledged(server,room) => {}
