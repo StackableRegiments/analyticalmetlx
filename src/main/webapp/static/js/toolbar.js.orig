@@ -551,17 +551,17 @@ var Modes = (function(){
                             selectionAdorner.append(marquee);
                             pkg.insertAfter(marquee);
                         }
-												pkg.append($("<div/>", {id:"imageSizeControls"}).css({
-													height:px("80")
-												}))
+                        pkg.append($("<div/>", {id:"imageSizeControls"}).css({
+                            height:px("80")
+                        }))
                         var thumbnail = $("<img />").css({
                             position:"absolute",
                             top:90,
                             left:0
                         }).appendTo(pkg);
-												pkg.append($("<div/>", {id:"uploadControls"}).css({
-													height:px("80")
-												}))
+                        pkg.append($("<div/>", {id:"uploadControls"}).css({
+                            height:px("80")
+                        }))
                         var p = progress().value(actionsCompleted).max(necessaryActions);
                         p.element.css({
                             margin:"auto"
@@ -592,8 +592,8 @@ var Modes = (function(){
                                 var sx = viewboxWidth / img.width;
                                 var sy = viewboxHeight / img.height;
                                 var shift = 1 / (Math.min(sx,sy) - 0.1);
-																var tolerance = 1.2;
-																shift *= tolerance;
+                                var tolerance = 1.2;
+                                shift *= tolerance;
                                 var scale = viewboxWidth / boardWidth;
                                 if(shift > 1){
                                     console.log("Zooming out to accomodate image",shift,viewboxWidth,viewboxHeight,img.width,img.height);
@@ -616,25 +616,25 @@ var Modes = (function(){
                                     "background-color":"lightgray",
                                     border:"2px dotted blue"
                                 });
-																var width = img.width;
-																var height = img.height;
-																function createButton(scaleFactor, buttonName) {
-																	var button = $("<div/>", {
-																		class:"imageUploadSizeChoice",
-																	}).on("click", function(){
-																		width = img.width * scaleFactor;
-																		height = img.height * scaleFactor;
-																		thumbnail.css({
-																			width:px(width),
-																			height: px(height)
-																		});
-																	}).append($("<span/>",{text:buttonName}));
-																	return button;
-																};
-																var nativeImage = createButton(1, "Native Size");
-																var mediumImage = createButton(0.75, "3/4 of Size");
-																var smallImage = createButton(0.5, "1/2 of Size"); 
-																$("#imageSizeControls").append(smallImage).append(mediumImage).append(nativeImage);
+                                var width = img.width;
+                                var height = img.height;
+                                function createButton(scaleFactor, buttonName) {
+                                    var button = $("<div/>", {
+                                        class:"imageUploadSizeChoice",
+                                    }).on("click", function(){
+                                        width = img.width * scaleFactor;
+                                        height = img.height * scaleFactor;
+                                        thumbnail.css({
+                                            width:px(width),
+                                            height: px(height)
+                                        });
+                                    }).append($("<span/>",{text:buttonName}));
+                                    return button;
+                                };
+                                var nativeImage = createButton(1, "Native Size");
+                                var mediumImage = createButton(0.75, "3/4 of Size");
+                                var smallImage = createButton(0.5, "1/2 of Size");
+                                $("#imageSizeControls").append(smallImage).append(mediumImage).append(nativeImage);
                                 thumbnail.css({
                                     opacity:0.1,
                                     width:px(screenWidth),
@@ -644,43 +644,43 @@ var Modes = (function(){
                                 updateTracking(identity);
                                 var currentSlide = Conversations.getCurrentSlideJid();
                                 var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(file.name.split(".")[0]));
-																var uploadImage = $("<div/>", {class: "uploadImageButton"})
-																	.on("click", function() {
-																		$.ajax({
-																			url: url,
-																			type: 'POST',
-																			success: function(e){
-																					updateTracking(identity);
-																					var loader = $("#upload");
-																					var imageStanza = {
-																							type:"image",
-																							author:UserSettings.getUsername(),
-																							timestamp:t,
-																							tag:identity,
-																							identity:identity,
-																							slide:currentSlide.toString(),
-																							source:$(e).text(),
-																							width:parseFloat(width),
-																							height:parseFloat(height),
-																							target:"presentationSpace",
-																							privacy:Privacy.getCurrentPrivacy(),
-																							x:worldPos.x,
-																							y:worldPos.y
-																					};
-																					console.log("Sending image stanza",imageStanza);
-																					sendStanza(imageStanza);
-																					updateTracking(identity);
-																			},
-																			error: function(e){
-																					pkg.addClass("fail");
-																			},
-																			data:img.src,
-																			cache: false,
-																			contentType: false,
-																			processData: false
-																	});
-																}).append($("<span/>",{text: "Upload"}));
-																	$("#uploadControls").append(uploadImage);
+                                var uploadImage = $("<div/>", {class: "uploadImageButton"})
+                                        .on("click", function() {
+                                            $.ajax({
+                                                url: url,
+                                                type: 'POST',
+                                                success: function(e){
+                                                    updateTracking(identity);
+                                                    var loader = $("#upload");
+                                                    var imageStanza = {
+                                                        type:"image",
+                                                        author:UserSettings.getUsername(),
+                                                        timestamp:t,
+                                                        tag:identity,
+                                                        identity:identity,
+                                                        slide:currentSlide.toString(),
+                                                        source:$(e).text(),
+                                                        width:parseFloat(width),
+                                                        height:parseFloat(height),
+                                                        target:"presentationSpace",
+                                                        privacy:Privacy.getCurrentPrivacy(),
+                                                        x:worldPos.x,
+                                                        y:worldPos.y
+                                                    };
+                                                    console.log("Sending image stanza",imageStanza);
+                                                    sendStanza(imageStanza);
+                                                    updateTracking(identity);
+                                                },
+                                                error: function(e){
+                                                    pkg.addClass("fail");
+                                                },
+                                                data:img.src,
+                                                cache: false,
+                                                contentType: false,
+                                                processData: false
+                                            });
+                                        }).append($("<span/>",{text: "Upload"}));
+                                $("#uploadControls").append(uploadImage);
                             };
                             img.src = e.target.result;
                         }
@@ -1035,14 +1035,14 @@ var Modes = (function(){
                 $("#textEditorCustomizationOptionsContainer").html(textCustomizationOptions(text));
                 textEditor.find("#closeTextEditor").remove();
                 textEditor.prepend($("<div />",{
-		    id:"closeTextEditor",
+                    id:"closeTextEditor",
                     text:"X"
                 }).css({
                     "background-color":"red",
                     "color":"white",
                     "float":"right"
                 }).click(function(){
-		    textEditor.remove();
+                    textEditor.remove();
                 }));
 
                 var inputArea = $("#textEditorInputArea");
