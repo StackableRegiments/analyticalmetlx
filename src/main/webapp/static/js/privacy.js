@@ -39,25 +39,27 @@ var Privacy = (function(){
         }
     };
     var adjustButtonsToIndicateSelection = function(selection){
-        $.each(changePrivacyButtons,function(id,p){
-            var button = $("#"+id);
-            button.addClass("disabledButton");
-            if ("images" in selection){
-                if (_.any(selection.images,function(item){return item.privacy != p;})){
-                    button.removeClass("disabledButton");
+        if(selection){
+            $.each(changePrivacyButtons,function(id,p){
+                var button = $("#"+id);
+                button.addClass("disabledButton");
+                if ("images" in selection){
+                    if (_.any(selection.images,function(item){return item.privacy != p;})){
+                        button.removeClass("disabledButton");
+                    }
                 }
-            }
-            if ("inks" in selection){
-                if (_.any(selection.inks,function(item){return item.privacy != p;})){
-                    button.removeClass("disabledButton");
+                if ("inks" in selection){
+                    if (_.any(selection.inks,function(item){return item.privacy != p;})){
+                        button.removeClass("disabledButton");
+                    }
                 }
-            }
-            if ("texts" in selection){
-                if (_.any(selection.texts,function(item){return item.privacy != p;})){
-                    button.removeClass("disabledButton");
+                if ("texts" in selection){
+                    if (_.any(selection.texts,function(item){return item.privacy != p;})){
+                        button.removeClass("disabledButton");
+                    }
                 }
-            }
-        });
+            });
+        }
     };
     $(function(){
         $.each(privacyButtons,function(id,p){
@@ -74,9 +76,9 @@ var Privacy = (function(){
                         republished.imageIds = _.pluck(Modes.select.selected.images,"identity");
                         republished.textIds = _.pluck(Modes.select.selected.texts,"identity");
                         republished.inkIds = _.pluck(Modes.select.selected.inks,"identity");
-												if (_.size(republished.imageIds) > 0 || _.size(republished.textIds) > 0 || _.size(republished.inkIds) > 0){
-													sendStanza(republished);
-												}
+                        if (_.size(republished.imageIds) > 0 || _.size(republished.textIds) > 0 || _.size(republished.inkIds) > 0){
+                            sendStanza(republished);
+                        }
                     }
                 }
             }).addClass("disabledButton");
