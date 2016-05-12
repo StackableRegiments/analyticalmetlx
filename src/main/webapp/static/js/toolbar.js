@@ -491,6 +491,7 @@ var Modes = (function(){
                 var subject = $.extend({},currentText);
                 subject.text = oldText;
                 delete subject.canvas;
+		console.log(subject);
                 sendStanza(subject);
             }
             var checkTyping = function(){

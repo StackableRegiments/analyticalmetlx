@@ -545,8 +545,6 @@ function drawImage(image){
             visibleBounds.push(image.bounds);
             var borderW = sBounds.screenWidth * 0.10;
             var borderH = sBounds.screenHeight * 0.10;
-            //                                  prerenderImage(image);
-            //                                  boardContext.drawImage(image.canvas, 0, 0, image.canvas.width, image.canvas.height, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
             boardContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
         }
     }
@@ -558,7 +556,11 @@ function drawText(text){
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-        boardContext.drawImage(text.canvas,sBounds.screenPos.x,sBounds.screenPos.y,sBounds.screenWidth,sBounds.screenHeight);
+        boardContext.drawImage(text.canvas,
+			       sBounds.screenPos.x,
+			       sBounds.screenPos.y,
+			       sBounds.screenWidth,
+			       sBounds.screenHeight);
     }
     catch(e){
         console.log("drawText exception",e);
