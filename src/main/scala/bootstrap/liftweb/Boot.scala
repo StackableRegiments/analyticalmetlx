@@ -83,7 +83,7 @@ class Boot extends Logger {
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
       //Widget
       Menu(Loc("Analytical widget","widget" :: Nil,"Widgets")),
-      Menu(Loc("Organisational view","admin" :: Nil,"Organisation admin")),
+      //Menu(Loc("Organisational view","admin" :: Nil,"Organisation admin")),
       //Hybrid textboxing
       Menu(Loc("HTML embed layer","textbox" :: Nil,"Textbox")),
       //FutureMeTL

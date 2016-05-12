@@ -1,16 +1,16 @@
 var Submissions = (function(){
-	var submissionSummaryListing = {};
-	var submissionSummaryTemplate = {};
-	var currentSubmissionTemplate = {};
-	var currentSubmissionContainer = {};
+    var submissionSummaryListing = {};
+    var submissionSummaryTemplate = {};
+    var currentSubmissionTemplate = {};
+    var currentSubmissionContainer = {};
     var submissions = [];
     var currentSubmission = {};
     $(function(){
-				submissionSummaryListing = $("#submissionListing");
-				submissionSummaryTemplate = submissionSummaryListing.find(".submissionSummary").clone();
-				currentSubmissionContainer = $("#currentSubmission");
-				currentSubmissionTemplate = currentSubmissionContainer.find(".submissionContainer").clone();
-				submissionSummaryListing.empty();
+        submissionSummaryListing = $("#submissionListing");
+        submissionSummaryTemplate = submissionSummaryListing.find(".submissionSummary").clone();
+        currentSubmissionContainer = $("#currentSubmission");
+        currentSubmissionTemplate = currentSubmissionContainer.find(".submissionContainer").clone();
+        submissionSummaryListing.empty();
         $("#submissions").click(function(){
             showBackstage("submissions");
         });
@@ -51,45 +51,45 @@ var Submissions = (function(){
         $("#submissionCount").text("");
     };
     var renderSubmissionsInPlace = function(){
-			submissionSummaryListing.empty();
-			filteredSubmissions().map(function(submission){
-				renderSubmissionSummary(submission);
-			})
-			/*
-        $("#submissionListing").html(unwrap(filteredSubmissions().map(renderSubmissionSummary)));
-				*/
+        submissionSummaryListing.empty();
+        filteredSubmissions().map(function(submission){
+            renderSubmissionSummary(submission);
+        })
+        /*
+         $("#submissionListing").html(unwrap(filteredSubmissions().map(renderSubmissionSummary)));
+         */
         renderCurrentSubmissionInPlace();
         refreshSubmissionCount();
     }
     var renderCurrentSubmissionInPlace = function(){
-			currentSubmissionContainer.html(renderSubmission(currentSubmission));
+        currentSubmissionContainer.html(renderSubmission(currentSubmission));
     };
     var renderSubmissionSummary = function(submission){
-			if ("type" in submission && submission.type == "submission"){
-				var rootElem = submissionSummaryTemplate.clone();
-				submissionSummaryListing.append(rootElem);
-				rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s %s", submission.author, new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()));
-				rootElem.find(".submissionImageThumb").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
-				rootElem.find(".viewSubmissionButton").attr("id",sprintf("viewSubmissionButton_%s",submission.identity)).on("click",function(){
-					currentSubmission = submission;
-					renderCurrentSubmissionInPlace();
-				});
-			}
+        if ("type" in submission && submission.type == "submission"){
+            var rootElem = submissionSummaryTemplate.clone();
+            submissionSummaryListing.append(rootElem);
+            rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s %s", submission.author, new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()));
+            rootElem.find(".submissionImageThumb").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
+            rootElem.find(".viewSubmissionButton").attr("id",sprintf("viewSubmissionButton_%s",submission.identity)).on("click",function(){
+                currentSubmission = submission;
+                renderCurrentSubmissionInPlace();
+            });
+        }
     };
     var renderSubmission = function(submission){
         var rootElem = $("<div />");
         if ("type" in submission && submission.type == "submission"){
-					rootElem = currentSubmissionTemplate.clone();
-					rootElem.attr("id",sprintf("submission_%s",submission.identity))
-					rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s",submission.author, submission.timestamp));
-					rootElem.find(".submissionImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
-					if (Conversations.shouldModifyConversation()){
-						rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
-							addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
-						});
-					} else {
-						rootElem.find("submissionTeacherControls").hide();
-					}
+            rootElem = currentSubmissionTemplate.clone();
+            rootElem.attr("id",sprintf("submission_%s",submission.identity))
+            rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s",submission.author, submission.timestamp));
+            rootElem.find(".submissionImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
+            if (Conversations.shouldModifyConversation()){
+                rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
+                    addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
+                });
+            } else {
+                rootElem.find("submissionTeacherControls").hide();
+            }
         }
         return rootElem;
     };
