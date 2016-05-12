@@ -129,14 +129,14 @@ var stanzaHandlers = {
     text:textReceived,
     command:commandReceived,
     submission:submissionReceived,
-		attendance:attendanceReceived,
-		file:fileReceived
+    attendance:attendanceReceived,
+    file:fileReceived
 };
 function fileReceived(file){
-	//doing nothing with files yet.
+    //doing nothing with files yet.
 }
 function attendanceReceived(attendance){
-	//doing nothing with attendances for the moment.
+    //doing nothing with attendances for the moment.
 }
 function submissionReceived(submission){
     Submissions.processSubmission(submission);
@@ -156,13 +156,12 @@ function commandReceived(c){
         }
         if(Conversations.getIsSyncedToTeacher()){
             var f = function(){
-                console.log("syncing to teacher view");
                 zoomToPage();
                 TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
             };
             if(UserSettings.getIsInteractive()){
-						// interactive users don't chase the teacher's viewbox, only projectors do.	
-            //    WorkQueue.enqueue(f);
+                // interactive users don't chase the teacher's viewbox, only projectors do.
+                //    WorkQueue.enqueue(f);
             }
             else{
                 f();
@@ -174,7 +173,6 @@ function commandReceived(c){
 }
 function textReceived(t){
     try{
-        console.log(sprintf("textReceived [%s]",t.text),t);
         if(isUsable(t)){
             boardContent.texts[t.identity] = t;
             prerenderText(t);
@@ -480,7 +478,6 @@ function transformReceived(transform){
     blit();
 }
 function moveReceived(move){
-    console.log("moveReceived",move);
     updateStatus(sprintf("Moving %s, %s, %s",
                          Object.keys(move.images).length,
                          Object.keys(move.texts).length,
@@ -500,7 +497,6 @@ function deleteInk(inks,privacy,id){
     if(id in boardContent[inks]){
         var ink = boardContent[inks][id];
         if(ink.privacy.toUpperCase() == privacy.toUpperCase()){
-            console.log("Deleting ink",inks,id);
             delete boardContent[inks][id];
         }
     }
@@ -587,13 +583,11 @@ function imageReceived(image){
         }
         image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
         incorporateBoardBounds(image.bounds);
-        console.log("imageReceived",image);
         boardContent.images[image.identity]  = image;
         updateTracking(image.identity);
         prerenderImage(image);
         WorkQueue.enqueue(function(){
             if(isInClearSpace(image.bounds)){
-                console.log("Drawing image in clear space");
                 try {
                     drawImage(image);
                 } catch(e){
@@ -633,7 +627,7 @@ function inkReceived(ink){
 }
 function takeControlOfViewbox(){
     delete Progress.onBoardContentChanged.autoZooming;
-		UserSettings.setUserPref("followingTeacherViewbox",true);
+    UserSettings.setUserPref("followingTeacherViewbox",true);
 }
 function zoomToFit(){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
@@ -642,7 +636,7 @@ function zoomToFit(){
     IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height);
 }
 function zoomToOriginal(){
-		takeControlOfViewbox();
+    takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
@@ -650,7 +644,7 @@ function zoomToOriginal(){
     IncludeView.specific(0,0,boardWidth,boardHeight);
 }
 function zoomToPage(){
-		takeControlOfViewbox();
+    takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;

@@ -497,13 +497,13 @@ var Modes = (function(){
                 WorkQueue.pause();
                 var oldTextTest = oldText;
                 oldText = newText;
-		var scrollHeight = textEditorInput.prop("scrollHeight");
-		if(scrollHeight > textEditorInput.height()){
-		    textEditorInput.height(scrollHeight);
-		}
+                var scrollHeight = textEditorInput.prop("scrollHeight");
+                if(scrollHeight > textEditorInput.height()){
+                    textEditorInput.height(scrollHeight);
+                }
                 currentText.text = newText;
-		currentText.width = textEditorInput.width();
-		currentText.height = textEditorInput.height();
+                currentText.width = textEditorInput.width();
+                currentText.height = textEditorInput.height();
                 selectedTexts = [currentText];
                 Progress.call("onSelectionChanged",[Modes.select.text]);
                 var el = textEditorInput;
@@ -556,12 +556,12 @@ var Modes = (function(){
                         h = px(currentText.size);
                         textEditorInput.val(currentText.text);
                     }
-		    textEditorInput.width(currentText.width);
-		    textEditorInput.height(currentText.height);
+                    textEditorInput.width(currentText.width);
+                    textEditorInput.height(currentText.height);
 
                     var screenPos = worldToScreen(currentText.x,currentText.y);
                     var possiblyAdjustedHeight = Math.max(currentText.height,h);
-                    var possiblyAdjustedWidth = currentText.width * 1.1;
+                    var possiblyAdjustedWidth = currentText.width;//HUH?  This is just, like, this crazy bug.  Why would we want it to grow every time it's updated? * 1.1;
                     var possiblyAdjustedX = screenPos.x;
                     var possiblyAdjustedY = screenPos.y;
                     var acceptableMinY = 30;
@@ -644,16 +644,16 @@ var Modes = (function(){
                     fontBoldSelector = $("#fontBoldSelector");
                     fontItalicSelector = $("#fontItalicSelector");
                     fontUnderlineSelector = $("#fontUnderlineSelector");
-		    /*
-                    textEditorInput.resizable({
-			handles:"ne se nw sw",
-                        stop:function(event,ui){
-                            currentText.width = ui.width;
-                            currentText.height = ui.height;
-                            prerenderText(currentText);
-                        }
-                    });
-		     */
+                    /*
+                     textEditorInput.resizable({
+                     handles:"ne se nw sw",
+                     stop:function(event,ui){
+                     currentText.width = ui.width;
+                     currentText.height = ui.height;
+                     prerenderText(currentText);
+                     }
+                     });
+                     */
                     textEditorInput.hide();
                     textEditor.hide();
                     //textDropdowns.hide();
@@ -994,9 +994,9 @@ var Modes = (function(){
                                     scaledHeight = 300;
                                     scaledWidth = w / scaleFactor;
                                 } else {
-                                    var scaleFactor = w / 300;
+                                    var sf = w / 300;
                                     scaledWidth = 300;
-                                    scaledHeight = h / scaleFactor;
+                                    scaledHeight = h / sf;
                                 }
                                 imageUploadThumbnail.attr("width",scaledWidth);
                                 imageUploadThumbnail.attr("height",scaledHeight);
@@ -1012,8 +1012,6 @@ var Modes = (function(){
                                 imageUploadWidth.text(w);
                                 imageUploadHeight.text(h);
 
-                                currentImage.width = w;
-                                currentImage.height = h;
                                 //render canvas is responsible for the resizing.  The other canvas is a thumbnail.
                                 var renderCanvas = $("<canvas/>");
                                 renderCanvas.attr("width",w);
@@ -1023,6 +1021,8 @@ var Modes = (function(){
                                     height: px(h)
                                 });
                                 renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                                currentImage.width = w;
+                                currentImage.height = h;
                                 currentImage.resizedImage = renderCanvas[0].toDataURL();
                                 if ("resizedImage" in currentImage){
                                     imageUploadButton.show();
@@ -1064,7 +1064,58 @@ var Modes = (function(){
                 imageUploadWidth.text("");
                 imageUploadHeight.text("");
                 imageFileChoice.unwrap();
-                purrentImage = {};
+                currentImage = {};
+                imageUploadButton
+                    .text("Upload")
+                    .unbind("click")
+                    .on("click",actOnImageButtonClick);
+            };
+            var actOnImageButtonClick = function(){
+                imageUploadButton.unbind("click").text("Uploading");
+                if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
+                    WorkQueue.pause();
+                    var worldPos = {x:currentImage.x,y:currentImage.y};
+                    var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+                    var t = Date.now();
+                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var currentSlide = Conversations.getCurrentSlideJid();
+                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        success: function(e){
+                            updateTracking(identity);
+                            var newIdentity = $(e).find("resourceUrl").text();
+                            var imageStanza = {
+                                type:"image",
+                                author:UserSettings.getUsername(),
+                                timestamp:t,
+                                tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
+                                identity:newIdentity,
+                                slide:currentSlide.toString(),
+                                source:$(e).text(),
+                                width:currentImage.width,
+                                height:currentImage.height,
+                                target:"presentationSpace",
+                                privacy:Privacy.getCurrentPrivacy(),
+                                x:currentImage.x,
+                                y:currentImage.y
+                            };
+                            resetImageUpload();
+                            sendStanza(imageStanza);
+                            WorkQueue.gracefullyResume();
+                        },
+                        error: function(e){
+                            resetImageUpload();
+                            alert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+                            WorkQueue.gracefullyResume();
+                        },
+                        data:currentImage.resizedImage,
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    });
+                }
             };
             var hasInitialized = false;
             $(function(){
@@ -1107,54 +1158,6 @@ var Modes = (function(){
                             }
                         });
                         imageSizeChoiceSelector.append(thisChoice);
-                    });
-                    imageUploadButton.on("click",function(){
-                        if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
-                            var worldPos = {x:currentImage.x,y:currentImage.y};
-                            var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
-                            WorkQueue.pause();
-                            var t = Date.now();
-                            var identity = sprintf("%s%s",UserSettings.getUsername(),t);
-                            var currentSlide = Conversations.getCurrentSlideJid();
-                            var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
-                            $.ajax({
-                                url: url,
-                                type: 'POST',
-                                success: function(e){
-                                    resetImageUpload();
-                                    updateTracking(identity);
-                                    var newIdentity = $(e).find("resourceUrl").text();
-                                    var imageStanza = {
-                                        type:"image",
-                                        author:UserSettings.getUsername(),
-                                        timestamp:t,
-                                        tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-                                        identity:newIdentity,
-                                        slide:currentSlide.toString(),
-                                        source:$(e).text(),
-                                        width:currentImage.width,
-                                        height:currentImage.height,
-                                        target:"presentationSpace",
-                                        privacy:Privacy.getCurrentPrivacy(),
-                                        x:currentImage.x,
-                                        y:currentImage.y
-                                    };
-                                    console.log("Sending image stanza",imageStanza);
-                                    sendStanza(imageStanza);
-                                    WorkQueue.gracefullyResume();
-                                },
-                                error: function(e){
-                                    resetImageUpload();
-                                    alert("upload failed");
-                                    console.log("image upload failed",e);
-                                    WorkQueue.gracefullyResume();
-                                },
-                                data:currentImage.resizedImage,
-                                cache: false,
-                                contentType: false,
-                                processData: false
-                            });
-                        }
                     });
                     resetImageUpload();
                 }
@@ -1217,34 +1220,36 @@ var Modes = (function(){
         },
         select:(function(){
             var updateSelectionVisualState = function(sel){
-                Modes.select.selected = sel;
-                var shouldShowButtons = function(){
-                    if ("images" in sel && _.size(sel.images) > 0){
-                        return true;
-                    } else if ("inks" in sel && _.size(sel.inks) > 0){
-                        return true;
-                    } else if ("texts" in sel && _.size(sel.texts) > 0){
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                if (shouldShowButtons()){
-                    $("#delete").removeClass("disabledButton");
-                    $("#resize").removeClass("disabledButton");
-                } else {
-                    $("#delete").addClass("disabledButton");
-                    $("#resize").addClass("disabledButton");
-                }
-                if (Modes.currentMode == Modes.select){
-                    $("#selectionAdorner").empty();
-                    _.forEach(["images","texts","inks","highlighters"],function(category){
-                        if (category in sel){
-                            $.each(sel[category],function(i,item){
-                                drawSelectionBounds(item);
-                            });
+                if(sel){
+                    Modes.select.selected = sel;
+                    var shouldShowButtons = function(){
+                        if ("images" in sel && _.size(sel.images) > 0){
+                            return true;
+                        } else if ("inks" in sel && _.size(sel.inks) > 0){
+                            return true;
+                        } else if ("texts" in sel && _.size(sel.texts) > 0){
+                            return true;
+                        } else {
+                            return false;
                         }
-                    });
+                    }
+                    if (shouldShowButtons()){
+                        $("#delete").removeClass("disabledButton");
+                        $("#resize").removeClass("disabledButton");
+                    } else {
+                        $("#delete").addClass("disabledButton");
+                        $("#resize").addClass("disabledButton");
+                    }
+                    if (Modes.currentMode == Modes.select){
+                        $("#selectionAdorner").empty();
+                        _.forEach(["images","texts","inks","highlighters"],function(category){
+                            if (category in sel){
+                                $.each(sel[category],function(i,item){
+                                    drawSelectionBounds(item);
+                                });
+                            }
+                        });
+                    }
                 }
             };
             var clearSelectionFunction = function(){
@@ -1494,7 +1499,6 @@ var Modes = (function(){
                         else{
                             var selectionRect = rectFromTwoPoints(marqueeWorldOrigin,worldPos);
                             var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
-                            console.log("Selection bounds",selectionBounds);
                             var intersected = {
                                 images:{},
                                 texts:{},
@@ -1524,7 +1528,6 @@ var Modes = (function(){
                                     var b = item.bounds;
                                     var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
                                     var overlap = overlapRect(selectionBounds,item.bounds);
-                                    console.log(overlap,selectionThreshold);
                                     if(overlap >= selectionThreshold){
                                         //if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
@@ -1755,7 +1758,6 @@ var Modes = (function(){
                                 drawAdvancedTools(brush);
                             });
                             var bar = Canvas.circle(brush.color,width,50);
-                            //console.log(width,brush.width);
                             if (width == brush.width){
                                 sizeDot.addClass("activeTool");
                             }
