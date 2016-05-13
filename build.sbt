@@ -69,7 +69,7 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "net.sf.ehcache" % "ehcache" % "2.10.1",
     "io.github.stackableregiments" %% "common-utils" % "0.3.+",
-    "io.github.stackableregiments" %% "metldata" % "3.7.+",
+    "io.github.stackableregiments" %% "metldata" % "3.8.+",
     "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
     "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",

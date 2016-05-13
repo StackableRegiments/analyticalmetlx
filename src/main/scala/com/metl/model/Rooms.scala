@@ -122,6 +122,7 @@ class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) ext
 
 case class ServerToLocalMeTLStanza[A <: MeTLStanza](stanza:A)
 case class LocalToServerMeTLStanza[A <: MeTLStanza](stanza:A)
+case class ArchiveToServerMeTLStanza[A <: MeTLStanza](stanza:A)
 abstract class RoomStateInformation
 case class RoomJoinAcknowledged(server:String,room:String) extends RoomStateInformation
 case class RoomLeaveAcknowledged(server:String,room:String) extends RoomStateInformation
@@ -134,7 +135,7 @@ case object Ping
 abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long]) extends LiftActor with ListenerManager with Logger {
   lazy val config = ServerConfiguration.configForName(configName)
   private var shouldBacklog = false
-  private var backlog = Queue.empty[MeTLStanza]
+  private var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
   private def onConnectionLost:Unit = {
     debug("MeTLRoom(%s):onConnectionLost".format(location))
     shouldBacklog = true
@@ -148,9 +149,13 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   private def processBacklog:Unit = {
     debug("MeTLRoom(%s):sendToServer.processingBacklog".format(location))
     while (!backlog.isEmpty){
-      val item = backlog.dequeue
+      val (item,shouldUpdateTimestamp) = backlog.dequeue
       trace("MeTLRoom(%s):sendToServer.processingBacklog.dequeue(%s)".format(location,item))
-      this ! LocalToServerMeTLStanza(item)
+      if (shouldUpdateTimestamp){
+        this ! LocalToServerMeTLStanza(item)
+      } else {
+        this ! ArchiveToServerMeTLStanza(item)
+      }
     }
   }
   protected def initialize:Unit = {}
@@ -242,6 +247,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("received stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s)
     })
+    case ls@ArchiveToServerMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.LocalToServerMeTLStanza",{
+      trace("received archived stanza to send to server: %s %s".format(ls, s))
+      sendStanzaToServer(s,false)
+    })
+
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom recieved unknown message")
@@ -272,15 +282,15 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     trace("%s s->l %s".format(location,a))
     joinedUsers.foreach(j => j._3 ! a)
   })
-  protected def sendStanzaToServer(s:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
+  protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
     trace("%s l->s %s".format(location,s))
     showInterest
     if (shouldBacklog) {
       debug("MeTLRoom(%s):sendToServer.backlogging".format(location))
-      backlog.enqueue(s)
+      backlog.enqueue((s,updateTimestamp))
     } else {
       trace("sendingStanzaToServer: %s".format(s))
-      messageBus.sendStanzaToRoom(s)
+      messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
   })
   private def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
@@ -314,7 +324,7 @@ object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider,UnknownRoom,
   override def getThumbnail = Array.empty[Byte]
   override def getSnapshot(size:RenderDescription) = Array.empty[Byte]
   override protected def sendToChildren(s:MeTLStanza) = {}
-  override protected def sendStanzaToServer(s:MeTLStanza) = {}
+  override protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true) = {}
 }
 
 object ThumbnailSpecification {

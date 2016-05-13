@@ -845,7 +845,7 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
       val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
       room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
       oldContent.getAll.foreach(stanza => {
-        room ! LocalToServerMeTLStanza(stanza match {
+        room ! ArchiveToServerMeTLStanza(stanza match {
           case m:MeTLInk => m.copy(slide = newLoc.getJid)
           case m:MeTLImage => m.copy(slide = newLoc.getJid)
           case m:MeTLText => m.copy(slide = newLoc.getJid)
