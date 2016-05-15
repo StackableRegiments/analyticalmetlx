@@ -867,12 +867,69 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
   }
 }
 
+class ImageDownscaler(maximumByteSize:Int) extends Logger {
+  import java.awt.{Image,Graphics2D,Canvas,Transparency,RenderingHints}
+  import java.awt.image._
+  import java.io._
+  import javax.imageio.ImageIO
+  def filterByMaximumSize(in:Array[Byte]):Option[Array[Byte]] = {
+    in match {
+      case tooBig if tooBig.length > maximumByteSize => None
+      case acceptable => Some(acceptable)
+    }
+  }
+  def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = {
+    in match {
+      case b if b.length <= maximumByteSize => b
+      case tooBig => {
+        try {
+          var resized:Array[Byte] = in
+          while (resized.length > maximumByteSize){
+            val tempG = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR).createGraphics.asInstanceOf[Graphics2D]
+
+            val inStream = new ByteArrayInputStream(resized)
+            val image = ImageIO.read(inStream).asInstanceOf[BufferedImage]
+            inStream.close()
+            val observer = new Canvas(tempG.getDeviceConfiguration)
+            val originalH = image.getHeight(observer)
+            val targetH = (originalH * 0.8).toInt
+            val originalW = image.getWidth(observer)
+            val targetW = (originalW * 0.8).toInt
+            val (typeName,targetType):Tuple2[String,Int] = (image.getTransparency() == Transparency.OPAQUE) match {
+              case true => ("jpg",BufferedImage.TYPE_INT_RGB)
+              case false => ("png",BufferedImage.TYPE_INT_ARGB)
+            }
+
+            val res = new BufferedImage(targetW,targetH,targetType)
+            val g = image.createGraphics.asInstanceOf[Graphics2D]
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+            g.drawImage(res,0,0,targetW,targetH,null)
+            g.dispose
+            val stream = new java.io.ByteArrayOutputStream
+            ImageIO.write(res,typeName,stream)
+            info("downscaling image [%s]: (%s,%s)=>(%s,%s)".format(descriptor,originalW,originalH,targetW,targetH))
+            resized = stream.toByteArray
+          }
+          resized
+        } catch {
+          case e:Exception => {
+            error("Exception while downscaling image [%s].  Returning emptyByteArray instead".format(descriptor),e)
+            Array.empty[Byte]
+          }
+        }
+      }
+    }
+  }
+}
+
 class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName) with Logger {
+  lazy val downscaler = new ImageDownscaler(16777216)
+  protected def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = downscaler.downscaleImage(in,descriptor)
   override def toMeTLImage(input:NodeSeq):MeTLImage = {
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)
     val tag = getStringByName(input,"tag")
-    val imageBytes = base64Decode(getStringByName(input,"imageBytes"))
+    val imageBytes = downscaleImage(base64Decode(getStringByName(input,"imageBytes")),tag)
     val newUrl = config.postResource(c.slide.toString,nextFuncName,imageBytes)
     val source = Full(newUrl)
     val pngBytes = Empty
@@ -900,7 +957,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
       case _ => getStringByName(input,"title")
     }
     val id = getStringByName(input,"id")
-    val quizImage = Full(base64Decode(getStringByName(input,"imageBytes")))
+    val quizImage = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"quiz: %s".format(id)))
     val newUrl = quizImage.map(qi => config.postResource("quizImages",nextFuncName,qi))
     val isDeleted = getBooleanByName(input,"isDeleted")
     val options = getXmlByName(input,"quizOption").map(qo => toQuizOption(qo)).toList
@@ -919,7 +976,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)
     val title = getStringByName(input,"title")
-    val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes")))
+    val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"submission: %s".format(c.identity)))
     val url = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib)).getOrElse("unknown")
     val blacklist = getXmlByName(input,"blacklist").map(bl => {
       val username = getStringByName(bl,"username")
@@ -939,7 +996,7 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     val m = parseMeTLContent(input,config)
     val name = getStringByName(input,"name")
     val id = getStringByName(input,"id")
-    val bytes = Full(base64Decode(getStringByName(input,"bytes")))
+    val bytes = downscaler.filterByMaximumSize(base64Decode(getStringByName(input,"bytes")))
     val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
     MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
   })
