@@ -905,10 +905,11 @@ class ImageDownscaler(maximumByteSize:Int) extends Logger {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BICUBIC)
             g.drawImage(res,0,0,targetW,targetH,null)
             g.dispose
-            val stream = new java.io.ByteArrayOutputStream
-            ImageIO.write(res,typeName,stream)
+            val outStream = new java.io.ByteArrayOutputStream
+            ImageIO.write(res,typeName,outStream)
             info("downscaling image [%s]: (%s,%s)=>(%s,%s)".format(descriptor,originalW,originalH,targetW,targetH))
-            resized = stream.toByteArray
+            resized = outStream.toByteArray
+            outStream.close
           }
           resized
         } catch {
