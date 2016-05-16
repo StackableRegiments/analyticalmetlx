@@ -87,8 +87,8 @@ object Globals extends PropertyReader with Logger {
   val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize)
 }
 
-object CurrentSlide extends SessionVar[Box[String]](Empty)
-object CurrentConversation extends SessionVar[Box[Conversation]](Empty)
+//object CurrentSlide extends SessionVar[Box[String]](Empty)
+//object CurrentConversation extends SessionVar[Box[Conversation]](Empty)
 
 object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
 

@@ -16,12 +16,97 @@ import com.metl.model._
 import Globals._
 
 object Metl extends Metl
-class Metl extends Logger  {
+class Metl extends Logger {
+  protected def generateName:String = {
+    var name = "USERNAME:%s".format(Globals.currentUser.is)
+    S.param("conversationJid").foreach(cj => {
+      try {
+        name += "_CONVERSATION:%s".format(cj.toInt)
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in conversationJid: %s".format(cj),e)
+        }
+      }
+    })
+    S.param("slideId").foreach(sid => {
+      try {
+        name += "_SLIDE:%s".format(sid.toInt)
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in slideId: %s".format(sid),e)
+        }
+      }
+    })
+    S.param("unique").foreach(uniq => {
+      try {
+        if (uniq.toLowerCase.trim == "true"){
+          name += "_UNIQUE:%s".format(nextFuncName)
+        }
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in conversationJid: %s".format(uniq),e)
+        }
+      }
+    })
+    S.param("showTools").foreach(tools => {
+      try {
+        if (tools.toLowerCase.trim == "true"){
+          name += "_SHOWTOOLS:%s".format(true)
+        } else {
+          name += "_SHOWTOOLS:%s".format(false)
+        }
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in showTools: %s".format(tools),e)
+        }
+      }
+    })
+    name
+  }
+  def getShowToolsFromName(in:String):Option[Boolean] = {
+    in.split("_").map(_.split(":")).find(_(0) == "SHOWTOOLS").map(_.drop(1).mkString(":")).flatMap(showToolsString => {
+      try {
+        Some(showToolsString.toBoolean)
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in showToolsString: %s".format(showToolsString),e)
+          None
+        }
+      }
+    })
+  }
+  def getConversationFromName(in:String):Option[Int] = {
+    in.split("_").map(_.split(":")).find(_(0) == "CONVERSATION").map(_.drop(1).mkString(":")).flatMap(convString => {
+      try {
+        Some(convString.toInt)
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in convString: %s".format(convString),e)
+          None
+        }
+      }
+    })
+  }
+  def getSlideFromName(in:String):Option[Int] = {
+    in.split("_").map(_.split(":")).find(_(0) == "SLIDE").map(_.drop(1).mkString(":")).flatMap(slideString => {
+      try {
+        Some(slideString.toInt)
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in slideString: %s".format(slideString),e)
+          None
+        }
+      }
+    })
+  }
+  def getUserFromName(in:String):Option[String] = {
+    in.split("_").map(_.split(":")).find(_(0) == "USERNAME").map(_.drop(1).mkString(":"))
+  }
   def specific = {
-    val name = "%s".format(Globals.currentUser.is)
+    val name = generateName
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz} />
-    debug("generating comet html: %s".format(output))
+    warn("generating comet html: %s".format(output))
     output
   }
 }

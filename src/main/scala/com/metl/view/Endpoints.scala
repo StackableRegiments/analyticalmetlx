@@ -278,28 +278,30 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         val serverConfig = ServerConfiguration.default
         val c = serverConfig.detailsOfConversation(conversationJid)
         debug("Forced to join conversation %s".format(conversationJid))
-        CurrentConversation(Full(c))
         if (c.slides.exists(s => slide.toLowerCase.trim == s.id.toString.toLowerCase.trim)){
           debug("Forced move to slide %s".format(slide))
-          CurrentSlide(Full(slide))
+          RedirectResponse("/board?conversationJid=%s&slideId=%s".format(c.jid,slide))
+        } else {
+          RedirectResponse("/board?conversationJid=%s".format(c.jid))
         }
       }
-      RedirectResponse("/board")
     }
     case r @ Req("projector" :: conversationJid :: Nil, _, _) => {
-      S.session match {
-        case Full(sess) => {
-          val serverConfig = ServerConfiguration.default
-          val c = serverConfig.detailsOfConversation(conversationJid)
-          if ((c.subject.toLowerCase.trim == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == c.subject.toLowerCase.trim)) && c != Conversation.empty){
-            IsInteractiveUser(Full(false))
-            CurrentConversation(Full(c))
-            c.slides.sortBy(s => s.index).headOption.map(s => CurrentSlide(Full(s.id.toString)))
-          }
+      for {
+        conversationJid <- r.param("conversation");
+        slide <- r.param("slide");
+        sess <- S.session
+      } yield {
+        val serverConfig = ServerConfiguration.default
+        val c = serverConfig.detailsOfConversation(conversationJid)
+        debug("Forced to join conversation %s".format(conversationJid))
+        if (c.slides.exists(s => slide.toLowerCase.trim == s.id.toString.toLowerCase.trim)){
+          debug("Forced move to slide %s".format(slide))
+          RedirectResponse("/board?conversationJid=%s&slideId=%s&showTools=false".format(c.jid,slide))
+        } else {
+          RedirectResponse("/board?conversationJid=%s&showTools=false".format(c.jid))
         }
-        case _ => {}
       }
-      RedirectResponse("/board")
     }
     case r @ Req(List("upload"),_,_) =>{
       debug("Upload registered in MeTLStatefulRestHelper")
