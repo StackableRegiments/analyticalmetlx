@@ -26,8 +26,7 @@ package com.metl.snippet
         val serverConfig = ServerConfiguration.default
         var results = serverConfig.searchForConversation(query)
         SetHtml("searchResults",results.map(c=> ajaxButton(c.title, ()=>{
-          CurrentConversation(Full(c))
-          RedirectTo("board")
+          RedirectTo("board?conversationJid=%s".format(c.jid))
         })));
       }
     })
