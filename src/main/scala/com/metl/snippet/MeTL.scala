@@ -17,12 +17,21 @@ import Globals._
 
 object Metl extends Metl
 class Metl extends Logger {
+  protected def shouldDisplayConversation(c:Conversation):Boolean = {
+    (c.subject.toLowerCase == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == c.subject.toLowerCase.trim)) && c != Conversation.empty
+  }
   protected def generateName:String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
     S.param("conversationJid").foreach(cj => {
       try {
         name += "_CONVERSATION:%s".format(cj.toInt)
+        val conversation = ServerConfiguration.default.detailsOfConversation(cj)
+        if (!shouldDisplayConversation(conversation)){
+          warn("snippet.Metl is kicking the user from this conversation")
+          S.redirectTo("/conversationSearch")
+        }
       } catch {
+        case redir:ResponseShortcutException => throw redir
         case e:Exception => {
           error("invalid argument passed in conversationJid: %s".format(cj),e)
         }
@@ -44,7 +53,7 @@ class Metl extends Logger {
         }
       } catch {
         case e:Exception => {
-          error("invalid argument passed in conversationJid: %s".format(uniq),e)
+          error("invalid argument passed in unique: %s".format(uniq),e)
         }
       }
     })

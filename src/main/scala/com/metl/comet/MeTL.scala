@@ -746,6 +746,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
   private def refreshClientSideStateJs = {
     currentConversation.map(cc => {
+      if (!shouldDisplayConversation(cc)){
+        warn("refreshClientSideState kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+        currentConversation = Empty
+        currentSlide = Empty
+        partialUpdate(RedirectTo("/conversationSearch"))
+      }
       val conversationJid = cc.jid.toString
       joinRoomByJid(conversationJid)
       currentSlide.map(cs => {
@@ -758,7 +764,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     debug(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
     debug(receiveUserGroups)
-    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match{
+    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match {
       case Full(cc) => Full(cc)
       case _ => Full(Call("showBackstage",JString("conversations")))
     }
@@ -804,8 +810,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       //      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
       //joinRoomByJid(conversationJid,"loopback")
       currentConversation
-    } else{
+    } else {
       debug("conversation denied: %s, %s.".format(jid,details.subject))
+      warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+      currentConversation = Empty
+      currentSlide = Empty
+      reRender// partialUpdate(RedirectTo("/conversationSearch"))
       Empty
     }
   }
@@ -1056,13 +1066,21 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
         val newJid = c.commandParameters(0).toInt
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
-        currentConversation = currentConversation.map(cc => {
-          if (cc.jid == newJid){
-            newConv
-          } else cc
-        })
-        debug("updating conversation to: %s".format(newConv))
-        partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+        if (!shouldDisplayConversation(newConv)){
+          warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+          currentConversation = Empty
+          currentSlide = Empty
+          reRender
+          partialUpdate(RedirectTo("/conversationSearch"))
+        } else {
+          currentConversation = currentConversation.map(cc => {
+            if (cc.jid == newJid){
+              newConv
+            } else cc
+          })
+          debug("updating conversation to: %s".format(newConv))
+          partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+        }
       }
       case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
         debug("incoming syncMove: %s".format(c))
