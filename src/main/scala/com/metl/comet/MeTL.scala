@@ -20,10 +20,14 @@ import JsCmds._
 import JE._
 import net.liftweb.http.js.jquery.JqJsCmds._
 
+import net.liftweb.http.js.jquery.JqJE._
+
 import java.util.Date
 import com.metl.renderer.SlideRenderer
 
 import json.JsonAST._
+
+import com.metl.snippet.Metl._
 
 case class StylableRadioButtonInteractableMessage(messageTitle:String,body:String,radioOptions:Map[String,()=>Boolean],defaultOption:Box[String] = Empty, customError:Box[()=>Unit] = Empty,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
   var answerProvided = false
@@ -76,6 +80,137 @@ object MeTLActorManager extends LiftActor with ListenerManager with Logger {
     case _ => warn("MeTLActorManager received unknown message")
   }
 }
+
+object MeTLConversationSearchActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case _ => warn("MeTLConversationSearchActorManager received unknown message")
+  }
+}
+
+class MeTLSlideDisplayActor extends CometActor with Logger {
+  import com.metl.snippet.Metl._
+  protected var currentConversation:Option[Conversation] = None
+  protected var currentSlide:Option[Int] = None
+  override def lifespan = Full(2 minutes)
+  override def localSetup = {
+    super.localSetup
+  }
+  protected var username = Globals.currentUser.is
+  protected lazy val serverConfig = ServerConfiguration.default
+  override def render = {
+    "#slidesContainer *" #> {
+      ".slideContainer" #> currentConversation.map(_.slides).getOrElse(Nil).map(slide => {
+        currentConversation.map(cc => {
+          ".slideAnchor [href]" #> boardFor(cc.jid,slide.id)
+        }).getOrElse({
+          ".slideAnchor" #> NodeSeq.Empty
+        })
+      })
+    } &
+    "#addSlideButtonContainer" #> currentConversation.filter(cc => shouldModifyConversation(username,cc)).map(cc => {
+      "#addSlideButtonContainer [onclick]" #> {
+        ajaxCall(Jq("#this"),(j:String) => {
+          warn("add slide button clicked: %s".format(j))
+          val index = currentSlide.flatMap(cs => cc.slides.find(_.id == cs).map(_.index)).getOrElse(0)
+          serverConfig.addSlideAtIndexOfConversation(cc.jid.toString,index)
+          reRender
+          Noop
+        })
+      }  
+    }).getOrElse({
+      "#addSlideButtonContainer" #> NodeSeq.Empty
+    })
+  }
+  override def lowPriority = {
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
+      val newJid = c.commandParameters(0).toInt
+      val newConv = serverConfig.detailsOfConversation(newJid.toString)
+      if (currentConversation.exists(_.jid == newJid)){
+        if (!shouldDisplayConversation(newConv)){
+          warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+          currentConversation = Empty
+          currentSlide = Empty
+          reRender
+          partialUpdate(RedirectTo(noBoard))
+        } else {
+          currentConversation = Some(newConv)
+          debug("updating conversation to: %s".format(newConv))
+          reRender
+        }
+      }
+    }
+    case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
+      debug("incoming syncMove: %s".format(c))
+      val newJid = c.commandParameters(0).toInt
+      currentConversation.map(cc => {
+        cc.slides.find(_.id == newJid).foreach(slide => {
+          currentSlide = Some(slide.id)
+          reRender
+          partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
+        })
+      })
+    }
+    case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
+      //not relaying teacherInConversation to page
+    }
+    case _ => warn("MeTLSlideDisplayActor received unknown message")
+  }
+}
+
+class MeTLConversationSearchActor extends CometActor with CometListener with Logger {
+  override def registerWith = MeTLConversationSearchActorManager 
+  override def lifespan = Full(5 minutes)
+  protected lazy val serverConfig = ServerConfiguration.default
+  protected var query:Option[String] = None
+  protected var listing:List[Conversation] = Nil
+  override def localSetup = {
+    super.localSetup
+    query = Some(Globals.currentUser.is)
+    listing = query.map(q => serverConfig.searchForConversation(q)).getOrElse(Nil)
+  }
+  protected def queryApplies(c:Conversation):Boolean = {
+    listing.exists(_.jid == c.jid) || c.author == Globals.currentUser.is || query.map(_.toLowerCase.trim).exists(q => c.author.toLowerCase.trim == q || c.title.toLowerCase.trim.contains(q))
+  }
+  override def render = {
+    "#createConversationContainer" #> {
+      "#createConversationButton [onclick]" #> ajaxCall(JsNull,(_s:String) => {
+        val title = "%s at %s".format(Globals.currentUser.is,new java.util.Date())
+        val newConv = serverConfig.createConversation(title,Globals.currentUser.is)
+        reRender
+      }) &
+      "#conversationSearchBox *" #> ajaxText(query.getOrElse(""),(q:String) => {
+        query = Some(q)
+        reRender
+      }) &
+      "#conversationListing *" #> {
+        ".conversationContainer" #> listing.map(conv => {
+          ".conversationAnchor [href]" #> boardFor(conv.jid) &
+          ".conversationTitle *" #> conv.title &
+          ".conversationAuthor *" #> conv.author &
+          ".conversationJid *" #> conv.jid &
+          ".slidesContainer" #> {
+            ".slide" #> conv.slides.map(slide => {
+              ".slideIndex *" #> slide.index &
+              ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+            })
+          }
+        })
+      }
+    } 
+  }
+  override def lowPriority = {
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
+      val newJid = c.commandParameters(0).toInt
+      val newConv = serverConfig.detailsOfConversation(newJid.toString)
+      if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
+        reRender
+      }
+    }
+    case _ => warn("MeTLConversationSearchActor received unknown message")
+  }
+}
+
 class MeTLActor extends StronglyTypedJsonActor with Logger{
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
@@ -750,7 +885,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         warn("refreshClientSideState kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
         currentConversation = Empty
         currentSlide = Empty
-        partialUpdate(RedirectTo("/conversationSearch"))
+        partialUpdate(RedirectTo(noBoard))
       }
       val conversationJid = cc.jid.toString
       joinRoomByJid(conversationJid)
@@ -815,7 +950,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
-      reRender// partialUpdate(RedirectTo("/conversationSearch"))
+      reRender// partialUpdate(RedirectTo(noBoard))
       Empty
     }
   }
@@ -1071,7 +1206,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           currentConversation = Empty
           currentSlide = Empty
           reRender
-          partialUpdate(RedirectTo("/conversationSearch"))
+          partialUpdate(RedirectTo(noBoard))
         } else {
           currentConversation = currentConversation.map(cc => {
             if (cc.jid == newJid){
@@ -1103,13 +1238,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       }
     }
   })
-  private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = {
-    username.toLowerCase.trim == c.author.toLowerCase.trim && c != Conversation.empty
-  }
-  private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = {
-    (c.subject.toLowerCase == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == c.subject.toLowerCase.trim)) && c != Conversation.empty
-  }
-  private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = {
-    (shouldModifyConversation(c) || c.permissions.studentsCanPublish) && c != Conversation.empty
-  }
+  private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
+  private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
+  private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)
 }
