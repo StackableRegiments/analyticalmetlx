@@ -873,13 +873,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     debug("leaving all rooms: %s".format(rooms))
     rooms.foreach(r => {
       if (shuttingDown || (r._1._2 != username && r._1._2 != "global")){
-        //        CurrentConversation.filter(cc => cc.jid.toString == r._1._2).foreach(cc => r._2 ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cc.jid.toString,false,Nil)))
+        //        currentConversation.filter(cc => cc.jid.toString == r._1._2).foreach(cc => r._2 ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cc.jid.toString,false,Nil)))
         debug("leaving room: %s".format(r))
         r._2() ! LeaveRoom(username,userUniqueId,this)
       }
     })
   }
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Full(2 minutes)
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
     debug("roomInfo received: %s".format(roomInfo))
