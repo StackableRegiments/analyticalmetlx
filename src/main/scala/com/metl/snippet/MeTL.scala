@@ -17,9 +17,28 @@ import Globals._
 
 object Metl extends Metl
 class Metl extends Logger {
-  protected def shouldDisplayConversation(c:Conversation):Boolean = {
+  def shouldModifyConversation(username:String, c:Conversation):Boolean = {
+    username.toLowerCase.trim == c.author.toLowerCase.trim && c != Conversation.empty
+  }
+  def shouldDisplayConversation(c:Conversation):Boolean = {
     (c.subject.toLowerCase == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == c.subject.toLowerCase.trim)) && c != Conversation.empty
   }
+  def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
+    (shouldModifyConversation(username,c) || c.permissions.studentsCanPublish) && c != Conversation.empty
+  }
+  def boardFor():String = {
+    "/board"   
+  }
+  def boardFor(conversationJid:Int):String = {
+    "/board?conversationJid=%s".format(conversationJid)
+  }
+  def boardFor(conversationJid:Int,slideId:Int):String = {
+    "/board?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
+  }
+  def noBoard:String = {
+    "/conversationSearch"
+  }
+
   protected def generateName:String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
     S.param("conversationJid").foreach(cj => {
@@ -28,7 +47,7 @@ class Metl extends Logger {
         val conversation = ServerConfiguration.default.detailsOfConversation(cj)
         if (!shouldDisplayConversation(conversation)){
           warn("snippet.Metl is kicking the user from this conversation")
-          S.redirectTo("/conversationSearch")
+          S.redirectTo(noBoard)
         }
       } catch {
         case redir:ResponseShortcutException => throw redir
