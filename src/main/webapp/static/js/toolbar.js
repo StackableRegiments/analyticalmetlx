@@ -1220,6 +1220,7 @@ var Modes = (function(){
             }
         },
         select:(function(){
+						var isAdministeringContent = false;
             var updateSelectionVisualState = function(sel){
                 if(sel){
                     Modes.select.selected = sel;
@@ -1237,10 +1238,21 @@ var Modes = (function(){
                     if (shouldShowButtons()){
                         $("#delete").removeClass("disabledButton");
                         $("#resize").removeClass("disabledButton");
+												if (isAdministeringContent){
+													$("#ban").removeClass("disabledButton");
+												} else {
+													$("#ban").addClass("disabledButton");
+												}
                     } else {
                         $("#delete").addClass("disabledButton");
                         $("#resize").addClass("disabledButton");
+												$("#ban").addClass("disabledButton");
                     }
+										if (isAdministeringContent){
+											$("#administerContent").removeClass("disabledButton");
+										} else {
+											$("#administerContent").addClass("disabledButton");
+										}
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
                         _.forEach(["images","texts","inks","highlighters"],function(category){
@@ -1331,6 +1343,35 @@ var Modes = (function(){
                     var threshold = 30;
                     var resizeHandle = [0,0,0,0];
                     var initialHeight = 0;
+										$("#administerContent").bind("click",function(){
+											isAdministeringContent = !isAdministeringContent;
+											if (isAdministeringContent){
+												$("#administerContent").removeClass("disabledButton");
+											} else {
+												$("#administerContent").addClass("disabledButton");
+											}
+											clearSelectionFunction();
+										});	
+										$("#ban").bind("click",function(){
+                       if (Modes.select.selected != undefined && isAdministeringContent){
+														var authorList = _.uniq(_.flatten(_.flatten([_.uniq(_.map(Modes.select.selected.inks,function(item){return item.author;})),_.uniq(_.map(Modes.select.selected.texts,function(item){return item.author;})),_.uniq(_.map(Modes.select.selected.images,function(item){return item.author;}))]))); //surely there's an unnecessary few steps here. 
+                            var deleteTransform = batchTransform();
+                            deleteTransform.isDeleted = true;
+                            if ("inks" in Modes.select.selected){
+                                deleteTransform.inkIds = _.keys(Modes.select.selected.inks);
+                            }
+                            if ("texts" in Modes.select.selected){
+                                deleteTransform.textIds = _.keys(Modes.select.selected.texts);
+                            }
+                            if ("images" in Modes.select.selected){
+                                deleteTransform.imageIds = _.keys(Modes.select.selected.images);
+                            }
+														console.log("banning: ",authorList,deleteTransform);
+                            //sendStanza(deleteTransform);
+                        }
+                        clearSelectionFunction();
+
+ 										});
                     $("#resize").bind("click",function(){
                         var items = _.flatten([
                             _.values(Modes.select.selected.images),
@@ -1532,9 +1573,15 @@ var Modes = (function(){
                                     if(overlap >= selectionThreshold){
                                         //if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
-                                        if(item.author == UserSettings.getUsername()){
-                                            intersected[category][item.identity] = item;
-                                        }
+																				if (isAdministeringContent){
+																					if(item.author != UserSettings.getUsername()){
+																							intersected[category][item.identity] = item;
+																					}
+																				} else {
+																					if(item.author == UserSettings.getUsername()){
+																							intersected[category][item.identity] = item;
+																					}
+																				}
                                     }
                                 });
                             }
@@ -1542,9 +1589,15 @@ var Modes = (function(){
                             $.each(boardContent.highlighters,function(i,item){
                                 if(intersectRect(item.bounds,selectionBounds)){
                                     incrementKey(intersectAuthors,item.author);
-                                    if(item.author == UserSettings.getUsername()){
-                                        intersected.inks[item.identity] = item;
-                                    }
+																		if (isAdministeringContent){
+																			if(item.author != UserSettings.getUsername()){
+																					intersected.inks[item.identity] = item;
+																			}
+																		} else {
+																			if(item.author == UserSettings.getUsername()){
+																					intersected.inks[item.identity] = item;
+																			}
+																		}
                                 }
                             });
                             if(modifiers.ctrl){
@@ -1552,8 +1605,7 @@ var Modes = (function(){
                                     $.each(intersected[category],function(id,item){
                                         if(id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
-                                        }
-                                        else{
+                                        } else {
                                             Modes.select.selected[category][id] = item;
                                         }
                                     });
@@ -1590,6 +1642,8 @@ var Modes = (function(){
                     $("#resize").unbind("click");
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
+										$("#administerContent").unbind("click");
+										$("#ban").unbind("click");
                 }
             }
         })(),
