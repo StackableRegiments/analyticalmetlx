@@ -125,6 +125,7 @@ function registerPositionHandlers(contexts,down,move,up){
             return context.offset();
         }
 				context.css({"touch-action":"none"});
+				var isGesture = false;
 				var trackedTouches = {};
 				var updatePoint = function(pointerEvent){
 					var pointId = pointerEvent.originalEvent.pointerId;
@@ -155,6 +156,9 @@ function registerPositionHandlers(contexts,down,move,up){
 						"eraser":isEraser
 					};
 					trackedTouches[pointId] = newPoint;
+					if (_.size(trackedTouches) > 1){
+						isGesture = true;
+					}
 					return {
 						"pointerType":pointerEvent.pointerType,
 						"eraser":isEraser,
@@ -173,6 +177,9 @@ function registerPositionHandlers(contexts,down,move,up){
 					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
 					var worldPos = screenToWorld(x,y);
 					delete trackedTouches[pointId];
+					if (isGesture && _.size(trackedTouches) == 0){
+						isGesture = false;
+					}
 					return {
 						"pointerType":pointerEvent.pointerType,
 						"eraser":isEraser,
@@ -213,7 +220,7 @@ function registerPositionHandlers(contexts,down,move,up){
 					},25);
 					context.bind("pointerdown",function(e){
 						var point = updatePoint(e);
-						if (_.size(trackedTouches) == 1){
+						if (_.size(trackedTouches) == 1 && !isGesture){
 							WorkQueue.pause();
 							var o = offset();
 							e.preventDefault();
@@ -226,7 +233,7 @@ function registerPositionHandlers(contexts,down,move,up){
 						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
 							performGesture();
 						}
-						if (_.size(trackedTouches) == 1){
+						if (_.size(trackedTouches) == 1 && !isGesture){
 							if(isDown){
 								e.preventDefault();
 								move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
@@ -237,7 +244,7 @@ function registerPositionHandlers(contexts,down,move,up){
 						var point = releasePoint(e);
 						WorkQueue.gracefullyResume();
 						e.preventDefault();
-						if(isDown){
+						if(isDown && !isGesture){
 								up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 						}
 						isDown = false;
