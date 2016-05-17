@@ -126,20 +126,86 @@ function registerPositionHandlers(contexts,down,move,up){
 				context.css({"touch-action":"none"});
 				var trackedTouches = {};
 				var trackingTouches = true;
+				var updatePoint = function(pointerEvent){
+					var pointId = pointerEvent.originalEvent.pointerId;
+					var o = offset();
+					var x = pointerEvent.pageX - o.left;
+					var y = pointerEvent.pageY - o.top;
+					var z = pointerEvent.originalEvent.pressure || 0.5;
+					var worldPos = screenToWorld(x,y);
+					var tempNewPoint = {
+						"x":worldPos.x,
+						"y":worldPos.y,
+						"z":z
+					};
+					var oldPoint = trackedTouches[pointId] || tempNewPoint;
+					var xDelta = tempNewPoint.x - oldPoint.x;
+					var yDelta = tempNewPoint.y - oldPoint.y;
+					var newPoint = {
+						"prevX":oldPoint.x,
+						"prevY":oldPoint.y,
+						"prevZ":oldPoint.z,
+						"x":tempNewPoint.x,
+						"y":tempNewPoint.y,
+						"z":tempNewPoint.z,
+						"xDelta":xDelta,
+						"yDelta":yDelta
+					};
+					trackedTouches[pointId] = newPoint;
+					return {
+						"x":x,
+						"y":y,
+						"z":z,
+						"worldPos":worldPos
+					};	
+				};
+				var releasePoint = function(pointerEvent){
+					var pointId = pointerEvent.originalEvent.pointerId;
+					var o = offset();
+					var x = pointerEvent.pageX - o.left;
+					var y = pointerEvent.pageY - o.top;
+					var z = pointerEvent.originalEvent.pressure || 0.5;
+					var worldPos = screenToWorld(x,y);
+					delete trackedTouches[pointId];
+					return {
+						"x":x,
+						"y":y,
+						"z":z,
+						"worldPos":worldPos
+					};	
+				}
 				if (detectPointerEvents()){
+					var performGesture = _.throttle(function(){
+						if (_.size(trackedTouches) > 1){
+							takeControlOfViewbox();
+							var xDelta = _.reduce(trackedTouches,function(seed,iter){return seed + iter.xDelta;},0);
+							var yDelta = _.reduce(trackedTouches,function(seed,iter){return seed + iter.yDelta;},0);
+							console.log("translating:",xDelta,yDelta);
+							Pan.translate(-1 * xDelta,-1 * yDelta);
+
+							var prevSouthMost = _.min(_.map(trackedTouches,function(touch){return touch.prevY;})); 
+							var prevNorthMost = _.max(_.map(trackedTouches,function(touch){return touch.prevY;})); 
+							var prevEastMost =  _.min(_.map(trackedTouches,function(touch){return touch.prevX;})); 
+							var prevWestMost =  _.max(_.map(trackedTouches,function(touch){return touch.prevX;})); 
+							var prevYScale = prevNorthMost - prevSouthMost;
+							var prevXScale = prevWestMost - prevEastMost;
+
+							var southMost = _.min(_.map(trackedTouches,function(touch){return touch.y;})); 
+							var northMost = _.max(_.map(trackedTouches,function(touch){return touch.y;})); 
+							var eastMost =  _.min(_.map(trackedTouches,function(touch){return touch.x;})); 
+							var westMost =  _.max(_.map(trackedTouches,function(touch){return touch.x;})); 
+							var yScale = northMost - southMost;
+							var xScale = westMost - eastMost;
+							
+							var previousScale = (prevXScale + prevYScale)	/ 2;
+							var currentScale = (xScale + yScale)	/ 2;
+							console.log("scaling:",previousScale,currentScale);
+							Zoom.scale(previousScale / currentScale);
+						}
+					},100);
 					context.bind("pointerdown",function(e){
 						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
-							var pointId = e.originalEvent.pointerId;
-							var o = offset();
-							var x = e.pageX - o.left;
-							var y = e.pageY - o.top;
-							var worldPos = screenToWorld(x,y);
-							var newPoint = {
-								"x":worldPos.x,
-								"y":worldPos.y
-							};
-							trackedTouches[pointId] = newPoint;
-							console.log("PE:",pointId,trackedTouches);
+							updatePoint(e);
 						} else {
 							trackingTouches = false;
 							trackedTouches = {};
@@ -155,55 +221,25 @@ function registerPositionHandlers(contexts,down,move,up){
 						}
 					});
 					context.bind("pointermove",function(e){
-						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
-							var pointId = e.originalEvent.pointerId;
-							var o = offset();
-							var x = e.pageX - o.left;
-							var y = e.pageY - o.top;
-							var worldPos = screenToWorld(x,y);
-							var newPoint = {
-								"x":worldPos.x,
-								"y":worldPos.y
-							};
-							var oldPoint = trackedTouches[pointId] || newPoint;
-							if (_.size(trackedTouches) > 1){
-								var xDelta = newPoint.x - oldPoint.x;
-								var yDelta = newPoint.y - oldPoint.y;
-								takeControlOfViewbox();
-								Pan.translate(-1 * xDelta,-1 * yDelta);
-							//Zoom.scale(previousScale / scale);
-							}
-							trackedTouches[pointId] = newPoint;
-
-						} else {
-							trackingTouches = false;
-							trackedTouches = {};
-							if(isDown){
-									var o = offset();
-									e.preventDefault();
-									var x = e.pageX - o.left;
-									var y = e.pageY - o.top;
-									var z = e.originalEvent.pressure || 0.5;
-									move(x,y,z,screenToWorld(x,y),modifiers(e));
-							}
+						var point = updatePoint(e);
+						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+							performGesture();
+						}
+						if(isDown){
+							e.preventDefault();
+							move(point.x,point.y,point.z,point.worldPos,modifiers(e));
 						}
 					});
 					context.bind("pointerup",function(e){
-						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
-							var pointId = e.originalEvent.pointerId;
-							delete trackedTouches[pointId];
+						var point = releasePoint(e);
+						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
 						} else {
 							trackingTouches = false;
 							trackedTouches = {};
 							WorkQueue.gracefullyResume();
 							e.preventDefault();
 							if(isDown){
-									var o = offset();
-									var x = e.pageX - o.left;
-									var y = e.pageY - o.top;
-									var z = e.originalEvent.pressure || 0.5;
-									var worldPos = screenToWorld(x,y);
-									up(x,y,z,worldPos,modifiers(e));
+									up(point.x,point.y,point.z,point.worldPos,modifiers(e));
 							}
 							isDown = false;
 						}
