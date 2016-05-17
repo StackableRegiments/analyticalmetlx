@@ -30,38 +30,42 @@ class Metl extends Logger {
     "/board"   
   }
   def boardFor(conversationJid:Int):String = {
-    "/board?conversationJid=%s".format(conversationJid)
+    "/simpleBoard?conversationJid=%s".format(conversationJid)
   }
   def boardFor(conversationJid:Int,slideId:Int):String = {
-    "/board?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
+    "/simpleBoard?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
   }
   def noBoard:String = {
     "/conversationSearch"
   }
 
+  lazy val serverConfig = ServerConfiguration.default
   protected def generateName:String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
     S.param("conversationJid").foreach(cj => {
       try {
         name += "_CONVERSATION:%s".format(cj.toInt)
-        val conversation = ServerConfiguration.default.detailsOfConversation(cj)
+        val conversation = serverConfig.detailsOfConversation(cj)
         if (!shouldDisplayConversation(conversation)){
           warn("snippet.Metl is kicking the user from this conversation")
           S.redirectTo(noBoard)
         }
+        S.param("slideId").foreach(sid => {
+          try {
+            name += "_SLIDE:%s".format(sid.toInt)
+            if (shouldModifyConversation(Globals.currentUser.is,conversation)){
+              MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
+            }
+          } catch {
+            case e:Exception => {
+              error("invalid argument passed in slideId: %s".format(sid),e)
+            }
+          }
+        })
       } catch {
         case redir:ResponseShortcutException => throw redir
         case e:Exception => {
           error("invalid argument passed in conversationJid: %s".format(cj),e)
-        }
-      }
-    })
-    S.param("slideId").foreach(sid => {
-      try {
-        name += "_SLIDE:%s".format(sid.toInt)
-      } catch {
-        case e:Exception => {
-          error("invalid argument passed in slideId: %s".format(sid),e)
         }
       }
     })
@@ -130,10 +134,24 @@ class Metl extends Logger {
   def getUserFromName(in:String):Option[String] = {
     in.split("_").map(_.split(":")).find(_(0) == "USERNAME").map(_.drop(1).mkString(":"))
   }
-  def specific = {
+  def specificSimple(in:NodeSeq):NodeSeq = {
+    val name = generateName
+    val clazz = "lift:comet?type=SinglePageMeTLActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    warn("generating single page comet html: %s".format(output))
+    output
+  }
+  def specificSlideDisplay(in:NodeSeq):NodeSeq = {
+    val name = generateName
+    val clazz = "lift:comet?type=MeTLSlideDisplayActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    warn("generating single page comet html: %s".format(output))
+    output
+  }
+  def specific(in:NodeSeq):NodeSeq = {
     val name = generateName
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
-    val output = <span class={clazz} />
+    val output = <span class={clazz}>{in}</span>
     warn("generating comet html: %s".format(output))
     output
   }
