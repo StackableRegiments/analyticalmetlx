@@ -101,6 +101,14 @@ function worldToScreen(x,y){
  RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
  * */
 
+function detectPointerEvents(){
+	try {
+		return (("pointerEnabled" in Navigator && Navigator.pointerEnabled == true) || PointerEvent != undefined);
+	} catch(e) {
+		return false;
+	}
+}
+
 function registerPositionHandlers(contexts,down,move,up){
     var isDown = false;
     var modifiers = function(e){
@@ -115,167 +123,294 @@ function registerPositionHandlers(contexts,down,move,up){
         var offset = function(){
             return context.offset();
         }
-        context.bind("mousedown",function(e){
-            WorkQueue.pause();
-            var o = offset();
-            e.preventDefault();
-            isDown = true;
-            var x = e.pageX - o.left;
-            var y = e.pageY - o.top;
-            var worldPos = screenToWorld(x,y);
-            down(x,y,worldPos,modifiers(e));
-        });
-        context.bind("mousemove",function(e){
-            if(isDown){
-                var o = offset();
-                e.preventDefault();
-                var x = e.pageX - o.left;
-                var y = e.pageY - o.top;
-                move(x,y,screenToWorld(x,y),modifiers(e));
-            }
-        });
-        context.bind("mouseup",function(e){
-            WorkQueue.gracefullyResume();
-            e.preventDefault();
-            if(isDown){
-                var o = offset();
-                var x = e.pageX - o.left;
-                var y = e.pageY - o.top;
-                var worldPos = screenToWorld(x,y);
-                up(x,y,worldPos,modifiers(e));
-            }
-            isDown = false;
-        });
-        var mouseOut = function(x,y){
-            WorkQueue.gracefullyResume();
-            var worldPos = screenToWorld(x,y);
-            var worldX = worldPos.x;
-            var worldY = worldPos.y;
-            if(worldX < viewboxX){
-                takeControlOfViewbox();
-                Extend.left();
-            }
-            else if(worldX >= (viewboxX + viewboxWidth)){
-                takeControlOfViewbox();
-                Extend.right();
-            }
-            else if(worldY < viewboxY){
-                takeControlOfViewbox();
-                Extend.up();
-            }
-            else if(worldY >= (viewboxY + viewboxHeight)){
-                takeControlOfViewbox();
-                Extend.down();
-            }
-            isDown = false;
-        }
-        context.bind("mouseout",function(e){
-            WorkQueue.gracefullyResume();
-            e.preventDefault();
-            if(isDown){
-                mouseOut(e.offsetX,e.offsetY);
-            }
-            isDown = false;
-        });
-        var touches;
-        var masterTouch;
-        var prevPos;
-        var touchesToWorld = function(touches){
-            return touches.map(function(t){
-                return screenToWorld(t.x,t.y);
-            });
-        }
-        var averagePos = function(touches){
-            return {
-                x:average(_.pluck(touches,"x")),
-                y:average(_.pluck(touches,"y"))
-            };
-        }
-        var offsetTouches = function(ts){
-            var touches = [];
-            var o = offset();
-            $.each(ts,function(i,touch){
-                touches.push({
-                    x: touch.pageX - o.left,
-                    y: touch.pageY - o.top,
-                    identifier:touch.identifier
-                });
-            });
-            return touches;
-        }
-        context.bind("touchstart",function(e){
-            WorkQueue.pause();
-            e.preventDefault();
-            var touches = offsetTouches(e.originalEvent.touches);
-            if(touches.length == 1){
-                var t = touches[0];
-                var worldPos = screenToWorld(t.x,t.y);
-                isDown = true;
-                down(t.x,t.y,worldPos,modifiers(e));
-            }
-            else{
-                var avg = averagePos(touches);
-                prevPos = avg;
-            }
-        });
-        var distance = function(p1,p2){
-            return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
-        }
-        context.bind("touchmove",function(e){
-            e.preventDefault();
-            var touches = offsetTouches(e.originalEvent.touches);
-            switch(touches.length){
-            case 0 : break;
-            case 1:
-                if(isDown){
-                    var t = touches[0];
-                    move(t.x,t.y,screenToWorld(t.x,t.y),modifiers(e));
-                }
-                break;
-            default:
-                var pos = averagePos(touches);
-                var xDelta = pos.x - prevPos.x;
-                var yDelta =  pos.y - prevPos.y;
-                prevPos = pos;
-                takeControlOfViewbox();
-                Pan.translate(-1 * xDelta,-1 * yDelta);
-                break;
-            }
-        });
-        context.bind("touchend",function(e){
-            WorkQueue.gracefullyResume();
-            e.preventDefault();
-            if(isDown){
-                var o = offset();
-                var t = e.originalEvent.changedTouches[0];
-                var x = t.pageX - o.left;
-                var y = t.pageY - o.top;
-                if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
-                    mouseOut(x,y);
-                }
-                else{
-                    up(x,y,screenToWorld(x,y),modifiers(e));
-                }
-            }
-            isDown = false;
-        });
-        var previousScale = 1.0;
-        var changeFactor = 0.1;
-        context.bind("gesturechange",function(e){
-            WorkQueue.pause();
-            e.preventDefault();
-            isDown = false;
-            var scale = e.originalEvent.scale;
-            //Zoom.scale(previousScale / scale,true);
-            // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
-            takeControlOfViewbox();
-            Zoom.scale(previousScale / scale);
-            previousScale = scale;
-        });
-        context.bind("gestureend",function(){
-            WorkQueue.gracefullyResume();
-            previousScale = 1.0;
-        });
+				context.css({"touch-action":"none"});
+				var trackedTouches = {};
+				var trackingTouches = true;
+				if (detectPointerEvents()){
+					context.bind("pointerdown",function(e){
+						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
+							var pointId = e.originalEvent.pointerId;
+							var o = offset();
+							var x = e.pageX - o.left;
+							var y = e.pageY - o.top;
+							var worldPos = screenToWorld(x,y);
+							var newPoint = {
+								"x":worldPos.x,
+								"y":worldPos.y
+							};
+							trackedTouches[pointId] = newPoint;
+							console.log("PE:",pointId,trackedTouches);
+						} else {
+							trackingTouches = false;
+							trackedTouches = {};
+							WorkQueue.pause();
+							var o = offset();
+							e.preventDefault();
+							isDown = true;
+							var x = e.pageX - o.left;
+							var y = e.pageY - o.top;
+							var z = e.originalEvent.pressure || 0.5;
+							var worldPos = screenToWorld(x,y);
+							down(x,y,z,worldPos,modifiers(e));
+						}
+					});
+					context.bind("pointermove",function(e){
+						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
+							var pointId = e.originalEvent.pointerId;
+							var o = offset();
+							var x = e.pageX - o.left;
+							var y = e.pageY - o.top;
+							var worldPos = screenToWorld(x,y);
+							var newPoint = {
+								"x":worldPos.x,
+								"y":worldPos.y
+							};
+							var oldPoint = trackedTouches[pointId] || newPoint;
+							if (_.size(trackedTouches) > 1){
+								var xDelta = newPoint.x - oldPoint.x;
+								var yDelta = newPoint.y - oldPoint.y;
+								takeControlOfViewbox();
+								Pan.translate(-1 * xDelta,-1 * yDelta);
+							//Zoom.scale(previousScale / scale);
+							}
+							trackedTouches[pointId] = newPoint;
+
+						} else {
+							trackingTouches = false;
+							trackedTouches = {};
+							if(isDown){
+									var o = offset();
+									e.preventDefault();
+									var x = e.pageX - o.left;
+									var y = e.pageY - o.top;
+									var z = e.originalEvent.pressure || 0.5;
+									move(x,y,z,screenToWorld(x,y),modifiers(e));
+							}
+						}
+					});
+					context.bind("pointerup",function(e){
+						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
+							var pointId = e.originalEvent.pointerId;
+							delete trackedTouches[pointId];
+						} else {
+							trackingTouches = false;
+							trackedTouches = {};
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									var o = offset();
+									var x = e.pageX - o.left;
+									var y = e.pageY - o.top;
+									var z = e.originalEvent.pressure || 0.5;
+									var worldPos = screenToWorld(x,y);
+									up(x,y,z,worldPos,modifiers(e));
+							}
+							isDown = false;
+						}
+					});
+					var pointerOut = function(x,y){
+							trackingTouches = false;
+							trackedTouches = {};
+							WorkQueue.gracefullyResume();
+							var worldPos = screenToWorld(x,y);
+							var worldX = worldPos.x;
+							var worldY = worldPos.y;
+							if(worldX < viewboxX){
+									takeControlOfViewbox();
+									Extend.left();
+							}
+							else if(worldX >= (viewboxX + viewboxWidth)){
+									takeControlOfViewbox();
+									Extend.right();
+							}
+							else if(worldY < viewboxY){
+									takeControlOfViewbox();
+									Extend.up();
+							}
+							else if(worldY >= (viewboxY + viewboxHeight)){
+									takeControlOfViewbox();
+									Extend.down();
+							}
+							isDown = false;
+					}
+					context.bind("pointerOut",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									pointerOut(e.offsetX,e.offsetY);
+							}
+							isDown = false;
+					});
+
+				} else {
+					context.bind("mousedown",function(e){
+							WorkQueue.pause();
+							var o = offset();
+							e.preventDefault();
+							isDown = true;
+							var x = e.pageX - o.left;
+							var y = e.pageY - o.top;
+							var z = 0.5;
+							var worldPos = screenToWorld(x,y);
+							down(x,y,z,worldPos,modifiers(e));
+					});
+					context.bind("mousemove",function(e){
+							if(isDown){
+									var o = offset();
+									e.preventDefault();
+									var x = e.pageX - o.left;
+									var y = e.pageY - o.top;
+									var z = 0.5;
+									move(x,y,z,screenToWorld(x,y),modifiers(e));
+							}
+					});
+					context.bind("mouseup",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									var o = offset();
+									var x = e.pageX - o.left;
+									var y = e.pageY - o.top;
+									var z = 0.5;
+									var worldPos = screenToWorld(x,y);
+									up(x,y,z,worldPos,modifiers(e));
+							}
+							isDown = false;
+					});
+					var mouseOut = function(x,y){
+							WorkQueue.gracefullyResume();
+							var worldPos = screenToWorld(x,y);
+							var worldX = worldPos.x;
+							var worldY = worldPos.y;
+							if(worldX < viewboxX){
+									takeControlOfViewbox();
+									Extend.left();
+							}
+							else if(worldX >= (viewboxX + viewboxWidth)){
+									takeControlOfViewbox();
+									Extend.right();
+							}
+							else if(worldY < viewboxY){
+									takeControlOfViewbox();
+									Extend.up();
+							}
+							else if(worldY >= (viewboxY + viewboxHeight)){
+									takeControlOfViewbox();
+									Extend.down();
+							}
+							isDown = false;
+					}
+					context.bind("mouseout",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									mouseOut(e.offsetX,e.offsetY);
+							}
+							isDown = false;
+					});
+					var touches;
+					var masterTouch;
+					var prevPos;
+					var touchesToWorld = function(touches){
+							return touches.map(function(t){
+									return screenToWorld(t.x,t.y);
+							});
+					}
+					var averagePos = function(touches){
+							return {
+									x:average(_.pluck(touches,"x")),
+									y:average(_.pluck(touches,"y"))
+							};
+					}
+					var offsetTouches = function(ts){
+							var touches = [];
+							var o = offset();
+							$.each(ts,function(i,touch){
+									touches.push({
+											x: touch.pageX - o.left,
+											y: touch.pageY - o.top,
+											identifier:touch.identifier
+									});
+							});
+							return touches;
+					}
+					context.bind("touchstart",function(e){
+							WorkQueue.pause();
+							e.preventDefault();
+							var touches = offsetTouches(e.originalEvent.touches);
+							if(touches.length == 1){
+									var t = touches[0];
+									var worldPos = screenToWorld(t.x,t.y);
+									isDown = true;
+									var z = 0.5;
+									down(t.x,t.y,z,worldPos,modifiers(e));
+							}
+							else{
+									var avg = averagePos(touches);
+									prevPos = avg;
+							}
+					});
+					var distance = function(p1,p2){
+							return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
+					}
+					context.bind("touchmove",function(e){
+							e.preventDefault();
+							var touches = offsetTouches(e.originalEvent.touches);
+							switch(touches.length){
+							case 0 : break;
+							case 1:
+									if(isDown){
+											var t = touches[0];
+											var z = 0.5;
+											move(t.x,t.y,z,screenToWorld(t.x,t.y),modifiers(e));
+									}
+									break;
+							default:
+									var pos = averagePos(touches);
+									var xDelta = pos.x - prevPos.x;
+									var yDelta =  pos.y - prevPos.y;
+									prevPos = pos;
+									takeControlOfViewbox();
+									Pan.translate(-1 * xDelta,-1 * yDelta);
+									break;
+							}
+					});
+					context.bind("touchend",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									var o = offset();
+									var t = e.originalEvent.changedTouches[0];
+									var x = t.pageX - o.left;
+									var y = t.pageY - o.top;
+									var z = 0.5;
+									if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
+											mouseOut(x,y);
+									}
+									else{
+											up(x,y,z,screenToWorld(x,y),modifiers(e));
+									}
+							}
+							isDown = false;
+					});
+					var previousScale = 1.0;
+					var changeFactor = 0.1;
+					context.bind("gesturechange",function(e){
+							WorkQueue.pause();
+							e.preventDefault();
+							isDown = false;
+							var scale = e.originalEvent.scale;
+							//Zoom.scale(previousScale / scale,true);
+							// I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
+							takeControlOfViewbox();
+							Zoom.scale(previousScale / scale);
+							previousScale = scale;
+					});
+					context.bind("gestureend",function(){
+							WorkQueue.gracefullyResume();
+							previousScale = 1.0;
+					});
+				}
     });
     return function(forceDown){
         isDown = forceDown;
@@ -887,7 +1022,7 @@ var Modes = (function(){
                         sendStanza(deleteTransform);
                     }));
                     updateStatus("Text input mode");
-                    var up = function(x,y,worldPos){
+                    var up = function(x,y,z,worldPos){
                         if(typingTimer){
                             typingTimerElapsed();
                         }
@@ -1170,7 +1305,7 @@ var Modes = (function(){
                     setActiveMode("#imageTools","#insertImage");
                     resetImageUpload();
                     Progress.call("onLayoutUpdated");
-                    var up = function(x,y,worldPos){
+                    var up = function(x,y,z,worldPos){
                         marquee.show();
                         marquee.css({
                             left:px(x),
@@ -1199,19 +1334,19 @@ var Modes = (function(){
                 Modes.currentMode = Modes.pan;
                 var originX;
                 var originY;
-                var down = function(x,y){
+                var down = function(x,y,z){
                     takeControlOfViewbox();
                     originX = x;
                     originY = y;
                 }
-                var move = function(x,y){
+                var move = function(x,y,z){
                     var xDelta = x - originX;
                     var yDelta = y - originY;
                     Pan.translate(-1 * xDelta,-1 * yDelta);
                     originX = x;
                     originY = y;
                 }
-                var up = function(x,y){}
+                var up = function(x,y,z){}
                 registerPositionHandlers(board,down,move,up);
             },
             deactivate:function(){
@@ -1373,7 +1508,7 @@ var Modes = (function(){
                         func("texts");
                         func("inks");
                     }
-                    var down = function(x,y,worldPos,modifiers){
+                    var down = function(x,y,z,worldPos,modifiers){
                         resizing = false;
                         dragging = false;
                         originPoint = {x:x,y:y};
@@ -1418,7 +1553,7 @@ var Modes = (function(){
                             updateMarquee(marquee,originPoint,originPoint);
                         }
                     };
-                    var move = function(x,y,worldPos,modifiers){
+                    var move = function(x,y,z,worldPos,modifiers){
                         var currentPoint = {x:x,y:y};
                         var xDelta = x - lastX;
                         var yDelta = y - lastY;
@@ -1454,7 +1589,7 @@ var Modes = (function(){
                             updateMarquee(marquee,originPoint,currentPoint);
                         }
                     };
-                    var up = function(x,y,worldPos,modifiers){
+                    var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
                         if(dragging){
                             var moved = batchTransform();
@@ -1607,7 +1742,7 @@ var Modes = (function(){
                 var startWorldPos;
                 var proportion;
                 var originPoint = {x:0,y:0};
-                var down = function(x,y,worldPos){
+                var down = function(x,y,z,worldPos){
                     //adding this so that using the zoom marquee results in the autofit being turned off.
                     takeControlOfViewbox();
                     proportion = boardHeight / boardWidth;
@@ -1619,7 +1754,7 @@ var Modes = (function(){
                     originPoint = {x:x,y:y};
                     updateMarquee(marquee,originPoint,originPoint);
                 }
-                var move = function(x,y,worldPos){
+                var move = function(x,y,z,worldPos){
                     var currentPoint = {x:x,y:y};
                     var rect = rectFromTwoPoints(currentPoint,originPoint);
                     var hAlign = "left";
@@ -1633,7 +1768,7 @@ var Modes = (function(){
                     var constrainedRect = aspectConstrainedRect(rect,hAlign,vAlign);
                     updateMarquee(marquee,{x:constrainedRect.right,y:constrainedRect.bottom},{x:constrainedRect.left,y:constrainedRect.top});
                 }
-                var up = function(x,y,worldPos){
+                var up = function(x,y,z,worldPos){
                     WorkQueue.gracefullyResume();
                     marquee.hide();
                     var currentPoint = {x:contentOffsetX + worldPos.x,y:contentOffsetY + worldPos.y};
@@ -1684,11 +1819,11 @@ var Modes = (function(){
                     Modes.currentMode = Modes.feedback;
                     applyStateStyling();
                     setActiveMode("#feedbackTools","#feedbackMode");
-                    var down = function(x,y,worldPos){
+                    var down = function(x,y,z,worldPos){
                     }
-                    var move = function(x,y,worldPos){
+                    var move = function(x,y,z,worldPos){
                     }
-                    var up = function(x,y,worldPos){
+                    var up = function(x,y,z,worldPos){
                     }
                     registerPositionHandlers(board,down,move,up);
                     applyStateStyling();
@@ -1844,8 +1979,8 @@ var Modes = (function(){
                     var currentStroke = [];
                     var isDown = false;
                     var resumeWork;
-                    var mousePressure = 128;
-                    var down = function(x,y){
+                    var mousePressure = 256;
+                    var down = function(x,y,z){
                         deleted = [];
                         isDown = true;
                         if(!erasing){
@@ -1853,12 +1988,12 @@ var Modes = (function(){
                             boardContext.lineWidth = Modes.draw.drawingAttributes.lineWidth * 128 * mousePressure;
                             boardContext.beginPath();
                             boardContext.moveTo(x,y);
-                            currentStroke = [x, y, mousePressure];
+                            currentStroke = [x, y, mousePressure * z];
                         }
                     };
                     var raySpan = 10;
                     var deleted = [];
-                    var move = function(x,y,worldPos){
+                    var move = function(x,y,z,worldPos){
                         if(erasing){
                             var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                             var markAsDeleted = function(bounds){
@@ -1884,10 +2019,10 @@ var Modes = (function(){
                         else{
                             boardContext.lineTo(x,y);
                             boardContext.stroke();
-                            currentStroke = currentStroke.concat([x,y,mousePressure]);
+                            currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                         }
                     };
-                    var up = function(x,y){
+                    var up = function(x,y,z){
                         isDown = false;
                         if(erasing){
                             var deleteTransform = batchTransform();
@@ -1898,8 +2033,9 @@ var Modes = (function(){
                         else{
                             boardContext.lineTo(x,y);
                             boardContext.stroke();
-                            currentStroke = currentStroke.concat([x,y,mousePressure]);
+                            currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                             strokeCollected(currentStroke.join(" "));
+														console.log("stroke collected:",currentStroke);
                         }
                     };
                     $(".activeBrush").removeClass("activeBrush");
@@ -1929,10 +2065,10 @@ var Modes = (function(){
             activate:function(){
                 Modes.currentMode.deactivate();
                 Modes.currentMode = Modes.erase;
-                var down = function(x,y,worldPos){};
-                var move = function(x,y,worldPos){
+                var down = function(x,y,z,worldPos){};
+                var move = function(x,y,z,worldPos){
                 };
-                var up = function(x,y,worldPos){};
+                var up = function(x,y,z,worldPos){};
                 registerPositionHandlers(board,down,move,up);
             },
             deactivate:function(){
