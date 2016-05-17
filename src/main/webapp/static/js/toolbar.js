@@ -111,11 +111,12 @@ function detectPointerEvents(){
 
 function registerPositionHandlers(contexts,down,move,up){
     var isDown = false;
-    var modifiers = function(e){
+    var modifiers = function(e,isErasing){
         return {
             shift:e.shiftKey,
             ctrl:e.ctrlKey,
-            alt:e.altKey
+            alt:e.altKey,
+						eraser:isErasing
         }
     }
     $.each(contexts,function(i,_context){
@@ -125,7 +126,6 @@ function registerPositionHandlers(contexts,down,move,up){
         }
 				context.css({"touch-action":"none"});
 				var trackedTouches = {};
-				var trackingTouches = true;
 				var updatePoint = function(pointerEvent){
 					var pointId = pointerEvent.originalEvent.pointerId;
 					var o = offset();
@@ -141,7 +141,9 @@ function registerPositionHandlers(contexts,down,move,up){
 					var oldPoint = trackedTouches[pointId] || tempNewPoint;
 					var xDelta = tempNewPoint.x - oldPoint.x;
 					var yDelta = tempNewPoint.y - oldPoint.y;
+					var isEraser = oldPoint.eraser || pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
 					var newPoint = {
+						"pointerType":pointerEvent.originalEvent.pointerType,
 						"prevX":oldPoint.x,
 						"prevY":oldPoint.y,
 						"prevZ":oldPoint.z,
@@ -149,10 +151,13 @@ function registerPositionHandlers(contexts,down,move,up){
 						"y":tempNewPoint.y,
 						"z":tempNewPoint.z,
 						"xDelta":xDelta,
-						"yDelta":yDelta
+						"yDelta":yDelta,
+						"eraser":isEraser
 					};
 					trackedTouches[pointId] = newPoint;
 					return {
+						"pointerType":pointerEvent.pointerType,
+						"eraser":isEraser,
 						"x":x,
 						"y":y,
 						"z":z,
@@ -165,9 +170,12 @@ function registerPositionHandlers(contexts,down,move,up){
 					var x = pointerEvent.pageX - o.left;
 					var y = pointerEvent.pageY - o.top;
 					var z = pointerEvent.originalEvent.pressure || 0.5;
+					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
 					var worldPos = screenToWorld(x,y);
 					delete trackedTouches[pointId];
 					return {
+						"pointerType":pointerEvent.pointerType,
+						"eraser":isEraser,
 						"x":x,
 						"y":y,
 						"z":z,
@@ -202,22 +210,15 @@ function registerPositionHandlers(contexts,down,move,up){
 							console.log("scaling:",previousScale,currentScale);
 							Zoom.scale(previousScale / currentScale);
 						}
-					},100);
+					},25);
 					context.bind("pointerdown",function(e){
-						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch"){
-							updatePoint(e);
-						} else {
-							trackingTouches = false;
-							trackedTouches = {};
+						var point = updatePoint(e);
+						if (_.size(trackedTouches) == 1){
 							WorkQueue.pause();
 							var o = offset();
 							e.preventDefault();
 							isDown = true;
-							var x = e.pageX - o.left;
-							var y = e.pageY - o.top;
-							var z = e.originalEvent.pressure || 0.5;
-							var worldPos = screenToWorld(x,y);
-							down(x,y,z,worldPos,modifiers(e));
+							down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 						}
 					});
 					context.bind("pointermove",function(e){
@@ -225,27 +226,23 @@ function registerPositionHandlers(contexts,down,move,up){
 						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
 							performGesture();
 						}
-						if(isDown){
-							e.preventDefault();
-							move(point.x,point.y,point.z,point.worldPos,modifiers(e));
+						if (_.size(trackedTouches) == 1){
+							if(isDown){
+								e.preventDefault();
+								move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+							}
 						}
 					});
 					context.bind("pointerup",function(e){
 						var point = releasePoint(e);
-						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
-						} else {
-							trackingTouches = false;
-							trackedTouches = {};
-							WorkQueue.gracefullyResume();
-							e.preventDefault();
-							if(isDown){
-									up(point.x,point.y,point.z,point.worldPos,modifiers(e));
-							}
-							isDown = false;
+						WorkQueue.gracefullyResume();
+						e.preventDefault();
+						if(isDown){
+								up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 						}
+						isDown = false;
 					});
 					var pointerOut = function(x,y){
-							trackingTouches = false;
 							trackedTouches = {};
 							WorkQueue.gracefullyResume();
 							var worldPos = screenToWorld(x,y);
@@ -269,14 +266,18 @@ function registerPositionHandlers(contexts,down,move,up){
 							}
 							isDown = false;
 					}
-					context.bind("pointerOut",function(e){
+					var pointerClose = function(e){
+						var point = releasePoint(e);
 							WorkQueue.gracefullyResume();
 							e.preventDefault();
 							if(isDown){
 									pointerOut(e.offsetX,e.offsetY);
 							}
 							isDown = false;
-					});
+					};
+					context.bind("pointerout",pointerClose);
+					//context.bind("pointerOut",pointerClose);
+					context.bind("pointerLeave",pointerClose);
 
 				} else {
 					context.bind("mousedown",function(e){
@@ -2016,21 +2017,22 @@ var Modes = (function(){
                     var isDown = false;
                     var resumeWork;
                     var mousePressure = 256;
-                    var down = function(x,y,z){
+                    var down = function(x,y,z,worldPos,modifiers){
                         deleted = [];
                         isDown = true;
-                        if(!erasing){
+                        if(!erasing && !modifiers.eraser){
                             boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
                             boardContext.lineWidth = Modes.draw.drawingAttributes.lineWidth * 128 * mousePressure;
                             boardContext.beginPath();
                             boardContext.moveTo(x,y);
                             currentStroke = [x, y, mousePressure * z];
-                        }
+                        } else {
+												}
                     };
                     var raySpan = 10;
                     var deleted = [];
-                    var move = function(x,y,z,worldPos){
-                        if(erasing){
+                    var move = function(x,y,z,worldPos,modifiers){
+                        if(erasing || modifiers.eraser){
                             var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                             var markAsDeleted = function(bounds){
                                 var tl = worldToScreen(bounds[0],bounds[1]);
@@ -2058,15 +2060,14 @@ var Modes = (function(){
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                         }
                     };
-                    var up = function(x,y,z){
+                    var up = function(x,y,z,worldPos,modifiers){
                         isDown = false;
-                        if(erasing){
+                        if(erasing || modifiers.eraser){
                             var deleteTransform = batchTransform();
                             deleteTransform.isDeleted = true;
                             deleteTransform.inkIds = deleted;
                             sendStanza(deleteTransform);
-                        }
-                        else{
+                        } else {
                             boardContext.lineTo(x,y);
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
