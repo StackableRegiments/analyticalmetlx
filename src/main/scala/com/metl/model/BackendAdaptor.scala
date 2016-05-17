@@ -30,6 +30,57 @@ import net.liftweb.mongodb._
 
 import scala.xml._
 
+object SecurityListener extends Logger {
+  import java.util.Date
+  case class SessionRecord(username:String,ipAddress:String,started:Long,lastActivity:Long)
+  val ipAddresses = new scala.collection.mutable.HashMap[String,SessionRecord]()
+  object SafeSessionIdentifier extends SessionVar[String](nextFuncName)
+  object IPAddress extends SessionVar[Option[String]](None)
+  def activeSessions = ipAddresses.values.toList
+  protected def sessionId:String = {
+    SafeSessionIdentifier.is
+    //S.session.map(_.uniqueId).getOrElse("unknown")
+  }
+  protected def user:String = {
+    Globals.currentUser.is
+  }
+  def login:Unit = {
+    if (user != "forbidden"){
+      ipAddresses.remove(sessionId).foreach(rec => {
+        ipAddresses += ((sessionId,rec.copy(username = user,lastActivity = new Date().getTime)))
+      })
+      S.session.foreach(_.addSessionCleanup((s) => {
+        SecurityListener.cleanupSession(s)
+      }))
+      info("%s :: %s logged in, ipAddress %s".format(sessionId,user,IPAddress.is))
+    }
+  }
+  def cleanupSession(in:LiftSession):Unit = {
+    val thisSessionId = sessionId //in.uniqueId
+    ipAddresses.remove(thisSessionId).foreach(rec => {
+      if (rec.username != "forbidden"){
+          info("%s :: %s user session expired, ipAddress %s".format(thisSessionId,rec.username,Some(rec.ipAddress)))
+      }
+    })
+  }
+  def maintainIPAddress(r:Req):Unit = {
+    try {
+      val oldIPAddress = IPAddress.is
+      val newIPAddress = r.remoteAddr
+      IPAddress(Some(newIPAddress))
+      if (!oldIPAddress.exists(_ == newIPAddress)){
+        val now = new Date().getTime
+        ipAddresses += ((sessionId,SessionRecord(user,newIPAddress,now,now)))
+        if (user != "forbidden")
+          info("%s :: %s changed IP address %s".format(sessionId,user,Some(newIPAddress)))
+      }
+    } catch {
+      case e:StateInStatelessException => {}
+      case e:Exception => {}
+    }
+  }
+}
+
 class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) with Logger {
   debug("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
   override def constructResponseWithMessages(req:Req,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
@@ -280,7 +331,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
             session.setAttribute(authSubjectAttr,subject)
             //val req:javax.servlet.http.HttpServletRequest = sr.req
             //req.login(username,"no password")
-            println("authenticated: %s\r\n%s".format(subject,sr.req.getUserPrincipal()))
+            //println("authenticated: %s\r\n%s".format(subject,sr.req.getUserPrincipal()))
           }
           case other => {
             warn("type of containerRequest not of the type expected: %s".format(other))
@@ -300,6 +351,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
             trace("saml step 2: authed")
             setUserPrincipal(la.username)
             Globals.currentUser(la.username)
+            SecurityListener.login
             trace("saml step 3: set user")
             var existingGroups:List[Tuple2[String,String]] = Nil
             if (Globals.groupsProviders != null){
@@ -353,6 +405,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
               onSuccess = (la:LiftAuthStateData) => {
                 setUserPrincipal(la.username)
                 Globals.currentUser(la.username)
+                SecurityListener.login
                 var existingGroups:List[Tuple2[String,String]] = Nil
                 if (Globals.groupsProviders != null){
                   Globals.groupsProviders.foreach(gp => {
@@ -378,6 +431,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
               if ( la.authenticated ) {
                 setUserPrincipal(la.username)
                 Globals.currentUser(la.username)
+                SecurityListener.login
                 var existingGroups:List[Tuple2[String,String]] = Nil
                 if (Globals.groupsProviders != null){
                   Globals.groupsProviders.foreach(gp => {
@@ -405,6 +459,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
                 if ( la.authenticated ) {
                   setUserPrincipal(la.username)
                   Globals.currentUser(la.username)
+                  SecurityListener.login
                   var existingGroups:List[Tuple2[String,String]] = Nil
                   if (Globals.groupsProviders != null){
                     Globals.groupsProviders.foreach(gp => {
@@ -434,6 +489,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
             onSuccess = (la:LiftAuthStateData) => {
               if ( la.authenticated ) {
                 Globals.currentUser(la.username)
+                SecurityListener.login
                 Globals.casState.set(new CASStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
               }
             },
@@ -540,6 +596,10 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     })
     setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
+
+    S.addAnalyzer((req,timeTaken,_entries) => {
+      req.foreach(r => SecurityListener.maintainIPAddress(r))
+    })
     info(configs)
   }
   def listRooms(configName:String):List[String] = configs(configName)._2.list
