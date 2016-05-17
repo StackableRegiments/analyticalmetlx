@@ -255,7 +255,83 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-   
+    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","imageIds"),(args) => {
+      val conversationJid = getArgAsString(args(0))
+      val slideJid = getArgAsInt(args(1))
+      val inkIds = args(2) match {
+        case l:List[String] => l
+        case _ => Nil
+      }
+      val textIds = args(3) match {
+        case l:List[String] => l
+        case _ => Nil
+      }
+      val imageIds = args(4) match {
+        case l:List[String] => l
+        case _ => Nil
+      }
+      val now = new Date().getTime
+      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
+
+      val title = "submission%s%s.jpg".format(username,now.toString)
+
+      val inks = pubHistory.getInks.filter(elem => inkIds.contains(elem.identity))
+      val images = pubHistory.getImages.filter(elem => imageIds.contains(elem.identity))
+      val texts = pubHistory.getTexts.filter(elem => textIds.contains(elem.identity))
+      val highlighters = pubHistory.getHighlighters.filter(elem => inkIds.contains(elem.identity))
+      
+      val authors = (inks ::: images ::: texts ::: highlighters).map(_.author).distinct
+      val conv = serverConfig.detailsOfConversation(conversationJid)
+      serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
+      this ! SpamMessage(<div />,Full("submissions"),Full("Blacklisted users: %s".format(authors)))
+
+      def getColorForAuthor(name:String):Color = {
+        new Color(0,0,0,0)
+      }
+      val thickness = 5
+      val coloredAuthors = Map(authors.map(a => (a,SubmissionBlacklistedPerson(a,getColorForAuthor(a)))):_*)
+
+      val annotationHistory = new History("annotation")
+
+      inks.foreach(ink => {
+        val color = coloredAuthors(ink.author).highlight
+        annotationHistory.addStanza(ink.copy(color = color,thickness=ink.thickness * 2,author="blacklist"))
+      })
+      images.foreach(image => {
+        val color = coloredAuthors(image.author).highlight
+        val bounds = List(Point(image.left,image.top,thickness),Point(image.right,image.top,thickness),Point(image.right,image.bottom,thickness),Point(image.left,image.bottom,thickness),Point(image.left,image.top,thickness))
+        val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+        annotationHistory.addStanza(newStanza)
+
+      })
+      texts.foreach(text => {
+        val color = coloredAuthors(text.author).highlight
+        val bounds = List(Point(text.left,text.top,thickness),Point(text.right,text.top,thickness),Point(text.right,text.bottom,thickness),Point(text.left,text.bottom,thickness),Point(text.left,text.top,thickness))
+        val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+        annotationHistory.addStanza(newStanza)
+      })
+
+      val mergedHistory = pubHistory.merge(annotationHistory)
+
+      val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
+      val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
+        (width,height) match {
+        case (a:Int,b:Int) if a > 0 && b > 0 => {
+          val blacklistedPeople = coloredAuthors.values.toList
+          val imageBytes = SlideRenderer.render(mergedHistory,width,height)
+          val uri = serverConfig.postResource(conversationJid,title,imageBytes)
+          val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople)
+          rooms.get((server,conversationJid)).map(r =>{
+            r() ! LocalToServerMeTLStanza(submission)
+          });
+          this ! SpamMessage(<div />,Full("submissions"),Full("Blacklisted and banned users: %s".format(authors)))
+        }
+        case _ => {
+          this ! SpamMessage(<div />,Full("submissions"),Full("Blacklisting failed.  Your canvas is empty."))
+        }
+      }
+      JNull
+    },Empty),
     /*
      ClientSideFunctionDefinition("changeSubjectOfConversation",List("jid","newSubject"),(args) => {
      val jid = getArgAsString(args(0))
