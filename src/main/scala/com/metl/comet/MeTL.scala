@@ -232,6 +232,30 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
+      val jid = getArgAsString(args(0))
+      val rawBlacklist = args(1) match {
+        case l:List[String] => l
+        case JArray(bl) => bl.flatMap{
+          case JString(s) => Some(s)
+          case other => {
+            warn("unknown internal JValue: [%s]".format(other))
+            None
+          }
+        }
+        case other => {
+          warn("unknown JValue: [%s]".format(other))
+          Nil
+        }
+      }
+      println("changeBlacklistOfConversation: [%s] [%s]".format(jid,rawBlacklist))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))//newBlacklist))
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+   
     /*
      ClientSideFunctionDefinition("changeSubjectOfConversation",List("jid","newSubject"),(args) => {
      val jid = getArgAsString(args(0))
