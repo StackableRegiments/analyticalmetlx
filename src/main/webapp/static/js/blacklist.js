@@ -3,7 +3,10 @@ var Blacklist = (function(){
     var blacklistSummaryTemplate = {};
     var currentBlacklistTemplate = {};
     var currentBlacklistContainer = {};
+		var blacklistAuthorsContainer = {};
+		var blacklistAuthorTemplate = {};
     var blacklists = [];
+		var blacklistAuthors = [];
     var currentBlacklist = {};
     $(function(){
         blacklistSummaryListing = $("#blacklistListing");
@@ -11,16 +14,36 @@ var Blacklist = (function(){
         currentBlacklistContainer = $("#currentBlacklist");
         currentBlacklistTemplate = currentBlacklistContainer.find(".blacklistContainer").clone();
 				console.log("setup blacklist templates:",blacklistSummaryListing,blacklistSummaryTemplate,currentBlacklistContainer,currentBlacklistTemplate);
+        blacklistAuthorsContainer = $("#currentBlacklistAuthorList");
+        blacklistAuthorTemplate = blacklistAuthorsContainer.find(".blacklistAuthorContainer").clone();
         blacklistSummaryListing.empty();
+        blacklistAuthorsContainer.empty();
     });
     var filteredBlacklists = function(){
-			return blacklists;
-//        return _.filter(blacklists,filterBlacklist);
+			return _.filter(blacklists,filterBlacklist);
     };
     var filterBlacklist = function(sub){
-			return sub;
-      //  return (Conversations.shouldModifyConversation() || sub.author.toLowerCase() == UserSettings.getUsername().toLowerCase());
+      return Conversations.shouldModifyConversation();
     };
+		var updateAuthorList = function(conversation){
+			console.log("blacklist.updateAuthorList",conversation);
+			if ("blacklist" in conversation && "jid" in conversation && Conversations.getCurrentConversationJid() == conversation.jid){
+				blacklistAuthors = conversation.blacklist;
+				renderBlacklistAuthorsInPlace();
+			}
+		};
+		var renderBlacklistAuthorsInPlace = function(){
+			blacklistAuthorsContainer.empty();
+			blacklistAuthors.map(function(author){
+				var rootElem = blacklistAuthorTemplate.clone();
+				rootElem.find(".blacklistAuthorName").text(author);
+				rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
+					blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
+					changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
+				});
+				blacklistAuthorsContainer.append(rootElem);
+			});
+		};
     var clearState = function(){
         blacklists = [];
         currentBlacklist = {};
@@ -28,7 +51,6 @@ var Blacklist = (function(){
     var renderBlacklistsInPlace = function(){
         blacklistSummaryListing.empty();
         filteredBlacklists().map(function(blacklist){
-					console.log("rendering blacklistItem: ",blacklist);
             renderBlacklistSummary(blacklist);
         })
         renderCurrentBlacklistInPlace();
@@ -95,11 +117,13 @@ var Blacklist = (function(){
         }
     };
 
+    Progress.conversationDetailsReceived["blacklist"] = updateAuthorList;
     Progress.onConversationJoin["blacklist"] = clearState;
     Progress.historyReceived["blacklist"] = historyReceivedFunction;
     return {
         getAllBlacklists:function(){return filteredBlacklists();},
         getCurrentBlacklist:function(){return currentBlacklist;},
-        processBlacklist:onBlacklistReceived
+        processBlacklist:onBlacklistReceived,
+				getBlacklistedAuthors:function(){return blacklistAuthors;}
     };
 })();
