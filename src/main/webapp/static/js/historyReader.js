@@ -380,11 +380,21 @@ function prerenderInk(ink){
     context.moveTo(x,y);
     context.beginPath();
     context.lineWidth = ink.thickness * pica(pr);
+		/*
     if(ink.thickness > lineDrawingThreshold){
+		//currently ugly
         renderHull(ink);
         return true;
     }
     else{
+		*/
+		/*
+		timeIt("hulling",function(){
+			renderHull(ink);
+		});
+//		  nicer, but I think we can make it nicer
+		timeIt("oldSlimStrokes",function(){
+				context.lineCap = "round";
         for(p = 0; p < points.length; p += 3){
             newPr = points[p+2];
             if(Math.abs(newPr - pr) < pressureSimilarityThreshold){
@@ -406,9 +416,41 @@ function prerenderInk(ink){
         }
         context.stroke();
         return true;
-    }
-    return false;
+		});
+    //}
+		//
+		*/
+		// using a simpler strategy, which looks a lot like the one the dynamic renderer uses.
+//		timeIt("cappedStrokes",function(){
+		var x = points[0] + contentOffsetX;
+		var y = points[1] + contentOffsetY;
+		_.each(_.chunk(points,3),function(point){
+			context.beginPath();
+			context.moveTo(x,y);
+			x = point[0] + contentOffsetX;
+			y = point[1] + contentOffsetY;
+			context.lineTo(x,y);
+			context.lineWidth = ink.thickness * (point[2] / 256);
+			context.lineCap = "round";
+			context.stroke();
+//		});
+		});
+		return true;
+//    return false;
 }
+/*
+var timeCaptures = {};
+function timeIt(label,action){
+	var start = new Date().getTime();
+	var res = action();
+	var duration = new Date().getTime() - start;
+	//console.log(label,duration);
+	var coll = timeCaptures[label] || [];
+	coll.push(duration);
+	timeCaptures[label] = coll;
+	return res;
+}
+*/
 function alertCanvas(canvas,label){
     var url = canvas.toDataURL();
     window.open(url,label,sprintf("width=%s, height=%s",canvas.width,canvas.height));
