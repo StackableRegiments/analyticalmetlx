@@ -87,16 +87,31 @@ var Blacklist = (function(){
     var renderBlacklist = function(blacklist){
         var rootElem = $("<div />");
         if ("type" in blacklist && blacklist.type == "submission" && "target" in blacklist && blacklist.target == "bannedcontent"){
-            rootElem = currentBlacklistTemplate.clone();
-            rootElem.attr("id",sprintf("blacklist_%s",blacklist.identity))
-            rootElem.find(".blacklistDescription").text(sprintf("submitted by %s at %s",blacklist.author, blacklist.timestamp));
-            rootElem.find(".blacklistImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),blacklist.author,blacklist.identity));
             if (Conversations.shouldModifyConversation()){
-                rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
-                    addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,blacklist.identity);
-                });
+							rootElem = currentBlacklistTemplate.clone();
+							rootElem.attr("id",sprintf("blacklist_%s",blacklist.identity))
+							rootElem.find(".blacklistDescription").text(sprintf("submitted by %s at %s",blacklist.author, blacklist.timestamp));
+							rootElem.find(".blacklistImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),blacklist.author,blacklist.identity));
+							var authorContainer = rootElem.find(".blacklistAuthors");
+							var authorTemplate = authorContainer.find(".blacklistAuthor").clone();
+							authorContainer.empty();
+							if ("blacklist" in blacklist){
+								_.each(blacklist.blacklist,function(ba){
+									if ("username" in ba && "highlight" in ba){
+										var authorElem = authorTemplate.clone();
+										authorElem.find(".blacklistAuthorName").text(ba.username);
+										var color = ba.highlight[0];
+										var opacity = ba.highlight[1];
+										authorElem.find(".blacklistAuthorColor").css({"background-color":color,"opacity":opacity});
+										authorContainer.append(authorElem);
+									}
+								});
+							}
+							rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
+								addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,blacklist.identity);
+							});
             } else {
-                rootElem.find("blacklistTeacherControls").hide();
+							// do we need to do any hiding here?
             }
         }
         return rootElem;
