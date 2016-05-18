@@ -18,7 +18,7 @@ var showGrid = false;
 var expansion = 100;
 var commandMode = true;
 function unregisterPositionHandlers(context){
-    $.each("mouseup mousemove mousedown touchstart touchmove touchend touchcancelled mouseout touchleave gesturechange gesturestart".split(" "),function(i,evt){
+    $.each("pointerdown pointermove pointerup pointerout pointerleave pointercancel mouseup mousemove mousedown touchstart touchmove touchend touchcancelled mouseout touchleave gesturechange gesturestart".split(" "),function(i,evt){
         context.unbind(evt);
     });
     WorkQueue.gracefullyResume();
