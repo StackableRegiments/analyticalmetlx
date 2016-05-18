@@ -14,6 +14,45 @@
         <!--<div id="applicationMenuPopup" class="backstageHeader">
             <div class="lift:embed?what=_futureApplicationButton" ></div>
         </div>-->
+        <div id="blacklistPopup" class="backstage">
+          <h2 class="nmt">Manage banned content</h2>
+          <div class="flex-container-row img-resp">
+						<div id="currentBlacklistAuthorList" class="mr quarter">
+							<div class="blacklistAuthors">
+								<div class="blacklistAuthor">
+									<span class="blacklistAuthorName"></span>
+									<span class="blacklistAuthorUnbanButton"></span>
+								</div>
+							</div>
+						</div>
+            <div id="blacklistListing" class="mr quarter">
+              <!-- many ".blacklistSummary"s are cloned from JS -->
+              <div class="blacklistSummary">
+                <button type="button" class="viewBlacklistButton block with-border clickable nmt">
+                  <div class="blacklistDescription"></div>
+                  <image class="blacklistImageThumb"></image>
+                </button>
+              </div>
+            </div>
+            <div id="currentBlacklist" class="half">
+              <!-- one ".currentBlacklistItem" will be visible at any time, but it will be cloned and replaced by JS -->
+              <div class="blacklistContainer">
+                <div class="blacklistDescription"></div>
+                <image class="blacklistImage"></image>
+								<div class="blacklistAuthors">
+									<div class="blacklistAuthor">
+										<span class="blacklistAuthorColor"></span>
+										<span class="blacklistAuthorName"></span>
+									</div>
+								</div>
+                <span class="blacklistTeacherControls">
+                  <input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="submissionsPopup" class="backstage">
           <h2 class="nmt">Submissions</h2>
           <div class="flex-container-row img-resp">
