@@ -46,8 +46,11 @@ object SecurityListener extends Logger {
   }
   def login:Unit = {
     if (user != "forbidden"){
-      ipAddresses.remove(sessionId).foreach(rec => {
-        ipAddresses += ((sessionId,rec.copy(username = user,lastActivity = new Date().getTime)))
+      val now = new Date().getTime
+      ipAddresses.remove(sessionId).map(rec => {
+        ipAddresses += ((sessionId,rec.copy(username = user,lastActivity = now)))
+      }).getOrElse({
+        ipAddresses += ((sessionId,SessionRecord(user,"unknown",now,now)))
       })
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
@@ -70,7 +73,11 @@ object SecurityListener extends Logger {
       IPAddress(Some(newIPAddress))
       if (!oldIPAddress.exists(_ == newIPAddress)){
         val now = new Date().getTime
-        ipAddresses += ((sessionId,SessionRecord(user,newIPAddress,now,now)))
+        ipAddresses.remove(sessionId).map(rec => {
+          ipAddresses += ((sessionId,rec.copy(ipAddress = newIPAddress,lastActivity = now)))
+        }).getOrElse({
+          ipAddresses += ((sessionId,SessionRecord(user,newIPAddress,now,now)))
+        })
         if (user != "forbidden")
           info("%s :: %s changed IP address %s".format(sessionId,user,Some(newIPAddress)))
       }
