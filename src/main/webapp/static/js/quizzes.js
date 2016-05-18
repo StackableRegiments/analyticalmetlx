@@ -161,7 +161,7 @@ var Quizzes = (function(){
             graph.show();
             _.defer(function(){
                 var data = {
-                    labels:_.pluck(quiz.options,"name"),
+                    labels:_.map(quiz.options,"name"),
                     datasets:[
                         {
                             fillColor:"gray",

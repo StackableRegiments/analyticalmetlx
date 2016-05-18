@@ -86,7 +86,7 @@ var DeviceConfiguration = (function(){
         var deviceHeight = 0;
         var deviceWidth = 0;
         var matchMetaTag = function(metaName,metaValue){
-            return (navigator.standalone && _.any(_.filter(document.getElementsByTagName("meta"),function(i){return i.name.toLowerCase().trim() == metaName.toLowerCase().trim();}),function(i){return i.content.toLowerCase().trim() == metaValue.toLowerCase().trim();}));
+            return (navigator.standalone && _.some(_.filter(document.getElementsByTagName("meta"),function(i){return i.name.toLowerCase().trim() == metaName.toLowerCase().trim();}),function(i){return i.content.toLowerCase().trim() == metaValue.toLowerCase().trim();}));
         }
         switch (currentDevice){
         case "iPhone":

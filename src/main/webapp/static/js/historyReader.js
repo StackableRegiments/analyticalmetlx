@@ -155,7 +155,7 @@ function mergeBounds(b1,b2){
 }
 var boardLimit = 10000;
 function isUsable(element){
-    var boundsOk = !(_.any(element.bounds,function(p){
+    var boundsOk = !(_.some(element.bounds,function(p){
         return isNaN(p) || p > boardLimit || p < -boardLimit;
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true

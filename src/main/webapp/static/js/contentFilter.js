@@ -43,7 +43,7 @@ var ContentFilter = (function(){
         };
     };
     var applyFilters = function(stanza){
-        return _.any(filters,function(filter){
+        return _.some(filters,function(filter){
             return ("enabled" in filter && filter.enabled == true) ? filter.filterStanza(stanza) : false ;
         });
     };

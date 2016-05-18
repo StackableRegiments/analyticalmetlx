@@ -112,7 +112,7 @@ var Conversations = (function(){
     })();
 
     var shouldRefreshSlideDisplay = function(details){
-        return (!("slides" in currentConversation) || "slides" in details && _.any(details,function(slide,slideIndex){
+        return (!("slides" in currentConversation) || "slides" in details && _.some(details,function(slide,slideIndex){
             var ccs = currentConversation.slides[slideIndex];
             if (ccs && "id" in ccs && "id" in slide && "index" in slide && "index" in ccs && ccs.id == slide.id && ccs.index == slide.index){
                 return false;
@@ -233,7 +233,7 @@ var Conversations = (function(){
                 }
             }
             updateCurrentConversation(details);
-            if (!(_.any(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
+            if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
                 currentlyDisplayedConversations.push(details);
                 refreshConversationSearchResults();
             }
@@ -449,7 +449,7 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.any(UserSettings.getUserGroups(), function(group){
+        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(group){
             return group.value.toLowerCase() == conversation.subject.toLowerCase();
         }))) {
             return true;
@@ -669,7 +669,7 @@ var Conversations = (function(){
 })();
 
 function unwrap(jqs){
-    return _.pluck(jqs,"0");
+    return _.map(jqs,"0");
 }
 function receiveCurrentSlide(jid){
     Progress.call("currentSlideJidReceived",[jid]);

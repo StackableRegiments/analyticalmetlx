@@ -147,7 +147,7 @@ function commandReceived(c){
             return;
         }
         var ps = c.parameters.map(parseFloat);
-        if(_.any(ps,isNaN)){
+        if(_.some(ps,isNaN)){
             console.log("Can't follow teacher to",c);
             return;
         }
@@ -522,7 +522,7 @@ function dirtyInkReceived(dirtyInk){
     blit();
 }
 function isInClearSpace(bounds){
-    return !_.any(visibleBounds,function(onscreenElement){
+    return !_.some(visibleBounds,function(onscreenElement){
         return intersectRect(onscreenElement,bounds);
     });
 }
