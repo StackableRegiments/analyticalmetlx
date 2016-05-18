@@ -135,10 +135,10 @@ var Blacklist = (function(){
             if ("target" in blacklist && blacklist.target == "bannedcontent"){
                 if (filterBlacklist(blacklist)){
                     blacklists.push(blacklist);
+										if (!skipRender){
+											renderBlacklistsInPlace();
+										}
                 }
-            }
-            if (!skipRender){
-                renderBlacklistsInPlace();
             }
         }
         catch (e){
@@ -149,6 +149,7 @@ var Blacklist = (function(){
     Progress.conversationDetailsReceived["blacklist"] = updateAuthorList;
     Progress.onConversationJoin["blacklist"] = clearState;
     Progress.historyReceived["blacklist"] = historyReceivedFunction;
+		Progress.stanzaReceived["blacklist"] = onBlacklistReceived;
     return {
         getAllBlacklists:function(){return filteredBlacklists();},
         getCurrentBlacklist:function(){return currentBlacklist;},
