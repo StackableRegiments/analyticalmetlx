@@ -7,7 +7,8 @@
 	<appender name="SECURITY_FILE" class="ch.qos.logback.core.FileAppender">
 		<file>security.log</file>
 		<encoder>
-			<Pattern>%d{MM:dd:YYYY HH:mm:ss.SSSz} - %msg%n</Pattern>
+			<!-- this pattern should match what the consumer of these logs will need, and should start with datetime -->
+			<Pattern>%d{MM-dd-YYYY HH:mm:ss.SSSz} - MeTL - %msg%n</Pattern>
 		</encoder>
 	</appender>
   <!--
