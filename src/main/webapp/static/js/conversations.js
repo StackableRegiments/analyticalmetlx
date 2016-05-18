@@ -445,6 +445,12 @@ var Conversations = (function(){
             return false;
         }
     };
+		var getIsBannedFunction = function(conversation){
+			if (!conversation){
+					conversation = currentConversation;
+			}
+			return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
+		};
     var shouldDisplayConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
@@ -461,7 +467,7 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish)){
+        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
             return true;
         } else {
             return false;
@@ -664,7 +670,8 @@ var Conversations = (function(){
         shouldModifyConversation : shouldModifyConversationFunction,
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
-        updateThumbnail :updateThumbnailFor
+        updateThumbnail :updateThumbnailFor,
+				getIsBanned : getIsBannedFunction
     };
 })();
 
