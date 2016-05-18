@@ -30,13 +30,13 @@ class Metl extends Logger {
     "/board"   
   }
   def boardFor(conversationJid:Int):String = {
-    "/simpleBoard?conversationJid=%s".format(conversationJid)
+    "/board?conversationJid=%s".format(conversationJid)
   }
   def boardFor(conversationJid:Int,slideId:Int):String = {
-    "/simpleBoard?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
+    "/board?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
   }
   def noBoard:String = {
-    "/conversationSearch"
+    "/"///conversationSearch"
   }
 
   lazy val serverConfig = ServerConfiguration.default
