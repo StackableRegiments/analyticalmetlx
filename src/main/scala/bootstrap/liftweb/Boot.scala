@@ -92,8 +92,10 @@ class Boot extends Logger {
       Menu(Loc("Home","index" :: Nil,"Home")),
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
+      //Menu(Loc("MeTL Collaborative Board","simpleBoard" :: Nil,"MeTL in a browser")),
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
       //WebMeTL
+      Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
       Menu(Loc("WebMeTL Conversation search","conversations" :: Nil,"Conversations",Hidden)),
       Menu(Loc("Slide","slide" :: Nil,"Slide",Hidden)),
