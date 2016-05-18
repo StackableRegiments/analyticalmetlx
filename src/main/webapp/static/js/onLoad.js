@@ -282,7 +282,7 @@ var TweenController = (function(){
             if(w == 0 || h == 0){
                 return;
             }
-            if(_.any(ps,function(p){
+            if(_.some(ps,function(p){
                 return typeof(p) == "undefined" || isNaN(p);
             })){
                 return;

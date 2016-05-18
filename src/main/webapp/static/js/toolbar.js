@@ -134,34 +134,27 @@ function registerPositionHandlers(contexts,down,move,up){
 					var y = pointerEvent.pageY - o.top;
 					var z = pointerEvent.originalEvent.pressure || 0.5;
 					var worldPos = screenToWorld(x,y);
-					var tempNewPoint = {
+					var newPoint = {
 						"x":worldPos.x,
 						"y":worldPos.y,
+						"screenX":x,
+						"screenY":y,
 						"z":z
 					};
-					var oldPoint = trackedTouches[pointId] || tempNewPoint;
-					var xDelta = tempNewPoint.x - oldPoint.x;
-					var yDelta = tempNewPoint.y - oldPoint.y;
-					var isEraser = oldPoint.eraser || pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
-					var newPoint = {
+					var pointItem = trackedTouches[pointId] || {
+						"pointerId":pointId,
 						"pointerType":pointerEvent.originalEvent.pointerType,
-						"prevX":oldPoint.x,
-						"prevY":oldPoint.y,
-						"prevZ":oldPoint.z,
-						"x":tempNewPoint.x,
-						"y":tempNewPoint.y,
-						"z":tempNewPoint.z,
-						"xDelta":xDelta,
-						"yDelta":yDelta,
-						"eraser":isEraser
+						"eraser":pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5,
+						"points":[]
 					};
-					trackedTouches[pointId] = newPoint;
+					pointItem.points.push(newPoint);
+					trackedTouches[pointId] = pointItem;
 					if (_.size(trackedTouches) > 1){
 						isGesture = true;
 					}
 					return {
 						"pointerType":pointerEvent.pointerType,
-						"eraser":isEraser,
+						"eraser":pointItem.isEraser,
 						"x":x,
 						"y":y,
 						"z":z,
@@ -193,37 +186,63 @@ function registerPositionHandlers(contexts,down,move,up){
 					var performGesture = _.throttle(function(){
 						if (_.size(trackedTouches) > 1){
 							takeControlOfViewbox();
-							var xDelta = _.reduce(trackedTouches,function(seed,iter){return seed + iter.xDelta;},0);
-							var yDelta = _.reduce(trackedTouches,function(seed,iter){return seed + iter.yDelta;},0);
-							console.log("translating:",xDelta,yDelta);
-							Pan.translate(-1 * xDelta,-1 * yDelta);
+							
+							var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+								var first = _.first(item.points);
+								var last = _.last(item.points);
+								return [first,last];
+							});
+							trackedTouches = {};
+							/*
+							trackedTouches = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(series){
+								series.points = [_.last(series.points)];
+								return series;
+							});
+							*/
+							var xDelta = _.reduce(calculationPoints,function(seed,iter){
+								try {
+									return seed + iter[0].x - iter[1].x;
+								} catch(e){
+									return seed;
+								}
+							},0) / _.size(calculationPoints);
+							var yDelta = _.reduce(calculationPoints,function(seed,iter){
+								try {
+									return seed + iter[0].y - iter[1].y;
+								} catch(e){
+									return seed;
+								}
+							},0) / _.size(calculationPoints);
 
-							var prevSouthMost = _.min(_.map(trackedTouches,function(touch){return touch.prevY;})); 
-							var prevNorthMost = _.max(_.map(trackedTouches,function(touch){return touch.prevY;})); 
-							var prevEastMost =  _.min(_.map(trackedTouches,function(touch){return touch.prevX;})); 
-							var prevWestMost =  _.max(_.map(trackedTouches,function(touch){return touch.prevX;})); 
+							//console.log("translating:",xDelta,yDelta,calculationPoints);
+							Pan.translate(xDelta,yDelta);
+
+							var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;})); 
+							var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;})); 
+							var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;})); 
+							var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;})); 
 							var prevYScale = prevNorthMost - prevSouthMost;
 							var prevXScale = prevWestMost - prevEastMost;
 
-							var southMost = _.min(_.map(trackedTouches,function(touch){return touch.y;})); 
-							var northMost = _.max(_.map(trackedTouches,function(touch){return touch.y;})); 
-							var eastMost =  _.min(_.map(trackedTouches,function(touch){return touch.x;})); 
-							var westMost =  _.max(_.map(trackedTouches,function(touch){return touch.x;})); 
+							var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;})); 
+							var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;})); 
+							var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;})); 
+							var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;})); 
 							var yScale = northMost - southMost;
 							var xScale = westMost - eastMost;
 							
 							var previousScale = (prevXScale + prevYScale)	/ 2;
 							var currentScale = (xScale + yScale)	/ 2;
-							console.log("scaling:",previousScale,currentScale);
+							//console.log("scaling:",previousScale,currentScale);
 							Zoom.scale(previousScale / currentScale);
 						}
-					},25);
+					},10);
 					context.bind("pointerdown",function(e){
+						e.preventDefault();
 						var point = updatePoint(e);
 						if (_.size(trackedTouches) == 1 && !isGesture){
 							WorkQueue.pause();
 							var o = offset();
-							e.preventDefault();
 							isDown = true;
 							down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 						}
@@ -231,6 +250,7 @@ function registerPositionHandlers(contexts,down,move,up){
 					context.bind("pointermove",function(e){
 						var point = updatePoint(e);
 						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+							e.preventDefault();
 							performGesture();
 						}
 						if (_.size(trackedTouches) == 1 && !isGesture){
@@ -274,6 +294,7 @@ function registerPositionHandlers(contexts,down,move,up){
 							isDown = false;
 					}
 					var pointerClose = function(e){
+						trackedTouches = {};
 						var point = releasePoint(e);
 							WorkQueue.gracefullyResume();
 							e.preventDefault();
@@ -283,8 +304,8 @@ function registerPositionHandlers(contexts,down,move,up){
 							isDown = false;
 					};
 					context.bind("pointerout",pointerClose);
-					//context.bind("pointerOut",pointerClose);
-					context.bind("pointerLeave",pointerClose);
+					context.bind("pointerleave",pointerClose);
+					context.bind("pointercancel",pointerClose);
 
 				} else {
 					context.bind("mousedown",function(e){
@@ -362,8 +383,8 @@ function registerPositionHandlers(contexts,down,move,up){
 					}
 					var averagePos = function(touches){
 							return {
-									x:average(_.pluck(touches,"x")),
-									y:average(_.pluck(touches,"y"))
+									x:average(_.map(touches,"x")),
+									y:average(_.map(touches,"y"))
 							};
 					}
 					var offsetTouches = function(ts){
@@ -1008,7 +1029,7 @@ var Modes = (function(){
                 newText = inputContents;
                 startTime = Date.now();
                 /*
-                 var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
+                 var chars = Math.max.apply(Math,_.map(text.runs,"length"));
                  var xInset = (boardWidth / 2 - text.width / 2);
                  var yInset = (boardHeight / 2 - text.height / 2);
                  var xDelta = text.bounds[0] - viewboxX - xInset;
@@ -1573,7 +1594,7 @@ var Modes = (function(){
                         }
                         else if (!(modifiers.ctrl)){//You can't ctrl-click to drag
                             var isDragHandle = function(property){
-                                return _.any(Modes.select.selected[property],function(el){
+                                return _.some(Modes.select.selected[property],function(el){
                                     if (el){
                                         return intersectRect(el.bounds,ray);
                                     } else {
@@ -1581,7 +1602,7 @@ var Modes = (function(){
                                     }
                                 });
                             }
-                            dragging = _.any(["images","texts","inks"],isDragHandle);
+                            dragging = _.some(["images","texts","inks"],isDragHandle);
                         }
                         marqueeWorldOrigin = worldPos;
                         if(dragging){
@@ -2029,9 +2050,11 @@ var Modes = (function(){
                         isDown = true;
                         if(!erasing && !modifiers.eraser){
                             boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
-                            boardContext.lineWidth = Modes.draw.drawingAttributes.lineWidth * 128 * mousePressure;
+														/*
+                            boardContext.lineWidth = Modes.draw.drawingAttributes.lineWidth * 128 * mousePressure * z;
                             boardContext.beginPath();
                             boardContext.moveTo(x,y);
+														*/
                             currentStroke = [x, y, mousePressure * z];
                         } else {
 												}
@@ -2062,7 +2085,13 @@ var Modes = (function(){
                             boardContext.globalAlpha = 1.0;
                         }
                         else{
-                            boardContext.lineTo(x,y);
+														var newWidth = Modes.draw.drawingAttributes.width * z;
+                            boardContext.lineWidth = newWidth;
+                            boardContext.beginPath();
+                            boardContext.lineWidth = newWidth;
+														var lastPoint = _.takeRight(currentStroke,3);
+														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
+														boardContext.lineTo(x,y);
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                         }
@@ -2075,6 +2104,12 @@ var Modes = (function(){
                             deleteTransform.inkIds = deleted;
                             sendStanza(deleteTransform);
                         } else {
+														var newWidth = Modes.draw.drawingAttributes.width * z;
+                            boardContext.lineWidth = newWidth;
+                            boardContext.beginPath();
+                            boardContext.lineWidth = newWidth;
+														var lastPoint = _.takeRight(currentStroke,3);
+														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
                             boardContext.lineTo(x,y);
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
