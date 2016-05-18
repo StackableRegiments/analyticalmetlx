@@ -2126,9 +2126,10 @@ var Modes = (function(){
                             boardContext.globalAlpha = 1.0;
                         }
                         else{
+														var oldWidth = boardContext.lineWidth;
 														var newWidth = Modes.draw.drawingAttributes.width * z;
-                            boardContext.lineWidth = newWidth;
                             boardContext.beginPath();
+														boardContext.lineCap = "round";
                             boardContext.lineWidth = newWidth;
 														var lastPoint = _.takeRight(currentStroke,3);
 														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
@@ -2149,6 +2150,7 @@ var Modes = (function(){
                             boardContext.lineWidth = newWidth;
                             boardContext.beginPath();
                             boardContext.lineWidth = newWidth;
+														boardContext.lineCap = "round";
 														var lastPoint = _.takeRight(currentStroke,3);
 														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
                             boardContext.lineTo(x,y);
