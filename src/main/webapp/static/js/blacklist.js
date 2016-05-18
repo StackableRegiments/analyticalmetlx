@@ -18,6 +18,7 @@ var Blacklist = (function(){
         blacklistAuthorTemplate = blacklistAuthorsContainer.find(".blacklistAuthorContainer").clone();
         blacklistSummaryListing.empty();
         blacklistAuthorsContainer.empty();
+				refreshToolState();
     });
     var filteredBlacklists = function(){
 			return _.filter(blacklists,filterBlacklist);
@@ -44,7 +45,20 @@ var Blacklist = (function(){
 				blacklistAuthorsContainer.append(rootElem);
 			});
 		};
+		var refreshToolState = function(){
+			if (Conversations.shouldModifyConversation()){
+				$("#ban").show();
+				$("#administerContent").show();
+				$("#menuBlacklist").show();
+			} else {
+				$("#ban").hide();
+				$("#administerContent").hide();
+				$("#menuBlacklist").hide();
+				$("#blacklistPopup").hide();
+			}
+		};
     var clearState = function(){
+				refreshToolState();
         blacklists = [];
         currentBlacklist = {};
     };
