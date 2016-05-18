@@ -1354,8 +1354,17 @@ var Modes = (function(){
 										});	
 										$("#ban").bind("click",function(){
                        if (Modes.select.selected != undefined && isAdministeringContent){
+													var s = Modes.select.selected;			 
+														banContent(
+															Conversations.getCurrentConversationJid(),
+															Conversations.getCurrentSlideJid(),
+															_.uniq(_.map(s.inks,function(e){return e.identity;})),
+															_.uniq(_.map(s.texts,function(e){return e.identity;})),
+															_.uniq(_.map(s.images,function(e){return e.identity;}))
+														);
+															/*
 														var authorList = _.uniq(_.flatten(_.flatten([_.uniq(_.map(Modes.select.selected.inks,function(item){return item.author;})),_.uniq(_.map(Modes.select.selected.texts,function(item){return item.author;})),_.uniq(_.map(Modes.select.selected.images,function(item){return item.author;}))]))); //surely there's an unnecessary few steps here. 
-														changeBlacklistOfConversation(Conversation.getCurrentConversationJid(),authorList); //ban those users from public content
+														changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),authorList); //ban those users from public content
 														var recordedMoment = submission();
                             var deleteTransform = batchTransform();
                             deleteTransform.isDeleted = true;
@@ -1371,6 +1380,7 @@ var Modes = (function(){
 														console.log("banning: ",authorList,deleteTransform);
 														//leaving this disabled while I develop, so I don't have to keep creating new content.
                             //sendStanza(deleteTransform); //delete the content
+														*/
                         }
                         clearSelectionFunction();
 
