@@ -261,7 +261,14 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",{
     trace("stanza received: %s".format(a))
-      (a,roomMetaData) match {
+    (a,roomMetaData) match {
+      case (m:MeTLCommand,_) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
+        com.metl.comet.MeTLConversationSearchActorManager ! m
+        com.metl.comet.MeTLSlideDisplayActorManager ! m
+      }
+      case (m:MeTLCommand,cr:ConversationRoom) if List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION").contains(m.command) => {
+        com.metl.comet.MeTLSlideDisplayActorManager ! m
+      }
       case (m:Attendance,cr:ConversationRoom) => {
         trace("attendance received: %s".format(m))
         //      if (!getAttendance.exists(_ == m.author)){
