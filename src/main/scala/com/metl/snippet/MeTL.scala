@@ -24,7 +24,7 @@ class Metl extends Logger {
     (c.subject.toLowerCase == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == c.subject.toLowerCase.trim)) && c != Conversation.empty
   }
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
-    (shouldModifyConversation(username,c) || c.permissions.studentsCanPublish) && c != Conversation.empty
+    (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username))) && c != Conversation.empty
   }
   def boardFor():String = {
     "/board"   
