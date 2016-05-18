@@ -159,6 +159,11 @@ function registerPositionHandlers(contexts,down,move,up){
 					pointItem.eraser = pointItem.eraser || isEraser;
 					trackedTouches[pointId] = pointItem;
 					if (_.size(trackedTouches) > 1){
+						if (isGesture == false){
+							_.each(trackedTouches,function(series){
+								series.points = [_.last(series.points)];
+							});
+						}
 						isGesture = true;
 					}
 					return {
