@@ -77,6 +77,10 @@ object StatelessHtml extends Stemmer with Logger {
   def listRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listRooms", {
     Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).mkString("\r\n")))
   })
+  def listSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessions", {
+    Full(PlainTextResponse(SecurityListener.activeSessions.map(s => "%s (%s) : %s => %s".format(s.username,s.ipAddress,s.started,s.lastActivity)).mkString("\r\n")))
+  })
+
   def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", {
     <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
   })
