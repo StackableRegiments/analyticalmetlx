@@ -651,4 +651,8 @@ $(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
     });
+		$('#menuBlacklist').click(function(){
+			showBackstage("blacklist");
+			updateActiveMenu(this);
+		});
 });

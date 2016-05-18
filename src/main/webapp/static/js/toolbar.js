@@ -1413,6 +1413,7 @@ var Modes = (function(){
             }
         },
         select:(function(){
+						var isAdministeringContent = false;
             var updateSelectionVisualState = function(sel){
                 if(sel){
                     Modes.select.selected = sel;
@@ -1430,10 +1431,21 @@ var Modes = (function(){
                     if (shouldShowButtons()){
                         $("#delete").removeClass("disabledButton");
                         $("#resize").removeClass("disabledButton");
+												if (isAdministeringContent){
+													$("#ban").removeClass("disabledButton");
+												} else {
+													$("#ban").addClass("disabledButton");
+												}
                     } else {
                         $("#delete").addClass("disabledButton");
                         $("#resize").addClass("disabledButton");
+												$("#ban").addClass("disabledButton");
                     }
+										if (isAdministeringContent){
+											$("#administerContent").removeClass("disabledButton");
+										} else {
+											$("#administerContent").addClass("disabledButton");
+										}
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
                         _.forEach(["images","texts","inks","highlighters"],function(category){
@@ -1479,6 +1491,11 @@ var Modes = (function(){
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
+						Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+							if (isAdministeringContent && Conversations.shouldModifyConversation()){
+								isAdministeringContent = false;
+							}
+						};
             return {
                 name:"select",
                 selected:{
@@ -1524,6 +1541,29 @@ var Modes = (function(){
                     var threshold = 30;
                     var resizeHandle = [0,0,0,0];
                     var initialHeight = 0;
+										$("#administerContent").bind("click",function(){
+											isAdministeringContent = !isAdministeringContent;
+											if (isAdministeringContent){
+												$("#administerContent").removeClass("disabledButton");
+											} else {
+												$("#administerContent").addClass("disabledButton");
+											}
+											clearSelectionFunction();
+										});	
+										$("#ban").bind("click",function(){
+                       if (Modes.select.selected != undefined && isAdministeringContent){
+													var s = Modes.select.selected;			 
+														banContent(
+															Conversations.getCurrentConversationJid(),
+															Conversations.getCurrentSlideJid(),
+															_.uniq(_.map(s.inks,function(e){return e.identity;})),
+															_.uniq(_.map(s.texts,function(e){return e.identity;})),
+															_.uniq(_.map(s.images,function(e){return e.identity;}))
+														);
+                        }
+                        clearSelectionFunction();
+
+ 										});
                     $("#resize").bind("click",function(){
                         var items = _.flatten([
                             _.values(Modes.select.selected.images),
@@ -1725,9 +1765,15 @@ var Modes = (function(){
                                     if(overlap >= selectionThreshold){
                                         //if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
-                                        if(item.author == UserSettings.getUsername()){
-                                            intersected[category][item.identity] = item;
-                                        }
+																				if (isAdministeringContent){
+																					if(item.author != UserSettings.getUsername()){
+																							intersected[category][item.identity] = item;
+																					}
+																				} else {
+																					if(item.author == UserSettings.getUsername()){
+																							intersected[category][item.identity] = item;
+																					}
+																				}
                                     }
                                 });
                             }
@@ -1735,9 +1781,15 @@ var Modes = (function(){
                             $.each(boardContent.highlighters,function(i,item){
                                 if(intersectRect(item.bounds,selectionBounds)){
                                     incrementKey(intersectAuthors,item.author);
-                                    if(item.author == UserSettings.getUsername()){
-                                        intersected.inks[item.identity] = item;
-                                    }
+																		if (isAdministeringContent){
+																			if(item.author != UserSettings.getUsername()){
+																					intersected.inks[item.identity] = item;
+																			}
+																		} else {
+																			if(item.author == UserSettings.getUsername()){
+																					intersected.inks[item.identity] = item;
+																			}
+																		}
                                 }
                             });
                             if(modifiers.ctrl){
@@ -1745,8 +1797,7 @@ var Modes = (function(){
                                     $.each(intersected[category],function(id,item){
                                         if(id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
-                                        }
-                                        else{
+                                        } else {
                                             Modes.select.selected[category][id] = item;
                                         }
                                     });
@@ -1783,6 +1834,8 @@ var Modes = (function(){
                     $("#resize").unbind("click");
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
+										$("#administerContent").unbind("click");
+										$("#ban").unbind("click");
                 }
             }
         })(),

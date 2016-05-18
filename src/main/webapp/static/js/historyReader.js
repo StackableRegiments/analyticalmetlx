@@ -627,7 +627,7 @@ function render(content){
                 inksRenderedMark = Date.now();
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
-                console.log("renderImmediateContent");
+                //console.log("renderImmediateContent");
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
