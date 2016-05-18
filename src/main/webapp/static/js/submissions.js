@@ -110,10 +110,10 @@ var Submissions = (function(){
             if ("target" in submission && submission.target == "submission"){
                 if (filterSubmission(submission)){
                     submissions.push(submission);
+										if (!skipRender){
+												renderSubmissionsInPlace();
+										}
                 }
-            }
-            if (!skipRender){
-                renderSubmissionsInPlace();
             }
         }
         catch (e){
@@ -123,6 +123,7 @@ var Submissions = (function(){
 
     Progress.onConversationJoin["Submissions"] = clearState;
     Progress.historyReceived["Submissions"] = historyReceivedFunction;
+    Progress.stanzaReceived["Submissions"] = onSubmissionReceived;
     return {
         getAllSubmissions:function(){return filteredSubmissions();},
         getCurrentSubmission:function(){return currentSubmission;},
