@@ -1267,7 +1267,6 @@ var Modes = (function(){
             };
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},text:{},inks:{}};
-								isAdministeringContent = false;
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1299,6 +1298,11 @@ var Modes = (function(){
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
+						Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+							if (isAdministeringContent && Conversations.shouldModifyConversation()){
+								isAdministeringContent = false;
+							}
+						};
             return {
                 name:"select",
                 selected:{
