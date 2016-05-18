@@ -1267,6 +1267,7 @@ var Modes = (function(){
             };
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},text:{},inks:{}};
+								isAdministeringContent = false;
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1362,25 +1363,6 @@ var Modes = (function(){
 															_.uniq(_.map(s.texts,function(e){return e.identity;})),
 															_.uniq(_.map(s.images,function(e){return e.identity;}))
 														);
-															/*
-														var authorList = _.uniq(_.flatten(_.flatten([_.uniq(_.map(Modes.select.selected.inks,function(item){return item.author;})),_.uniq(_.map(Modes.select.selected.texts,function(item){return item.author;})),_.uniq(_.map(Modes.select.selected.images,function(item){return item.author;}))]))); //surely there's an unnecessary few steps here. 
-														changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),authorList); //ban those users from public content
-														var recordedMoment = submission();
-                            var deleteTransform = batchTransform();
-                            deleteTransform.isDeleted = true;
-                            if ("inks" in Modes.select.selected){
-                                deleteTransform.inkIds = _.keys(Modes.select.selected.inks);
-                            }
-                            if ("texts" in Modes.select.selected){
-                                deleteTransform.textIds = _.keys(Modes.select.selected.texts);
-                            }
-                            if ("images" in Modes.select.selected){
-                                deleteTransform.imageIds = _.keys(Modes.select.selected.images);
-                            }
-														console.log("banning: ",authorList,deleteTransform);
-														//leaving this disabled while I develop, so I don't have to keep creating new content.
-                            //sendStanza(deleteTransform); //delete the content
-														*/
                         }
                         clearSelectionFunction();
 
