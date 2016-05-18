@@ -71,7 +71,7 @@ function proportion(width,height){
     var targetHeight = boardHeight;
     return (width / height) / (targetWidth / targetHeight);
 }
-function screenToWorld(x,y){
+function scaleScreenToWorld(i){
     var p = proportion(boardWidth,boardHeight);
     var scale;
     if(p > 1){//Viewbox wider than board
@@ -80,21 +80,28 @@ function screenToWorld(x,y){
     else{//Viewbox narrower than board
         scale = viewboxHeight / boardHeight;
     }
-    var worldX = x * scale + viewboxX;
-    var worldY = y * scale + viewboxY;
+    return i * scale;
+}
+function scaleWorldToScreen(i){
+    var p = proportion(boardWidth,boardHeight);
+    var scale;
+    if(p > 1){//Viewbox wider than board
+        scale = viewboxWidth / boardWidth;
+    }
+    else{//Viewbox narrower than board
+        scale = viewboxHeight / boardHeight;
+    }
+    return i / scale;
+}
+
+function screenToWorld(x,y){
+    var worldX = scaleScreenToWorld(x) + viewboxX;
+    var worldY = scaleScreenToWorld(y) + viewboxY;
     return {x:worldX,y:worldY};
 }
 function worldToScreen(x,y){
-    var p = proportion(boardWidth,boardHeight);
-    var scale;
-    if(p > 1){//Viewbox wider than board
-        scale = viewboxWidth / boardWidth;
-    }
-    else{//Viewbox narrower than board
-        scale = viewboxHeight / boardHeight;
-    }
-    var screenX = (x - viewboxX) / scale;
-    var screenY = (y - viewboxY) / scale;
+    var screenX = scaleWorldToScreen(x - viewboxX);
+    var screenY = scaleWorldToScreen(y - viewboxY);
     return {x:screenX,y:screenY};
 }
 /*
@@ -129,6 +136,7 @@ function registerPositionHandlers(contexts,down,move,up){
 				var trackedTouches = {};
 				var updatePoint = function(pointerEvent){
 					var pointId = pointerEvent.originalEvent.pointerId;
+					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
 					var o = offset();
 					var x = pointerEvent.pageX - o.left;
 					var y = pointerEvent.pageY - o.top;
@@ -144,17 +152,18 @@ function registerPositionHandlers(contexts,down,move,up){
 					var pointItem = trackedTouches[pointId] || {
 						"pointerId":pointId,
 						"pointerType":pointerEvent.originalEvent.pointerType,
-						"eraser":pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5,
+						"eraser":isEraser,
 						"points":[]
 					};
 					pointItem.points.push(newPoint);
+					pointItem.eraser = pointItem.eraser || isEraser;
 					trackedTouches[pointId] = pointItem;
 					if (_.size(trackedTouches) > 1){
 						isGesture = true;
 					}
 					return {
 						"pointerType":pointerEvent.pointerType,
-						"eraser":pointItem.isEraser,
+						"eraser":pointItem.eraser,
 						"x":x,
 						"y":y,
 						"z":z,
@@ -163,15 +172,16 @@ function registerPositionHandlers(contexts,down,move,up){
 				};
 				var releasePoint = function(pointerEvent){
 					var pointId = pointerEvent.originalEvent.pointerId;
+					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
 					var o = offset();
 					var x = pointerEvent.pageX - o.left;
 					var y = pointerEvent.pageY - o.top;
 					var z = pointerEvent.originalEvent.pressure || 0.5;
-					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
 					var worldPos = screenToWorld(x,y);
 					delete trackedTouches[pointId];
 					if (isGesture && _.size(trackedTouches) == 0){
 						isGesture = false;
+						isDown = false;
 					}
 					return {
 						"pointerType":pointerEvent.pointerType,
@@ -193,29 +203,10 @@ function registerPositionHandlers(contexts,down,move,up){
 								return [first,last];
 							});
 							trackedTouches = {};
-							/*
-							trackedTouches = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(series){
-								series.points = [_.last(series.points)];
-								return series;
-							});
-							*/
-							var xDelta = _.reduce(calculationPoints,function(seed,iter){
-								try {
-									return seed + iter[0].x - iter[1].x;
-								} catch(e){
-									return seed;
-								}
-							},0) / _.size(calculationPoints);
-							var yDelta = _.reduce(calculationPoints,function(seed,iter){
-								try {
-									return seed + iter[0].y - iter[1].y;
-								} catch(e){
-									return seed;
-								}
-							},0) / _.size(calculationPoints);
+							var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+							var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-							//console.log("translating:",xDelta,yDelta,calculationPoints);
-							Pan.translate(xDelta,yDelta);
+							Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
 
 							var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;})); 
 							var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;})); 
@@ -236,26 +227,24 @@ function registerPositionHandlers(contexts,down,move,up){
 							//console.log("scaling:",previousScale,currentScale);
 							Zoom.scale(previousScale / currentScale);
 						}
-					},10);
+					},25);
 					context.bind("pointerdown",function(e){
-						e.preventDefault();
 						var point = updatePoint(e);
+						e.preventDefault();
+						WorkQueue.pause();
 						if (_.size(trackedTouches) == 1 && !isGesture){
-							WorkQueue.pause();
-							var o = offset();
 							isDown = true;
 							down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 						}
 					});
 					context.bind("pointermove",function(e){
 						var point = updatePoint(e);
+						e.preventDefault();
 						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
-							e.preventDefault();
 							performGesture();
 						}
 						if (_.size(trackedTouches) == 1 && !isGesture){
 							if(isDown){
-								e.preventDefault();
 								move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 							}
 						}
@@ -294,14 +283,13 @@ function registerPositionHandlers(contexts,down,move,up){
 							isDown = false;
 					}
 					var pointerClose = function(e){
-						trackedTouches = {};
 						var point = releasePoint(e);
-							WorkQueue.gracefullyResume();
-							e.preventDefault();
-							if(isDown){
-									pointerOut(e.offsetX,e.offsetY);
-							}
-							isDown = false;
+						WorkQueue.gracefullyResume();
+						e.preventDefault();
+						if(isDown){
+								pointerOut(e.offsetX,e.offsetY);
+						}
+						isDown = false;
 					};
 					context.bind("pointerout",pointerClose);
 					context.bind("pointerleave",pointerClose);
@@ -2050,11 +2038,6 @@ var Modes = (function(){
                         isDown = true;
                         if(!erasing && !modifiers.eraser){
                             boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
-														/*
-                            boardContext.lineWidth = Modes.draw.drawingAttributes.lineWidth * 128 * mousePressure * z;
-                            boardContext.beginPath();
-                            boardContext.moveTo(x,y);
-														*/
                             currentStroke = [x, y, mousePressure * z];
                         } else {
 												}

@@ -46,7 +46,7 @@ function strokeCollected(spoints){
 
         var currentSlide = Conversations.getCurrentSlideJid();
         var ink = {
-            thickness : Modes.draw.drawingAttributes.width,
+            thickness : scaleScreenToWorld(Modes.draw.drawingAttributes.width),
             color:[Modes.draw.drawingAttributes.color,255],
             type:"ink",
             author:UserSettings.getUsername(),
