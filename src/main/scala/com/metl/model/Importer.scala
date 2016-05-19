@@ -122,6 +122,9 @@ case class CloudConvertProcessResponse(url:String,id:String,host:String,expires:
 case class CloudConvertUploadElement(url:String)
 case class CloudConvertUploadResponse(url:String,id:String,message:String,step:String,upload:CloudConvertUploadElement)
 
+import net.liftweb.json.JsonAST
+import net.liftweb.json.JsonDSL._
+import net.liftweb.json.Printer._
 import net.liftweb.json._
 
 class CloudConvertPoweredParser(val apiKey:String) extends Logger {
@@ -149,10 +152,53 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
     }
   }
 
-
   implicit val formats = DefaultFormats
   protected val host = "https://api.cloudconvert.com/process"
+  protected val getProcessUrl = host
   protected def callCloudConvert(bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
+    try {
+      val encoding = "UTF-8"
+      val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
+      println("apiKey: %s".format(apiKey))
+      val getPrcRequestJson = ("inputformat" -> inFormat) ~ ("outputformat" -> outFormat)
+      val getPrcRequestJsonString:String = Printer.compact(JsonAST.render(getPrcRequestJson))
+      println("getPrcRequest: %s".format(getPrcRequestJsonString))
+      val getPrcResponse = client.postBytesExpectingHTTPResponse(getProcessUrl,getPrcRequestJsonString.getBytes(encoding),List(("Contenta-Type","application/json")))
+      println("getPrcResponse: %s".format(getPrcResponse))
+      val getPrcResponseString = getPrcResponse.responseAsString
+      println("getPrcResponseString: %s".format(getPrcResponseString))
+      val getPrcResponseJson = parse(getPrcResponseString).extract[CloudConvertProcessResponse]
+      var procUrl = getPrcResponseJson.url
+      if (procUrl.startsWith("//"))
+        procUrl = "https:"+procUrl
+      println("callCloudConvert.prc.procUrl: %s".format(procUrl))
+      val prcRequestJson = ("inputformat" -> inFormat) ~ ("outputformat" -> outFormat) ~ ("input" -> "upload") ~ ("wait" -> true) ~ ("download" -> true)
+      val prcRequestJsonString = Printer.compact(JsonAST.render(prcRequestJson))
+      println("prcRequestJsonString: %s".format(prcRequestJsonString))
+      val prcResponse = client.postBytesExpectingHTTPResponse(procUrl,prcRequestJsonString.getBytes(encoding),List(("Content-Type","application/json")))
+      println("prc response: %s".format(prcResponse))
+      val prcResponseString = prcResponse.responseAsString
+      println("prcResponseString: %s".format(prcResponseString))
+      val prcResponseJson = parse(prcResponseString).extract[CloudConvertUploadResponse]
+      var uplUrl = prcResponseJson.upload.url
+      if (uplUrl.startsWith("//"))
+        uplUrl = "https:"+uplUrl
+      uplUrl = uplUrl + "/" + nextFuncName + "." + inFormat
+      println("uplUrl: %s".format(uplUrl))
+/*
+ * make the third call, and get the bytes returned
+      unzipper.extractFiles(bytes).right.map(files => files.map(fileTup => {
+        (fileTup._1.split("-").reverse.head.split(".").head.toInt,fileTup._2)
+      }))
+*/
+      Left(new Exception("not yet implemented"))
+    } catch {
+      case e:Exception => Left(e)
+    }
+  }
+
+
+  protected def dispatchCallCloudConvert(bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
     try {
       println("apiKey: %s".format(apiKey))
       val prc = url(host).POST.setContentType("application/json","UTF-8").setHeader("Authorization","Bearer %s".format(apiKey)) << """{"inputformat":"%s","outputformat":"%s"}""".format(inFormat,outFormat)
