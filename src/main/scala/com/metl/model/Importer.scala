@@ -166,7 +166,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
           if (procUrl.startsWith("//"))
             procUrl = "https:"+procUrl
           println("callCloudConvert.prc.procUrl: %s".format(procUrl))
-          val svc = url(procUrl).POST.setContentType("application/json","UTF-8") << """{"inputformat":"%s","outputformat":"%s","input":"upload","wait":"true","download":"true"}""".format(inFormat,outFormat)
+          val svc = url(procUrl).POST.setContentType("application/json","UTF-8").setHeader("Authorization","Bearer %s".format(apiKey)) << """{"inputformat":"%s","outputformat":"%s","input":"upload","wait":"true","download":"true"}""".format(inFormat,outFormat)
 
           val svcResp = dispatch.Http(svc OK as.String).either
           svcResp() match {
@@ -179,7 +179,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
                 uplUrl = "https:"+uplUrl
               uplUrl = uplUrl + "/" + nextFuncName + "." + inFormat
               println("callCloudConvert.prc.uplUrl: %s".format(uplUrl))
-              val upl = url(uplUrl).PUT.setBody(bytes)   
+              val upl = url(uplUrl).PUT.setBody(bytes).setHeader("Authorization","Bearer %s".format(apiKey))   
               val result = dispatch.Http(upl OK as.Bytes).either
               result() match {
                 case Right(bytes) => {
