@@ -123,7 +123,8 @@ var Submissions = (function(){
 
     Progress.onConversationJoin["Submissions"] = clearState;
     Progress.historyReceived["Submissions"] = historyReceivedFunction;
-    Progress.stanzaReceived["Submissions"] = onSubmissionReceived;
+		// disabling this, because it's done in board.
+    //Progress.stanzaReceived["Submissions"] = onSubmissionReceived;
     return {
         getAllSubmissions:function(){return filteredSubmissions();},
         getCurrentSubmission:function(){return currentSubmission;},

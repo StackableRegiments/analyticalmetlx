@@ -163,7 +163,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
       val getPrcRequestJson = ("inputformat" -> inFormat) ~ ("outputformat" -> outFormat)
       val getPrcRequestJsonString:String = Printer.compact(JsonAST.render(getPrcRequestJson))
       println("getPrcRequest: %s".format(getPrcRequestJsonString))
-      val getPrcResponse = client.postBytesExpectingHTTPResponse(getProcessUrl,getPrcRequestJsonString.getBytes(encoding),List(("Contenta-Type","application/json")))
+      val getPrcResponse = client.postBytesExpectingHTTPResponse(getProcessUrl,getPrcRequestJsonString.getBytes(encoding),List(("Content-Type","application/json")))
       println("getPrcResponse: %s".format(getPrcResponse))
       val getPrcResponseString = getPrcResponse.responseAsString
       println("getPrcResponseString: %s".format(getPrcResponseString))
@@ -185,13 +185,15 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         uplUrl = "https:"+uplUrl
       uplUrl = uplUrl + "/" + nextFuncName + "." + inFormat
       println("uplUrl: %s".format(uplUrl))
-/*
- * make the third call, and get the bytes returned
-      unzipper.extractFiles(bytes).right.map(files => files.map(fileTup => {
+      val uplResponse = client.postBytesExpectingHTTPResponse(uplUrl,bytes,List(("Content-Type","application/octet-stream")))
+      println("uplResponse: %s".format(uplResponse))
+      val uplResponseBytes = uplResponse.bytes
+      println("uplResponseBytes: %s".format(uplResponseBytes.length))
+      val parsedResponse = unzipper.extractFiles(bytes,_.getName.endsWith(".jpg")).right.map(files => files.map(fileTup => {
         (fileTup._1.split("-").reverse.head.split(".").head.toInt,fileTup._2)
       }))
-*/
-      Left(new Exception("not yet implemented"))
+      println("parsedResponse: %s".format(parsedResponse))
+      parsedResponse
     } catch {
       case e:Exception => Left(e)
     }
