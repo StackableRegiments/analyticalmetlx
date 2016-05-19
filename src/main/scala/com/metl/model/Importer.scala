@@ -17,6 +17,9 @@ import java.awt.geom._
 import com.metl.data._
 import com.metl.utils._
 
+import dispatch._ 
+import Defaults._
+
 class HSLFPowerpointParser {
   import org.apache.poi.hslf.usermodel._
   def importAsShapes(jid:Int,in:InputStream,server:ServerConfiguration,author:String = Globals.currentUser.is):Map[Int,History] = {
@@ -114,7 +117,118 @@ object PowerpointVersion extends Enumeration {
   type PowerpointVersion = Value
   val PptXml, PptOle, NotParseable = Value
 }
+
+case class CloudConvertProcessResponse(url:String,id:String,host:String,expires:String,maxtime:Int,minutes:Int)
+case class CloudConvertUploadElement(url:String)
+case class CloudConvertUploadResponse(url:String,id:String,message:String,step:String,upload:CloudConvertUploadElement)
+
+class CloudConvertPoweredParser(val apiKey:String) extends Logger {
+  val downscaler = new com.metl.view.ImageDownscaler(16 * 1024 * 1024)
+  val unzipper = new Unzipper
+  def importPpt(jid:Int,bytes:Array[Byte],server:ServerConfiguration,author:String):Map[Int,History] = {
+    warn("CloudConvertPoweredParser ppt: %s %s".format(jid,author))
+    importToCloudConvert(jid,bytes,"ppt","jpg",server,author) match {
+      case Right(map) => map
+      case Left(e) => {
+        error("Exception converting with cloudConvert ppt=>jpg",e)
+        
+        Map.empty[Int,History]
+      }
+    }
+  }
+  def importPptx(jid:Int,bytes:Array[Byte],server:ServerConfiguration,author:String):Map[Int,History] = {
+    warn("CloudConvertPoweredParser pptx: %s %s".format(jid,author))
+    importToCloudConvert(jid,bytes,"pptx","jpg",server,author) match {
+      case Right(map) => map
+      case Left(e) => {
+        error("Exception converting with cloudConvert pptx=>jpg",e)
+        Map.empty[Int,History]
+      }
+    }
+  }
+
+  import net.liftweb.json._
+
+  protected val host = "https://api.cloudconvert.com/process"
+  protected def callCloudConvert(bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
+    try {
+      println("apiKey: %s".format(apiKey))
+      val prc = url(host).POST.setContentType("application/json","UTF-8").setHeader("Authorization","Bearer %s".format(apiKey)) << """{"inputformat":"%s","outputformat":"%s"}""".format(inFormat,outFormat)
+      val prcResponse = dispatch.Http(prc OK as.String).either
+      prcResponse() match {
+        case Right(prcJsonString) => {
+          println("callCloudConvert.prc.right: %s".format(prcJsonString))
+          implicit val formats = DefaultFormats
+          val procJson = parse(prcJsonString)
+          val procRespObj = procJson.extract[CloudConvertProcessResponse]
+          var procUrl = procRespObj.url
+          if (procUrl.startsWith("//"))
+            procUrl = "https:"+procUrl
+          println("callCloudConvert.prc.procUrl: %s".format(procUrl))
+          val svc = url(procUrl).POST.setContentType("application/json","UTF-8") << """{"inputformat":"%s","outputformat":"%s","input":"upload","wait":"true","download":"true"}""".format(inFormat,outFormat)
+
+          val svcResp = dispatch.Http(svc OK as.String).either
+          svcResp() match {
+            case Right(svcJsonString) => {
+              println("callCloudConvert.upl.right: %s".format(svcJsonString))
+              val uplJson = parse(svcJsonString)
+              val uplRespObj = uplJson.extract[CloudConvertUploadResponse]
+              var uplUrl = uplRespObj.upload.url
+              if (uplUrl.startsWith("//"))
+                uplUrl = "https:"+uplUrl
+              uplUrl = uplUrl + "/" + nextFuncName + "." + inFormat
+              println("callCloudConvert.prc.uplUrl: %s".format(uplUrl))
+              val upl = url(uplUrl).PUT.setBody(bytes)   
+              val result = dispatch.Http(upl OK as.Bytes).either
+              result() match {
+                case Right(bytes) => {
+                  println("callCloudConvert.upl.bytes: %s".format(bytes.length))
+                  unzipper.extractFiles(bytes).right.map(files => files.map(fileTup => {
+                    (fileTup._1.split("-").reverse.head.split(".").head.toInt,fileTup._2)
+                  }))
+                }
+                case Left(e) => Left(e)
+              }
+            }
+            case Left(e) => Left(e)
+          }
+        }
+        case Left(e) => Left(e)
+      }
+    } catch {
+      case e:Exception => Left(e)
+    }
+  }
+
+  protected def importToCloudConvert(jid:Int,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Throwable,Map[Int,History]] = {
+    callCloudConvert(bytes,inFormat,outFormat).right.map(slides => {
+      Map({
+        slides.flatMap{
+          case (index,imageBytes) => {
+            val slideId = index + jid
+            val identity = server.postResource(slideId.toString,nextFuncName,imageBytes) 
+            val tag = "{author: '%s', privacy: '%s', id: '%s', isBackground: false, zIndex: 0, resourceIdentity: '%s', timestamp: %s}".format(author,"public",identity,identity, new java.util.Date().getTime)
+            val dimensions = downscaler.getDimensionsOfImage(imageBytes) match {
+              case Right(dims) => dims
+              case Left(e) => {
+                error("exception while getting dimensions of returned image",e)
+                (720,576)
+              }
+            }
+            val bgImg = MeTLImage(server,author,-1L,tag,Full(identity),Full(imageBytes),Empty,dimensions._1,dimensions._2,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
+            val history = new History(slideId.toString)
+            history.addStanza(bgImg)
+            Some((slideId,history))
+          }
+          case _ => None
+        }
+      }:_*)
+    })
+  }
+}
+
 class PowerpointParser extends Logger {
+  protected val apiKey = Globals.cloudConverterApiKey
   protected def detectPptVersion(in:Array[Byte]):PowerpointVersion.Value = {
     try {
         org.apache.poi.hslf.usermodel.HSLFSlideShowFactory.createSlideShow(new org.apache.poi.poifs.filesystem.NPOIFSFileSystem(new ByteArrayInputStream(in)))
@@ -135,6 +249,22 @@ class PowerpointParser extends Logger {
     }
   }
   def importAsImages(jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
+    detectPptVersion(in) match {
+      case PowerpointVersion.PptXml => {
+        debug("version 2007+")
+        new CloudConvertPoweredParser(apiKey).importPptx(jid,in,server,author)
+      }
+      case PowerpointVersion.PptOle => {
+        debug("version 2003")
+        new CloudConvertPoweredParser(apiKey).importPpt(jid,in,server,author)
+      }
+      case _ => {
+        debug("not sure of version")
+        Map.empty[Int,History]
+      }
+    }
+  }
+  def deprecatedImportAsImages(jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
     detectPptVersion(in) match {
       case PowerpointVersion.PptXml => {
         debug("version 2007+")
@@ -164,6 +294,28 @@ class PowerpointParser extends Logger {
         debug("not sure of version")
         Map.empty[Int,History]
       }
+    }
+  }
+}
+
+class Unzipper extends Logger {
+  import java.io._
+  import org.apache.commons.io.IOUtils
+  import org.apache.commons.compress.archivers.zip._
+  import collection.mutable.ListBuffer
+  def extractFiles(in:Array[Byte],filter:ZipArchiveEntry=>Boolean = (zae) => true):Either[Throwable,List[Tuple2[String,Array[Byte]]]] = {
+    try {
+      val zis = new ZipArchiveInputStream(new ByteArrayInputStream(in),"UTF-8",false,true)
+      val results = ListBuffer.empty[Tuple2[String,Array[Byte]]]
+      var entry:ZipArchiveEntry = zis.getNextZipEntry
+      while (entry != null) {
+        if (filter(entry)){
+          results += ((entry.getName,IOUtils.toByteArray(zis)))
+        }
+      }
+      Right(results.toList)
+    } catch {
+      case e:Throwable => Left(e)
     }
   }
 }

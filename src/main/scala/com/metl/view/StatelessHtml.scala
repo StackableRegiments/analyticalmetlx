@@ -743,10 +743,20 @@ object StatelessHtml extends Stemmer with Logger {
   def powerpointImport(r:Req):Box[LiftResponse] = {
     (for (
       title <- r.param("title");
+      a = {println("title parsed: %s".format(title)); 1};
       magnification = r.param("magnification").map(_.toInt);
-      bytes <- r.body;
+      b = {println("magnification parsed: %s".format(magnification)); 1};
+      bytes <- {
+        r.body match {
+          case Full(b) => Some(b)
+          case _ => r.uploadedFiles.headOption.map(_.file)
+        }
+      };
+      c = {println("bytes parsed: %s".format(bytes.length)); 1};
       author = Globals.currentUser.is;
+      d = {println("author parsed: %s".format(author)); 1};
       conv = config.createConversation(title,author);
+      e = {println("config created: %s".format(conv.jid)); 1};
       histories <- foreignConversationParse(conv.jid,bytes,config,author,false,magnification);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
@@ -795,7 +805,6 @@ object StatelessHtml extends Stemmer with Logger {
     }
   }
   protected def foreignConversationImport(server:ServerConfiguration,onBehalfOfUser:String,conversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
-
     try {
       val newConvWithAllSlides = conversation.copy(
         lastAccessed = new java.util.Date().getTime,
@@ -880,6 +889,21 @@ class ImageDownscaler(maximumByteSize:Int) extends Logger {
     in match {
       case tooBig if tooBig.length > maximumByteSize => None
       case acceptable => Some(acceptable)
+    }
+  }
+  def getDimensionsOfImage(in:Array[Byte]):Either[Exception,Tuple2[Int,Int]] = {
+    try {
+      val tempG = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR).createGraphics.asInstanceOf[Graphics2D]
+
+      val inStream = new ByteArrayInputStream(in)
+      val image = ImageIO.read(inStream).asInstanceOf[BufferedImage]
+      inStream.close()
+      val observer = new Canvas(tempG.getDeviceConfiguration)
+      val originalH = image.getHeight(observer)
+      val originalW = image.getWidth(observer)
+      Right((originalW,originalH))
+    } catch {
+      case e:Exception => Left(e)
     }
   }
   def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = {

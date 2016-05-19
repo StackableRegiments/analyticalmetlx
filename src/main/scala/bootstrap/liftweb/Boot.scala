@@ -97,6 +97,7 @@ class Boot extends Logger {
       //WebMeTL
       Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
+      Menu(Loc("Import Powerpoint","importPowerpoint" :: Nil,"Import Powerpoint",Hidden)),
       Menu(Loc("WebMeTL Conversation search","conversations" :: Nil,"Conversations",Hidden)),
       Menu(Loc("Slide","slide" :: Nil,"Slide",Hidden)),
       Menu(Loc("SlidePrev","slidePrev" :: Nil,"Previous Slide",Hidden)),

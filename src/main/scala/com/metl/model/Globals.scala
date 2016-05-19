@@ -63,6 +63,8 @@ object Globals extends PropertyReader with Logger {
   val importerParallelism = (propFile \\ "importerPerformance").headOption.map(ipn => readAttribute(ipn,"parallelism").toInt).filter(_ > 0).getOrElse(1)
   var isDevMode:Boolean = true
 
+  val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
+
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
 
