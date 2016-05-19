@@ -743,21 +743,15 @@ object StatelessHtml extends Stemmer with Logger {
   def powerpointImport(r:Req):Box[LiftResponse] = {
     (for (
       title <- r.param("title");
-      a = {println("title parsed: %s".format(title)); 1};
-      magnification = r.param("magnification").map(_.toInt);
-      b = {println("magnification parsed: %s".format(magnification)); 1};
       bytes <- {
         r.body match {
           case Full(b) => Some(b)
           case _ => r.uploadedFiles.headOption.map(_.file)
         }
       };
-      c = {println("bytes parsed: %s".format(bytes.length)); 1};
       author = Globals.currentUser.is;
-      d = {println("author parsed: %s".format(author)); 1};
       conv = config.createConversation(title,author);
-      e = {println("config created: %s".format(conv.jid)); 1};
-      histories <- foreignConversationParse(conv.jid,bytes,config,author,false,magnification);
+      histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
@@ -770,7 +764,7 @@ object StatelessHtml extends Stemmer with Logger {
       bytes <- r.body;
       author = Globals.currentUser.is;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(conv.jid,bytes,config,author,true,None);
+      histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
@@ -784,19 +778,16 @@ object StatelessHtml extends Stemmer with Logger {
       bytes <- r.body;
       author = Globals.currentUser.is;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(conv.jid,bytes,config,author,false,None);
+      histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
   }
-  protected def foreignConversationParse(jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String,flexible:Boolean = false,magnification:Option[Int] = Some(3)):Box[Map[Int,History]] = {
+  protected def foreignConversationParse(filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
     try {
-      Full(flexible match {
-        case true => new PowerpointParser().importAsShapes(jid,in,server,onBehalfOfUser)
-        case false => new PowerpointParser().importAsImages(jid,in,server,onBehalfOfUser,magnification.getOrElse(3))
-      })
+      Full(new ForeignDocumentParser().importAnything(filename,jid,in,server,onBehalfOfUser))
     } catch {
       case e:Exception => {
         error("exception in foreignConversationImport",e)
