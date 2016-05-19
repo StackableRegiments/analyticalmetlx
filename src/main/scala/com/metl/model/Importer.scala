@@ -122,6 +122,8 @@ case class CloudConvertProcessResponse(url:String,id:String,host:String,expires:
 case class CloudConvertUploadElement(url:String)
 case class CloudConvertUploadResponse(url:String,id:String,message:String,step:String,upload:CloudConvertUploadElement)
 
+import net.liftweb.json._
+
 class CloudConvertPoweredParser(val apiKey:String) extends Logger {
   val downscaler = new com.metl.view.ImageDownscaler(16 * 1024 * 1024)
   val unzipper = new Unzipper
@@ -147,8 +149,8 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
     }
   }
 
-  import net.liftweb.json._
 
+  implicit val formats = DefaultFormats
   protected val host = "https://api.cloudconvert.com/process"
   protected def callCloudConvert(bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
     try {
@@ -158,7 +160,6 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
       prcResponse() match {
         case Right(prcJsonString) => {
           println("callCloudConvert.prc.right: %s".format(prcJsonString))
-          implicit val formats = DefaultFormats
           val procJson = parse(prcJsonString)
           val procRespObj = procJson.extract[CloudConvertProcessResponse]
           var procUrl = procRespObj.url
