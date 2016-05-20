@@ -27,7 +27,12 @@ import net.liftweb.json._
 
 case class CloudConvertProcessResponse(url:String,id:String,host:String,expires:String,maxtime:Int,minutes:Int)
 case class CloudConvertUploadElement(url:String)
-case class CloudConvertUploadResponse(url:String,id:String,message:String,step:String,upload:CloudConvertUploadElement)
+case class CloudConvertProcessDefinitionResponse(url:Option[String],id:String,message:String,step:String,upload:Option[CloudConvertUploadElement],output:Option[CloudConvertUploadElement])
+case class CloudConvertUploadResponse(file:String,size:Int,message:String)
+case class CloudConvertInputElement(`type`:String,filename:String,size:Long,name:String,ext:String) 
+case class CloudConvertOutputElement(url:String,filename:String,size:Long,downloads:Int,ext:String,files:Option[List[String]]) 
+case class CloudConvertConverterElement(format:String,`type`:String,options:Option[JObject],duration:Double)
+case class CloudConvertStatusMessageResponse(id:String,url:Option[String],percent:Option[String],message:Option[String],step:String,starttime:Option[Long],expire:Long,input:Option[CloudConvertInputElement],converter:Option[CloudConvertConverterElement],output:Option[CloudConvertOutputElement],endtime:Option[Long])
 
 class CloudConvertPoweredParser(val apiKey:String) extends Logger {
   implicit val formats = DefaultFormats
@@ -55,6 +60,78 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
       }
     }
   }
+  protected def schemify(in:String):String = {
+    if (in.startsWith("//"))
+      "https:" + in
+    else in
+  }
+  protected def describeResponse(in:HTTPResponse):HTTPResponse = {
+    val described = in.headers.get("Content-Type") match {
+      case Some(s) if s == "application/octet-stream" => "bytes(%s)".format(in.bytes.length)
+      case other => "string(%s)".format(in.responseAsString)
+    }
+    info("Response: %s\r\n%s".format(in,described))
+    in
+  }
+  protected def callComplexCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
+    try {
+      val encoding = "UTF-8"
+      val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
+      println("apiKey: %s".format(apiKey))
+      val procResponse = describeResponse(client.postFormExpectingHTTPResponse("https://api.cloudconvert.com/process",List(
+        ("inputformat" -> inFormat),
+        ("outputformat" -> outFormat)
+      )))
+      val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
+
+      Thread.sleep(5000)
+
+      val defineProcResponse = describeResponse(client.postFormExpectingHTTPResponse(schemify(procResponseObj.url),List(
+        ("input" -> "upload"),
+        ("outputformat" -> outFormat)
+      )))
+      val defineProcResponseObj = parse(defineProcResponse.responseAsString).extract[CloudConvertProcessDefinitionResponse]
+      var uploadUrl = defineProcResponseObj.upload.map(u => schemify(u.url)).getOrElse({
+        throw new Exception("no upload url defined on process response: %s".format(defineProcResponseObj))
+      })
+      val uploadResponse = describeResponse(client.putBytesExpectingHTTPResponse(uploadUrl + "/" + urlEncode(filename + "." + inFormat),bytes))
+      val uploadResponseObj = parse(uploadResponse.responseAsString).extract[CloudConvertUploadResponse]
+      var completed = false
+      var downloadUrl = ""
+      while (!completed){
+        Thread.sleep(1000)
+        val statusResponse = describeResponse(client.getExpectingHTTPResponse(procResponseObj.url))
+        val statusObj = parse(statusResponse.responseAsString).extract[CloudConvertStatusMessageResponse]
+        info("Status: %s".format(statusObj)) 
+        if (statusObj.step == "error")
+          throw new Exception("error received while converting: %s".format(statusObj))
+        else if (statusObj.step == "finished"){
+          completed = true
+          statusObj.output.foreach(out => {
+            downloadUrl = schemify(out.url)
+          })
+        }
+      }
+      if (downloadUrl == "")
+        throw new Exception("download Url malformed")
+      val downloadResponse = describeResponse(client.getExpectingHTTPResponse(downloadUrl))
+      val convertResponseBytes = downloadResponse.bytes
+      println("downloaded bytes: %s".format(convertResponseBytes.length))
+      val parsedResponse = unzipper.extractFiles(convertResponseBytes,_.getName.endsWith(".jpg")).right.map(files => files.map(fileTup => {
+        // we should read the page number from the filename, which should be:  "filename-%s.jpg".format(pageNumber), where filename should be the original filename, without the suffix.
+        // this should TOTALLY be a regex to make it clean and strong
+        var newNumber = fileTup._1
+        newNumber = newNumber.drop(filename.length + 1)
+        newNumber = newNumber.take(newNumber.length - 4)
+        (newNumber.toInt,fileTup._2)
+      }))
+      println("parsedResponse: %s".format(parsedResponse))
+      parsedResponse
+    } catch {
+      case e:Exception => Left(e)
+    }
+  }
+
 
   protected def callSimpleCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
     try {
@@ -100,8 +177,10 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
       case e:Exception => Left(e)
     }
   }
+
   protected def importToCloudConvert(jid:Int,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Throwable,Map[Int,History]] = {
     callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
+    //callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
       Map({
         slides.flatMap{
           case (index,imageBytes) => {
