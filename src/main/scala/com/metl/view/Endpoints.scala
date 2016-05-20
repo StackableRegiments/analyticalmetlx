@@ -235,6 +235,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       warn("powerpointImport endpoint triggered: %s".format(r));
       Stopwatch.time("MeTLStatefulRestHelper.powerpointImport", StatelessHtml.powerpointImport(r))
     }
+    case r@Req(List("conversationImportEndpoint"),_,_) => () => {
+      warn("conversationImportEndpoint endpoint triggered: %s".format(r));
+      Stopwatch.time("MeTLStatefulRestHelper.conversationImportEndpoint", StatelessHtml.foreignConversationImportEndpoint(r))
+    }
+
     case r@Req(List("powerpointImportFlexible"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.powerpointImportFlexible", StatelessHtml.powerpointImportFlexible(r))
     case r@Req(List("conversationImportAsMe"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversationAsMe(r))
     case Req(List("createConversation",title),_,_) =>

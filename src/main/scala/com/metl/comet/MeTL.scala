@@ -370,28 +370,45 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
      },Full(RECEIVE_CONVERSATION_DETAILS)),
      */
     ClientSideFunctionDefinition("importConversation",List.empty[String],(unused) => {
-      this ! InteractableMessage((i) => {
-        // this doesn't work yet - about to rewrite it to use a jquery file upload plugin instead.
+      println("importConversation fired")
+      val im = InteractableMessage((i) => {
         val uploadId = nextFuncName
-        <form action="/powerpointImport" method="post" enctype="multipart/form-data">
-          <label for={uploadId}>File upload</label>
-          {
-            fileUpload((fup:FileParamHolder) => {
-              val filename = fup.fileName
-              val bytes = fup.file
-              val author = username
-              val title = "%s's (%s), created at %s".format(author,filename,new java.util.Date())
-              this ! SpamMessage(Text("Beginning import: %s %s %s %s".format(title,filename,author,bytes.length)))
-              val newConv = com.metl.view.StatelessHtml.foreignConversationImport(title,filename,bytes,author)
-              this ! SpamMessage(Text("Conversation imported: %s".format(newConv)))
-              Noop
-            },("id",uploadId),("name",uploadId))
-          }
-          {
-            submit("Import",() => Noop,("name","submit"))
-          }
-        </form>
-      },Full("conversation"),Full("Import conversation"))
+        val progressId = nextFuncName
+        val progressBarId = nextFuncName
+        val script = """$('#'+'%s').fileupload({
+                dataType: 'json',
+                add: function (e,data) {
+                  $('#'+'%s').css('width', '0%%');
+                  $('#'+'%s').show();
+                  data.submit();
+                },
+                progressall: function (e, data) {
+                  var progress = parseInt(data.loaded / data.total * 100, 10) + '%%';
+                  $('#'+'%s').css('width', progress);
+                },
+                done: function (e, data) {
+                  $.each(data.files, function (index, file) {
+                    $('<p/>').text(file.name).appendTo(document.body);
+                  });
+                  $('#'+'%s').fadeOut();
+                }
+              });
+            """.format(uploadId,progressId,progressBarId,progressBarId,progressId)
+
+        val nodes = <div>
+          <label for={uploadId}>{Text("Select your file")}</label>
+          <input id={uploadId} type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
+          <div>{Text("The conversation will appear quickly, but may take up to a minute or two to fill with content.")}</div>
+          <div id={progressId} style="width:20em; border: 1pt solid silver; display: none">
+            <div id={progressBarId} style="background: green; height: 1em; width:0%"></div>
+          </div>
+          <script>{script}</script>
+        </div>
+        println("generating nodes")
+        nodes
+      },Full("conversationImport"),Full("Import conversation"))
+      println("generated new IM: %s".format(im))
+      this ! im
       JNull
     },Empty),
     ClientSideFunctionDefinition("requestDeleteConversationDialogue",List("conversationJid"),(args) => {
@@ -1009,7 +1026,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
-    case c:ClientMessage => clientMessageBroker.processMessage(c)
+    case c:ClientMessage => {
+      println("NewMessage: %s".format(c))
+      clientMessageBroker.processMessage(c)
+    }
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
