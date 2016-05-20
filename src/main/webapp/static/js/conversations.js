@@ -362,6 +362,24 @@ var Conversations = (function(){
             DeviceConfiguration.setCurrentDevice("projector");
             return false;
         }));
+				if (targetConversationJid == "" || currentSlide == 0){
+					$("#projectorViewLink").empty();
+					$("#slideDeepLink").empty();
+					$("#conversationDeepLink").empty();
+				} else {
+					$("#projectorViewLink").html($("<a/>",{
+						href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
+						text:"Project this conversation"
+					}));
+					$("#slideDeepLink").html($("<a/>",{
+						href:sprintf("/board?conversationJid=%s&slideId=%s",targetConversationJid,currentSlide),
+						text:"DeepLink this slide"
+					}));
+					$("#conversationDeepLink").html($("<a/>",{
+						href:sprintf("/board?conversationJid=%s",targetConversationJid),
+						text:"Deeplink this conversation"
+					}));
+				}
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
