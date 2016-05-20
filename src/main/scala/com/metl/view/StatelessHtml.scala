@@ -826,7 +826,7 @@ object StatelessHtml extends Stemmer with Logger {
     try {
       val newConvWithAllSlides = conversation.copy(
         lastAccessed = new java.util.Date().getTime,
-        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1, h._1 - conversation.jid)).toList
+        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1, h._1 - conversation.jid - 1)).toList
       )
       val remoteConv = server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
       println("remoteConv created: %s".format(remoteConv))
