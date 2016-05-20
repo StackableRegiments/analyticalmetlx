@@ -622,6 +622,10 @@ var Conversations = (function(){
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
+				$("#importConversationButton").on("click",bounceAnd(function(){
+						//redirect to conversation import
+						alert("this'll redirect to import");
+				}));
         $("#createConversationButton").on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
         }));
