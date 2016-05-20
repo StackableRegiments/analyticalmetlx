@@ -30,7 +30,7 @@ case class CloudConvertUploadElement(url:String)
 case class CloudConvertProcessDefinitionResponse(url:Option[String],id:String,message:String,step:String,upload:Option[CloudConvertUploadElement],output:Option[CloudConvertUploadElement])
 case class CloudConvertUploadResponse(file:String,size:Int,message:String)
 case class CloudConvertInputElement(`type`:String,filename:String,size:Long,name:String,ext:String) 
-case class CloudConvertOutputElement(url:String,filename:String,size:Long,downloads:Int,ext:String,files:Option[List[String]]) 
+case class CloudConvertOutputElement(url:String,filename:String,size:Option[Long],downloads:Option[Int],ext:String,files:Option[List[String]]) 
 case class CloudConvertConverterElement(format:String,`type`:String,options:Option[JObject],duration:Double)
 case class CloudConvertStatusMessageResponse(id:String,url:Option[String],percent:Option[String],message:Option[String],step:String,starttime:Option[Long],expire:Long,input:Option[CloudConvertInputElement],converter:Option[CloudConvertConverterElement],output:Option[CloudConvertOutputElement],endtime:Option[Long])
 
@@ -45,7 +45,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
       val parts = filename.split('.').toList
       val name = parts.init.filterNot(_ == "").mkString(".")
       val suffix = parts.last
-      warn("CloudConvertPoweredParser anything: %s %s %s => %s %s".format(jid,author,filename,name,suffix))
+      debug("CloudConvertPoweredParser anything: %s %s %s => %s %s".format(jid,author,filename,name,suffix))
       importToCloudConvert(jid,name,bytes,suffix,"jpg",server,author) match {
         case Right(map) => map
         case Left(e) => {
@@ -68,28 +68,33 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
   protected def describeResponse(in:HTTPResponse):HTTPResponse = {
     val described = in.headers.get("Content-Type") match {
       case Some(s) if s == "application/octet-stream" => "bytes(%s)".format(in.bytes.length)
+      case Some(s) if s == "application/zip" => "bytes(%s)".format(in.bytes.length)
       case other => "string(%s)".format(in.responseAsString)
     }
-    info("Response: %s\r\n%s".format(in,described))
+    debug("Response: %s\r\n%s".format(in,described))
     in
   }
   protected def callComplexCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
     try {
       val encoding = "UTF-8"
       val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
-      println("apiKey: %s".format(apiKey))
+      trace("apiKey: %s".format(apiKey))
       val procResponse = describeResponse(client.postFormExpectingHTTPResponse("https://api.cloudconvert.com/process",List(
         ("inputformat" -> inFormat),
         ("outputformat" -> outFormat)
       )))
       val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
 
-      Thread.sleep(5000)
-
+      // until they fix a bug, we have to use JSON POST for this step.
+      //
+      val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(schemify(procResponseObj.url),Printer.compact(render((
+        ("input" -> "upload") ~ ("outputformat" -> outFormat)))).getBytes(encoding),List(("Content-Type","application/json"))))
+/*
       val defineProcResponse = describeResponse(client.postFormExpectingHTTPResponse(schemify(procResponseObj.url),List(
         ("input" -> "upload"),
         ("outputformat" -> outFormat)
       )))
+      */
       val defineProcResponseObj = parse(defineProcResponse.responseAsString).extract[CloudConvertProcessDefinitionResponse]
       var uploadUrl = defineProcResponseObj.upload.map(u => schemify(u.url)).getOrElse({
         throw new Exception("no upload url defined on process response: %s".format(defineProcResponseObj))
@@ -116,7 +121,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         throw new Exception("download Url malformed")
       val downloadResponse = describeResponse(client.getExpectingHTTPResponse(downloadUrl))
       val convertResponseBytes = downloadResponse.bytes
-      println("downloaded bytes: %s".format(convertResponseBytes.length))
+      trace("downloaded bytes: %s".format(convertResponseBytes.length))
       val parsedResponse = unzipper.extractFiles(convertResponseBytes,_.getName.endsWith(".jpg")).right.map(files => files.map(fileTup => {
         // we should read the page number from the filename, which should be:  "filename-%s.jpg".format(pageNumber), where filename should be the original filename, without the suffix.
         // this should TOTALLY be a regex to make it clean and strong
@@ -125,19 +130,18 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         newNumber = newNumber.take(newNumber.length - 4)
         (newNumber.toInt,fileTup._2)
       }))
-      println("parsedResponse: %s".format(parsedResponse))
+      trace("parsedResponse: %s".format(parsedResponse))
       parsedResponse
     } catch {
       case e:Exception => Left(e)
     }
   }
 
-
   protected def callSimpleCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
     try {
       val encoding = "UTF-8"
       val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
-      println("apiKey: %s".format(apiKey))
+      trace("apiKey: %s".format(apiKey))
       val formData = List(
         ("inputformat" -> inFormat),
         ("outputformat" -> outFormat),
@@ -147,18 +151,17 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         ("file" -> base64Encode(bytes)),
         ("filename" -> (filename + "." + inFormat))
       )
-//      println("posting form to %s: %s".format(convertUrl,formData.filterNot(_._1 == "filename")))
       var convertResponse = client.postFormExpectingHTTPResponse(convertUrl,formData)
       while (convertResponse.statusCode >= 300 && convertResponse.statusCode < 400){
-        println("getPrcResponse redirecting: %s".format(convertResponse))
+        trace("getPrcResponse redirecting: %s".format(convertResponse))
         convertResponse = client.getExpectingHTTPResponse(convertResponse.headers("Location"))
       }
-      println("getPrcResponse: %s".format(convertResponse))
+      trace("getPrcResponse: %s".format(convertResponse))
       val convertResponseBytes = convertResponse.bytes
-      println("downloaded bytes: %s".format(convertResponseBytes.length))
+      trace("downloaded bytes: %s".format(convertResponseBytes.length))
       try {
         if (convertResponse.statusCode != 200)
-          println("uplResponseString: %s".format(convertResponse.responseAsString))
+          trace("uplResponseString: %s".format(convertResponse.responseAsString))
       } catch {
         case e:Exception => {
         }
@@ -171,7 +174,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         newNumber = newNumber.take(newNumber.length - 4)
         (newNumber.toInt,fileTup._2)
       }))
-      println("parsedResponse: %s".format(parsedResponse))
+      trace("parsedResponse: %s".format(parsedResponse))
       parsedResponse
     } catch {
       case e:Exception => Left(e)
@@ -179,8 +182,8 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
   }
 
   protected def importToCloudConvert(jid:Int,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Throwable,Map[Int,History]] = {
-    callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
-    //callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
+    //callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
+    callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
       Map({
         slides.flatMap{
           case (index,imageBytes) => {
@@ -195,10 +198,10 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
               }
             }
             val bgImg = MeTLImage(server,author,-1L,tag,Full(identity),Full(imageBytes),Empty,dimensions._1,dimensions._2,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
-            println("building metlImage: %s".format(bgImg))
+            debug("building metlImage: %s".format(bgImg))
             val history = new History(slideId.toString)
             history.addStanza(bgImg)
-            println("created history: %s".format(history))
+            debug("created history: %s".format(history))
             Some((slideId,history))
           }
           case _ => None
@@ -221,7 +224,7 @@ class Unzipper extends Logger {
   import org.apache.commons.compress.archivers.zip._
   import collection.mutable.ListBuffer
   def extractFiles(in:Array[Byte],filter:ZipArchiveEntry=>Boolean = (zae) => true):Either[Throwable,List[Tuple2[String,Array[Byte]]]] = {
-    println("extractingFiles: %s".format(in.length))
+    debug("extractingFiles: %s".format(in.length))
     try {
       val zis = new ZipArchiveInputStream(new ByteArrayInputStream(in),"UTF-8",false,true)
       val results = ListBuffer.empty[Tuple2[String,Array[Byte]]]
@@ -229,7 +232,7 @@ class Unzipper extends Logger {
         var entry:ZipArchiveEntry = zis.getNextZipEntry
         while (entry != null) {
           if (filter(entry)){
-            println("found: %s".format(entry.getName))
+            debug("found: %s".format(entry.getName))
             results += ((entry.getName,IOUtils.toByteArray(zis)))
           }
           entry = zis.getNextZipEntry
