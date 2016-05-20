@@ -145,4 +145,5 @@
 	<clientAdaptors>
 		<embeddedXmppServer keystorePath="/stackable/analyticalmetlx/config/metl.jks" keystorePassword="helpme" />
 	</clientAdaptors>
+	<cloudConverterApiKey>SPn93VNlob69qd2d61piK57MjYv0B4gNkWg1E80GBsp6Yui4PLc8wVIjA-iSlEpbx9rjhVU_DetlBsgFZL-G9A</cloudConverterApiKey>
 </serverConfiguration>
