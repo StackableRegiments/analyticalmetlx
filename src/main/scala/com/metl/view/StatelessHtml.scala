@@ -740,6 +740,21 @@ object StatelessHtml extends Stemmer with Logger {
     })
     remoteConv
   }
+  def foreignConversationImportEndpoint(r:Req):Box[LiftResponse] = {
+    (for (
+      firstFile <- r.uploadedFiles.headOption;
+      bytes = firstFile.file;
+      filename = firstFile.fileName;
+      author = Globals.currentUser.is;
+      title = "%s's (%s) created at %s".format(author,filename,new java.util.Date());
+      conv = config.createConversation(title,author);
+      histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
+      remoteConv <- foreignConversationImport(config,author,conv,histories);
+      node <- serializer.fromConversation(remoteConv).headOption
+    ) yield {
+      XmlResponse(node)
+    })
+  }
   def powerpointImport(r:Req):Box[LiftResponse] = {
     (for (
       title <- r.param("title");
@@ -750,8 +765,9 @@ object StatelessHtml extends Stemmer with Logger {
         }
       };
       author = Globals.currentUser.is;
+      filename = title;
       conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
+      histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
