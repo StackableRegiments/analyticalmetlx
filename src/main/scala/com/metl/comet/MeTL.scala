@@ -369,6 +369,31 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
      })
      },Full(RECEIVE_CONVERSATION_DETAILS)),
      */
+    ClientSideFunctionDefinition("importConversation",List.empty[String],(unused) => {
+      this ! InteractableMessage((i) => {
+        // this doesn't work yet - about to rewrite it to use a jquery file upload plugin instead.
+        val uploadId = nextFuncName
+        <form action="/powerpointImport" method="post" enctype="multipart/form-data">
+          <label for={uploadId}>File upload</label>
+          {
+            fileUpload((fup:FileParamHolder) => {
+              val filename = fup.fileName
+              val bytes = fup.file
+              val author = username
+              val title = "%s's (%s), created at %s".format(author,filename,new java.util.Date())
+              this ! SpamMessage(Text("Beginning import: %s %s %s %s".format(title,filename,author,bytes.length)))
+              val newConv = com.metl.view.StatelessHtml.foreignConversationImport(title,filename,bytes,author)
+              this ! SpamMessage(Text("Conversation imported: %s".format(newConv)))
+              Noop
+            },("id",uploadId),("name",uploadId))
+          }
+          {
+            submit("Import",() => Noop,("name","submit"))
+          }
+        </form>
+      },Full("conversation"),Full("Import conversation"))
+      JNull
+    },Empty),
     ClientSideFunctionDefinition("requestDeleteConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -797,15 +822,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     },Empty)
   )
   private def editableQuizNodeSeq(quiz:MeTLQuiz):InteractableMessage = {
-    var tempQuiz = quiz
     InteractableMessage((i) => {
+      var tempQuiz = quiz
       var answerProvided = false
       var errorMessages = List.empty[SpamMessage]
       <div id="createQuizForm">
       <label for="quizQuestion">Question</label>
       <div>
       {
-        textarea(quiz.question,(input:String) => {
+        textarea(tempQuiz.question,(input:String) => {
           if (input.length > 0){
             tempQuiz = tempQuiz.replaceQuestion(input)
           } else {
@@ -822,7 +847,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       }
       <div>
       {
-        quiz.options.sortBy(o => o.name).map(qo => {
+        tempQuiz.options.sortBy(o => o.name).map(qo => {
           //val cssColorString = "background-color:%s;".format(ColorConverter.toRGBHexString(qo.color))
           <div class="quizOption">
           <label class="quizName">
@@ -859,7 +884,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       </div>
       {
         ajaxButton(<span>{Text("Add an option")}</span>, ()=>{
-          this ! editableQuizNodeSeq(tempQuiz.addOption(QuizOption("","")))
+          tempQuiz = tempQuiz.addOption(QuizOption("",""))
+          this ! editableQuizNodeSeq(tempQuiz)
           i.done
         },("class","quizAddOptionButton toolbar btn-icon fa fa-plus np"))
       }

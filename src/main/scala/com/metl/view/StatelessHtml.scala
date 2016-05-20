@@ -777,13 +777,24 @@ object StatelessHtml extends Stemmer with Logger {
       title <- r.param("title");
       bytes <- r.body;
       author = Globals.currentUser.is;
-      conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
-      remoteConv <- foreignConversationImport(config,author,conv,histories);
+      remoteConv <- foreignConversationImport(title,title,bytes,author);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
+  }
+  def foreignConversationImport(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
+    try {
+      val conv = config.createConversation(title,author);
+      for (
+        histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
+        remoteConv <- foreignConversationImport(config,author,conv,histories)
+      ) yield {
+        remoteConv
+      }
+    } catch {
+      case e:Exception => Failure("Exception while importing conversation",Full(e),Empty)
+    }
   }
   protected def foreignConversationParse(filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
     try {

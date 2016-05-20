@@ -623,8 +623,7 @@ var Conversations = (function(){
             showBackstage("conversations");
         });
 				$("#importConversationButton").on("click",bounceAnd(function(){
-						//redirect to conversation import
-						alert("this'll redirect to import");
+						importConversation();
 				}));
         $("#createConversationButton").on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
