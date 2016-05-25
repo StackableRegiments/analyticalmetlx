@@ -509,60 +509,62 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
       
       val authors = (inks ::: images ::: texts ::: highlighters).map(_.author).distinct
       val conv = serverConfig.detailsOfConversation(conversationJid)
-      serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
-      this ! SpamMessage(<div />,Full("submissions"),Full("Blacklisted users: %s".format(authors)))
+      if (shouldModifyConversation(conv)){
+        serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
+        this ! SpamMessage(<div />,Full("submissions"),Full("Blacklisted users: %s".format(authors)))
 
-      def getColorForAuthor(name:String):Color = {
-        new Color(128,128,128,128)
-      }
-      val thickness = 5
-      val coloredAuthors = Map(authors.map(a => (a,SubmissionBlacklistedPerson(a,getColorForAuthor(a)))):_*)
-
-      val annotationHistory = new History("annotation")
-
-      inks.foreach(ink => {
-        val color = coloredAuthors(ink.author).highlight
-        annotationHistory.addStanza(ink.copy(color = color,thickness=ink.thickness * 2,author="blacklist"))
-      })
-      images.foreach(image => {
-        val color = coloredAuthors(image.author).highlight
-        val bounds = List(Point(image.left,image.top,thickness),Point(image.right,image.top,thickness),Point(image.right,image.bottom,thickness),Point(image.left,image.bottom,thickness),Point(image.left,image.top,thickness))
-        val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
-        annotationHistory.addStanza(newStanza)
-
-      })
-      texts.foreach(text => {
-        val color = coloredAuthors(text.author).highlight
-        val bounds = List(Point(text.left,text.top,thickness),Point(text.right,text.top,thickness),Point(text.right,text.bottom,thickness),Point(text.left,text.bottom,thickness),Point(text.left,text.top,thickness))
-        val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
-        annotationHistory.addStanza(newStanza)
-      })
-
-      val mergedHistory = pubHistory.merge(annotationHistory)
-
-      val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
-      val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
-      (width,height) match {
-        case (a:Int,b:Int) if a > 0 && b > 0 => {
-          val blacklistedPeople = coloredAuthors.values.toList
-          val imageBytes = SlideRenderer.render(mergedHistory,width,height)
-          val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-          val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
-          println("banned with the following: %s".format(submission))
-          rooms.get((server,conversationJid)).map(r =>{
-            r() ! LocalToServerMeTLStanza(submission)
-          });
-          this ! SpamMessage(<div />,Full("submissions"),Full("Blacklist record created and added for authors: %s".format(authors)))
+        def getColorForAuthor(name:String):Color = {
+          new Color(128,128,128,128)
         }
-        case _ => {
-          this ! SpamMessage(<div />,Full("submissions"),Full("blacklist record creation failed.  Your canvas is empty."))
+        val thickness = 5
+        val coloredAuthors = Map(authors.map(a => (a,SubmissionBlacklistedPerson(a,getColorForAuthor(a)))):_*)
+
+        val annotationHistory = new History("annotation")
+
+        inks.foreach(ink => {
+          val color = coloredAuthors(ink.author).highlight
+          annotationHistory.addStanza(ink.copy(color = color,thickness=ink.thickness * 2,author="blacklist"))
+        })
+        images.foreach(image => {
+          val color = coloredAuthors(image.author).highlight
+          val bounds = List(Point(image.left,image.top,thickness),Point(image.right,image.top,thickness),Point(image.right,image.bottom,thickness),Point(image.left,image.bottom,thickness),Point(image.left,image.top,thickness))
+          val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+          annotationHistory.addStanza(newStanza)
+
+        })
+        texts.foreach(text => {
+          val color = coloredAuthors(text.author).highlight
+          val bounds = List(Point(text.left,text.top,thickness),Point(text.right,text.top,thickness),Point(text.right,text.bottom,thickness),Point(text.left,text.bottom,thickness),Point(text.left,text.top,thickness))
+          val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+          annotationHistory.addStanza(newStanza)
+        })
+
+        val mergedHistory = pubHistory.merge(annotationHistory)
+
+        val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
+        val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
+        (width,height) match {
+          case (a:Int,b:Int) if a > 0 && b > 0 => {
+            val blacklistedPeople = coloredAuthors.values.toList
+            val imageBytes = SlideRenderer.render(mergedHistory,width,height)
+            val uri = serverConfig.postResource(conversationJid,title,imageBytes)
+            val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
+            println("banned with the following: %s".format(submission))
+            rooms.get((server,conversationJid)).map(r =>{
+              r() ! LocalToServerMeTLStanza(submission)
+            });
+            this ! SpamMessage(<div />,Full("submissions"),Full("Blacklist record created and added for authors: %s".format(authors)))
+          }
+          case _ => {
+            this ! SpamMessage(<div />,Full("submissions"),Full("blacklist record creation failed.  Your canvas is empty."))
+          }
         }
+        val deleterId = nextFuncName
+        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,imageIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
+        rooms.get((server,slideJid.toString)).map(r =>{
+          r() ! LocalToServerMeTLStanza(deleter)
+        })
       }
-      val deleterId = nextFuncName
-      val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,imageIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
-      rooms.get((server,slideJid.toString)).map(r =>{
-        r() ! LocalToServerMeTLStanza(deleter)
-      })
       JNull
     },Empty),
     /*
