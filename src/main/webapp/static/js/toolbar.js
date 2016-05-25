@@ -1441,6 +1441,14 @@ var Modes = (function(){
                         $("#resize").addClass("disabledButton");
 												$("#ban").addClass("disabledButton");
                     }
+
+										if (Conversations.shouldModifyConversation()){
+											$("#ban").show();
+											$("#administerContent").show();	
+										} else {
+											$("#ban").hide();
+											$("#administerContent").hide();	
+										}
 										if (isAdministeringContent){
 											$("#administerContent").removeClass("disabledButton");
 										} else {
@@ -1487,6 +1495,29 @@ var Modes = (function(){
                 });
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             },100);
+						var banContentFunction = function(){
+							 if (Modes.select.selected != undefined && isAdministeringContent){
+									var s = Modes.select.selected;			 
+										banContent(
+											Conversations.getCurrentConversationJid(),
+											Conversations.getCurrentSlideJid(),
+											_.uniq(_.map(s.inks,function(e){return e.identity;})),
+											_.uniq(_.map(s.texts,function(e){return e.identity;})),
+											_.uniq(_.map(s.images,function(e){return e.identity;}))
+										);
+								}
+								clearSelectionFunction();
+						};
+						var administerContentFunction = function(){
+							isAdministeringContent = Conversations.shouldModifyConversation() ? !isAdministeringContent : false;
+							if (isAdministeringContent){
+								$("#administerContent").removeClass("disabledButton");
+							} else {
+								$("#administerContent").addClass("disabledButton");
+							}
+							clearSelectionFunction();
+						};	
+
             Progress.onBoardContentChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
@@ -1494,6 +1525,22 @@ var Modes = (function(){
 						Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
 							if (isAdministeringContent && Conversations.shouldModifyConversation()){
 								isAdministeringContent = false;
+							}
+							if (Conversations.shouldModifyConversation()){
+								$("#ban").show();
+								$("#administerContent").show();	
+								$("#administerContent").bind("click",administerContentFunction);
+								$("#ban").bind("click",banContentFunction);
+							} else {
+								$("#ban").hide();
+								$("#administerContent").hide();	
+								$("#administerContent").unbind("click");
+								$("#ban").unbind("click");
+							}
+							if (isAdministeringContent){
+								$("#administerContent").removeClass("disabledButton");
+							} else {
+								$("#administerContent").addClass("disabledButton");
 							}
 						};
             return {
@@ -1541,29 +1588,8 @@ var Modes = (function(){
                     var threshold = 30;
                     var resizeHandle = [0,0,0,0];
                     var initialHeight = 0;
-										$("#administerContent").bind("click",function(){
-											isAdministeringContent = !isAdministeringContent;
-											if (isAdministeringContent){
-												$("#administerContent").removeClass("disabledButton");
-											} else {
-												$("#administerContent").addClass("disabledButton");
-											}
-											clearSelectionFunction();
-										});	
-										$("#ban").bind("click",function(){
-                       if (Modes.select.selected != undefined && isAdministeringContent){
-													var s = Modes.select.selected;			 
-														banContent(
-															Conversations.getCurrentConversationJid(),
-															Conversations.getCurrentSlideJid(),
-															_.uniq(_.map(s.inks,function(e){return e.identity;})),
-															_.uniq(_.map(s.texts,function(e){return e.identity;})),
-															_.uniq(_.map(s.images,function(e){return e.identity;}))
-														);
-                        }
-                        clearSelectionFunction();
-
- 										});
+										$("#administerContent").bind("click",administerContentFunction);
+										$("#ban").bind("click",banContentFunction);
                     $("#resize").bind("click",function(){
                         var items = _.flatten([
                             _.values(Modes.select.selected.images),
