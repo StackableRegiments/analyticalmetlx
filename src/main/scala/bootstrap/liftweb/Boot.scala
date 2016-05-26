@@ -34,6 +34,8 @@ class Boot extends Logger {
 
     LiftRules.cometRequestTimeout = Full(25)
 
+    LiftRules.maxMimeFileSize = 50 * 1024 * 1024 // 50MB file uploads allowed
+    LiftRules.maxMimeSize = 100 * 1024 * 1024 // 50MB file uploads allowed
     trace("Config begins")
     // this starts up our system - populates serverConfigurations, attaches CAS, attaches RestHelpers, etc.
     MeTLXConfiguration.initializeSystem
