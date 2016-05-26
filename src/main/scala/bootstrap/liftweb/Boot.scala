@@ -29,13 +29,6 @@ class Boot extends Logger {
     trace("Boot begins")
     LiftRules.addToPackages("com.metl")
 
-    LiftRules.allowParallelSnippets.session.set(true)
-    LiftRules.maxConcurrentRequests.session.set((r:Req)=>1000)
-
-    LiftRules.cometRequestTimeout = Full(25)
-
-    LiftRules.maxMimeFileSize = 50 * 1024 * 1024 // 50MB file uploads allowed
-    LiftRules.maxMimeSize = 100 * 1024 * 1024 // 50MB file uploads allowed
     trace("Config begins")
     // this starts up our system - populates serverConfigurations, attaches CAS, attaches RestHelpers, etc.
     MeTLXConfiguration.initializeSystem
