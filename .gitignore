@@ -7,3 +7,4 @@ testdb*
 node_modules
 src/main/assets/build/source/
 .idea
+security.log
