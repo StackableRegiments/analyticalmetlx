@@ -662,7 +662,6 @@ var Modes = (function(){
         currentMode:noneMode,
         none:noneMode,
         text:(function(){
-            var selectedTexts = [];
             var texts = [];
             var noop = function(){};
             var createBlankText = function(screenPos){
@@ -676,26 +675,17 @@ var Modes = (function(){
                     x:screenPos.x,
                     y:screenPos.y,
                     author:UserSettings.getUsername(),
-                    runs:[
-                        {text:"Sample run"},
-                        {text:"30 pt run",size:30},
-                        {text:"orange run",color:"orange"}
-                    ]
+                    runs:[]
                 });
             };
-            var editText = function(editor){
-                editor.hasFocus = true;
-                console.log("editText",editor);
-            }
             return {
                 create:function(t){
                     var doc = carota.editor.create(
-                        $("#textInputInvisibleHost")[0],
+                        $("<div />").appendTo($("#textInputInvisibleHost"))[0],
                         board[0],
                         function(){render(boardContent)});
                     doc.position = {x:t.x,y:t.y};
                     doc.contentChanged(function(){
-                        console.log(doc);
                         var fb = doc.frame.bounds();
                         if(fb){
                             t.bounds = [
@@ -704,7 +694,6 @@ var Modes = (function(){
                                 doc.position.x+fb.w,
                                 doc.position.y+fb.h];
                         }
-                        console.log(t.bounds);
                     });
                     doc.load(t.runs);
                     t.doc = doc;
@@ -714,11 +703,26 @@ var Modes = (function(){
                     carota.editor.paint(board[0],t.doc,true);
                 },
                 activate:function(){
+                    var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
+                    var lastClick = Date.now();
+                    var down = function(x,y,z,worldPos){
+                        var threshold = 10;
+                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+                        selectedTexts = _.values(boardContent.richTexts).filter(function(text){
+                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
+                        });
+                        if (selectedTexts.length > 0){
+                            var editor = selectedTexts[0].doc;
+                            var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
+                            var node = editor.byCoordinate(relativePos.x,relativePos.y);
+                            editor.mousedownHandler(node);
+                        }
+                    }
                     var up = function(x,y,z,worldPos){
                         var threshold = 10;
                         var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
@@ -726,15 +730,25 @@ var Modes = (function(){
                             return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
                         });
                         if (selectedTexts.length > 0){
-                            currentText = selectedTexts[0];
-			    console.log("Selected text",currentText);
-			    editText(currentText);
+			    _.each(boardContent.richTexts,function(t){
+				t.doc.isActive = false;
+			    });
+                            var editor = selectedTexts[0].doc;
+			    editor.isActive = true;
+                            var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
+                            var clickTime = Date.now();
+                            var node = editor.byCoordinate(relativePos.x,relativePos.y);
+                            editor.mouseupHandler(node);
+                            if(clickTime - lastClick <= doubleClickThreshold){
+                                editor.dblclickHandler(node);
+                            }
+                            lastClick = clickTime;
                         } else {
-                            var newText = createBlankText(worldPos);
+                            createBlankText(worldPos);
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     }
-                    registerPositionHandlers(board,noop,noop,up);
+                    registerPositionHandlers(board,down,noop,up);
                 },
                 deactivate:function(){
                     selectedTexts = [];

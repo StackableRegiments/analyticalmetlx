@@ -920,22 +920,26 @@
                 var rect = require('./rect');
 
                 var paint = exports.paint = function(canvas,doc,hasFocus) {
-                    var dpr = 1;
-
-                    var screenPos = worldToScreen(doc.position.x,doc.position.y);
-                    var logicalWidth = canvas.width,
+                    var screenPos = worldToScreen(doc.position.x,doc.position.y),
+                        logicalWidth = canvas.width,
                         logicalHeight = canvas.height;
 
                     var ctx = canvas.getContext('2d');
                     ctx.save();
-                    var sWidth = logicalWidth * dpr,
-                        sHeight = logicalHeight * dpr;
                     var output =  rect(0, 0, logicalWidth, logicalHeight);
-		    var s = scale();
+                    var s = scale();
                     ctx.translate(screenPos.x,screenPos.y);
-		    ctx.scale(s,s);
+                    ctx.scale(s,s);
+                    if(doc.isActive){
+                        var bounds = doc.frame.bounds();
+                        ctx.strokeStyle = 'black';
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(0,0,bounds.w,bounds.h);
+                    }
                     doc.draw(ctx, output);
-                    doc.drawSelection(ctx, hasFocus);
+                    if(doc.isActive){
+                        doc.drawSelection(ctx, hasFocus);
+                    }
                     ctx.restore();
                 };
 
@@ -1289,19 +1293,32 @@
                         });
                     }
 
-                    registerMouseEvent('mousedown', function(node) {
+                    doc.mousedownHandler = function(node) {
                         selectDragStart = node.ordinal;
                         doc.select(node.ordinal, node.ordinal);
                         keyboardX = null;
-                    });
-
-                    registerMouseEvent('dblclick', function(node) {
+                    };
+                    doc.dblclickHandler = function(node) {
                         node = node.parent();
                         if (node) {
                             doc.select(node.ordinal, node.ordinal +
                                        (node.word ? node.word.text.length : node.length));
                         }
-                    });
+                    };
+                    doc.mouseupHandler = function(node) {
+                        selectDragStart = null;
+                        keyboardX = null;
+                        updateTextArea();
+                        textArea.focus();
+                    };
+
+                    /*
+                     registerMouseEvent('mousedown', doc.mousedownHandler);
+                     registerMouseEvent('mouseup', doc.mouseupHandler);
+
+                     registerMouseEvent('dblclick', doc.dblclickHandler);
+                     */
+                    /*The editor must not take these events itself because the master canvas is listening for them and there will be inconsistent information.  MeTL will hand the events through, having corrected for world to screen positioning*/
 
                     registerMouseEvent('mousemove', function(node) {
                         if (selectDragStart !== null) {
@@ -1316,41 +1333,20 @@
                         }
                     });
 
-                    registerMouseEvent('mouseup', function(node) {
-                        selectDragStart = null;
-                        keyboardX = null;
-                        updateTextArea();
-                        textArea.focus();
-                    });
-
                     var nextCaretToggle = new Date().getTime(),
                         focused = false,
                         cachedWidth = host.clientWidth,
                         cachedHeight = host.clientHeight;
 
                     var update = function() {
-                        var requirePaint = false;
-                        var newFocused = document.activeElement === textArea;
-                        var element = canvas;
-                        if (element.clientWidth !== cachedWidth ||
-                            element.clientHeight !== cachedHeight) {
-                            requirePaint = true;
-                            cachedWidth =element.clientWidth;
-                            cachedHeight = element.clientHeight;
-                        }
-                        if (focused !== newFocused) {
-                            focused = newFocused;
-                            requirePaint = true;
-                        }
-                        var now = new Date().getTime();
-                        if (now > nextCaretToggle) {
-                            nextCaretToggle = now + 500;
-                            if (doc.toggleCaret()) {
-                                requirePaint = true;
+                        if(doc.isActive){
+                            var now = new Date().getTime();
+                            if (now > nextCaretToggle) {
+                                nextCaretToggle = now + 500;
+                                if (doc.toggleCaret()) {
+                                    requestPaintFunc();
+                                }
                             }
-                        }
-                        if (requirePaint) {
-                            requestPaintFunc();
                         }
                         setTimeout(update,500);
                     };
@@ -2018,8 +2014,10 @@
                         this.word.draw(ctx, this.line.left + this.left, this.line.baseline);
 
                         // Handy for showing how word boundaries work
-                        // var b = this.bounds();
-                        // ctx.strokeRect(b.l, b.t, b.w, b.h);
+                        /*
+                         var b = this.bounds();
+                         ctx.strokeRect(b.l, b.t, b.w, b.h);
+                         */
                     },
                     bounds: function() {
                         return rect(
