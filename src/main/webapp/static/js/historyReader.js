@@ -379,19 +379,19 @@ function prerenderInk(ink){
 
     context.moveTo(x,y);
     context.beginPath();
- 		var x = points[0] + contentOffsetX;
-		var y = points[1] + contentOffsetY;
-		_.each(_.chunk(points,3),function(point){
-			context.beginPath();
-			context.moveTo(x,y);
-			x = point[0] + contentOffsetX;
-			y = point[1] + contentOffsetY;
-			context.lineTo(x,y);
-			context.lineWidth = ink.thickness * (point[2] / 256);
-			context.lineCap = "round";
-			context.stroke();
-		});
-		return true;
+    var x = points[0] + contentOffsetX;
+    var y = points[1] + contentOffsetY;
+    _.each(_.chunk(points,3),function(point){
+        context.beginPath();
+        context.moveTo(x,y);
+        x = point[0] + contentOffsetX;
+        y = point[1] + contentOffsetY;
+        context.lineTo(x,y);
+        context.lineWidth = ink.thickness * (point[2] / 256);
+        context.lineCap = "round";
+        context.stroke();
+    });
+    return true;
 }
 function alertCanvas(canvas,label){
     var url = canvas.toDataURL();
@@ -484,21 +484,21 @@ function prerenderText(text){
     var yOffset = 0;
     var runs = [];
     var breaking = false;
-		$.each(text.text.split(''),function(i,c){
-				if(c.match(newline)){
-						runs.push(""+run);
-						run = "";
-						return;
-				}
-				else if(breaking && c == " "){
-						runs.push(run);
-						run = "";
-						return;
-				}
-				var w = context.measureText(run).width;
-				breaking = w >= text.width - 80;
-				run += c;
-		});
+    $.each(text.text.split(''),function(i,c){
+        if(c.match(newline)){
+            runs.push(""+run);
+            run = "";
+            return;
+        }
+        else if(breaking && c == " "){
+            runs.push(run);
+            run = "";
+            return;
+        }
+        var w = context.measureText(run).width;
+        breaking = w >= text.width - 80;
+        run += c;
+    });
     runs.push(run);
     runs = runs.map(function(r){
         return r.trim();
@@ -579,7 +579,7 @@ var visibleBounds = [];
 function render(content){
     if(content){
         var startMark = Date.now();
-        var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,inksRenderedMark,renderDecoratorsMark;
+        var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
         try{
             var viewBounds = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
             visibleBounds = [];
@@ -598,6 +598,15 @@ function render(content){
                     });
                 }
             }
+            var renderRichTexts = function(texts){
+                if(texts){
+                    $.each(texts,function(i,text){
+                        if(intersectRect(text.bounds,viewBounds)){
+                            Modes.text.draw(text);
+                        }
+                    });
+                }
+            }
             var renderImmediateContent = function(){
                 renderInks(boardContent.highlighters);
                 highlightersRenderedMark = Date.now();
@@ -607,11 +616,12 @@ function render(content){
                     }
                 });
                 textsRenderedMark = Date.now();
+                renderRichTexts(boardContent.richTexts);
+                richTextsRenderedMark = Date.now();
                 renderInks(boardContent.inks);
                 inksRenderedMark = Date.now();
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
-                //console.log("renderImmediateContent");
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;

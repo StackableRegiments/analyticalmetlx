@@ -490,14 +490,14 @@ $(function(){
             Modes.image.activate();
         }
     });
-		/*
-    $("#insertMode").click(function(){
-        if(Modes.currentMode != Modes.insert){
-            Modes.insert.activate();
-        }
+    /*
+     $("#insertMode").click(function(){
+     if(Modes.currentMode != Modes.insert){
+     Modes.insert.activate();
+     }
 
-    });
-		*/
+     });
+     */
     $("#panMode").click(function(){
         if(Modes.currentMode != Modes.pan){
             Modes.pan.activate();
@@ -592,49 +592,49 @@ $(function(){
         blit();
     });
     setLoadProgress(3);
-		/*
-    $.each({
-        red:"#FF0000",
-        green:"#00FF00",
-        blue:"#0000FF"
-    },function(id,code){
-        $("#"+id).click(bounceAnd(function(){
-            Modes.draw.drawingAttributes.color = code;
-        }));
+    /*
+     $.each({
+     red:"#FF0000",
+     green:"#00FF00",
+     blue:"#0000FF"
+     },function(id,code){
+     $("#"+id).click(bounceAnd(function(){
+     Modes.draw.drawingAttributes.color = code;
+     }));
+     });
+     $.each({
+     thin:0.3,
+     medium:1,
+     fat:3,
+     xfat:30
+     },function(id,width){
+     $("#"+id).attr("title",width).click(bounceAnd(function(){
+     Modes.draw.drawingAttributes.width = width;
+     }));
+     });
+     $("#toggleHighlighter").click(function(){
+     Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
+     });
+     */
+    $("#submissionsButton").on("click",function(){
+        showBackstage("submissions");
     });
-    $.each({
-        thin:0.3,
-        medium:1,
-        fat:3,
-        xfat:30
-    },function(id,width){
-        $("#"+id).attr("title",width).click(bounceAnd(function(){
-            Modes.draw.drawingAttributes.width = width;
-        }));
+    $("#quizzesButton").on("click",function(){
+        showBackstage("quizzes");
     });
-    $("#toggleHighlighter").click(function(){
-			Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
+    $("#submitScreenshotButton").on("click",function(){
+        var currentConversation = Conversations.getCurrentConversation();
+        var currentSlide = Conversations.getCurrentSlideJid();
+        if("jid" in currentConversation){
+            submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
+        }
     });
-		*/
-		$("#submissionsButton").on("click",function(){
-			showBackstage("submissions");
-		});
-		$("#quizzesButton").on("click",function(){
-			showBackstage("quizzes");
-		});
-		$("#submitScreenshotButton").on("click",function(){
-			var currentConversation = Conversations.getCurrentConversation();
-			var currentSlide = Conversations.getCurrentSlideJid();
-			if("jid" in currentConversation){
-					submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
-			}
-		});
-		$("#enableSync").on("click",Conversations.enableSyncMove);
-		$("#disableSync").on("click",Conversations.disableSyncMove);
+    $("#enableSync").on("click",Conversations.enableSyncMove);
+    $("#disableSync").on("click",Conversations.disableSyncMove);
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
 
-		Modes.draw.activate();
+    Modes.draw.activate();
 
     $("#progress").hide();
     setLoadProgress(8);
@@ -651,8 +651,8 @@ $(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
     });
-		$('#menuBlacklist').click(function(){
-			showBackstage("blacklist");
-			updateActiveMenu(this);
-		});
+    $('#menuBlacklist').click(function(){
+        showBackstage("blacklist");
+        updateActiveMenu(this);
+    });
 });

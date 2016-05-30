@@ -1,5 +1,0 @@
-MeTLText = (function(){
-  return {
-    live
-  };
-})();
