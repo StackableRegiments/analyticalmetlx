@@ -667,7 +667,8 @@ var Modes = (function(){
             var createBlankText = function(screenPos){
                 var w = 150;
                 var h = 50;
-                richTextReceived({
+
+                var t = Modes.text.create({
                     bounds:[screenPos.x,screenPos.y,screenPos.x + w,screenPos.y + h],
                     identity:_.uniqueId(),
                     width:w,
@@ -677,6 +678,7 @@ var Modes = (function(){
                     author:UserSettings.getUsername(),
                     runs:[]
                 });
+                return t;
             };
             return {
                 create:function(t){
@@ -697,7 +699,9 @@ var Modes = (function(){
                     });
                     doc.load(t.runs);
                     t.doc = doc;
+		    boardContent.richTexts = boardContent.richTexts || {};
                     boardContent.richTexts[t.identity] = t;
+		    return t;
                 },
                 draw:function(t){
                     carota.editor.paint(board[0],t.doc,true);
@@ -729,12 +733,12 @@ var Modes = (function(){
                         selectedTexts = _.values(boardContent.richTexts).filter(function(text){
                             return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
                         });
+                        _.each(boardContent.richTexts,function(t){
+                            t.doc.isActive = false;
+                        });
                         if (selectedTexts.length > 0){
-			    _.each(boardContent.richTexts,function(t){
-				t.doc.isActive = false;
-			    });
                             var editor = selectedTexts[0].doc;
-			    editor.isActive = true;
+                            editor.isActive = true;
                             var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
                             var clickTime = Date.now();
                             var node = editor.byCoordinate(relativePos.x,relativePos.y);
@@ -744,7 +748,7 @@ var Modes = (function(){
                             }
                             lastClick = clickTime;
                         } else {
-                            createBlankText(worldPos);
+                            createBlankText(worldPos).doc.isActive = true;
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     }

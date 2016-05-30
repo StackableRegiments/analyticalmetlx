@@ -930,12 +930,14 @@
                     var s = scale();
                     ctx.translate(screenPos.x,screenPos.y);
                     ctx.scale(s,s);
+		    /*
                     if(doc.isActive){
                         var bounds = doc.frame.bounds();
                         ctx.strokeStyle = 'black';
                         ctx.lineWidth = 0.5;
                         ctx.strokeRect(0,0,bounds.w,bounds.h);
                     }
+		     */
                     doc.draw(ctx, output);
                     if(doc.isActive){
                         doc.drawSelection(ctx, hasFocus);
