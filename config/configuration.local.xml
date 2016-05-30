@@ -1,149 +1,157 @@
 <serverConfiguration>
-	<metl2011InstallUrl>http://setup.stackableregiments.com/windowsClients/sluBeta/</metl2011InstallUrl>
-	<serverAddress>
-		<scheme>http</scheme>
-		<hostname>localhost</hostname>
-		<port>8080</port>
-	</serverAddress>
+  <metl2011InstallUrl>http://setup.stackableregiments.com/windowsClients/sluBeta/</metl2011InstallUrl>
+  <serverAddress>
+    <scheme>http</scheme>
+    <hostname>localhost</hostname>
+    <port>8080</port>
+  </serverAddress>
   <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
-	<serverConfigurations>
+  <serverConfigurations>
     <server>
       <type>sql</type>
-			<name>sqlAdaptor</name>
-			<driver>org.h2.Driver</driver>
-			<url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
+      <name>sqlAdaptor</name>
+      <driver>org.h2.Driver</driver>
+      <url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
     </server>
-		<!--
-    <server>
-      <type>localH2</type>
-			<name>localH2</name>
-			<filename>./testdb.h2</filename>
-		</server>
--->
+    <!--
+        <server>
+        <type>localH2</type>
+        <name>localH2</name>
+        <filename>./testdb.h2</filename>
+        </server>
+    -->
     <server>
       <type>transientLoopback</type>
     </server>
     <server>
       <type>frontend</type>
     </server>
-	</serverConfigurations>
-	<caches>
-		<roomLifetime miliseconds="3600000"/>
-		<resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
-	</caches>
-	<importerPerformance parallelism="8"/>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
+  </serverConfigurations>
+  <liftConfiguration>
+    <cometRequestTimeout>25</cometRequestTimeout>
+    <maxMimeSize>1048576000</maxMimeSize>
+    <maxMimeFileSize>524288000</maxMimeFileSize>
+    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
+    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
+    <allowParallelSnippets>true</allowParallelSnippets>
+  </liftConfiguration>
+  <caches>
+    <roomLifetime miliseconds="3600000"/>
+    <resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
+  </caches>
+  <importerPerformance parallelism="8"/>
+  <clientConfig>
+    <xmppDomain>local.temp</xmppDomain>
+    <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+  </clientConfig>
 
-	<!--		 -->
-	<!--	
-  <defaultServerConfiguration>devmetl.saintleo</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
+  <!--           -->
+  <!--
+      <defaultServerConfiguration>devmetl.saintleo</defaultServerConfiguration>
+      <serverConfigurations>
+      <server>
       <type>MeTL2015</type>
-			<name>devmetl.saintleo</name>
+      <name>devmetl.saintleo</name>
       <host>devmetl.saintleo.edu</host>
-			<xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
-    </server>
-    <server>
+      <xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
+      </server>
+      <server>
       <type>transientLoopback</type>
-    </server>
-    <server>
+      </server>
+      <server>
       <type>frontend</type>
-    </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppDomain>metl.adm.monash.edu.au</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	-->
-<!--
-  <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
+      </server>
+      </serverConfigurations>
+      <clientConfig>
+      <xmppDomain>metl.adm.monash.edu.au</xmppDomain>
+      <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+      </clientConfig>
+  -->
+  <!--
+      <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
+      <serverConfigurations>
+      <server>
       <type>MeTL2015</type>
-			<name>demo.stackable</name>
+      <name>demo.stackable</name>
       <host>demo.stackableregiments.com</host>
-			<xmppDomainName>local.temp</xmppDomainName>
-    </server>
-    <server>
+      <xmppDomainName>local.temp</xmppDomainName>
+      </server>
+      <server>
       <type>transientLoopback</type>
-    </server>
-    <server>
+      </server>
+      <server>
       <type>frontend</type>
-    </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
--->
-<!--  
-  <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
+      </server>
+      </serverConfigurations>
+      <clientConfig>
+      <xmppDomain>local.temp</xmppDomain>
+      <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+      </clientConfig>
+  -->
+  <!--
+      <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
+      <serverConfigurations>
+      <server>
       <type>MeTL2015</type>
-			<name>localAgainstDemo</name>
+      <name>localAgainstDemo</name>
       <host>demo.stackableregiments.com</host>
-			<xmppDomainName>local.temp</xmppDomainName>
-    </server>
-    <server>
+      <xmppDomainName>local.temp</xmppDomainName>
+      </server>
+      <server>
       <type>transientLoopback</type>
-    </server>
-    <server>
+      </server>
+      <server>
       <type>frontend</type>
-    </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	 -->
-	<securityProvider>
-		<stableKeyProvider /> 
-		<!--		<stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
-		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-		<!-- <staticKeyProvider ejabberdPassword="ejPass" yawsPassword="yawsPass" /> -->
-		<!--		<staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />-->
-	</securityProvider>
+      </server>
+      </serverConfigurations>
+      <clientConfig>
+      <xmppDomain>local.temp</xmppDomain>
+      <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+      </clientConfig>
+  -->
+  <securityProvider>
+    <stableKeyProvider />
+    <!--                <stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
+    <!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
+    <!-- <staticKeyProvider ejabberdPassword="ejPass" yawsPassword="yawsPass" /> -->
+    <!--                <staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />-->
+  </securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
-	<authentication>
-		<!--
-		<google clientId="644091314927-57jgi23haeebo1g43mqe0s0l470enlmk.apps.googleusercontent.com"/>
--->
-		<mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
-			<template>
-				<div>
-					<h2>Login to MeTL</h2>
-					<div>Please choose a password.  Use only alphanumeric characters.
-					</div>
-					<form id="loginForm">
-						<label for="usernameInput">Username</label>
-						<input type="text" id="usernameInput"></input>
-						<input type="hidden" id="passwordInput" value="mockPassword"></input>
-						<input type="submit" value="Login">c</input>
-					</form>
-				</div>
-			</template>
-		</mock>
+  <authentication>
+    <!--
+        <google clientId="644091314927-57jgi23haeebo1g43mqe0s0l470enlmk.apps.googleusercontent.com"/>
+    -->
+    <mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
+      <template>
+        <div>
+          <h2>Login to MeTL</h2>
+          <div>Please choose a password.  Use only alphanumeric characters.
+          </div>
+          <form id="loginForm">
+            <label for="usernameInput">Username</label>
+            <input type="text" id="usernameInput"></input>
+            <input type="hidden" id="passwordInput" value="mockPassword"></input>
+            <input type="submit" value="Login">c</input>
+          </form>
+        </div>
+      </template>
+    </mock>
   </authentication>
   <groupsProvider>
     <!-- as many groupsProviders can be used at a time -->
-		<selfGroups/>
-		<flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
-		<flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
-			<wantsSubgroups username="jeff.borden"/>
-			<wantsSubgroups username="greg.kunzweiler"/>
-		</flatFileGroups>
-		<flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
-	</groupsProvider>
-	<!--
-	<stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
--->
-	<clientAdaptors>
-		<embeddedXmppServer keystorePath="/stackable/analyticalmetlx/config/metl.jks" keystorePassword="helpme" />
-	</clientAdaptors>
-	<cloudConverterApiKey>SPn93VNlob69qd2d61piK57MjYv0B4gNkWg1E80GBsp6Yui4PLc8wVIjA-iSlEpbx9rjhVU_DetlBsgFZL-G9A</cloudConverterApiKey>
+    <selfGroups/>
+    <flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
+    <flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
+      <wantsSubgroups username="jeff.borden"/>
+      <wantsSubgroups username="greg.kunzweiler"/>
+    </flatFileGroups>
+    <flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
+  </groupsProvider>
+  <!--
+      <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
+  -->
+  <clientAdaptors>
+    <embeddedXmppServer keystorePath="/stackable/analyticalmetlx/config/metl.jks" keystorePassword="helpme" />
+  </clientAdaptors>
+  <cloudConverterApiKey>SPn93VNlob69qd2d61piK57MjYv0B4gNkWg1E80GBsp6Yui4PLc8wVIjA-iSlEpbx9rjhVU_DetlBsgFZL-G9A</cloudConverterApiKey>
 </serverConfiguration>

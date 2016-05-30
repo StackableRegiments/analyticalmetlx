@@ -127,6 +127,7 @@ var stanzaHandlers = {
     moveDelta:transformReceived,
     image:imageReceived,
     text:textReceived,
+    richText:richTextReceived,
     command:commandReceived,
     submission:submissionReceived,
     attendance:attendanceReceived,
@@ -169,6 +170,14 @@ function commandReceived(c){
         }
         else{
         }
+    }
+}
+function richTextReceived(t){
+    if(isUsable(t)){
+        boardContent.richTexts = boardContent.richTexts || {};
+        WorkQueue.enqueue(function(){
+            Modes.text.create(t);
+        });
     }
 }
 function textReceived(t){
@@ -557,10 +566,10 @@ function drawText(text){
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
         boardContext.drawImage(text.canvas,
-			       sBounds.screenPos.x,
-			       sBounds.screenPos.y,
-			       sBounds.screenWidth,
-			       sBounds.screenHeight);
+                               sBounds.screenPos.x,
+                               sBounds.screenPos.y,
+                               sBounds.screenWidth,
+                               sBounds.screenHeight);
     }
     catch(e){
         console.log("drawText exception",e);

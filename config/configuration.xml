@@ -7,13 +7,13 @@
       <name>demo.stackable</name>
       <host>demo.stackableregiments.com</host>
       <meggleUrl>unused</meggleUrl>
-			<xmppDomainName>local.temp</xmppDomainName>
-			<httpUsername>crying_horse</httpUsername>
-			<httpPassword>bacon_sandwich<httpPassword>
-			<messageBusUsernamePrefix>ejMbUser</messageBusUsernamePrefix>
-			<messageBusPassword>fred</messageBusPassword>
-			<conversationListenerUsernamePrefix>ejClUser</conversationListenerUsernamePrefix>
-			<conversationListenerPassword>fred</conversationListenerPassword>
+      <xmppDomainName>local.temp</xmppDomainName>
+      <httpUsername>crying_horse</httpUsername>
+      <httpPassword>bacon_sandwich<httpPassword>
+      <messageBusUsernamePrefix>ejMbUser</messageBusUsernamePrefix>
+      <messageBusPassword>fred</messageBusPassword>
+      <conversationListenerUsernamePrefix>ejClUser</conversationListenerUsernamePrefix>
+      <conversationListenerPassword>fred</conversationListenerPassword>
     </server>
     <server>
       <type>transientLoopback</type>
@@ -21,29 +21,29 @@
     <server>
       <type>frontend</type>
     </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppHost>demo.stackableregiments.com</xmppHost>
-		<xmppPort>5222</xmppPort>
-		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>01234567</cryptoKey>
-		<cryptoIV>01234567</cryptoIV>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	<securityProvider>
-		<!--		<stableKeyProvider localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/>-->
-		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-		<staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />
-	</securityProvider>
+  </serverConfigurations>
+  <clientConfig>
+    <xmppHost>demo.stackableregiments.com</xmppHost>
+    <xmppPort>5222</xmppPort>
+    <xmppDomain>local.temp</xmppDomain>
+    <conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
+    <webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
+    <thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
+    <resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
+    <historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
+    <structureDirectory>Structure</structureDirectory>
+    <resourceDirectory>Resources</resourceDirectory>
+    <uploadPath>upload_nested.yaws</uploadPath>
+    <primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+    <cryptoKey>01234567</cryptoKey>
+    <cryptoIV>01234567</cryptoIV>
+    <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+  </clientConfig>
+  <securityProvider>
+    <!--                <stableKeyProvider localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/>-->
+    <!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
+    <staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />
+  </securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
   <authentication>
     <!-- only one authenticator can be used at a time -->
@@ -86,7 +86,7 @@
     </saml>
     <!--
         <casAuthenticator domain="metlx" baseUrl="http://refer.adm.monash.edu.au:11000/cas"/>
-    -->
+        -->
   </authentication>
   <groupsProvider>
     <!-- as many groupsProviders can be used at a time -->
