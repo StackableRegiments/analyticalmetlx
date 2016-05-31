@@ -664,6 +664,8 @@ var Modes = (function(){
         text:(function(){
             var texts = [];
             var noop = function(){};
+            var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector;
+
             var createBlankText = function(screenPos){
                 var w = 150;
                 var h = 50;
@@ -680,6 +682,26 @@ var Modes = (function(){
                 });
                 return t;
             };
+            $(function(){
+                fontFamilySelector = $("#fontFamilySelector");
+                fontSizeSelector = $("#fontSizeSelector");
+                fontColorSelector = $("#fontColorSelector");
+                fontBoldSelector = $("#fontBoldSelector");
+                fontItalicSelector = $("#fontItalicSelector");
+                fontUnderlineSelector = $("#fontUnderlineSelector");
+                var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
+                var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
+                var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
+                Fonts.getAllFamilies().map(function(family){
+                    fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
+                });
+                Fonts.getAllSizes().map(function(size){
+                    fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
+                });
+                Colors.getAllNamedColors().map(function(color){
+                    fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
+                });
+            });
             return {
                 create:function(t){
                     var doc = carota.editor.create(
@@ -697,16 +719,27 @@ var Modes = (function(){
                                 doc.position.y+fb.h];
                         }
                     });
+                    doc.selectionChanged(function(formatReport){
+                        var format = formatReport();
+                        fontBoldSelector.toggleClass("active",format.bold == true);
+                        fontItalicSelector.toggleClass("active",format.italic == true);
+                        fontUnderlineSelector.toggleClass("active",format.underline == true);
+                        fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
+                        fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
+                        fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
+                    });
                     doc.load(t.runs);
                     t.doc = doc;
-		    boardContent.richTexts = boardContent.richTexts || {};
+                    boardContent.richTexts = boardContent.richTexts || {};
                     boardContent.richTexts[t.identity] = t;
-		    return t;
+                    return t;
                 },
                 draw:function(t){
                     carota.editor.paint(board[0],t.doc,true);
                 },
                 activate:function(){
+
+
                     var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;

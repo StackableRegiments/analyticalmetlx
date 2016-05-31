@@ -930,14 +930,15 @@
                     var s = scale();
                     ctx.translate(screenPos.x,screenPos.y);
                     ctx.scale(s,s);
-		    /*
-                    if(doc.isActive){
-                        var bounds = doc.frame.bounds();
-                        ctx.strokeStyle = 'black';
-                        ctx.lineWidth = 0.5;
-                        ctx.strokeRect(0,0,bounds.w,bounds.h);
-                    }
-		     */
+                    /*
+                     Debugging around the hitbox
+                     if(doc.isActive){
+                     var bounds = doc.frame.bounds();
+                     ctx.strokeStyle = 'black';
+                     ctx.lineWidth = 0.5;
+                     ctx.strokeRect(0,0,bounds.w,bounds.h);
+                     }
+                     */
                     doc.draw(ctx, output);
                     if(doc.isActive){
                         doc.drawSelection(ctx, hasFocus);
@@ -1314,26 +1315,26 @@
                         textArea.focus();
                     };
 
+                    /*The editor must not take these events itself because the master canvas is listening for them and there will be inconsistent information.  MeTL will hand the events through, having corrected for world to screen positioning.  Mousemove is therefore not available*/
                     /*
                      registerMouseEvent('mousedown', doc.mousedownHandler);
                      registerMouseEvent('mouseup', doc.mouseupHandler);
 
                      registerMouseEvent('dblclick', doc.dblclickHandler);
-                     */
-                    /*The editor must not take these events itself because the master canvas is listening for them and there will be inconsistent information.  MeTL will hand the events through, having corrected for world to screen positioning*/
 
-                    registerMouseEvent('mousemove', function(node) {
-                        if (selectDragStart !== null) {
-                            if (node) {
-                                focusChar = node.ordinal;
-                                if (selectDragStart > node.ordinal) {
-                                    doc.select(node.ordinal, selectDragStart);
-                                } else {
-                                    doc.select(selectDragStart, node.ordinal);
-                                }
-                            }
-                        }
-                    });
+                     registerMouseEvent('mousemove', function(node) {
+                     if (selectDragStart !== null) {
+                     if (node) {
+                     focusChar = node.ordinal;
+                     if (selectDragStart > node.ordinal) {
+                     doc.select(node.ordinal, selectDragStart);
+                     } else {
+                     doc.select(selectDragStart, node.ordinal);
+                     }
+                     }
+                     }
+                     });
+                     */
 
                     var nextCaretToggle = new Date().getTime(),
                         focused = false,
@@ -2221,7 +2222,7 @@
                 exports.defaultFormatting = {
                     size: 30,
                     font: 'sans-serif',
-                    color: 'black',
+                    color: '#000000',
                     bold: false,
                     italic: false,
                     underline: false,
