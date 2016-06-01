@@ -701,6 +701,32 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
+                var toggleFormattingProperty = function(prop){
+                    return function(){
+                        _.each(boardContent.richTexts,function(t){
+                            if(t.doc.isActive){
+                                var selRange = t.doc.selectedRange();
+                                selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
+                            }
+                        });
+                    };
+                }
+                var setFormattingProperty = function(prop){
+                    return function(){
+                        var newValue = $(this).val();
+                        _.each(boardContent.richTexts,function(t){
+                            if(t.doc.isActive){
+                                t.doc.selectedRange().setFormatting(prop,newValue);
+                            }
+                        });
+                    }
+                };
+                fontBoldSelector.click(toggleFormattingProperty("bold"));
+                fontItalicSelector.click(toggleFormattingProperty("italic"));
+                fontUnderlineSelector.click(toggleFormattingProperty("underline"));
+                fontFamilySelector.change(setFormattingProperty("font"));
+                fontSizeSelector.change(setFormattingProperty("size"));
+                fontColorSelector.change(setFormattingProperty("color"));
             });
             return {
                 create:function(t){
@@ -738,8 +764,6 @@ var Modes = (function(){
                     carota.editor.paint(board[0],t.doc,true);
                 },
                 activate:function(){
-
-
                     var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;
