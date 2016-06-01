@@ -223,8 +223,8 @@ object StatelessHtml extends Stemmer with Logger {
   def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
     val themes = List(
-      history.collect{case t:MeTLText => t}.map(t => Theme(t.author,t.text)).toList,
-      history.collect{case i:MeTLInk => i}.groupBy(_.author).flatMap{
+      history.getTexts.map(t => Theme(t.author,t.text)).toList,
+      (history.getInks ::: history.getHighlighters).groupBy(_.author).flatMap{
         case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
       }).flatten
     debug(themes)
