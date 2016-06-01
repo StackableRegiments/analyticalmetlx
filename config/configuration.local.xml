@@ -108,7 +108,6 @@
 		<!-- <staticKeyProvider ejabberdPassword="examplePassword" yawsPassword="examplePassword" /> -->
 		<!--		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />-->
 	</securityProvider>
-  <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
 	<authentication>
 		<!--
 		<google clientId="exampleGoogleClientId"/>
@@ -130,7 +129,6 @@
 		</mock>
   </authentication>
   <groupsProvider>
-    <!-- as many groupsProviders can be used at a time -->
 		<selfGroups/>
 		<flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
 		<flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
@@ -139,9 +137,6 @@
 		</flatFileGroups>
 		<flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
 	</groupsProvider>
-	<!--
-	<stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
--->
 	<clientAdaptors>
 		<embeddedXmppServer keystorePath="exampleKeystorePath" keystorePassword="exampleKeystorePassword" />
 	</clientAdaptors>

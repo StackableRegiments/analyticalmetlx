@@ -1,5 +1,4 @@
 <serverConfiguration>
-  <!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
   <defaultServerConfiguration>saintleo</defaultServerConfiguration>
   <serverConfigurations>
     <server>
@@ -40,13 +39,9 @@
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	<securityProvider>
-		<!--		<stableKeyProvider localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/>-->
-		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
 		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />
 	</securityProvider>
-  <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
   <authentication>
-    <!-- only one authenticator can be used at a time -->
     <saml>
       <serverScheme>https</serverScheme>
       <serverName>devmetl.saintleo.edu</serverName>
@@ -84,12 +79,8 @@
         <eligibleGroup samlAttribute="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" groupType="ou" />
       </eligibleGroups>
     </saml>
-    <!--
-        <casAuthenticator domain="metlx" baseUrl="http://refer.adm.monash.edu.au:11000/cas"/>
-    -->
   </authentication>
   <groupsProvider>
-    <!-- as many groupsProviders can be used at a time -->
     <selfGroups/>
     <flatFileGroups format="stLeo" location="" refreshPeriod=""/>
     <flatFileGroups format="globalOverrides" location="" refreshPeriod=""/>
