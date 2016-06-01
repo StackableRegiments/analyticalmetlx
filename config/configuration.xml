@@ -8,12 +8,12 @@
       <host>demo.stackableregiments.com</host>
       <meggleUrl>unused</meggleUrl>
       <xmppDomainName>local.temp</xmppDomainName>
-      <httpUsername>crying_horse</httpUsername>
-      <httpPassword>bacon_sandwich<httpPassword>
-      <messageBusUsernamePrefix>ejMbUser</messageBusUsernamePrefix>
-      <messageBusPassword>fred</messageBusPassword>
-      <conversationListenerUsernamePrefix>ejClUser</conversationListenerUsernamePrefix>
-      <conversationListenerPassword>fred</conversationListenerPassword>
+      <httpUsername>exampleUsername</httpUsername>
+      <httpPassword>examplePassword<httpPassword>
+      <messageBusUsernamePrefix>exampleUsername</messageBusUsernamePrefix>
+      <messageBusPassword>examplePassword</messageBusPassword>
+      <conversationListenerUsernamePrefix>exampleUsername</conversationListenerUsernamePrefix>
+      <conversationListenerPassword>examplePassword</conversationListenerPassword>
     </server>
     <server>
       <type>transientLoopback</type>
@@ -35,14 +35,14 @@
     <resourceDirectory>Resources</resourceDirectory>
     <uploadPath>upload_nested.yaws</uploadPath>
     <primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-    <cryptoKey>01234567</cryptoKey>
-    <cryptoIV>01234567</cryptoIV>
+    <cryptoKey>exampleKey</cryptoKey>
+    <cryptoKey>exampleIV</cryptoIV>
     <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
   </clientConfig>
   <securityProvider>
     <!--                <stableKeyProvider localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/>-->
     <!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-    <staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />
+    <staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />
   </securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
   <authentication>
@@ -74,9 +74,9 @@
         <route>quizzes</route>
       </protectedRoutes>
       <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
-      <keystorePath>adfs.jks</keystorePath>
-      <keystorePassword>helpme</keystorePassword>
-      <keystorePrivateKeyPassword>password</keystorePrivateKeyPassword>
+      <keystorePath>exampleKeystorePath</keystorePath>
+      <keystorePassword>exampleKeystorePassword</keystorePassword>
+      <keystorePrivateKeyPassword>exampleKeystorePassword</keystorePrivateKeyPassword>
       <informationAttributes>
         <informationAttribute samlAttribute="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" attributeType="email" />
       </informationAttributes>

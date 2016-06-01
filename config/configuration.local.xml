@@ -113,14 +113,9 @@
     <stableKeyProvider />
     <!--                <stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
     <!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-    <!-- <staticKeyProvider ejabberdPassword="ejPass" yawsPassword="yawsPass" /> -->
-    <!--                <staticKeyProvider ejabberdPassword="fred" yawsUsername="crying_horse" yawsPassword="bacon_sandwich" />-->
   </securityProvider>
   <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
   <authentication>
-    <!--
-        <google clientId="644091314927-57jgi23haeebo1g43mqe0s0l470enlmk.apps.googleusercontent.com"/>
-    -->
     <mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
       <template>
         <div>
@@ -151,7 +146,7 @@
       <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
   -->
   <clientAdaptors>
-    <embeddedXmppServer keystorePath="/stackable/analyticalmetlx/config/metl.jks" keystorePassword="helpme" />
+    <embeddedXmppServer keystorePath="exampleKeystorePath" keystorePassword="exampleKeystorePassword" />
   </clientAdaptors>
-  <cloudConverterApiKey>SPn93VNlob69qd2d61piK57MjYv0B4gNkWg1E80GBsp6Yui4PLc8wVIjA-iSlEpbx9rjhVU_DetlBsgFZL-G9A</cloudConverterApiKey>
+  <cloudConverterApiKey>exampleCloudConverterApiKey</cloudConverterApiKey>
 </serverConfiguration>

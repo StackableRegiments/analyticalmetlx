@@ -40,7 +40,7 @@ object CanvasContentAnalysis extends Logger {
     }.toList)
   def thematize(phrases:List[String]) = {
     val api = "textanalysis.p.mashape.com/textblob-noun-phrase-extraction"
-    val keyValue = "Qm1rX4gNL4mshC888MqhPShOQYcQp1wnwgOjsn7XSceLrYy9UT"
+    val keyValue = "exampleApiKey"
 
     val req = host(api).secure << Map(
       "text" -> phrases.mkString(",")
@@ -69,7 +69,7 @@ object CanvasContentAnalysis extends Logger {
     }
     else{
       debug("Loading themes for %s strokes".format(inks.size))
-      val myScriptKey = "1b822746-8aa1-4b9c-8437-419f15ba71b4"
+      val myScriptKey = "exampleApiKey"
       val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
 
       val json = JObject(List(
