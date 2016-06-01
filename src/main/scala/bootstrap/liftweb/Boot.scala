@@ -18,34 +18,53 @@ object Boot{
     ("Cache-Control","public, max-age=%s".format(ninetyDays)),
     ("Pragma","public")
   )
+  val noCache = List(
+    ("Cache-Control","private, no-cache, max-age=0"),
+    ("Pragma","private")
+  )
 }
 
-class Boot {
-  def boot {
-    println("Boot begins")
+class Boot extends Logger {
+   def boot {
+    trace("Boot begins")
     LiftRules.addToPackages("com.metl")
 
-    LiftRules.allowParallelSnippets.session.set(true)
-    LiftRules.maxConcurrentRequests.session.set((r:Req)=>1000)
-
-    LiftRules.cometRequestTimeout = Full(25)
-
-    println("Config begins")
+    trace("Config begins")
     // this starts up our system - populates serverConfigurations, attaches CAS, attaches RestHelpers, etc.
     MeTLXConfiguration.initializeSystem
-    println("Routing begins")
+    trace("Routing begins")
     val defaultHeaders = LiftRules.defaultHeaders
+    val isDebug = Props.mode match {
+      case Props.RunModes.Production => false
+      case Props.RunModes.Staging => false
+      case Props.RunModes.Pilot => false
+      case _ => true
+    }
     LiftRules.defaultHeaders = {
-      case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.cacheStrongly
+      case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.noCache
       case (_, Req("proxyDataUri"::_, _, _)) => Boot.cacheStrongly
       case (_, Req("proxy"::_, _, _)) => Boot.cacheStrongly
+      case (_, Req("static" ::_,_,_)) => Boot.noCache
       case any => defaultHeaders(any)
     }
-
+    LiftRules.supplementalHeaders.default.set(List(
+      ("Access-Control-Allow-Origin", "*"),
+      ("Access-Control-Allow-Credentials", "true"),
+      ("Access-Control-Allow-Methods", "GET, OPTIONS"),
+      ("Access-Control-Allow-Headers", "WWW-Authenticate,Keep-Alive,User-Agent,X-Requested-With,Cache-Control,Content-Type")
+    ))
+    LiftRules.attachResourceId = {
+      if (isDebug){
+        s => "%s?%s".format(s,nextFuncName)
+      } else {
+        val prodRunId = nextFuncName
+        s => "%s?%s".format(s,prodRunId)
+      }
+    }
     LiftRules.passNotFoundToChain = false
     LiftRules.uriNotFound.prepend {
       case (Req("static":: rest,_,_),failure) => {
-        println("staticResource uriNotFound: %s".format(rest))
+        debug("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
       case _ => NotFoundAsResponse(RedirectResponse("/"))
@@ -59,15 +78,22 @@ class Boot {
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
       //Widget
       Menu(Loc("Analytical widget","widget" :: Nil,"Widgets")),
+      //Menu(Loc("Organisational view","admin" :: Nil,"Organisation admin")),
+      //Hybrid textboxing
+      Menu(Loc("HTML embed layer","textbox" :: Nil,"Textbox")),
       //FutureMeTL
       Menu(Loc("Future","future" :: Nil,"Future MeTL")),
       //MeTLX
       Menu(Loc("Home","index" :: Nil,"Home")),
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
+      //Menu(Loc("MeTL Collaborative Board","simpleBoard" :: Nil,"MeTL in a browser")),
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
       //WebMeTL
+      Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
+      Menu(Loc("Import Powerpoint","importPowerpoint" :: Nil,"Import Powerpoint",Hidden)),
+      Menu(Loc("WebMeTL Conversation search","conversations" :: Nil,"Conversations",Hidden)),
       Menu(Loc("Slide","slide" :: Nil,"Slide",Hidden)),
       Menu(Loc("SlidePrev","slidePrev" :: Nil,"Previous Slide",Hidden)),
       Menu(Loc("SlideNext","slideNext" :: Nil,"Next Slide",Hidden)),
@@ -81,6 +107,6 @@ class Boot {
     LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
-    println("Boot ends")
+    trace("Boot ends")
   }
 }

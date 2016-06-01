@@ -21,7 +21,7 @@ object QuizTemplates {
 }
 
 class QuizSnippet {
-  object server extends RequestVar[ServerConfiguration](Utils.prepareServerFromRequest)
+  object server extends RequestVar[ServerConfiguration](ServerConfiguration.default)
   object conversationId extends RequestVar[String](S.param("conversation").openOr(""))
   object slideId extends RequestVar[String](S.param("slide").openOr(""))
   object quizId extends RequestVar[String](S.param("quiz").openOr(""))
@@ -34,8 +34,8 @@ class QuizSnippet {
   def navigation:NodeSeq = (conversationId) match {
     case (cid) if (cid.length>0) => {
       Utils.navLinks(List(
-        Link("slidesLink","/slide?server=%s&conversation=%s&slide=%s".format(server.is.name,cid,slideId.is),"View slides"),
-        Link("quizzesLink","/quizzes?server=%s&conversation=%s&slide=%s".format(server.is.name,cid,slideId.is),"Quizzes")
+        Link("slidesLink","/slide?conversation=%s&slide=%s".format(cid,slideId.is),"View slides"),
+        Link("quizzesLink","/quizzes?conversation=%s&slide=%s".format(cid,slideId.is),"Quizzes")
       ))
     }
     case _ => NodeSeq.Empty
@@ -45,10 +45,10 @@ class QuizSnippet {
   def next(in:NodeSeq):NodeSeq = getNearbyQuizId(1).map(nextId => renderNext(nextId).apply(in)).openOr(in)
 
   private def renderPrevious(previousId:String) =
-    "#quizNavigationPrevious *" #> <a href={"/quiz?server=%s&conversation=%s&slide=%s&quiz=%s".format(server.is.name,conversationId.is,slideId.is,previousId)}><span>Previous quiz</span></a>
+    "#quizNavigationPrevious *" #> <a href={"/quiz?conversation=%s&slide=%s&quiz=%s".format(conversationId.is,slideId.is,previousId)}><span>Previous quiz</span></a>
 
   private def renderNext(nextId:String) =
-    "#quizNavigationNext *" #> <a href={"/quiz?server=%s&conversation=%s&slide=%s&quiz=%s".format(server.is.name,conversationId.is,slideId.is,nextId)}><span>Next quiz</span></a>
+    "#quizNavigationNext *" #> <a href={"/quiz?conversation=%s&slide=%s&quiz=%s".format(conversationId.is,slideId.is,nextId)}><span>Next quiz</span></a>
 
   private def getNearbyQuizId(offset:Int):Box[String] = (conversationId.is,quizId.is) match {
     case (cid,qid) if (cid.length>0 && qid.length>0) => {
@@ -88,7 +88,7 @@ class QuizSnippet {
       "#quizOptions *" #> {
         quiz.options.map(option => ResponseItem(option.name,option.text,option.color,userAnswer.map(qr => qr.answer == option.name).getOrElse(false))).foldLeft(NodeSeq.Empty)((acc,item) => acc ++ renderResponseItem(item).apply(QuizTemplates.quizOption))
       } &
-      "#quizImage *" #> quiz.url.map(qu => <img src={"/%s/quizImage/%s/%s".format(server.is.name,conversationId.is,quiz.id)} />).openOr(NodeSeq.Empty)
+      "#quizImage *" #> quiz.url.map(qu => <img src={"/quizImage/%s/%s".format(conversationId.is,quiz.id)} />).openOr(NodeSeq.Empty)
     }).getOrElse(ClearClearable)
   }
 
@@ -101,7 +101,7 @@ class QuizSnippet {
   ".quizOptionName *" #> item.name &
   ".quizOptionName [style]" #> "background-color: %s".format(ColorConverter.toHexString(item.color)) &
   ".quizOptionText *" #> item.text &
-  ".quizOptionAnchor [href]" #> "/%s/quizResponse/%s/%s/%s?slide=%s".format(server.is.name,conversationId.is,quizId.is,item.name,slideId.is)
+  ".quizOptionAnchor [href]" #> "/quizResponse/%s/%s/%s?slide=%s".format(conversationId.is,quizId.is,item.name,slideId.is)
 
   private def renderQuizError(message:String) = "#quizError *" #> Text(message)
   private def handleParamErrors:Box[CssSel] ={

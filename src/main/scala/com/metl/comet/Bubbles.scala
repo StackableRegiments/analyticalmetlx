@@ -44,7 +44,7 @@ case object HideAll
 case class RemoteSilentQuestionRecieved(questionId:String)
 case class RemoteQuestionRecieved(questionId:String)
 
-object BubbleConstants{
+object BubbleConstants extends Logger{
   //spec change has decided that it's not possible to vote a discussion point lower than zero
   setDefaultAdmins
   def setDefaultAdmins = {
@@ -70,7 +70,7 @@ object BubbleConstants{
     val canAddTopicMap = StackAdmin.canAddTopicsMap
     canAddTopicMap
   })
-  def fullAdmins = Stopwatch.time("BubbleConstants:fullAdmins",() => canAddTopicsData.get match {
+  def fullAdmins = Stopwatch.time("BubbleConstants:fullAdmins",canAddTopicsData.get match {
     case map:Map[String,Boolean] if map.keys.toList.length > 0 => map
     case _ => Map.empty[String,Boolean].withDefault((input:String) => false)
   })
@@ -120,7 +120,7 @@ object StackTemplateHolder{
   def clientMessageTemplate = if (Globals.isDevMode) getClientMessageTemplate else useClientMessageTemplate
 }
 
-class QuestionPresenter(val context:StackQuestion) extends Discussable(context,context) {
+class QuestionPresenter(val context:StackQuestion) extends Discussable(context,context) with Logger {
   override val id = context._id.is.toString
   val summaryId = "q%s".format(id)
   val about = context.about.is
@@ -253,7 +253,7 @@ class QuestionPresenter(val context:StackQuestion) extends Discussable(context,c
   }
 }
 
-case class Answer(parent:StackQuestion,context:StackAnswer) extends Discussable(parent,context) {
+case class Answer(parent:StackQuestion,context:StackAnswer) extends Discussable(parent,context) with Logger {
   lazy val about = context.about
   override val id = context.id.toString
   def update(discussionPoint:DiscussionPoint) = stackWorker ! WorkUpdateAnswer(parent,context,discussionPoint,timeticks)
@@ -375,7 +375,7 @@ case class Answer(parent:StackQuestion,context:StackAnswer) extends Discussable(
       "Link"
   }</a>)
 }
-case class Comment(parent:StackQuestion, context:StackComment) extends Discussable(parent,context) {
+case class Comment(parent:StackQuestion, context:StackComment) extends Discussable(parent,context) with Logger {
   private var commentsElement = nextFuncName
   override val id = context.id.toString
   lazy val about = context.about
@@ -509,7 +509,7 @@ object Discussable {
   val dateFormat = new SimpleDateFormat("""EEEE d/M, HH:mm""")
 }
 
-abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) extends Rated{
+abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) extends Rated with Logger {
   def activateNewInputBox(inputId:String,submitButtonId:String) = StackHelpers.activateNewInputBox(inputId,submitButtonId)
   def stackServer = StackServerManager.get(saveContext.teachingEvent.is)
   def stackWorker = StackServerManager.getWorker(saveContext.teachingEvent.is)
@@ -637,7 +637,7 @@ abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) ex
       })).apply(StackTemplateHolder.votingTemplate)
   }
 }
-trait StackRouter extends LiftActor with ListenerManager{
+trait StackRouter extends LiftActor with ListenerManager with Logger {
   def createUpdate = questions
   def questions:List[QuestionPresenter]
   def addQuestion(question:QuestionPresenter)
@@ -649,7 +649,7 @@ trait StackRouter extends LiftActor with ListenerManager{
         updateListeners(Silently(qp))
       })
     } catch {
-      case e:Throwable => println("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
+      case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
     }
   }
   def possiblyUpdateQuestionById(id:String) = {
@@ -660,28 +660,28 @@ trait StackRouter extends LiftActor with ListenerManager{
         updateListeners(qp)
       })
     } catch {
-      case e:Throwable => println("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
+      case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
     }
   }
   override def lowPriority = {
-    case r:RemoteSilentQuestionRecieved => Stopwatch.time("StackRouter:remoteSilentQuestionReceived",() => possiblyUpdateQuestionSilentlyById(r.questionId))
-    case r:RemoteQuestionRecieved => Stopwatch.time("StackRouter:remoteQuestionReceived",() => possiblyUpdateQuestionById(r.questionId))
-    case b:Bob=> Stopwatch.time("StackRouter:bob",()=>updateListeners(b))
-    case e:Emerge=> Stopwatch.time("StackRouter:emerge",()=>updateListeners(e))
-    case s:Silently=> Stopwatch.time("StackRouter:silently",()=>{
+    case r:RemoteSilentQuestionRecieved => Stopwatch.time("StackRouter:remoteSilentQuestionReceived",possiblyUpdateQuestionSilentlyById(r.questionId))
+    case r:RemoteQuestionRecieved => Stopwatch.time("StackRouter:remoteQuestionReceived",possiblyUpdateQuestionById(r.questionId))
+    case b:Bob=> Stopwatch.time("StackRouter:bob",updateListeners(b))
+    case e:Emerge=> Stopwatch.time("StackRouter:emerge",updateListeners(e))
+    case s:Silently=> Stopwatch.time("StackRouter:silently",{
       val qp = s.present
       //XMPPQuestionSyncActor ! QuestionSyncRequest(qp.location,qp.id,true)
     })
-    case d:Detail => Stopwatch.time("StackRouter:detail",()=>updateListeners(d))
-    case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",()=>{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
-    case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter",()=> {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
-    case other => println("StackRouter received unknown: %s".format(other))
+    case d:Detail => Stopwatch.time("StackRouter:detail",updateListeners(d))
+    case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
+    case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter", {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
+    case other => warn("StackRouter received unknown: %s".format(other))
   }
 }
-class StackServer(location:String) extends StackRouter {
+class StackServer(location:String) extends StackRouter with Logger{
   private var hasFetched = false
   private var evaluatedQuestions:List[QuestionPresenter] = List.empty[QuestionPresenter]
-  override def addQuestion(question:QuestionPresenter) = Stopwatch.time("StackServer:addQuestion",()=>{
+  override def addQuestion(question:QuestionPresenter) = Stopwatch.time("StackServer:addQuestion",{
     TopicServer ! TopicActivity(location)
     val otherQuestions = evaluatedQuestions.filterNot(q => q.id == question.id)
     if (!question.context.deleted.is)
@@ -689,7 +689,7 @@ class StackServer(location:String) extends StackRouter {
     else evaluatedQuestions = otherQuestions
   })
   def fetchQuestionsFromDB = StackQuestion.findAll("teachingEvent",location).map(new QuestionPresenter(_))
-  override def questions:List[QuestionPresenter] = Stopwatch.time("StackServer:questions",()=>{
+  override def questions:List[QuestionPresenter] = Stopwatch.time("StackServer:questions",{
     if (!hasFetched){
       evaluatedQuestions = fetchQuestionsFromDB.filterNot(_.context.deleted.is)
       hasFetched = true
@@ -720,10 +720,10 @@ case class WorkOpenQuestion(context:StackQuestion,who:String,session:Box[LiftSes
 case class WorkOpenAnswer(parentContext:StackQuestion,context:StackAnswer,who:String,session:Box[LiftSession],when:Long) extends OpenRequest
 case class WorkOpenComment(parentContext:StackQuestion,context:StackComment,who:String,session:Box[LiftSession],when:Long) extends OpenRequest
 
-class StackWorker(location:String) extends LiftActor {
+class StackWorker(location:String) extends LiftActor with Logger {
   private lazy val stackServer = StackServerManager.get(location)
   override def messageHandler = {
-    case WorkCreateQuestion(author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateQuestion",()=>{
+    case WorkCreateQuestion(author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateQuestion",{
       val q = StackQuestion.createRecord.about(DiscussionPoint(com.metl.model.Author(author), text)).teachingEvent(location).creationDate(timeticks).save
       val rep = Informal.createRecord.time(timeticks).protagonist(author).action(GainAction.MadeQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
@@ -731,7 +731,7 @@ class StackWorker(location:String) extends LiftActor {
       stackServer ! newQ
       StackOverflow.local(Detail(q._id.is.toString),author,location,session)
     })
-    case WorkCreateAnswerToQuestion(context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateAnswerToQuestion",()=>{
+    case WorkCreateAnswerToQuestion(context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateAnswerToQuestion",{
       val stackAnswer = StackAnswer(nextFuncName, context._id.is.toString,DiscussionPoint(com.metl.model.Author(author),text), List.empty[Vote], List.empty[StackComment], timeticks, Nil, Nil, false)
       context.addAnswer(stackAnswer)
       val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.is.author.name).action(GainAction.MadeAnswerOnStack).conversation(context.teachingEvent.is).question(context._id.is)
@@ -739,7 +739,7 @@ class StackWorker(location:String) extends LiftActor {
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s div".format(context.id))
     })
-    case WorkCreateCommentOnAnswer(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnAnswer",()=>{
+    case WorkCreateCommentOnAnswer(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnAnswer",{
       val stackComment = StackComment(nextFuncName,parent._id.is.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
       context.addComment(stackComment)
       StackOverflow.setCommentState(location,parent.id.toString,context.id,true,author,session)
@@ -748,7 +748,7 @@ class StackWorker(location:String) extends LiftActor {
       stackServer ! Emerge("#%s .comments".format(context.id))
       Reputation.accrue(rep)
     })
-    case WorkCreateCommentOnComment(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnComment",()=>{
+    case WorkCreateCommentOnComment(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnComment",{
       val stackComment = StackComment(nextFuncName,parent._id.is.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
       context.addComment(stackComment)
       StackOverflow.setCommentState(location,parent.id.toString,context.id,true,author,session)
@@ -757,85 +757,85 @@ class StackWorker(location:String) extends LiftActor {
       stackServer ! Emerge("#%s .comments".format(context.id))
       Reputation.accrue(rep)
     })
-    case WorkUpdateQuestion(context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateQuestion",()=>{
+    case WorkUpdateQuestion(context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateQuestion",{
       context.updateContent(discussionPoint.content)
       val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.is.author.name).action(GainAction.EditedQuestionOnStack).conversation(context.teachingEvent.is).question(context._id.is)
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
-    case WorkUpdateAnswer(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateAnswer",()=>{
+    case WorkUpdateAnswer(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateAnswer",{
       context.updateContent(discussionPoint.content)
       val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedAnswerOnStack).conversation(parent.teachingEvent.is).slide(parent.slideJid.is).question(parent._id.is)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
-    case WorkUpdateComment(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateComment",()=>{
+    case WorkUpdateComment(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateComment",{
       context.updateContent(discussionPoint)
       val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedCommentOnStack).conversation(parent.teachingEvent.is).slide(parent.slideJid.is).question(parent._id.is)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
-    case WorkVoteUpQuestion(context:StackQuestion,question:QuestionPresenter,who:String) => Stopwatch.time("StackWorker:workVoteUpQuestion",()=>{
+    case WorkVoteUpQuestion(context:StackQuestion,question:QuestionPresenter,who:String) => Stopwatch.time("StackWorker:workVoteUpQuestion",{
       if(question.voteUp(who)){
         stackServer ! Silently(new QuestionPresenter(context))
         stackServer ! BobUp(".%s .voteCount".format(question.summaryId))
       }
     })
-    case WorkVoteDownQuestion(context:StackQuestion,question:QuestionPresenter,who:String) => Stopwatch.time("StackWorker:workVoteDownQuestion",()=>{
+    case WorkVoteDownQuestion(context:StackQuestion,question:QuestionPresenter,who:String) => Stopwatch.time("StackWorker:workVoteDownQuestion",{
       if(question.voteDown(who)){
         stackServer ! Silently(new QuestionPresenter(context))
         stackServer ! BobDown(".%s .voteCount".format(question.summaryId))
       }
     })
-    case WorkVoteUpAnswer(parent:StackQuestion,context:StackAnswer,answer:Answer,who:String) => Stopwatch.time("StackWorker:workVoteUpAnswer",()=>{
+    case WorkVoteUpAnswer(parent:StackQuestion,context:StackAnswer,answer:Answer,who:String) => Stopwatch.time("StackWorker:workVoteUpAnswer",{
       if(answer.voteUp(who)){
         stackServer ! Silently(new QuestionPresenter(parent))
         stackServer ! BobUp(".%s .voteCount".format(context.id))
       }
     })
-    case WorkVoteDownAnswer(parent:StackQuestion,context:StackAnswer,answer:Answer,who:String) => Stopwatch.time("StackWorker:workVoteDownAnswer",()=>{
+    case WorkVoteDownAnswer(parent:StackQuestion,context:StackAnswer,answer:Answer,who:String) => Stopwatch.time("StackWorker:workVoteDownAnswer",{
       if(answer.voteDown(who)){
         stackServer ! Silently(new QuestionPresenter(parent))
         stackServer ! BobDown(".%s .voteCount".format(context.id))
       }
     })
-    case WorkVoteUpComment(parent:StackQuestion,context:StackComment,comment:Comment,who:String) => Stopwatch.time("StackWorker:workVoteUpComment",()=>{
+    case WorkVoteUpComment(parent:StackQuestion,context:StackComment,comment:Comment,who:String) => Stopwatch.time("StackWorker:workVoteUpComment",{
       if(comment.voteUp(who)){
         stackServer ! Silently(new QuestionPresenter(parent))
         stackServer ! BobUp(".%s .voteCount".format(context.id))
       }
     })
-    case WorkVoteDownComment(parent:StackQuestion,context:StackComment,comment:Comment,who:String) => Stopwatch.time("StackWorker:workVoteDownComment",()=>{
+    case WorkVoteDownComment(parent:StackQuestion,context:StackComment,comment:Comment,who:String) => Stopwatch.time("StackWorker:workVoteDownComment",{
       if(comment.voteDown(who)){
         stackServer ! Silently(new QuestionPresenter(parent))
         stackServer ! BobDown(".%s .voteCount".format(context.id))
       }
     })
-    case WorkDeleteQuestion(context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteQuestion",()=>{
+    case WorkDeleteQuestion(context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteQuestion",{
       context.delete
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s".format(context.id))
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.is.author.name).action(GainAction.DeletedQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
     })
-    case WorkDeleteAnswer(parent,context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteAnswer",()=>{
+    case WorkDeleteAnswer(parent,context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteAnswer",{
       context.delete
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s".format(context.id))
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.DeletedAnswerOnStack).conversation(location)
       Reputation.accrue(rep)
     })
-    case WorkDeleteComment(parent,context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteComment",()=>{
+    case WorkDeleteComment(parent,context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteComment",{
       context.delete
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s".format(context.id))
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.DeletedCommentOnStack).conversation(location)
       Reputation.accrue(rep)
     })
-    case other => println("stackWorker received unknown message: %s".format(other.toString))
+    case other => warn("stackWorker received unknown message: %s".format(other.toString))
   }
 }
 
@@ -866,14 +866,14 @@ object ExpansionStrategy{
 }
 object StackOverflow extends StackOverflow {
   def localOpenAction(a:OpenRequest):Unit = a match {
-    case WorkOpenQuestion(context,author,session,timeticks) => Stopwatch.time("StackWorker:workOpenQuestion",()=>{
+    case WorkOpenQuestion(context,author,session,timeticks) => Stopwatch.time("StackWorker:workOpenQuestion",{
       val id = context._id.toString
       val location = context.teachingEvent.is
       val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.is.author.name).action(GainAction.ViewedQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
       local(Detail(id),author,location,session)
     })
-    case WorkOpenAnswer(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenAnswer",()=>{
+    case WorkOpenAnswer(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenAnswer",{
       val contextId = context.id
       val parentId = parent._id.is.toString
       val location = parent.teachingEvent.is
@@ -883,7 +883,7 @@ object StackOverflow extends StackOverflow {
       val newState = !currentState
       setCommentState(location,parentId,contextId,newState,who,session)
     })
-    case WorkOpenComment(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenComment",()=>{
+    case WorkOpenComment(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenComment",{
       val contextId = context.id
       val parentId = parent._id.is.toString
       val location = parent.teachingEvent.is
@@ -893,7 +893,7 @@ object StackOverflow extends StackOverflow {
       val newState = !currentState
       setCommentState(location,parentId,contextId,newState,who,session)
     })
-    case other => println("StackOverflow:localOpenAction received unknown message: %s".format(other))
+    case other => warn("StackOverflow:localOpenAction received unknown message: %s".format(other))
   }
   private lazy val openedComments = new SynchronizedWriteMap[Tuple2[String,String],List[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],List[String]],true,(k:Tuple2[String,String]) => List.empty[String])
   def getOpenedComments(location:Tuple2[String,String]) = {
@@ -948,7 +948,7 @@ object StackOverflow extends StackOverflow {
   }
 }
 
-class StackOverflow extends CometActor with CometListener{
+class StackOverflow extends CometActor with CometListener with Logger {
   private var starting:Boolean = true
   private lazy val location = currentStack.is.teachingEventIdentity.is
   lazy val stackServer = StackServerManager.get(location)
@@ -964,8 +964,7 @@ class StackOverflow extends CometActor with CometListener{
   private var detailedQuestion:Box[QuestionPresenter] = Empty
   override def exceptionHandler = {
     case e => {
-      println("StackOverflow threw exception: %s".format(e))
-      e.printStackTrace
+      error("StackOverflow threw exception: %s".format(e))
     }
   }
 
@@ -1021,14 +1020,14 @@ class StackOverflow extends CometActor with CometListener{
     case anything => if (!starting) actUponLowPriority(anything)
   }
   def actUponLowPriority(a:Any):Unit = a match {
-    case BobUp(id)=> Stopwatch.time("Bubbles:bobUp",()=>partialUpdate(Call("bobUp",id)))
-    case BobDown(id)=> Stopwatch.time("Bubbles:bobDown",()=>partialUpdate(Call("bobDown",id)))
-    case Emerge(selector)=> Stopwatch.time("bubbles:emerge",()=>partialUpdate(Call("emerge",selector)))
-    case Silently(q)=> Stopwatch.time("Bubbles:silently",()=>acceptNewQuestion(q,true,silentlyUpdateDetailedQuestion _))
-    case SetExpansionState(q,l) => Stopwatch.time("Bubbles:setExpansionState",()=>partialUpdate(setClientSideExpansionState(q,l)))
-    case q:QuestionPresenter=> Stopwatch.time("Bubbles:questionPresenter",()=>partialUpdate(updateLocation & updateDetailedQuestion & updateSummaryFor(q)))
-    case qs:List[QuestionPresenter]=> Stopwatch.time("Bubbles:list[questionPresenter]",()=>partialUpdate(updateLocation & updateDetailedQuestion & updateQuestions))
-    case Detail(questionId,overrideShow) => Stopwatch.time("Bubbles:detail",()=>{
+    case BobUp(id)=> Stopwatch.time("Bubbles:bobUp",partialUpdate(Call("bobUp",id)))
+    case BobDown(id)=> Stopwatch.time("Bubbles:bobDown",partialUpdate(Call("bobDown",id)))
+    case Emerge(selector)=> Stopwatch.time("bubbles:emerge",partialUpdate(Call("emerge",selector)))
+    case Silently(q)=> Stopwatch.time("Bubbles:silently",acceptNewQuestion(q,true,silentlyUpdateDetailedQuestion _))
+    case SetExpansionState(q,l) => Stopwatch.time("Bubbles:setExpansionState",partialUpdate(setClientSideExpansionState(q,l)))
+    case q:QuestionPresenter=> Stopwatch.time("Bubbles:questionPresenter",partialUpdate(updateLocation & updateDetailedQuestion & updateSummaryFor(q)))
+    case qs:List[QuestionPresenter]=> Stopwatch.time("Bubbles:list[questionPresenter]",partialUpdate(updateLocation & updateDetailedQuestion & updateQuestions))
+    case Detail(questionId,overrideShow) => Stopwatch.time("Bubbles:detail",{
       val start = new Date().getTime
       AddAnswerDialog.map(_.done)
       AddCommentDialog.map(_.done)
@@ -1040,7 +1039,7 @@ class StackOverflow extends CometActor with CometListener{
       StackOverflow.setRequestedDetailedQuestion((currentUser.is,location),newDetailedQuestionId)
       partialUpdate(updateDetailedQuestion & setDefaultClientSideExpansionState)
     })
-    case unknown => println("StackOverflow: I do not know what to do with -> %s".format(unknown))
+    case unknown => warn("StackOverflow: I do not know what to do with -> %s".format(unknown))
   }
   def updateDetailedQuestion = {
     Call("$('#questionDetail').slideUp",
@@ -1062,7 +1061,7 @@ class StackOverflow extends CometActor with CometListener{
     case 1 => "Question"
     case _ => "Questions"
   }
-  def render = Stopwatch.time("Bubbles:render",()=>{
+  def render = Stopwatch.time("Bubbles:render",{
     partialUpdate(updateLocation & updateQuestions & updateDetailedQuestion)
     starting = false
     NodeSeq.Empty
@@ -1072,7 +1071,7 @@ class StackOverflow extends CometActor with CometListener{
     val summary = q.summaryHtml
     val internalQuestions = questions
     oldQuestions = internalQuestions.map(q => q.id)
-    Stopwatch.time("Bubbles:updateSummaryFor:jsCmds",()=>{
+    Stopwatch.time("Bubbles:updateSummaryFor:jsCmds",{
       Call("ensureId",q.summaryId) &
       Replace(q.summaryId,summary) &
       Call("bobUp", "#%s".format(q.summaryId)) &
@@ -1084,8 +1083,8 @@ class StackOverflow extends CometActor with CometListener{
   def updateQuestions = {
     val internalQuestions = questions
     oldQuestions = internalQuestions.map(q => q.id)
-    val renderedQuestions = Stopwatch.time("Bubbles:updateQuestions:summaries",()=>summaries(internalQuestions))
-    val res = Stopwatch.time("Bubbles:updateQuestions:jsCmds",()=>{SetHtml("headerQuestionCount", Text(internalQuestions.size.toString)) &
+    val renderedQuestions = Stopwatch.time("Bubbles:updateQuestions:summaries",summaries(internalQuestions))
+    val res = Stopwatch.time("Bubbles:updateQuestions:jsCmds",{SetHtml("headerQuestionCount", Text(internalQuestions.size.toString)) &
       SetHtml("pluralizedQuestionCount", Text(pluralize(internalQuestions.size))) &
       SetHtml("stackQuestions",
         expansion.value match{
@@ -1096,7 +1095,7 @@ class StackOverflow extends CometActor with CometListener{
     res
   }
 
-  override def fixedRender = Stopwatch.time("Bubbles:fixedRender",()=>{
+  override def fixedRender = Stopwatch.time("Bubbles:fixedRender",{
     setStartupQuestion
     "#teachersContainer *" #> BubbleConstants.teachers(location).map(teacher => <div class='teacher'>{teacher}</div>) &
     ".addChild *" #> {x:NodeSeq => addQuestion(x)}
@@ -1107,7 +1106,7 @@ class StackOverflow extends CometActor with CometListener{
     case JObject(List(JField("command",JString(PING_LATENCY)), JField("params",(JInt(start))))) =>{
       partialUpdate(Call("pongLatency",JInt(start)))
     }
-    case other => println("Stack did not understand: %s".format(other))
+    case other => warn("Stack did not understand: %s".format(other))
   }
   def pingLatency = Script(Function(PING_LATENCY,List.empty[String],jsonSend(PING_LATENCY,JsRaw("new Date().getTime()"))) & OnLoad(Call(PING_LATENCY)))
   def latencyGauge(x:NodeSeq) = {

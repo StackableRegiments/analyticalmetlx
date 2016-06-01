@@ -3,11 +3,12 @@ var Privacy = (function(){
     var setPrivacyIndicators = function(){
         $.each({privateMode:"PRIVATE",publicMode:"PUBLIC"},function(id,p){
             if (p == privacy){
-                $("#"+id).addClass("activePrivacy");
+                $("#"+id).addClass("activePrivacy active");
             } else {
-                $("#"+id).removeClass("activePrivacy");
+                $("#"+id).removeClass("activePrivacy active");
             }
         });
+				$("#currentlyBanned").text(Conversations.getIsBanned() == true ? "(banned because of inappropriate content)" : "");
         $("#currentPrivacyStatus").text(privacy == "PUBLIC"?
                                         "publicly" : "privately");
     };
@@ -37,27 +38,30 @@ var Privacy = (function(){
             $("#publicMode").addClass("disabledButton");
             attemptToSetPrivacy("PRIVATE");//You must be forced into private mode if the conversation changes mode under you
         }
+				setPrivacyIndicators();
     };
     var adjustButtonsToIndicateSelection = function(selection){
-        $.each(changePrivacyButtons,function(id,p){
-            var button = $("#"+id);
-            button.addClass("disabledButton");
-            if ("images" in selection){
-                if (_.any(selection.images,function(item){return item.privacy != p;})){
-                    button.removeClass("disabledButton");
+        if(selection){
+            $.each(changePrivacyButtons,function(id,p){
+                var button = $("#"+id);
+                button.addClass("disabledButton");
+                if ("images" in selection){
+                    if (_.some(selection.images,function(item){return item.privacy != p;})){
+                        button.removeClass("disabledButton");
+                    }
                 }
-            }
-            if ("inks" in selection){
-                if (_.any(selection.inks,function(item){return item.privacy != p;})){
-                    button.removeClass("disabledButton");
+                if ("inks" in selection){
+                    if (_.some(selection.inks,function(item){return item.privacy != p;})){
+                        button.removeClass("disabledButton");
+                    }
                 }
-            }
-            if ("texts" in selection){
-                if (_.any(selection.texts,function(item){return item.privacy != p;})){
-                    button.removeClass("disabledButton");
+                if ("texts" in selection){
+                    if (_.some(selection.texts,function(item){return item.privacy != p;})){
+                        button.removeClass("disabledButton");
+                    }
                 }
-            }
-        });
+            });
+        }
     };
     $(function(){
         $.each(privacyButtons,function(id,p){
@@ -71,13 +75,15 @@ var Privacy = (function(){
                     if(Modes.currentMode == Modes.select){
                         var republished = batchTransform();
                         republished.newPrivacy = p;
-                        republished.imageIds = _.pluck(Modes.select.selected.images,"identity");
-                        republished.textIds = _.pluck(Modes.select.selected.texts,"identity");
-                        republished.inkIds = _.pluck(Modes.select.selected.inks,"identity");
-                        sendStanza(republished);
+                        republished.imageIds = _.map(Modes.select.selected.images,"identity");
+                        republished.textIds = _.map(Modes.select.selected.texts,"identity");
+                        republished.inkIds = _.map(Modes.select.selected.inks,"identity");
+                        if (_.size(republished.imageIds) > 0 || _.size(republished.textIds) > 0 || _.size(republished.inkIds) > 0){
+                            sendStanza(republished);
+                        }
                     }
                 }
-            });
+            }).addClass("disabledButton");
         });
         adjustPrivacyForConversation();
         setPrivacyIndicators();
@@ -89,6 +95,7 @@ var Privacy = (function(){
     Progress.onConversationJoin["privacy"] = function(){
         adjustPrivacyForConversation();
         attemptToSetPrivacy("PUBLIC");
+				setPrivacyIndicators();
     }
     Progress.onSelectionChanged["privacy"] = adjustButtonsToIndicateSelection;
     return {

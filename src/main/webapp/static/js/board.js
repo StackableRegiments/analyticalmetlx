@@ -46,7 +46,7 @@ function strokeCollected(spoints){
 
         var currentSlide = Conversations.getCurrentSlideJid();
         var ink = {
-            thickness : Modes.draw.drawingAttributes.width,
+            thickness : scaleScreenToWorld(Modes.draw.drawingAttributes.width),
             color:[Modes.draw.drawingAttributes.color,255],
             type:"ink",
             author:UserSettings.getUsername(),
@@ -128,8 +128,16 @@ var stanzaHandlers = {
     image:imageReceived,
     text:textReceived,
     command:commandReceived,
-    submission:submissionReceived
+    submission:submissionReceived,
+    attendance:attendanceReceived,
+    file:fileReceived
 };
+function fileReceived(file){
+    //doing nothing with files yet.
+}
+function attendanceReceived(attendance){
+    //doing nothing with attendances for the moment.
+}
 function submissionReceived(submission){
     Submissions.processSubmission(submission);
 }
@@ -139,7 +147,7 @@ function commandReceived(c){
             return;
         }
         var ps = c.parameters.map(parseFloat);
-        if(_.any(ps,isNaN)){
+        if(_.some(ps,isNaN)){
             console.log("Can't follow teacher to",c);
             return;
         }
@@ -148,12 +156,12 @@ function commandReceived(c){
         }
         if(Conversations.getIsSyncedToTeacher()){
             var f = function(){
-                console.log("syncing to teacher view");
                 zoomToPage();
                 TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
             };
             if(UserSettings.getIsInteractive()){
-                WorkQueue.enqueue(f);
+                // interactive users don't chase the teacher's viewbox, only projectors do.
+                //    WorkQueue.enqueue(f);
             }
             else{
                 f();
@@ -165,7 +173,6 @@ function commandReceived(c){
 }
 function textReceived(t){
     try{
-        console.log(sprintf("textReceived [%s]",t.text),t);
         if(isUsable(t)){
             boardContent.texts[t.identity] = t;
             prerenderText(t);
@@ -273,7 +280,7 @@ function transformReceived(transform){
             "incorporateBoardBounds":incBoardBounds
         };
     })();
-    if(transform.newPrivacy != "not_set"){
+    if(transform.newPrivacy != "not_set" && !transform.isDeleted){
         var p = transform.newPrivacy;
         op += "Became "+p;
         var setPrivacy = function(ink){
@@ -471,7 +478,6 @@ function transformReceived(transform){
     blit();
 }
 function moveReceived(move){
-    console.log("moveReceived",move);
     updateStatus(sprintf("Moving %s, %s, %s",
                          Object.keys(move.images).length,
                          Object.keys(move.texts).length,
@@ -491,7 +497,6 @@ function deleteInk(inks,privacy,id){
     if(id in boardContent[inks]){
         var ink = boardContent[inks][id];
         if(ink.privacy.toUpperCase() == privacy.toUpperCase()){
-            console.log("Deleting ink",inks,id);
             delete boardContent[inks][id];
         }
     }
@@ -517,7 +522,7 @@ function dirtyInkReceived(dirtyInk){
     blit();
 }
 function isInClearSpace(bounds){
-    return !_.any(visibleBounds,function(onscreenElement){
+    return !_.some(visibleBounds,function(onscreenElement){
         return intersectRect(onscreenElement,bounds);
     });
 }
@@ -540,8 +545,6 @@ function drawImage(image){
             visibleBounds.push(image.bounds);
             var borderW = sBounds.screenWidth * 0.10;
             var borderH = sBounds.screenHeight * 0.10;
-            //                                  prerenderImage(image);
-            //                                  boardContext.drawImage(image.canvas, 0, 0, image.canvas.width, image.canvas.height, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
             boardContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
         }
     }
@@ -553,7 +556,11 @@ function drawText(text){
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-        boardContext.drawImage(text.canvas,sBounds.screenPos.x,sBounds.screenPos.y,sBounds.screenWidth,sBounds.screenHeight);
+        boardContext.drawImage(text.canvas,
+			       sBounds.screenPos.x,
+			       sBounds.screenPos.y,
+			       sBounds.screenWidth,
+			       sBounds.screenHeight);
     }
     catch(e){
         console.log("drawText exception",e);
@@ -578,13 +585,11 @@ function imageReceived(image){
         }
         image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
         incorporateBoardBounds(image.bounds);
-        console.log("imageReceived",image);
         boardContent.images[image.identity]  = image;
         updateTracking(image.identity);
         prerenderImage(image);
         WorkQueue.enqueue(function(){
             if(isInClearSpace(image.bounds)){
-                console.log("Drawing image in clear space");
                 try {
                     drawImage(image);
                 } catch(e){
@@ -622,6 +627,10 @@ function inkReceived(ink){
         });
     }
 }
+function takeControlOfViewbox(){
+    delete Progress.onBoardContentChanged.autoZooming;
+    UserSettings.setUserPref("followingTeacherViewbox",true);
+}
 function zoomToFit(){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
     requestedViewboxWidth = boardContent.width;
@@ -629,7 +638,7 @@ function zoomToFit(){
     IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height);
 }
 function zoomToOriginal(){
-    delete Progress.onBoardContentChanged.autoZooming;
+    takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
@@ -637,7 +646,7 @@ function zoomToOriginal(){
     IncludeView.specific(0,0,boardWidth,boardHeight);
 }
 function zoomToPage(){
-    delete Progress.onBoardContentChanged.autoZooming;
+    takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;

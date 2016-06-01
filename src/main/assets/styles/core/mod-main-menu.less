@@ -1,0 +1,43 @@
+.backstage-menu {
+    position: relative;
+    top: -500px;
+    left: 0;
+    width: 100%;
+    z-index: 3;
+    transition-property: top;
+	transition-duration: .5s;
+	transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+    background-color:@menu-bg;
+    box-shadow:  0 1px 1px rgba(0,0,0,0.3);
+}
+.backstage-menu.active {
+    top:0;
+}
+.main-menu {
+    position:absolute;
+    top:0;
+    left:0;
+    z-index: 3;
+}
+.btn-menu {
+    .nm;
+}
+.main-menu-container {
+    button {
+        background-color:@block-bg;
+        .nm;
+        margin-bottom:1px;
+        width:100%;
+        text-align:left;
+        z-index:3;
+    }
+}
+.closeButton {
+    .btn-raised;
+    background-color:@subtool-bg;
+}
+.backstage {
+    .ptb;
+    .plr;
+    background-color:@block-bg;
+}

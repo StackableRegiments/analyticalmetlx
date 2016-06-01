@@ -3,31 +3,44 @@ package com.metl.model
 import dispatch._, Defaults._
 import com.metl.data._
 import net.liftweb.json._
+import net.liftweb.common.Logger
 
 case class Theme(author:String,text:String)
 
-object CanvasContentAnalysis {
+case class Chunked(timeThreshold:Int, distanceThreshold:Int, chunksets:Seq[Chunkset])
+case class Chunkset(author:String,chunks:Seq[Chunk]){
+  val start = chunks.map(_.start).min
+  val end = chunks.map(_.end).max
+}
+case class Chunk(activity:Seq[MeTLCanvasContent]){
+  val start = activity.headOption.map(_.timestamp).getOrElse(0L)
+  val end = activity.reverse.headOption.map(_.timestamp).getOrElse(0L)
+  val milis = end - start
+}
+
+object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
   val analysisThreshold = 5
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
-  def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = es.sortBy(_.timestamp).groupBy(_.author).map {
-    case (author,items) => {
-      items.foldLeft((0L,List.empty[List[MeTLCanvasContent]])){
-        case ((last,runs@(head :: tail)),item) => {
-          if((item.timestamp - last) < timeThreshold){
-            (item.timestamp, (item :: head) :: tail)
+  def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
+    es.sortBy(_.timestamp).groupBy(_.author).map {
+      case (author,items) => {
+        Chunkset(author, items.foldLeft((0L,List.empty[List[MeTLCanvasContent]])){
+          case ((last,runs@(head :: tail)),item) => {
+            if((item.timestamp - last) < timeThreshold){
+              (item.timestamp, (item :: head) :: tail)
+            }
+            else{
+              (item.timestamp, List(item) :: runs)
+            }
           }
-          else{
-            (item.timestamp, List(item) :: runs)
-          }
-        }
-        case ((last,runs),item) => (item.timestamp, List(item) :: runs)
+          case ((last,runs),item) => (item.timestamp, List(item) :: runs)
+        }._2.map(run => Chunk(run.reverse)))
       }
-    }._2.map(_.reverse)
-  }
+    }.toList)
   def thematize(phrases:List[String]) = {
     val api = "textanalysis.p.mashape.com/textblob-noun-phrase-extraction"
-    val keyValue = "exampleApiKey"
+    val keyValue = "exampleKey"
 
     val req = host(api).secure << Map(
       "text" -> phrases.mkString(",")
@@ -39,11 +52,11 @@ object CanvasContentAnalysis {
     val response = for(
       s <- f.right
     ) yield {
-      println(s)
-      (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
+      debug(s)
+        (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
     }
     val r = response()
-    println(r)
+    debug(r)
     r match {
       case Right(rs) => rs
       case _ => Nil
@@ -51,12 +64,12 @@ object CanvasContentAnalysis {
   }
   def extract(inks:List[MeTLInk]):List[String] = {
     if(inks.size < analysisThreshold) {
-      println("Not analyzing handwriting for %s strokes".format(inks.size))
+      debug("Not analysing themes for %s strokes".format(inks.size))
       Nil
     }
     else{
-      println("Analyzing handwriting for %s strokes".format(inks.size))
-      val myScriptKey = "exampleApiKey"
+      debug("Loading themes for %s strokes".format(inks.size))
+      val myScriptKey = "exampleKey"
       val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
 
       val json = JObject(List(
@@ -75,6 +88,7 @@ object CanvasContentAnalysis {
       req.setContentType("application/x-www-form-urlencoded","UTF-8")
 
       val f = Http(req OK as.String).either
+      debug(f)
       val response = for(
         s <- f.right
       ) yield {
@@ -82,6 +96,7 @@ object CanvasContentAnalysis {
         labels.collect{ case JField(_,JString(s)) => s }
       }
       val r = response()
+      debug(r)
       r match {
         case Right(rs) => rs
         case _ => Nil

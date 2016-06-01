@@ -7,17 +7,26 @@ var DeviceConfiguration = (function(){
     };
     var allowedToHideHeader = false;
     // the default states of the various sections
+		var allowShowingChrome = function(){
+			var isInConversation = false;
+			try {
+				isInConversation = "jid" in Conversations.getCurrentConversation();
+			} catch(e) {
+				isInConversation = false;
+			}
+			return currentDevice != "projector" && isInConversation; 
+		}
     var sectionsVisible = {//All false because the application's start state is the search screen.  onHistory will restore them.
         tools:false,
         slides:false,
-        header:false
+        header:false,
     };
     var setSectionVisibility = function(section,visible){
-        if (currentDevice != "projector"){
-            if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
-                sectionsVisible[section] = visible;
-            }
-        }
+			if (allowShowingChrome){
+					if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
+							sectionsVisible[section] = visible;
+					}
+			}
     };
     var alterCurrentDeviceFunction = function(newDevice){
         currentDevice = newDevice;
@@ -37,6 +46,19 @@ var DeviceConfiguration = (function(){
         $("#absoluteCloseButton").removeClass("closeButton").text("").click(bounceAnd(function(){}));
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
+				try {
+					if (UserSettings.getIsInteractive() && "jid" in Conversations.getCurrentConversation()){
+						DeviceConfiguration.setHeader(true);
+						DeviceConfiguration.setTools(true);
+						DeviceConfiguration.setSlides(true);
+					} else {
+						DeviceConfiguration.setHeader(false);
+						DeviceConfiguration.setTools(false);
+						DeviceConfiguration.setSlides(false);
+					}
+				} catch(e){
+					console.log("error while trying to fix the layout:",e);
+				}
         zoomToPage();
         fitFunction();
     };
@@ -47,11 +69,8 @@ var DeviceConfiguration = (function(){
         fitFunction = projectorFitFunction;
         zoomToFit();
         $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
-            UserSettings.setIsInteractive(true);
-            DeviceConfiguration.setHeader(true);
-            DeviceConfiguration.setTools(true);
-            DeviceConfiguration.setSlides(true);
-            setDefaultOptions();
+					UserSettings.setIsInteractive(true);
+					setDefaultOptions();
         }));
         $("#applicationMenuButton").hide();
         Modes.none.activate();
@@ -67,7 +86,7 @@ var DeviceConfiguration = (function(){
         var deviceHeight = 0;
         var deviceWidth = 0;
         var matchMetaTag = function(metaName,metaValue){
-            return (navigator.standalone && _.any(_.filter(document.getElementsByTagName("meta"),function(i){return i.name.toLowerCase().trim() == metaName.toLowerCase().trim();}),function(i){return i.content.toLowerCase().trim() == metaValue.toLowerCase().trim();}));
+            return (navigator.standalone && _.some(_.filter(document.getElementsByTagName("meta"),function(i){return i.name.toLowerCase().trim() == metaName.toLowerCase().trim();}),function(i){return i.content.toLowerCase().trim() == metaValue.toLowerCase().trim();}));
         }
         switch (currentDevice){
         case "iPhone":
@@ -126,7 +145,9 @@ var DeviceConfiguration = (function(){
         }
         return {height:deviceHeight,width:deviceWidth};
     };
-    var defaultFitFunction = function(){customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);};
+    var defaultFitFunction = function(){
+			customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);
+		};
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
     var customizableFitFunction = function(showHeader,showTools,showSlides){
@@ -145,105 +166,46 @@ var DeviceConfiguration = (function(){
 
         var deviceDimensions = getDeviceDimensions();
         var width = deviceDimensions.width;
-
+				var height = deviceDimensions.height;
         try{
             var performRemeasure = function(){
-                var toolSize = 0;
-                var subSize = 0;
-                var subSizeOffset = 0;
-                var toolWidth = 0;
-                var preferredToolModeSize = parseInt(UserSettings.getUserPref("toolModeSize"));
-                var xOffset = 0;
-                var yOffset = 0;
-
                 if (showHeader == true){
                     boardHeader.show();
-                    boardHeader.width(width);
                     applicationMenu.show();
-                    applicationMenu.width(preferredToolModeSize);
                 } else {
-                    boardHeader.width(0);
-                    applicationMenu.width(0);
                     applicationMenu.hide();
                     boardHeader.hide();
                 }
 
-                var height = deviceDimensions.height - $(".shrinkWrappedRow").height();
                 if (showTools == true){
-                    toolSize = preferredToolModeSize;
-                    subSize = parseInt(UserSettings.getUserPref("subModeSize"));
-                    subSizeOffset = 10; //Woo!  Magic number!  It's the left offset of the submode button
-                    toolWidth = Math.max(toolSize,subSize + subSizeOffset);
-                    toolsColumn.width(toolWidth).css("max-width",px(208)).height(height);
                     tools.show();
-                    subTools.height(subSize).css("min-width",px(toolWidth - subSizeOffset)).show();
+										subTools.show();
                     toolsColumn.show();
                 } else {
-                    xOffset += 4;
-                    subTools.height(0).css("min-width",px(0));
                     subTools.hide();
                     tools.hide();
-                    toolsColumn.width(0).height(0);
                     toolsColumn.hide();
                 }
-                var thumbWidth = 0;
-                var thumbHeight = 0;
                 if (showSlides == true){
                     thumbsColumn.show();
-                    thumbWidth = parseInt(UserSettings.getUserPref("thumbnailSize"));
-                    thumbHeight = thumbWidth * 0.75;
                 } else {
-                    xOffset += 4;
                     thumbsColumn.hide();
                 }
-                var thumbScrollOffset = 35;
-                var thumbContainerWidth = thumbWidth;
-                if (thumbWidth > 0){
-                    thumbContainerWidth = thumbContainerWidth + thumbScrollOffset;
-                }
-                thumbsColumn.width(thumbContainerWidth).height(height).css("display","block");
-                thumbScrollContainer.width(thumbContainerWidth).height(height);
-                slideContainer.width(thumbContainerWidth).height(height);
-                $(".slideButtonContainer").width(thumbWidth).height(thumbHeight).css("margin",px(10));
-                thumbs.width(thumbWidth).height(thumbHeight);
-                $("#addSlideButton").css("margin",px(10));
-
-                var gestureWiggleRoomWidth = 0; // magic number to create a bit of wiggle room for the gestures
-                var gestureWiggleRoomHeight = 0; // magic number to create a bit of wiggle room for the gesture
-                if (currentDevice != "projector"){
-                    gestureWiggleRoomHeight = 15;
-                    height -= yOffset / 2;
-                    width -= xOffset;
-                }
-
-                $("#masterLayout").height(height).width(width).css({
-                    "margin-left":px(xOffset / 2),
-                    "margin-top":px(yOffset / 2)
-                });
-
-                var actualToolsWidth = toolsColumn.width();
-                var actualThumbsWidth = thumbsColumn.width();
-                var padding = 0;
-                var containerWidth = width - (actualToolsWidth + actualThumbsWidth + gestureWiggleRoomWidth);
-                var containerHeight = height - gestureWiggleRoomHeight;
-                $("#notices").height(gestureWiggleRoomHeight);
-                var container = $("#boardContainer");
-
-                $("#boardColumn").width(containerWidth).height(containerHeight);
-                container.width(containerWidth).height(containerHeight);
-                board.attr("width",px(containerWidth - padding));
-                board.attr("height",px(containerHeight - padding));
-                board.width(containerWidth - padding);
-                board.height(containerHeight - padding);
-                boardWidth = containerWidth - padding;
-                boardHeight = containerHeight - padding;
-                if ("documentElement" in document){
-                    $(document.documentElement).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
-                }
-                $(document.body).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
-                $(document).width(deviceDimensions.width).css("min-width",deviceDimensions.width).css("max-width",deviceDimensions.width).height(deviceDimensions.height).css("min-height",deviceDimensions.height).css("max-height",deviceDimensions.height);
+								var board = $("#board");
+								var bwidth = board.width();
+								var bheight = board.height();
+								var selectionAdorner = $("#selectionAdorner");
+								var radar = $("#radar");
+								var marquee = $("#marquee");									
+								var textAdorner = $("#textAdorner");
+								var imageAdorner = $("#imageAdorner");
+								boardContext.canvas.width = bwidth;
+								boardContext.canvas.height = bheight;
+								boardContext.width = bwidth;
+								boardContext.height = bheight;
+								boardWidth = bwidth; 
+								boardHeight = bheight;
             }
-            //performRemeasure();
             performRemeasure();
             IncludeView.default();
         }
@@ -264,30 +226,31 @@ var DeviceConfiguration = (function(){
     };
     var initialized = false;
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
-    Progress.historyReceived.DeviceConfiguration_showChrome = function(){
+    Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
             if(UserSettings.getIsInteractive()){
-                DeviceConfiguration.setSlides(true);
-                DeviceConfiguration.setTools(true);
-                if(!initialized){
-                    Modes.draw.activate();
-                    if(DeviceConfiguration.getCurrentDevice() == "iPad"){
-                        $("#panMode").remove();
-                    }
-                }
-            }
-            else{
-                DeviceConfiguration.setSlides(false);
-                DeviceConfiguration.setTools(false);
-                if(!initialized){
-                    Modes.none.activate();
-                }
+							DeviceConfiguration.setSlides(true);
+							DeviceConfiguration.setTools(true);
+							if(!initialized){
+									Modes.draw.activate();
+									if(DeviceConfiguration.getCurrentDevice() == "iPad"){
+											$("#panMode").remove();
+									}
+							}
+            } else {
+							DeviceConfiguration.setSlides(false);
+							DeviceConfiguration.setTools(false);
+							if(!initialized){
+									Modes.none.activate();
+							}
             }
             initialized = true;
         }
         catch(e){
             console.log("Progress.historyRedceived.DeviceConfiguration_showChrome",e);
         }
+				tryToDetermineCurrentDevice();
+				actOnCurrentDevice();
     }
 
     $(function(){

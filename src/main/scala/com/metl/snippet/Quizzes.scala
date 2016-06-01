@@ -13,7 +13,7 @@ import Helpers._
 import S._
 
 class QuizzesSnippet {
-  object server extends RequestVar[ServerConfiguration](Utils.prepareServerFromRequest)
+  object server extends RequestVar[ServerConfiguration](ServerConfiguration.default)
   object conversationId extends RequestVar[String](S.param("conversation").openOr(""))
   object slideId extends RequestVar[String](S.param("slide").openOr(""))
   object conversation extends RequestVar[Conversation](server.detailsOfConversation(conversationId.is))
@@ -25,8 +25,8 @@ class QuizzesSnippet {
   def navigation:NodeSeq = (conversationId) match {
     case (cid) if (cid.length>0) => {
       Utils.navLinks(List(
-        Link("slidesLink","/slide?server=%s&conversation=%s&slide=%s".format(server.is.name,cid,slideId.is),"View slides"),
-        Link("quizzesLink","/quizzes?server=%s&conversation=%s&slide=%s".format(server.is.name,cid,slideId.is),"Quizzes")
+        Link("slidesLink","/slide?conversation=%s&slide=%s".format(cid,slideId.is),"View slides"),
+        Link("quizzesLink","/quizzes?conversation=%s&slide=%s".format(cid,slideId.is),"Quizzes")
       ))
     }
     case _ => NodeSeq.Empty
@@ -37,7 +37,7 @@ class QuizzesSnippet {
   private def renderList = "#quizList *" #> {
     MeTLXConfiguration.getRoom(conversationId.is,server.is.name).getHistory.getQuizzes.sortBy(q => q.id).map(quiz => {
       <div class="quizItem">
-      <a href={"/quiz?server=%s&conversation=%s&slide=%s&quiz=%s".format(server.is.name,conversationId.is,slideId.is,quiz.id)}>
+      <a href={"/quiz?conversation=%s&slide=%s&quiz=%s".format(conversationId.is,slideId.is,quiz.id)}>
       <span>{quiz.question}</span>
       </a>
       </div>

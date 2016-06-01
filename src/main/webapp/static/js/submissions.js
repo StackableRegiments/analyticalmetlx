@@ -1,12 +1,22 @@
 var Submissions = (function(){
+    var submissionSummaryListing = {};
+    var submissionSummaryTemplate = {};
+    var currentSubmissionTemplate = {};
+    var currentSubmissionContainer = {};
     var submissions = [];
     var currentSubmission = {};
     $(function(){
+        submissionSummaryListing = $("#submissionListing");
+        submissionSummaryTemplate = submissionSummaryListing.find(".submissionSummary").clone();
+        currentSubmissionContainer = $("#currentSubmission");
+        currentSubmissionTemplate = currentSubmissionContainer.find(".submissionContainer").clone();
+        submissionSummaryListing.empty();
         $("#submissions").click(function(){
             showBackstage("submissions");
         });
-        var submissionsCount = $("<span />",{
-            id:"submissionCount"
+        var submissionsCount = $("<div />",{
+            id:"submissionCount",
+            class:"icon-txt"
         });
         $("#feedbackStatus").prepend(submissionsCount);
         submissionsCount.click(function(){
@@ -41,56 +51,44 @@ var Submissions = (function(){
         $("#submissionCount").text("");
     };
     var renderSubmissionsInPlace = function(){
-        $("#submissionListing").html(unwrap(filteredSubmissions().map(renderSubmissionSummary)));
+        submissionSummaryListing.empty();
+        filteredSubmissions().map(function(submission){
+            renderSubmissionSummary(submission);
+        })
+        /*
+         $("#submissionListing").html(unwrap(filteredSubmissions().map(renderSubmissionSummary)));
+         */
         renderCurrentSubmissionInPlace();
         refreshSubmissionCount();
     }
     var renderCurrentSubmissionInPlace = function(){
-        $("#currentSubmission").html(renderSubmission(currentSubmission));
+        currentSubmissionContainer.html(renderSubmission(currentSubmission));
     };
     var renderSubmissionSummary = function(submission){
-        var rootElem = $("<div />",{
-            class:"submissionSummary"
-        });
         if ("type" in submission && submission.type == "submission"){
-            var imageThumb = $("<image/>",{
-                class:"submissionImageThumb",
-                src:sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity)
-            })
-            $("<span/>",{
-                text:sprintf("submitted at %s %s", new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()),
-            }).appendTo(rootElem);
-            $("<div/>",{
-                type:"button",
-                class:"viewSubmissionButton",
-                id:sprintf("viewSubmissionButton_%s",submission.identity),
-            }).on("click",function(){
+            var rootElem = submissionSummaryTemplate.clone();
+            submissionSummaryListing.append(rootElem);
+            rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s %s", submission.author, new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()));
+            rootElem.find(".submissionImageThumb").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
+            rootElem.find(".viewSubmissionButton").attr("id",sprintf("viewSubmissionButton_%s",submission.identity)).on("click",function(){
                 currentSubmission = submission;
                 renderCurrentSubmissionInPlace();
-            }).append(imageThumb).appendTo(rootElem);
+            });
         }
-        return rootElem;
     };
     var renderSubmission = function(submission){
         var rootElem = $("<div />");
         if ("type" in submission && submission.type == "submission"){
-            $("<div/>",{
-                text:sprintf("submitted at %s",submission.timestamp),
-                class:"submissionContainer",
-                id:sprintf("submission_%s",submission.identity)
-            }).appendTo(rootElem);
-            $("<image/>",{
-                class:"submissionImage",
-                src:sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity)
-            }).appendTo(rootElem);
+            rootElem = currentSubmissionTemplate.clone();
+            rootElem.attr("id",sprintf("submission_%s",submission.identity))
+            rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s",submission.author, submission.timestamp));
+            rootElem.find(".submissionImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
             if (Conversations.shouldModifyConversation()){
-                $("<input/>",{
-                    type:"button",
-                    class: "toolbar",
-                    value:"Display Submission on next slide"
-                }).on("click",function(){
+                rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
                     addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
-                }).appendTo(rootElem);
+                });
+            } else {
+                rootElem.find("submissionTeacherControls").hide();
             }
         }
         return rootElem;
@@ -112,10 +110,10 @@ var Submissions = (function(){
             if ("target" in submission && submission.target == "submission"){
                 if (filterSubmission(submission)){
                     submissions.push(submission);
+										if (!skipRender){
+												renderSubmissionsInPlace();
+										}
                 }
-            }
-            if (!skipRender){
-                renderSubmissionsInPlace();
             }
         }
         catch (e){
@@ -125,6 +123,8 @@ var Submissions = (function(){
 
     Progress.onConversationJoin["Submissions"] = clearState;
     Progress.historyReceived["Submissions"] = historyReceivedFunction;
+		// disabling this, because it's done in board.
+    //Progress.stanzaReceived["Submissions"] = onSubmissionReceived;
     return {
         getAllSubmissions:function(){return filteredSubmissions();},
         getCurrentSubmission:function(){return currentSubmission;},

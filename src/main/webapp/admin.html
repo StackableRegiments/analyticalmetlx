@@ -1,0 +1,47 @@
+<div class="lift:surround?with=defaultWebMeTL;at=content">
+  <script src="static/js/stable/isotope.pkgd.min.js"></script>
+  <script src="static/js/stable/packery-mode.pkgd.min.js"></script>
+  <script src="static/js/stable/lodash.js"></script>
+  <script src="static/js/stable/moment.min.js"></script>
+  <script src="static/js/stable/d3.min.js"></script>
+  <script src="static/js/stable/metricsgraphics.js"></script>
+  <script src="static/js/stable/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="static/css/bootstrap.min.css"></link>
+  <link rel="stylesheet" href="static/css/admin.css"></link>
+  <link rel="stylesheet" href="static/css/metricsgraphics.css"></link>
+  <script data-lift="with-resource-id" src="static/js/admin.js"></script>
+
+  <div class="inset">
+    <div id="conversationFilters" class="col-md-4">
+      <div class="author">
+        <input placeholder="Author search" />
+      </div>
+      <div class="fragment">
+        <input placeholder="Text fragment" />
+      </div>
+    </div>
+    <div id="conversations" class="col-md-8">
+      <div class="tile conversationTemplate template gridLines gridMedium">
+        <div class="expandedTemplate template ">
+          <div><a class="inspect"><span class="label">Activity</span><span class="activityCount">0</span></a></div>
+          <div><span class="label">Participants</span><span class="uniqueAuthors">0</span></div>
+          <div><span class="label">Observers</span><span class="uniqueObservers">0</span></div>
+        </div>
+        <div class="detailTemplate template">
+          <div><span class="label">Min</span><span class="min">0</span></div>
+          <div><span class="label">Max</span><span class="max">0</span></div>
+          <div><span class="label">Span</span><span class="span">0</span></div>
+        </div>
+        <div class="topLevel column">
+          <div class="title">A title of a conversation</div>
+          <div><span class="creation">01/01/1911</span></div>
+          <progress class="progress"></progress>
+          <div><span class="label">Author</span><span class="author">first.last@domain.com</span></div>
+          <div><a class="expand"><span class="label">Slides</span><span class="slideCount">115</span></a></div>
+        </div>
+        <div class="expandedContainer column"></div>
+        <div class="detailContainer column"></div>
+      </div>
+    </div>
+  </div>
+</div>

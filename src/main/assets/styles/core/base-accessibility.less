@@ -1,0 +1,54 @@
+/* shared styles used for accessibility */
+/* fix for chrome bug incorrect font sizes without js */
+.no-js body {
+    font-size:1.5em;
+}
+/* display of no javascript errors */
+.js .js-error {
+   display:none;  
+}
+.no-js .js-error {
+    .ptb;
+    .plr;
+    .mb;
+    /*background:@bg-components;*/
+    font-weight:bold;
+}
+/* accessibility for hidden elements */
+.hidden {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+.unhidden {
+    position:relative;
+    left:auto;
+    top:auto;
+    width:auto;
+    height:auto;
+    overflow:visible
+}
+.sr-hidden {
+    display:none;
+}
+/* spinner */
+.loading-spinner {
+    position:fixed;
+    top:45%;
+    right:50%;
+    z-index: 10;
+}
+.apng .icon-spinner {
+    background-image: url("images/spinner-apng.png");
+    background-repeat: no-repeat;
+    background-size:66px 66px;
+    display: none;
+    height: 66px;
+    width: 66px;
+    img {
+        display:none;
+    }
+}

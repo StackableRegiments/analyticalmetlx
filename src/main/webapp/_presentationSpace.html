@@ -1,76 +1,43 @@
 <div id="boardContainer">
   <canvas id="board" class="fill" ></canvas>
-  <div id="selectionAdorner" ></div>
+  <div id="selectionAdorner"></div>
   <div id="radar" ></div>
   <div id="marquee" ></div>
-  <div id="textAdorner" ></div>
-  <div id="backstageContainer">
-    <div id="applicationMenuPopup" class="backstageHeader">
-      <div class="lift:embed?what=_futureApplicationButton" ></div>
-    </div>
-    <div id="customizeBrushPopup" class="backstage">
-      <div id="penColor">
-        <span>Choose Pen Color</span>
-        <div id="colors" ></div>
-      </div>
-      <div id="penSize">
-        <span>Choose Pen Size </span>
-        <div id="sizes" ></div>
-      </div>
-      <div id="penModes">
-        <span>Choose Pen Mode</span>
-        <div id="penMode" ></div>
-      </div>
-      <div class="toolbar" id="resetPenButton" ></div>
-    </div>
-    <div id="preferencesPopup" class="backstage">
-      <div id="preferencesContainer">
-        <div id="preferencesContainerLeft">
-          <div>
-            <label for="showGrid">Show grid</label>
-          </div>
-          <input type="checkbox" id="showGrid" ></input>
-          <div>
-            <label for="implicitlyExpanding">Implicit expansion</label>
-          </div>
-          <input type="checkbox" id="implicitlyExpanding" ></input>
-          <div>
-            <label for="toggleHighQualityInk">High quality stylus</label>
-          </div>
-          <input type="checkbox" id="toggleHighQualityInk" ></input>
-          <div>
-            <label>Ink render quality</label>(<span id="opCount" ></span>)
-          </div>
-          <input type="radio" name="renderQuality" value="8">High</input><br />
-          <input type="radio" name="renderQuality"  checked="true" value="32">Medium</input><br />
-          <input type="radio" name="renderQuality" value="127">Low</input><br />
-          <div>
-            <label>Load slides at native zoom</label>
-          </div>
-          <input type="checkbox" id="loadSlidesAtNativeZoom" ></input>
+  <div id="imageAdorner">
+    <div id="imageMarquee"></div>
+    <div id="imageInsertOptions" class="block with-border input-full-width">
+      <h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert image</label></strong></h2>
+      <button id="imageInsertOptionsClose" class=" btn-close fa fa-times nmt"><span class="hidden">Close</span></button>
+      <input type="file" id="imageFileChoice"></input>
+      <div id="imageSizeControls">
+        <h3>Select size</h3>
+        <div id="imageSizeChoiceSelector" class="flex-container-row tools bg-tools">
+          <button class="imageSizeChoice"></button>
         </div>
-        <div id="preferencesContainerRight"></div>
-      </div>
-    </div>
-    <div id="conversationsPopup" class="backstage">
-      <div id="conversationsContainer">
-        <div id="search">
-          <div id="conversationCreationControls">
-            <div id="s2cConversationMessageContainer"/>
-            <div id="createConversationContainer"/>
-            <div id="importPowerpointContainer"/>
+        <button id="imageUploadButton" value="Upload" class="button-transparent-border">Upload</button>
+        <h3>Preview</h3>
+        <div class="smallest-txt">(Max preview size of 300px)</div>
+        <div id="imageUploadDescription">
+          <div>
+            <span>X: <span id="imageUploadX"></span>, </span>
+            <span>Y: <span id="imageUploadY"></span>, </span>
+            <span>Width: <span id="imageUploadWidth"></span>, </span>
+            <span>Height: <span id="imageUploadHeight"></span></span>
           </div>
-          <span>
-            <span id="searchForConversationBoxContainer" />
-            <span id="searchButtonContainer" />
-          </span>
+          <!-- this canvas never gets bigger than 300px square, and represents the image in the aspect ratio of the eventually pasted image -->
+          <canvas id="imageUploadThumbnail"></canvas>
         </div>
-        <div id="searchResults" />
       </div>
     </div>
   </div>
-  <div id="loadingSlidePopup" class="backstage">
-    <div><span id="targetSlide" /></div>
-    <img class="slideLoading" src="static/images/ajax-loader.gif" alt="Loading..."/>
+  <div id="textAdorner" >
+    <div id="textMarquee"></div>
+    <textarea id="textEditorInputArea"></textarea>
+  </div>
+  <div id="loadingSlidePopup" class="loading-spinner" style="display:none;">
+    <div><span id="targetSlide"></span></div>
+    <span class="icon-spinner">
+      <img class="slideLoading" src="static/images/ajax-loader.gif" alt="Loading..."/>
+    </span>
   </div>
 </div>

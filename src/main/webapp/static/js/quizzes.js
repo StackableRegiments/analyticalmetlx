@@ -2,18 +2,31 @@ var Quizzes = (function(){
     var quizzes = {};
     var quizAnswers = {};
     var currentQuiz = {};
+		var unansweredQuizSummaryContainer = {};
+		var unansweredQuizSummaryTemplate = {};
+		var answeredQuizSummaryContainer = {};
+		var answeredQuizSummaryTemplate = {};
+		var currentQuizContainer = {};
+		var currentQuizTemplate = {};
     $(function(){
-        $("#quizzes").click(function(){
-            showBackstage("quizzes");
-        });
-        var quizCount = $("<span />",{
-            id:"quizCount"
-        });
-        $("#feedbackStatus").prepend(quizCount);
-        quizCount.click(function(){
-            showBackstage("quizzes");
-        });
-        refreshQuizCount();
+			unansweredQuizSummaryContainer = $("#unansweredQuizListing");
+			unansweredQuizSummaryTemplate = unansweredQuizSummaryContainer.find(".quizItem").clone();
+			answeredQuizSummaryContainer = $("#answeredQuizListing");
+			answeredQuizSummaryTemplate = answeredQuizSummaryContainer.find(".quizItem").clone();
+			currentQuizContainer = $("#currentQuiz");
+			currentQuizTemplate = currentQuizContainer.find(".currentQuizItem").clone();	
+			$("#quizzes").click(function(){
+					showBackstage("quizzes");
+			});
+			var quizCount = $("<div />",{
+					id:"quizCount",
+					class:"icon-txt"
+			});
+			$("#feedbackStatus").prepend(quizCount);
+			quizCount.click(function(){
+					showBackstage("quizzes");
+			});
+			refreshQuizCount();
     });
     var refreshQuizCount = function(){
         var quizCount = _.size(quizzes);
@@ -34,42 +47,35 @@ var Quizzes = (function(){
         quizzes = {};
         quizAnswers = {};
         currentQuiz = {};
-        $("#quizCreateButtonContainer").empty();
-        $("#quizListing").empty();
-        $("#currentQuiz").empty();
+        unansweredQuizSummaryContainer.empty();
+        answeredQuizSummaryContainer.empty();
+        currentQuizContainer.empty();
         $("#quizCount").text("");
         if (Conversations.shouldModifyConversation()){
-            $("<a/>",{
-                id:"quizCreationButton",
-                class: "quizCreationButton",
-            }).on("click",function(){
-                requestCreateQuizDialogue(Conversations.getCurrentConversation());
-            }).append($("<span/>",{text: "Create Quiz"})).appendTo($("#quizCreateButtonContainer"));
-        }
+					$("#quizCreationButton").unbind("click").on("click",function(){
+						requestCreateQuizDialogue(Conversations.getCurrentConversation());
+					}).show();
+				} else {
+					$("#quizCreationButton").unbind("click").hide();
+				}
     };
     var renderQuizzesInPlace = function(){
         try{
             var haveAnsweredQuiz = function(quiz) {
                 return quizAnswersFunction(quiz)[UserSettings.getUsername()] != undefined;
             }
-            var answeredQuizzes = $.map(quizzes, function(quiz, id){ if(haveAnsweredQuiz(quiz)) return quiz; });
-            var unansweredQuizzes = $.map(quizzes, function(quiz, id){ if(!haveAnsweredQuiz(quiz)) return quiz; });
-            var answeredHtml = $("<div/>", {class: "answeredQuizzes"})
-            if(answeredQuizzes.length > 0) {
-                answeredHtml.append($("<span/>",{
-                    class: "quizTitle",
-                    text: "Answered Quizzes" }))
-                $.map(_.filter(answeredQuizzes,function(aq){return aq.isDeleted != true;}),function(quizData){ answeredHtml.append(renderQuizSummary(quizData)); });
-            }
-            var unansweredHtml = $("<div/>", {class: "unansweredQuizzes"})
-            if(unansweredQuizzes.length > 0) {
-                unansweredHtml.append($("<span/>",{
-                    class: "quizTitle",
-                    text: "Unanswered Quizzes"}))
-                $.map(_.filter(unansweredQuizzes,function(uaq){return uaq.isDeleted != true;}),function(quizData){ unansweredHtml.append(renderQuizSummary(quizData)); });
-            }
+						var sortedQuizzes = _.sortBy(quizzes,function(quiz){return quiz.created});
+            var answeredQuizzes = $.map(sortedQuizzes, function(quiz, id){ if(haveAnsweredQuiz(quiz)) return quiz; });
+            var unansweredQuizzes = $.map(sortedQuizzes, function(quiz, id){ if(!haveAnsweredQuiz(quiz)) return quiz; });
 
-            $("#quizListing").empty().html($("<div/>").append(unansweredHtml).append(answeredHtml));
+						answeredQuizSummaryContainer.empty();
+            if(answeredQuizzes.length > 0) {
+                $.map(_.filter(answeredQuizzes,function(aq){return aq.isDeleted != true;}),function(quizData){ renderQuizSummary(quizData,answeredQuizSummaryContainer,answeredQuizSummaryTemplate.clone()); });
+            }
+						unansweredQuizSummaryContainer.empty();
+            if(unansweredQuizzes.length > 0) {
+                $.map(_.filter(unansweredQuizzes,function(uaq){return uaq.isDeleted != true;}),function(quizData){ renderQuizSummary(quizData,unansweredQuizSummaryContainer,unansweredQuizSummaryTemplate.clone()); });
+            }
 
             $("#currentQuiz").empty();
             if ("type" in currentQuiz && currentQuiz.type == "quiz" && "isDeleted" in currentQuiz && currentQuiz.isDeleted != true){
@@ -97,47 +103,37 @@ var Quizzes = (function(){
             return {};
         }
     }
-    var renderQuizSummary = function(quiz){
+    var renderQuizSummary = function(quiz,targetContainer,template){
         var uniq = function(label){return sprintf("quiz_summary_%s_%s",label,quiz.id);};
-        var rootElem = $("<a/>",{
-            id: uniq("container"),
-            class:"quizSummary"
-        }).on("click",function(){
-            currentQuiz = quiz;
+		var rootElem = template.find(".quizSummary");
+		rootElem.attr("id",uniq("container")).on("click",function(){
+		    $(".quizSummary").removeClass('active');
+		    $(this).addClass('active');
+			currentQuiz = quiz;
+			// reRenderCurrentQuiz
             $("#currentQuiz").html(renderQuiz(quiz));
-        })
-        $("<div/>",{
-            id: uniq("title"),
-            class:"quizSummaryQuestion",
-            text: quiz.question
-        }).appendTo(rootElem);
-        var allAnswersForThisQuiz = quiz.id in quizAnswers? _.reduce(quizAnswersFunction(quiz),function(prev,curr){
-            var additional = "answerCount" in curr ? curr.answerCount : 0;
+		});
+		rootElem.find(".quizSummaryQuestion").attr("id",uniq("title")).text(quiz.question);
+		var allAnswersForThisQuiz = quiz.id in quizAnswers? _.reduce(quizAnswersFunction(quiz),function(prev,curr){
+        var additional = "answerCount" in curr ? curr.answerCount : 0;
             return prev + additional;
         },0) : 0;
-        $("<div/>",{
-            id: uniq("answers"),
-            class:"quizSummaryAnswerCount",
-            text: sprintf("activity: %s", allAnswersForThisQuiz)
-        }).appendTo(rootElem);
+		rootElem.find(".quizSummaryAnswerCount").attr("id",uniq("answers")).text(sprintf("%s", allAnswersForThisQuiz));
         if (Conversations.shouldModifyConversation()){
-            $("<input/>",{
-                id: uniq("editButton"),
-                class:"quizSummaryEditButton",
-                type: "button",
-                value: "Edit Quiz"
-            }).on("click",function(){
-                requestUpdateQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
-            }).appendTo(rootElem);
-        }
-        return $("<div/>").append(rootElem);
+			rootElem.closest(".quizItem").find(".quizSummaryEditButton").attr("id",uniq("editButton")).on("click",function(){
+				requestUpdateQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
+			});
+        } else {
+			rootElem.closest(".quizItem").find(".quizTeacherControls").remove();
+		}
+		targetContainer.append(template);
     };
     var renderQuiz = function(quiz){
         var quizOptionAnswerCount = function(quiz, qo){
             var count = 0;
             if (quiz.id in quizAnswers){
                 $.each(theseQuizAnswerers,function(name,answerer){
-                    if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == username.toLowerCase())){
+                    if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == UserSettings.getUsername().toLowerCase())){
                         count = count +1;
                     }
                 });
@@ -149,103 +145,86 @@ var Quizzes = (function(){
             if (quiz.id in quizAnswers){
                 $.each(theseQuizAnswerers,function(name,answerer){
                     if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && name.toLowerCase() == UserSettings.getUsername().toLowerCase()){
-                        text = "quizOption activeAnswer";
+                        text = "quizOption activeAnswer active";
                     }
                 });
             };
             return text;
         }
         var uniq = function(label){return sprintf("quiz_%s_%s",label,quiz.id);};
-        var rootElem = $("<div/>",{
-            id: uniq("container"),
-            class:"quizItem"
-        });
-        $("<div/>",{
-            id: uniq("title"),
-            class:"quizQuestion",
-            text: quiz.question
-        }).appendTo(rootElem);
-        var graph = $("<canvas />").appendTo(rootElem);
-        _.defer(function(){
-            var data = {
-                labels:_.pluck(quiz.options,"name"),
-                datasets:[
-                    {
-                        fillColor:"gray",
-                        strokeColor:"black",
-                        data:quiz.options.map(function(qo){
-                            return quizOptionAnswerCount(quiz,qo);
-                        })
-                    }
-                ]
-            };
-            var options = {
-                scaleOverride:true,
-                scaleStepWidth:1,
-                scaleSteps:Math.max.apply(Math,data.datasets[0].data),
-                scaleStartValue:0
-            }
-            console.log(data,options);
-            new Chart(graph[0].getContext("2d")).Bar(data,options);
-        });
+				var rootElem = currentQuizTemplate.clone();
+				rootElem.attr("id",uniq("container"));
+				rootElem.find(".quizQuestion").text(quiz.question).attr("id",uniq("title"));
+        if (Conversations.isAuthor()){
+            rootElem.find(".resultsTitle").show();
+            var graph = rootElem.find(".quizResultsGraph");
+            graph.show();
+            _.defer(function(){
+                var data = {
+                    labels:_.map(quiz.options,"name"),
+                    datasets:[
+                        {
+                            fillColor:"gray",
+                            strokeColor:"black",
+                            data:quiz.options.map(function(qo){
+                                return quizOptionAnswerCount(quiz,qo);
+                            })
+                        }
+                    ]
+                };
+                var options = {
+                    scaleOverride:true,
+                    scaleStepWidth:1,
+                    scaleSteps:Math.max.apply(Math,data.datasets[0].data),
+                    scaleStartValue:0
+                }
+                console.log(data,options);
+                new Chart(graph[0].getContext("2d")).Bar(data,options);
+            });
+        }
+        else {
+            rootElem.find(".resultsTitle").hide();
+            rootElem.find(".quizResultsGraph").hide();
+        }
+
         var theseQuizAnswerers = quizAnswersFunction(quiz);
         if ("url" in quiz){
-            $("<img/>",{
-                class:"quizImagePreview",
-                src: sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quiz.id)
-            }).appendTo(rootElem);
+					rootElem.find(".quizImagePreview").attr("src",sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quiz.id)).show();
         }
-        var generateColorClass = function(color) {return sprintf("background-color:%s", color.toString().split(",")[0])}
+        else {
+            rootElem.find(".quizImagePreview").hide();
+        }
+       /*var generateColorClass = function(color) {return sprintf("border-color:%s", color.toString().split(",")[0])}*/
+				var quizOptionContainer = rootElem.find(".quizOptionContainer");
+				var quizOptionTemplate = quizOptionContainer.find(".quizOption").clone();
+				quizOptionContainer.empty();
         $.each(quiz.options,function(i,qo){
-
-            var quizRootElem = $("<div/>",{
-                id: uniq("option_"+qo.name),
-                class: quizOptionClass(quiz, qo)
-            }).on("click",function(){
-                answerQuiz(Conversations.getCurrentConversationJid(),quiz.id,qo.name);
-            });
-            var quizText = $("<span/>", {
-                text: qo.text,
-                class: "quizText",
-            })
-            var quizName = $("<span/>", {
-                text: qo.name,
-                style: generateColorClass(qo.color),
-                class: "quizName"
-            })
-            $("<a/>",{
-                id: uniq("option_button_"+qo.name),
-            }).append(quizName).append(quizText).appendTo(quizRootElem);
-            if(Conversations.shouldModifyConversation())
-                quizRootElem.append($("<span/>",{
-                    class:"optionResultCount",
-                    text:"Responses: "+quizOptionAnswerCount(quiz, qo)
-                }));
-            quizRootElem.appendTo(rootElem);
+					var optionRootElem = quizOptionTemplate.clone();
+					quizOptionContainer.append(optionRootElem);
+					optionRootElem.attr("id",uniq("option_"+qo.name)).addClass(quizOptionClass(quiz,qo)).on("click",function(){
+						answerQuiz(Conversations.getCurrentConversationJid(),quiz.id,qo.name);
+					});	
+					optionRootElem.find(".quizOptionText").text(qo.text);
+					optionRootElem.find(".quizOptionName").text(qo.name);
+					if(Conversations.shouldModifyConversation()){
+						optionRootElem.find(".quizOptionAnswerCount").text(quizOptionAnswerCount(quiz,qo));
+					} else {
+						optionRootElem.find(".quizOptionCountContainer").remove();
+					}
         });
         if (Conversations.shouldModifyConversation()){
-            $("<input/>",{
-                type:"button",
-                class: "toolbar",
-                value:"Display Quiz on next slide"
-            }).on("click",function(){
-                addQuizViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
-            }).appendTo(rootElem);
-            $("<input/>",{
-                type:"button",
-                class: "toolbar",
-                value:"Display Quiz with results on next slide"
-            }).on("click",function(){
-                addQuizResultsViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
-            }).appendTo(rootElem);
-            $("<input />",{
-                type:"button",
-                class:"toolbar",
-                value:"Delete this quiz"
-            }).on("click",function(){
-                requestDeleteQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
-            }).appendTo(rootElem);
-        }
+					rootElem.find(".quizShouldDisplayOnNextSlide").on("click",function(){
+						addQuizViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
+					});
+          rootElem.find(".quizResultsShouldDisplayOnNextSlide").on("click",function(){
+						addQuizResultsViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
+					});
+					rootElem.find(".deleteQuiz").on("click",function(){
+							requestDeleteQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
+					});
+        } else {
+					rootElem.find(".currentQuizTeacherControls").hide();
+				}
         return rootElem;
     };
     var actOnQuiz = function(newQuiz){

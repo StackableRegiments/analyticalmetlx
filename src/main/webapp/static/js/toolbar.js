@@ -18,7 +18,7 @@ var showGrid = false;
 var expansion = 100;
 var commandMode = true;
 function unregisterPositionHandlers(context){
-    $.each("mouseup mousemove mousedown touchstart touchmove touchend touchcancelled mouseout touchleave gesturechange gesturestart".split(" "),function(i,evt){
+    $.each("pointerdown pointermove pointerup pointerout pointerleave pointercancel mouseup mousemove mousedown touchstart touchmove touchend touchcancelled mouseout touchleave gesturechange gesturestart".split(" "),function(i,evt){
         context.unbind(evt);
     });
     WorkQueue.gracefullyResume();
@@ -71,7 +71,7 @@ function proportion(width,height){
     var targetHeight = boardHeight;
     return (width / height) / (targetWidth / targetHeight);
 }
-function screenToWorld(x,y){
+function scaleScreenToWorld(i){
     var p = proportion(boardWidth,boardHeight);
     var scale;
     if(p > 1){//Viewbox wider than board
@@ -80,34 +80,50 @@ function screenToWorld(x,y){
     else{//Viewbox narrower than board
         scale = viewboxHeight / boardHeight;
     }
-    var worldX = x * scale + viewboxX;
-    var worldY = y * scale + viewboxY;
+    return i * scale;
+}
+function scaleWorldToScreen(i){
+    var p = proportion(boardWidth,boardHeight);
+    var scale;
+    if(p > 1){//Viewbox wider than board
+        scale = viewboxWidth / boardWidth;
+    }
+    else{//Viewbox narrower than board
+        scale = viewboxHeight / boardHeight;
+    }
+    return i / scale;
+}
+
+function screenToWorld(x,y){
+    var worldX = scaleScreenToWorld(x) + viewboxX;
+    var worldY = scaleScreenToWorld(y) + viewboxY;
     return {x:worldX,y:worldY};
 }
 function worldToScreen(x,y){
-    var p = proportion(boardWidth,boardHeight);
-    var scale;
-    if(p > 1){//Viewbox wider than board
-        scale = viewboxWidth / boardWidth;
-    }
-    else{//Viewbox narrower than board
-        scale = viewboxHeight / boardHeight;
-    }
-    var screenX = (x - viewboxX) / scale;
-    var screenY = (y - viewboxY) / scale;
+    var screenX = scaleWorldToScreen(x - viewboxX);
+    var screenY = scaleWorldToScreen(y - viewboxY);
     return {x:screenX,y:screenY};
 }
 /*
  RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
  * */
 
+function detectPointerEvents(){
+	try {
+		return (("pointerEnabled" in Navigator && Navigator.pointerEnabled == true) || PointerEvent != undefined);
+	} catch(e) {
+		return false;
+	}
+}
+
 function registerPositionHandlers(contexts,down,move,up){
     var isDown = false;
-    var modifiers = function(e){
+    var modifiers = function(e,isErasing){
         return {
             shift:e.shiftKey,
             ctrl:e.ctrlKey,
-            alt:e.altKey
+            alt:e.altKey,
+						eraser:isErasing
         }
     }
     $.each(contexts,function(i,_context){
@@ -115,161 +131,344 @@ function registerPositionHandlers(contexts,down,move,up){
         var offset = function(){
             return context.offset();
         }
-        context.bind("mousedown",function(e){
-            WorkQueue.pause();
-            var o = offset();
-            e.preventDefault();
-            isDown = true;
-            var x = e.pageX - o.left;
-            var y = e.pageY - o.top;
-            var worldPos = screenToWorld(x,y);
-            down(x,y,worldPos,modifiers(e));
-        });
-        context.bind("mousemove",function(e){
-            if(isDown){
-                var o = offset();
-                e.preventDefault();
-                var x = e.pageX - o.left;
-                var y = e.pageY - o.top;
-                move(x,y,screenToWorld(x,y),modifiers(e));
-            }
-        });
-        context.bind("mouseup",function(e){
-            WorkQueue.gracefullyResume();
-            e.preventDefault();
-            if(isDown){
-                var o = offset();
-                var x = e.pageX - o.left;
-                var y = e.pageY - o.top;
-                var worldPos = screenToWorld(x,y);
-                up(x,y,worldPos,modifiers(e));
-            }
-            isDown = false;
-        });
-        var mouseOut = function(x,y){
-            WorkQueue.gracefullyResume();
-            var worldPos = screenToWorld(x,y);
-            var worldX = worldPos.x;
-            var worldY = worldPos.y;
-            if(worldX < viewboxX){
-                Extend.left();
-            }
-            else if(worldX >= (viewboxX + viewboxWidth)){
-                Extend.right();
-            }
-            else if(worldY < viewboxY){
-                Extend.up();
-            }
-            else if(worldY >= (viewboxY + viewboxHeight)){
-                Extend.down();
-            }
-            isDown = false;
-        }
-        context.bind("mouseout",function(e){
-            WorkQueue.gracefullyResume();
-            e.preventDefault();
-            if(isDown){
-                mouseOut(e.offsetX,e.offsetY);
-            }
-            isDown = false;
-        });
-        var touches;
-        var masterTouch;
-        var prevPos;
-        var touchesToWorld = function(touches){
-            return touches.map(function(t){
-                return screenToWorld(t.x,t.y);
-            });
-        }
-        var averagePos = function(touches){
-            return {
-                x:average(_.pluck(touches,"x")),
-                y:average(_.pluck(touches,"y"))
-            };
-        }
-        var offsetTouches = function(ts){
-            var touches = [];
-            var o = offset();
-            $.each(ts,function(i,touch){
-                touches.push({
-                    x: touch.pageX - o.left,
-                    y: touch.pageY - o.top,
-                    identifier:touch.identifier
-                });
-            });
-            return touches;
-        }
-        context.bind("touchstart",function(e){
-            WorkQueue.pause();
-            e.preventDefault();
-            var touches = offsetTouches(e.originalEvent.touches);
-            if(touches.length == 1){
-                var t = touches[0];
-                var worldPos = screenToWorld(t.x,t.y);
-                isDown = true;
-                down(t.x,t.y,worldPos,modifiers(e));
-            }
-            else{
-                var avg = averagePos(touches);
-                prevPos = avg;
-            }
-        });
-        var distance = function(p1,p2){
-            return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
-        }
-        context.bind("touchmove",function(e){
-            e.preventDefault();
-            var touches = offsetTouches(e.originalEvent.touches);
-            switch(touches.length){
-            case 0 : break;
-            case 1:
-                if(isDown){
-                    var t = touches[0];
-                    move(t.x,t.y,screenToWorld(t.x,t.y),modifiers(e));
-                }
-                break;
-            default:
-                var pos = averagePos(touches);
-                var xDelta = pos.x - prevPos.x;
-                var yDelta =  pos.y - prevPos.y;
-                prevPos = pos;
-                Pan.translate(-1 * xDelta,-1 * yDelta);
-                break;
-            }
-        });
-        context.bind("touchend",function(e){
-            WorkQueue.gracefullyResume();
-            e.preventDefault();
-            if(isDown){
-                var o = offset();
-                var t = e.originalEvent.changedTouches[0];
-                var x = t.pageX - o.left;
-                var y = t.pageY - o.top;
-                if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
-                    mouseOut(x,y);
-                }
-                else{
-                    up(x,y,screenToWorld(x,y),modifiers(e));
-                }
-            }
-            isDown = false;
-        });
-        var previousScale = 1.0;
-        var changeFactor = 0.1;
-        context.bind("gesturechange",function(e){
-            WorkQueue.pause();
-            e.preventDefault();
-            isDown = false;
-            var scale = e.originalEvent.scale;
-            //Zoom.scale(previousScale / scale,true);
-            // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
-            Zoom.scale(previousScale / scale);
-            previousScale = scale;
-        });
-        context.bind("gestureend",function(){
-            WorkQueue.gracefullyResume();
-            previousScale = 1.0;
-        });
+				context.css({"touch-action":"none"});
+				var isGesture = false;
+				var trackedTouches = {};
+				var updatePoint = function(pointerEvent){
+					var pointId = pointerEvent.originalEvent.pointerId;
+					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
+					var o = offset();
+					var x = pointerEvent.pageX - o.left;
+					var y = pointerEvent.pageY - o.top;
+					var z = pointerEvent.originalEvent.pressure || 0.5;
+					var worldPos = screenToWorld(x,y);
+					var newPoint = {
+						"x":worldPos.x,
+						"y":worldPos.y,
+						"screenX":x,
+						"screenY":y,
+						"z":z
+					};
+					var pointItem = trackedTouches[pointId] || {
+						"pointerId":pointId,
+						"pointerType":pointerEvent.originalEvent.pointerType,
+						"eraser":isEraser,
+						"points":[]
+					};
+					pointItem.points.push(newPoint);
+					pointItem.eraser = pointItem.eraser || isEraser;
+					trackedTouches[pointId] = pointItem;
+					if (_.size(trackedTouches) > 1){
+						if (isGesture == false){
+							_.each(trackedTouches,function(series){
+								series.points = [_.last(series.points)];
+							});
+						}
+						isGesture = true;
+					}
+					return {
+						"pointerType":pointerEvent.pointerType,
+						"eraser":pointItem.eraser,
+						"x":x,
+						"y":y,
+						"z":z,
+						"worldPos":worldPos
+					};	
+				};
+				var releasePoint = function(pointerEvent){
+					var pointId = pointerEvent.originalEvent.pointerId;
+					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
+					var o = offset();
+					var x = pointerEvent.pageX - o.left;
+					var y = pointerEvent.pageY - o.top;
+					var z = pointerEvent.originalEvent.pressure || 0.5;
+					var worldPos = screenToWorld(x,y);
+					delete trackedTouches[pointId];
+					if (isGesture && _.size(trackedTouches) == 0){
+						isGesture = false;
+						isDown = false;
+					}
+					return {
+						"pointerType":pointerEvent.pointerType,
+						"eraser":isEraser,
+						"x":x,
+						"y":y,
+						"z":z,
+						"worldPos":worldPos
+					};	
+				}
+				if (detectPointerEvents()){
+					var performGesture = _.throttle(function(){
+						if (_.size(trackedTouches) > 1){
+							takeControlOfViewbox();
+							
+							var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+								var first = _.first(item.points);
+								var last = _.last(item.points);
+								return [first,last];
+							});
+							trackedTouches = {};
+							var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+							var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+
+							Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+
+							var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;})); 
+							var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;})); 
+							var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;})); 
+							var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;})); 
+							var prevYScale = prevNorthMost - prevSouthMost;
+							var prevXScale = prevWestMost - prevEastMost;
+
+							var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;})); 
+							var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;})); 
+							var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;})); 
+							var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;})); 
+							var yScale = northMost - southMost;
+							var xScale = westMost - eastMost;
+							
+							var previousScale = (prevXScale + prevYScale)	/ 2;
+							var currentScale = (xScale + yScale)	/ 2;
+							//console.log("scaling:",previousScale,currentScale);
+							Zoom.scale(previousScale / currentScale);
+						}
+					},25);
+					context.bind("pointerdown",function(e){
+						var point = updatePoint(e);
+						e.preventDefault();
+						WorkQueue.pause();
+						if (_.size(trackedTouches) == 1 && !isGesture){
+							isDown = true;
+							down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+						}
+					});
+					context.bind("pointermove",function(e){
+						var point = updatePoint(e);
+						e.preventDefault();
+						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+							performGesture();
+						}
+						if (_.size(trackedTouches) == 1 && !isGesture){
+							if(isDown){
+								move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+							}
+						}
+					});
+					context.bind("pointerup",function(e){
+						var point = releasePoint(e);
+						WorkQueue.gracefullyResume();
+						e.preventDefault();
+						if(isDown && !isGesture){
+								up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+						}
+						isDown = false;
+					});
+					var pointerOut = function(x,y){
+							trackedTouches = {};
+							WorkQueue.gracefullyResume();
+							var worldPos = screenToWorld(x,y);
+							var worldX = worldPos.x;
+							var worldY = worldPos.y;
+							if(worldX < viewboxX){
+									takeControlOfViewbox();
+									Extend.left();
+							}
+							else if(worldX >= (viewboxX + viewboxWidth)){
+									takeControlOfViewbox();
+									Extend.right();
+							}
+							else if(worldY < viewboxY){
+									takeControlOfViewbox();
+									Extend.up();
+							}
+							else if(worldY >= (viewboxY + viewboxHeight)){
+									takeControlOfViewbox();
+									Extend.down();
+							}
+							isDown = false;
+					}
+					var pointerClose = function(e){
+						var point = releasePoint(e);
+						WorkQueue.gracefullyResume();
+						e.preventDefault();
+						if(isDown){
+								pointerOut(e.offsetX,e.offsetY);
+						}
+						isDown = false;
+					};
+					context.bind("pointerout",pointerClose);
+					context.bind("pointerleave",pointerClose);
+					context.bind("pointercancel",pointerClose);
+
+				} else {
+					context.bind("mousedown",function(e){
+							WorkQueue.pause();
+							var o = offset();
+							e.preventDefault();
+							isDown = true;
+							var x = e.pageX - o.left;
+							var y = e.pageY - o.top;
+							var z = 0.5;
+							var worldPos = screenToWorld(x,y);
+							down(x,y,z,worldPos,modifiers(e));
+					});
+					context.bind("mousemove",function(e){
+							if(isDown){
+									var o = offset();
+									e.preventDefault();
+									var x = e.pageX - o.left;
+									var y = e.pageY - o.top;
+									var z = 0.5;
+									move(x,y,z,screenToWorld(x,y),modifiers(e));
+							}
+					});
+					context.bind("mouseup",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									var o = offset();
+									var x = e.pageX - o.left;
+									var y = e.pageY - o.top;
+									var z = 0.5;
+									var worldPos = screenToWorld(x,y);
+									up(x,y,z,worldPos,modifiers(e));
+							}
+							isDown = false;
+					});
+					var mouseOut = function(x,y){
+							WorkQueue.gracefullyResume();
+							var worldPos = screenToWorld(x,y);
+							var worldX = worldPos.x;
+							var worldY = worldPos.y;
+							if(worldX < viewboxX){
+									takeControlOfViewbox();
+									Extend.left();
+							}
+							else if(worldX >= (viewboxX + viewboxWidth)){
+									takeControlOfViewbox();
+									Extend.right();
+							}
+							else if(worldY < viewboxY){
+									takeControlOfViewbox();
+									Extend.up();
+							}
+							else if(worldY >= (viewboxY + viewboxHeight)){
+									takeControlOfViewbox();
+									Extend.down();
+							}
+							isDown = false;
+					}
+					context.bind("mouseout",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									mouseOut(e.offsetX,e.offsetY);
+							}
+							isDown = false;
+					});
+					var touches;
+					var masterTouch;
+					var prevPos;
+					var touchesToWorld = function(touches){
+							return touches.map(function(t){
+									return screenToWorld(t.x,t.y);
+							});
+					}
+					var averagePos = function(touches){
+							return {
+									x:average(_.map(touches,"x")),
+									y:average(_.map(touches,"y"))
+							};
+					}
+					var offsetTouches = function(ts){
+							var touches = [];
+							var o = offset();
+							$.each(ts,function(i,touch){
+									touches.push({
+											x: touch.pageX - o.left,
+											y: touch.pageY - o.top,
+											identifier:touch.identifier
+									});
+							});
+							return touches;
+					}
+					context.bind("touchstart",function(e){
+							WorkQueue.pause();
+							e.preventDefault();
+							var touches = offsetTouches(e.originalEvent.touches);
+							if(touches.length == 1){
+									var t = touches[0];
+									var worldPos = screenToWorld(t.x,t.y);
+									isDown = true;
+									var z = 0.5;
+									down(t.x,t.y,z,worldPos,modifiers(e));
+							}
+							else{
+									var avg = averagePos(touches);
+									prevPos = avg;
+							}
+					});
+					var distance = function(p1,p2){
+							return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
+					}
+					context.bind("touchmove",function(e){
+							e.preventDefault();
+							var touches = offsetTouches(e.originalEvent.touches);
+							switch(touches.length){
+							case 0 : break;
+							case 1:
+									if(isDown){
+											var t = touches[0];
+											var z = 0.5;
+											move(t.x,t.y,z,screenToWorld(t.x,t.y),modifiers(e));
+									}
+									break;
+							default:
+									var pos = averagePos(touches);
+									var xDelta = pos.x - prevPos.x;
+									var yDelta =  pos.y - prevPos.y;
+									prevPos = pos;
+									takeControlOfViewbox();
+									Pan.translate(-1 * xDelta,-1 * yDelta);
+									break;
+							}
+					});
+					context.bind("touchend",function(e){
+							WorkQueue.gracefullyResume();
+							e.preventDefault();
+							if(isDown){
+									var o = offset();
+									var t = e.originalEvent.changedTouches[0];
+									var x = t.pageX - o.left;
+									var y = t.pageY - o.top;
+									var z = 0.5;
+									if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
+											mouseOut(x,y);
+									}
+									else{
+											up(x,y,z,screenToWorld(x,y),modifiers(e));
+									}
+							}
+							isDown = false;
+					});
+					var previousScale = 1.0;
+					var changeFactor = 0.1;
+					context.bind("gesturechange",function(e){
+							WorkQueue.pause();
+							e.preventDefault();
+							isDown = false;
+							var scale = e.originalEvent.scale;
+							//Zoom.scale(previousScale / scale,true);
+							// I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
+							takeControlOfViewbox();
+							Zoom.scale(previousScale / scale);
+							previousScale = scale;
+					});
+					context.bind("gestureend",function(){
+							WorkQueue.gracefullyResume();
+							previousScale = 1.0;
+					});
+				}
     });
     return function(forceDown){
         isDown = forceDown;
@@ -438,13 +637,13 @@ var bounceButton = function(button){
 var Modes = (function(){
     var removeActiveMode = function(){
         $(".activeTool").removeClass("activeTool");
-        $(".activeMode").removeClass("activeMode");
+        $(".activeMode").addClass("inactiveMode").removeClass("activeMode");
     };
     var setActiveMode = function(toolsSelector,headerSelector){
-        $(".activeMode").removeClass("activeMode");
-        $(toolsSelector).addClass("activeMode");
-        $(".activeTool").removeClass("activeTool");
-        $(headerSelector).addClass("activeTool");
+        removeActiveMode();
+        $(toolsSelector).addClass("activeMode").removeClass("inactiveMode");
+        $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+        $(headerSelector).addClass("activeTool").removeClass("inactiveTool");
         //Progress.call("onLayoutUpdated");//Only necessary if the rest of the application will be disrupted.  WILL blank canvas.
     };
     var noneMode = {
@@ -462,26 +661,10 @@ var Modes = (function(){
     return {
         currentMode:noneMode,
         none:noneMode,
-        insert:(function(){
+        text:(function(){
+            var currentText = {};
             var marquee = undefined;
             var typingTimer = undefined;
-            var textStyles = [
-                {
-                    size:20,
-                    family:"Arial"
-                },
-                {
-                    size:10,
-                    family:"Arial"
-                }
-            ];
-            var insertModes = [
-                "Text",
-                "Image"
-            ];
-            var textEditor = undefined;
-            var currentInsertMode = "text";
-            var currentStyle = undefined;
             var selectedTexts = [];
             var typingDelay = 1000;
             var typingTicks = 100;
@@ -489,27 +672,40 @@ var Modes = (function(){
             var changeToTextBoxMade = false;
             var currentCaretPos = undefined;
             var currentScrollTop = 0;
+            var lineWithSeparatorRatio = 1.3; //magic number?
             var oldText = "";
             var newText = "";
+            var currentFamily = Fonts.getAllFamilies()[0];
+            var currentSize = Fonts.getAllSizes()[2];
             var typingTimerElapsed = function(){
                 WorkQueue.gracefullyResume();
                 clearTimeout(typingTimer);
                 typingTimer = undefined;
-                var subject = $.extend({},selectedTexts[0]);
+                var subject = $.extend({},currentText);
                 subject.text = oldText;
                 delete subject.canvas;
+		console.log(subject);
                 sendStanza(subject);
             }
             var checkTyping = function(){
                 WorkQueue.pause();
                 var oldTextTest = oldText;
                 oldText = newText;
-                var el = $("#textEditorInputArea").get(0);
+                var scrollHeight = textEditorInput.prop("scrollHeight");
+                if(scrollHeight > textEditorInput.height()){
+                    textEditorInput.height(scrollHeight);
+                }
+                currentText.text = newText;
+                currentText.width = textEditorInput.width();
+                currentText.height = textEditorInput.height();
+                selectedTexts = [currentText];
+                Progress.call("onSelectionChanged",[Modes.select.text]);
+                var el = textEditorInput;
+                if(!el){return;}
                 if ("selectionStart" in el){
                     currentCaretPos = el.selectionStart;
                     currentScrollTop = el.scrollTop;
                 }
-
                 var t = Date.now();
                 var elapsed = t - startTime;
                 if(oldTextTest == newText || changeToTextBoxMade){
@@ -528,234 +724,256 @@ var Modes = (function(){
                     typingTimer = setTimeout(checkTyping,typingTicks);
                 }
             };
+            var hasInitialized = false;
+
+            var textEditor = undefined;
+            var textDropdowns = undefined;
+            var textEditorInput = undefined;
+            var fontFamilySelector = undefined;
+            var fontSizeSelector = undefined;
+            var fontColorSelector = undefined;
+            var fontBoldSelector = undefined;
+            var fontItalicSelector = undefined;
+            var fontUnderlineSelector = undefined;
+
+            var updateTextFont = function(t){
+                t.font = sprintf("%spx %s",t.size,t.family);
+            }
+            var updateTextEditor = function(){
+                if ("type" in currentText && currentText.type == "text"){
+                    var h = undefined;
+                    prerenderText(currentText);
+                    if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
+                        h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
+                        textEditorInput.val(currentText.runs.join("\n"));
+                    } else {
+                        h = px(currentText.size);
+                        textEditorInput.val(currentText.text);
+                    }
+                    textEditorInput.width(currentText.width);
+                    textEditorInput.height(currentText.height);
+
+                    var screenPos = worldToScreen(currentText.x,currentText.y);
+                    var possiblyAdjustedHeight = Math.max(currentText.height,h);
+                    var possiblyAdjustedWidth = currentText.width;//HUH?  This is just, like, this crazy bug.  Why would we want it to grow every time it's updated? * 1.1;
+                    var possiblyAdjustedX = screenPos.x;
+                    var possiblyAdjustedY = screenPos.y;
+                    var acceptableMinY = 30;
+                    var acceptableMaxX = boardWidth - 100;
+                    //var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
+                    var acceptableMaxY = boardHeight - textEditor.height();//boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
+                    if (possiblyAdjustedX > acceptableMaxX){
+                        /*The screen should move, not the box*/
+                        possiblyAdjustedX = screenPos.x - textEditor.width();
+                    }
+                    if (possiblyAdjustedY < acceptableMinY){
+                        possiblyAdjustedY = acceptableMinY;
+                    }
+                    if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
+                        possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
+                    }
+                    // there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
+                    textEditorInput.css({
+                        width:px(possiblyAdjustedWidth),
+                        "font-weight": currentText.weight,
+                        "font-style": currentText.style,
+                        "text-decoration": currentText.decoration,
+                        "color": currentText.color[0],
+                        "min-height":h,
+                        "font-family":currentText.family,
+                        "font-size":px(currentText.size),
+                        position:"absolute",
+                        left:px(possiblyAdjustedX),
+                        top:px(possiblyAdjustedY),
+                        padding:0,
+                        border:0,
+                        background:"white"
+                        /*width:px(possiblyAdjustedWidth),*/
+                        /*"min-width":px(240)*/
+                    });
+                    updateTextFont(currentText);
+                    if ("setSelectionRange" in textEditorInput){
+                        textEditorInput.setSelectionRange(currentCaretPos,currentCaretPos);
+                        $(textEditorInput).scrollTop(currentScrollTop);
+                    }
+                    $("#textEditorClose").on("click",function(){
+                        textEditor.hide();
+                    });
+                    fontFamilySelector.val(currentText["family"]);
+                    fontSizeSelector.val(currentText["size"]);
+                    fontColorSelector.val(currentText["color"]);
+                    if (currentText.weight == "bold"){
+                        fontBoldSelector.addClass("active");
+                    } else {
+                        fontBoldSelector.removeClass("active");
+                    }
+                    if (currentText.style == "italic"){
+                        fontItalicSelector.addClass("active");
+                    } else {
+                        fontItalicSelector.removeClass("active");
+                    }
+                    if (currentText.decoration == "underline"){
+                        fontUnderlineSelector.addClass("active");
+                    } else {
+                        fontUnderlineSelector.removeClass("active");
+                    }
+                    textEditor.show();
+                    //textDropdowns.show();
+                    textEditorInput.focus();
+                } else {
+                    textEditor.hide();
+                    //textDropdowns.hide();
+                    textEditorInput.hide();
+                }
+            };
+            if (!hasInitialized){
+                $(function(){
+                    hasInitialized = true;
+                    textEditor = $("#textEditor");
+                    textDropdowns = $("#textDropdowns");
+                    textEditorInput = $("#textEditorInputArea");
+                    fontFamilySelector = $("#fontFamilySelector");
+                    fontSizeSelector = $("#fontSizeSelector");
+                    fontColorSelector = $("#fontColorSelector");
+                    fontBoldSelector = $("#fontBoldSelector");
+                    fontItalicSelector = $("#fontItalicSelector");
+                    fontUnderlineSelector = $("#fontUnderlineSelector");
+                    /*
+                     textEditorInput.resizable({
+                     handles:"ne se nw sw",
+                     stop:function(event,ui){
+                     currentText.width = ui.width;
+                     currentText.height = ui.height;
+                     prerenderText(currentText);
+                     }
+                     });
+                     */
+                    textEditorInput.hide();
+                    textEditor.hide();
+                    //textDropdowns.hide();
+                    var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
+                    fontFamilySelector.empty();
+                    Fonts.getAllFamilies().map(function(family){
+                        fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
+                    });
+                    fontFamilySelector.on("change",function(e){
+                        var newFamily = $(this).val();
+                        currentFamily = newFamily;
+                        if ("family" in currentText){
+                            currentText["family"] = newFamily;
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
+                    fontSizeSelector.empty();
+                    Fonts.getAllSizes().map(function(size){
+                        fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
+                    });
+                    fontSizeSelector.on("change",function(e){
+                        var newSizeInt = parseInt($(this).val());
+                        currentSize = newSizeInt;
+                        if ("size" in currentText){
+                            currentText["size"] = newSizeInt;
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
+                    fontColorSelector.empty();
+                    Colors.getAllNamedColors().map(function(color){
+                        fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
+                    });
+                    fontColorSelector.on("change",function(e){
+                        var newColor = $(this).val();
+                        if ("color" in currentText){
+                            currentText["color"] = Colors.getColorForName(newColor);
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    fontBoldSelector.on("click",function(){
+                        if ("weight" in currentText){
+                            currentText["weight"] = !fontBoldSelector.hasClass("active") ? "bold" : "Normal";
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    fontItalicSelector.on("click",function(){
+                        if ("style" in currentText){
+                            currentText["style"] = !fontItalicSelector.hasClass("active") ? "italic" : "Normal";
+                            typingTimerElapsed();
+                        }
+                        updateTextEditor();
+                    });
+                    fontUnderlineSelector.on("click",function(){
+                        if ("decoration" in currentText){
+                            currentText["decoration"] = !fontUnderlineSelector.hasClass("active") ? "underline" : "Normal";
+                        }
+                        updateTextEditor();
+                        typingTimerElapsed();
+                    });
+                    textEditorInput.keyup(function(e){
+                        if ("type" in currentText && currentText.type == "text"){
+                            e.stopPropagation();
+                            var el = $(this).get(0);
+                            if ("selectionStart" in el && currentCaretPos != undefined){
+                                currentCaretPos = el.selectionStart;
+                                currentScrollTop = el.scrollTop;
+                            }
+                            if (e.ctrlKey){
+                                if(e.keyCode == 73) {
+                                    if(currentText.style == "Normal"){
+                                        currentText["style"] = "italic";
+                                    }
+                                    else {
+                                        currentText["style"] = "Normal";
+                                    }
+                                    updateTextEditor();
+                                    sendText();
+                                }
+                                if (e.keyCode == 66){
+                                    if (currentText.weight == "Normal"){
+                                        currentText["weight"] = "bold";
+                                    } else {
+                                        currentText["weight"] = "Normal";
+                                    }
+                                    updateTextEditor();
+                                    typingTimerElapsed();
+                                }
+                            } else {
+                                newText = $(this).val();
+                                checkTyping();
+                            }
+                        }
+                    }).keydown(function(e){
+                        if ("type" in currentText && currentText.type == "text"){
+                            e.stopPropagation();
+                        }
+                    });
+                    textEditorInput.bind("paste",function(e){
+                        if ("type" in currentText && currentText.type == "text"){
+                            var thisBox = $(this);
+                            if ("type" in e && e.type == "paste"){
+                                window.setTimeout(function(){
+                                    newText = thisBox.val();
+                                    checkTyping();
+                                },0);
+                            }
+                        }
+                    });
+                });
+            }
             var removeTextEditor = function(){
                 if(typingTimer){
                     typingTimerElapsed();
                 }
-                $("#insertOptions").remove();
-                $("#textEditor").remove();
+                currentText = {};
+                textEditor.hide();
+                //textDropdowns.hide();
             };
-            var noop = function(){};
-            var handleFilesSelected = function(worldPos){
-                return function(e){
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var files = e.target.files || e.dataTransfer.files;
-                    var limit = files.length;
-                    var file = files[0];
-                    if (file.type.indexOf("image") == 0) {
-                        WorkQueue.pause();
-                        var t = Date.now();
-                        var identity = sprintf("%s%s",UserSettings.getUsername(),t);
-                        var actionsCompleted = 0;
-                        var necessaryActions = 4;//readLocal,upload,sendStanza,receiveStanza
-                        var reader = new FileReader();
-                        var pos = worldToScreen(worldPos.x,worldPos.y);
-                        var pkg = $("<div />").css({
-                            position:"relative",
-                            left:px(pos.left),
-                            top:px(pos.top)
-                        });
-                        if (marquee){
-                            var selectionAdorner = $("#textAdorner");
-                            selectionAdorner.empty();
-                            selectionAdorner.append(marquee);
-                            pkg.insertAfter(marquee);
-                        }
-                        var imageSizeControls = $("<div/>", {
-                            id:"imageSizeControls"
-                        }).css({
-                            height:px("80")
-                        }).appendTo(pkg);
-                        var thumbnail = $("<canvas />",{id:"imageUploadThumbnail"}).appendTo(pkg);
-                        var p = progress().value(actionsCompleted).max(necessaryActions);
-                        p.element.css({
-                            margin:"auto"
-                        });
-                        var progressContainer = $("<div />").css({
-                            position:"absolute",
-                            top:90,
-                            left:0,
-                            width:"100%",
-                            "text-align":"center"
-                        }).appendTo(pkg).append(p.element);
-                        var statusMesage = $("<div />").appendTo(pkg);
-                        updateTracking(identity,function(){
-                            actionsCompleted++;
-                            p.value(actionsCompleted);
-                            if(actionsCompleted >= necessaryActions){
-                                WorkQueue.gracefullyResume();
-                                stopTracking(identity);
-                            }
-                        },function(){
-                            WorkQueue.gracefullyResume();
-                            pkg.remove();
-                        });
-                        reader.onload = function(e){
-                            updateTracking(identity);
-                            var img = new Image();
-                            img.onload = function(e){
-                                var onComplete = function(){
-                                    var scale = viewboxWidth / boardWidth;
-                                    var screenWidth = img.width / scale;
-                                    var screenHeight = img.height / scale;
-                                    var centerX = worldPos.x + img.width / 2;
-                                    var centerY = worldPos.y + img.height / 2;
-                                    Extend.center(centerX,centerY);
-                                    p.element.css({
-                                        top:px(centerY / 2)
-                                    });
-                                    pkg.css({
-                                        left:px((boardWidth - screenWidth) / 2),
-                                        top:px((boardHeight - screenHeight) / 2),
-                                        "background-color":"lightgray",
-                                        border:"2px dotted blue"
-                                    });
-                                    var thumbnailDrawer = function(w,h){
-                                        return function(){
-                                            thumbnail.attr("width",w);
-                                            thumbnail.attr("height",h);
-                                            thumbnail.css({
-                                                width:px(w),
-                                                height: px(h)
-                                            });
-                                            thumbnail[0].getContext("2d").drawImage(img,0,0,w,h);
-                                        }
-                                    }
-                                    thumbnailDrawer(img.width,img.height)();
-                                    var scaleByProportion = function(scaleFactor, buttonName) {
-                                        return $("<div/>", {
-                                            class:"imageUploadSizeChoice"
-                                        })
-                                            .on("click",bounceAnd(thumbnailDrawer(img.width * scaleFactor, img.height * scaleFactor)))
-                                            .append($("<span/>",{text:buttonName}));
-                                    };
-                                    var scaleAtFixedSize = function(size, buttonName) {
-                                        return scaleByProportion(size/ Math.max(img.width,img.height),buttonName);
-                                    };
-                                    var thumbSize = scaleAtFixedSize(120, "120px");
-                                    var miniature = scaleAtFixedSize(320, "320px");
-                                    var nativeImage = scaleByProportion(1, "Native Size");
-                                    var mediumImage = scaleByProportion(0.75, "3/4 of Size");
-                                    var smallImage = scaleByProportion(0.5, "1/2 of Size");
-                                    var currentSlide = Conversations.getCurrentSlideJid();
-                                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(file.name.split(".")[0]));
-                                    var uploadImage = $("<div/>", {
-                                        class:"imageUploadSizeChoice",
-                                        text:"Upload"
-                                    }).on("click", bounceAnd(function() {
-                                        $.ajax({
-                                            url: url,
-                                            type: 'POST',
-                                            success: function(e){
-                                                updateTracking(identity);
-                                                //                                                var thumbnail = $(thumbnail);
-                                                var thumbnail = $("#imageUploadThumbnail");
-                                                var loader = $("#upload");
-                                                var imageStanza = {
-                                                    type:"image",
-                                                    author:UserSettings.getUsername(),
-                                                    timestamp:t,
-                                                    tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+identity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
-                                                    //identity,
-                                                    identity:identity,
-                                                    slide:currentSlide.toString(),
-                                                    source:$(e).text(),
-                                                    width:parseFloat(thumbnail.width()),
-                                                    height:parseFloat(thumbnail.height()),
-                                                    target:"presentationSpace",
-                                                    privacy:Privacy.getCurrentPrivacy(),
-                                                    x:worldPos.x,
-                                                    y:worldPos.y
-                                                };
-                                                console.log("Sending image stanza",imageStanza);
-                                                sendStanza(imageStanza);
-                                                updateTracking(identity);
-                                            },
-                                            error: function(e){
-                                                pkg.addClass("fail");
-                                            },
-                                            data:thumbnail[0].toDataURL(),
-                                            cache: false,
-                                            contentType: false,
-                                            processData: false
-                                        });
-                                    }));
-                                    imageSizeControls.append(thumbSize).append(miniature).append(smallImage).append(mediumImage).append(nativeImage);
-                                    uploadImage.appendTo(pkg);
-                                }
-                                var sx = viewboxWidth / img.width;
-                                var sy = viewboxHeight / img.height;
-                                var shift = 1 / Math.min(sx,sy);
-                                var scale = viewboxWidth / boardWidth;
-                                if(shift > 1){
-                                    Zoom.zoom(shift,true,onComplete);
-                                }
-                                else{
-                                    onComplete();
-                                }
-                            }
-                            img.src=e.target.result;
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                }
-            };
-            var newInsertOptions = function(x,y,worldPos,onText,onImage){
-                var clearOptions = function(){
-                    $("#insertOptions").remove();
-
-                }
-                var clearBefore = function(func){
-                    return function(){
-                        clearOptions();
-                        func();
-                    }
-                }
-                onText = clearBefore(onText);
-                onImage = clearBefore(onImage);
-                clearOptions();
-                var options = $("<div />",{
-                    id:"insertOptions",
-                    class:"insertOptionsContainer"
-                }).css({
-                    position:"absolute",
-                    left:px(x - 30),
-                    top:px(y)
-                });
-                options.append($("<div />",{
-                    text:"X",
-                    class:"closeButton"
-                }).click(bounceAnd(function(){
-                    options.remove();
-                })));
-                if(currentInsertMode.toLowerCase() == "image"){
-                    var insertImage = $("<input />",{
-                        type:"file",
-                        accept:"image/*",
-                        class:"fileUploadControl"
-                    }).appendTo(options);
-                    if (options){
-                        insertImage[0].addEventListener("change",function(e){
-                            clearOptions();
-                            handleFilesSelected(worldPos)(e);
-                        },false)
-                    }
-                    return options;
-                } else if (currentInsertMode.toLowerCase() == "text"){
-                    onText();
-                    return false;
-                } else {
-                    return false;
-                }
-            }
-            var color = "Black";
-            var updateTextFont = function(t){
-                t.font = sprintf("%spx %s",t.size,t.family);
-            }
             var createBlankText = function(worldPos){
                 var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
-                var style = currentStyle;
                 var currentSlide = Conversations.getCurrentSlideJid();
                 var text = {
                     author:UserSettings.getUsername(),
@@ -763,8 +981,8 @@ var Modes = (function(){
                     decoration:"None",
                     identity:id,
                     privacy:Privacy.getCurrentPrivacy(),
-                    family:style.family,
-                    size:style.size,
+                    family:currentFamily,
+                    size:currentSize,
                     slide:currentSlide,
                     style:"Normal",
                     tag:id,
@@ -779,10 +997,10 @@ var Modes = (function(){
                     type:"text",
                     weight:"Normal"
                 };
-                updateTextFont(text);
+                selectedTexts = [text];
                 prerenderText(text);
-                selectedTexts = [];
-                selectedTexts.push(text);
+                currentText = text;
+                updateTextEditor();
                 return text;
             };
             var alteredText = function(t){
@@ -792,297 +1010,9 @@ var Modes = (function(){
                 checkTyping();
                 return t;
             };
-            var textCustomizationOptions = function(text){
-                var options = $("<div />",{
-                    class:"textOptionsContainer"
-                });
-                var combobox = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var cont = $("<span/>").css({
-                        position:"relative"
-                    });
-                    var setTextPropValue = function(t){
-                        var newVal = transform ? transform(t) : t;
-                        var oldVal = text[property];
-                        if (newVal != oldVal){
-                            text[property] = newVal;
-                            alteredText(text);
-                            editText(text);
-                        }
-                    };
-                    var topRow = $("<div/>");
-                    var textArea = $("<input/>",{
-                        type:"text",
-                        class: "comboBoxTextfield",
-                        value:transformedValue
-                    }).on("blur",function(){
-                        var v = $(this).val();
-                        setTextPropValue(v);
-                    }).keydown(function(e){
-                    }).keyup(function(e){
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (e.keyCode == 13){
-                            var v = $(this).val();
-                            setTextPropValue(v);
-                        }
-                    });
-                    var toggleButton = $("<input/>",{
-                        class: "comboBoxButton ",
-                        type: "button",
-                        value:"More"
-                    });
-                    var bottomRow = $("<div/>").css({
-                        position:"absolute",
-                        "z-index":100
-                    });
-                    var listOfOptions = $("<div/>",{
-                        class:"comboBoxList"
-                    }).html(unwrap(opts.map(function(opt){
-                        return $("<div/>",{
-                            class:"comboBoxListItem",
-                            text:opt
-                        }).click(bounceAnd(function(){setTextPropValue(opt);}));
-                    })));
-                    var listContainer = $("<span/>",{
-                        class:"comboBoxListContainer"
-                    }).append(listOfOptions).hide();
-                    toggleButton.click(bounceAnd(function(){
-                        var isOpen = listOfOptions.is(":visible");
-                        $(".comboBoxListContainer").hide();
-                        if (!isOpen){
-                            listContainer.show();
-                        }
-                    }));
-                    topRow.append(textArea,toggleButton);
-                    bottomRow.append(listContainer);
-                    cont.append(topRow,bottomRow);
-                    options.append(cont);
-                }
-                var dropdown = function(opts,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    if (!(_.contains(opts,transformedValue))){
-                        opts.push(transformedValue);
-                    }
-                    var cont = $("<select />",{
-                        class:"textOptionsDropdown"
-                    }).html(unwrap(opts.map(function(opt){
-                        var o = $("<option />",{
-                            value:opt,
-                            text:opt
-                        });
-                        if(transformedValue == opt){
-                            o.prop("selected",true);
-                        }
-                        return o;
-                    }))).change(function(){
-                        var v = $(this).val();
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    });
-                    options.append(cont);
-                }
-                var toggle = function(name,property,transform,transformBack){
-                    var value = text[property];
-                    var transformedValue = transformBack ? transformBack(value) : value;
-                    var el = $("<span />",{
-                        class:"textOptionsToggleContainer"
-                    });
-                    $("<label />",{
-                        text:name,
-                        class:"textOptionsToggleLabel",
-                        for:name
-                    }).appendTo(el);
-                    var cb = $("<input />",{
-                        type:"checkbox",
-                        class:"textOptionsToggleButton",
-                        name:name
-                    }).change(function(change){
-                        var v = $(this).prop("checked");
-                        text[property] = transform? transform(v) : v;
-                        alteredText(text);
-                        editText(text);
-                    }).appendTo(el);
-                    if (transformedValue){
-                        cb.prop("checked",true);
-                    } else {
-                        cb.prop("checked",false);
-                    }
-                    options.append(el);
 
-                }
-                dropdown(Fonts.getAllFamilies(),"family");
-                combobox(Fonts.getAllSizes(),"size",parseInt);
-                combobox(_.map(Colors.getAllNamedColors(),function(c){return c.name;}),"color",Colors.getColorForName,Colors.getNameForColor);
-                toggle("Bold","weight",function(bool){if (bool){ return "bold";} else {return "Normal";}},function(string){return string == "bold";});
-                toggle("Italic", "style", function(bool){if(bool){return "italic";} else { return "Normal";}}, function(string){return string=="italic"});
-                toggle("Underline","decoration",function(bool){if (bool) {return "underline";} else {return "Normal";}}, function(string){return string == "underline";});
-                return options;
-            }
-            var openingEditBox = false;
-            var lineWithSeparatorRatio = 1.3;
-            var createTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var input = $("<textarea />",{
-                    id:"textEditorInputArea"
-                }).css({
-                    "font-family":text.family,
-                    "font-size":px(text.size),
-                    width:px(text.width),
-                    height:px(text.runs.length * text.size * lineWithSeparatorRatio)
-                });
-                input.keyup(function(e){
-                    e.stopPropagation();
-                    var el = $(this).get(0);
-                    if ("selectionStart" in el && currentCaretPos != undefined){
-                        currentCaretPos = el.selectionStart;
-                        currentScrollTop = el.scrollTop;
-                    }
-                    if (e.ctrlKey){
-                        if(e.keyCode == 73) {
-                            if(text.style == "Normal"){
-                                text["style"] = "italic";
-                            }
-                            else {
-                                text["style"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                        if (e.keyCode == 66){
-                            if (text.weight == "Normal"){
-                                text["weight"] = "bold";
-                            } else {
-                                text["weight"] = "Normal";
-                            }
-                            alteredText(text);
-                            editText(text);
-                        }
-                    } else {
-                        newText = $(this).val();
-                        checkTyping();
-                    }
-                }).keydown(function(e){
-                    e.stopPropagation();
-                });
-                input.bind("paste",function(e){
-                    var thisBox = $(this);
-                    if ("type" in e && e.type == "paste"){
-                        window.setTimeout(function(){
-                            newText = thisBox.val();
-                            checkTyping();
-                        },0);
-                    }
-                });
-                $("#textEditorCustomizationOptionsContainer").remove();
-                var customizationOptionsContainer = $("<div />",{
-                    id:"textEditorCustomizationOptionsContainer"
-                }).html(textCustomizationOptions(text));
-                var textEditor = $("<div />",{
-                    id:"textEditor"
-                }).css({
-                    position:"absolute",
-                    left:px(newPos.x),
-                    top:px(newPos.y)
-                }).append(input).append(customizationOptionsContainer);
-                if (marquee){
-                    var selectionAdorner = $("#textAdorner");
-                    selectionAdorner.empty();
-                    selectionAdorner.append(marquee);
-                    textEditor.insertAfter(marquee);
-                }
-                input.val(text.runs.join("\n"));
-                updateTextEditor(text);
-                input.focus();
-            }
-            var updateTextEditor = function(text){
-                var b = text.bounds;
-                var newPos = worldToScreen(
-                    b[0],
-                    b[1]);
-                var possiblyAdjustedHeight = text.height;
-                var possiblyAdjustedWidth = text.width * 1.1;
-                var possiblyAdjustedX = newPos.x;
-                var possiblyAdjustedY = newPos.y;
-                var acceptableMaxHeight = boardHeight * 0.7;
-                var acceptableMaxWidth = boardWidth * 0.7;
-                var acceptableMinX = 30;
-                var acceptableMinY = 30;
-                var acceptableMaxX = boardWidth - 100;
-                var acceptableMaxY = boardHeight - 100;
-
-                if (possiblyAdjustedWidth > acceptableMaxWidth){
-                    possiblyAdjustedWidth = acceptableMaxWidth;
-                }
-                if (possiblyAdjustedHeight > acceptableMaxHeight){
-                    possiblyAdjustedHeight = acceptableMaxHeight;
-                }
-                if (possiblyAdjustedX < acceptableMinX){
-                    possiblyAdjustedX = acceptableMinX;
-                }
-                if ((possiblyAdjustedX + possiblyAdjustedWidth) > acceptableMaxX){
-                    possiblyAdjustedX = acceptableMaxX - possiblyAdjustedWidth;
-                }
-                if (possiblyAdjustedY < acceptableMinY){
-                    possiblyAdjustedY = acceptableMinY;
-                }
-                if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
-                    possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
-                }
-                var textEditor = $("#textEditor");
-                var h = px(text.runs.length * text.size * lineWithSeparatorRatio);
-                textEditor.css({
-                    position:"absolute",
-                    left:px(possiblyAdjustedX),
-                    top:px(possiblyAdjustedY),
-                    width:px(possiblyAdjustedWidth),
-                    "min-width":px(240)
-                });
-                $("#textEditorCustomizationOptionsContainer").html(textCustomizationOptions(text));
-                textEditor.find("#closeTextEditor").remove();
-                textEditor.prepend($("<div />",{
-                    id:"closeTextEditor",
-                    class:"closeButton",
-                    text:"X"
-                }).css({
-                    "float":"right"
-                }).click(bounceAnd(function(){
-                    textEditor.remove();
-                })));
-
-                var inputArea = $("#textEditorInputArea");
-                inputArea.css({
-                    width:px(possiblyAdjustedWidth),
-                    "font-weight": text.weight,
-                    "font-style": text.style,
-                    "text-decoration": text.decoration,
-                    "color": text.color[0],
-                    "height":h,
-                    "font-family":text.family,
-                    "font-size":px(text.size)
-                });
-                var el = inputArea;
-                if ("setSelectionRange" in el){
-                    el.setSelectionRange(currentCaretPos,currentCaretPos);
-                    $(el).scrollTop(currentScrollTop);
-                }
-                inputArea.focus();
-            }
-            var editText = function(text,shouldNotPan){
-                var innerCreateTextboxFunction = undefined;
-                if (openingEditBox == true){
-                    oldText = text.text;
-                    openingEditBox = false;
-                    innerCreateTextboxFunction = createTextEditor;
-                } else {
-                    innerCreateTextboxFunction = updateTextEditor;
-                }
+            var editText = function(text){
+                oldText = text.text;
                 var inputContents = "";
                 if (oldText.runs != undefined){
                     inputContents = oldText.runs.join("\n");
@@ -1091,44 +1021,34 @@ var Modes = (function(){
                 }
                 newText = inputContents;
                 startTime = Date.now();
-                var chars = Math.max.apply(Math,_.pluck(text.runs,"length"));
-                var xInset = (boardWidth / 2 - text.width / 2);
-                var yInset = (boardHeight / 2 - text.height / 2);
-                var xDelta = text.bounds[0] - viewboxX - xInset;
-                var yDelta = text.bounds[1] - viewboxY - yInset;
-                if (shouldNotPan){
-                    innerCreateTextboxFunction(text);
-                } else {
-                    innerCreateTextboxFunction(text);
-                    //Extend.shift(xDelta,yDelta,innerCreateTextboxFunction(text));
-                }
+                /*
+                 var chars = Math.max.apply(Math,_.map(text.runs,"length"));
+                 var xInset = (boardWidth / 2 - text.width / 2);
+                 var yInset = (boardHeight / 2 - text.height / 2);
+                 var xDelta = text.bounds[0] - viewboxX - xInset;
+                 var yDelta = text.bounds[1] - viewboxY - yInset;
+                 */
+                prerenderText(text);
+                updateTextEditor();
             }
             var possiblyClearEditBoxesFunction = _.debounce(function(){
                 var newSelectedTexts = [];
                 _.forEach(selectedTexts,function(st){
                     if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
                         newSelectedTexts.push(st);
-                    } else if ("runs" in st && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
+                    } else if ("runs" in st && _.size(st.runs) == 1 && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
                         newSelectedTexts.push(st);
                     }
                 });
-                var selectionAdorner = $("#selectionAdorner");
                 selectedTexts = newSelectedTexts;
-                if (Modes.currentMode == Modes.insert && currentInsertMode.toLowerCase() == "text"){
-                    selectionAdorner.empty();
-                    if (_.size(selectedTexts) > 0){
-                        var text = selectedTexts[0];
-                        if (Modes.currentMode == Modes.insert && currentInsertMode.toLowerCase() == "text"){
-                            var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
-                            if (intersectRect(text.bounds,view)){
-                                if (!($("#textEditorInputArea").val())){
-                                    openingEditBox = true;
-                                }
-                                editText(text,true);
-                                drawSelectionBounds(text);
-                            } else {
-                                removeTextEditor();
-                            }
+                if (Modes.currentMode == Modes.text){
+                    if (_.size(selectedTexts) > 0 ){
+                        $("#selectionAdorner").empty();
+                        selectedTexts[0] = currentText;
+                        var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
+                        if (intersectRect(currentText.bounds,view)){
+                            editText(currentText);
+                            drawSelectionBounds(currentText);
                         } else {
                             removeTextEditor();
                         }
@@ -1137,46 +1057,18 @@ var Modes = (function(){
                     }
                 }
             },200);
-
-            Progress.onBoardContentChanged["Modes.insert"] = possiblyClearEditBoxesFunction;
-            Progress.onSelectionChanged["Modes.insert"] = possiblyClearEditBoxesFunction;
-            Progress.historyReceived["Modes.insert"] = possiblyClearEditBoxesFunction;
-            Progress.onViewboxChanged["Modes.insert"] = possiblyClearEditBoxesFunction;
+            Progress.onBoardContentChanged["Modes.text"] = possiblyClearEditBoxesFunction;
+            Progress.onSelectionChanged["Modes.text"] = possiblyClearEditBoxesFunction;
+            Progress.historyReceived["Modes.text"] = possiblyClearEditBoxesFunction;
+            Progress.onViewboxChanged["Modes.text"] = possiblyClearEditBoxesFunction;
+            var noop = function(){};
             return {
                 activate:function(){
-                    marquee = $("<div />",{
-                        id:"textMarquee"
-                    });
-                    var adorner = $("#textAdorner");
-                    adorner.empty();
-                    if(!currentStyle){
-                        currentStyle = textStyles[0];
-                    }
-                    var uploadKey = "fileUploadSupported";
-                    if(uploadKey in Modes.insert){}
-                    else{
-                        Modes.insert[uploadKey] = !($("<input />",{
-                            type:"file"
-                        })[0].disabled);
-                    }
+                    marquee = $("#textMarquee");
                     Modes.currentMode.deactivate();
-                    Modes.currentMode = Modes.insert;
-                    setActiveMode("#insertTools","#insertMode");
+                    Modes.currentMode = Modes.text;
+                    setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
-                    $("#textTools").empty();
-                    _.forEach(insertModes,function(modeName){
-                        var tsButton = $("<div/>",{
-                            class:"modeSpecificTool",
-                            text:modeName
-                        }).on("click",function(){
-                            currentInsertMode = modeName;
-                            $(".activeBrush").removeClass("activeBrush");
-                            $(this).addClass("activeBrush");
-                        }).appendTo("#textTools");
-                        if (modeName.toLowerCase() == currentInsertMode.toLowerCase()){
-                            tsButton.addClass("activeBrush");
-                        }
-                    });
                     Progress.call("onLayoutUpdated");
                     $("#minorText").click(function(){});
                     $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
@@ -1186,14 +1078,14 @@ var Modes = (function(){
                         deleteTransform.isDeleted = true;
                         deleteTransform.textIds = [deletedStanza.identity];
                         sendStanza(deleteTransform);
-                        upload.hide();
                     }));
                     updateStatus("Text input mode");
-                    var up = function(x,y,worldPos){
+                    var up = function(x,y,z,worldPos){
                         if(typingTimer){
                             typingTimerElapsed();
                         }
-                        adorner.append(marquee);
+                        textEditorInput.show();
+                        //textDropdowns.show();
                         marquee.show();
                         marquee.css({
                             left:px(x),
@@ -1201,44 +1093,291 @@ var Modes = (function(){
                         });
                         oldText = "";
                         newText = "";
-                        $("#insertOptions").remove();
-                        $("#textEditor").remove();
                         var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
                         var threshold = 10;
                         var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
                         currentCaretPos = 0;
                         currentScrollTop = 0;
-                        selectedTexts  = _.values(boardContent.texts).filter(function(text){
+                        selectedTexts = _.values(boardContent.texts).filter(function(text){
                             return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
                         });
-                        var text = selectedTexts[0];
-                        if(currentInsertMode.toLowerCase() != "text" || !text){
-                            var options = newInsertOptions(
-                                newScreenPos.x,newScreenPos.y,worldPos,
-                                function(){
-                                    openingEditBox = true;
-                                    text = createBlankText(worldPos);
-                                    selectedTexts[0] = text;
-                                    editText(text);
-                                },
-                                function(){
-                                });
-                            if(options){
-                                $(marquee).after(options);
-                            }
+                        if (selectedTexts.length > 0){
+                            currentText = selectedTexts[0];
+                            editText(currentText);
+                        } else {
+                            var newText = createBlankText(worldPos);
+                            currentText = newText;
+                            selectedTexts.push(newText);
+                            editText(newText);
                         }
-                        else{
-                            openingEditBox = true;
-                            editText(text);
-                        }
+                        Modes.select.texts = [currentText];
+                        Progress.call("onSelectionChanged",[Modes.select.selected]);
                     }
                     registerPositionHandlers(board,noop,noop,up);
                 },
                 deactivate:function(){
                     removeTextEditor();
+                    textEditorInput.hide();
                     selectedTexts = [];
                     $("#selectionAdorner").empty();
-                    $("#textTools .modeSpecificTool").unbind("click");
+                    unregisterPositionHandlers(board);
+                    removeActiveMode();
+                }
+            };
+        })(),
+
+        image:(function(){
+            var marquee = undefined;
+            var noop = function(){};
+            var currentImage = {};
+            var insertOptions = undefined;
+            var imageInsertOptionsClose = undefined;
+            var imageFileChoice = undefined;
+            var imageSizeControls = undefined;
+            var imageSizeChoiceSelector = undefined;
+            var imageUploadThumbnail = undefined;
+            var imageProgressContainer = undefined;
+            var imageUploadButton = undefined;
+            var imageUploadX = undefined;
+            var imageUploadY = undefined;
+            var imageUploadWidth = undefined;
+            var imageUploadHeight = undefined;
+            var imageSizeChoices = [
+                {name:"160*120",func:function(w,h){return {w:160,h:120}}},
+                {name:"320*240",func:function(w,h){return {w:320,h:240}}},
+                {name:"25%",func:function(w,h){return {w:w / 4, h:h / 4}}},
+                {name:"50%",func:function(w,h){return {w:w / 2, h:h / 2}}},
+                {name:"75%",func:function(w,h){return {w:(w / 4) * 3, h:(h / 4) * 3}}},
+                {name:"Native",func:function(w,h){return {w:w,h:h}}}
+            ];
+            var updateImageEditor = function(){
+                if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                    // there is now only one place that the imageOptions dialog gets positioned, and it's here, so if you want to move it about, etc, do it right here.
+                    insertOptions.css({
+                        position:"absolute",
+                        left:px(currentImage.screenX - 30),
+                        top:px(currentImage.screenY)
+                    });
+                    if ("fileUpload" in currentImage){
+                        imageFileChoice.hide();
+                        imageSizeControls.show();
+                        $.map(imageSizeChoiceSelector.find(".imageSizeChoice"),function(elem){
+                            if ("thumbnailSize" in currentImage && currentImage.thumbnailSize.name == $(elem).text()){
+                                $(elem).addClass("active");
+                            } else {
+                                $(elem).removeClass("active");
+                            }
+                        });
+                        var reader = new FileReader();
+                        reader.onload = function(e){
+                            if (!("thumbnailSize" in currentImage)){
+                                currentImage.thumbnailSize = imageSizeChoices[0];
+                            }
+                            imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+                            var img = new Image();
+                            img.onload = function(e){
+                                var resizedDimensions = currentImage.thumbnailSize.func(img.width,img.height);
+                                var w = resizedDimensions.w;
+                                var h = resizedDimensions.h;
+
+                                var scaledHeight = h;
+                                var scaledWidth = w;
+                                if (w < h){
+                                    //height is larger
+                                    var scaleFactor = h / 300;
+                                    scaledHeight = 300;
+                                    scaledWidth = w / scaleFactor;
+                                } else {
+                                    var sf = w / 300;
+                                    scaledWidth = 300;
+                                    scaledHeight = h / sf;
+                                }
+                                imageUploadThumbnail.attr("width",scaledWidth);
+                                imageUploadThumbnail.attr("height",scaledHeight);
+                                imageUploadThumbnail.css({
+                                    width:px(scaledWidth),
+                                    height: px(scaledHeight)
+                                });
+
+                                imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,scaledWidth,scaledHeight);
+
+                                imageUploadX.text(currentImage.x);
+                                imageUploadY.text(currentImage.y);
+                                imageUploadWidth.text(w);
+                                imageUploadHeight.text(h);
+
+                                //render canvas is responsible for the resizing.  The other canvas is a thumbnail.
+                                var renderCanvas = $("<canvas/>");
+                                renderCanvas.attr("width",w);
+                                renderCanvas.attr("height",h);
+                                renderCanvas.css({
+                                    width:px(w),
+                                    height: px(h)
+                                });
+                                renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                                currentImage.width = w;
+                                currentImage.height = h;
+                                currentImage.resizedImage = renderCanvas[0].toDataURL();
+                                if ("resizedImage" in currentImage){
+                                    imageUploadButton.show();
+                                }
+                            };
+                            img.src = e.target.result;
+                        };
+                        reader.readAsDataURL(currentImage.fileUpload);
+                        if ("resizedImage" in currentImage){
+                            imageUploadButton.show();
+                        } else {
+                            imageUploadButton.hide();
+                        }
+                    } else {
+                        imageFileChoice.show();
+                        imageSizeControls.hide();
+                    }
+                    insertOptions.show();
+                } else {
+                    resetImageUpload();
+                }
+            };
+            var newInsertOptions = function(x,y,worldPos,onImage){
+                currentImage = {
+                    "type":"imageDefinition",
+                    "screenX":x,
+                    "screenY":y,
+                    "x":worldPos.x,
+                    "y":worldPos.y
+                }
+                updateImageEditor();
+            }
+            var resetImageUpload = function(){
+                insertOptions.hide();
+                imageFileChoice.wrap("<form>").closest("form").get(0).reset();
+                imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+                imageUploadX.text("");
+                imageUploadY.text("");
+                imageUploadWidth.text("");
+                imageUploadHeight.text("");
+                imageFileChoice.unwrap();
+                currentImage = {};
+                imageUploadButton
+                    .text("Upload")
+                    .unbind("click")
+                    .on("click",actOnImageButtonClick);
+            };
+            var actOnImageButtonClick = function(){
+                imageUploadButton.unbind("click").text("Uploading");
+                if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
+                    WorkQueue.pause();
+                    var worldPos = {x:currentImage.x,y:currentImage.y};
+                    var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+                    var t = Date.now();
+                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var currentSlide = Conversations.getCurrentSlideJid();
+                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        success: function(e){
+                            updateTracking(identity);
+                            var newIdentity = $(e).find("resourceUrl").text();
+                            var imageStanza = {
+                                type:"image",
+                                author:UserSettings.getUsername(),
+                                timestamp:t,
+                                tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
+                                identity:newIdentity,
+                                slide:currentSlide.toString(),
+                                source:$(e).text(),
+                                width:currentImage.width,
+                                height:currentImage.height,
+                                target:"presentationSpace",
+                                privacy:Privacy.getCurrentPrivacy(),
+                                x:currentImage.x,
+                                y:currentImage.y
+                            };
+                            resetImageUpload();
+                            sendStanza(imageStanza);
+                            WorkQueue.gracefullyResume();
+                        },
+                        error: function(e){
+                            resetImageUpload();
+                            alert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+                            WorkQueue.gracefullyResume();
+                        },
+                        data:currentImage.resizedImage,
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    });
+                }
+            };
+            var hasInitialized = false;
+            $(function(){
+                if (!hasInitialized){
+                    hasInitialized = true;
+                    marquee = $("imageMarquee");
+                    insertOptions = $("#imageInsertOptions");
+                    imageInsertOptionsClose = $("#imageInsertOptionsClose");
+                    imageFileChoice = $("#imageFileChoice");
+                    imageSizeControls = $("#imageSizeControls");
+                    imageSizeChoiceSelector = $("#imageSizeChoiceSelector");
+                    imageUploadThumbnail = $("#imageUploadThumbnail");
+                    imageProgressContainer = $("#imageProgressContainer");
+                    imageUploadButton = $("#imageUploadButton");
+                    imageUploadX = $("#imageUploadX");
+                    imageUploadY = $("#imageUploadY");
+                    imageUploadWidth = $("#imageUploadWidth");
+                    imageUploadHeight = $("#imageUploadHeight");
+                    imageInsertOptionsClose.on("click",resetImageUpload);
+                    imageFileChoice.attr("accept","image/*");
+                    imageFileChoice[0].addEventListener("change",function(e){
+                        if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                            var files = e.target.files || e.dataTransfer.files;
+                            var limit = files.length;
+                            var file = files[0];
+                            if (file.type.indexOf("image") == 0) {
+                                currentImage.fileUpload = file;
+                                currentImage.thumbnailSize = imageSizeChoices[0];
+                                updateImageEditor();
+                            }
+                        }
+                    },false);
+                    var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
+                    imageSizeChoiceSelector.empty();
+                    imageSizeChoices.map(function(isc){
+                        var thisChoice = imageSizeOptionTemplate.clone().text(isc.name).on("click",function(){
+                            if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                                currentImage.thumbnailSize = isc;
+                                updateImageEditor();
+                            }
+                        });
+                        imageSizeChoiceSelector.append(thisChoice);
+                    });
+                    resetImageUpload();
+                }
+            });
+            return {
+                activate:function(){
+                    Modes.currentMode.deactivate();
+                    Modes.currentMode = Modes.image;
+                    setActiveMode("#imageTools","#insertImage");
+                    resetImageUpload();
+                    Progress.call("onLayoutUpdated");
+                    var up = function(x,y,z,worldPos){
+                        marquee.show();
+                        marquee.css({
+                            left:px(x),
+                            top:px(y)
+                        });
+                        resetImageUpload();
+                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
+                        var threshold = 10;
+                        var options = newInsertOptions(newScreenPos.x,newScreenPos.y,worldPos);
+                    }
+                    registerPositionHandlers(board,noop,noop,up);
+                },
+                deactivate:function(){
+                    resetImageUpload();
                     unregisterPositionHandlers(board);
                     removeActiveMode();
                 }
@@ -1253,18 +1392,19 @@ var Modes = (function(){
                 Modes.currentMode = Modes.pan;
                 var originX;
                 var originY;
-                var down = function(x,y){
+                var down = function(x,y,z){
+                    takeControlOfViewbox();
                     originX = x;
                     originY = y;
                 }
-                var move = function(x,y){
+                var move = function(x,y,z){
                     var xDelta = x - originX;
                     var yDelta = y - originY;
                     Pan.translate(-1 * xDelta,-1 * yDelta);
                     originX = x;
                     originY = y;
                 }
-                var up = function(x,y){}
+                var up = function(x,y,z){}
                 registerPositionHandlers(board,down,move,up);
             },
             deactivate:function(){
@@ -1273,35 +1413,57 @@ var Modes = (function(){
             }
         },
         select:(function(){
+						var isAdministeringContent = false;
             var updateSelectionVisualState = function(sel){
-                Modes.select.selected = sel;
-                var shouldShowButtons = function(){
-                    if ("images" in sel && _.size(sel.images) > 0){
-                        return true;
-                    } else if ("inks" in sel && _.size(sel.inks) > 0){
-                        return true;
-                    } else if ("texts" in sel && _.size(sel.texts) > 0){
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                if (shouldShowButtons()){
-                    $("#delete").removeClass("disabledButton");
-                    $("#resize").removeClass("disabledButton");
-                } else {
-                    $("#delete").addClass("disabledButton");
-                    $("#resize").addClass("disabledButton");
-                }
-                if (Modes.currentMode == Modes.select){
-                    $("#selectionAdorner").empty();
-                    _.forEach(["images","texts","inks","highlighters"],function(category){
-                        if (category in sel){
-                            $.each(sel[category],function(i,item){
-                                drawSelectionBounds(item);
-                            });
+                if(sel){
+                    Modes.select.selected = sel;
+                    var shouldShowButtons = function(){
+                        if ("images" in sel && _.size(sel.images) > 0){
+                            return true;
+                        } else if ("inks" in sel && _.size(sel.inks) > 0){
+                            return true;
+                        } else if ("texts" in sel && _.size(sel.texts) > 0){
+                            return true;
+                        } else {
+                            return false;
                         }
-                    });
+                    }
+                    if (shouldShowButtons()){
+                        $("#delete").removeClass("disabledButton");
+                        $("#resize").removeClass("disabledButton");
+												if (isAdministeringContent){
+													$("#ban").removeClass("disabledButton");
+												} else {
+													$("#ban").addClass("disabledButton");
+												}
+                    } else {
+                        $("#delete").addClass("disabledButton");
+                        $("#resize").addClass("disabledButton");
+												$("#ban").addClass("disabledButton");
+                    }
+
+										if (Conversations.shouldModifyConversation()){
+											$("#ban").show();
+											$("#administerContent").show();	
+										} else {
+											$("#ban").hide();
+											$("#administerContent").hide();	
+										}
+										if (isAdministeringContent){
+											$("#administerContent").removeClass("disabledButton");
+										} else {
+											$("#administerContent").addClass("disabledButton");
+										}
+                    if (Modes.currentMode == Modes.select){
+                        $("#selectionAdorner").empty();
+                        _.forEach(["images","texts","inks","highlighters"],function(category){
+                            if (category in sel){
+                                $.each(sel[category],function(i,item){
+                                    drawSelectionBounds(item);
+                                });
+                            }
+                        });
+                    }
                 }
             };
             var clearSelectionFunction = function(){
@@ -1333,10 +1495,54 @@ var Modes = (function(){
                 });
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             },100);
+						var banContentFunction = function(){
+							 if (Modes.select.selected != undefined && isAdministeringContent){
+									var s = Modes.select.selected;			 
+										banContent(
+											Conversations.getCurrentConversationJid(),
+											Conversations.getCurrentSlideJid(),
+											_.uniq(_.map(s.inks,function(e){return e.identity;})),
+											_.uniq(_.map(s.texts,function(e){return e.identity;})),
+											_.uniq(_.map(s.images,function(e){return e.identity;}))
+										);
+								}
+								clearSelectionFunction();
+						};
+						var administerContentFunction = function(){
+							isAdministeringContent = Conversations.shouldModifyConversation() ? !isAdministeringContent : false;
+							if (isAdministeringContent){
+								$("#administerContent").removeClass("disabledButton");
+							} else {
+								$("#administerContent").addClass("disabledButton");
+							}
+							clearSelectionFunction();
+						};	
+
             Progress.onBoardContentChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
+						Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+							if (isAdministeringContent && Conversations.shouldModifyConversation()){
+								isAdministeringContent = false;
+							}
+							if (Conversations.shouldModifyConversation()){
+								$("#ban").show();
+								$("#administerContent").show();	
+								$("#administerContent").bind("click",administerContentFunction);
+								$("#ban").bind("click",banContentFunction);
+							} else {
+								$("#ban").hide();
+								$("#administerContent").hide();	
+								$("#administerContent").unbind("click");
+								$("#ban").unbind("click");
+							}
+							if (isAdministeringContent){
+								$("#administerContent").removeClass("disabledButton");
+							} else {
+								$("#administerContent").addClass("disabledButton");
+							}
+						};
             return {
                 name:"select",
                 selected:{
@@ -1382,6 +1588,8 @@ var Modes = (function(){
                     var threshold = 30;
                     var resizeHandle = [0,0,0,0];
                     var initialHeight = 0;
+										$("#administerContent").bind("click",administerContentFunction);
+										$("#ban").bind("click",banContentFunction);
                     $("#resize").bind("click",function(){
                         var items = _.flatten([
                             _.values(Modes.select.selected.images),
@@ -1416,6 +1624,7 @@ var Modes = (function(){
                                 left:px(resizeLeft),
                                 top:px(resizeTop)
                             }));
+
                         }
                     });
                     var categories = function(func){
@@ -1423,7 +1632,7 @@ var Modes = (function(){
                         func("texts");
                         func("inks");
                     }
-                    var down = function(x,y,worldPos,modifiers){
+                    var down = function(x,y,z,worldPos,modifiers){
                         resizing = false;
                         dragging = false;
                         originPoint = {x:x,y:y};
@@ -1444,7 +1653,7 @@ var Modes = (function(){
                         }
                         else if (!(modifiers.ctrl)){//You can't ctrl-click to drag
                             var isDragHandle = function(property){
-                                return _.any(Modes.select.selected[property],function(el){
+                                return _.some(Modes.select.selected[property],function(el){
                                     if (el){
                                         return intersectRect(el.bounds,ray);
                                     } else {
@@ -1452,7 +1661,7 @@ var Modes = (function(){
                                     }
                                 });
                             }
-                            dragging = _.any(["images","texts","inks"],isDragHandle);
+                            dragging = _.some(["images","texts","inks"],isDragHandle);
                         }
                         marqueeWorldOrigin = worldPos;
                         if(dragging){
@@ -1468,7 +1677,7 @@ var Modes = (function(){
                             updateMarquee(marquee,originPoint,originPoint);
                         }
                     };
-                    var move = function(x,y,worldPos,modifiers){
+                    var move = function(x,y,z,worldPos,modifiers){
                         var currentPoint = {x:x,y:y};
                         var xDelta = x - lastX;
                         var yDelta = y - lastY;
@@ -1504,7 +1713,7 @@ var Modes = (function(){
                             updateMarquee(marquee,originPoint,currentPoint);
                         }
                     };
-                    var up = function(x,y,worldPos,modifiers){
+                    var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
                         if(dragging){
                             var moved = batchTransform();
@@ -1550,7 +1759,6 @@ var Modes = (function(){
                         else{
                             var selectionRect = rectFromTwoPoints(marqueeWorldOrigin,worldPos);
                             var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
-                            console.log("Selection bounds",selectionBounds);
                             var intersected = {
                                 images:{},
                                 texts:{},
@@ -1580,13 +1788,18 @@ var Modes = (function(){
                                     var b = item.bounds;
                                     var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
                                     var overlap = overlapRect(selectionBounds,item.bounds);
-                                    console.log(overlap,selectionThreshold);
                                     if(overlap >= selectionThreshold){
                                         //if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
-                                        if(item.author == UserSettings.getUsername()){
-                                            intersected[category][item.identity] = item;
-                                        }
+																				if (isAdministeringContent){
+																					if(item.author != UserSettings.getUsername()){
+																							intersected[category][item.identity] = item;
+																					}
+																				} else {
+																					if(item.author == UserSettings.getUsername()){
+																							intersected[category][item.identity] = item;
+																					}
+																				}
                                     }
                                 });
                             }
@@ -1594,9 +1807,15 @@ var Modes = (function(){
                             $.each(boardContent.highlighters,function(i,item){
                                 if(intersectRect(item.bounds,selectionBounds)){
                                     incrementKey(intersectAuthors,item.author);
-                                    if(item.author == UserSettings.getUsername()){
-                                        intersected.inks[item.identity] = item;
-                                    }
+																		if (isAdministeringContent){
+																			if(item.author != UserSettings.getUsername()){
+																					intersected.inks[item.identity] = item;
+																			}
+																		} else {
+																			if(item.author == UserSettings.getUsername()){
+																					intersected.inks[item.identity] = item;
+																			}
+																		}
                                 }
                             });
                             if(modifiers.ctrl){
@@ -1604,8 +1823,7 @@ var Modes = (function(){
                                     $.each(intersected[category],function(id,item){
                                         if(id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
-                                        }
-                                        else{
+                                        } else {
                                             Modes.select.selected[category][id] = item;
                                         }
                                     });
@@ -1642,6 +1860,8 @@ var Modes = (function(){
                     $("#resize").unbind("click");
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
+										$("#administerContent").unbind("click");
+										$("#ban").unbind("click");
                 }
             }
         })(),
@@ -1659,7 +1879,9 @@ var Modes = (function(){
                 var startWorldPos;
                 var proportion;
                 var originPoint = {x:0,y:0};
-                var down = function(x,y,worldPos){
+                var down = function(x,y,z,worldPos){
+                    //adding this so that using the zoom marquee results in the autofit being turned off.
+                    takeControlOfViewbox();
                     proportion = boardHeight / boardWidth;
                     startX = x;
                     startY = y;
@@ -1669,7 +1891,7 @@ var Modes = (function(){
                     originPoint = {x:x,y:y};
                     updateMarquee(marquee,originPoint,originPoint);
                 }
-                var move = function(x,y,worldPos){
+                var move = function(x,y,z,worldPos){
                     var currentPoint = {x:x,y:y};
                     var rect = rectFromTwoPoints(currentPoint,originPoint);
                     var hAlign = "left";
@@ -1683,7 +1905,7 @@ var Modes = (function(){
                     var constrainedRect = aspectConstrainedRect(rect,hAlign,vAlign);
                     updateMarquee(marquee,{x:constrainedRect.right,y:constrainedRect.bottom},{x:constrainedRect.left,y:constrainedRect.top});
                 }
-                var up = function(x,y,worldPos){
+                var up = function(x,y,z,worldPos){
                     WorkQueue.gracefullyResume();
                     marquee.hide();
                     var currentPoint = {x:contentOffsetX + worldPos.x,y:contentOffsetY + worldPos.y};
@@ -1714,52 +1936,10 @@ var Modes = (function(){
         },
         feedback:(function(){
             var applyStateStyling = function(){
-                $("#feedbackTools").empty().append(roleAppropriateTools());
-                var currentConversation = Conversations.getCurrentConversation();
-                var enabled = currentConversation.permissions && currentConversation.permissions.studentCanPublish;
-                var enable = $("#enableCollaboration").unbind("click").on("click",function(){
-                    currentConversation = Conversations.getCurrentConversation();
-                    enabled = currentConversation.permissions.studentCanPublish;
-                    if(!enabled){
-                        Conversations.changeConversationToTutorial();
-                        enable.addClass("activePrivacy");
-                    }
-                });
-                var disable = $("#disableCollaboration").unbind("click").on("click",function(){
-                    currentConversation = Conversations.getCurrentConversation();
-                    enabled = currentConversation.permissions.studentCanPublish;
-                    if(enabled){
-                        Conversations.changeConversationToLecture();
-                        disable.addClass("activePrivacy");
-                    }
-                });
-                var sync = $("#enableSync").unbind("click").on("click",Conversations.enableSyncMove);
-                var desync = $("#disableSync").unbind("click").on("click",Conversations.disableSyncMove);
-                enable.removeClass("activePrivacy");
-                disable.removeClass("activePrivacy");
-                if(enabled){
-                    enable.addClass("activePrivacy");
-                }
-                else{
-                    disable.addClass("activePrivacy");
-                }
-                if(Conversations.isAuthor()){
-                    enable.show();
-                    disable.show();
-                    sync.hide();
-                    desync.hide();
-                }
-                else{
-                    enable.hide();
-                    disable.hide();
-                    sync.show();
-                    desync.show();
-                }
-                $(".modeSpecificTool").removeClass(active);
                 switch(currentBackstage){
-                case "quizzes":$(".modeSpecificTool.quizzes").addClass(active);
+                case "quizzes":$("#quizzesButton").addClass(active);
                     break;
-                case "submissions":$(".modeSpecificTool.submissions").addClass(active);
+                case "submissions":$("#submissionButton").addClass(active);
                     break;
                 default:
                     break;
@@ -1767,81 +1947,8 @@ var Modes = (function(){
             };
             Progress.onConversationJoin["setConversationRole"] = function(){
                 applyStateStyling();
-                if(!Conversations.isAuthor()){
-                    Conversations.enableSyncMove();
-                }
             }
             Progress.conversationDetailsReceived["respectNewPermissions"] = applyStateStyling;
-
-            var teacherTools=function(){
-                var tools = $("<div />");
-                $("<div/>",{
-                    id:"submitScreenshotButton",
-                    class:"modeSpecificTool",
-                    text:"Submit screenshot"
-                }).on("click",bounceAnd(function(){
-                    var currentConversation = Conversations.getCurrentConversation();
-                    var currentSlide = Conversations.getCurrentSlideJid();
-                    if("jid" in currentConversation){
-                        submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
-                    }
-                    bounceButton(this);
-                })).appendTo(tools);
-                $("<div/>",{
-                    class:"modeSpecificTool quizzes",
-                    text:"Quizzes"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("quizzes");
-                })).appendTo(tools);
-                $("<div/>",{
-                    class:"modeSpecificTool submissions",
-                    text:"Submissions"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("submissions");
-                })).appendTo(tools);
-                return tools;
-            };
-            var studentTools=function(){
-                var tools = $("<div />");
-                $("<div/>",{
-                    id:"submitScreenshotButton",
-                    class:"modeSpecificTool",
-                    text:"Submit screenshot"
-                }).on("click",bounceAnd(function(){
-                    var currentConversation = Conversations.getCurrentConversation();
-                    var currentSlide = Conversations.getCurrentSlideJid();
-                    if("jid" in currentConversation){
-                        submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
-                    }
-                    bounceButton(this);
-                })).appendTo(tools);
-                /*
-                 $("<div/>",{
-                 id:"syncToTeacherButton",
-                 class:"modeSpecificTool",
-                 text:Conversations.getIsSyncedToTeacherDescriptor()
-                 }).on("click",function(){
-                 Conversations.toggleSyncMove();
-                 applyStateStyling();
-                 }).appendTo(tools);
-                 */
-                $("<div/>",{
-                    class:"modeSpecificTool quizzes",
-                    text:"Quizzes"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("quizzes");
-                })).appendTo(tools);
-                $("<div/>",{
-                    class:"modeSpecificTool submissions",
-                    text:"Submissions"
-                }).on("click",bounceAnd(function(){
-                    showBackstage("submissions");
-                })).appendTo(tools);
-                return tools;
-            };
-            var roleAppropriateTools = function(){
-                return Conversations.shouldModifyConversation() ? teacherTools() : studentTools();
-            };
             return {
                 name:"feedback",
                 activate:function(){
@@ -1849,11 +1956,11 @@ var Modes = (function(){
                     Modes.currentMode = Modes.feedback;
                     applyStateStyling();
                     setActiveMode("#feedbackTools","#feedbackMode");
-                    var down = function(x,y,worldPos){
+                    var down = function(x,y,z,worldPos){
                     }
-                    var move = function(x,y,worldPos){
+                    var move = function(x,y,z,worldPos){
                     }
-                    var up = function(x,y,worldPos){
+                    var up = function(x,y,z,worldPos){
                     }
                     registerPositionHandlers(board,down,move,up);
                     applyStateStyling();
@@ -1868,102 +1975,110 @@ var Modes = (function(){
         draw:(function(){
             var originalBrushes = Brushes.getDefaultBrushes();
             var currentBrush;
+            var erasing = false;
+            var hasActivated = false;
             return {
                 name:"draw",
                 brushes:_.map(originalBrushes,function(i){return _.clone(i);}),
                 activate:function(){
-                    if(!Modes.draw.drawingAttributes){
-                        Modes.draw.drawingAttributes = Modes.draw.brushes[0];
-                    }
-                    if(!currentBrush){
-                        currentBrush = Modes.draw.brushes[0];
-                    }
                     if(Modes.currentMode == Modes.draw){
                         return;
                     }
-                    var mousePressure = 128;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-                    var drawAdvancedTools = function(brush){
-                        var dots = $("<div />",{
-                            class:"dots"
+                    var drawAdvancedTools = function(){};
+                    var penSizeTemplate = undefined;
+                    var penColorTemplate = undefined;
+                    var updateOriginalBrush = function(brush){
+                        Modes.draw.brushes[brush.index] = brush;
+                    };
+                    $(".activeBrush").removeClass("activeBrush");
+                    var drawTools = function(){
+                        var container = $("#drawTools");
+                        _.each(container.find(".pen"),function(button,i){
+                            var brush = Modes.draw.brushes[i];
+                            var thisButton = $(button)
+                                    .css({color:brush.color})
+                                    .click(function(){
+                                        $(".activeBrush").removeClass("activeBrush");
+                                        $(this).addClass("activeBrush");
+                                        currentBrush = brush;
+                                        updateOriginalBrush(brush);
+                                        Modes.draw.drawingAttributes = currentBrush;
+                                        erasing = false;
+                                        drawAdvancedTools(brush);
+                                    });
+                            thisButton.find(".widthIndicator").text(brush.width);
+                            if (brush == currentBrush){
+                                thisButton.addClass("activeBrush");
+                            }
                         });
-                        var bars = $("<div />",{
-                            class:"bars"
-                        });
+                    };
+                    drawAdvancedTools = function(brush){
+                        var dots = $("#colors .dots");
+                        var bars = $("#sizes .dots");
                         var colors = Colors.getAllNamedColors();
                         var widths = Brushes.getAllBrushSizes();
+                        bars.empty();
                         widths.map(function(width){
-                            var sizeDot = $("<div />", {
-                                class: "sizeDot"
-                            }).css({
-                                "text-align":"center"
-                            }).click(function(){
-                                brush.width = width;
-                                currentBrush = brush;
-                                drawTools();
-                                drawAdvancedTools(brush);
-                            })
-                            var bar = Canvas.circle(brush.color,width,60);
-                            console.log(width,brush.width);
-                            if (width == brush.width){
-                                sizeDot.addClass("activeTool");
-                            }
-                            sizeDot.append(bar)
+                            var sizeDot = penSizeTemplate.clone();
                             bars.append(sizeDot);
-                        });
-                        colors.map(function(color){
-                            var colorDot = $("<div />").css({
-                                "vertical-align":"middle"
-                            }).click(function(){
-                                brush.color = color.rgb;
+                            sizeDot.click(function(){
+                                brush.width = width;
+                                updateOriginalBrush(brush);
                                 currentBrush = brush;
                                 drawTools();
                                 drawAdvancedTools(brush);
                             });
-                            var dot = Canvas.circle(color.rgb,50,50);
-                            if (color == brush.color){
+                            var bar = Canvas.circle(brush.color,width,50);
+                            if (width == brush.width){
+                                sizeDot.addClass("activeTool");
+                            }
+                            sizeDot.prepend(bar)
+                            var sizeName = width.toString() + 'px';
+                            sizeDot.find('.sizeDotName').append(sizeName);
+                        });
+                        dots.empty();
+                        colors.map(function(color){
+                            var colorDot = penColorTemplate.clone();
+                            dots.append(colorDot);
+                            colorDot.on("click",function(){
+                                brush.color = color.rgb;
+                                currentBrush = brush;
+                                updateOriginalBrush(brush);
+                                drawTools();
+                                drawAdvancedTools(brush);
+                            });
+                            //var dot = Canvas.circle(color.rgb,50,50);
+                            colorDot.css("color",color.rgb);
+                            if ("rgb" in color && color.rgb == brush.color){
                                 colorDot.addClass("activeTool");
                             }
-                            colorDot.append(dot);
-                            dots.append(colorDot);
+                            //colorDot.prepend(dot);
+                            var colorDotName = color.name;
+                            colorDot.find('.colorDotName').append(colorDotName);
                         });
-                        var offset = widths[widths.length-1];
-                        var highlighterModeText = brush.isHighlighter ? "highlighter" : "pen";
-                        var penModeControl = $("<div/>");
-                        var hlButton = $("<span/>",{
-                            text:"highlighter",
-                            class:"toolbar"
-
-                        }).on("click",function(){
+                        var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
                             brush.isHighlighter = true;
                             currentBrush = brush;
+                            updateOriginalBrush(brush);
                             drawTools();
                             drawAdvancedTools(brush);
                         });
-                        var penButton = $("<span/>",{
-                            text:"pen",
-                            class:"toolbar"
-                        }).on("click",function(){
+                        var penButton = $("#setPenToPen").unbind("click").on("click",function(){
                             brush.isHighlighter = false;
                             currentBrush = brush;
+                            updateOriginalBrush(brush);
                             drawTools();
                             drawAdvancedTools(brush);
                         });
                         if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-                            hlButton.addClass("activeTool");
-                            penButton.removeClass("activeTool");
+                            hlButton.addClass("activeTool").addClass("active");
+                            penButton.removeClass("activeTool").removeClass("active");
                         } else {
-                            penButton.addClass("activeTool");
-                            hlButton.removeClass("activeTool");
+                            penButton.addClass("activeTool").addClass("active");
+                            hlButton.removeClass("activeTool").removeClass("active");
                         }
-                        $("#colors").html(dots);
-                        $("#sizes").html(bars);
-                        $("#penMode").html(penModeControl.append(penButton).append(hlButton));
-                        $("#colors td").css({
-                            width:px(offset*3),
-                            height:px(offset*3)
-                        });
                         Progress.call("onLayoutUpdated");
                     }
                     $("#resetPenButton").empty().text("reset pen").click(function(){
@@ -1978,74 +2093,43 @@ var Modes = (function(){
                             drawAdvancedTools(currentBrush);
                         }
                     });
-                    var drawTools = function(){
-                        $(".activeBrush").removeClass("activeBrush");
-												var penNumber = 1;
-                        $("#drawTools").empty().html(unwrap(
-                            Modes.draw.brushes.map(function(brush){
-                                var dot = Canvas.swirl(brush.color,brush.width,parseInt(UserSettings.getUserPref("subModeSize")),brush.isHighlighter);
-                                var dotButton = $("<div />",{
-																					class:"modeSpecificTool",
-																					id:"pen"+penNumber+"Button"
-																				})
-                                        .click(function(){
-                                            currentBrush = brush;
-                                            erasing = false;
-                                            Modes.draw.drawingAttributes = brush;
-                                            $(".activeBrush").removeClass("activeBrush");
-                                            $(this).addClass("activeBrush");
-                                            drawAdvancedTools(Modes.draw.drawingAttributes);
-                                        })
-                                        .append(dot);
-																penNumber = penNumber + 1;
-                                if (brush == currentBrush){
-                                    dotButton.addClass("activeBrush");
-                                } else {
-                                    dotButton.removeClass("activeBrush");
-                                }
-                                return dotButton;
-                            })))
-                            .append($("<div />",{
-                                text:"Erase",
-                                class:"modeSpecificTool",
-																id:"eraseTool",
-                                click:function(){
-                                    erasing = true;
-                                    $(".activeBrush").removeClass("activeBrush");
-                                    $(this).addClass("activeBrush");
-                                }
-                            }))
-                            .append($("<div />",{
-                                text:"More",
-																id:"penCustomizationButton"
-                            }).addClass("modeSpecificTool")
-                                    .click(bounceAnd(function(){
-                                        drawAdvancedTools(Modes.draw.drawingAttributes);
-                                        showBackstage("customizeBrush");
-                                    })));
-                        Progress.call("onLayoutUpdated");
+                    if(!hasActivated){
+                        hasActivated = true;
+                        penSizeTemplate = $("#penSize .sizeDot").clone();
+                        penColorTemplate = $("#penColor .colorDot").clone();
+                        currentBrush = Modes.draw.brushes[0];
+                        drawTools();
+                        drawAdvancedTools(currentBrush);
+                        Modes.draw.drawingAttributes = currentBrush;
+                        var container = $("#drawTools");
+                        container.find(".eraser").click(function(button){
+                            $(".activeBrush").removeClass("activeBrush");
+                            $(this).addClass("activeBrush");
+                            erasing = true;
+                        });
+                        container.find(".advancedTools").on("click",function(){
+                            drawAdvancedTools(currentBrush);
+                            showBackstage("customizeBrush");
+                        });
                     }
                     setActiveMode("#drawTools","#drawMode");
-                    drawTools();
                     var currentStroke = [];
                     var isDown = false;
                     var resumeWork;
-                    var down = function(x,y){
+                    var mousePressure = 256;
+                    var down = function(x,y,z,worldPos,modifiers){
                         deleted = [];
                         isDown = true;
-                        if(!erasing){
+                        if(!erasing && !modifiers.eraser){
                             boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
-                            boardContext.lineWidth = Modes.draw.drawingAttributes.lineWidth * 128 * mousePressure;
-                            boardContext.beginPath();
-                            boardContext.moveTo(x,y);
-                            currentStroke = [x, y, mousePressure];
-                        }
+                            currentStroke = [x, y, mousePressure * z];
+                        } else {
+												}
                     };
-                    var erasing = false;
                     var raySpan = 10;
                     var deleted = [];
-                    var move = function(x,y,worldPos){
-                        if(erasing){
+                    var move = function(x,y,z,worldPos,modifiers){
+                        if(erasing || modifiers.eraser){
                             var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                             var markAsDeleted = function(bounds){
                                 var tl = worldToScreen(bounds[0],bounds[1]);
@@ -2068,30 +2152,54 @@ var Modes = (function(){
                             boardContext.globalAlpha = 1.0;
                         }
                         else{
-                            boardContext.lineTo(x,y);
+														var oldWidth = boardContext.lineWidth;
+														var newWidth = Modes.draw.drawingAttributes.width * z;
+                            boardContext.beginPath();
+														boardContext.lineCap = "round";
+                            boardContext.lineWidth = newWidth;
+														var lastPoint = _.takeRight(currentStroke,3);
+														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
+														boardContext.lineTo(x,y);
                             boardContext.stroke();
-                            currentStroke = currentStroke.concat([x,y,mousePressure]);
+                            currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                         }
                     };
-                    var up = function(x,y){
+                    var up = function(x,y,z,worldPos,modifiers){
                         isDown = false;
-                        if(erasing){
+                        if(erasing || modifiers.eraser){
                             var deleteTransform = batchTransform();
                             deleteTransform.isDeleted = true;
                             deleteTransform.inkIds = deleted;
                             sendStanza(deleteTransform);
-                        }
-                        else{
+                        } else {
+														var newWidth = Modes.draw.drawingAttributes.width * z;
+                            boardContext.lineWidth = newWidth;
+                            boardContext.beginPath();
+                            boardContext.lineWidth = newWidth;
+														boardContext.lineCap = "round";
+														var lastPoint = _.takeRight(currentStroke,3);
+														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
                             boardContext.lineTo(x,y);
                             boardContext.stroke();
-                            currentStroke = currentStroke.concat([x,y,mousePressure]);
+                            currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                             strokeCollected(currentStroke.join(" "));
+														console.log("stroke collected:",currentStroke);
                         }
                     };
-
+                    $(".activeBrush").removeClass("activeBrush");
+                    if (erasing){
+                        $("#drawTools").find(".eraser").addClass("activeBrush");
+                    } else {
+                        _.each($("#drawTools").find(".pen"),function(button,i){
+                            if ((i + 1) == currentBrush.id){
+                                $(button).addClass("activeBrush");
+                            }
+                        });
+                    }
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
+                    $(".activeBrush").removeClass("activeBrush");
                     removeActiveMode();
                     WorkQueue.gracefullyResume();
                     unregisterPositionHandlers(board);
@@ -2105,10 +2213,10 @@ var Modes = (function(){
             activate:function(){
                 Modes.currentMode.deactivate();
                 Modes.currentMode = Modes.erase;
-                var down = function(x,y,worldPos){};
-                var move = function(x,y,worldPos){
+                var down = function(x,y,z,worldPos){};
+                var move = function(x,y,z,worldPos){
                 };
-                var up = function(x,y,worldPos){};
+                var up = function(x,y,z,worldPos){};
                 registerPositionHandlers(board,down,move,up);
             },
             deactivate:function(){

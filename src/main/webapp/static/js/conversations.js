@@ -8,21 +8,32 @@ var Conversations = (function(){
     var currentTeacherSlide = 0;
     var isSyncedToTeacher = false;
 
+    var conversationTemplate = undefined;
+    var conversationSearchListing = undefined;
+
+    $(function(){
+        //take a template of the html for the searchResultItem
+        conversationSearchListing = $("#searchResults");
+        conversationTemplate = conversationSearchListing.find(".searchResultItem").clone();
+        conversationSearchListing.empty();
+    });
     var ThumbCache = (function(){
+        var cacheRefreshTime = 10 * 1000; // 10 seconds
         var cache = {};
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
-        var fetchAndPaintThumb = function(slide,slideContainer){
-            var currentSrc = slideContainer.attr("src");
-            var slideImage = slideContainer.find("img");
-            var thumbUrl = sprintf("/thumbnailDataUri/%s/%s?nocache=%s",currentServerConfigName,slide.id,Date.now());
+        var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
+            console.log("fetching",slide.id)
+            var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
             var storeThumb = function(data){
-                cache[slide.id] = data;
-                //then fire paint as normal, which paints from the cache
-                paintThumb(slide,slideContainer);
+                cache[slide.id] = {
+                    data:data,
+                    when:Date.now()
+                };
+                //Use the data straight away instead of recursing
+                slideImage.attr("src",data);
             };
-            cache[slide.id] = "data:image/jpeg;base64,"
             $.ajax({
                 url:thumbUrl,
                 beforeSend: function ( xhr ) {
@@ -33,35 +44,75 @@ var Conversations = (function(){
         };
         var paintThumb = function(slide,slideContainer){
             var slideImage = slideContainer.find("img");
-            if (slide.id in cache){
-                slideImage.attr("src",cache[slide.id]);
+            if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                console.log("cached",slide.id)
+                slideImage.attr("src",cache[slide.id].data);
             } else {
-                fetchAndPaintThumb(slide,slideContainer);
+                fetchAndPaintThumb(slide,slideContainer,slideImage);
             }
         };
-        var possiblyUpdateThumbnail = function(slide,slidesContainer,slideContainerHeight){
+        var makeBlankCanvas = function(w,h){
+            var c = $("<canvas />");
+            c.width = w;
+            c.height = h;
+            c.attr("width",w);
+            c.attr("height",h);
+            var ctx = c[0].getContext("2d");
+            ctx.rect(0,0,w,h);
+            ctx.fillStyle="white";
+            ctx.fill();
+            return c[0].toDataURL();
+        }
+        var blank4to3Canvas = makeBlankCanvas(320,240);
+        var possiblyUpdateThumbnail = function(slide){
+            var thumbScroller = $("#thumbScrollContainer");
             var slidesTop = 0;
-            var slidesBottom = slidesTop + slideContainerHeight;
-            var slideContainer = $(sprintf("#slideContainer_%s",slide.id));
-            var slideTop = slideContainer.position().top + 10; //10 pixel margin for the top, which appears to be being ignored.
-            var slideBottom = slideTop + slideContainer.height();
-            var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-            var isEntirelyVisible = isVisible && (slideBottom <= slidesBottom) && (slideTop >= slidesTop);
-            if (isEntirelyVisible){
-                paintThumb(slide,slideContainer);
+            var slidesBottom = thumbScroller.height();
+            var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
+            try {
+                var slideImage = slideContainer.find("img");
+                var slideTop = slideContainer.position().top;
+                var slideBottom = slideTop + slideContainer.height();
+                if (slideTop == slideBottom){
+                    slideImage.attr("src",blank4to3Canvas);
+                    return;
+                }
+                var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+                if (isVisible){
+                    paintThumb(slide,slideContainer);
+                }
+            } catch(e) {
+                console.log("exception while painting thumb: ",e);
+                //couldn't find the slideContainer at this time.
             }
         }
         var clearCacheFunction = function(){
             cache = {};
         };
+        var paintAllThumbsFunc = function(){
+            console.log("Paint all thumbs")
+            _.forEach(currentConversation.slides,function(slide){
+                var img = $(sprintf("#slideContainer_%s img",slide.id));
+                if (img.height() == 0 || img.height() == undefined){
+                    img.on("load",function(){
+                        img.off("load");
+                        possiblyUpdateThumbnail(slide);
+                    });
+                    img.attr("src",blank4to3Canvas);
+                } else {
+                    possiblyUpdateThumbnail(slide);
+                }
+            });
+        };
         return {
             paintThumb:possiblyUpdateThumbnail,
+            paintAllThumbs:_.debounce(paintAllThumbsFunc,500),
             clearCache:clearCacheFunction
         };
     })();
 
     var shouldRefreshSlideDisplay = function(details){
-        return (!("slides" in currentConversation) || "slides" in details && _.any(details,function(slide,slideIndex){
+        return (!("slides" in currentConversation) || "slides" in details && _.some(details,function(slide,slideIndex){
             var ccs = currentConversation.slides[slideIndex];
             if (ccs && "id" in ccs && "id" in slide && "index" in slide && "index" in ccs && ccs.id == slide.id && ccs.index == slide.index){
                 return false;
@@ -71,46 +122,71 @@ var Conversations = (function(){
         }));
     }
     var paintThumbs = function(){
-        console.log("firing paintThumbs");
-        var slidesContainer = $("#slideContainer");
-        var containerHeight = slidesContainer.height();
-        _.forEach(currentConversation.slides,function(slide){
-            ThumbCache.paintThumb(slide,slidesContainer,containerHeight);
-        })
+        try {
+            ThumbCache.paintAllThumbs();
+        }
+        catch(e){
+            console.log("exception while painting thumbs",e);
+        }
     }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
         slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).append(constructAddSlideButton());
-        var lazyRepaint = _.debounce(paintThumbs,200);
         slideContainer.off("scroll");
-        slideContainer.on("scroll",lazyRepaint);
+        slideContainer.on("scroll",paintThumbs);
         Progress.call("onLayoutUpdated");
     }
-    var changeConvToLectureFunction = function(jid){
-        if (!jid){
-            jid = currentConversation.jid.toString();
-        }
-        var newPermissions = {"studentCanOpenFriends":false,"studentCanPublish":false,"usersAreCompulsorilySynced":true};
+
+    var setStudentsCanPublishFunction = function(publishingAllowed){
+        var jid = currentConversation.jid.toString();
+        var oldPerms = currentConversation.permissions;
+        var newPermissions = {
+            "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
+            "studentCanPublish":publishingAllowed,
+            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+        };
         changePermissionsOfConversation(jid,newPermissions);
     };
-    var changeConvToTutorialFunction = function(jid){
-        if (!jid){
-            jid = currentConversation.jid.toString();
-        }
-        var newPermissions = {"studentCanOpenFriends":false,"studentCanPublish":true,"usersAreCompulsorilySynced":false};
+
+    var getStudentsCanPublishFunction = function(){
+        return currentConversation.permissions.studentCanPublish;
+    };
+    var setStudentsMustFollowTeacherFunction = function(mustFollowTeacher){
+        var jid = currentConversation.jid.toString();
+        var oldPerms = currentConversation.permissions;
+        var newPermissions = {
+            "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
+            "studentCanPublish":oldPerms.studentCanPublish,
+            "usersAreCompulsorilySynced":mustFollowTeacher
+        };
         changePermissionsOfConversation(jid,newPermissions);
     };
+    var getStudentsMustFollowTeacherFunction = function(){
+        return currentConversation.permissions.usersAreCompulsorilySynced;
+    };
+
     var enableSyncMoveFunction = function(){
         isSyncedToTeacher = true;
-        $("#enableSync").addClass("activePrivacy");
-        $("#disableSync").removeClass("activePrivacy");
+        redrawSyncState();
     };
     var disableSyncMoveFunction = function(){
+        if ("permissions" in currentConversation && !shouldModifyConversationFunction(currentConversation) && currentConversation.permissions.usersAreCompulsorilySynced) {
+            return;
+        }
         isSyncedToTeacher = false;
-        $("#enableSync").removeClass("activePrivacy");
-        $("#disableSync").addClass("activePrivacy");
+        redrawSyncState();
     };
+    var redrawSyncState = function(){
+        if (isSyncedToTeacher){
+            $("#enableSync").addClass("activePrivacy active");
+            $("#disableSync").removeClass("activePrivacy active");
+        } else {
+            $("#enableSync").removeClass("activePrivacy active");
+            $("#disableSync").addClass("activePrivacy active");
+        }
+        $("#followTeacherCheckbox").prop("checked",isSyncedToTeacher);
+    }
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
             disableSyncMoveFunction();
@@ -157,7 +233,7 @@ var Conversations = (function(){
                 }
             }
             updateCurrentConversation(details);
-            if (!(_.any(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
+            if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
                 currentlyDisplayedConversations.push(details);
                 refreshConversationSearchResults();
             }
@@ -286,11 +362,78 @@ var Conversations = (function(){
             DeviceConfiguration.setCurrentDevice("projector");
             return false;
         }));
+				if (targetConversationJid == "" || currentSlide == 0){
+					$("#projectorViewLink").empty();
+					$("#slideDeepLink").empty();
+					$("#conversationDeepLink").empty();
+				} else {
+					$("#projectorViewLink").html($("<a/>",{
+						href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
+						text:"Project this conversation"
+					}));
+					$("#slideDeepLink").html($("<a/>",{
+						href:sprintf("/board?conversationJid=%s&slideId=%s",targetConversationJid,currentSlide),
+						text:"DeepLink this slide"
+					}));
+					$("#conversationDeepLink").html($("<a/>",{
+						href:sprintf("/board?conversationJid=%s",targetConversationJid),
+						text:"Deeplink this conversation"
+					}));
+				}
+    };
+    var updatePermissionButtons = function(details){
+        var isAuthor = shouldModifyConversationFunction(details);
+        var scpc = $("#studentsCanPublishCheckbox");
+        scpc.off("change");
+        scpc.prop("checked",details.permissions.studentCanPublish);
+        scpc.prop("disabled",!isAuthor);
+        if (isAuthor){
+            scpc.on("change",function(){
+                setStudentsCanPublishFunction(scpc.is(":checked"));
+            });
+        }
+        var smftc = $("#studentsMustFollowTeacherCheckbox");
+        smftc.off("change");
+        smftc.prop("checked",details.permissions.usersAreCompulsorilySynced);
+        smftc.prop("disabled",!isAuthor);
+        var ftc = $("#followTeacherCheckbox");
+        ftc.off("change");
+        ftc.prop("checked",isSyncedToTeacher);
+        if (isAuthor){
+            smftc.on("change",function(){
+                setStudentsMustFollowTeacherFunction(smftc.is(":checked"));
+            });
+        } else {
+            ftc.on("change",function(){
+                var previousState = isSyncedToTeacher;
+                var currentState = ftc.is(":checked");
+                if (previousState != currentState){
+                    if (currentState){
+                        enableSyncMoveFunction();
+                    } else {
+                        disableSyncMoveFunction();
+                    }
+                }
+            });
+        }
+        ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
+        if (isAuthor){
+            $("#syncButtons").hide();
+            $("#syncCheckbox").hide();
+        } else {
+            $("#syncButtons").show();
+            $("#syncCheckbox").show();
+        }
     };
     var updateCurrentConversation = function(details){
         if (details.jid == currentConversation.jid){
+            if (!shouldModifyConversationFunction(details) && details.permissions.usersAreCompulsorilySynced){
+                enableSyncMoveFunction();
+            }
+            updatePermissionButtons(details);
             updateConversationHeader();
             updateLinks();
+            redrawSyncState();
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
@@ -320,11 +463,17 @@ var Conversations = (function(){
             return false;
         }
     };
+		var getIsBannedFunction = function(conversation){
+			if (!conversation){
+					conversation = currentConversation;
+			}
+			return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
+		};
     var shouldDisplayConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
         }
-        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.any(UserSettings.getUserGroups(), function(group){
+        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(group){
             return group.value.toLowerCase() == conversation.subject.toLowerCase();
         }))) {
             return true;
@@ -336,7 +485,7 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish)){
+        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
             return true;
         } else {
             return false;
@@ -361,12 +510,12 @@ var Conversations = (function(){
     };
     var constructAddSlideButton = function(){
         if (shouldModifyConversationFunction()){
-            return $("<div/>",{
+            return $("<button/>",{
                 id: "addSlideButton",
-                class:"toolbar",
+                class:"toolbar fa fa-plus btn-icon nmt",
                 name: "addSlideButton",
                 type: "button"
-            }).append($("<span>Add Slide</span>")).on("click",bounceAnd(function(){
+            }).append($("<div class='icon-txt'>Add Slide</div>")).on("click",bounceAnd(function(){
                 var currentJid = currentConversation.jid;
                 var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
                 var newIndex = currentSlideIndex + 1;
@@ -404,10 +553,6 @@ var Conversations = (function(){
         var newSlide = $("<div/>",{
             id: sprintf("slideContainer_%s",slide.id),
             class:"slideButtonContainer"
-        }).css({
-            height:"75px",
-            width:"100px",
-            margin:"10px"
         });
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
@@ -421,21 +566,17 @@ var Conversations = (function(){
         $("<span/>",{
             text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
             class: "slideThumbnailNumber"
-        }).appendTo($("<div/>").appendTo(newSlide));
+        }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
     }
     var constructConversation = function(conversation){
+
         var uniq = function(name){
             return sprintf("%s_%s",name,conversation.jid);
         };
         var jidString = conversation.jid.toString();
-        var deleteSpan = $("<span>Delete</span>")
-        var renameSpan = $("<span>Rename</span>")
-        var sharingSpan = $("<span>Sharing</span>")
-        var newConv = $("<div/>",{
-            id: uniq("conversation"),
-            class:"searchResult"
-        }).on("click",bounceAnd(function(e){
+        var newConv = conversationTemplate.clone();
+        newConv.attr("id",uniq("conversation")).on("click",bounceAnd(function(e){
             var id1 = e.target.parentElement.id;
             var id2 = e.target.parentElement.parentElement.id;
             if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
@@ -445,67 +586,22 @@ var Conversations = (function(){
             doMoveToSlide(firstSlide.id.toString());
         }));
         var jidString = conversation.jid.toString();
-        var row1 = $("<div/>");
-        var row2 = $("<div/>",{
-            class:"middleRow",
-        });
-        var row3 = $("<div/>",{
-            id:uniq("extraConversationTools"),
-            class: "extraConversationTools"
-        });
+        var row1 = newConv.find(".searchResultTopRow");
+        var row2 = newConv.find(".searchResultMiddleRow");
+        var row3 = newConv.find(".teacherConversationTools");
+        row3.attr("id",uniq("extraConversationTools"));
+        newConv.find(".conversationTitle").attr("id",uniq("conversationTitle")).text(conversation.title);
+        newConv.find(".conversationAuthor").text(conversation.author);
+        newConv.find(".conversationSubject").text(conversation.subject);
+        newConv.find(".conversationCreated").text(conversation.created);
 
-        var convTitle = $("<span/>",{
-            id: uniq("conversationTitle"),
-            class: "conversationTitle",
-            text: conversation.title
-        });
-        var convAuthor = $("<span/>",{
-            class:"conversationAuthor",
-            text: sprintf("by %s",conversation.author)
-        });
-        var convSubject = $("<span/>",{
-            class:"conversationSubject",
-            text:sprintf("Restricted to %s",conversation.subject)
-        });
-        var convCreated = $("<span/>",{
-            class:"conversationCreated",
-            text:sprintf("Created on %s",conversation.created)
-        });
-        var joinConvButton = $("<div/>", {
-            id: uniq("conversationJoin"),
-            class: "conversationJoinButton conversationSearchButton",
-            name: uniq("conversationJoin"),
-            type: "button"
-        }).on("click",bounceAnd(function(){
-            targetConversationJid = jidString;
-            var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-            hideBackstage();
-            doMoveToSlide(firstSlide.id.toString());
-        })).append("<span>join</span>");
-        var renameConvButton = $("<div/>", {
-            id: uniq("conversationRenameSubmit"),
-            class: "conversationSearchButton toolbar conversationRenameButton",
-            name: uniq("conversationRenameSubmit"),
-            type: "button"
-        }).on("click",bounceAnd(function(){requestRenameConversationDialogue(jidString);})).append(renameSpan);
-        var changeSharingButton = $("<div/>", {
-            id: uniq("conversationChangeSubjectSubmit"),
-            name: uniq("conversationChangeSubjectSubmit"),
-            class: "conversationSearchButton toolbar conversationSharingButton",
-            type: "button"
-        }).on("click",bounceAnd(function(){requestChangeSubjectOfConversationDialogue(jidString);})).append(sharingSpan);
-        var deleteConvButton = $("<div/>", {
-            id: uniq("conversationDelete"),
-            class: "conversationSearchButton toolbar conversationDeleteButton",
-            name: uniq("conversationDelete"),
-            type: "button"
-        }).on("click",bounceAnd(function(){
-            requestDeleteConversationDialogue(jidString);
-        })).append(deleteSpan);
-        newConv.append(row1.append(convTitle));
-        newConv.append(row2.append(convAuthor).append(convSubject).append(convCreated));
         if (shouldModifyConversationFunction(conversation)){
-            newConv.append(row3.append(renameConvButton).append(changeSharingButton).append(deleteConvButton));
+
+            newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
+            newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
+            newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
+        } else {
+            newConv.find(".teacherConversationTools").remove()
         }
         if ("jid" in conversation && targetConversationJid.trim().toLowerCase() == conversation.jid.toString().trim().toLowerCase()){
             newConv.addClass("activeConversation");
@@ -520,33 +616,24 @@ var Conversations = (function(){
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
     Progress.onLayoutUpdated["Conversations"] = paintThumbs;
+    Progress.historyReceived["Conversations"] = paintThumbs;
     $(function(){
+        $("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
-        $("<div />", {
-            id:"createConversationButton",
-            class: "conversationSearchButton toolbar",
-            name:"createConversationButton",
-            type:"button"
-        }).append($("<span/>",{text:"Create Conversation"})).on("click",bounceAnd(function(){
+				$("#importConversationButton").on("click",bounceAnd(function(){
+						importConversation();
+				}));
+        $("#createConversationButton").on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
-        })).appendTo("#createConversationContainer");
-        $("<div />", {
-            id:"myConversationsButton",
-            class: "conversationSearchButton toolbar",
-            type:"button",
-        }).append($("<span/>",{text:"My Conversations"})).on("click",bounceAnd(function(){
+        }));
+        $("#myConversationsButton").on("click",bounceAnd(function(){
             getSearchResult(UserSettings.getUsername());
-        })).appendTo("#createConversationContainer");
-        $("<div />", {
-            id:"searchButton",
-            class: "conversationSearchButton toolbar",
-            name:"searchButton",
-            type: "button"
-        }).append($("<span/>", {text: "Search"})).on("click",bounceAnd(function(){
+        }));
+        $("#searchButton").on("click",bounceAnd(function(){
             getSearchResult(currentSearchTerm);
-        })).appendTo("#searchButtonContainer");
+        }));
         var updateSearchTerm = function(e){
             currentSearchTerm = this.value;
             if (e.which == 13){
@@ -554,18 +641,14 @@ var Conversations = (function(){
                 getSearchResult(currentSearchTerm);
             }
         };
-        $("<input/>", {
-            id:"searchForConversationBox",
-            name:"searchForConversationBox",
-            blur:updateSearchTerm,
-            change:updateSearchTerm,
-            focus:updateSearchTerm,
-            keydown:updateSearchTerm,
-            select:updateSearchTerm
-        }).appendTo("#searchForConversationBoxContainer");
-        $("<span />",{
+        var sfcb = $("#searchForConversationBox");
+        _.forEach(["blur","change","focus","keydown","select"],function(item){
+            sfcb.on(item,updateSearchTerm)
+        });
+        $("<div />",{
             text:"share",
-            id:"shareButton"
+            id:"shareButton",
+            class:"icon-txt"
         }).on("click",bounceAnd(function(){
             $("#shareContainer").toggle();
             updateLinks();
@@ -599,19 +682,22 @@ var Conversations = (function(){
         enableSyncMove : enableSyncMoveFunction,
         disableSyncMove : disableSyncMoveFunction,
         toggleSyncMove : toggleSyncMoveFunction,
-        changeConversationToTutorial : changeConvToTutorialFunction,
-        changeConversationToLecture : changeConvToLectureFunction,
+        setStudentsCanPublish : setStudentsCanPublishFunction,
+        getStudentsCanPublish : getStudentsCanPublishFunction,
+        setStudentsMustFollowTeacher : setStudentsMustFollowTeacherFunction,
+        getStudentsMustFollowTeacher : getStudentsMustFollowTeacherFunction,
         shouldDisplayConversation : shouldDisplayConversationFunction,
         shouldPublishInConversation : shouldPublishInConversationFunction,
         shouldModifyConversation : shouldModifyConversationFunction,
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
-        updateThumbnail :updateThumbnailFor
+        updateThumbnail :updateThumbnailFor,
+				getIsBanned : getIsBannedFunction
     };
 })();
 
 function unwrap(jqs){
-    return _.pluck(jqs,"0");
+    return _.map(jqs,"0");
 }
 function receiveCurrentSlide(jid){
     Progress.call("currentSlideJidReceived",[jid]);

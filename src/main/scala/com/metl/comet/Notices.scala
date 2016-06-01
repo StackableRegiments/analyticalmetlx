@@ -19,7 +19,7 @@ import ElemAttr._
 import com.metl.model.Globals._
 import com.metl.model._
 
-object MeTLSpamServer extends LiftActor with ListenerManager{
+object MeTLSpamServer extends LiftActor with ListenerManager with Logger{
   private var latestNotice:MeTLMessage = Clear
   def createUpdate = latestNotice
   override def lowPriority = {
@@ -27,7 +27,7 @@ object MeTLSpamServer extends LiftActor with ListenerManager{
       latestNotice = notice
       updateListeners()
     }
-    case other => println("MeTLSpamServer received unknown message: %s".format(other))
+    case other => warn("MeTLSpamServer received unknown message: %s".format(other))
   }
 }
 trait MeTLMessage{
@@ -63,21 +63,21 @@ object Notices{
       session.sendCometActorMessage("Notices", Box(noticesName(currentUser.is)), message)
   }
 }
-class Notices extends CometActor with CometListener{
+class Notices extends CometActor with CometListener with Logger{
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   private val id = nextFuncName
   private var visibleMessages = List.empty[MeTLMessage]
   def registerWith = MeTLSpamServer
   private def removeMessage(message:MeTLMessage) = Hide(message.id) & Replace(message.id,NodeSeq.Empty)
-  private def remove(message:MeTLMessage) = Stopwatch.time("Notices:remove(%s)".format(message),()=>{
+  private def remove(message:MeTLMessage) = Stopwatch.time("Notices:remove(%s)".format(message),{
     visibleMessages = visibleMessages.filterNot(m => m == message)
     partialUpdate(removeMessage(message))
   })
-  private def doSpam(spam:MeTLSpam) = Stopwatch.time("Notices:doSpam(%s)".format(spam),()=>{
+  private def doSpam(spam:MeTLSpam) = Stopwatch.time("Notices:doSpam(%s)".format(spam),{
     (".spamMessage" #> ((n:NodeSeq) => a(()=>removeMessage(spam),(".noticeContent" #> spam.content).apply(n),("id",spam.id)))
     ).apply(StackTemplateHolder.spamTemplate)
   })
-  private def doInteractable(message:MeTLInteractableMessage) = Stopwatch.time("Notices:doInteractable(%s)".format(message),()=>{
+  private def doInteractable(message:MeTLInteractableMessage) = Stopwatch.time("Notices:doInteractable(%s)".format(message),{
     message.onDone(()=>remove(message))
       (".noticeLabel *" #> message.title.openOr("Response") &
         ".noticeContent" #> ajaxForm(message.seq) &
@@ -95,11 +95,11 @@ class Notices extends CometActor with CometListener{
   override def render = NodeSeq.Empty
   override def lowPriority = {
     case Clear => {}
-    case message:MeTLMessage=> Stopwatch.time("Notices:message",()=>{
+    case message:MeTLMessage=> Stopwatch.time("Notices:message",{
       val removalFunction = visibleMessages.find(m => m.uniqueId == message.uniqueId).map(em => removeMessage(em)).getOrElse(Noop)
       visibleMessages = message :: visibleMessages
       partialUpdate(removalFunction & PrependHtml(id,renderMessage(message)))
     })
-    case other => println("Notices received unknown message: %s".format(other))
+    case other => warn("Notices received unknown message: %s".format(other))
   }
 }

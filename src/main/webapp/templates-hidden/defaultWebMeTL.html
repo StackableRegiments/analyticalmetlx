@@ -1,149 +1,62 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/" lang="en">
 
-<head>
-  <meta http-equiv="content-type" content="text/html; charset=UTF-8" ></meta>
-  <meta name="description" content="" ></meta>
-  <meta name="keywords" content="" ></meta>
-    
-	<title id="headTitle">MeTL Viewer</title>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" ></meta>
+    <meta name="apple-mobile-web-app-capable" content="yes" ></meta>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" ></meta>
+    <meta name="description" content="" ></meta>
+    <meta name="keywords" content="" ></meta>
 
-  <style class="lift:CSS.blueprint" ></style>
-  <style class="lift:CSS.fancyType" ></style>
+    <title id="headTitle">MeTL</title>
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <link href='https://fonts.googleapis.com/css?family=Advent+Pro:400,200|Cabin:400,700,400italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <link rel='stylesheet' href='/static/assets/styles/main.css'>
+    <link rel='stylesheet' href='/static/assets/styles/jquery-ui.min.css'>
+    <!--<style class="lift:CSS.blueprint" ></style>
+        <style class="lift:CSS.fancyType" ></style>-->
 
-  <script id="jquery" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
-  <script id="json" src="/classpath/json.js" type="text/javascript"></script>
-  <script id="ahpi.imgload" src="/static/js/ahpi.imgload.js" type="text/javascript"></script>
+    <script id="jquery" src="/static/assets/js/vendor/jquery.min.js" type="text/javascript"></script>
+    <script id="jqueryUi" src="/static/assets/js/vendor/jquery-ui.min.js" type="text/javascript"></script>
+    <script id="json" src="/classpath/json.js" type="text/javascript"></script>
+    <script id="ahpi.imgload" src="/static/js/ahpi.imgload.js" type="text/javascript"></script>
+    <script id="displayWidgets" src="/static/assets/js/metl-front-end-core.min.js" type="text/javascript"></script>
+  </head>
 
-	<style type="text/css">
-/* <![CDATA[ */
-.edit_error_class {
-  display: block;
-  color: red;
-}
+  <body class="theme-light">
 
-.lift_error {
-  color: red;
-}
+    <header id="header" class="">
+      <div id="title" class="title-container plr pbh">
+        <div class="metl-logo"><span class="hidden">MeTL</span></div>
+      </div>
+      <div class="flex-container-row">
+        <h1 id="titleText" class="large-txt mrh"></h1>
+        <nav id="navigation" class="primary-nav">
+          <a id="navHome" href="/" class="fa fa-home button-round mrh"><span class="hidden">Home</span></a>
+          <div id="navLinkContainer"/>
+        </nav>
+      </div>
 
-.lift_warning {
-  color: yellow;
-}
+    </header>
+    <p id="currentUser" class="nm align-right smallest-txt mrh">Logged in: <span id="currentUsername"></span></p>
+    <div id="content"></div>
 
-.lift_notice {
-}
-
-#header {
-	background-color: darkblue;
-	color: white;
-	top: 0;
-	right: 0;
-	width: 100%;
-	height: 100px;
-}
-#header * {
-	color: inherit;
-}
-
-#header #navigation {
-	float: left;
-}
-
-#header #currentUser {
-	float: right;
-	padding: 0.5em;
-}
-
-#header #title {
-	text-align: center;
-}
-
-#header #title > h1 {
-	display: inline;
-}
-
-#navigation a {
-	background-size: 75px 75px;
-	display: inline-block;
-	width: 75px;
-	height: 100px;
-}
-#navigation a > span {
-	display: block;
-	padding-top: 75px;
-	text-align: center;
-}
-#navLinkContainer {
-	display: inline-block;
-}
-
-#navHome {
-	background: url("/static/images/home.png") no-repeat;
-}
-.navLinkAnchor.slidesLink {
-	background: url("/static/images/transparency.png") no-repeat;
-}
-.navLinkAnchor.quizLink {
-	background: url("/static/images/quiz.png") no-repeat;
-}
-.navLinkAnchor.quizzesLink {
-	background: url("/static/images/quiz.png") no-repeat;
-}
-
-.navigationPrevious, .navigationNext {
-	background-color: white;
-	position: absolute;
-	top: 100px;
-	width: 128px;
-	bottom: 0;
-}
-.navigationPrevious {
-	left: 0;
-}
-.navigationNext {
-	right: 0;
-}
-.navigationPrevious > a, .navigationNext > a {
-	display: block;
-	position: absolute;
-	top: 50%;
-	margin-top: -64px;
-	width: 128px;
-	height: 128px;
-}
-.navigationPrevious > a {
-	background: url("/static/images/left.png") no-repeat;
-}
-.navigationNext > a {
-	background: url("/static/images/right.png") no-repeat;
-}
-
-.navigationPrevious > a > span, .navigationNext > a > span {
-	display: block;
-	margin: 0 auto;
-	padding-top: 128px;
-	text-align: center;
-}
-
-/* ]]> */
-	</style>
-</head>
-
-<body>
-
-	<div id="header">
-    <div id="currentUser"><div class="lift:GlobalsSnippet.currentUser" ></div></div>
-		<div id="navigation">
-			<a id="navHome" href="/"><span>Home</span></a>
-      <div id="navLinkContainer"></div>
-		</div>
-		<div id="title">
-			<h1 id="titleText">MeTL Viewer</h1>
-		</div>
-	</div>
-
-	<div id="content" >
-	</div>
-
-</body>
+  </body>
 
 </html>

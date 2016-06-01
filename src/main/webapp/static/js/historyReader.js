@@ -10,9 +10,10 @@ var requestedViewboxHeight = 240;
 function loadSlide(jid){
     startMark = Date.now();
     $("#targetSlide").text(sprintf("Loading slide %s",jid));
-    showBackstage("loadingSlide");
+    showSpinner();
     moveToSlide(jid.toString());
 }
+
 function receiveHistory(json){
     try{
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark, historyDecoratorsMark, blitMark;
@@ -70,20 +71,6 @@ function receiveHistory(json){
             clearBoard();
             render(boardContent);
             blitMark = Date.now();
-            /*
-             $("#timingLog").text(sprintf("receiveHistory %s timing:\n%s milis download\n%s milis prerender ink\n%s milis prerender highlighters\n%s milis prerender text\n%s milis imagesLoaded\n%s milis history decorators\n%s milis blit\n%s milis total\n%s milis bench",
-             Date.now(),
-             historyDownloadedMark - startMark,
-             prerenderInkMark - historyDownloadedMark,
-             prerenderHighlightersMark - prerenderInkMark,
-             prerenderTextMark - prerenderHighlightersMark,
-             imagesLoadedMark - prerenderTextMark,
-             historyDecoratorsMark - imagesLoadedMark,
-             blitMark - prerenderTextMark,
-             blitMark - startMark,
-             blitMark - historyDownloadedMark
-             ));
-             */
         }
         if(_.keys(boardContent.images).length == 0){
             _.defer(startRender);
@@ -168,7 +155,7 @@ function mergeBounds(b1,b2){
 }
 var boardLimit = 10000;
 function isUsable(element){
-    var boundsOk = !(_.any(element.bounds,function(p){
+    var boundsOk = !(_.some(element.bounds,function(p){
         return isNaN(p) || p > boardLimit || p < -boardLimit;
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
@@ -392,35 +379,19 @@ function prerenderInk(ink){
 
     context.moveTo(x,y);
     context.beginPath();
-    context.lineWidth = ink.thickness * pica(pr);
-    if(ink.thickness > lineDrawingThreshold){
-        renderHull(ink);
-        return true;
-    }
-    else{
-        for(p = 0; p < points.length; p += 3){
-            newPr = points[p+2];
-            if(Math.abs(newPr - pr) < pressureSimilarityThreshold){
-                context.moveTo(x,y);
-                x = points[p]+contentOffsetX;
-                y = points[p+1]+contentOffsetY;
-                context.lineTo(x,y);
-            }
-            else{
-                context.stroke();
-                context.beginPath();
-                context.moveTo(x,y);
-                x = points[p]+contentOffsetX;
-                y = points[p+1]+contentOffsetY;
-                context.lineWidth = pica(newPr * ink.thickness)
-                pr = points[p+2];
-                context.lineTo(x,y);
-            }
-        }
-        context.stroke();
-        return true;
-    }
-    return false;
+ 		var x = points[0] + contentOffsetX;
+		var y = points[1] + contentOffsetY;
+		_.each(_.chunk(points,3),function(point){
+			context.beginPath();
+			context.moveTo(x,y);
+			x = point[0] + contentOffsetX;
+			y = point[1] + contentOffsetY;
+			context.lineTo(x,y);
+			context.lineWidth = ink.thickness * (point[2] / 256);
+			context.lineCap = "round";
+			context.stroke();
+		});
+		return true;
 }
 function alertCanvas(canvas,label){
     var url = canvas.toDataURL();
@@ -435,7 +406,7 @@ function calculateImageBounds(image){
 }
 function calculateImageSource(image){
     var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-    return sprintf("/proxy/%s/%s",slide,encodeURIComponent(image.identity));
+    return sprintf("/proxyImageUrl/%s?source=%s",slide,encodeURIComponent(image.source));
 }
 function calculateTextBounds(text){
     text.bounds = [text.x,text.y,text.x + text.width, text.y + (text.runs.length * text.size * 1.25)];
@@ -513,21 +484,21 @@ function prerenderText(text){
     var yOffset = 0;
     var runs = [];
     var breaking = false;
-    $.each(text.text,function(i,c){
-        if(c.match(newline)){
-            runs.push(""+run);
-            run = "";
-            return;
-        }
-        else if(breaking && c == " "){
-            runs.push(run);
-            run = "";
-            return;
-        }
-        var w = context.measureText(run).width;
-        breaking = w >= text.width - 80;
-        run += c;
-    });
+		$.each(text.text.split(''),function(i,c){
+				if(c.match(newline)){
+						runs.push(""+run);
+						run = "";
+						return;
+				}
+				else if(breaking && c == " "){
+						runs.push(run);
+						run = "";
+						return;
+				}
+				var w = context.measureText(run).width;
+				breaking = w >= text.width - 80;
+				run += c;
+		});
     runs.push(run);
     runs = runs.map(function(r){
         return r.trim();
@@ -640,7 +611,7 @@ function render(content){
                 inksRenderedMark = Date.now();
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
-                console.log("renderImmediateContent");
+                //console.log("renderImmediateContent");
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
@@ -658,17 +629,6 @@ function render(content){
             });
             imagesRenderedMark = Date.now();
             renderImmediateContent();
-            /*
-             console.log("Render %s timing:\n%s milis fit\n%s milis images\n%s milis highlighters\n%s milis texts\n%s milis inks\n%s milis renderDecorators\n%s milis total",
-             Date.now(),
-             fitMark - startMark,
-             imagesRenderedMark - fitMark,
-             highlightersRenderedMark - imagesRenderedMark,
-             textsRenderedMark - highlightersRenderedMark,
-             inksRenderedMark - textsRenderedMark,
-             renderDecoratorsMark - inksRenderedMark,
-             renderDecoratorsMark - startMark);
-             */
         }
         catch(e){
             console.log("Render exception",e);

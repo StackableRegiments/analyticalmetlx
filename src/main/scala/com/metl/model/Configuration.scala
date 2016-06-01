@@ -9,17 +9,18 @@ import Helpers._
 import scala.xml._
 import scala.collection.mutable.{Map=>MutableMap}
 
-case class ClientConfiguration(xmppHost:String,xmppPort:Int,xmppDomain:String,xmppUsername:String,xmppPassword:String,conversationSearchUrl:String,webAuthenticationUrl:String,thumbnailUrl:String,resourceUrl:String,historyUrl:String,httpUsername:String,httpPassword:String,structureDirectory:String,resourceDirectory:String,uploadPath:String,primaryKeyGenerator:String,cryptoKey:String,cryptoIV:String,imageUrl:String)
+case class ClientConfiguration(xmppDomain:String,xmppUsername:String,xmppPassword:String,imageUrl:String)
 
-abstract class ConfigurationProvider {
+abstract class ConfigurationProvider extends Logger {
   val keys:MutableMap[String,String] = MutableMap.empty[String,String]
+  keys.update("t","ejPass")
   def checkPassword(username:String,password:String):Boolean = {
-    println("checking: %s %s in %s".format(username,password,keys))
-    keys.get(username).exists(_ == password)
+    debug("checking: %s %s in %s".format(username,password,keys))
+    keys.get(username.trim.toLowerCase()).exists(_ == password)
   }
   def getPasswords(username:String):Option[Tuple4[String,String,String,String]] = {
-    val xu = adornUsernameForEjabberd(username)
-    val hu = adornUsernameForYaws(username)
+    val xu = adornUsernameForEjabberd(username.trim.toLowerCase())
+    val hu = adornUsernameForYaws(username.trim.toLowerCase())
 
     val xp = keys.get(xu) match {
       case None => {
@@ -46,8 +47,8 @@ abstract class ConfigurationProvider {
   }
   protected def generatePasswordForYaws(username:String):String 
   protected def generatePasswordForEjabberd(username:String):String 
-  def adornUsernameForEjabberd(username:String):String 
-  def adornUsernameForYaws(username:String):String 
+  def adornUsernameForEjabberd(username:String):String = username
+  def adornUsernameForYaws(username:String):String = username
   def vendClientConfiguration(username:String):Option[ClientConfiguration] = {
     for (
       cc <- MeTLXConfiguration.clientConfig;
@@ -55,14 +56,17 @@ abstract class ConfigurationProvider {
     ) yield {
       cc.copy(
         xmppUsername = xu,
-        xmppPassword = xp,
-        httpUsername = hu,
-        httpPassword = hp
+        xmppPassword = xp
       )
     }
   }
 }
-class StableKeyConfigurationProvider(scheme:String,localPort:Int,remoteBackendHost:String,remoteBackendPort:Int) extends ConfigurationProvider {
+class StableKeyConfigurationProvider extends ConfigurationProvider {
+  protected def generatePasswordForEjabberd(username:String):String = nextFuncName
+  protected def generatePasswordForYaws(username:String):String = nextFuncName
+}
+
+class StableKeyWithRemoteCheckerConfigurationProvider(scheme:String,localPort:Int,remoteBackendHost:String,remoteBackendPort:Int) extends ConfigurationProvider {
   protected val ejPassword = nextFuncName
   protected val verifyPath:String = "verifyUserCredentials"
   protected val returnAddress:String = {
@@ -88,8 +92,8 @@ class StableKeyConfigurationProvider(scheme:String,localPort:Int,remoteBackendHo
   }
   protected def generatePasswordForEjabberd(username:String):String = nextFuncName
   protected def generatePasswordForYaws(username:String):String = nextFuncName
-  def adornUsernameForEjabberd(username:String):String = "ejUserAndIp|%s|%s".format(username,scheme,getLocalIp,getLocalPort,verifyPath)
-  def adornUsernameForYaws(username:String):String = "%s@%s".format(username,returnAddress)
+  override def adornUsernameForEjabberd(username:String):String = "ejUserAndIp|%s|%s".format(username,scheme,getLocalIp,getLocalPort,verifyPath)
+  override def adornUsernameForYaws(username:String):String = "%s@%s".format(username,returnAddress)
 }
 
 class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPassword:String,yawsUsername:Option[String],yawsPassword:String) extends ConfigurationProvider {
@@ -100,13 +104,13 @@ class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPas
     keys.update(yu,yawsPassword)
   })
   override def checkPassword(username:String,password:String):Boolean = {
-    println("checking: %s %s in %s".format(username,password,keys))
+    debug("checking: %s %s in %s".format(username,password,keys))
     ejabberdUsername.filter(_ == username).map(_u => password == ejabberdPassword).getOrElse(false) || 
     yawsUsername.filter(_ == username).map(_u => password == yawsPassword).getOrElse(false) ||
     keys.get(username).exists(_ == password)
   }
   protected def generatePasswordForEjabberd(username:String):String = ejabberdPassword
   protected def generatePasswordForYaws(username:String):String = yawsPassword
-  def adornUsernameForEjabberd(username:String):String = ejabberdUsername.getOrElse(username)
-  def adornUsernameForYaws(username:String):String = yawsUsername.getOrElse(username)
+  override def adornUsernameForEjabberd(username:String):String = ejabberdUsername.getOrElse(username)
+  override def adornUsernameForYaws(username:String):String = yawsUsername.getOrElse(username)
 }

@@ -23,6 +23,7 @@
         };
 }());
 var reapplyStylingToServerGeneratedContent = function(contentId){
+    $("#" + contentId).find('.simpleMultipleButtonInteractableMessageButton a').addClass('button-transparent-border button');
 };
 var bounceAnd = function(func){
     return function(e){
@@ -40,6 +41,10 @@ var noActiveBackstage = "none";
 var flash = function(el){
     var t = 100;
     el.fadeOut(t).fadeIn(t);
+}
+function updateActiveMenu(menuItem) {
+    $(".activeBackstageTab").removeClass("activeBackstageTab active");
+    $(menuItem).addClass("activeBackstageTab active");
 }
 var WorkQueue = (function(){
     var isAbleToWork = true;
@@ -272,11 +277,12 @@ var TweenController = (function(){
     };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
-            var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
+            //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
+            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid()];
             if(w == 0 || h == 0){
                 return;
             }
-            if(_.any(ps,function(p){
+            if(_.some(ps,function(p){
                 return typeof(p) == "undefined" || isNaN(p);
             })){
                 return;
@@ -389,8 +395,9 @@ var Extend = (function(){
     }
 })();
 
-var active = "activeBackstageTab";
+var active = "activeBackstageTab active";
 function showBackstage(id){
+    $(".backstage-menu").addClass('active');
     $(".backstage").hide();
     $(".backstageTabHeader").removeClass(active);
     $(".backstage").removeClass(active);
@@ -401,7 +408,8 @@ function showBackstage(id){
     $("#"+id).addClass(active);
     $(".modeSpecificTool."+id).addClass(active);
     $("#backstageContainer").show();
-    $("#applicationMenuPopup").show();
+    //$("#applicationMenuPopup").show().addClass('active');
+    $("#applicationMenuPopup").addClass('active');
     if(Conversations.inConversation()){
         $("#backstageTabHeaders").show();
         $("#applicationMenuButton").show();
@@ -416,17 +424,27 @@ function showBackstage(id){
 }
 function hideBackstage(){
     window.currentBackstage = noActiveBackstage;
+    $(".backstage-menu").removeClass('active');
     $(".backstage").hide();
     $(".backstageTabHeader").removeClass(active);
     $(".backstage").removeClass(active);
     $("#applicationMenuButton").removeClass(active);
-    $("#applicationMenuPopup").hide();
+    //$("#applicationMenuPopup").hide().removeClass('active');
+    $("#applicationMenuPopup").removeClass('active');
     $("#backstageTabHeaders").hide();
     $("#backstageContainer").hide();
     $("#hideBackstage").hide();
     $("#notices").show();
     $(".modeSpecificTool").removeClass(active);
+    hideSpinner();
 };
+function showSpinner() {
+    $("#loadingSlidePopup").show();
+};
+function hideSpinner() {
+    $("#loadingSlidePopup").hide();
+}
+
 $(function(){
     var heading = $("#heading");
     heading.text("Loading MeTLX...");
@@ -442,7 +460,7 @@ $(function(){
     boardContext = board[0].getContext("2d");
     heading.text("Set up board");
     setLoadProgress(1);
-    DeviceConfiguration.resetCurrentDevice();
+    //DeviceConfiguration.resetCurrentDevice();
     $("input.toolbar").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#slideContainer button").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#up").click(bounceAnd(Extend.up));
@@ -461,12 +479,25 @@ $(function(){
             Modes.select.activate();
         }
     });
+    $("#insertText").click(function(){
+        if(Modes.currentMode != Modes.text){
+            Modes.text.activate();
+        }
+    });
+
+    $("#insertImage").click(function(){
+        if(Modes.currentMode != Modes.image){
+            Modes.image.activate();
+        }
+    });
+		/*
     $("#insertMode").click(function(){
         if(Modes.currentMode != Modes.insert){
             Modes.insert.activate();
         }
 
     });
+		*/
     $("#panMode").click(function(){
         if(Modes.currentMode != Modes.pan){
             Modes.pan.activate();
@@ -561,6 +592,7 @@ $(function(){
         blit();
     });
     setLoadProgress(3);
+		/*
     $.each({
         red:"#FF0000",
         green:"#00FF00",
@@ -581,33 +613,46 @@ $(function(){
         }));
     });
     $("#toggleHighlighter").click(function(){
-        Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
+			Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
     });
+		*/
+		$("#submissionsButton").on("click",function(){
+			showBackstage("submissions");
+		});
+		$("#quizzesButton").on("click",function(){
+			showBackstage("quizzes");
+		});
+		$("#submitScreenshotButton").on("click",function(){
+			var currentConversation = Conversations.getCurrentConversation();
+			var currentSlide = Conversations.getCurrentSlideJid();
+			if("jid" in currentConversation){
+					submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
+			}
+		});
+		$("#enableSync").on("click",Conversations.enableSyncMove);
+		$("#disableSync").on("click",Conversations.disableSyncMove);
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
+
+		Modes.draw.activate();
+
     $("#progress").hide();
     setLoadProgress(8);
-    var toggler = function(idFragment){
-        var element = $(sprintf("#restore%s",idFragment));
-        var toggleFuncField = sprintf("set%s",idFragment);
-        var toggled = false;
-        var setText = function(){
-            if(toggled){
-                element.text(sprintf("Restore %s",idFragment.toLowerCase()));
-            }
-            else{
-                element.text(sprintf("Hide %s",idFragment.toLowerCase()));
-            }
-        }
-        element.click(bounceAnd(function(){
-            DeviceConfiguration[toggleFuncField](toggled);
-            DeviceConfiguration.applyFit();
-            toggled = !toggled;
-            setText();
-        }));
-        setText();
-    }
-    toggler("Tools");
-    toggler("Slides");
-    DeviceConfiguration.applyFit();
+
+    $('#updatePens').click(function(){
+        showBackstage("customizeBrush");
+        updateActiveMenu(this);
+    });
+    $('#menuSubmissions').click(function(){
+        showBackstage("submissions");
+        updateActiveMenu(this);
+    });
+    $('#menuPolls').click(function(){
+        showBackstage("quizzes");
+        updateActiveMenu(this);
+    });
+		$('#menuBlacklist').click(function(){
+			showBackstage("blacklist");
+			updateActiveMenu(this);
+		});
 });

@@ -264,7 +264,7 @@ case class StackAnswer(id:String, parentId:String,var about:DiscussionPoint, var
 }
 object StackAnswer extends JsonObjectMeta[StackAnswer]
 
-case class StackComment(id:String, parentId:String,var about:DiscussionPoint, creationDate:Long, var votes:List[Vote], var comments:List[StackComment], var deleted:Boolean) extends JsonObject[StackComment] with VoteCollector{
+case class StackComment(id:String, parentId:String,var about:DiscussionPoint, creationDate:Long, var votes:List[Vote], var comments:List[StackComment], var deleted:Boolean) extends JsonObject[StackComment] with VoteCollector with Logger {
   def meta = StackComment
   def listVotes = votes
   def listDeepVotes = comments.filter(a => !a.deleted).map(a => a.listDeepVotes).foldLeft(listVotes)((acc,item) => acc ::: item)
@@ -293,7 +293,7 @@ case class StackComment(id:String, parentId:String,var about:DiscussionPoint, cr
     val deleteCmd = StackComment.jsCmdFormat.format(parentId,id,"{'comments':[],'votes':[],'deleted':true}")
     val newQuery = new BasicDBObject("$eval",deleteCmd)
     newQuery.append("nolock",true)
-    println("[MONGO] - dbResponse: %s".format(MongoDB.useSession(db => db.command(newQuery))))
+    trace("[MONGO] - dbResponse: %s".format(MongoDB.useSession(db => db.command(newQuery))))
   }
   def totalChildCount:Int = {
     comments.filter(c => !c.deleted).map(c => c.totalChildCount).sum + 1

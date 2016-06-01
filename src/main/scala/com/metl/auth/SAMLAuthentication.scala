@@ -200,16 +200,14 @@ class SAMLAuthenticator (
       case Failure(message:String, boxOfThrowable:Box[Throwable], _) => {
         boxOfThrowable.map {
           case exception: RequiresHttpAction =>
-            val exceptionMessage = "Failure caught when generating SAML redirection: %s".format(exception.getMessage)
-            val exceptionStackTrace = "Failure caught when generating SAML redirection: %s".format(exception.getStackTraceString)
-            error("Error code: %s - (%s) %s".format(exception.getCode, exceptionMessage, exceptionStackTrace))
+            error("Error code",exception)
             exception.getCode match {
               case 401 => new UnauthorizedResponse("Unauthenticated request")
               case 403 => new ForbiddenResponse("Forbidden")
               case _ => internalServerErrorResponseWithUnknownError
             }
           case other =>
-            error("Unknown exception caught: %s".format(other.toString))
+            error("Unknown exception caught",other)
             internalServerErrorResponseWithUnknownError
         }.openOr(internalServerErrorResponseWithUnknownError)
       }
@@ -226,23 +224,23 @@ class SAMLAuthenticator (
       val userProfile: Saml2Profile = samlClient.getUserProfile(credentials, liftWebContext)
 
       val rawAttributes = userProfile.getAttributes
-      println("raw saml attrs: %s".format(rawAttributes))
+      debug("raw saml attrs: %s".format(rawAttributes))
       val attributes:List[Tuple2[String,String]] = rawAttributes.asScala.toList.flatMap {
         case ( name: String, arrayList: java.util.ArrayList[String] ) => {
-          println("decoding attribute: %s as an arrayList[String]: %s".format(name,arrayList))
+          debug("decoding attribute: %s as an arrayList[String]: %s".format(name,arrayList))
           arrayList.toArray.toList.map(arr => ( name, arr.toString ) )
         }
         case ( name: String, arrayList: java.util.ArrayList[Object] ) => {
-          println("decoding attribute: %s as an arrayList[Object]: %s".format(name,arrayList))
+          debug("decoding attribute: %s as an arrayList[Object]: %s".format(name,arrayList))
           arrayList.toArray.toList.map(arr => ( name, arr.toString ) )
         }
         case ( name: String, str: String ) => {
-          println("decoding attribute: %s as a string: %s".format(name,str))
+          debug("decoding attribute: %s as a string: %s".format(name,str))
           List(( name, str ))
         }
       }.toList
 
-      println("all attrs for '%s': %s\r\nroles: %s".format(userProfile.getId,attributes,userProfile.getRoles))
+      debug("all attrs for '%s': %s\r\nroles: %s".format(userProfile.getId,attributes,userProfile.getRoles))
 
       // This is where we might want to adjust the LiftAuthStateData to
       // support the attributes and groups returned by the SAML packet.
@@ -261,32 +259,28 @@ class SAMLAuthenticator (
 
       // Let's think about rewriting LiftAuthenticator to remove the SessionVar from it, making that
       // the responsibility of the consuming app, now that we have apps which don't want to remember your session username.
-      println("setting inSessionState: %s".format(liftAuthStateData))
+      debug("setting inSessionState: %s".format(liftAuthStateData))
       InSessionLiftAuthState.set(liftAuthStateData)
 
-      println("firing onSuccess")
+      debug("firing onSuccess")
       onSuccess(liftAuthStateData)
 
       // Let's use the RelayState returned from  the IDP
       val redirectResponse = CurrentReq.value.param("RelayState").map(relayState => {
         new RedirectResponse(relayState, request)
       }).getOrElse(redirectHome)
-      println("redirecting to: %s".format(redirectResponse))
+      debug("redirecting to: %s".format(redirectResponse))
       redirectResponse
     }
 
     boxOfRedirectResponse match {
       case Full(redirectResponse:RedirectResponse) => redirectResponse
       case Failure(message: String, boxOfThrowable: Box[Throwable], _) => {
-        val exceptionMessage:String = boxOfThrowable.map(_.getMessage).openOr("Unknown exception message")
-        val errorStackTrace:String = boxOfThrowable.map(_.getStackTraceString).openOr("Unknown exception stack trace")
-        error("Exception thrown when retrieving user credentials from SAML response: (%s) - %s".format(exceptionMessage, errorStackTrace))
+        boxOfThrowable.foreach(bot => error("Exception thrown when retrieving user credentials from SAML response",bot))
         internalServerErrorResponseWithUnknownError
       }
       case Failure(_, boxOfThrowable: Box[Throwable], _) => {
-        val exceptionMessage:String = boxOfThrowable.map(_.getMessage).openOr("Unknown exception message")
-        val errorStackTrace:String = boxOfThrowable.map(_.getStackTraceString).openOr("Unknown exception stack trace")
-        error("Exception thrown when retrieving user credentials from SAML response: (%s) - %s".format(exceptionMessage, errorStackTrace))
+        boxOfThrowable.foreach(bot => error("Exception thrown when retrieving user credentials from SAML response",bot))
         internalServerErrorResponseWithUnknownError
       }
       case other => {

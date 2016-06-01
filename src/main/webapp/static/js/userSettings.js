@@ -12,6 +12,7 @@ var UserSettings = (function(){
     var setUsernameFunction = function(newName){
         username = newName;
         $("#username").text(username);
+        $("#currentUsername").text(username);
     };
     var setUserGroupsFunction = function(newGroups){
         userGroups = newGroups;
@@ -35,7 +36,8 @@ var UserSettings = (function(){
         toolModeSize:60,
         subModeSize:30,
         thumbnailSize:100,
-        loadSlidesAtNativeZoom:false
+        loadSlidesAtNativeZoom:false,
+				followingTeacherViewbox:false
     };
     var setUserPrefFunction = function(prefKey,prefValue){
         if(localStorage){
@@ -55,7 +57,7 @@ var UserSettings = (function(){
         getUsername:function(){return username;},
         getUserOptions:function(){return userOptions;},
         getUserGroups:function(){return userGroups;},
-        getIsInteractive:function(){return isInteractiveUser;},
+        getIsInteractive:function(){return isInteractiveUser == true;},
         setIsInteractive:setIsInteractiveUserFunction,
         getUserPref:getUserPrefFunction,
         setUserPref:setUserPrefFunction

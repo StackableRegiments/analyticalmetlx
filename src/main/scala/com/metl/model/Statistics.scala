@@ -5,7 +5,7 @@ import com.metl.utils._
 
 
 object Stats {
-  def uniqueUsersOfSlide(server:ServerConfiguration,slideJid:Int):List[String] = Stopwatch.time("Stats.uniqueUsersOfSlide", () => {
+  def uniqueUsersOfSlide(server:ServerConfiguration,slideJid:Int):List[String] = Stopwatch.time("Stats.uniqueUsersOfSlide", {
     try {
       server.getHistory(slideJid.toString).getAll.map(i => i match {
         case m:MeTLStanza => m.author
@@ -15,7 +15,7 @@ object Stats {
       case e:Throwable => List.empty[String]
     }
   })
-  def uniqueUsersOfConversation(server:ServerConfiguration,convJid:Int):List[String] = Stopwatch.time("Stats.uniqueUsersOfConversation", () => {
+  def uniqueUsersOfConversation(server:ServerConfiguration,convJid:Int):List[String] = Stopwatch.time("Stats.uniqueUsersOfConversation", {
     try {
       (convJid :: server.detailsOfConversation(convJid.toString).slides.map(s => s.id).toList).map(j => uniqueUsersOfSlide(server,j)).flatten.distinct
     } catch {

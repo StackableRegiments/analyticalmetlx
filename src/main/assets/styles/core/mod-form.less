@@ -1,0 +1,342 @@
+/*@charset "utf-8";*/
+/* CSS Document */
+fieldset,fieldset.half {
+    border:none;
+    .mth;
+    .pbd;
+}
+
+fieldset fieldset {
+    border: 1px solid @form-borders;
+    width:75%;
+    margin:1em 0 0 0;
+}
+fieldset {
+    .np;
+}
+legend {width:100%; .large-txt; .mb; .font-weight-light;}
+fieldset fieldset > legend { .std-txt; width:auto; .plrh; .nmb; }
+label,
+.label {
+    display:block;
+    margin:1em 0 0.5em 0;
+}
+.compact-form {
+    label,.label {
+        .mth;
+        .nmb;
+    }
+}
+
+.inline-input {display:inline; .align-left; .mr;}
+input[type=submit].inline-button,
+input[type=button].inline-button,
+button.inline-button{ 
+    display:inline-block;
+}
+
+input,
+input[type="search"],
+textarea,
+button,
+.input-box {
+    width:75%;
+    padding:10px;
+    border-radius: 0;
+    border: 2px solid @form-borders;
+    /*box-shadow: inset 2px 2px 2px 0px @shadows;*/
+    .nm;
+    .border-box;
+    background:transparent;
+    -webkit-appearance: none; 
+}
+.no-boxsizing {
+    input,
+    input[type="search"] {
+	width:63%;
+    }
+}
+.input-full-width {
+    input,
+    input[type="search"],
+    textarea,
+    select {
+        width:100%;
+    }
+}
+input[type=file] {
+    background:@form-elements-bg;
+}
+select{
+    width:75%;
+    border-style:solid;
+    border-width:2px;
+    border-color:@form-borders;
+    padding:8px;
+    background:@form-elements-bg;
+}
+/*optgroup {
+		background:@bg-menus;
+		font-weight:normal;
+}*/
+input[list] {
+    background: @form-elements-bg url(images/filter-menu.png) right 10px center no-repeat;
+}
+
+input[list]::-webkit-calendar-picker-indicator {
+  /*display: none;*/
+  color:rgba(255,255,255,0);
+  background: #fff url(images/filter-menu.png) center center no-repeat;
+}
+.no-inputlist input[list] {
+    display:none;
+}
+input,
+select,
+textarea,
+.input-box {
+    &:focus {
+	border: 2px solid @form-borders-highlight;
+	outline:0;
+    }
+    &[readonly] {
+	background-color: @disabled-bg;
+	color: @disabled-fg;
+    }
+    &[readonly]:focus {
+	border-color: @disabled-borders;
+    }
+}
+.error-text {
+    width:80%;
+    margin-top:0;
+    margin-bottom:0.2em;
+    background: url('images/forms-error.png') no-repeat 0 2px;
+    color: @error;
+    padding-left: 18px;
+}
+.noticeHeader {
+    .med-txt;
+}
+.notice-success .noticeItem, .notice-failure {
+    background:;
+    .mth;
+}
+.notice-success {
+    .noticeItem {
+        &:before {
+            background-color: ;
+            float:left;
+            background-image: url(images/all-success-30-white.png);
+            background-position:center center;
+            content: " ";
+            height:30px;
+            width:30px;
+            background-size:25px 25px;
+        }
+        .noticeHeader,.noticeMessage {
+            margin-left: 44px;
+        }
+    }
+}
+.svg .notice-success .noticeItem:before {
+    
+}
+fieldset fieldset .error-text {
+    .mlh;
+}
+input.error,
+select.error,
+textarea.error {
+    border: 2px solid @error;
+}
+.further-instructions {
+    position:relative;
+    top:8px;
+    border:none;
+    clear:both;
+    width:90%;
+    font-size:11px;
+    line-height:14px;
+}
+
+input[type="submit"],
+input[type="button"],
+button {
+    border:none;
+    width:auto;
+    box-shadow:none;
+    background-color:;
+    color:;
+    clear:both;
+    .mt;
+    display:block;
+    &:hover {
+	text-decoration: underline;
+    }
+}
+
+/*input[type="radio"] {
+    padding-left:0.5em;
+}*/
+input[type="checkbox"] + label, input[type="radio"] + label, .checkbox-sim {
+    box-sizing: border-box !important;
+    .flex-container-row;
+    .fa;
+    flex-grow:1;
+    cursor: pointer;
+    &::before {
+		content: " ";
+		text-align: center;
+		vertical-align: top;
+        .mrh;
+	}
+	span {
+	    .font-std;
+	}
+}
+input[type="checkbox"] {
+    & + label::before {
+        content:"\f096";
+    }
+    &:checked + label::before {
+        content: "\f14a";
+    }
+}
+input[type="radio"] {
+    & + label::before {
+        content:"\f10c";
+    }
+    &:checked + label::before {
+        content: "\f192";
+    }
+}
+input[type="checkbox"], input[type="radio"], .checkbox-hidden-sim {
+	.hidden;
+    &[disabled] + label {
+        .btn-active.disabled;
+    }
+}
+/*.separate-field input[type="checkbox"] + label, .separate-field input[type="radio"] + label {
+    width: 50%;
+}*/
+
+/*input[type="checkbox"][readonly],
+input[type="radio"][readonly] {
+    +label::before {
+	background-color: @form-bg-cont;
+    }
+    +label {
+	color: @text-disabled;
+	font-style: italic;
+    }
+}
+.separate-field input[type='checkbox'] + label::before {
+    padding:3.5px;
+}
+input[type="radio"] + label:before {
+	border-radius: 100%;
+        padding:3px 4px 5px 4px;
+}         */
+
+input[type="checkbox"]:focus + label::before,
+input[type="radio"]:focus + label::before,
+input[type=submit]:focus,
+input[type=button]:focus
+button:focus {
+    /*outline:1px dotted ;*/
+    text-decoration:none;
+}
+/*input[type="checkbox"]:focus + label, input[type="radio"]:focus + label {
+    text-decoration: underline;
+}
+input[type="checkbox"]+label+label, input[type="radio"]+label+label {clear:both;}
+.separate-field {border:1px solid @borders-light; box-sizing: border-box;display:inline-block;}
+
+.date .third {
+    .nmr;
+}*/
+.form-input-with-icon {
+    .add-on {
+        border:2px solid @form-borders;
+        border-right:none;
+        order:1;
+    }
+    .icon-search {
+        background-color: transparent;
+        color: @form-borders;
+    }
+    .input-search {
+        border-left:none;
+        .grow;
+        order:2;
+        &:focus + .add-on {
+            border-color: @form-borders-highlight;
+            outline:0;
+        }
+        &:focus ~ .btn-search {
+            background-color: @form-borders-highlight;
+            color:white;
+            outline:0;
+        }
+    }
+    .btn-search {
+        margin: 0;
+        background: @form-borders;
+        order:3;
+        &:focus {
+            background-color: @form-borders-highlight;
+            color:white;
+            outline:0;
+        }
+    }
+}
+.generatedcontent .required:after,
+.asterisk-required {
+    color: @error;
+    content: ' *';
+}
+.generatedcontent .required-label,
+.generatedcontent .fieldHeaderIsRequired {
+    .hidden;
+}
+.file-drop-box {
+    height:100px;
+    border:1px solid #eee;
+    text-align:center;
+    vertical-align:middle;
+    padding-top:40px;
+    background:#f5f6f6;
+}
+/*fieldset.dropdown-check {
+    border: 1px solid @borders-light;
+    margin:10px 2% 0.5em 0;
+    background:@bg-light;
+    legend {
+        width: 100%;
+        float:left;
+        padding:10px;
+    }
+    .checkbox-list {
+        display:none;
+        clear:both;
+        padding:10px;
+    }
+}*/
+@media only screen and(max-width:@width-mobile) {
+
+    fieldset fieldset,
+    input,
+    select,
+    textarea {
+	width:100%;
+	.no-boxsizing {
+	    width:96%;
+	}
+    }
+    .inline-input {
+        display:block;
+	float:none;
+	.nmr
+    }
+}

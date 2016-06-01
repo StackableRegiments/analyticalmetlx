@@ -1,51 +1,50 @@
+import com.typesafe.sbt.SbtStartScript
+import SbtStartScript.StartScriptKeys._
+import com.earldouglas.xsbtwebplugin.WebPlugin
+
 name := "web-container-metlx"
 version := "0.2.0"
 organization := "io.github.stackableregiments"
 
-scalaVersion := "2.11.5"
+val scalaVersionString = "2.11.5"
+
+scalaVersion := scalaVersionString
 
 resolvers ++= Seq(
-  "snapshots"     at "http://oss.sonatype.org/content/repositories/snapshots",
-  "releases"        at "http://oss.sonatype.org/content/repositories/releases"
+  "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",
+  "releases"        at "https://oss.sonatype.org/content/repositories/releases"
 )
+
+seq(webSettings :_*)
+
+startScriptJettyVersion in Compile := "9.2.10.v20150310"
+
+startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
+
+startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://refer.adm.monash.edu/jetty-distribution-" + version + ".zip" }
+
+startScriptJettyContextPath := "/"
+
+startScriptJettyHome in Compile <<= (streams, target, startScriptJettyURL in Compile, startScriptJettyChecksum in Compile) map startScriptJettyHomeTask
+
+startScriptForWar in Compile <<= (streams, startScriptBaseDirectory, startScriptFile in Compile, com.earldouglas.xsbtwebplugin.PluginKeys.packageWar in Compile, startScriptJettyHome in Compile, startScriptJettyContextPath in Compile) map startScriptForWarTask
+
+startScript in Compile <<= startScriptForWar in Compile
+
+seq(genericStartScriptSettings:_*)
 
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
-//seq(webSettings :_*)
-
-jetty()
-
-javaOptions in container ++= Seq(
-  "-Dmetlx.configurationFile=config/configuration.local.xml",
-  "-Dlogback.configurationFile=config/logback.xml",
-  "-XX:+UseConcMarkSweepGC",
-  "-XX:+CMSClassUnloadingEnabled"
-)
-
-libraryDependencies ++= {
-  Seq(
-    //              "net.liftweb"       %% "lift-webkit" % liftVersion % "compile",
-    //             "net.liftmodules"   %% "lift-jquery-module" % (liftVersion + "-2.2"),
-    "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar")
-      //              "ch.qos.logback" % "logback-classic" % "1.0.6"
-  )
-}
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val scalaVersionString = "2.11.5"
-  //  val logbackVersion = "1.0.1"
   Seq(
-    //    "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided",
-    //    "org.eclipse.jetty" % "jetty-webapp" % "9.1.5.v20140505",
-    //    "org.eclipse.jetty" % "jetty-plus" % "9.1.5.v20140505",
-    //    "org.slf4j" % "slf4j-simple" % "1.6.2",
-    "ch.qos.logback" % "logback-classic" % "1.1.3",
-    //    changing to logback-core as per Chris's changes
-    //    "ch.qos.logback" % "logback-core" % logbackVersion,
+    "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
+    "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
+    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
@@ -53,8 +52,10 @@ libraryDependencies ++= {
     "org.specs2" %% "specs2" % "3.3.1" % "test",
     "org.mockito" % "mockito-core" % "1.9.0" % "test",
     "commons-io" % "commons-io" % "1.4",
-    "org.apache.vysper" % "vysper-core" % "0.7" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "org.apache.vysper.extensions" % "xep0045-muc" % "0.7" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
+    "org.apache.vysper" % "vysper" % "0.7",
+    "org.apache.vysper" % "vysper-core" % "0.7",
+    "org.apache.vysper" % "vysper-server" % "0.7",
+    "org.apache.vysper.extensions" % "xep0045-muc" % "0.7",
     "org.pac4j" % "pac4j-saml" % "1.6.0",
     "javax.mail" % "mail" % "1.4",
     "net.liftweb" %% "lift-mapper" % liftVersion,
@@ -62,29 +63,31 @@ libraryDependencies ++= {
     "net.liftweb" %% "lift-mongodb" % liftVersion,
     "net.liftweb" %% "lift-mongodb-record" % liftVersion,
     "org.seleniumhq.selenium" % "selenium-java" % "2.8.0",
-    "io.github.stackableregiments" %% "common-utils" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metldata" % "3.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "lift-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "ldap-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "form-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "cas-authentication" % "0.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "metl2011" % "3.7.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"), 
-    "io.github.stackableregiments" %% "metl-h2" % "3.2.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "lift-extensions" % "0.1.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri"),
-    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+" exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri")
+    "org.apache.poi" % "poi" % "3.13",
+    "org.apache.poi" % "poi-ooxml" % "3.13",
+    "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
+    "org.apache.poi" % "poi-scratchpad" % "3.13",
+    "net.sf.ehcache" % "ehcache" % "2.10.1",
+    "io.github.stackableregiments" %% "metl2011" % "3.12.+",
+    "io.github.stackableregiments" %% "metl-h2" % "3.22.+",
+    "io.github.stackableregiments" %% "common-utils" % "0.4.+",
+    "io.github.stackableregiments" %% "metldata" % "3.10.+",
+    "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
+    "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
+    "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
+    "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
+    //    until sonatype lets us publish again, the following two lines replace the h2 dependency
+    //    "com.h2database" % "h2" % "1.4.189",
+    //    "io.github.stackableregiments" %% "persisted-metl" % "3.6.+",
+    "mysql" % "mysql-connector-java" % "5.1.38",
+    //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
+    "org.apache.shiro" % "shiro-core" % "1.2.4",
+    "org.apache.shiro" % "shiro-web" % "1.2.4",
+    "org.apache.commons" % "commons-compress" % "1.1",
+    "io.github.stackableregiments" %% "lift-extensions" % "0.2.+"
   )
-}
+}.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
-// enable the in-sbt jettyContainer for testing
-
-//enablePlugins(JettyPlugin)
-
-//containerPort := 8080
-
-// increase the time between polling for file changes when using continuous execution
-pollInterval := 1000
-
-// append several options to the list of options passed to the Java compiler
 javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
 
 // append -deprecation to the options passed to the Scala compiler
@@ -95,6 +98,8 @@ publishTo := Some("sonatype" at "https://oss.sonatype.org/service/local/staging/
 
 // set Ivy logging to be at the highest level
 ivyLoggingLevel := UpdateLogging.Full
+
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
 
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := false
@@ -144,12 +149,3 @@ traceLevel := 10
 traceLevel := 0
 
 credentials += Credentials(Path.userHome / ".ivy2" / "ivy-credentials")
-
-// Exclude transitive dependencies, e.g., include log4j without including logging via jdmk, jmx, or jms.
-/*
- libraryDependencies += "log4j" % "log4j" % "1.2.15" excludeAll(
- ExclusionRule(organization = "com.sun.jdmk"),
- ExclusionRule(organization = "com.sun.jmx"),
- ExclusionRule(organization = "javax.jms")
- )
- */

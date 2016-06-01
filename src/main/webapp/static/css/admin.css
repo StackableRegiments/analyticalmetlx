@@ -1,0 +1,51 @@
+.template{
+    display:none;
+}
+.tile{
+    background:darkslategray;
+    border:1px solid gray;
+    color:white;
+    font-size:small;
+    margin:1em;
+    padding:1em;
+}
+.tile .title{
+    font-size:x-large;
+    max-width:180px;
+}
+.column{
+    vertical-align:top;
+    display:inline-block;
+}
+.title-container .metl-logo{
+    height:30px;
+    margin-bottom:0;
+    background-size:60%;
+}
+.inset{
+    margin-left:1em;
+    margin-top:1em;
+}
+.gridLines{
+    //background-image: linear-gradient(to right, grey 0.5px, transparent 0.5px), linear-gradient(to bottom, grey 0.5px, transparent 0.5px)
+}
+.gridLarge{
+    background-size: 40px 40px;
+}
+.gridMedium{
+    background-size: 30px 30px;
+}
+.gridSmall{
+    background-size: 20px 20px;
+}
+.sortOption{
+    display:inline-block;
+    padding:1em 0.5em;
+}
+.label{
+    display:inline;
+    margin-right:1em;
+}
+.expandedTemplate, .detailTemplate{
+    margin-left:1em;
+}

@@ -19,13 +19,13 @@ import net.liftweb.http.SHtml._
 case class TopicActivity(topicIdentity:String)
 case class NewTopic(topic:Topic)
 
-object TopicServer extends LiftActor with ListenerManager{
+object TopicServer extends LiftActor with ListenerManager with Logger{
   def fetchFromDB = TopicManager.getAll
   var topics = fetchFromDB
   def getTopics = topics
   def createUpdate = topics
   override def lowPriority = {
-    case TopicActivity(topicActivity) => Stopwatch.time("TopicServer:topicActivity",()=>{
+    case TopicActivity(topicActivity) => Stopwatch.time("TopicServer:topicActivity",{
       topics.find(t => t.identity == topicActivity).map(t => updateListeners(t))
     })
     case NewTopic(topic) => {
@@ -33,11 +33,11 @@ object TopicServer extends LiftActor with ListenerManager{
       updateListeners(topics)
       updateListeners(topic)
     }
-    case other => println("TopicServer received unknown message: %s".format(other))
+    case other => warn("TopicServer received unknown message: %s".format(other))
   }
 }
 
-class TopicActor extends CometActor with CometListener{
+class TopicActor extends CometActor with CometListener with Logger {
   def registerWith = TopicServer
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   def namesHtmlCssBind(topics:List[Topic]) =
@@ -79,15 +79,15 @@ class TopicActor extends CometActor with CometListener{
   }
   def indicateActivity(topic:String) = partialUpdate(Call("divJiggle","#topic_%s".format(topic)))
   override def lowPriority = {
-    case names:List[Topic] => Stopwatch.time("Topics:list[string]",()=>updateNames(names))
-    case topic:Topic => Stopwatch.time("Topics:topicActivity",()=>indicateActivity(topic.identity))
-    case other => println("TopicActor received unknown message: %s".format(other))
+    case names:List[Topic] => Stopwatch.time("Topics:list[string]",updateNames(names))
+    case topic:Topic => Stopwatch.time("Topics:topicActivity",indicateActivity(topic.identity))
+    case other => warn("TopicActor received unknown message: %s".format(other))
   }
-  override def fixedRender = Stopwatch.time("Topics:fixedRender",()=>((BubbleConstants.fullAdmins(Globals.currentUser.is) match {
+  override def fixedRender = Stopwatch.time("Topics:fixedRender",((BubbleConstants.fullAdmins(Globals.currentUser.is) match {
     case true => "#topicAddButton *" #> createTopicLink
     case _ => "#topicAddButton" #> NodeSeq.Empty
   })))
-  override def render = Stopwatch.time("Topics:render",()=>{
+  override def render = Stopwatch.time("Topics:render",{
     updateNames(TopicServer.getTopics)
     NodeSeq.Empty
   })

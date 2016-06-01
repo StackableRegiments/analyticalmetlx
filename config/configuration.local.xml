@@ -1,13 +1,25 @@
 <serverConfiguration>
-	<!--    <metl2011InstallUrl>http://devmetl.saintleo.edu/MeTL2011/</metl2011InstallUrl>-->
-	<!-- 
-  <defaultServerConfiguration>localH2</defaultServerConfiguration>
+	<metl2011InstallUrl>http://setup.stackableregiments.com/windowsClients/sluBeta/</metl2011InstallUrl>
+	<serverAddress>
+		<scheme>http</scheme>
+		<hostname>localhost</hostname>
+		<port>8080</port>
+	</serverAddress>
+  <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
-      <type>localH2</type>
-			<name>localDev</name>
-			<filename>./testdb.h2</filename>
+      <type>sql</type>
+			<name>sqlAdaptor</name>
+			<driver>org.h2.Driver</driver>
+			<url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
     </server>
+		<!--
+    <server>
+      <type>localH2</type>
+			<name>localH2</name>
+			<filename>./testdb.h2</filename>
+		</server>
+-->
     <server>
       <type>transientLoopback</type>
     </server>
@@ -15,8 +27,17 @@
       <type>frontend</type>
     </server>
 	</serverConfigurations>
+	<caches>
+		<roomLifetime miliseconds="3600000"/>
+		<resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
+	</caches>
+	<importerPerformance parallelism="8"/>
+	<clientConfig>
+		<xmppDomain>local.temp</xmppDomain>
+		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+	</clientConfig>
 
-		 -->
+	<!--		 -->
 	<!--	
   <defaultServerConfiguration>devmetl.saintleo</defaultServerConfiguration>
 	<serverConfigurations>
@@ -34,20 +55,7 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>devmetl.saintleo.edu</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>metl.adm.monash.edu.au</xmppDomain>
-		<conversationSearchUrl>https://devmetl.saintleo.edu:8443/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>https://devmetl.saintleo.edu:8443/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>https://devmetl.saintleo.edu:8443/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://devmetl.saintleo.edu:1188/</resourceUrl>
-		<historyUrl>https://devmetl.saintleo.edu:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	-->
@@ -68,24 +76,11 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>demo.stackableregiments.com</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 -->
-<!-- --> 
+<!--  
   <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
@@ -102,30 +97,21 @@
     </server>
 	</serverConfigurations>
 	<clientConfig>
-		<xmppHost>demo.stackableregiments.com</xmppHost>
-		<xmppPort>5222</xmppPort>
 		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>http://localhost:8080/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>http://localhost:8080/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>http://localhost:8080/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoKey>exampleIV</cryptoIV>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
-	<!-- -->
+	 -->
 	<securityProvider>
-		<!--		<stableKeyProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
+		<stableKeyProvider /> 
+		<!--		<stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
 		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />
+		<!-- <staticKeyProvider ejabberdPassword="examplePassword" yawsPassword="examplePassword" /> -->
+		<!--		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />-->
 	</securityProvider>
-  <!--  <proxyBehind scheme="https" host="outerhostname.saintleo.edu" port="443" /> -->
 	<authentication>
+		<!--
+		<google clientId="exampleKey"/>
+-->
 		<mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
 			<template>
 				<div>
@@ -143,14 +129,16 @@
 		</mock>
   </authentication>
   <groupsProvider>
-    <!-- as many groupsProviders can be used at a time -->
 		<selfGroups/>
 		<flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
-		<!--
-		<flatFileGroups format="stLeo" location="" refreshPeriod=""/>-->
+		<flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
+			<wantsSubgroups username="jeff.borden"/>
+			<wantsSubgroups username="greg.kunzweiler"/>
+		</flatFileGroups>
 		<flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
 	</groupsProvider>
-	<!--
-	<stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
--->
+	<clientAdaptors>
+		<embeddedXmppServer keystorePath="examplePath" keystorePassword="examplePassword" />
+	</clientAdaptors>
+	<cloudConverterApiKey>exampleKey</cloudConverterApiKey>
 </serverConfiguration>

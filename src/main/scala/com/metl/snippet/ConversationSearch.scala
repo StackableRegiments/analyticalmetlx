@@ -16,19 +16,16 @@ package com.metl.snippet
     val serializer = new GenericXmlSerializer("rest")
   }
 
-  class ConversationSearch {
+  class ConversationSearch extends Logger {
     def render = "#searchInput" #> ajaxText("",query=> {
-      println("Searching for [%s]".format(query))
+      debug("Searching for [%s]".format(query))
       if(query.length <= 1){
         SetHtml("searchResults", <div class="error">Search query must be longer than 1 character</div>)
       }
       else{
         val serverConfig = ServerConfiguration.default
         var results = serverConfig.searchForConversation(query)
-        SetHtml("searchResults",results.map(c=> ajaxButton(c.title, ()=>{
-          CurrentConversation(Full(c))
-          RedirectTo("board")
-        })));
+        SetHtml("searchResults",results.map(c=> <a href={"/board?conversationJid=%s".format(c.jid)}>{c.title}</a>))
       }
     })
   }
