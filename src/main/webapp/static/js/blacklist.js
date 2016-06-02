@@ -149,9 +149,9 @@ var Blacklist = (function(){
     Progress.historyReceived["blacklist"] = historyReceivedFunction;
 		Progress.stanzaReceived["blacklist"] = onBlacklistReceived;
     return {
-        getAllBlacklists:function(){return filteredBlacklists();},
-        getCurrentBlacklist:function(){return currentBlacklist;},
-        processBlacklist:onBlacklistReceived,
-				getBlacklistedAuthors:function(){return blacklistAuthors;}
+			getAllBlacklists:function(){return Conversations.shouldModifyConversation() ? filteredBlacklists() : [];},
+			getCurrentBlacklist:function(){return Conversations.shouldModifyConversation() ? currentBlacklist : {};},
+			processBlacklist:onBlacklistReceived,
+			getBlacklistedAuthors:function(){return Conversations.shouldModifyConversation() ? blacklistAuthors : [];}
     };
 })();
