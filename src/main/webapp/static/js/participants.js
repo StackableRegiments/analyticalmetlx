@@ -2,16 +2,6 @@ var Participants = (function(){
 	var participantItemTemplate = {};
 	var participantsContainer = {};
 	var participants = {};
-	$(function(){
-		participantsContainer = $("#participantsListingContainer");
-		participantItemTemplate = participantsContainer.find(".participation").clone();
-		participantsContainer.empty();
-		$("#menuParticipants").click(function(){
-			showBackstage("participants");
-			updateActiveMenu(this);
-			updateParticipantsListing();
-		});
-	});
 	var onHistoryReceived = function(history){
 		var newParticipants = {};
 		_.each(_.groupBy(history.attendances,"author"),function(authorAttendances){
@@ -103,9 +93,34 @@ var Participants = (function(){
 			console.log("participantRender failed:",e,participants);
 		}
 	};
+	var openParticipantsMenuFunction = function(){
+		showBackstage("participants");
+		updateActiveMenu(this);
+		updateParticipantsListing();
+	};
+	var updateButtons = function(){
+		if (Conversations.shouldModifyConversation()){
+			$("#menuParticipants").click(openParticipantsMenuFunction);
+			$("#menuParticipants").show();
+		} else {
+			$("#menuParticipants").unbind("click");
+			$("#menuParticipants").hide();
+		}
+	};
+	var onDetailsReceived = function(){
+		updateButtons();
+	};
+	$(function(){
+		participantsContainer = $("#participantsListingContainer");
+		participantItemTemplate = participantsContainer.find(".participation").clone();
+		participantsContainer.empty();
+		updateButtons();
+	});
 	Progress.stanzaReceived["participants"] = onStanzaReceived;
 	Progress.historyReceived["participants"] = onHistoryReceived;
+	Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
+	Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
 	return {
-		getParticipants:function(){return participants;}
+		getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};}
 	};
 })();
