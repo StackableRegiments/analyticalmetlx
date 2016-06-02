@@ -664,7 +664,8 @@ var Modes = (function(){
         text:(function(){
             var texts = [];
             var noop = function(){};
-            var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector;
+            var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
+                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen;
 
             var createBlankText = function(screenPos){
                 var w = 150;
@@ -691,6 +692,12 @@ var Modes = (function(){
                 fontItalicSelector = $("#fontItalicSelector");
                 fontUnderlineSelector = $("#fontUnderlineSelector");
                 justifySelector = $("#justifySelector");
+                presetFitToText = $("#presetFitToText");
+                presetRunToEdge = $("#presetRunToEdge");
+                presetNarrow = $("#presetNarrow");
+                presetWiden = $("#presetWiden");
+                presetFullscreen = $("#presetFullscreen");
+                presetCenterOnScreen = $("#presetCenterOnScreen");
                 var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
                 var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
                 var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
@@ -723,6 +730,41 @@ var Modes = (function(){
                         });
                     }
                 };
+                var adoptPresetWidth = function(preset){
+                    return function(){
+                        _.each(boardContent.richTexts,function(t){
+                            if(t.doc.isActive){
+                                switch(preset){
+                                case "runToEdge":
+                                    var logicalBoardWidth = screenToWorld(boardWidth,0);
+                                    t.doc.width((logicalBoardWidth.x + viewboxX - t.x));
+                                    break;
+                                case "fitToText":
+                                    t.doc.width(t.doc.frame.actualWidth());
+                                    break;
+                                case "widen":
+                                    t.doc.width(t.doc.frame.actualWidth() * 1.6);
+                                    break;
+                                case "narrow":
+                                    t.doc.width(t.doc.frame.actualWidth() * 0.6);
+                                    break;
+                                case "centerOnScreen":
+                                    t.doc.width(screenToWorld(boardWidth,0).x);
+                                    t.doc.selectedRange().setFormatting("align","center");
+                                    t.doc.position.x = viewboxX;
+                                    boardContent.richTexts[t.id] = t;
+                                    break;
+                                case "fullscreen":
+                                    t.doc.width(screenToWorld(boardWidth,0).x);
+                                    t.doc.position.x = viewboxX;
+                                    t.doc.position.y = viewboxY;
+                                    boardContent.richTexts[t.id] = t;
+                                    break;
+                                }
+                            }
+                        });
+                    };
+                }
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
                 fontUnderlineSelector.click(toggleFormattingProperty("underline"));
@@ -730,6 +772,12 @@ var Modes = (function(){
                 fontSizeSelector.change(setFormattingProperty("size"));
                 fontColorSelector.change(setFormattingProperty("color"));
                 justifySelector.change(setFormattingProperty("align"));
+                presetFitToText.click(adoptPresetWidth("fitToText"));
+                presetRunToEdge.click(adoptPresetWidth("runToEdge"));
+                presetNarrow.click(adoptPresetWidth("narrow"));
+                presetWiden.click(adoptPresetWidth("widen"));
+                presetCenterOnScreen.click(adoptPresetWidth("centerOnScreen"));
+                presetFullscreen.click(adoptPresetWidth("fullscreen"));
             });
             return {
                 create:function(t){
@@ -816,12 +864,13 @@ var Modes = (function(){
                     registerPositionHandlers(board,down,noop,up);
                 },
                 deactivate:function(){
-                    $("#selectionAdorner").empty();
+                    removeActiveMode();
                     _.each(boardContent.richTexts,function(t){
                         t.doc.isActive = false;
                     });
                     unregisterPositionHandlers(board);
-                    removeActiveMode();
+		    /*Necessary to ensure that no carets or marquees remain on the editors*/
+		    blit();
                 }
             }
         })(),

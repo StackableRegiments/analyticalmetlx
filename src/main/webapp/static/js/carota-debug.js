@@ -931,8 +931,14 @@
                     ctx.translate(screenPos.x,screenPos.y);
                     ctx.scale(s,s);
                     doc.draw(ctx, output);
-                    if(doc.isActive){
+                    if(doc.isActive && Modes.currentMode == Modes.text){
                         doc.drawSelection(ctx, hasFocus);
+			var bounds = doc.frame.bounds();
+                        if(bounds){
+                            ctx.setLineDash([5]);
+                            ctx.strokeStyle = "red";
+                            ctx.strokeRect(0,0,bounds.w,bounds.h);
+                        }
                     }
                     ctx.restore();
                 };
