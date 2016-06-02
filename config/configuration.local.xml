@@ -146,7 +146,7 @@
       <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
   -->
   <clientAdaptors>
-    <embeddedXmppServer keystorePath="exampleKeystorePath" keystorePassword="exampleKeystorePassword" />
+    <embeddedXmppServer keystorePath="config/metl.jks" keystorePassword="helpme" />
   </clientAdaptors>
   <cloudConverterApiKey>exampleCloudConverterApiKey</cloudConverterApiKey>
 </serverConfiguration>

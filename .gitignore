@@ -8,3 +8,5 @@ node_modules
 src/main/assets/build/source/
 .idea
 security.log
+config/configuration.local.xml
+config/configuration.xml

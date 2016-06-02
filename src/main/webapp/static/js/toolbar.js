@@ -664,7 +664,7 @@ var Modes = (function(){
         text:(function(){
             var texts = [];
             var noop = function(){};
-            var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector;
+            var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector;
 
             var createBlankText = function(screenPos){
                 var w = 150;
@@ -677,6 +677,7 @@ var Modes = (function(){
                     height:h,
                     x:screenPos.x,
                     y:screenPos.y,
+                    type:"richText",
                     author:UserSettings.getUsername(),
                     runs:[]
                 });
@@ -689,6 +690,7 @@ var Modes = (function(){
                 fontBoldSelector = $("#fontBoldSelector");
                 fontItalicSelector = $("#fontItalicSelector");
                 fontUnderlineSelector = $("#fontUnderlineSelector");
+                justifySelector = $("#justifySelector");
                 var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
                 var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
                 var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
@@ -727,6 +729,7 @@ var Modes = (function(){
                 fontFamilySelector.change(setFormattingProperty("font"));
                 fontSizeSelector.change(setFormattingProperty("size"));
                 fontColorSelector.change(setFormattingProperty("color"));
+                justifySelector.change(setFormattingProperty("align"));
             });
             return {
                 create:function(t){
@@ -753,6 +756,7 @@ var Modes = (function(){
                         fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
                         fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
                         fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
+                        justifySelector.val(format.align || carota.runs.defaultFormatting.align);
                     });
                     doc.load(t.runs);
                     t.doc = doc;
@@ -1118,6 +1122,8 @@ var Modes = (function(){
                             return true;
                         } else if ("texts" in sel && _.size(sel.texts) > 0){
                             return true;
+                        } else if ("richTexts" in sel && _.size(sel.richTexts) > 0){
+                            return true;
                         } else {
                             return false;
                         }
@@ -1150,7 +1156,7 @@ var Modes = (function(){
                     }
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
-                        _.forEach(["images","texts","inks","highlighters"],function(category){
+                        _.forEach(["images","texts","inks","highlighters","richTexts"],function(category){
                             if (category in sel){
                                 $.each(sel[category],function(i,item){
                                     drawSelectionBounds(item);
@@ -1165,7 +1171,7 @@ var Modes = (function(){
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
-                _.forEach(["images","texts","inks","highlighters"],function(catName){
+                _.forEach(["images","texts","inks","highlighters","richTexts"],function(catName){
                     var selCatName = catName == "highlighters" ? "inks" : catName;
                     var boardCatName = catName;
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
@@ -1242,7 +1248,8 @@ var Modes = (function(){
                 selected:{
                     images:{},
                     texts:{},
-                    inks:{}
+                    inks:{},
+                    richTexts:{}
                 },
                 clearSelection:clearSelectionFunction,
                 activate:function(){
@@ -1275,6 +1282,9 @@ var Modes = (function(){
                             if ("images" in Modes.select.selected){
                                 deleteTransform.imageIds = _.keys(Modes.select.selected.images);
                             }
+                            if ("richTexts" in Modes.select.selected){
+                                deleteTransform.richTextIds = _.keys(Modes.select.selected.richTexts);
+                            }
                             sendStanza(deleteTransform);
                         }
                         clearSelectionFunction();
@@ -1288,7 +1298,8 @@ var Modes = (function(){
                         var items = _.flatten([
                             _.values(Modes.select.selected.images),
                             _.values(Modes.select.selected.texts),
-                            _.values(Modes.select.selected.inks)]);
+                            _.values(Modes.select.selected.inks),
+                            _.values(Modes.select.selected.richTexts)]);
                         if(items.length > 0){
                             var x1 = Math.min.apply(Math,items.map(function(item){
                                 return item.bounds[0];
@@ -1324,6 +1335,7 @@ var Modes = (function(){
                     var categories = function(func){
                         func("images");
                         func("texts");
+                        func("richTexts");
                         func("inks");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
@@ -1355,7 +1367,7 @@ var Modes = (function(){
                                     }
                                 });
                             }
-                            dragging = _.some(["images","texts","inks"],isDragHandle);
+                            dragging = _.some(["images","texts","inks","richTexts"],isDragHandle);
                         }
                         marqueeWorldOrigin = worldPos;
                         if(dragging){
@@ -1416,6 +1428,7 @@ var Modes = (function(){
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
+                            moved.richTextIds = _.keys(Modes.select.selected.richTexts);
                             dragging = false;
                             sendStanza(moved);
                         }
@@ -1435,11 +1448,16 @@ var Modes = (function(){
                                 totalBounds.x = Math.min(image.bounds[0]);
                                 totalBounds.y = Math.min(image.bounds[1]);
                             });
+                            _.forEach(Modes.select.selected.richTexts,function(image){
+                                totalBounds.x = Math.min(image.bounds[0]);
+                                totalBounds.y = Math.min(image.bounds[1]);
+                            });
                             resized.xOrigin = totalBounds.x;
                             resized.yOrigin = totalBounds.y;
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
+                            resized.richTextIds = _.keys(Modes.select.selected.richTexts);
                             resized.xScale = xScale;
                             if (modifiers.ctrl){
                                 var yScale = y / resizeHandle[0];
@@ -1456,7 +1474,8 @@ var Modes = (function(){
                             var intersected = {
                                 images:{},
                                 texts:{},
-                                inks:{}
+                                inks:{},
+                                richTexts:{}
                             };
                             var intersectAuthors = {};
                             var overlapThreshold = 0.5;
@@ -1483,7 +1502,6 @@ var Modes = (function(){
                                     var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
                                     var overlap = overlapRect(selectionBounds,item.bounds);
                                     if(overlap >= selectionThreshold){
-                                        //if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
                                         if (isAdministeringContent){
                                             if(item.author != UserSettings.getUsername()){
@@ -1527,10 +1545,12 @@ var Modes = (function(){
                             else{
                                 Modes.select.selected = intersected;
                             }
-                            var status = sprintf("Selected %s images, %s texts, %s inks ",
+                            var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,
-                                                 _.keys(Modes.select.selected.inks).length);
+                                                 _.keys(Modes.select.selected.inks).length,
+                                                 _.keys(Modes.select.selected.richTexts).length);
+                            console.log(status);
                             $.each(intersectAuthors,function(author,count){
                                 status += sprintf("%s:%s ",author, count);
                             });
