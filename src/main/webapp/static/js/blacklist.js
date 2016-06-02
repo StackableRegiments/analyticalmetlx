@@ -13,7 +13,6 @@ var Blacklist = (function(){
         blacklistSummaryTemplate = blacklistSummaryListing.find(".blacklistSummary").clone();
         currentBlacklistContainer = $("#currentBlacklist");
         currentBlacklistTemplate = currentBlacklistContainer.find(".blacklistContainer").clone();
-				console.log("setup blacklist templates:",blacklistSummaryListing,blacklistSummaryTemplate,currentBlacklistContainer,currentBlacklistTemplate);
         blacklistAuthorsContainer = $("#currentBlacklistAuthorList");
         blacklistAuthorTemplate = blacklistAuthorsContainer.find(".blacklistAuthorContainer").clone();
         blacklistSummaryListing.empty();
@@ -27,7 +26,6 @@ var Blacklist = (function(){
       return Conversations.shouldModifyConversation();
     };
 		var updateAuthorList = function(conversation){
-			console.log("blacklist.updateAuthorList",conversation);
 			if ("blacklist" in conversation && "jid" in conversation && Conversations.getCurrentConversationJid() == conversation.jid){
 				blacklistAuthors = conversation.blacklist;
 				renderBlacklistAuthorsInPlace();
