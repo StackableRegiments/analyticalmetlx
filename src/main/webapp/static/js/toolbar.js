@@ -1296,6 +1296,13 @@ var Modes = (function(){
                                 y:currentImage.y
                             };
                             resetImageUpload();
+														updateTracking(newIdentity,function(){
+															var newX = Math.min(imageStanza.x,viewboxX);
+															var newY = Math.min(imageStanza.y,viewboxY);
+															var newW = Math.max(imageStanza.x + imageStanza.width,viewboxWidth);
+															var newH = Math.max(imageStanza.y + imageStanza.height,viewboxHeight);	
+															IncludeView.specific(newX,newY,newW,newH);
+														});
                             sendStanza(imageStanza);
                             WorkQueue.gracefullyResume();
                         },
