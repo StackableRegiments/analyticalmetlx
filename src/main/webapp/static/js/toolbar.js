@@ -711,7 +711,7 @@ var Modes = (function(){
                                 selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
                             }
                         });
-                    };
+                    }
                 }
                 var setFormattingProperty = function(prop){
                     return function(){
@@ -816,14 +816,15 @@ var Modes = (function(){
                     registerPositionHandlers(board,down,noop,up);
                 },
                 deactivate:function(){
-                    selectedTexts = [];
                     $("#selectionAdorner").empty();
+                    _.each(boardContent.richTexts,function(t){
+                        t.doc.isActive = false;
+                    });
                     unregisterPositionHandlers(board);
                     removeActiveMode();
                 }
-            };
+            }
         })(),
-
         image:(function(){
             var marquee = undefined;
             var noop = function(){};
