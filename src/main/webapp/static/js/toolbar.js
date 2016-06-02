@@ -2183,7 +2183,6 @@ var Modes = (function(){
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                             strokeCollected(currentStroke.join(" "));
-														console.log("stroke collected:",currentStroke);
                         }
                     };
                     $(".activeBrush").removeClass("activeBrush");

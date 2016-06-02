@@ -119,6 +119,10 @@ function receiveHistory(json){
     catch(e){
         console.log("receiveHistory exception",e);
     }
+		if (!UserSettings.getIsInteractive()){
+			//projector mode should always start viewing the entire slide
+			zoomToFit();
+		}
 }
 var lineDrawingThreshold = 25;
 function incorporateBoardBounds(bounds){
