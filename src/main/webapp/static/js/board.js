@@ -120,6 +120,43 @@ function sendInk(ink){
     updateStrokesPending(1,ink.identity);
     sendStanza(ink);
 }
+function partToStanza(p){
+    var defaults = carota.runs.defaultFormatting;
+    return {
+        text:p.run.text,
+        color:p.run.color || defaults.color,
+        size:p.run.size || defaults.size,
+        font:p.run.font || defaults.font,
+        justify:p.run.align || defaults.align,
+        bold:p.run.bold,
+        underline:p.run.underline,
+        italic:p.run.italic
+    };
+}
+function wordToStanza(w){
+    return w.text.parts.map(partToStanza);
+}
+function richTextEditorToStanza(t){
+    return {
+        author:t.author,
+        bounds:t.bounds,
+        identity:t.identity,
+        type:t.type,
+        x:t.x,
+        y:t.y,
+        requestedWidth:t.doc.width(),
+        words:_.flatten(t.doc.words.map(wordToStanza))
+    }
+}
+function sendRichText(t){
+    if(t.doc){
+        //console.log("sendRichText",t);
+        var stanza = richTextEditorToStanza(t);
+	//console.log(JSON.stringify(stanza,null,"\t"));
+        //console.log(stanza);
+        //sendStanza(stanza);
+    }
+}
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,

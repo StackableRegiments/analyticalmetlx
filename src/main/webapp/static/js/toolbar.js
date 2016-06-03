@@ -667,17 +667,14 @@ var Modes = (function(){
             var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
                 presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen;
 
-            var createBlankText = function(screenPos){
-                var w = 150;
-                var h = 50;
-
+            var createBlankText = function(worldPos){
                 var t = Modes.text.create({
-                    bounds:[screenPos.x,screenPos.y,screenPos.x + w,screenPos.y + h],
+                    bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:_.uniqueId(),
-                    width:w,
-                    height:h,
-                    x:screenPos.x,
-                    y:screenPos.y,
+                    width:0,
+                    height:0,
+                    x:worldPos.x,
+                    y:worldPos.y,
                     type:"richText",
                     author:UserSettings.getUsername(),
                     runs:[]
@@ -752,13 +749,15 @@ var Modes = (function(){
                                     t.doc.width(screenToWorld(boardWidth,0).x);
                                     t.doc.selectedRange().setFormatting("align","center");
                                     t.doc.position.x = viewboxX;
-                                    boardContent.richTexts[t.id] = t;
+                                    t.doc.contentChanged.fire();
+                                    boardContent.richTexts[t.identity] = t;
                                     break;
                                 case "fullscreen":
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
                                     t.doc.position.x = viewboxX;
                                     t.doc.position.y = viewboxY;
-                                    boardContent.richTexts[t.id] = t;
+                                    t.doc.width(screenToWorld(boardWidth,0).x);
+                                    t.doc.contentChanged.fire();
+                                    boardContent.richTexts[t.identity] = t;
                                     break;
                                 }
                             }
@@ -781,8 +780,11 @@ var Modes = (function(){
             });
             return {
                 create:function(t){
+                    var host = $("#textInputInvisibleHost");
+                    var editorId = sprintf("t_%s",t.identity);
+                    host.find(sprintf("#%s",editorId)).remove();
                     var doc = carota.editor.create(
-                        $("<div />").appendTo($("#textInputInvisibleHost"))[0],
+                        $("<div />",{id:editorId}).appendTo(host)[0],
                         board[0],
                         function(){render(boardContent)});
                     doc.position = {x:t.x,y:t.y};
@@ -792,8 +794,9 @@ var Modes = (function(){
                             t.bounds = [
                                 doc.position.x,
                                 doc.position.y,
-                                doc.position.x+fb.w,
-                                doc.position.y+fb.h];
+                                doc.position.x+doc.frame.actualWidth(),
+                                doc.position.y+doc.frame.bounds().h];
+                            sendRichText(t);
                         }
                     });
                     doc.selectionChanged(function(formatReport){
@@ -823,31 +826,27 @@ var Modes = (function(){
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
                     var lastClick = Date.now();
-                    var down = function(x,y,z,worldPos){
-                        var threshold = 10;
-                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        selectedTexts = _.values(boardContent.richTexts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-                        });
-                        if (selectedTexts.length > 0){
-                            var editor = selectedTexts[0].doc;
-                            var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
-                            var node = editor.byCoordinate(relativePos.x,relativePos.y);
-                            editor.mousedownHandler(node);
-                        }
-                    }
                     var up = function(x,y,z,worldPos){
                         var threshold = 10;
                         var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
                         selectedTexts = _.values(boardContent.richTexts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
+                            /*This checks against the maximum possible bound of the textbox rather than the space occupied.
+                             This is because justification makes visual comparison very hard.*/
+                            var visibleBounds = [
+                                text.bounds[0],
+                                text.bounds[1],
+                                text.bounds[0] + text.doc.width(),
+                                text.bounds[3]
+                            ];
+                            console.log(ray,visibleBounds);
+                            return intersectRect(visibleBounds,ray) && text.author == UserSettings.getUsername();
                         });
+                        console.log(selectedTexts);
                         _.each(boardContent.richTexts,function(t){
-                            t.doc.isActive = false;
+                            t.doc.isActive = _.some(selectedTexts,function(st){return t.identity == st.identity});
                         });
                         if (selectedTexts.length > 0){
                             var editor = selectedTexts[0].doc;
-                            editor.isActive = true;
                             var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
                             var clickTime = Date.now();
                             var node = editor.byCoordinate(relativePos.x,relativePos.y);
@@ -861,7 +860,7 @@ var Modes = (function(){
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     }
-                    registerPositionHandlers(board,down,noop,up);
+                    registerPositionHandlers(board,noop,noop,up);
                 },
                 deactivate:function(){
                     removeActiveMode();
@@ -869,8 +868,8 @@ var Modes = (function(){
                         t.doc.isActive = false;
                     });
                     unregisterPositionHandlers(board);
-		    /*Necessary to ensure that no carets or marquees remain on the editors*/
-		    blit();
+                    /*Necessary to ensure that no carets or marquees remain on the editors*/
+                    blit();
                 }
             }
         })(),
@@ -1044,7 +1043,6 @@ var Modes = (function(){
                                 y:currentImage.y
                             };
                             resetImageUpload();
-                            sendStanza(imageStanza);
                             WorkQueue.gracefullyResume();
                         },
                         error: function(e){
@@ -1542,6 +1540,9 @@ var Modes = (function(){
                                                 break;
                                             case "ink":
                                                 prerenderInk(item);
+                                                break;
+                                            case "richText":
+                                                //It was already measuring as it changed, but we don't want to destroy the bounds
                                                 break;
                                             default:
                                                 item.bounds = [NaN,NaN,NaN,NaN];

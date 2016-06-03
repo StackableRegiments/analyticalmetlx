@@ -933,7 +933,7 @@
                     doc.draw(ctx, output);
                     if(doc.isActive && Modes.currentMode == Modes.text){
                         doc.drawSelection(ctx, hasFocus);
-			var bounds = doc.frame.bounds();
+                        var bounds = doc.frame.bounds();
                         if(bounds){
                             ctx.setLineDash([5]);
                             ctx.strokeStyle = "red";
@@ -958,7 +958,6 @@
                         doc = carotaDoc(),
                         keyboardSelect = 0,
                         keyboardX = null, nextKeyboardX = null,
-                        selectDragStart = null,
                         focusChar = null,
                         textAreaContent = '',
                         richClipboard = null,
@@ -967,7 +966,7 @@
                     doc.width(canvas.clientWidth);
 
                     var hasFocus = function(){
-                        return selectDragStart || (document.focussedElement == textArea);
+                        return document.focussedElement == textArea;
                     }
 
                     var toggles = {
@@ -1280,10 +1279,8 @@
 
                     doc.selectionChanged(function(getformatting, takeFocus) {
                         requestPaintFunc();
-                        if (!selectDragStart) {
-                            if (takeFocus !== false) {
-                                updateTextArea();
-                            }
+                        if (takeFocus !== false) {
+                            updateTextArea();
                         }
                     });
 
@@ -1293,11 +1290,6 @@
                         });
                     }
 
-                    doc.mousedownHandler = function(node) {
-                        selectDragStart = node.ordinal;
-                        doc.select(node.ordinal, node.ordinal);
-                        keyboardX = null;
-                    };
                     doc.dblclickHandler = function(node) {
                         node = node.parent();
                         if (node) {
@@ -1306,32 +1298,11 @@
                         }
                     };
                     doc.mouseupHandler = function(node) {
-                        selectDragStart = null;
                         keyboardX = null;
+                        doc.select(node.ordinal, node.ordinal);
                         updateTextArea();
                         textArea.focus();
                     };
-
-                    /*The editor must not take these events itself because the master canvas is listening for them and there will be inconsistent information.  MeTL will hand the events through, having corrected for world to screen positioning.  Mousemove is therefore not available*/
-                    /*
-                     registerMouseEvent('mousedown', doc.mousedownHandler);
-                     registerMouseEvent('mouseup', doc.mouseupHandler);
-
-                     registerMouseEvent('dblclick', doc.dblclickHandler);
-
-                     registerMouseEvent('mousemove', function(node) {
-                     if (selectDragStart !== null) {
-                     if (node) {
-                     focusChar = node.ordinal;
-                     if (selectDragStart > node.ordinal) {
-                     doc.select(node.ordinal, selectDragStart);
-                     } else {
-                     doc.select(selectDragStart, node.ordinal);
-                     }
-                     }
-                     }
-                     });
-                     */
 
                     var nextCaretToggle = new Date().getTime(),
                         focused = false,
