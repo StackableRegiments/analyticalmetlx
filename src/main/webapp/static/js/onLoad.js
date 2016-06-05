@@ -537,7 +537,8 @@ $(function(){
             hideBackstage();
         }
         else{
-            showBackstage("applicationMenu");
+            showBackstage("settings");//applicationMenu");
+						updateActiveMenu($("#menuSettings"));
         }
     });
     loadSlidesAtNativeZoom = UserSettings.getUserPref("loadSlidesAtNativeZoom") == "true";
@@ -653,6 +654,10 @@ $(function(){
     });
 		$('#menuBlacklist').click(function(){
 			showBackstage("blacklist");
+			updateActiveMenu(this);
+		});
+		$('#menuSettings').click(function(){
+			showBackstage("settings");
 			updateActiveMenu(this);
 		});
 });

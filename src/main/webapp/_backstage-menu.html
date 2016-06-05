@@ -1,9 +1,4 @@
-<div>
-  <div id="floatingToggleContainer" class="main-menu">
-    <button class="floatingToolbar btn-menu fa fa-bars" id="applicationMenuButton">
-      <span class="hidden">Menu</span>
-    </button>
-  </div>
+<span>
   <div class="backstage-menu box-model-block flex-container-row">
     <span id="absoluteCloseButton"></span>
     <div id="applicationMenuPopup" class="backstageHeader mtb mlr">
@@ -15,6 +10,14 @@
         <!--<div id="applicationMenuPopup" class="backstageHeader">
             <div class="lift:embed?what=_futureApplicationButton" ></div>
         </div>-->
+				<div id="settingsPopup" class="backstage">
+					<div class="slidesToggleButtonContainer">
+						<button type="button" id="slidesToggleButton" class="toolbar btn-icon fa fa-film"><div>Show Slides</div></button>
+					</div>
+					<div class="toolsToggleButtonContainer">
+						<button type="button" id="toolsToggleButton" class="toolbar btn-icon fa fa-wrench"><div>Show tools</div></button>
+					</div>
+				</div>
         <div id="blacklistPopup" class="backstage">
           <h2 class="nmt">Manage banned content</h2>
           <div class="flex-container-row img-resp">
@@ -266,4 +269,4 @@
       <button class="toolbar backstageTabHeader closeButton fa fa-times nm btn-icon" type="button" id="hideBackstage"><span class="hidden">Close</span></button>
     </div>
   </div>
-</div>
+</span>

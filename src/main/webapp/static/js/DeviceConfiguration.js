@@ -151,6 +151,7 @@ var DeviceConfiguration = (function(){
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
     var customizableFitFunction = function(showHeader,showTools,showSlides){
+			console.log("refiring fit:",showHeader,showTools,showSlides);
         var toolsColumn = $("#toolsColumn");
         var tools = $("#ribbon").find(".toolbar");
         var subTools = $(".modeSpecificTool");
@@ -191,9 +192,12 @@ var DeviceConfiguration = (function(){
                 } else {
                     thumbsColumn.hide();
                 }
+								var boardContainer = $("#boardContainer");
 								var board = $("#board");
-								var bwidth = board.width();
-								var bheight = board.height();
+								//var bwidth = board.width();
+								//var bheight = board.height();
+								var bwidth = boardContainer.width();
+								var bheight = boardContainer.height();
 								var selectionAdorner = $("#selectionAdorner");
 								var radar = $("#radar");
 								var marquee = $("#marquee");									
@@ -205,6 +209,7 @@ var DeviceConfiguration = (function(){
 								boardContext.height = bheight;
 								boardWidth = bwidth; 
 								boardHeight = bheight;
+								console.log("refiring fit:",bwidth,bheight);
             }
             performRemeasure();
             IncludeView.default();
@@ -253,6 +258,23 @@ var DeviceConfiguration = (function(){
 				actOnCurrentDevice();
     }
 
+		var updateToolsToggleButton = function(){
+			var button = $("#slidesToggleButton");
+			if (sectionsVisible.slides){
+				button.removeClass("disabledButton");
+			} else {
+				button.addClass("disabledButton");
+			}
+		};
+		var updateSlidesToggleButton = function(){
+			var button = $("#toolsToggleButton");
+			if (sectionsVisible.tools){
+				button.removeClass("disabledButton");
+			} else {
+				button.addClass("disabledButton");
+			}
+		};
+			
     $(function(){
         // set up orientation and resize handlers
         var w = $(window);
@@ -270,10 +292,12 @@ var DeviceConfiguration = (function(){
          */
         $("#toolsToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("tools",!sectionsVisible.tools);
+						updateToolsToggleButton();
             outerFit();
         }));
         $("#slidesToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("slides",!sectionsVisible.slides);
+						updateSlidesToggleButton();
             outerFit();
         }));
     });
