@@ -460,6 +460,13 @@
                 };
 
                 var prototype = node.derive({
+                    calculateBounds: function(){
+                        return this.frame.bounds ? [
+                            this.position.x,
+                            this.position.y,
+                            this.position.x+this.frame.actualWidth(),
+                            this.position.y+this.frame.bounds().h] : [0,0,0,0]
+                    },
                     load: function(runs, takeFocus) {
                         var self = this;
                         this.undo = [];
@@ -469,8 +476,6 @@
                             return word(w, self.codes);
                         }).all();
                         this.layout();
-                        this.contentChanged.fire();
-                        this.select(0, 0, takeFocus);
                     },
                     layout: function() {
                         this.frame = null;
@@ -932,12 +937,14 @@
                     ctx.scale(s,s);
                     doc.draw(ctx, output);
                     if(doc.isActive && Modes.currentMode == Modes.text){
-                        doc.drawSelection(ctx, hasFocus);
-                        var bounds = doc.frame.bounds();
-                        if(bounds){
-                            ctx.setLineDash([5]);
-                            ctx.strokeStyle = "red";
-                            ctx.strokeRect(0,0,bounds.w,bounds.h);
+                        if(doc.frame){
+                            doc.drawSelection(ctx, hasFocus);
+                            var bounds = doc.frame.bounds();
+                            if(bounds){
+                                ctx.setLineDash([5]);
+                                ctx.strokeStyle = "red";
+                                ctx.strokeRect(0,0,bounds.w,bounds.h);
+                            }
                         }
                     }
                     ctx.restore();
@@ -964,6 +971,10 @@
                         plainClipboard = null;
 
                     doc.width(canvas.clientWidth);
+
+		    doc.claimFocus = function(){
+			$(textArea).focus();
+		    }
 
                     var hasFocus = function(){
                         return document.focussedElement == textArea;
@@ -1214,13 +1225,15 @@
                     }
 
                     function getVerticalOffset() {
-                        var docHeight = doc.frame.bounds().h;
-                        if (docHeight < host.clientHeight) {
-                            switch (verticalAlignment) {
-                            case 'middle':
-                                return (host.clientHeight - docHeight) / 2;
-                            case 'bottom':
-                                return host.clientHeight - docHeight;
+                        if(doc.frame.bounds){
+                            var docHeight = doc.frame.bounds().h;
+                            if (docHeight < host.clientHeight) {
+                                switch (verticalAlignment) {
+                                case 'middle':
+                                    return (host.clientHeight - docHeight) / 2;
+                                case 'bottom':
+                                    return host.clientHeight - docHeight;
+                                }
                             }
                         }
                         return 0;
@@ -1302,6 +1315,7 @@
                         doc.select(node.ordinal, node.ordinal);
                         updateTextArea();
                         textArea.focus();
+			console.log("mouseup");
                     };
 
                     var nextCaretToggle = new Date().getTime(),
@@ -1321,7 +1335,6 @@
                         }
                         setTimeout(update,500);
                     };
-
                     update();
 
                     doc.sendKey = handleKey;
@@ -2190,7 +2203,7 @@
                 exports.defaultFormatting = {
                     size: 30,
                     font: 'sans-serif',
-                    color: '#000000',
+                    color: ['#000000',255],
                     bold: false,
                     italic: false,
                     underline: false,
@@ -2458,7 +2471,7 @@
                 /*  Applies the style of a run to the canvas context
                  */
                 exports.applyRunStyle = function(ctx, run) {
-                    ctx.fillStyle = (run && run.color) || runs.defaultFormatting.color;
+                    ctx.fillStyle = (run && run.color) || runs.defaultFormatting.color[0];
                     ctx.font = getFontString(run);
                 };
 
@@ -2472,7 +2485,7 @@
                 exports.getRunStyle = function(run) {
                     var parts = [
                         'font: ', getFontString(run),
-                        '; color: ', ((run && run.color) || runs.defaultFormatting.color)
+                        '; color: ', ((run && run.color) || runs.defaultFormatting.color[0])
                     ];
 
                     if (run) {

@@ -3,14 +3,14 @@
     <encoder>
       <Pattern>LOG %d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
     </encoder>
-	</appender>
-	<appender name="SECURITY_FILE" class="ch.qos.logback.core.FileAppender">
-		<file>security.log</file>
-		<encoder>
-			<!-- this pattern should match what the consumer of these logs will need, and should start with datetime -->
-			<Pattern>%d{MM-dd-YYYY HH:mm:ss.SSSz} - MeTL - %msg%n</Pattern>
-		</encoder>
-	</appender>
+  </appender>
+  <appender name="SECURITY_FILE" class="ch.qos.logback.core.FileAppender">
+    <file>security.log</file>
+    <encoder>
+      <!-- this pattern should match what the consumer of these logs will need, and should start with datetime -->
+      <Pattern>%d{MM-dd-YYYY HH:mm:ss.SSSz} - MeTL - %msg%n</Pattern>
+    </encoder>
+  </appender>
   <!--
       <appender name="FILE" class="ch.qos.logback.core.FileAppender">
       <file>debug.log</file>
@@ -31,13 +31,13 @@
       <logger name="com.metl.model.VysperClientXmlSerializer" level="TRACE"/>
   -->
   <!--
-  <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
+      <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
   -->
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
-	<logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
-	<logger name="com.metl.model.SecurityListener" level="ALL">
-		<appender-ref ref="SECURITY_FILE"/>
-	</logger>
+  <logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
+  <logger name="com.metl.model.SecurityListener" level="ALL">
+    <appender-ref ref="SECURITY_FILE"/>
+  </logger>
   <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
   <root level="INFO">
     <appender-ref ref="STDOUT"/>

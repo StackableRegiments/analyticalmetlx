@@ -120,17 +120,27 @@ function sendInk(ink){
     updateStrokesPending(1,ink.identity);
     sendStanza(ink);
 }
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
+    return {
+        alpha: hex[1],
+        red: parseInt(result[1], 16),
+        green: parseInt(result[2], 16),
+        blue: parseInt(result[3], 16)
+    };
+}
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
+    var color = hexToRgb(p.run.color || defaults.color);
     return {
         text:p.run.text,
-        color:p.run.color || defaults.color,
+        color:color,
         size:p.run.size || defaults.size,
         font:p.run.font || defaults.font,
         justify:p.run.align || defaults.align,
-        bold:p.run.bold,
-        underline:p.run.underline,
-        italic:p.run.italic
+        bold:p.run.bold === true,
+        underline:p.run.underline === true,
+        italic:p.run.italic === true
     };
 }
 function wordToStanza(w){
@@ -139,22 +149,26 @@ function wordToStanza(w){
 function richTextEditorToStanza(t){
     return {
         author:t.author,
-        bounds:t.bounds,
+        timestamp:-1,
+        target:t.target,
+        tag:"_",
+        privacy:t.privacy,
+        slide:t.slide,
         identity:t.identity,
         type:t.type,
         x:t.x,
         y:t.y,
         requestedWidth:t.doc.width(),
+        width:t.bounds[2]-t.bounds[0],
+        height:t.bounds[3]-t.bounds[1],
         words:_.flatten(t.doc.words.map(wordToStanza))
     }
 }
 function sendRichText(t){
     if(t.doc){
-        //console.log("sendRichText",t);
         var stanza = richTextEditorToStanza(t);
-	//console.log(JSON.stringify(stanza,null,"\t"));
-        //console.log(stanza);
-        //sendStanza(stanza);
+        console.log(JSON.stringify(stanza,null,"\t"));
+        sendStanza(stanza);
     }
 }
 var stanzaHandlers = {
@@ -164,7 +178,7 @@ var stanzaHandlers = {
     moveDelta:transformReceived,
     image:imageReceived,
     text:textReceived,
-    richText:richTextReceived,
+    multiWordText:richTextReceived,
     command:commandReceived,
     submission:submissionReceived,
     attendance:attendanceReceived,
@@ -211,9 +225,8 @@ function commandReceived(c){
 }
 function richTextReceived(t){
     if(isUsable(t)){
-        boardContent.richTexts = boardContent.richTexts || {};
         WorkQueue.enqueue(function(){
-            Modes.text.create(t);
+            Modes.text.editorFor(t).doc.load(t.words);
         });
     }
 }

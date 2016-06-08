@@ -370,7 +370,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
      },Full(RECEIVE_CONVERSATION_DETAILS)),
      */
     ClientSideFunctionDefinition("importConversation",List.empty[String],(unused) => {
-      println("importConversation fired")
       val im = InteractableMessage((i) => {
         val uploadId = nextFuncName
         val progressId = nextFuncName
@@ -404,10 +403,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           </div>
           <script>{script}</script>
         </div>
-        println("generating nodes")
         nodes
       },Full("conversationImport"),Full("Import conversation"))
-      println("generated new IM: %s".format(im))
       this ! im
       JNull
     },Empty),
@@ -475,7 +472,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
           Nil
         }
       }
-      println("changeBlacklistOfConversation: [%s] [%s]".format(jid,rawBlacklist))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))//newBlacklist))
@@ -549,7 +545,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
             val imageBytes = SlideRenderer.render(mergedHistory,width,height)
             val uri = serverConfig.postResource(conversationJid,title,imageBytes)
             val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
-            println("banned with the following: %s".format(submission))
+            debug("banned with the following: %s".format(submission))
             rooms.get((server,conversationJid)).map(r =>{
               r() ! LocalToServerMeTLStanza(submission)
             });
@@ -1029,7 +1025,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
     case c:ClientMessage => {
-      println("NewMessage: %s".format(c))
       clientMessageBroker.processMessage(c)
     }
     case JoinThisSlide(slide) => moveToSlide(slide)
@@ -1279,7 +1274,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
     serializer.toMeTLData(jVal) match {
       case m:MeTLStanza => sendStanzaToServer(m,serverName)
-      case _ => {}
+      case notAStanza => println("Not a stanza at sendStanzaToServer %s",notAStanza)
     }
   })
   private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName),{
@@ -2324,8 +2319,12 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger{
   })
   private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
     serializer.toMeTLData(jVal) match {
-      case m:MeTLStanza => sendStanzaToServer(m,serverName)
-      case _ => {}
+      case m:MeTLStanza =>{
+        sendStanzaToServer(m,serverName)
+      }
+      case _ => {
+        debug("Not recognized: %s".format(jVal))
+      }
     }
   })
   private def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName),{
@@ -2388,6 +2387,7 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger{
                   (true,c.slide+username,c match {
                     case i:MeTLInk => i.alterPrivacy(Privacy.PRIVATE)
                     case t:MeTLText => t.alterPrivacy(Privacy.PRIVATE)
+                    case t:MeTLMultiWordText => t.alterPrivacy(Privacy.PRIVATE)
                     case i:MeTLImage => i.alterPrivacy(Privacy.PRIVATE)
                     case di:MeTLDirtyInk => di.alterPrivacy(Privacy.PRIVATE)
                     case dt:MeTLDirtyText => dt.alterPrivacy(Privacy.PRIVATE)
@@ -2403,6 +2403,7 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger{
               }
             }
             if (shouldSend){
+              println("localToServer stanza: %s".format(finalItem))
               rooms.get((serverName,roomId)).map(targetRoom => targetRoom() ! LocalToServerMeTLStanza(finalItem))
             }
           })

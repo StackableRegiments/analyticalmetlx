@@ -25,7 +25,6 @@ class RenderDescription(val width:Int,val height:Int)
 object SlideRenderer extends SlideRenderer
 
 class SlideRenderer extends Logger {
-
   protected val JAVA_DEFAULT_DPI = 72.0
   protected val WINDOWS_DEFAULT_DPI = 96.0
 
@@ -39,9 +38,9 @@ class SlideRenderer extends Logger {
 
   protected def imageToByteArray(image:BufferedImage):Array[Byte] = Stopwatch.time("SlideRenderer.imageToByteArray",{
     try {
-    val stream = new java.io.ByteArrayOutputStream
-    ImageIO.write(image, "jpg", stream)
-    stream.toByteArray
+      val stream = new java.io.ByteArrayOutputStream
+      ImageIO.write(image, "jpg", stream)
+      stream.toByteArray
     } catch {
       case e:Exception => {
         error("couldn't serialize image",e)
@@ -155,7 +154,7 @@ class SlideRenderer extends Logger {
     }
   })
 
-    
+
   case class PreparedTextLine(textRuns:List[PreparedTextRun],x:Float,y:Float,width:Float,height:Float)
   case class PreparedTextRun(text:String,layout:TextLayout,color:Color,x:Float,y:Float,width:Float,height:Float)
   def measureText(metlText:MeTLText):Dimensions = measureText(metlText,defaultObserver)
@@ -200,7 +199,7 @@ class SlideRenderer extends Logger {
           val sectionFontIsBold = xml.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(metlText.weight == "Bold")
           val sectionFontIsItalic = xml.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(metlText.style == "Italic")
           val sectionFontIsUnderline = xml.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(metlText.decoration.contains("italic"))
-          val paragraphs = (xml \\ "Paragraph") 
+          val paragraphs = (xml \\ "Paragraph")
           paragraphs.flatMap(paragraph => {
             val paraFontFamily = paragraph.attribute("FontFamily").headOption.map(_.text).getOrElse(sectionFontFamily)
             val paraFontSize = paragraph.attribute("FontSize").headOption.map(_.text.toDouble).getOrElse(sectionFontSize)
@@ -208,44 +207,44 @@ class SlideRenderer extends Logger {
             val paraFontIsBold = paragraph.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(sectionFontIsBold)
             val paraFontIsItalic = paragraph.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(sectionFontIsItalic)
             val paraFontIsUnderline = paragraph.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(sectionFontIsUnderline)
-            (paragraph \\ "Run").foldLeft(List.empty[List[TextRunDefinition]])((acc,item) => item match {
-              case e:Elem => {
-                val lines:List[String] = lineSeparators.foldLeft(List(e.text))((a,i) => a.flatMap(_.split(i).toList)).toList
-                val runs:List[TextRunDefinition] = lines.flatMap(runText => {
-                  val runFontFamily = e.attribute("FontFamily").headOption.map(_.text).getOrElse(paraFontFamily)
-                  val runFontSize = e.attribute("FontSize").headOption.map(_.text.toDouble).getOrElse(paraFontSize)
-                  val runFontColor = e.attribute("Foreground").headOption.map(c => ColorConverter.fromARGBHexString(c.text)).getOrElse(paraFontColor)
-                  val runFontIsBold = e.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(paraFontIsBold)
-                  val runFontIsItalic = e.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(paraFontIsItalic)
-                  val runFontIsUnderline = e.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(paraFontIsUnderline)
-                  val trds = e.text.foldLeft((List.empty[String],""))((a,i) => {
-                    (a._2 + i) match {
-                      case s if s.endsWith("\r\n") => (a._1 ::: List(s.reverse.drop(2).reverse),"")
-                      case s if s.endsWith("\n") => (a._1 ::: List(s.reverse.drop(1).reverse),"")
-                      case s if s.endsWith("\r") => (a._1 ::: List(s.reverse.drop(1).reverse),"")
-                      case s if s.endsWith("\\v") => (a._1 ::: List(s.reverse.drop(2).reverse),"")
-                      case s => (a._1,s)
+              (paragraph \\ "Run").foldLeft(List.empty[List[TextRunDefinition]])((acc,item) => item match {
+                case e:Elem => {
+                  val lines:List[String] = lineSeparators.foldLeft(List(e.text))((a,i) => a.flatMap(_.split(i).toList)).toList
+                  val runs:List[TextRunDefinition] = lines.flatMap(runText => {
+                    val runFontFamily = e.attribute("FontFamily").headOption.map(_.text).getOrElse(paraFontFamily)
+                    val runFontSize = e.attribute("FontSize").headOption.map(_.text.toDouble).getOrElse(paraFontSize)
+                    val runFontColor = e.attribute("Foreground").headOption.map(c => ColorConverter.fromARGBHexString(c.text)).getOrElse(paraFontColor)
+                    val runFontIsBold = e.attribute("FontWeight").headOption.map(c => c.text.toLowerCase.contains("bold")).getOrElse(paraFontIsBold)
+                    val runFontIsItalic = e.attribute("FontStyle").headOption.map(c => c.text.toLowerCase.contains("italic")).getOrElse(paraFontIsItalic)
+                    val runFontIsUnderline = e.attribute("Decoration").headOption.map(c => c.text.toLowerCase.contains("underline")).getOrElse(paraFontIsUnderline)
+                    val trds = e.text.foldLeft((List.empty[String],""))((a,i) => {
+                      (a._2 + i) match {
+                        case s if s.endsWith("\r\n") => (a._1 ::: List(s.reverse.drop(2).reverse),"")
+                        case s if s.endsWith("\n") => (a._1 ::: List(s.reverse.drop(1).reverse),"")
+                        case s if s.endsWith("\r") => (a._1 ::: List(s.reverse.drop(1).reverse),"")
+                        case s if s.endsWith("\\v") => (a._1 ::: List(s.reverse.drop(2).reverse),"")
+                        case s => (a._1,s)
+                      }
+                    })
+                      (trds._1 ::: List(trds._2)).map(s => TextRunDefinition(s,runFontFamily,runFontSize,runFontColor,false,false,false,false))
+                    //TextRunDefinition(runText,runFontFamily,runFontSize,runFontColor,false,false,false,false)
+                  }).toList
+                  val startOfList:List[List[TextRunDefinition]] = (lineSeparators.foldLeft(false)((a,i) => a || e.text.startsWith(i)) match {
+                    case true => acc ::: List(runs.headOption.toList)
+                    case false => {
+                      val part1:List[List[TextRunDefinition]] = acc.reverse.drop(1).reverse.toList
+                      val part2:List[List[TextRunDefinition]] = List((acc.reverse.headOption.getOrElse(Nil) ::: runs.headOption.toList).toList)
+                      part1 ::: part2
                     }
                   })
-                  (trds._1 ::: List(trds._2)).map(s => TextRunDefinition(s,runFontFamily,runFontSize,runFontColor,false,false,false,false))
-                  //TextRunDefinition(runText,runFontFamily,runFontSize,runFontColor,false,false,false,false)
-                }).toList
-                val startOfList:List[List[TextRunDefinition]] = (lineSeparators.foldLeft(false)((a,i) => a || e.text.startsWith(i)) match {
-                  case true => acc ::: List(runs.headOption.toList)
-                  case false => {
-                    val part1:List[List[TextRunDefinition]] = acc.reverse.drop(1).reverse.toList  
-                    val part2:List[List[TextRunDefinition]] = List((acc.reverse.headOption.getOrElse(Nil) ::: runs.headOption.toList).toList)
-                    part1 ::: part2
-                  }
-                }) 
-                val endOfList:List[List[TextRunDefinition]] = runs.drop(1).map(r => List(r)).toList ::: Some(List(List.empty[TextRunDefinition])).filter(_i => lineSeparators.foldLeft(false)((a,i) => a || e.text.endsWith(i))).getOrElse(List.empty[List[TextRunDefinition]])
-                startOfList ::: endOfList
-              }
-              case other => {
-                acc
-              }
-            })
-        }).toList}
+                  val endOfList:List[List[TextRunDefinition]] = runs.drop(1).map(r => List(r)).toList ::: Some(List(List.empty[TextRunDefinition])).filter(_i => lineSeparators.foldLeft(false)((a,i) => a || e.text.endsWith(i))).getOrElse(List.empty[List[TextRunDefinition]])
+                  startOfList ::: endOfList
+                }
+                case other => {
+                  acc
+                }
+              })
+          }).toList}
 
         trace("runsByLine: %s".format(runsByLine))
 
@@ -318,7 +317,7 @@ class SlideRenderer extends Logger {
                         styledText.addAttribute(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON)
                       val styledTextIterator = styledText.getIterator()
                       val measurer = new LineBreakMeasurer(styledTextIterator, frc)
-    
+
                       val textLayout = measurer.nextLayout((metlText.width - runOffsetX).toFloat)
                       if (textLayout != null){
                         val currentY:Float = lineY + textLayout.getAscent()
@@ -340,7 +339,7 @@ class SlideRenderer extends Logger {
                         }
                         if (measurer.getPosition() < run.text.length){ //the measurer didn't reach the end of the run, so there's more of this run for the next line
                           val originalRun = run.copy(text = run.text.take(measurer.getPosition()))
-                          val newRun = run.copy(text = run.text.drop(measurer.getPosition())) 
+                          val newRun = run.copy(text = run.text.drop(measurer.getPosition()))
                           val newRuns = newRun :: textRuns.drop(1)
                           trace("textRun split across lines\r\noriginalRun: %s\r\nnewRun: %s".format(originalRun,newRun))
                           renderLine(newLines,newRuns,currentY + totalHeight, true, wraps + 1)
@@ -472,6 +471,9 @@ class SlideRenderer extends Logger {
     })
   })
 
+  protected def renderMultiWordText(text:MeTLMultiWordText,g:Graphics2D) = Stopwatch.time("SlideRenderer.renderMultiWordText",{
+  })
+
   protected val ratioConst = 0.75
 
   protected def filterAccordingToTarget[T](target:String,mccl:List[T]):List[T] = mccl.filter(mcc => {
@@ -483,8 +485,8 @@ class SlideRenderer extends Logger {
   def renderMultiple(h:History,requestedSizes:List[RenderDescription],target:String= "presentationSpace"):Map[RenderDescription,Array[Byte]] = Stopwatch.time("SlideRenderer.renderMultiple",{
     h.shouldRender match {
       case true => {
-        val (texts,highlighters,inks,images) = h.getRenderableGrouped
-        val dimensions = measureItems(h,texts,highlighters,inks,images,target)
+        val (texts,highlighters,inks,images,multiWordTexts) = h.getRenderableGrouped
+        val dimensions = measureItems(h,texts,highlighters,inks,images,multiWordTexts,target)
         Map(requestedSizes.map(rs => {
           val width = rs.width
           val height = rs.height
@@ -504,13 +506,13 @@ class SlideRenderer extends Logger {
   def measureHistory(h:History, target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureHistory",{
     h.shouldRender match {
       case true => {
-        val (texts,highlighters,inks,images) = h.getRenderableGrouped
-        measureItems(h,texts,highlighters,inks,images)
+        val (texts,highlighters,inks,images,multiWordTexts) = h.getRenderableGrouped
+        measureItems(h,texts,highlighters,inks,images,multiWordTexts)
       }
       case false => Dimensions(0.0,0.0,0.0,0.0,0.0,0.0)
     }
   })
-  def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems",{
+  def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], multiWordTexts:List[MeTLMultiWordText],target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems",{
     val nativeScaleTextBoxes = filterAccordingToTarget[MeTLText](target,texts).map(t => measureText(t))
     val td = nativeScaleTextBoxes.foldLeft(Dimensions(h.getLeft,h.getTop,h.getRight,h.getBottom,0.0,0.0))((acc,item) => {
       val newLeft = Math.min(acc.left,item.left)
@@ -563,10 +565,11 @@ class SlideRenderer extends Logger {
       }
       case false => h
     }
-    val (scaledTexts,scaledHighlighters,scaledInks,scaledImages) = scaledHistory.getRenderableGrouped
+    val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts) = scaledHistory.getRenderableGrouped
     filterAccordingToTarget[MeTLImage](target,scaledImages).foreach(img => renderImage(img,g))
     filterAccordingToTarget[MeTLInk](target,scaledHighlighters).foreach(renderInk(_,g))
     filterAccordingToTarget[MeTLText](target,scaledTexts).foreach(t => renderText(measureTextLines(t,g),g))
+    filterAccordingToTarget[MeTLMultiWordText](target,scaledMultiWordTexts).foreach(t => renderMultiWordText(t,g))
     filterAccordingToTarget[MeTLInk](target,scaledInks).foreach(renderInk(_,g))
     imageToByteArray(unscaledImage)
   })
@@ -580,72 +583,71 @@ class SlideRenderer extends Logger {
 }
 
 case class Vector2(x:Double,y:Double) {
-	def +(v:Vector2) = new Vector2(x+v.x,y+v.y)
-	def -(v:Vector2) = new Vector2(x-v.x,y-v.y)
-	def *(n:Double) = new Vector2(x*n,y*n)
+  def +(v:Vector2) = new Vector2(x+v.x,y+v.y)
+  def -(v:Vector2) = new Vector2(x-v.x,y-v.y)
+  def *(n:Double) = new Vector2(x*n,y*n)
 
-	def length = Math.sqrt(x*x+y*y)
-	def normalized ={
-		val l = 1.0/length
-		new Vector2(x*l,y*l)
-	}
+  def length = Math.sqrt(x*x+y*y)
+  def normalized ={
+    val l = 1.0/length
+    new Vector2(x*l,y*l)
+  }
 
-	def leftRot90 = new Vector2(y,-x)
-	def rightRot90 = new Vector2(-y,x)
+  def leftRot90 = new Vector2(y,-x)
+  def rightRot90 = new Vector2(-y,x)
 
-	override def toString = "[%f,%f]".format(x,y)
+  override def toString = "[%f,%f]".format(x,y)
 }
 
 class Stroke(points:List[Point],thickness:Double) extends Path2D.Double {
-	makeShape
+  makeShape
 
-	protected def offsetAt(point:Point) = point.thickness/256*thickness
+  protected def offsetAt(point:Point) = point.thickness/256*thickness
 
-	protected def leftPoint(start:Vector2,end:Vector2,dist:Double) ={
-		val actual = end-start
-		val perp = actual.leftRot90
-		val norm = perp.normalized
-		val point = norm*dist
-		point+end
-	}
+  protected def leftPoint(start:Vector2,end:Vector2,dist:Double) ={
+    val actual = end-start
+    val perp = actual.leftRot90
+    val norm = perp.normalized
+    val point = norm*dist
+    point+end
+  }
 
-	protected def rightPoint(start:Vector2,end:Vector2,dist:Double) ={
-		val actual = end-start
-		val perp = actual.rightRot90
-		val norm = perp.normalized
-		val point = norm*dist
-		point+end
-	}
+  protected def rightPoint(start:Vector2,end:Vector2,dist:Double) ={
+    val actual = end-start
+    val perp = actual.rightRot90
+    val norm = perp.normalized
+    val point = norm*dist
+    point+end
+  }
 
-	protected def addSegment(start:Point,end:Point) ={
-		val vStart = Vector2(start.x,start.y)
-		val vEnd = Vector2(end.x,end.y)
+  protected def addSegment(start:Point,end:Point) ={
+    val vStart = Vector2(start.x,start.y)
+    val vEnd = Vector2(end.x,end.y)
 
-		val v1 = leftPoint(vStart,vEnd,offsetAt(end))
-		val v2 = rightPoint(vStart,vEnd,offsetAt(end))   // XXX optimise, invert vEnd->v1
-		val v3 = leftPoint(vEnd,vStart,offsetAt(start))
-		val v4 = rightPoint(vEnd,vStart,offsetAt(start)) // XXX optimise, invert vStart->v3
+    val v1 = leftPoint(vStart,vEnd,offsetAt(end))
+    val v2 = rightPoint(vStart,vEnd,offsetAt(end))   // XXX optimise, invert vEnd->v1
+    val v3 = leftPoint(vEnd,vStart,offsetAt(start))
+    val v4 = rightPoint(vEnd,vStart,offsetAt(start)) // XXX optimise, invert vStart->v3
 
-		moveTo(v1.x,v1.y)
-		lineTo(v2.x,v2.y)
-		lineTo(v3.x,v3.y)
-		lineTo(v4.x,v4.y)
-		lineTo(v1.x,v1.y)
-	}
+    moveTo(v1.x,v1.y)
+    lineTo(v2.x,v2.y)
+    lineTo(v3.x,v3.y)
+    lineTo(v4.x,v4.y)
+    lineTo(v1.x,v1.y)
+  }
 
-	protected def addPoint(p:Point) ={
-		val offset = offsetAt(p)
-		append(new Ellipse2D.Double(p.x-offset,p.y-offset,offset*2,offset*2),false)
-	}
+  protected def addPoint(p:Point) ={
+    val offset = offsetAt(p)
+    append(new Ellipse2D.Double(p.x-offset,p.y-offset,offset*2,offset*2),false)
+  }
 
-	protected def makeShape ={
-		val (first,rest) = points.splitAt(1)
-		addPoint(first.head)
-		rest.foldLeft(first.head)((prev,current) => {
-			addPoint(current)
-			addSegment(prev,current)
-			current
-		})
-	}
+  protected def makeShape ={
+    val (first,rest) = points.splitAt(1)
+    addPoint(first.head)
+    rest.foldLeft(first.head)((prev,current) => {
+      addPoint(current)
+      addSegment(prev,current)
+      current
+    })
+  }
 }
-

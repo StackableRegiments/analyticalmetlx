@@ -16,7 +16,7 @@ function loadSlide(jid){
 
 function receiveHistory(json){
     try{
-        var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark, historyDecoratorsMark, blitMark;
+        var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
         boardContent = json;
         boardContent.minX = 0;
@@ -40,6 +40,10 @@ function receiveHistory(json){
             }
         });
         prerenderTextMark = Date.now();
+        _.each(boardContent.multiWordTexts,function(text,i){
+            Modes.text.editorFor(text).doc.load(text.words);
+        });
+	renderMultiWordMark = Date.now();
 
         boardContent.width = boardContent.maxX - boardContent.minX;
         boardContent.height = boardContent.maxY - boardContent.minY;
@@ -563,6 +567,7 @@ var boardContent = {
     images:{},
     highlighters:{},
     texts:{},
+    multiWordTexts:{},
     inks:{}
 };
 var pressureSimilarityThreshold = 32,
@@ -601,6 +606,9 @@ function render(content){
             var renderRichTexts = function(texts){
                 if(texts){
                     $.each(texts,function(i,text){
+                        if(!text.bounds){
+                            text.bounds = [text.x,text.x + text.width,text.y,text.y + text.height];
+                        }
                         if(intersectRect(text.bounds,viewBounds)){
                             Modes.text.draw(text);
                         }
@@ -616,7 +624,7 @@ function render(content){
                     }
                 });
                 textsRenderedMark = Date.now();
-                renderRichTexts(boardContent.richTexts);
+                renderRichTexts(boardContent.multiWordTexts);
                 richTextsRenderedMark = Date.now();
                 renderInks(boardContent.inks);
                 inksRenderedMark = Date.now();

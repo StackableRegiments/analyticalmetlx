@@ -668,18 +668,17 @@ var Modes = (function(){
                 presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen;
 
             var createBlankText = function(worldPos){
-                var t = Modes.text.create({
+                return Modes.text.editorFor({
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
-                    identity:_.uniqueId(),
+                    identity:sprintf("%s_%s_%s",UserSettings.getUsername(),new Date(),_.uniqueId()),
                     width:0,
                     height:0,
                     x:worldPos.x,
                     y:worldPos.y,
-                    type:"richText",
+                    type:"multiWordText",
                     author:UserSettings.getUsername(),
-                    runs:[]
+                    words:[]
                 });
-                return t;
             };
             $(function(){
                 fontFamilySelector = $("#fontFamilySelector");
@@ -709,7 +708,7 @@ var Modes = (function(){
                 });
                 var toggleFormattingProperty = function(prop){
                     return function(){
-                        _.each(boardContent.richTexts,function(t){
+                        _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
                                 var selRange = t.doc.selectedRange();
                                 selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
@@ -720,7 +719,7 @@ var Modes = (function(){
                 var setFormattingProperty = function(prop){
                     return function(){
                         var newValue = $(this).val();
-                        _.each(boardContent.richTexts,function(t){
+                        _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
                                 t.doc.selectedRange().setFormatting(prop,newValue);
                             }
@@ -729,7 +728,7 @@ var Modes = (function(){
                 };
                 var adoptPresetWidth = function(preset){
                     return function(){
-                        _.each(boardContent.richTexts,function(t){
+                        _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
                                 switch(preset){
                                 case "runToEdge":
@@ -750,14 +749,26 @@ var Modes = (function(){
                                     t.doc.selectedRange().setFormatting("align","center");
                                     t.doc.position.x = viewboxX;
                                     t.doc.contentChanged.fire();
-                                    boardContent.richTexts[t.identity] = t;
+                                    boardContent.multiWordTexts[t.identity] = t;
                                     break;
                                 case "fullscreen":
                                     t.doc.position.x = viewboxX;
                                     t.doc.position.y = viewboxY;
                                     t.doc.width(screenToWorld(boardWidth,0).x);
-                                    t.doc.contentChanged.fire();
-                                    boardContent.richTexts[t.identity] = t;
+                                    t.doc.select(0,t.doc.frame.length - 1);
+                                    t.doc.selectedRange().setFormatting("align","center");
+                                    t.doc.selectedRange().setFormatting("bold",true);
+                                    var content = t.doc.documentRange().save();
+                                    content.push({
+                                        text:"\n"
+                                    });
+                                    content.push({
+                                        text:"\n"
+                                    });
+                                    t.doc.load(content);
+                                    var startOfPara = t.doc.frame.length - 1;
+                                    t.doc.select(startOfPara,startOfPara);
+                                    boardContent.multiWordTexts[t.identity] = t;
                                     break;
                                 }
                             }
@@ -779,44 +790,46 @@ var Modes = (function(){
                 presetFullscreen.click(adoptPresetWidth("fullscreen"));
             });
             return {
-                create:function(t){
-                    var host = $("#textInputInvisibleHost");
-                    var editorId = sprintf("t_%s",t.identity);
-                    host.find(sprintf("#%s",editorId)).remove();
-                    var doc = carota.editor.create(
-                        $("<div />",{id:editorId}).appendTo(host)[0],
-                        board[0],
-                        function(){render(boardContent)});
-                    doc.position = {x:t.x,y:t.y};
-                    doc.contentChanged(function(){
-                        var fb = doc.frame.bounds();
-                        if(fb){
-                            t.bounds = [
-                                doc.position.x,
-                                doc.position.y,
-                                doc.position.x+doc.frame.actualWidth(),
-                                doc.position.y+doc.frame.bounds().h];
-                            sendRichText(t);
+                editorFor:function(t){
+                    var editor = boardContent.multiWordTexts[t.identity];
+                    if(!editor){
+                        editor = boardContent.multiWordTexts[t.identity] = t;
+                    }
+                    if(!editor.doc){
+                        var isAuthor = t.author == UserSettings.getUsername();
+                        editor.doc = carota.editor.create(
+                            $("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
+                            board[0],
+                            isAuthor? function(){render(boardContent)} : noop);
+                        if(isAuthor){
+                            editor.doc.contentChanged(function(){
+                                var source = boardContent.multiWordTexts[editor.identity];
+                                source.bounds = editor.doc.calculateBounds();;
+                                source.privacy = Privacy.getCurrentPrivacy();
+                                source.target = "presentationSpace";
+                                source.slide = Conversations.getCurrentSlideJid();
+                                sendRichText(source);
+                            });
+                            editor.doc.selectionChanged(function(formatReport){
+                                var format = formatReport();
+                                fontBoldSelector.toggleClass("active",format.bold == true);
+                                fontItalicSelector.toggleClass("active",format.italic == true);
+                                fontUnderlineSelector.toggleClass("active",format.underline == true);
+                                fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
+                                fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
+                                fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
+                                justifySelector.val(format.align || carota.runs.defaultFormatting.align);
+                            });
                         }
-                    });
-                    doc.selectionChanged(function(formatReport){
-                        var format = formatReport();
-                        fontBoldSelector.toggleClass("active",format.bold == true);
-                        fontItalicSelector.toggleClass("active",format.italic == true);
-                        fontUnderlineSelector.toggleClass("active",format.underline == true);
-                        fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
-                        fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
-                        fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
-                        justifySelector.val(format.align || carota.runs.defaultFormatting.align);
-                    });
-                    doc.load(t.runs);
-                    t.doc = doc;
-                    boardContent.richTexts = boardContent.richTexts || {};
-                    boardContent.richTexts[t.identity] = t;
-                    return t;
+                    }
+                    editor.doc.position = {x:t.x,y:t.y};
+                    editor.doc.bounds = editor.doc.calculateBounds();;
+                    return editor;
                 },
                 draw:function(t){
-                    carota.editor.paint(board[0],t.doc,true);
+                    if(t && t.doc){
+                        carota.editor.paint(board[0],t.doc,true);
+                    }
                 },
                 activate:function(){
                     var doubleClickThreshold = 500;
@@ -829,27 +842,28 @@ var Modes = (function(){
                     var up = function(x,y,z,worldPos){
                         var threshold = 10;
                         var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        selectedTexts = _.values(boardContent.richTexts).filter(function(text){
+                        var selectedTexts = _.values(boardContent.multiWordTexts).filter(function(text){
                             /*This checks against the maximum possible bound of the textbox rather than the space occupied.
                              This is because justification makes visual comparison very hard.*/
+                            text.bounds = text.doc.calculateBounds();
                             var visibleBounds = [
                                 text.bounds[0],
                                 text.bounds[1],
                                 text.bounds[0] + text.doc.width(),
                                 text.bounds[3]
                             ];
-                            console.log(ray,visibleBounds);
                             return intersectRect(visibleBounds,ray) && text.author == UserSettings.getUsername();
                         });
-                        console.log(selectedTexts);
-                        _.each(boardContent.richTexts,function(t){
+                        _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = _.some(selectedTexts,function(st){return t.identity == st.identity});
                         });
+                        console.log("Selected texts",selectedTexts);
                         if (selectedTexts.length > 0){
                             var editor = selectedTexts[0].doc;
                             var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
                             var clickTime = Date.now();
                             var node = editor.byCoordinate(relativePos.x,relativePos.y);
+                            console.log("Selected",editor,node,editor.mouseupHandler);
                             editor.mouseupHandler(node);
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 editor.dblclickHandler(node);
@@ -864,7 +878,7 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     removeActiveMode();
-                    _.each(boardContent.richTexts,function(t){
+                    _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
                     });
                     unregisterPositionHandlers(board);
@@ -1170,7 +1184,7 @@ var Modes = (function(){
                             return true;
                         } else if ("texts" in sel && _.size(sel.texts) > 0){
                             return true;
-                        } else if ("richTexts" in sel && _.size(sel.richTexts) > 0){
+                        } else if ("multiWordTexts" in sel && _.size(sel.multiWordTexts) > 0){
                             return true;
                         } else {
                             return false;
@@ -1204,7 +1218,7 @@ var Modes = (function(){
                     }
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
-                        _.forEach(["images","texts","inks","highlighters","richTexts"],function(category){
+                        _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
                             if (category in sel){
                                 $.each(sel[category],function(i,item){
                                     drawSelectionBounds(item);
@@ -1219,7 +1233,7 @@ var Modes = (function(){
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
-                _.forEach(["images","texts","inks","highlighters","richTexts"],function(catName){
+                _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(catName){
                     var selCatName = catName == "highlighters" ? "inks" : catName;
                     var boardCatName = catName;
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
@@ -1297,7 +1311,7 @@ var Modes = (function(){
                     images:{},
                     texts:{},
                     inks:{},
-                    richTexts:{}
+                    multiWordTexts:{}
                 },
                 clearSelection:clearSelectionFunction,
                 activate:function(){
@@ -1330,8 +1344,8 @@ var Modes = (function(){
                             if ("images" in Modes.select.selected){
                                 deleteTransform.imageIds = _.keys(Modes.select.selected.images);
                             }
-                            if ("richTexts" in Modes.select.selected){
-                                deleteTransform.richTextIds = _.keys(Modes.select.selected.richTexts);
+                            if ("multiWordTexts" in Modes.select.selected){
+                                deleteTransform.richTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
                             sendStanza(deleteTransform);
                         }
@@ -1347,7 +1361,7 @@ var Modes = (function(){
                             _.values(Modes.select.selected.images),
                             _.values(Modes.select.selected.texts),
                             _.values(Modes.select.selected.inks),
-                            _.values(Modes.select.selected.richTexts)]);
+                            _.values(Modes.select.selected.multiWordTexts)]);
                         if(items.length > 0){
                             var x1 = Math.min.apply(Math,items.map(function(item){
                                 return item.bounds[0];
@@ -1383,7 +1397,7 @@ var Modes = (function(){
                     var categories = function(func){
                         func("images");
                         func("texts");
-                        func("richTexts");
+                        func("multiWordTexts");
                         func("inks");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
@@ -1415,7 +1429,7 @@ var Modes = (function(){
                                     }
                                 });
                             }
-                            dragging = _.some(["images","texts","inks","richTexts"],isDragHandle);
+                            dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
                         }
                         marqueeWorldOrigin = worldPos;
                         if(dragging){
@@ -1476,7 +1490,7 @@ var Modes = (function(){
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
-                            moved.richTextIds = _.keys(Modes.select.selected.richTexts);
+                            moved.richTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             dragging = false;
                             sendStanza(moved);
                         }
@@ -1496,7 +1510,7 @@ var Modes = (function(){
                                 totalBounds.x = Math.min(image.bounds[0]);
                                 totalBounds.y = Math.min(image.bounds[1]);
                             });
-                            _.forEach(Modes.select.selected.richTexts,function(image){
+                            _.forEach(Modes.select.selected.multiWordTexts,function(image){
                                 totalBounds.x = Math.min(image.bounds[0]);
                                 totalBounds.y = Math.min(image.bounds[1]);
                             });
@@ -1505,7 +1519,7 @@ var Modes = (function(){
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
-                            resized.richTextIds = _.keys(Modes.select.selected.richTexts);
+                            resized.richTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             resized.xScale = xScale;
                             if (modifiers.ctrl){
                                 var yScale = y / resizeHandle[0];
@@ -1523,7 +1537,7 @@ var Modes = (function(){
                                 images:{},
                                 texts:{},
                                 inks:{},
-                                richTexts:{}
+                                multiWordTexts:{}
                             };
                             var intersectAuthors = {};
                             var overlapThreshold = 0.5;
@@ -1600,8 +1614,7 @@ var Modes = (function(){
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,
                                                  _.keys(Modes.select.selected.inks).length,
-                                                 _.keys(Modes.select.selected.richTexts).length);
-                            console.log(status);
+                                                 _.keys(Modes.select.selected.multiWordTexts).length);
                             $.each(intersectAuthors,function(author,count){
                                 status += sprintf("%s:%s ",author, count);
                             });
@@ -1948,7 +1961,6 @@ var Modes = (function(){
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                             strokeCollected(currentStroke.join(" "));
-                            console.log("stroke collected:",currentStroke);
                         }
                     };
                     $(".activeBrush").removeClass("activeBrush");
