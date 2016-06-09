@@ -67,6 +67,7 @@ function receiveHistory(json){
                 requestedViewboxHeight = boardContent.height;
                 IncludeView.default();
             }
+						console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
             hideBackstage();
             clearBoard();
             render(boardContent);
@@ -586,6 +587,7 @@ function render(content){
         var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,inksRenderedMark,renderDecoratorsMark;
         try{
             var viewBounds = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
+						console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
             visibleBounds = [];
             var scale = boardContent.maxX / viewboxWidth;
             var renderInks = function(inks){
@@ -657,7 +659,11 @@ function monashBlueGradient(context,width,height){
     return bgd;
 }
 var blit = function(){
+	try {
     render(boardContent);
+	} catch(e){
+		console.log("exception in render:",e);
+	}
 };
 function pica(value){
     return value / 128;

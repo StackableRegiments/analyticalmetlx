@@ -34,17 +34,43 @@
         <link rel="stylesheet" href="static/css/ribbon.css"></link>
             <link rel="stylesheet" href="static/css/header.css"></link>-->
 		<style>
+@media screen {
+	@-ms-viewport {
+		width:device-width;
+	}
+}
+#masterLayout {
+//	flex-direction:row;
+//	flex-pack:justify;
+	height:100% !important;
+	width:100% !important;
+}
 #boardColumn {
+	order:2;
 	flex-grow:1;
 	flex-shrink:1;
 	flex-basis:auto;
-	flex-direction:column;
 }
+#thumbsColumn {
+	order:3;
+	flex-grow:0;
+	flex-shrink:0;
+	flex-basis:content;
+}
+#toolsColumn {
+	order:1;
+	flex-grow:0;
+	flex-shrink:0;
+	flex-basis:content;
+}
+/*
 #boardContainer {
 	height:100% !important;
+	width:100% !important;
 }
+*/
 		</style>
-		<div>
+		<div id="masterHeader">
 			<span id="floatingToggleContainer" class="main-menu">
 				<button class="floatingToolbar btn-menu fa fa-bars" id="applicationMenuButton">
 					<span class="hidden">Menu</span>

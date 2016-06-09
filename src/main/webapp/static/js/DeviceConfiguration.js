@@ -1,4 +1,6 @@
 var DeviceConfiguration = (function(){
+	var gutterHeight = 10;
+	var gutterWidth = 2;
     var identity = Date.now();
     var currentDevice = "browser";
     var orientation = "landscape";
@@ -37,9 +39,12 @@ var DeviceConfiguration = (function(){
             currentDevice = "iPhone";
         } else if (navigator.userAgent.match(/iPad/i) != null){
             currentDevice = "iPad";
+        } else if (navigator.userAgent.match("Trident\/7\.0") != null){
+            currentDevice = "IE11+";
         } else {
             currentDevice = "browser";
         }
+				console.log("device:",currentDevice);
     };
     var setDefaultOptions = function(){
         tryToDetermineCurrentDevice();
@@ -138,12 +143,22 @@ var DeviceConfiguration = (function(){
                 deviceHeight -= 20;
             }
             break;
+						/*
+				case "IE11+":
+            deviceHeight = window.innerHeight * (screen.logicalYDPI / screen.deviceYDPI);
+            deviceWidth = window.innerWidth * (screen.logicalXDPI / screen.deviceXDPI);
+						break;
+				*/		
         default:
-            deviceHeight = window.innerHeight;
-            deviceWidth = window.innerWidth;
+            //deviceHeight = window.innerHeight;
+            //deviceWidth = window.innerWidth;
+            deviceHeight = $(window).height();
+            deviceWidth = $(window).width();
             break;
         }
-        return {height:deviceHeight,width:deviceWidth};
+				var resultantDimensions = {height:deviceHeight,width:deviceWidth};
+				console.log("gettingDeviceDimensions",resultantDimensions);
+        return resultantDimensions;
     };
     var defaultFitFunction = function(){
 			customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);
@@ -156,9 +171,36 @@ var DeviceConfiguration = (function(){
         var tools = $("#ribbon").find(".toolbar");
         var subTools = $(".modeSpecificTool");
 
+				var dropPx = function(str){
+					try {
+						var value = parseInt(str.split("px")[0]);
+						return isNaN(value) ? 0 : value;
+					} catch(e){
+						console.log("parseInt failed",e);
+						return 0;
+					}
+				};
+				var marginsFor = function(items){
+					return {
+						x:_.sum(_.map(items,function(item){
+							var l = dropPx(item.css("margin-left")) + dropPx(item.css("padding-left")) + dropPx(item.css("border"));
+							var r = dropPx(item.css("margin-right")) + dropPx(item.css("padding-right"))  + dropPx(item.css("border"));
+							return l + r;	
+						})),
+						y:_.sum(_.map(items,function(item){
+							var t = dropPx(item.css("margin-top")) + dropPx(item.css("padding-top")) + dropPx(item.css("border"));
+							var b = dropPx(item.css("margin-bottom")) + dropPx(item.css("padding-bottom")) + dropPx(item.css("border"));
+							return t + b;	
+						}))
+					};
+				};
+
+				var flexContainer = $("#masterLayout");
+
         var boardHeader = $("#boardHeader");
         var applicationMenu = $("#applicationMenu");
         var container = $("#boardContainer");
+				var boardColumn = $("#boardColumn");
 
         var thumbsColumn = $("#thumbsColumn");
         var slideContainer = $("#slideContainer");
@@ -196,8 +238,30 @@ var DeviceConfiguration = (function(){
 								var board = $("#board");
 								//var bwidth = board.width();
 								//var bheight = board.height();
+								var masterHeader = $("#masterHeader");
+
 								var bwidth = boardContainer.width();
 								var bheight = boardContainer.height();
+								//if (currentDevice == "IE11+"){
+									var flexDirection = flexContainer.css("flex-direction");
+									if (flexDirection == "row"){
+									bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
+									bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
+									} else {
+										bwidth = width - marginsFor([boardColumn]).x - gutterWidth;
+										bheight = bwidth - gutterHeight;
+									}
+									console.log(flexDirection);
+									console.log(width,toolsColumn.width(), thumbsColumn.width(), marginsFor([toolsColumn]).x,marginsFor([thumbsColumn]).x,marginsFor([boardColumn]).x);
+									console.log(height,masterHeader.height(), marginsFor([masterHeader]).y,marginsFor([boardColumn]).y);
+									if (bheight < 0 || bwidth < 0){
+										throw "retrying because of negativeValues";
+									}
+									bwidth = Math.round(bwidth);
+									bheight = Math.round(bheight);
+									//boardContainer.width(bwidth);
+									//boardContainer.height(bheight);
+								//}
 								var selectionAdorner = $("#selectionAdorner");
 								var radar = $("#radar");
 								var marquee = $("#marquee");									
@@ -213,12 +277,16 @@ var DeviceConfiguration = (function(){
             }
             performRemeasure();
             IncludeView.default();
+						blit();
         }
         catch(e){
             console.log("exception in fit",e);
+						_.defer(function(){
+							customizableFitFunction(showHeader,showTools,showSlides);
+						});
         }
-        window.scrollTo(1,1);
-        window.scrollTo(0,0);
+				window.scrollTo(1,1);
+				window.scrollTo(0,0);
     };
     var innerFit = function(){
         if (fitFunction){
@@ -256,6 +324,7 @@ var DeviceConfiguration = (function(){
         }
 				tryToDetermineCurrentDevice();
 				actOnCurrentDevice();
+				outerFit();
     }
 
 		var updateToolsToggleButton = function(){
@@ -275,6 +344,7 @@ var DeviceConfiguration = (function(){
 			}
 		};
 			
+
     $(function(){
         // set up orientation and resize handlers
         var w = $(window);
@@ -300,6 +370,7 @@ var DeviceConfiguration = (function(){
 						updateSlidesToggleButton();
             outerFit();
         }));
+				//_.defer(outerFit)();
     });
     var actOnCurrentDevice = function(){
         switch (currentDevice){

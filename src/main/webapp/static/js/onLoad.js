@@ -254,6 +254,12 @@ var TweenController = (function(){
         requestedViewboxHeight = viewboxHeight;
     };
     var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
+				if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+                if (onComplete){
+                    onComplete();
+                }
+					return;
+				}
         if(tween){
             //console.log("instantAlterViewboxFunc stopped tween");
             tween.stop();
@@ -263,6 +269,7 @@ var TweenController = (function(){
         viewboxY = finalY;
         viewboxWidth = finalWidth;
         viewboxHeight = finalHeight;
+				console.log("instantTweening:",finalX,finalY,finalWidth,finalHeight);
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
@@ -300,6 +307,12 @@ var TweenController = (function(){
     },300);
     var tween;
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
+				if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+                if (onComplete){
+                    onComplete();
+                }
+					return;
+				}
         var interval = 300;//milis
         var startX = viewboxX;
         var startY = viewboxY;
@@ -316,10 +329,12 @@ var TweenController = (function(){
             tween.stop();
             tween = false;
         }
+				console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
         tween = new TWEEN.Tween({x:0,y:0,w:0,h:0})
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
+							console.log("easingTweening: ",this.x,this.y,this.w,this.h);
                 viewboxX = startX + this.x;
                 viewboxY = startY + this.y;
                 viewboxWidth = startWidth + this.w;

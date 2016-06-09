@@ -536,6 +536,7 @@ function copyBuffer(buffer){
     return tmp;
 }
 function intersectRect(r1, r2) {//Left,top,right,bottom
+//	console.log("intersectRect",r1,r2);
     if (typeof(r1) != "undefined" && typeof(r2) != "undefined"){
         return !(r2[0] > r1[2] ||
                  r2[2] < r1[0] ||
