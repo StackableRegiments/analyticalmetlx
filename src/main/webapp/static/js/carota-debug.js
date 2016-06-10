@@ -461,13 +461,15 @@
 
                 var prototype = node.derive({
                     calculateBounds: function(){
-                        return this.frame.bounds ? [
-                            this.position.x,
-                            this.position.y,
-                            this.position.x+this.frame.actualWidth(),
-                            this.position.y+this.frame.bounds().h] : [0,0,0,0]
+                        var bounds = this.frame.bounds();
+                        var pos = this.position;
+                        return [
+                            pos.x + bounds.l,
+                            pos.y + bounds.t,
+                            pos.x + bounds.w,
+                            pos.y + bounds.h];
                     },
-                    load: function(runs, takeFocus) {
+                    load: function(runs) {
                         var self = this;
                         this.undo = [];
                         this.redo = [];
@@ -475,6 +477,7 @@
                         this.words = per(characters(runs)).per(split(self.codes)).map(function(w) {
                             return word(w, self.codes);
                         }).all();
+			this.words.push(word());/*EOF*/
                         this.layout();
                     },
                     layout: function() {
@@ -924,6 +927,9 @@
                 var dom = require('./dom');
                 var rect = require('./rect');
 
+
+                var currentTo = Date.now();
+
                 var paint = exports.paint = function(canvas,doc,hasFocus) {
                     var screenPos = worldToScreen(doc.position.x,doc.position.y),
                         logicalWidth = canvas.width,
@@ -972,9 +978,9 @@
 
                     doc.width(canvas.clientWidth);
 
-		    doc.claimFocus = function(){
-			$(textArea).focus();
-		    }
+                    doc.claimFocus = function(){
+                        $(textArea).focus();
+                    }
 
                     var hasFocus = function(){
                         return document.focussedElement == textArea;
@@ -1239,8 +1245,6 @@
                         return 0;
                     }
 
-
-
                     dom.handleEvent(textArea, 'input', function() {
                         var newText = textArea.value;
                         if (textAreaContent != newText) {
@@ -1313,9 +1317,9 @@
                     doc.mouseupHandler = function(node) {
                         keyboardX = null;
                         doc.select(node.ordinal, node.ordinal);
+                        isActive = true;
                         updateTextArea();
                         textArea.focus();
-			console.log("mouseup");
                     };
 
                     var nextCaretToggle = new Date().getTime(),
@@ -2471,7 +2475,7 @@
                 /*  Applies the style of a run to the canvas context
                  */
                 exports.applyRunStyle = function(ctx, run) {
-                    ctx.fillStyle = (run && run.color) || runs.defaultFormatting.color[0];
+                    ctx.fillStyle = (run && run.color && run.color[0]) || runs.defaultFormatting.color[0];
                     ctx.font = getFontString(run);
                 };
 
@@ -2485,7 +2489,7 @@
                 exports.getRunStyle = function(run) {
                     var parts = [
                         'font: ', getFontString(run),
-                        '; color: ', ((run && run.color) || runs.defaultFormatting.color[0])
+                        '; color: ', ((run && run.color && run.color[0]) || runs.defaultFormatting.color[0])
                     ];
 
                     if (run) {

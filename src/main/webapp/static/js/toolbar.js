@@ -229,7 +229,6 @@ function registerPositionHandlers(contexts,down,move,up){
 
                     var previousScale = (prevXScale + prevYScale)       / 2;
                     var currentScale = (xScale + yScale)        / 2;
-                    //console.log("scaling:",previousScale,currentScale);
                     Zoom.scale(previousScale / currentScale);
                 }
             },25);
@@ -667,10 +666,12 @@ var Modes = (function(){
             var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
                 presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen;
 
+            var echoesToDisregard = {};
             var createBlankText = function(worldPos){
                 return Modes.text.editorFor({
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
-                    identity:sprintf("%s_%s_%s",UserSettings.getUsername(),new Date(),_.uniqueId()),
+                    identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
+                    requestedWidth:300,
                     width:0,
                     height:0,
                     x:worldPos.x,
@@ -712,6 +713,9 @@ var Modes = (function(){
                             if(t.doc.isActive){
                                 var selRange = t.doc.selectedRange();
                                 selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
+                                if(t.doc.save().length > 0){
+                                    sendRichText(t);
+                                }
                             }
                         });
                     }
@@ -722,6 +726,9 @@ var Modes = (function(){
                         _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
                                 t.doc.selectedRange().setFormatting(prop,newValue);
+                                if(t.doc.save().length > 0){
+                                    sendRichText(t);
+                                }
                             }
                         });
                     }
@@ -748,8 +755,6 @@ var Modes = (function(){
                                     t.doc.width(screenToWorld(boardWidth,0).x);
                                     t.doc.selectedRange().setFormatting("align","center");
                                     t.doc.position.x = viewboxX;
-                                    t.doc.contentChanged.fire();
-                                    boardContent.multiWordTexts[t.identity] = t;
                                     break;
                                 case "fullscreen":
                                     t.doc.position.x = viewboxX;
@@ -768,9 +773,9 @@ var Modes = (function(){
                                     t.doc.load(content);
                                     var startOfPara = t.doc.frame.length - 1;
                                     t.doc.select(startOfPara,startOfPara);
-                                    boardContent.multiWordTexts[t.identity] = t;
                                     break;
                                 }
+                                t.doc.contentChanged.fire();
                             }
                         });
                     };
@@ -790,6 +795,7 @@ var Modes = (function(){
                 presetFullscreen.click(adoptPresetWidth("fullscreen"));
             });
             return {
+                echoesToDisregard:{},
                 editorFor:function(t){
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
@@ -804,11 +810,12 @@ var Modes = (function(){
                         if(isAuthor){
                             editor.doc.contentChanged(function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
-                                source.bounds = editor.doc.calculateBounds();;
                                 source.privacy = Privacy.getCurrentPrivacy();
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
-                                sendRichText(source);
+                                if(editor.doc.save().length > 0){
+                                    sendRichText(source);
+                                }
                             });
                             editor.doc.selectionChanged(function(formatReport){
                                 var format = formatReport();
@@ -819,11 +826,12 @@ var Modes = (function(){
                                 fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
                                 fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
                                 justifySelector.val(format.align || carota.runs.defaultFormatting.align);
+
                             });
                         }
                     }
                     editor.doc.position = {x:t.x,y:t.y};
-                    editor.doc.bounds = editor.doc.calculateBounds();;
+                    editor.doc.width(t.requestedWidth);
                     return editor;
                 },
                 draw:function(t){
@@ -845,33 +853,36 @@ var Modes = (function(){
                         var selectedTexts = _.values(boardContent.multiWordTexts).filter(function(text){
                             /*This checks against the maximum possible bound of the textbox rather than the space occupied.
                              This is because justification makes visual comparison very hard.*/
-                            text.bounds = text.doc.calculateBounds();
-                            var visibleBounds = [
-                                text.bounds[0],
-                                text.bounds[1],
-                                text.bounds[0] + text.doc.width(),
-                                text.bounds[3]
-                            ];
-                            return intersectRect(visibleBounds,ray) && text.author == UserSettings.getUsername();
+                            var bounds = text.doc.calculateBounds();
+                            return intersectRect(bounds,ray) && text.author == UserSettings.getUsername();
                         });
                         _.each(boardContent.multiWordTexts,function(t){
-                            t.doc.isActive = _.some(selectedTexts,function(st){return t.identity == st.identity});
+                            t.doc.isActive = false;
+                            if(t.doc.save().length == 0){
+                                delete boardContent.multiWordTexts[t.identity];
+                            }
                         });
                         console.log("Selected texts",selectedTexts);
                         if (selectedTexts.length > 0){
                             var editor = selectedTexts[0].doc;
+                            editor.isActive = true;
                             var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
                             var clickTime = Date.now();
                             var node = editor.byCoordinate(relativePos.x,relativePos.y);
-                            console.log("Selected",editor,node,editor.mouseupHandler);
                             editor.mouseupHandler(node);
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 editor.dblclickHandler(node);
                             }
                             lastClick = clickTime;
                         } else {
-                            createBlankText(worldPos).doc.isActive = true;
+                            var newEditor = createBlankText(worldPos).doc;
+                            newEditor.load([]);
+                            newEditor.isActive = true;
+                            newEditor.mouseupHandler(newEditor.byOrdinal(0));
                         }
+                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                            Modes.text.echoesToDisregard = {};
+                        };
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     }
                     registerPositionHandlers(board,noop,noop,up);

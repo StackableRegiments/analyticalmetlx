@@ -121,7 +121,9 @@ function sendInk(ink){
     sendStanza(ink);
 }
 function hexToRgb(hex) {
+    if(typeof hex == "string") hex = [hex,255];
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
+    console.log(hex,result);
     return {
         alpha: hex[1],
         red: parseInt(result[1], 16),
@@ -131,22 +133,23 @@ function hexToRgb(hex) {
 }
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
-    var color = hexToRgb(p.run.color || defaults.color);
+    var color = hexToRgb(p.color || defaults.color);
+    console.log(p,color);
     return {
-        text:p.run.text,
+        text:p.text,
         color:color,
-        size:p.run.size || defaults.size,
-        font:p.run.font || defaults.font,
-        justify:p.run.align || defaults.align,
-        bold:p.run.bold === true,
-        underline:p.run.underline === true,
-        italic:p.run.italic === true
+        size:p.size || defaults.size,
+        font:p.font || defaults.font,
+        justify:p.align || defaults.align,
+        bold:p.bold === true,
+        underline:p.underline === true,
+        italic:p.italic === true
     };
 }
-function wordToStanza(w){
-    return w.text.parts.map(partToStanza);
-}
+
 function richTextEditorToStanza(t){
+    var bounds = t.doc.calculateBounds();
+    var text = t.doc.save();
     return {
         author:t.author,
         timestamp:-1,
@@ -156,19 +159,19 @@ function richTextEditorToStanza(t){
         slide:t.slide,
         identity:t.identity,
         type:t.type,
-        x:t.x,
-        y:t.y,
-        requestedWidth:t.doc.width(),
-        width:t.bounds[2]-t.bounds[0],
-        height:t.bounds[3]-t.bounds[1],
-        words:_.flatten(t.doc.words.map(wordToStanza))
+        x:bounds[0],
+        y:bounds[1],
+        requestedWidth:bounds[2]-bounds[0],
+        width:bounds[2]-bounds[0],
+        height:bounds[3]-bounds[1],
+        words:text.map(partToStanza)
     }
 }
 function sendRichText(t){
     if(t.doc){
-        var stanza = richTextEditorToStanza(t);
-        console.log(JSON.stringify(stanza,null,"\t"));
-        sendStanza(stanza);
+        console.log("sendRichText");
+        Modes.text.echoesToDisregard[t.identity] = true;
+        sendStanza(richTextEditorToStanza(t));
     }
 }
 var stanzaHandlers = {
@@ -224,9 +227,11 @@ function commandReceived(c){
     }
 }
 function richTextReceived(t){
+    if(t.identity in Modes.text.echoesToDisregard) return;
     if(isUsable(t)){
         WorkQueue.enqueue(function(){
             Modes.text.editorFor(t).doc.load(t.words);
+	    blit();
         });
     }
 }
