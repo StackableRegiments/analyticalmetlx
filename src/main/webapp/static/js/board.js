@@ -81,7 +81,6 @@ function strokeCollected(spoints){
     }
 }
 function batchTransform(){
-
     var currentSlide = Conversations.getCurrentSlideJid();
     return {
         type:"moveDelta",

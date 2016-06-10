@@ -606,7 +606,6 @@ function render(content){
             var renderRichTexts = function(texts){
                 if(texts){
                     $.each(texts,function(i,text){
-                        console.log("renderRichText intersection check",text.bounds);
                         if(!text.bounds){
                             text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
                         }

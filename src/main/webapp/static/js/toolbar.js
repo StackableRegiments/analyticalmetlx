@@ -1240,7 +1240,7 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{}};
+                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1356,8 +1356,9 @@ var Modes = (function(){
                                 deleteTransform.imageIds = _.keys(Modes.select.selected.images);
                             }
                             if ("multiWordTexts" in Modes.select.selected){
-                                deleteTransform.richTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                deleteTransform.textIds = deleteTransform.textIds.concat(_.keys(Modes.select.selected.multiWordTexts));
                             }
+			    console.log(Modes.select.selected,deleteTransform);
                             sendStanza(deleteTransform);
                         }
                         clearSelectionFunction();
@@ -1501,7 +1502,7 @@ var Modes = (function(){
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
-                            moved.richTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                            moved.textIds = moved.textIds.concat(_.keys(Modes.select.selected.multiWordTexts));
                             dragging = false;
                             sendStanza(moved);
                         }
@@ -1530,7 +1531,7 @@ var Modes = (function(){
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
-                            resized.richTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                            resized.textIds = resized.textIds.concat( _.keys(Modes.select.selected.multiWordTexts));
                             resized.xScale = xScale;
                             if (modifiers.ctrl){
                                 var yScale = y / resizeHandle[0];
@@ -1565,9 +1566,6 @@ var Modes = (function(){
                                                 break;
                                             case "ink":
                                                 prerenderInk(item);
-                                                break;
-                                            case "richText":
-                                                //It was already measuring as it changed, but we don't want to destroy the bounds
                                                 break;
                                             default:
                                                 item.bounds = [NaN,NaN,NaN,NaN];
@@ -1624,8 +1622,7 @@ var Modes = (function(){
                             var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,
-                                                 _.keys(Modes.select.selected.inks).length,
-                                                 _.keys(Modes.select.selected.multiWordTexts).length);
+                                                 _.keys(Modes.select.selected.inks).length);
                             $.each(intersectAuthors,function(author,count){
                                 status += sprintf("%s:%s ",author, count);
                             });
