@@ -43,7 +43,7 @@ function receiveHistory(json){
         _.each(boardContent.multiWordTexts,function(text,i){
             Modes.text.editorFor(text).doc.load(text.words);
         });
-	renderMultiWordMark = Date.now();
+        renderMultiWordMark = Date.now();
 
         boardContent.width = boardContent.maxX - boardContent.minX;
         boardContent.height = boardContent.maxY - boardContent.minY;
@@ -606,8 +606,9 @@ function render(content){
             var renderRichTexts = function(texts){
                 if(texts){
                     $.each(texts,function(i,text){
+                        console.log("renderRichText intersection check",text.bounds);
                         if(!text.bounds){
-                            text.bounds = [text.x,text.x + text.width,text.y,text.y + text.height];
+                            text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
                         }
                         if(intersectRect(text.bounds,viewBounds)){
                             Modes.text.draw(text);
