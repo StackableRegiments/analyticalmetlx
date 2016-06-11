@@ -95,6 +95,13 @@ object MeTLSlideDisplayActorManager extends LiftActor with ListenerManager with 
     case _ => warn("MeTLSlideDisplayActorManager received unknown message")
   }
 }
+object MeTLEditConversationActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case m:MeTLCommand => sendListenersMessage(m)
+    case _ => warn("MeTLEditConversationActorManager received unknown message")
+  }
+}
 
 class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
   import com.metl.snippet.Metl._
@@ -260,6 +267,112 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
     case _ => warn("MeTLConversationSearchActor received unknown message")
   }
 }
+
+class MeTLEditConversationActor extends CometActor with CometListener with Logger {
+  import com.metl.view._
+  override def registerWith = MeTLEditConversationActorManager 
+  override def lifespan = Full(5 minutes)
+  protected lazy val serverConfig = ServerConfiguration.default
+  protected var conversation:Option[Conversation] = None
+  protected var username = Globals.currentUser.is
+  override def localSetup = {
+    super.localSetup
+    name.foreach(nameString => {
+      warn("localSetup for [%s]".format(name))
+      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => serverConfig.detailsOfConversation(jid.toString))
+    })
+  }
+
+  override def render = {
+    val resultantRender:RenderOut = conversation.map(conv => {
+      shouldModifyConversation(conv) match {
+        case true => {
+          val innerResult:RenderOut = (".editConversationContainer *" #> {
+            ".conversationTitle *" #> ajaxText(conv.title,(renamed:String) => {
+              serverConfig.renameConversation(conv.jid.toString,renamed)
+              Noop
+            }) &
+            ".conversationJid *" #> Text(conv.jid.toString) &
+            ".conversationAuthor *" #> Text(conv.author) &
+            ".conversationSubject *" #> Text(conv.subject) &
+            ".conversationTag *" #> Text(conv.tag) &
+            ".conversationCreated *" #> Text(conv.created.toString) &
+            ".conversationLastModified *" #> Text(conv.lastAccessed.toString) &
+            ".conversationSharing *" #> NodeSeq.Empty &
+            ".conversationDelete *" #> ajaxButton("delete",() => {
+              val result = serverConfig.deleteConversation(conv.jid.toString)
+              warn("deleting conversation: %s".format(result))
+              Noop
+            }) &
+            ".conversationDuplicate *" #> ajaxButton("duplicate",() => {
+              val result = StatelessHtml.duplicateConversationInternal(username,conv.jid.toString)
+              warn("duplicating conversation: %s".format(result))
+              Noop
+            }) &
+            ".conversationFollowLink [href]" #> boardFor(conv.jid) &
+            ".conversationProjectorLink [href]" #> projectorFor(conv.jid) &
+            ".conversationSlidesContainer *" #> {
+              conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
+                ".slideContainer *" #> {
+                  ".slideId *" #> Text(slide.id.toString) &
+                  ".slideIndex *" #> Text(slide.index.toString) &
+                  ".slideType *" #> Text(slide.slideType.toString) &
+                  ".slideThumbnail [src]" #> thumbnailFor(conv.jid,slide.id) &
+                  ".duplicateSlideButton *" #> {
+                    ajaxButton("duplicate slide",() => {
+                      val result = StatelessHtml.duplicateSlideInternal(username,slide.id.toString,conv.jid.toString)
+                      warn("duplicating slide: %s".format(result))
+                      Noop
+                    })
+                  } &
+                  ".addSlideAfterButton *" #> {
+                    ajaxButton("add slide after",() => {
+                      val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index + 1)
+                      warn("adding slide after: %s".format(result))
+                      Noop
+                    })
+                  } &
+                  ".addSlideBeforeButton *" #> {
+                    ajaxButton("add slide before",() => {
+                      val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index)
+                      warn("adding slide before: %s".format(result))
+                      Noop
+                    })
+                  } &
+                  ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+                }
+              })
+            }
+          })
+          innerResult
+        }
+        case _ => {
+          val innerResult:RenderOut = ".editConversationContainer" #> Text("you are not permitted to edit this conversation")
+          innerResult
+        }
+      }
+    }).getOrElse({
+      val innerResult:RenderOut = ".editConversationContainer" #> Text("no conversation selected")
+      innerResult
+    })
+    resultantRender
+  }
+  override def lowPriority = {
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
+      conversation.foreach(c => {
+        val newConv = serverConfig.detailsOfConversation(c.jid.toString)
+        warn("receivedUpdatedConversation: %s => %s".format(c,newConv))
+        conversation = Some(newConv)
+        reRender
+      })
+    }
+    case _ => warn("MeTLEditConversationActor received unknown message")
+  }
+  protected def shouldModifyConversation(c:Conversation = conversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
+  protected def shouldDisplayConversation(c:Conversation = conversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
+  protected def shouldPublishInConversation(c:Conversation = conversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)
+}
+
 
 class MeTLActor extends StronglyTypedJsonActor with Logger{
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd

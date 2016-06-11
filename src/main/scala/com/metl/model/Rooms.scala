@@ -265,6 +265,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       case (m:MeTLCommand,_) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
         com.metl.comet.MeTLConversationSearchActorManager ! m
         com.metl.comet.MeTLSlideDisplayActorManager ! m
+        com.metl.comet.MeTLEditConversationActorManager ! m
       }
       case (m:MeTLCommand,cr:ConversationRoom) if List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION").contains(m.command) => {
         com.metl.comet.MeTLSlideDisplayActorManager ! m

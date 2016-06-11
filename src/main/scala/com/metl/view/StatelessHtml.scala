@@ -560,8 +560,7 @@ object StatelessHtml extends Stemmer with Logger {
       case _ => c
     }).headOption.map(n => XmlResponse(n))
   }
-
-  def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
+  def duplicateSlideInternal(onBehalfOfUser:String,slide:String,conversation:String):Box[Conversation] = {
     val conv = config.detailsOfConversation(conversation)
     if (onBehalfOfUser == conv.author){
       val newConv = conv.slides.find(_.id.toString == slide).map(slide => {
@@ -584,12 +583,23 @@ object StatelessHtml extends Stemmer with Logger {
         })
         step1
       }).getOrElse(conv)
-      serializer.fromConversation(newConv).headOption.map(n => XmlResponse(n))
+      Full(newConv)
     } else {
-      Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
+      Empty 
     }
   }
-  def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+
+  def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
+    duplicateSlideInternal(onBehalfOfUser,slide,conversation).map(conv => {
+      serializer.fromConversation(conv).headOption.map(n => XmlResponse(n)) match {
+        case Some(r) => Full(r)
+        case _ => Empty
+      }
+    }).getOrElse({
+      Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
+    })
+   }
+  def duplicateConversationInternal(onBehalfOfUser:String,conversation:String):Box[Conversation] = {
     val oldConv = config.detailsOfConversation(conversation)
     if (onBehalfOfUser == oldConv.author){
       val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
@@ -626,10 +636,19 @@ object StatelessHtml extends Stemmer with Logger {
         (s:MeTLStanza) => s.author == remoteConv.author && s.isInstanceOf[MeTLQuiz] // || s.isInstanceOf[Attachment]
       )
       val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)
-      serializer.fromConversation(remoteConv2).headOption.map(n => XmlResponse(n))
-    } else {
+      Full(remoteConv2)
+    } else Empty 
+  }
+
+  def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+    duplicateConversationInternal(onBehalfOfUser,conversation).map(conv => {
+      serializer.fromConversation(conv).headOption.map(n => XmlResponse(n)) match {
+        case Some(r) => Full(r)
+        case _ => Empty
+      }
+    }).getOrElse({
       Full(ForbiddenResponse("only the author may duplicate a conversation"))
-    }
+    })
   }
   def exportMyConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
     for (

@@ -35,9 +35,25 @@ class Metl extends Logger {
   def boardFor(conversationJid:Int,slideId:Int):String = {
     "/board?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
   }
-  def noBoard:String = {
-    "/"///conversationSearch"
+  def projectorFor(conversationJid:Int):String = {
+    "/board?conversationJid=%s&showTools=false".format(conversationJid)
   }
+  def projectorFor(conversationJid:Int,slideId:Int):String = {
+    "/board?conversationJid=%s&slideId=%s&showTools=false".format(conversationJid,slideId)
+  }
+  def thumbnailFor(conversationJid:Int,slideId:Int):String = {
+    "/thumbnail/%s".format(slideId.toString)
+  }
+  def noBoard:String = {
+    "/"//conversationSearch()
+  }
+  def editConversation(conversationJid:Int):String = {
+    "/editConversation?conversationJid=%s".format(conversationJid.toString)
+  }
+  def conversationSearch():String = {
+    "/searchConversations"
+  }
+
 
   lazy val serverConfig = ServerConfiguration.default
   protected def generateName:String = {
@@ -146,6 +162,13 @@ class Metl extends Logger {
     val clazz = "lift:comet?type=MeTLSlideDisplayActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating single page comet html: %s".format(output))
+    output
+  }
+  def specificEditConversation(in:NodeSeq):NodeSeq = {
+    val name = generateName
+    val clazz = "lift:comet?type=MeTLEditConversationActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    warn("generating editConversation comet html: %s".format(output))
     output
   }
   def specific(in:NodeSeq):NodeSeq = {
