@@ -1276,6 +1276,7 @@ var Modes = (function(){
                         Conversations.getCurrentSlideJid(),
                         _.uniq(_.map(s.inks,function(e){return e.identity;})),
                         _.uniq(_.map(s.texts,function(e){return e.identity;})),
+                        _.uniq(_.map(s.multiWordTexts,function(e){return e.identity;})),
                         _.uniq(_.map(s.images,function(e){return e.identity;}))
                     );
                 }
@@ -1356,9 +1357,9 @@ var Modes = (function(){
                                 deleteTransform.imageIds = _.keys(Modes.select.selected.images);
                             }
                             if ("multiWordTexts" in Modes.select.selected){
-                                deleteTransform.textIds = deleteTransform.textIds.concat(_.keys(Modes.select.selected.multiWordTexts));
+                                deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
-			    console.log(Modes.select.selected,deleteTransform);
+			    console.log(deleteTransform);
                             sendStanza(deleteTransform);
                         }
                         clearSelectionFunction();
@@ -1502,7 +1503,7 @@ var Modes = (function(){
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
-                            moved.textIds = moved.textIds.concat(_.keys(Modes.select.selected.multiWordTexts));
+                            moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             dragging = false;
                             sendStanza(moved);
                         }
@@ -1531,7 +1532,7 @@ var Modes = (function(){
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
-                            resized.textIds = resized.textIds.concat( _.keys(Modes.select.selected.multiWordTexts));
+                            resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             resized.xScale = xScale;
                             if (modifiers.ctrl){
                                 var yScale = y / resizeHandle[0];
