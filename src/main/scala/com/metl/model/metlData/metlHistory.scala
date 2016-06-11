@@ -53,8 +53,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var images:List[MeTLImage] = List.empty[MeTLImage]
   protected var dirtyImages:List[MeTLDirtyImage] = List.empty[MeTLDirtyImage]
   protected var texts:List[MeTLText] = List.empty[MeTLText]
-  protected var multiWordTexts:List[MeTLMultiWordText] = List.empty[MeTLMultiWordText]
   protected var dirtyTexts:List[MeTLDirtyText] = List.empty[MeTLDirtyText]
+  protected var multiWordTexts:List[MeTLMultiWordText] = List.empty[MeTLMultiWordText]
   protected var metlMoveDeltas:List[MeTLMoveDelta] = List.empty[MeTLMoveDelta]
   protected var quizzes:List[MeTLQuiz] = List.empty[MeTLQuiz]
   protected var quizResponses:List[MeTLQuizResponse] = List.empty[MeTLQuizResponse]
@@ -148,8 +148,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
           addInk(s.adjustIndividualContent(i,true,left,top).asInstanceOf[MeTLInk],false)
         }
       }
-      case i:MeTLMultiWordText if matches(s.textIds,i) => {
-        removeText(i.generateDirty(s.timestamp),false)
+      case i:MeTLMultiWordText if matches(s.multiWordTextIds,i) => {
+        removeMultiWordText(i.generateDirty(s.timestamp),false)
         if(!s.isDeleted)
           addMultiWordText(s.adjustIndividualContent(i,true,left,top).asInstanceOf[MeTLMultiWordText],false)
       }
@@ -170,7 +170,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     def matches(cc:MeTLCanvasContent):Boolean = cc match {
       case i:MeTLInk => s.inkIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLText => s.textIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
-      case i:MeTLMultiWordText => s.textIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
+      case i:MeTLMultiWordText => s.multiWordTextIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLImage => s.imageIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
     }
     val relevantContents = getCanvasContents.filter(cc => matches(cc))
@@ -213,15 +213,6 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
     this
   })
-  /*
-   def addMeTLUnhandledData(s:MeTLUnhandledData,store:Boolean = true) = Stopwatch.time("History.addMeTLUnhandledData", {
-   if (store){
-   outputHook(s)
-   metlUnhandledData = metlUnhandledData ::: List(s)
-   }
-   this
-   })
-   */
   def addMeTLMoveDelta(s:MeTLMoveDelta,store:Boolean = true) = Stopwatch.time("History.addMeTLMoveDelta",{
     if (!metlMoveDeltas.exists(mmd => mmd.matches(s))){
       moveContent(s)
@@ -447,11 +438,9 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       dirtyImages = dirtyImages ::: List(dirtyImage)
     this
   })
-
   def removeText(dirtyText:MeTLDirtyText,store:Boolean = true) = Stopwatch.time("History.removeText",{
     val (item,remaining) = getCanvasContents.partition(s => s match {
       case t:MeTLText => dirtyText.isDirtierFor(t)
-      case t:MeTLMultiWordText => dirtyText.isDirtierFor(t)
       case _ => false
     })
     canvasContents = remaining
@@ -462,6 +451,26 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
           outputHook(dirtyText)
         update(true)
       }
+      case t:MeTLMultiWordText => {
+        calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
+        if (store)
+          outputHook(dirtyText)
+        update(true)
+      }
+      case _ => {}
+    })
+    if (store)
+      dirtyTexts = dirtyTexts ::: List(dirtyText)
+    this
+  })
+
+  def removeMultiWordText(dirtyText:MeTLDirtyText,store:Boolean = true) = Stopwatch.time("History.removeMultiWordText",{
+    val (item,remaining) = getCanvasContents.partition(s => s match {
+      case t:MeTLMultiWordText => dirtyText.isDirtierFor(t)
+      case _ => false
+    })
+    canvasContents = remaining
+    item.map(s => s match {
       case t:MeTLMultiWordText => {
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
         if (store)

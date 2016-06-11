@@ -2302,19 +2302,6 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger{
           partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
         }
       }
-      /*
-       case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
-       debug("incoming syncMove: %s".format(c))
-       val newJid = c.commandParameters(0).toInt
-       partialUpdate(Call(RECEIVE_SYNC_MOVE,newJid))
-       }
-       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
-       //not relaying teacherInConversation to page
-       }
-       case a:Attendance => {
-       //not relaying to page yet, because we're not using them in the webmetl client yet
-       }
-       */
       case _ => {
         trace("receiving: %s".format(metlStanza))
         val response = serializer.fromMeTLData(metlStanza) match {

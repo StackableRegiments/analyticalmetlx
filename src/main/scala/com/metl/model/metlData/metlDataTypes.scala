@@ -553,7 +553,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
     copy(privacy = replacementPrivacy,identity = genNewIdentity("dirtierGeneratedFrom(%s)".format(identity)),
       inkIds = newInkIds,
       textIds = newTextIds,
-      multiWordTextIds = multiWordTextIds,
+      multiWordTextIds = newMultiWordTextIds,
       imageIds = newImageIds,
       xTranslate = 0.0,yTranslate = 0.0,xScale = 1.0,yScale = 1.0,isDeleted = true)
   })
