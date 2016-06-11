@@ -164,7 +164,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     }
   })
   override def fromMeTLMoveDelta(i:MeTLMoveDelta):H2MoveDelta = {
-    incCanvasContent(H2MoveDelta.create,i,"moveDelta").inkIds(stringsToString(i.inkIds)).textIds(stringsToString(i.textIds)).imageIds(stringsToString(i.imageIds)).xTranslate(i.xTranslate).yTranslate(i.yTranslate).xScale(i.xScale).yScale(i.yScale).newPrivacy(fromPrivacy(i.newPrivacy)).isDeleted(i.isDeleted).xOrigin(i.xOrigin).yOrigin(i.yOrigin)
+    incCanvasContent(H2MoveDelta.create,i,"moveDelta").inkIds(stringsToString(i.inkIds)).textIds(stringsToString(i.textIds)).multiWordTextIds(stringsToString(i.multiWordTextIds)).imageIds(stringsToString(i.imageIds)).xTranslate(i.xTranslate).yTranslate(i.yTranslate).xScale(i.xScale).yScale(i.yScale).newPrivacy(fromPrivacy(i.newPrivacy)).isDeleted(i.isDeleted).xOrigin(i.xOrigin).yOrigin(i.yOrigin)
   }
   def toMeTLDirtyInk(i:H2DirtyInk):MeTLDirtyInk = {
     val cc = decCanvasContent(i)

@@ -237,9 +237,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("id",JString(input.id))
     ) :::
       parseMeTLContent(input) :::
-      input.url.map(u => JField("url",JString(u))).toList /* :::
-                                                           input.bytes.map(b => JField("bytes",JString(base64Encode(b)))).toList */
-    )
+      input.url.map(u => JField("url",JString(u))).toList)
   })
 
   override def toMeTLFile(i:JValue):MeTLFile = Stopwatch.time("JsonSerializer.toMeTLFile",{
@@ -261,6 +259,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("inkIds",JArray(input.inkIds.map(JString).toList)),
       JField("imageIds",JArray(input.imageIds.map(JString).toList)),
       JField("textIds",JArray(input.textIds.map(JString).toList)),
+      JField("multiWordTextIds",JArray(input.multiWordTextIds.map(JString).toList)),
       JField("xTranslate",JDouble(input.xTranslate)),
       JField("yTranslate",JDouble(input.yTranslate)),
       JField("xScale",JDouble(input.xScale)),
@@ -391,16 +390,16 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     j match {
       case input:JObject => {
         try{
-        val mc = parseJObjForMeTLContent(input,config)
-        val cc = parseJObjForCanvasContent(input)
-        val requestedWidth = getDoubleByName(input,"requestedWidth")
-        val tag = getStringByName(input,"tag")
-        val words:Seq[MeTLTextWord] = (input \ "words").extract[List[MeTLTextWord]]
-        val x = getDoubleByName(input,"x")
-        val y = getDoubleByName(input,"y")
-        val width = getDoubleByName(input,"width")
-        val height = getDoubleByName(input,"height")
-        MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words)
+          val mc = parseJObjForMeTLContent(input,config)
+          val cc = parseJObjForCanvasContent(input)
+          val requestedWidth = getDoubleByName(input,"requestedWidth")
+          val tag = getStringByName(input,"tag")
+          val words:Seq[MeTLTextWord] = (input \ "words").extract[List[MeTLTextWord]]
+          val x = getDoubleByName(input,"x")
+          val y = getDoubleByName(input,"y")
+          val width = getDoubleByName(input,"width")
+          val height = getDoubleByName(input,"height")
+          MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words)
         }
         catch {
           case e => {

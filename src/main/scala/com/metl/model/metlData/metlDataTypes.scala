@@ -649,7 +649,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
             privateImages.map(i => i.identity),p))
           case _ => List.empty[MeTLStanza]
         }
-        (publicDirtiers,privateAdjusters ::: publicInksToPrivatize ::: publicHighlightersToPrivatize ::: publicTextsToPrivatize ::: publicImagesToPrivatize)
+        (publicDirtiers,privateAdjusters ::: publicInksToPrivatize ::: publicHighlightersToPrivatize ::: publicTextsToPrivatize ::: publicImagesToPrivatize ::: publicMultiWordTextsToPrivatize)
       }
       case _ => {
         val privDelta = ((privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts).length > 0) match {
@@ -677,6 +677,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
     case i:MeTLInk => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && inkIds.contains(i.identity)
     case i:MeTLImage => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && imageIds.contains(i.identity)
     case i:MeTLText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && textIds.contains(i.identity)
+    case i:MeTLMultiWordText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && multiWordTextIds.contains(i.identity)
     case _ => false
   }
 }

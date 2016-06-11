@@ -83,7 +83,6 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getCommands = commands
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
-  //def getUnhandledData = unhandledData
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple5[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -127,7 +126,6 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLFile => addFile(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
-    //case s:MeTLUnhandledData => addMeTLUnhandledData(s) // we don't add these - these are below the interest of a history.  History only cares about stanzas and up.
     case _ => {
       warn("makeHistory: I don't know what to do with a MeTLStanza: %s".format(s))
       this
@@ -193,7 +191,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     val dirtyTest = cc match {
       case ink:MeTLInk => dirtyInks.exists(dInk => dInk.isDirtierFor(ink))
       case text:MeTLText => dirtyTexts.exists(dText => dText.isDirtierFor(text))
-      case text:MeTLMultiWordText => dirtyTexts.exists(dText => dText.isDirtierFor(text))
+      case multiWordText:MeTLMultiWordText => dirtyTexts.exists(dText => dText.isDirtierFor(multiWordText))
       case image:MeTLImage => dirtyImages.exists(dImage => dImage.isDirtierFor(image))
       case _ => false
     }

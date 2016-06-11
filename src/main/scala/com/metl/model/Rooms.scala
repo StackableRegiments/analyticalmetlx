@@ -461,8 +461,6 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
 class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends HistoryCachingRoom(configName,location,creator,roomMetaData,idleTimeout) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
-    //stanzasToIgnore = stanzasToIgnore ::: List(s)
-    //trace("xmppBridge, sending to server: %s".format(s))
     trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
     sendStanzaToServer(s)
   })
