@@ -297,7 +297,7 @@ class MeTLEditConversationActor extends CometActor with CometListener with Logge
             ".conversationSubject *" #> Text(conv.subject) &
             ".conversationTag *" #> Text(conv.tag) &
             ".conversationCreated *" #> Text(conv.created.toString) &
-            ".conversationLastModified *" #> Text(conv.lastAccessed.toString) &
+            ".conversationLastModified *" #> Text(new Date(conv.lastAccessed).toString) &
             ".conversationSharing *" #> NodeSeq.Empty &
             ".conversationDelete *" #> ajaxButton("delete",() => {
               val result = serverConfig.deleteConversation(conv.jid.toString)
@@ -310,7 +310,9 @@ class MeTLEditConversationActor extends CometActor with CometListener with Logge
               Noop
             }) &
             ".conversationFollowLink [href]" #> boardFor(conv.jid) &
+            ".conversationFollowLink *" #> Text(boardFor(conv.jid)) &
             ".conversationProjectorLink [href]" #> projectorFor(conv.jid) &
+            ".conversationProjectorLink *" #> Text(projectorFor(conv.jid)) &
             ".conversationSlidesContainer *" #> {
               conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
                 ".slideContainer *" #> {
