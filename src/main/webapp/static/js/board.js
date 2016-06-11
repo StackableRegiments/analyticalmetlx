@@ -571,8 +571,11 @@ function transformReceived(transform){
         });
         $.each(transform.multiWordTextIds,function(i,id){
             var text = boardContent.multiWordTexts[id];
-            text.x += transform.xTranslate;
-            text.y += transform.yTranslate;
+	    var doc = text.doc;
+	    console.log("Transforming",text,doc);
+            doc.position.x += transform.xTranslate;
+            doc.position.y += transform.yTranslate;
+	    text.bounds = doc.calculateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
     }
