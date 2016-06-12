@@ -196,7 +196,22 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
   }
 }
 
-class MeTLConversationSearchActor extends CometActor with CometListener with Logger {
+class MeTLConversationSearchActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
+  private val serializer = new JsonSerializer("frontend")
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
+  override def autoIncludeJsonCode = true
+  private lazy val RECEIVE_USERNAME = "receiveUsername"
+  private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
+  private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
+      serializer.fromConversationList(serverConfig.searchForConversation(args(0).toString))
+    },Full(RECEIVE_CONVERSATIONS))
+  )
+
   override def registerWith = MeTLConversationSearchActorManager 
   override def lifespan = Full(5 minutes)
   protected val username = Globals.currentUser.is
@@ -300,7 +315,33 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
   }
 }
 
-class MeTLEditConversationActor extends CometActor with CometListener with Logger {
+class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
+  private val serializer = new JsonSerializer("frontend")
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
+  override def autoIncludeJsonCode = true
+  private lazy val RECEIVE_USERNAME = "receiveUsername"
+  private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
+  private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
+  private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunctionDefinition("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
+      val jid = getArgAsString(args(0))
+      val newSlides = getArgAsJArray(args(1))
+      val c = serverConfig.detailsOfConversation(args(0).toString)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => {
+          (newSlides.arr.length == c.slides.length) match {
+            case true => serverConfig.reorderSlidesOfConversation(c.jid.toString,newSlides.arr.map(i => serializer.toSlide(i)).toList)
+            case false => c
+          }
+        }
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME))
+  )
   import com.metl.view._
   override def registerWith = MeTLEditConversationActorManager 
   override def lifespan = Full(5 minutes)
@@ -408,7 +449,39 @@ class MeTLEditConversationActor extends CometActor with CometListener with Logge
 }
 
 
-class MeTLActor extends StronglyTypedJsonActor with Logger{
+trait JArgUtils {
+  protected def getArgAsBool(input:Any):Boolean = input match {
+    case JBool(bool) => bool
+    case s:String if (s.toString.trim == "false") => false
+    case s:String if (s.toString.trim == "true") => true
+    case other => false
+  }
+  protected def getArgAsString(input:Any):String = input match {
+    case JString(js) => js
+    case s:String => s
+    case other => other.toString
+  }
+  protected def getArgAsInt(input:Any):Int = input match {
+    case JInt(i) => i.toInt
+    case i:Int => i
+    case JNum(n) => n.toInt
+    case d:Double => d.toInt
+    case s:String => s.toInt
+    case other => other.toString.toInt
+  }
+  protected def getArgAsJValue(input:Any):JValue = input match {
+    case jv:JValue => jv
+    case other => JNull
+  }
+  protected def getArgAsJArray(input:Any):JArray = input match {
+    case l:List[JValue] => JArray(l)
+    case ja:JArray => ja
+    case other => JArray(List.empty[JValue])
+  }
+
+}
+
+class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
@@ -1118,34 +1191,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     val roomOption = rooms.get((server,jid))
     val res = roomOption.map(r => r().getHistory.getQuizzes).getOrElse(List.empty[MeTLQuiz])
     res
-  }
-  private def getArgAsBool(input:Any):Boolean = input match {
-    case JBool(bool) => bool
-    case s:String if (s.toString.trim == "false") => false
-    case s:String if (s.toString.trim == "true") => true
-    case other => false
-  }
-  private def getArgAsString(input:Any):String = input match {
-    case JString(js) => js
-    case s:String => s
-    case other => other.toString
-  }
-  private def getArgAsInt(input:Any):Int = input match {
-    case JInt(i) => i.toInt
-    case i:Int => i
-    case JNum(n) => n.toInt
-    case d:Double => d.toInt
-    case s:String => s.toInt
-    case other => other.toString.toInt
-  }
-  private def getArgAsJValue(input:Any):JValue = input match {
-    case jv:JValue => jv
-    case other => JNull
-  }
-  private def getArgAsJArray(input:Any):JArray = input match {
-    case l:List[JValue] => JArray(l)
-    case ja:JArray => ja
-    case other => JArray(List.empty[JValue])
   }
 
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]

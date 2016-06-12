@@ -1,4 +1,21 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+	<script>
+function serverResponse(response){
+	console.log("serverResponse:",response);
+}
+function receiveUsername(username){
+	console.log("receiveUsername:",username);
+}
+function receiveUserGroups(userGroups){
+	console.log("receiveUserGroups:",userGroups);
+}
+function receiveConversationDetails(details){
+	console.log("receiveConversationDetails:",details);
+}
+function receiveNewConversationDetails(details){
+	console.log("receiveNewConversationDetails:",details);
+}
+	</script>
 	<div class="lift:Metl.specificEditConversation">
 		<div class="editConversationContainer">
 			<div>
