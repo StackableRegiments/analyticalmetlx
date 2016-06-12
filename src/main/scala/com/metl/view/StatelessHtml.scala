@@ -735,7 +735,7 @@ object StatelessHtml extends Stemmer with Logger {
       author = Globals.currentUser.is;
       title = "%s's (%s) created at %s".format(author,filename,new java.util.Date());
 
-      remoteConv <- com.metl.model.Importer.importConversation(title,title,bytes,author);
+      remoteConv <- com.metl.model.Importer.importConversation(title,filename,bytes,author);
 /*
       conv = config.createConversation(title,author);
       histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);

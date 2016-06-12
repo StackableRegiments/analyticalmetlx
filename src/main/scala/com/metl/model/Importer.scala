@@ -96,6 +96,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         ("inputformat" -> inFormat),
         ("outputformat" -> outFormat)
       )))
+      println("ERROR: %s".format(procResponse.responseAsString))
       val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter process created",3,108)),None))
 
@@ -125,12 +126,16 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         Thread.sleep(1000)
         val statusResponse = describeResponse(client.getExpectingHTTPResponse(procResponseObj.url))
         val statusObj = parse(statusResponse.responseAsString).extract[CloudConvertStatusMessageResponse]
-        val percentage = (for (
-          p <- statusObj.percent;
-          pInt <- Option(p.toInt)
-        ) yield {
-          pInt
-        }).getOrElse(0)
+        val percentage = try {
+          (for (
+            p <- statusObj.percent;
+            pDouble <- Option(p.toDouble)
+          ) yield {
+            pDouble.toInt
+          }).getOrElse(0)
+        } catch {
+          case e:Exception => 0
+        }
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(statusObj.message.map(m => "%s : %s : %s".format(statusObj.step,m,statusObj.percent.getOrElse("?%"))).getOrElse("waiting for cloudConverter"),5 + percentage,108)),None))
         info("Status: %s".format(statusObj)) 
         if (statusObj.step == "error"){
@@ -307,10 +312,12 @@ object Importer extends Logger {
     val importId = nextFuncName
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {
-      val conv = config.createConversation(title,author);
+//      val conv = config.createConversation(title,author);
+      val now = new java.util.Date()
+      val conv = Conversation.empty.copy(title = title, author = author,lastAccessed = now.getTime,jid = 0)  
       onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("created conversation",2,2)),None))
       for (
-        histories <- foreignConversationParse(importId,title,conv.jid,bytes,config,author);
+        histories <- foreignConversationParse(importId,filename,conv.jid,bytes,config,author);
         remoteConv <- foreignConversationImport(importId,config,author,conv,histories)
       ) yield {
         onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("finalizing import",4,4)),Some(ImportProgress("conversation imported",1,1)),Some(Right(remoteConv))))
@@ -334,10 +341,11 @@ object Importer extends Logger {
       }
     }
   }
-  protected def foreignConversationImport(importId:String,server:ServerConfiguration,onBehalfOfUser:String,conversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
+  protected def foreignConversationImport(importId:String,server:ServerConfiguration,onBehalfOfUser:String,fakeConversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
     try {
       val finalCount = histories.keys.toList.length + 4
-      onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("ready to import content",1,finalCount)),None))
+      onUpdate(ImportDescription(importId,fakeConversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("ready to import content",1,finalCount)),None))
+      val conversation = server.createConversation(fakeConversation.title,fakeConversation.author)
       val newConvWithAllSlides = conversation.copy(
         lastAccessed = new java.util.Date().getTime,
         slides = histories.map(h => Slide(server,onBehalfOfUser,h._1, h._1 - conversation.jid - 1)).toList
@@ -356,7 +364,7 @@ object Importer extends Logger {
       Full(newConvWithAllSlides)
     } catch {
       case e:Exception => {
-        onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("failed to import content",1,1)),Some(Left(e))))
+        onUpdate(ImportDescription(importId,fakeConversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("failed to import content",1,1)),Some(Left(e))))
         error("exception in foreignConversationImport",e)
         throw e
         //Empty
