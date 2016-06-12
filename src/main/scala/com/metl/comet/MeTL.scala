@@ -1261,7 +1261,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
   })
   private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
     val metlData = serializer.toMeTLData(jVal)
-    info("MeTL.sendStanza__: %s".format(metlData))
     metlData match {
       case m:MeTLStanza => sendStanzaToServer(m,serverName)
       case notAStanza => error("Not a stanza at sendStanzaToServer %s".format(notAStanza))
@@ -1271,13 +1270,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger{
     trace("OUT -> %s".format(stanza))
     stanza match {
       case m:MeTLMoveDelta => {
-        info("MeTL.sendStanza___: %s".format(m))
         val publicRoom = rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
         val publicHistory = publicRoom.getHistory
         val privateRoom = rooms.getOrElse((serverName,m.slide+username),() => EmptyRoom)()
         val privateHistory = privateRoom.getHistory
         val (sendToPublic,sendToPrivate) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
-        info("MeTL.sendPub, sendPriv: %s\nsendPub: %s".format(sendToPublic,sendToPrivate))
         sendToPublic.map(pub => {
           trace("OUT TO PUB -> %s".format(pub))
           publicRoom ! LocalToServerMeTLStanza(pub)
@@ -2170,7 +2167,6 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger{
     trace("OUT -> %s".format(stanza))
     stanza match {
       case m:MeTLMoveDelta => {
-        info("MeTLMoveDelta received: %s".format(m))
         val publicRoom = rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
         val publicHistory = publicRoom.getHistory
         val privateRoom = rooms.getOrElse((serverName,m.slide+username),() => EmptyRoom)()
@@ -2216,7 +2212,6 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger{
         }
       }
       case c:MeTLCanvasContent => {
-        info("MeTLCanvasContent received: %s".format(c))
         if (c.author == username){
           currentConversation.map(cc => {
             val (shouldSend,roomId,finalItem) = c.privacy match {

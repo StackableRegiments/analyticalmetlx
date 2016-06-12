@@ -123,7 +123,6 @@ function sendInk(ink){
 function hexToRgb(hex) {
     if(typeof hex == "string") hex = [hex,255];
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
-    console.log(hex,result);
     return {
         alpha: hex[1],
         red: parseInt(result[1], 16),
@@ -134,7 +133,6 @@ function hexToRgb(hex) {
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
     var color = hexToRgb(p.color || defaults.color);
-    console.log(p,color);
     return {
         text:p.text,
         color:color,
@@ -169,7 +167,6 @@ function richTextEditorToStanza(t){
 }
 function sendRichText(t){
     if(t.doc){
-        console.log("sendRichText");
         Modes.text.echoesToDisregard[t.identity] = true;
         sendStanza(richTextEditorToStanza(t));
     }
@@ -572,7 +569,6 @@ function transformReceived(transform){
         $.each(transform.multiWordTextIds,function(i,id){
             var text = boardContent.multiWordTexts[id];
 	    var doc = text.doc;
-	    console.log("Transforming",text,doc);
             doc.position.x += transform.xTranslate;
             doc.position.y += transform.yTranslate;
 	    text.bounds = doc.calculateBounds();

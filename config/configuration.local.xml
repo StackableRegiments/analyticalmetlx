@@ -149,4 +149,11 @@
     <embeddedXmppServer keystorePath="config/metl.jks" keystorePassword="helpme" />
   </clientAdaptors>
   <cloudConverterApiKey>exampleCloudConverterApiKey</cloudConverterApiKey>
+  <oneNote>
+    <clientId>9d77de87-0c11-41a8-bb51-4535663fb8f5</clientId>
+    <clientSecret>QNxWNdm5wmsG5A27BvVaPcc</clientSecret>
+    <redirectUrl>http://localhost:8080/permitOneNote</redirectUrl>
+    <!--<redirectUrl>https://login.live.com/oauth20_desktop.srf</redirectUrl>-->
+    <scopes>wl.signin wl.basic office.onenote_create</scopes>
+  </oneNote>
 </serverConfiguration>

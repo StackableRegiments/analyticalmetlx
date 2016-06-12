@@ -1359,7 +1359,6 @@ var Modes = (function(){
                             if ("multiWordTexts" in Modes.select.selected){
                                 deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
-			    console.log(deleteTransform);
                             sendStanza(deleteTransform);
                         }
                         clearSelectionFunction();
