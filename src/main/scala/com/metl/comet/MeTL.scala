@@ -382,25 +382,29 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
             ".conversationTag *" #> Text(conv.tag) &
             ".conversationCreated *" #> Text(conv.created.toString) &
             ".conversationLastModified *" #> Text(new Date(conv.lastAccessed).toString) &
-            ".conversationSharing *" #> {
+            {
               val choiceHolder = ajaxRadio((conv.subject.toLowerCase :: Globals.getUserGroups.map(_._2.toLowerCase)).distinct,Full(conv.subject.toLowerCase),(newSubject:String) => {
                 serverConfig.updateSubjectOfConversation(conv.jid.toString,newSubject.toLowerCase)
                 Noop
               })
-              ".conversationSharingChoiceContainer" #> choiceHolder.items.sortWith((a,b) => a.key < b.key).map(item => {
-                val newId = nextFuncName
-                val inputElem = item.xhtml
-                val labelName = item.key
-                ".conversationSharingChoiceLabel [for]" #> newId & 
-                ".conversationSharingChoiceLabel *" #> Text(labelName) &
-                ".conversationSharingChoiceInputElement [id]" #> newId & 
-                ".conversationSharingChoiceInputElement [onclick]" #> (inputElem \ "@onclick").headOption.map(_.text) &
-                ".conversationSharingChoiceInputElement [type]" #> (inputElem \ "@type").headOption.map(_.text) &
-                ".conversationSharingChoiceInputElement [name]" #> (inputElem \ "@name").headOption.map(_.text) &
-                ".conversationSharingChoiceInputElement [checked]" #> (inputElem \ "@checked").headOption.map(_.text) &
-                ".conversationSharingChoiceInputElement [value]" #> (inputElem \ "@value").headOption.map(_.text)
-              })
-            } &
+              ".conversationSharing *" #> {(n:NodeSeq) => {
+                choiceHolder.items.sortWith((a,b) => a.key < b.key).foldLeft(NodeSeq.Empty:NodeSeq)((acc,item) => acc ++ {
+                  val newId = nextFuncName
+                  val inputElem = item.xhtml
+                  val labelName = item.key
+                  (
+                    ".conversationSharingChoiceLabel [for]" #> newId & 
+                    ".conversationSharingChoiceLabel *" #> Text(labelName) &
+                    ".conversationSharingChoiceInputElement [id]" #> newId & 
+                    ".conversationSharingChoiceInputElement [onclick]" #> (inputElem \ "@onclick").headOption.map(_.text) &
+                    ".conversationSharingChoiceInputElement [type]" #> (inputElem \ "@type").headOption.map(_.text) &
+                    ".conversationSharingChoiceInputElement [name]" #> (inputElem \ "@name").headOption.map(_.text) &
+                    ".conversationSharingChoiceInputElement [checked]" #> (inputElem \ "@checked").headOption.map(_.text) &
+                    ".conversationSharingChoiceInputElement [value]" #> (inputElem \ "@value").headOption.map(_.text)
+                  ).apply(n)
+                })
+              }}
+            }&
             ".conversationDelete *" #> ajaxButton("delete",() => {
               val result = serverConfig.deleteConversation(conv.jid.toString)
               warn("deleting conversation: %s".format(result))
