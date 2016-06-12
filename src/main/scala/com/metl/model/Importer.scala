@@ -348,14 +348,14 @@ object Importer extends Logger {
       val conversation = server.createConversation(fakeConversation.title,fakeConversation.author)
       val newConvWithAllSlides = conversation.copy(
         lastAccessed = new java.util.Date().getTime,
-        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1, h._1 - conversation.jid - 1)).toList
+        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1 + conversation.jid, h._1 - 1)).toList
       )
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides measured",2,finalCount)),None))
       val remoteConv = server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides created",3,finalCount)),None))
       var slideCount = 4
       histories.toList.foreach(tup => {
-        val newLoc = RoomMetaDataUtils.fromJid((tup._1).toString)
+        val newLoc = RoomMetaDataUtils.fromJid((tup._1 + conversation.jid).toString)
         onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("queueing content for insertion for %s".format(newLoc),slideCount,finalCount)),None))
         slideCount += 1
         ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)

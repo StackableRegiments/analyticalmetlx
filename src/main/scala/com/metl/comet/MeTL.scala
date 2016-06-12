@@ -270,7 +270,7 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
           }
         } &
         ".slidesContainer" #> {
-          ".slide" #> conv.slides.map(slide => {
+          ".slide" #> conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
             ".slideIndex *" #> slide.index &
             ".slideId *" #> slide.id &
             ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
