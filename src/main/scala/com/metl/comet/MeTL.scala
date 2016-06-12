@@ -382,7 +382,42 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
             ".conversationTag *" #> Text(conv.tag) &
             ".conversationCreated *" #> Text(conv.created.toString) &
             ".conversationLastModified *" #> Text(new Date(conv.lastAccessed).toString) &
-            ".conversationSharing *" #> NodeSeq.Empty &
+            ".conversationSharing *" #> {
+              val choiceHolder = ajaxRadio((conv.subject.toLowerCase :: Globals.getUserGroups.map(_._2.toLowerCase)).distinct,Full(conv.subject.toLowerCase),(newSubject:String) => {
+                serverConfig.updateSubjectOfConversation(conv.jid.toString,newSubject.toLowerCase)
+                Noop
+              })
+              val form = new ChoiceHolder[String](choiceHolder.items.map(item => {
+                item.copy(xhtml = {
+                  val newId = nextFuncName
+                  val newXml = <label for={newId}>{item.key}</label> ++ ("input [id]" #> newId & "input *" #> NodeSeq.Empty).apply(item.xhtml \\ "input")
+                  println("newXml: %s".format(newXml))
+                  newXml
+                })
+              })).toForm
+              val labels = (form \\ "label").theSeq.toList
+              val inputs = (form \\ "input").theSeq.toList
+              val grouped = (labels ::: inputs).groupBy(el => el match {
+                case e:Elem if e.label == "input" => (e \\ "@id").text
+                case e:Elem if e.label == "label" => (e \\ "@for").text
+                case i @ <input>{_}</input> => (i \\ "@id").text
+                case i @ <input></input> => (i \\ "@id").text
+                case i @ <input/> => (i \\ "@id").text
+                case l @ <label>{_}</label> => (l \\ "@for").text
+                case l @ <label></label> => (l \\ "@for").text
+                case l @ <label/> => (l \\ "@for").text
+                case _ => ""
+              })
+              println("grouped the nodes: %s".format(grouped))
+              val theNodes = grouped.values.map(v => {
+                val innerXml = <span>{v.foldLeft(NodeSeq.Empty)((acc,item) => acc ++ item)}</span>
+                val choiceName = (innerXml \\ "label").text
+                (choiceName,innerXml)
+              }).toList.sortWith((a,b) => a._1 < b._1).foldLeft(NodeSeq.Empty:NodeSeq)((acc,item) => acc ++ item._2)
+              println("generated: %s".format(theNodes))
+              theNodes  
+              //labels ++ inputs
+            } &
             ".conversationDelete *" #> ajaxButton("delete",() => {
               val result = serverConfig.deleteConversation(conv.jid.toString)
               warn("deleting conversation: %s".format(result))
