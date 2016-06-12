@@ -85,6 +85,7 @@ object MeTLConversationSearchActorManager extends LiftActor with ListenerManager
   def createUpdate = HealthyWelcomeFromRoom
   override def lowPriority = {
     case m:MeTLCommand => sendListenersMessage(m)
+    case id:ImportDescription => sendListenersMessage(id)
     case _ => warn("MeTLConversationSearchActorManager received unknown message")
   }
 }
@@ -198,6 +199,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
 class MeTLConversationSearchActor extends CometActor with CometListener with Logger {
   override def registerWith = MeTLConversationSearchActorManager 
   override def lifespan = Full(5 minutes)
+  protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
   protected var query:Option[String] = None
   protected var listing:List[Conversation] = Nil
@@ -209,6 +211,7 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
   protected def queryApplies(c:Conversation):Boolean = {
     listing.exists(_.jid == c.jid) || c.author == Globals.currentUser.is || query.map(_.toLowerCase.trim).exists(q => c.author.toLowerCase.trim == q || c.title.toLowerCase.trim.contains(q))
   }
+  protected var imports:List[ImportDescription] = Nil
   override def render = {
     "#createConversationContainer" #> {
       "#createConversationButton [onclick]" #> ajaxCall(JsNull,(_s:String) => {
@@ -222,6 +225,38 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
       listing = query.map(q => serverConfig.searchForConversation(q)).getOrElse(Nil)
       reRender
     }) &
+    "#activeImportsListing *" #> imports.groupBy(_.id).values.flatMap(_.sortWith((a,b) => a.timestamp.getTime > b.timestamp.getTime).headOption).map(imp => {
+      ".importContainer" #> {
+        ".importId *" #> Text(imp.id) &
+        ".importName *" #> Text(imp.name) &
+        ".importAuthor *" #> Text(imp.author) & 
+        { 
+          imp.result match {
+            case None => {
+              ".importOverallProgressContainer *" #> {
+                ".importProgressDescriptor *" #> imp.overallProgress.map(_.name) &
+                ".importProgressProgressBar [style]" #> imp.overallProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator))
+              } &
+              ".importStageProgressContainer *" #> {
+                ".importProgressDescriptor *" #> imp.stageProgress.map(_.name) &
+                ".importProgressProgressBar [style]" #> imp.stageProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator)) 
+              } &
+              ".importResultContainer" #> NodeSeq.Empty
+            }
+            case Some(Left(e)) => {
+              ".importProgressContainer" #> NodeSeq.Empty & 
+              ".importError *" #> e.getMessage & 
+              ".importSuccess" #> NodeSeq.Empty
+            }
+            case Some(Right(conv)) => {
+              ".importProgressContainer" #> NodeSeq.Empty & 
+              ".importError" #> NodeSeq.Empty & 
+              ".importSuccess [href]" #> boardFor(conv.jid)
+            }
+          }
+        }
+      }
+    }) &
     "#conversationListing *" #> {
       ".conversationContainer" #> listing.map(conv => {
         ".conversationAnchor [href]" #> boardFor(conv.jid) &
@@ -230,17 +265,7 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
         ".conversationJid *" #> conv.jid &
         ".conversationEditingContainer" #> {
           shouldModifyConversation(Globals.currentUser.is,conv) match {
-            case true => {
-              ".conversationSharingContainer" #> {
-                NodeSeq.Empty
-              } &
-              ".conversationDeleteContainer" #> {
-                NodeSeq.Empty
-              } &
-              ".conversationRenameContainer" #> {
-                NodeSeq.Empty
-              }
-            }
+            case true => ".editConversationLink [href]" #> editConversation(conv.jid)
             case false => ".conversationEditingContainer" #> NodeSeq.Empty
           }
         } &
@@ -255,6 +280,13 @@ class MeTLConversationSearchActor extends CometActor with CometListener with Log
     }
   }
   override def lowPriority = {
+    case id:ImportDescription => {
+      if (id.author == username){
+        warn("received importDescription: %s".format(id))
+        imports = id :: imports
+        reRender
+      }
+    }
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
       warn("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0).toInt
@@ -274,7 +306,7 @@ class MeTLEditConversationActor extends CometActor with CometListener with Logge
   override def lifespan = Full(5 minutes)
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
-  protected var username = Globals.currentUser.is
+  protected val username = Globals.currentUser.is
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {

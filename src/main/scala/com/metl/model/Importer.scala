@@ -25,6 +25,12 @@ import net.liftweb.json.JsonDSL._
 import net.liftweb.json.Printer._
 import net.liftweb.json._
 
+
+case class ImportDescription(id:String, name:String, author:String, overallProgress:Option[ImportProgress],stageProgress:Option[ImportProgress], result:Option[Either[Exception,Conversation]]){
+  val timestamp = new java.util.Date()
+}
+case class ImportProgress(name:String,numerator:Int,denominator:Int)
+
 case class CloudConvertProcessResponse(url:String,id:String,host:String,expires:String,maxtime:Int,minutes:Int)
 case class CloudConvertUploadElement(url:String)
 case class CloudConvertProcessDefinitionResponse(url:Option[String],id:String,message:String,step:String,upload:Option[CloudConvertUploadElement],output:Option[CloudConvertUploadElement])
@@ -34,29 +40,35 @@ case class CloudConvertOutputElement(url:String,filename:String,size:Option[Long
 case class CloudConvertConverterElement(format:String,`type`:String,options:Option[JObject],duration:Double)
 case class CloudConvertStatusMessageResponse(id:String,url:Option[String],percent:Option[String],message:Option[String],step:String,starttime:Option[Long],expire:Long,input:Option[CloudConvertInputElement],converter:Option[CloudConvertConverterElement],output:Option[CloudConvertOutputElement],endtime:Option[Long])
 
-class CloudConvertPoweredParser(val apiKey:String) extends Logger {
+class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:ImportDescription=>Unit = (id:ImportDescription) => {}) extends Logger {
   implicit val formats = DefaultFormats
-  val downscaler = new com.metl.view.ImageDownscaler(16 * 1024 * 1024)
+  val downscaler = new ImageDownscaler(16 * 1024 * 1024)
   val unzipper = new Unzipper
   protected val convertUrl = "https://api.cloudconvert.com/convert"
 
   def importAnything(jid:Int,filename:String,bytes:Array[Byte],server:ServerConfiguration,author:String):Map[Int,History] = {
+    onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("",1,1)),None))
     try {
       val parts = filename.split('.').toList
       val name = parts.init.filterNot(_ == "").mkString(".")
       val suffix = parts.last
       debug("CloudConvertPoweredParser anything: %s %s %s => %s %s".format(jid,author,filename,name,suffix))
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("parsed input parameters",1,108)),None))
       importToCloudConvert(jid,name,bytes,suffix,"jpg",server,author) match {
         case Right(map) => map
         case Left(e) => {
           error("Exception converting with cloudConvert %s %s=>jpg".format(filename,suffix),e)
-          Map.empty[Int,History]
+          onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error from cloudConverter",1,1)),Some(Left(e))))
+          throw e
+//          Map.empty[Int,History]
         }
       }
     } catch {
       case e:Exception => {
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error from parsing input parameters to cloudConverter",1,1)),Some(Left(e))))
         error("Exception comprehending filename %s ?=>jpg".format(filename),e)
-        Map.empty[Int,History]
+        throw e
+//        Map.empty[Int,History]
       }
     }
   }
@@ -74,8 +86,9 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
     debug("Response: %s\r\n%s".format(in,described))
     in
   }
-  protected def callComplexCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Throwable,List[Tuple2[Int,Array[Byte]]]] = {
+  protected def callComplexCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Exception,List[Tuple2[Int,Array[Byte]]]] = {
     try {
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("ready to initiate cloudConverter process",2,108)),None))
       val encoding = "UTF-8"
       val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
       trace("apiKey: %s".format(apiKey))
@@ -84,6 +97,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         ("outputformat" -> outFormat)
       )))
       val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter process created",3,108)),None))
 
       // until they fix a bug, we have to use JSON POST for this step.
       //
@@ -96,31 +110,49 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
       )))
       */
       val defineProcResponseObj = parse(defineProcResponse.responseAsString).extract[CloudConvertProcessDefinitionResponse]
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(defineProcResponseObj.message,4,108)),None))
       var uploadUrl = defineProcResponseObj.upload.map(u => schemify(u.url)).getOrElse({
-        throw new Exception("no upload url defined on process response: %s".format(defineProcResponseObj))
+        val ex = new Exception("no upload url defined on process response: %s".format(defineProcResponseObj))
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error: "+defineProcResponseObj.message,4,108)),Some(Left(ex))))
+        throw ex
       })
       val uploadResponse = describeResponse(client.putBytesExpectingHTTPResponse(uploadUrl + "/" + urlEncode(filename + "." + inFormat),bytes))
       val uploadResponseObj = parse(uploadResponse.responseAsString).extract[CloudConvertUploadResponse]
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(uploadResponseObj.message,5,108)),None))
       var completed = false
       var downloadUrl = ""
       while (!completed){
         Thread.sleep(1000)
         val statusResponse = describeResponse(client.getExpectingHTTPResponse(procResponseObj.url))
         val statusObj = parse(statusResponse.responseAsString).extract[CloudConvertStatusMessageResponse]
+        val percentage = (for (
+          p <- statusObj.percent;
+          pInt <- Option(p.toInt)
+        ) yield {
+          pInt
+        }).getOrElse(0)
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(statusObj.message.map(m => "%s : %s : %s".format(statusObj.step,m,statusObj.percent.getOrElse("?%"))).getOrElse("waiting for cloudConverter"),5 + percentage,108)),None))
         info("Status: %s".format(statusObj)) 
-        if (statusObj.step == "error")
-          throw new Exception("error received while converting: %s".format(statusObj))
-        else if (statusObj.step == "finished"){
+        if (statusObj.step == "error"){
+          val ex = new Exception("error received while converting: %s".format(statusObj))
+          onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("",5,108)),Some(Left(ex))))
+          throw ex
+        } else if (statusObj.step == "finished"){
           completed = true
           statusObj.output.foreach(out => {
             downloadUrl = schemify(out.url)
           })
         }
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter download ready",106,108)),None))
       }
-      if (downloadUrl == "")
-        throw new Exception("download Url malformed")
+      if (downloadUrl == ""){
+        val ex = new Exception("download Url malformed")
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter download url malformed",106,108)),Some(Left(ex))))
+        throw ex
+      }
       val downloadResponse = describeResponse(client.getExpectingHTTPResponse(downloadUrl))
       val convertResponseBytes = downloadResponse.bytes
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("downloaded from cloudConverter",107,108)),None))
       trace("downloaded bytes: %s".format(convertResponseBytes.length))
       val parsedResponse = unzipper.extractFiles(convertResponseBytes,_.getName.endsWith(".jpg")).right.map(files => files.map(fileTup => {
         // we should read the page number from the filename, which should be:  "filename-%s.jpg".format(pageNumber), where filename should be the original filename, without the suffix.
@@ -131,9 +163,13 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
         (newNumber.toInt,fileTup._2)
       }))
       trace("parsedResponse: %s".format(parsedResponse))
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("extracted content from cloudConverter",108,108)),None))
       parsedResponse
     } catch {
-      case e:Exception => Left(e)
+      case e:Exception => {
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error returned from cloudConverter",1,1)),Some(Left(e))))
+        Left(e)
+      }
     }
   }
 
@@ -181,7 +217,7 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
     }
   }
 
-  protected def importToCloudConvert(jid:Int,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Throwable,Map[Int,History]] = {
+  protected def importToCloudConvert(jid:Int,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Exception,Map[Int,History]] = {
     //callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
     callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
       Map({
@@ -211,11 +247,123 @@ class CloudConvertPoweredParser(val apiKey:String) extends Logger {
   }
 }
 
-class ForeignDocumentParser extends Logger {
+class ForeignDocumentParser(importId:String,onUpdate:ImportDescription=>Unit = (id:ImportDescription) => {}) extends Logger {
   protected val apiKey = Globals.cloudConverterApiKey
   def importAnything(filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
-        new CloudConvertPoweredParser(apiKey).importAnything(jid,filename,in,server,author)
+    new CloudConvertPoweredParser(importId,apiKey,onUpdate).importAnything(jid,filename,in,server,author)
   }
+}
+
+object Importer extends Logger {
+  def onUpdate(id:ImportDescription):Unit = {
+    com.metl.comet.MeTLConversationSearchActorManager ! id
+  }
+  val config = ServerConfiguration.default
+  val exportSerializer = new ExportXmlSerializer(config.name)
+  def importExportedConversation(xml:NodeSeq):Box[Conversation] = {
+    for (
+      historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
+        val hist = exportSerializer.toHistory(h)
+        (hist.jid,hist)
+      }):_*));
+      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
+      remoteConv = importExportedConversation(Globals.currentUser.is,conversation,historyMap)
+    ) yield {
+      remoteConv
+    }
+  }
+  protected def importExportedConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
+    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+    val newConvWithOldSlides = newConv.copy(
+      lastAccessed = new java.util.Date().getTime,
+      slides = oldConv.slides.map(s => s.copy(
+        groupSet = Nil,
+        id = s.id - oldConv.jid + newConv.jid,
+        audiences = Nil
+      ))
+    )
+    val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
+    histories.foreach(h => {
+      val oldJid = h._1
+      val offset = remoteConv.jid - oldConv.jid
+      val serverName = remoteConv.server.name
+      val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
+        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
+        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
+        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
+        case _ => None
+      }
+      newRoom.foreach(nr => {
+        ServerSideBackgroundWorker ! CopyContent(
+          remoteConv.server,
+          h._2,
+          nr
+        )
+      })
+    })
+    remoteConv
+  }
+  def importConversation(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
+    val importId = nextFuncName
+    onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
+    try {
+      val conv = config.createConversation(title,author);
+      onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("created conversation",2,2)),None))
+      for (
+        histories <- foreignConversationParse(importId,title,conv.jid,bytes,config,author);
+        remoteConv <- foreignConversationImport(importId,config,author,conv,histories)
+      ) yield {
+        onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("finalizing import",4,4)),Some(ImportProgress("conversation imported",1,1)),Some(Right(remoteConv))))
+        remoteConv
+      }
+    } catch {
+      case e:Exception => {
+        onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("finalizing import",4,4)),Some(ImportProgress("import failed",1,1)),Some(Left(e))))
+        Failure("Exception while importing conversation",Full(e),Empty)
+      }
+    }
+  }
+  protected def foreignConversationParse(importId:String,filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
+    try {
+      Full(new ForeignDocumentParser(importId,onUpdate _).importAnything(filename,jid,in,server,onBehalfOfUser))
+    } catch {
+      case e:Exception => {
+        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing conversation",2,4)),Some(ImportProgress("parse failed",1,1)),Some(Left(e))))
+        error("exception in foreignConversationImport",e)
+        throw e//Empty
+      }
+    }
+  }
+  protected def foreignConversationImport(importId:String,server:ServerConfiguration,onBehalfOfUser:String,conversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
+    try {
+      val finalCount = histories.keys.toList.length + 4
+      onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("ready to import content",1,finalCount)),None))
+      val newConvWithAllSlides = conversation.copy(
+        lastAccessed = new java.util.Date().getTime,
+        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1, h._1 - conversation.jid - 1)).toList
+      )
+      onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides measured",2,finalCount)),None))
+      val remoteConv = server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
+      onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides created",3,finalCount)),None))
+      var slideCount = 4
+      histories.toList.foreach(tup => {
+        val newLoc = RoomMetaDataUtils.fromJid((tup._1).toString)
+        onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("queueing content for insertion for %s".format(newLoc),slideCount,finalCount)),None))
+        slideCount += 1
+        ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
+      })
+      onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("all content queued for insertion",finalCount,finalCount)),None))
+      Full(newConvWithAllSlides)
+    } catch {
+      case e:Exception => {
+        onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("failed to import content",1,1)),Some(Left(e))))
+        error("exception in foreignConversationImport",e)
+        throw e
+        //Empty
+      }
+    }
+  }
+  
 }
 
 class Unzipper extends Logger {
@@ -223,7 +371,7 @@ class Unzipper extends Logger {
   import org.apache.commons.io.IOUtils
   import org.apache.commons.compress.archivers.zip._
   import collection.mutable.ListBuffer
-  def extractFiles(in:Array[Byte],filter:ZipArchiveEntry=>Boolean = (zae) => true):Either[Throwable,List[Tuple2[String,Array[Byte]]]] = {
+  def extractFiles(in:Array[Byte],filter:ZipArchiveEntry=>Boolean = (zae) => true):Either[Exception,List[Tuple2[String,Array[Byte]]]] = {
     debug("extractingFiles: %s".format(in.length))
     try {
       val zis = new ZipArchiveInputStream(new ByteArrayInputStream(in),"UTF-8",false,true)
@@ -244,7 +392,220 @@ class Unzipper extends Logger {
       }
       Right(results.toList)
     } catch {
-      case e:Throwable => Left(e)
+      case e:Exception => Left(e)
     }
   }
+}
+
+case class CopyContent(server:ServerConfiguration,from:History,to:RoomMetaData)
+case class CopyLocation(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
+
+object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor with Logger {
+  protected val pool = Range(0,Globals.importerParallelism).map(i => new ServerSideBackgroundWorkerChild()).toArray
+  protected var position = 0
+  override def messageHandler = {
+    case message => {
+      try {
+        position += 1
+        if (position >= Globals.importerParallelism)
+          position = 0
+        val worker = pool(position)
+        trace("worker(%s : %s) doing job: %s".format(position,worker,message))
+        worker ! message
+      } catch {
+        case e:Exception => {
+          error("error in ServerSideBackgroundWorker - (%s) job %s".format(position,message),e)
+        }
+      }
+    }
+  }
+}
+
+class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with Logger {
+  val thisDuplicatorId = nextFuncName
+  override def messageHandler = {
+    case RoomJoinAcknowledged(server,room) => {}
+    case RoomLeaveAcknowledged(server,room) => {}
+    case CopyContent(config,oldContent,newLoc) => {
+      val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
+      room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
+      oldContent.getAll.sortWith((a,b) => a.timestamp < b.timestamp).foreach(stanza => {
+        room ! ArchiveToServerMeTLStanza(stanza match {
+          case m:MeTLInk => m.copy(slide = newLoc.getJid)
+          case m:MeTLImage => m.copy(slide = newLoc.getJid)
+          case m:MeTLText => m.copy(slide = newLoc.getJid)
+          case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
+          case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
+          case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
+          case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
+          case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
+          case m:MeTLQuiz => m
+          case s:MeTLStanza => s
+        })
+      })
+      room ! LeaveRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
+    }
+    case CopyLocation(config,oldLoc,newLoc,contentFilter) => {
+      val oldContent = config.getHistory(oldLoc.getJid).filter(contentFilter)
+      this ! CopyContent(config,oldContent,newLoc)
+    }
+  }
+}
+
+class ImageDownscaler(maximumByteSize:Int) extends Logger {
+  import java.awt.{Image,Graphics2D,Canvas,Transparency,RenderingHints}
+  import java.awt.image._
+  import java.io._
+  import javax.imageio.ImageIO
+  def filterByMaximumSize(in:Array[Byte]):Option[Array[Byte]] = {
+    in match {
+      case tooBig if tooBig.length > maximumByteSize => None
+      case acceptable => Some(acceptable)
+    }
+  }
+  def getDimensionsOfImage(in:Array[Byte]):Either[Exception,Tuple2[Int,Int]] = {
+    try {
+      val tempG = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR).createGraphics.asInstanceOf[Graphics2D]
+
+      val inStream = new ByteArrayInputStream(in)
+      val image = ImageIO.read(inStream).asInstanceOf[BufferedImage]
+      inStream.close()
+      val observer = new Canvas(tempG.getDeviceConfiguration)
+      val originalH = image.getHeight(observer)
+      val originalW = image.getWidth(observer)
+      Right((originalW,originalH))
+    } catch {
+      case e:Exception => Left(e)
+    }
+  }
+  def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = {
+    in match {
+      case b if b.length <= maximumByteSize => b
+      case tooBig => {
+        try {
+          var resized:Array[Byte] = in
+          while (resized.length > maximumByteSize){
+            val tempG = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR).createGraphics.asInstanceOf[Graphics2D]
+
+            val inStream = new ByteArrayInputStream(resized)
+            val image = ImageIO.read(inStream).asInstanceOf[BufferedImage]
+            inStream.close()
+            val observer = new Canvas(tempG.getDeviceConfiguration)
+            val originalH = image.getHeight(observer)
+            val targetH = (originalH * 0.8).toInt
+            val originalW = image.getWidth(observer)
+            val targetW = (originalW * 0.8).toInt
+            val (typeName,targetType):Tuple2[String,Int] = (image.getTransparency() == Transparency.OPAQUE) match {
+              case true => ("jpg",BufferedImage.TYPE_INT_RGB)
+              case false => ("png",BufferedImage.TYPE_INT_ARGB)
+            }
+
+            val res = new BufferedImage(targetW,targetH,targetType)
+            val g = image.createGraphics.asInstanceOf[Graphics2D]
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+            g.drawImage(res,0,0,targetW,targetH,null)
+            g.dispose
+            val outStream = new java.io.ByteArrayOutputStream
+            ImageIO.write(res,typeName,outStream)
+            info("downscaling image [%s]: (%s,%s)=>(%s,%s)".format(descriptor,originalW,originalH,targetW,targetH))
+            resized = outStream.toByteArray
+            outStream.close
+          }
+          resized
+        } catch {
+          case e:Exception => {
+            error("Exception while downscaling image [%s].  Returning emptyByteArray instead".format(descriptor),e)
+            Array.empty[Byte]
+          }
+        }
+      }
+    }
+  }
+}
+
+class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName) with Logger {
+  lazy val downscaler = new ImageDownscaler(16777216)
+  protected def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = downscaler.downscaleImage(in,descriptor)
+  override def toMeTLImage(input:NodeSeq):MeTLImage = {
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val tag = getStringByName(input,"tag")
+    val imageBytes = downscaleImage(base64Decode(getStringByName(input,"imageBytes")),tag)
+    val newUrl = config.postResource(c.slide.toString,nextFuncName,imageBytes)
+    val source = Full(newUrl)
+    val pngBytes = Empty
+    val width = getDoubleByName(input,"width")
+    val height = getDoubleByName(input,"height")
+    val x = getDoubleByName(input,"x")
+    val y = getDoubleByName(input,"y")
+    MeTLImage(config,m.author,m.timestamp,tag,source,Full(imageBytes),pngBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
+  }
+  override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",{
+    canvasContentToXml("image",input,List(
+      <tag>{input.tag}</tag>,
+      <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
+      <width>{input.width}</width>,
+      <height>{input.height}</height>,
+      <x>{input.x}</x>,
+      <y>{input.y}</y>
+    ))
+  })
+  override def toMeTLQuiz(input:NodeSeq):MeTLQuiz = Stopwatch.time("GenericXmlSerializer.toMeTLQuiz", {
+    val m = parseMeTLContent(input,config)
+    val created = getLongByName(input,"created")
+    val question = getStringByName(input,"question") match {
+      case q if (q.length > 0) => q
+      case _ => getStringByName(input,"title")
+    }
+    val id = getStringByName(input,"id")
+    val quizImage = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"quiz: %s".format(id)))
+    val newUrl = quizImage.map(qi => config.postResource("quizImages",nextFuncName,qi))
+    val isDeleted = getBooleanByName(input,"isDeleted")
+    val options = getXmlByName(input,"quizOption").map(qo => toQuizOption(qo)).toList
+    MeTLQuiz(config,m.author,m.timestamp,created,question,id,newUrl,quizImage,isDeleted,options,m.audiences)
+  })
+  override def fromMeTLQuiz(input:MeTLQuiz):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLQuiz", {
+    metlContentToXml("quiz",input,List(
+      <created>{input.created}</created>,
+      <question>{input.question}</question>,
+      <id>{input.id}</id>,
+      <isDeleted>{input.isDeleted}</isDeleted>,
+      <options>{input.options.map(o => fromQuizOption(o))}</options>
+    ) ::: input.imageBytes.map(ib => List(<imageBytes>{base64Encode(ib)}</imageBytes>)).openOr(List.empty[Node]))
+  })
+  override def toSubmission(input:NodeSeq):MeTLSubmission = Stopwatch.time("GenericXmlSerializer.toSubmission", {
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val title = getStringByName(input,"title")
+    val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"submission: %s".format(c.identity)))
+    val url = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib)).getOrElse("unknown")
+    val blacklist = getXmlByName(input,"blacklist").map(bl => {
+      val username = getStringByName(bl,"username")
+      val highlight = getColorByName(bl,"highlight")
+      SubmissionBlacklistedPerson(username,highlight)
+    }).toList
+    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+  })
+  override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
+    canvasContentToXml("screenshotSubmission",input,List(
+      <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
+      <title>{input.title}</title>,
+      <time>{input.timestamp.toString}</time>
+    ) ::: input.blacklist.map(bl => <blacklist><username>{bl.username}</username><highlight>{ColorConverter.toRGBAString(bl.highlight)}</highlight></blacklist> ).toList)
+  })
+  override def toMeTLFile(input:NodeSeq):MeTLFile = Stopwatch.time("GenericXmlSerializer.toMeTLFile",{
+    val m = parseMeTLContent(input,config)
+    val name = getStringByName(input,"name")
+    val id = getStringByName(input,"id")
+    val bytes = downscaler.filterByMaximumSize(base64Decode(getStringByName(input,"bytes")))
+    val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
+    MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
+  })
+  override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",{
+    metlContentToXml("file",input,List(
+      <name>{input.name}</name>,
+      <id>{input.id}</id>
+    ) :::
+      input.bytes.map(ib => List(<bytes>{base64Encode(ib)}</bytes>)).getOrElse(List.empty[Node]))
+  })
 }

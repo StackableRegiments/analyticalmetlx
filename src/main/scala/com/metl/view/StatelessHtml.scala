@@ -703,18 +703,15 @@ object StatelessHtml extends Stemmer with Logger {
   def importConversation(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
     (for (
       xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
-      historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
-        val hist = exportSerializer.toHistory(h)
-        (hist.jid,hist)
-      }):_*));
-      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
-      remoteConv = StatelessHtml.importConversation(Globals.currentUser.is,conversation,historyMap);
-      node <- serializer.fromConversation(remoteConv).headOption
+      conv <- com.metl.model.Importer.importExportedConversation(xml);
+      node <- serializer.fromConversation(conv).headOption
     ) yield {
       XmlResponse(node)
     })
   })
   def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
+    importConversation(req)
+    /*
     (for (
       xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
@@ -727,38 +724,9 @@ object StatelessHtml extends Stemmer with Logger {
     ) yield {
       XmlResponse(node)
     })
+  */
   })
-  protected def importConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
-    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
-    val newConvWithOldSlides = newConv.copy(
-      lastAccessed = new java.util.Date().getTime,
-      slides = oldConv.slides.map(s => s.copy(
-        groupSet = Nil,
-        id = s.id - oldConv.jid + newConv.jid,
-        audiences = Nil
-      ))
-    )
-    val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
-    histories.foreach(h => {
-      val oldJid = h._1
-      val offset = remoteConv.jid - oldConv.jid
-      val serverName = remoteConv.server.name
-      val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
-        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
-        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
-        case _ => None
-      }
-      newRoom.foreach(nr => {
-        ServerSideBackgroundWorker ! CopyContent(
-          remoteConv.server,
-          h._2,
-          nr
-        )
-      })
-    })
-    remoteConv
-  }
+
   def foreignConversationImportEndpoint(r:Req):Box[LiftResponse] = {
     (for (
       firstFile <- r.uploadedFiles.headOption;
@@ -766,15 +734,21 @@ object StatelessHtml extends Stemmer with Logger {
       filename = firstFile.fileName;
       author = Globals.currentUser.is;
       title = "%s's (%s) created at %s".format(author,filename,new java.util.Date());
+
+      remoteConv <- com.metl.model.Importer.importConversation(title,title,bytes,author);
+/*
       conv = config.createConversation(title,author);
       histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
       remoteConv <- foreignConversationImport(config,author,conv,histories);
+*/
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
   }
   def powerpointImport(r:Req):Box[LiftResponse] = {
+    foreignConversationImport(r)
+    /*
     (for (
       title <- r.param("title");
       bytes <- {
@@ -792,8 +766,11 @@ object StatelessHtml extends Stemmer with Logger {
     ) yield {
       XmlResponse(node)
     })
+    */
   }
   def powerpointImportFlexible(r:Req):Box[LiftResponse] = {
+    foreignConversationImport(r)
+    /*
     (for (
       title <- r.param("title");
       bytes <- r.body;
@@ -805,6 +782,7 @@ object StatelessHtml extends Stemmer with Logger {
     ) yield {
       XmlResponse(node)
     })
+    */
   }
 
   def foreignConversationImport(r:Req):Box[LiftResponse] = {
@@ -812,267 +790,12 @@ object StatelessHtml extends Stemmer with Logger {
       title <- r.param("title");
       bytes <- r.body;
       author = Globals.currentUser.is;
-      remoteConv <- foreignConversationImport(title,title,bytes,author);
+      remoteConv <- com.metl.model.Importer.importConversation(title,title,bytes,author);
+//      remoteConv <- foreignConversationImport(title,title,bytes,author);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
   }
-  def foreignConversationImport(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
-    try {
-      val conv = config.createConversation(title,author);
-      for (
-        histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
-        remoteConv <- foreignConversationImport(config,author,conv,histories)
-      ) yield {
-        remoteConv
-      }
-    } catch {
-      case e:Exception => Failure("Exception while importing conversation",Full(e),Empty)
-    }
-  }
-  protected def foreignConversationParse(filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
-    try {
-      Full(new ForeignDocumentParser().importAnything(filename,jid,in,server,onBehalfOfUser))
-    } catch {
-      case e:Exception => {
-        error("exception in foreignConversationImport",e)
-        Empty
-      }
-    }
-  }
-  protected def foreignConversationImport(server:ServerConfiguration,onBehalfOfUser:String,conversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
-    try {
-      val newConvWithAllSlides = conversation.copy(
-        lastAccessed = new java.util.Date().getTime,
-        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1, h._1 - conversation.jid - 1)).toList
-      )
-      val remoteConv = server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
-      println("remoteConv created: %s".format(remoteConv))
-      println("histories to upload: %s".format(histories))
-      println("serverSideConversation: %s".format(server.detailsOfConversation(conversation.jid.toString)))
-      histories.toList.foreach(tup => {
-        val newLoc = RoomMetaDataUtils.fromJid((tup._1).toString)
-        ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
-      })
-      Full(newConvWithAllSlides)
-    } catch {
-      case e:Exception => {
-        error("exception in foreignConversationImport",e)
-        Empty
-      }
-    }
-  }
-}
-case class CopyContent(server:ServerConfiguration,from:History,to:RoomMetaData)
-case class CopyLocation(server:ServerConfiguration,from:RoomMetaData,to:RoomMetaData,contentFilter:MeTLStanza=>Boolean)
-
-object ServerSideBackgroundWorker extends net.liftweb.actor.LiftActor with Logger {
-  protected val pool = Range(0,Globals.importerParallelism).map(i => new ServerSideBackgroundWorkerChild()).toArray
-  protected var position = 0
-  override def messageHandler = {
-    case message => {
-      try {
-        position += 1
-        if (position >= Globals.importerParallelism)
-          position = 0
-        val worker = pool(position)
-        trace("worker(%s : %s) doing job: %s".format(position,worker,message))
-        worker ! message
-      } catch {
-        case e:Exception => {
-          error("error in ServerSideBackgroundWorker - (%s) job %s".format(position,message),e)
-        }
-      }
-    }
-  }
 }
 
-class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with Logger {
-  val thisDuplicatorId = nextFuncName
-  override def messageHandler = {
-    case RoomJoinAcknowledged(server,room) => {}
-    case RoomLeaveAcknowledged(server,room) => {}
-    case CopyContent(config,oldContent,newLoc) => {
-      val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
-      room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
-      oldContent.getAll.sortWith((a,b) => a.timestamp < b.timestamp).foreach(stanza => {
-        room ! ArchiveToServerMeTLStanza(stanza match {
-          case m:MeTLInk => m.copy(slide = newLoc.getJid)
-          case m:MeTLImage => m.copy(slide = newLoc.getJid)
-          case m:MeTLText => m.copy(slide = newLoc.getJid)
-          case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
-          case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
-          case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
-          case m:MeTLQuiz => m
-          case s:MeTLStanza => s
-        })
-      })
-      room ! LeaveRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
-    }
-    case CopyLocation(config,oldLoc,newLoc,contentFilter) => {
-      val oldContent = config.getHistory(oldLoc.getJid).filter(contentFilter)
-      this ! CopyContent(config,oldContent,newLoc)
-    }
-  }
-}
-
-class ImageDownscaler(maximumByteSize:Int) extends Logger {
-  import java.awt.{Image,Graphics2D,Canvas,Transparency,RenderingHints}
-  import java.awt.image._
-  import java.io._
-  import javax.imageio.ImageIO
-  def filterByMaximumSize(in:Array[Byte]):Option[Array[Byte]] = {
-    in match {
-      case tooBig if tooBig.length > maximumByteSize => None
-      case acceptable => Some(acceptable)
-    }
-  }
-  def getDimensionsOfImage(in:Array[Byte]):Either[Exception,Tuple2[Int,Int]] = {
-    try {
-      val tempG = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR).createGraphics.asInstanceOf[Graphics2D]
-
-      val inStream = new ByteArrayInputStream(in)
-      val image = ImageIO.read(inStream).asInstanceOf[BufferedImage]
-      inStream.close()
-      val observer = new Canvas(tempG.getDeviceConfiguration)
-      val originalH = image.getHeight(observer)
-      val originalW = image.getWidth(observer)
-      Right((originalW,originalH))
-    } catch {
-      case e:Exception => Left(e)
-    }
-  }
-  def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = {
-    in match {
-      case b if b.length <= maximumByteSize => b
-      case tooBig => {
-        try {
-          var resized:Array[Byte] = in
-          while (resized.length > maximumByteSize){
-            val tempG = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR).createGraphics.asInstanceOf[Graphics2D]
-
-            val inStream = new ByteArrayInputStream(resized)
-            val image = ImageIO.read(inStream).asInstanceOf[BufferedImage]
-            inStream.close()
-            val observer = new Canvas(tempG.getDeviceConfiguration)
-            val originalH = image.getHeight(observer)
-            val targetH = (originalH * 0.8).toInt
-            val originalW = image.getWidth(observer)
-            val targetW = (originalW * 0.8).toInt
-            val (typeName,targetType):Tuple2[String,Int] = (image.getTransparency() == Transparency.OPAQUE) match {
-              case true => ("jpg",BufferedImage.TYPE_INT_RGB)
-              case false => ("png",BufferedImage.TYPE_INT_ARGB)
-            }
-
-            val res = new BufferedImage(targetW,targetH,targetType)
-            val g = image.createGraphics.asInstanceOf[Graphics2D]
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-            g.drawImage(res,0,0,targetW,targetH,null)
-            g.dispose
-            val outStream = new java.io.ByteArrayOutputStream
-            ImageIO.write(res,typeName,outStream)
-            info("downscaling image [%s]: (%s,%s)=>(%s,%s)".format(descriptor,originalW,originalH,targetW,targetH))
-            resized = outStream.toByteArray
-            outStream.close
-          }
-          resized
-        } catch {
-          case e:Exception => {
-            error("Exception while downscaling image [%s].  Returning emptyByteArray instead".format(descriptor),e)
-            Array.empty[Byte]
-          }
-        }
-      }
-    }
-  }
-}
-
-class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName) with Logger {
-  lazy val downscaler = new ImageDownscaler(16777216)
-  protected def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = downscaler.downscaleImage(in,descriptor)
-  override def toMeTLImage(input:NodeSeq):MeTLImage = {
-    val m = parseMeTLContent(input,config)
-    val c = parseCanvasContent(input)
-    val tag = getStringByName(input,"tag")
-    val imageBytes = downscaleImage(base64Decode(getStringByName(input,"imageBytes")),tag)
-    val newUrl = config.postResource(c.slide.toString,nextFuncName,imageBytes)
-    val source = Full(newUrl)
-    val pngBytes = Empty
-    val width = getDoubleByName(input,"width")
-    val height = getDoubleByName(input,"height")
-    val x = getDoubleByName(input,"x")
-    val y = getDoubleByName(input,"y")
-    MeTLImage(config,m.author,m.timestamp,tag,source,Full(imageBytes),pngBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
-  }
-  override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",{
-    canvasContentToXml("image",input,List(
-      <tag>{input.tag}</tag>,
-      <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
-      <width>{input.width}</width>,
-      <height>{input.height}</height>,
-      <x>{input.x}</x>,
-      <y>{input.y}</y>
-    ))
-  })
-  override def toMeTLQuiz(input:NodeSeq):MeTLQuiz = Stopwatch.time("GenericXmlSerializer.toMeTLQuiz", {
-    val m = parseMeTLContent(input,config)
-    val created = getLongByName(input,"created")
-    val question = getStringByName(input,"question") match {
-      case q if (q.length > 0) => q
-      case _ => getStringByName(input,"title")
-    }
-    val id = getStringByName(input,"id")
-    val quizImage = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"quiz: %s".format(id)))
-    val newUrl = quizImage.map(qi => config.postResource("quizImages",nextFuncName,qi))
-    val isDeleted = getBooleanByName(input,"isDeleted")
-    val options = getXmlByName(input,"quizOption").map(qo => toQuizOption(qo)).toList
-    MeTLQuiz(config,m.author,m.timestamp,created,question,id,newUrl,quizImage,isDeleted,options,m.audiences)
-  })
-  override def fromMeTLQuiz(input:MeTLQuiz):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLQuiz", {
-    metlContentToXml("quiz",input,List(
-      <created>{input.created}</created>,
-      <question>{input.question}</question>,
-      <id>{input.id}</id>,
-      <isDeleted>{input.isDeleted}</isDeleted>,
-      <options>{input.options.map(o => fromQuizOption(o))}</options>
-    ) ::: input.imageBytes.map(ib => List(<imageBytes>{base64Encode(ib)}</imageBytes>)).openOr(List.empty[Node]))
-  })
-  override def toSubmission(input:NodeSeq):MeTLSubmission = Stopwatch.time("GenericXmlSerializer.toSubmission", {
-    val m = parseMeTLContent(input,config)
-    val c = parseCanvasContent(input)
-    val title = getStringByName(input,"title")
-    val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"submission: %s".format(c.identity)))
-    val url = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib)).getOrElse("unknown")
-    val blacklist = getXmlByName(input,"blacklist").map(bl => {
-      val username = getStringByName(bl,"username")
-      val highlight = getColorByName(bl,"highlight")
-      SubmissionBlacklistedPerson(username,highlight)
-    }).toList
-    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
-  })
-  override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
-    canvasContentToXml("screenshotSubmission",input,List(
-      <imageBytes>{base64Encode(input.imageBytes.getOrElse(Array.empty[Byte]))}</imageBytes>,
-      <title>{input.title}</title>,
-      <time>{input.timestamp.toString}</time>
-    ) ::: input.blacklist.map(bl => <blacklist><username>{bl.username}</username><highlight>{ColorConverter.toRGBAString(bl.highlight)}</highlight></blacklist> ).toList)
-  })
-  override def toMeTLFile(input:NodeSeq):MeTLFile = Stopwatch.time("GenericXmlSerializer.toMeTLFile",{
-    val m = parseMeTLContent(input,config)
-    val name = getStringByName(input,"name")
-    val id = getStringByName(input,"id")
-    val bytes = downscaler.filterByMaximumSize(base64Decode(getStringByName(input,"bytes")))
-    val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
-    MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
-  })
-  override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",{
-    metlContentToXml("file",input,List(
-      <name>{input.name}</name>,
-      <id>{input.id}</id>
-    ) :::
-      input.bytes.map(ib => List(<bytes>{base64Encode(ib)}</bytes>)).getOrElse(List.empty[Node]))
-  })
-}

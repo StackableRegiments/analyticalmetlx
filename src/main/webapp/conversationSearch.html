@@ -1,8 +1,51 @@
-<div class="lift:surround?with=defaultWebMeTL;at=content">
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+	<style>
+.importProgressBarContainer {
+	height: 2em;
+	width: 20em;
+	background:white;
+	border:1px solid black;
+}
+.importProgressProgressBar {
+	height:2em;
+	background:green;
+	border:1px solid silver;
+}
+	</style>
+		<script data-lift="with-resource-id" src="static/js/stable/jquery.ui.widget.js"></script>
+		<script data-lift="with-resource-id" src="static/js/stable/jquery.iframe-transport.js"></script>
+		<script data-lift="with-resource-id" src="static/js/stable/jquery.fileupload.js"></script>
     <link rel="stylesheet" href="static/css/board.css"></link>
     <div id="masterLayout" class="flex-container-responsive">
 			<div class="lift:comet?type=MeTLConversationSearchActor">
 				<div id="conversationSearchBox">
+				</div>
+				<div id="activeImportsListing">
+					<div class="importContainer">
+						<span class="importId"></span>
+						<span class="importName"></span>
+						<span class="importAuthor"></span>
+						<div class="importProgressContainer">
+							<div class="importOverallProgressContainer">
+								<span class="importProgressDescriptor"></span>
+								<div class="importProgressBarContainer">
+									<div class="importProgressProgressBar"></div>
+								</div>
+							</div>
+							<div class="importStageProgressContainer">
+								<span class="importProgressDescriptor"></span>
+								<div class="importProgressBarContainer">
+									<div class="importProgressProgressBar"></div>
+								</div>
+							</div>
+						</div>
+						<div class="importResultContainer">
+							<div class="importResult">
+								<span class="importError"></span>
+								<a class="importSuccess">Join conversation</a>
+							</div>
+						</div>
+					</div>
 				</div>
 				<div id="conversationListing">
 					<div class="conversationContainer">
@@ -12,6 +55,9 @@
 								<span class="conversationAuthor"></span>
 								<span class="conversationJid"></span>
 							</a>
+							<span class="conversationEditingContainer">
+								<a class="editConversationLink">Edit</a>
+							</span>
 						</div>
 						<div class="secondRow">
 							<span class="slidesContainer">
@@ -22,20 +68,41 @@
 								</span>
 							</span>
 						</div>
-						<div class="thirdRow">
-							<span class="conversationEditingContainer">
-								<span class="conversationSharingContainer">
-								</span>
-								<span class="conversationRenameContainer">
-								</span>
-								<span class="conversationDeleteContainer">
-								</span>
-							</span>
-						</div>
 					</div>
 				</div>
 				<div id="createConversationContainer">
 					<button id="createConversationButton">Create</button>
+				</div>
+				<div id="importConversationContainer">
+					<script>
+/* <![CDATA[ */
+					$(function(){
+							$('#importConversationInputElement').fileupload({
+                dataType: 'json',
+                add: function (e,data) {
+                  $('#importConversationProgress').css('width', '0%');
+                  $('#importConversationProgressBar').show();
+                  data.submit();
+                },
+                progressall: function (e, data) {
+                  var progress = parseInt(data.loaded / data.total * 100, 10) + '%';
+                  $('#importConversationProgressBar').css('width', progress);
+                },
+                done: function (e, data) {
+                  $.each(data.files, function (index, file) {
+                    $('<p/>').text(file.name).appendTo(document.body);
+                  });
+                  $('#importConversationProgress').fadeOut();
+                }
+              });
+						});
+/* ]]> */
+					</script>
+					<label for=importConversationInputElement">Import file</label>
+					<input id="importConversationInputElement" type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
+					<div id="importConversationProgress" style="width:20em; border:1pt solid silver; display:none">
+						<div id="importConversationProgressBar" style="background: green; height: 1em; width:0%"></div>
+					</div>
 				</div>
 			</div>
 		</div>
