@@ -148,8 +148,8 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
             downloadUrl = schemify(out.url)
           })
         }
-        onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter download ready",106,108)),None))
       }
+      onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter download ready",106,108)),None))
       if (downloadUrl == ""){
         val ex = new Exception("download Url malformed")
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter download url malformed",106,108)),Some(Left(ex))))
