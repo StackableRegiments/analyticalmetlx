@@ -1,4 +1,6 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+	<script src="static/js/stable/lodash-4.12.0.js"></script>
+	<script src="/static/js/stable/jquery-sortable-min.js"></script>
 	<script>
 function serverResponse(response){
 	console.log("serverResponse:",response);
@@ -18,7 +20,70 @@ function receiveConversationDetails(details){
 function receiveNewConversationDetails(details){
 	console.log("receiveNewConversationDetails:",details);
 }
+$(function(){
+	$("ol.conversationSlidesContainer").sortable({
+		onDrop: function(item,container,_super){
+			var slideId = $(item).find(".slideId").text();
+			console.log("onDrop:",item,container,_super,slideId);
+			_super(item,container);
+			//bad news, they haven't yet moved in the DOM, so this doesn't work.
+			console.log("inDom:",_.map($(".slideContainer"),function(slide){
+				var index = $($(slide).find(".slideIndex")).text();
+				var id = $($(slide).find(".slideId")).text();
+				return {index:index,id:id};
+			}));
+			try {
+				if (currentConversation != undefined && "jid" in currentConversation && "slides" in currentConversation) {
+				var oldSlides = currentConversation.slides;
+				var newIndex = 0;
+				var newSlides = _.map($(".slideId"),function(el){
+					var slideId = parseInt($(el).text());
+					console.log("searching for:",slideId);
+					var returnedSlide = _.find(currentConversation.slides,function(slide){
+						if (slide.id == slideId){
+							console.log("found:",slide);
+							return true;
+						} else {
+							return false;
+						}
+					});
+					if (!("groupSet" in returnedSlide)){
+						returnedSlide.groupSet = [];
+					}
+					returnedSlide.index = newIndex;
+					newIndex = newIndex + 1;
+					return returnedSlide;
+				})
+				console.log("reordering slides:",oldSlides,newSlides);
+				reorderSlidesOfCurrentConversation(currentConversation.jid,newSlides);
+				}
+			} catch(e){
+				console.log("exception while reordering slides",e);
+			}
+		}
+	});
+});
 	</script>
+	<style>
+body.dragging, body.dragging * {
+  cursor: move !important;
+}
+
+.dragged {
+  position: absolute;
+  opacity: 0.5;
+  z-index: 2000;
+}
+
+ol.conversationSlidesContainer li.placeholder {
+  position: relative;
+  /** More li styles **/
+}
+ol.conversationSlidesContainer li.placeholder:before {
+  position: absolute;
+  /** Define arrowhead **/
+}
+	</style>
 	<div class="lift:Metl.specificEditConversation">
 		<div class="editConversationContainer">
 			<script class="currentConversationVar"></script>
@@ -68,8 +133,8 @@ function receiveNewConversationDetails(details){
 				<span>Project Conversation: </span>
 				<a class="conversationProjectorLink"></a>
 			</div>
-			<div class="conversationSlidesContainer">
-				<span class="slideContainer">
+			<ol class="conversationSlidesContainer">
+				<li class="slideContainer">
 					<a class="slideAnchor">
 						<img class="slideThumbnail"></img>
 						<span>
@@ -88,8 +153,8 @@ function receiveNewConversationDetails(details){
 					<span class="duplicateSlideButton"></span>
 					<span class="addSlideAfterButton"></span>
 					<span class="addSlideBeforeButton"></span>
-				</span>
-			</div>
+				</li>
+			</ol>
 		</div>
 	</div>
 </div>
