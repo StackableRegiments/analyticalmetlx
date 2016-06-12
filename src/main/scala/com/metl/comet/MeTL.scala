@@ -361,6 +361,9 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
       shouldModifyConversation(conv) match {
         case true => {
           val innerResult:RenderOut = (".editConversationContainer *" #> {
+            ".currentConversationVar *" #> conversation.map(conv => {
+              JsCrVar("currentConversation", serializer.fromConversation(conv))
+            }) &
             ".conversationTitle *" #> ajaxText(conv.title,(renamed:String) => {
               serverConfig.renameConversation(conv.jid.toString,renamed)
               Noop

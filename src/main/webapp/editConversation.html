@@ -8,9 +8,12 @@ function receiveUsername(username){
 }
 function receiveUserGroups(userGroups){
 	console.log("receiveUserGroups:",userGroups);
-}
+} 
 function receiveConversationDetails(details){
-	console.log("receiveConversationDetails:",details);
+	if (currentConversation != undefined && details != undefined && "jid" in currentConversation && "jid" in details && details.jid == currentConversation.jid) {
+		console.log("receiveConversationDetails:",details);
+		currentConversation = details;
+	}
 }
 function receiveNewConversationDetails(details){
 	console.log("receiveNewConversationDetails:",details);
@@ -18,6 +21,7 @@ function receiveNewConversationDetails(details){
 	</script>
 	<div class="lift:Metl.specificEditConversation">
 		<div class="editConversationContainer">
+			<script class="currentConversationVar"></script>
 			<div>
 				<span>Title: </span>
 				<span class="conversationTitle"></span>
