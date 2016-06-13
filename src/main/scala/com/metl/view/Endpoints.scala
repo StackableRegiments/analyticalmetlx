@@ -207,6 +207,15 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshot(jid,"thumbnail")
     })
+    case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
+      HttpResponder.snapshotWithPrivate(jid,"thumbnail")
+    })
+    case Req("printableImage" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
+      HttpResponder.snapshot(jid,"large")
+    })
+    case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
+      HttpResponder.snapshotWithPrivate(jid,"large")
+    })
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
     })

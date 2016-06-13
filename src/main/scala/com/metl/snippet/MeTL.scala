@@ -17,6 +17,7 @@ import Globals._
 
 object Metl extends Metl
 class Metl extends Logger {
+  val config = ServerConfiguration.default
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
     username.toLowerCase.trim == c.author.toLowerCase.trim && c != Conversation.empty
   }
@@ -44,6 +45,16 @@ class Metl extends Logger {
   def thumbnailFor(conversationJid:Int,slideId:Int):String = {
     "/thumbnail/%s".format(slideId.toString)
   }
+  def thumbnailWithPrivateFor(conversationJid:Int,slideId:Int):String = {
+    "/thumbnailWithPrivate/%s".format(slideId.toString)
+  }
+  def printSlideFor(conversationJid:Int,slideId:Int):String = {
+    "/printableImage/%s".format(slideId.toString)
+  }
+  def printSlideWithPrivateFor(conversationJid:Int,slideId:Int):String = {
+    "/printableImageWithPrivate/%s".format(slideId.toString)
+  }
+
   def noBoard:String = {
     "/"//conversationSearch()
   }
@@ -177,5 +188,60 @@ class Metl extends Logger {
     val output = <span class={clazz}>{in}</span>
     warn("generating comet html: %s".format(output))
     output
+  }
+  def getPagesFromPageRange(pageRange:String,conversation:Conversation):List[Slide] = {
+    pageRange.toLowerCase.trim match {
+      case "all" => conversation.slides
+      case specificPageRange => {
+        val pageIndexes = specificPageRange.split(",").flatMap(seq => {
+          seq.split("-").toList match {
+            case Nil => Nil
+            case List(i) => List(i.toInt)
+    //        case List(a,b) => Range.inclusive(a,b).toList
+            case l:List[String] => {
+              val sorted = l.map(_.toInt).sortWith((a,b) => a < b)
+              val start = sorted.head
+              val end = sorted.reverse.head
+              Range.inclusive(start,end).toList
+            }
+          }
+        }).distinct
+        conversation.slides.filter(s => pageIndexes.exists(_ == s.index + 1)).toList
+      }
+    }
+  }
+  protected def orEmpty(cond:Boolean,onSuccess: => NodeSeq):NodeSeq = {
+    if (cond){
+      onSuccess
+    } else {
+      NodeSeq.Empty
+    }
+  }
+  def printConversation = {
+    (for (
+      jid <- S.param("conversationJid");
+      pageRange <- S.param("pageRange");
+      conv = config.detailsOfConversation(jid);
+      pagesToPrint = getPagesFromPageRange(pageRange,conv)
+    ) yield {
+      val pageCount = conv.slides.length
+      val includePrivate = S.param("includePrivateContent").map(_.toBoolean).getOrElse(false)
+      val includeConvTitle = S.param("includeConversationTitle").map(_.toBoolean).getOrElse(false)
+      val includePageCount = S.param("includePageCount").map(_.toBoolean).getOrElse(false)
+      ".pagesContainer *" #> {
+        ".pageContainer *" #> pagesToPrint.map(page => {
+          ".pageHeader *" #> orEmpty(includeConvTitle,Text(conv.title)) &
+          ".pageFooter *" #> orEmpty(includePageCount,Text("%s/%s".format(page.index + 1, pageCount))) &
+          ".pageImageContainer *" #> {
+            includePrivate match {
+              case true => ".pageImage [src]" #> printSlideWithPrivateFor(conv.jid,page.id)
+              case false => ".pageImage [src]" #> printSlideFor(conv.jid,page.id)
+            }
+          }
+        })
+      }
+    }).getOrElse({
+      ".pagesContainer *" #> Text("conversation and/or pageRange not specified")
+    })
   }
 }

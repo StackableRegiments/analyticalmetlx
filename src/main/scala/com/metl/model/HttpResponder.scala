@@ -29,10 +29,34 @@ object HttpResponder extends HttpCacher with Logger {
     debug("getSnapshot: (%s => %s, %s) => %s".format(jid, room, size,snap))
     snap
   }
+  protected def getSnapshotWithPrivate(jid:String,size:String) = {
+    val publicRoom = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
+    val privateRoom = MeTLXConfiguration.getRoom(jid+Globals.currentUser.is,server.name,RoomMetaDataUtils.fromJid(jid+Globals.currentUser.is))
+    val merged = publicRoom.getHistory.merge(privateRoom.getHistory)
+    
+    val snap = com.metl.renderer.SlideRenderer.render(
+      merged,
+      size.trim.toLowerCase match {
+        case "thumbnail" => Globals.ThumbnailSize
+        case "small" => Globals.SmallSize
+        case "medium" => Globals.MediumSize
+        case "large" => Globals.LargeSize
+        case _ => Globals.ThumbnailSize
+      },
+      "presentationSpace")
+    debug("getSnapshotWithPrivate: (%s => (%s,%s), %s) => %s".format(jid, publicRoom, privateRoom, size, snap))
+    snap
+  }
+
   def snapshot(jid:String,size:String) ={
     val cachedBinary = CachedBinary(getSnapshot(jid,size),new Date().getTime)
     constructResponse(cachedBinary,"image/jpg",snapshotExpiry)
   }
+  def snapshotWithPrivate(jid:String,size:String) ={
+    val cachedBinary = CachedBinary(getSnapshotWithPrivate(jid,size),new Date().getTime)
+    constructResponse(cachedBinary,"image/jpg",snapshotExpiry)
+  }
+
   def snapshotDataUri(jid:String,size:String) = {
     val dataUri = "data:image/jpeg;base64," + DatatypeConverter.printBase64Binary(getSnapshot(jid,size))
     constructResponse(CachedBinary(IOUtils.toByteArray(dataUri),new Date().getTime),"image/jpg",snapshotExpiry)

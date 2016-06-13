@@ -88,6 +88,7 @@ class Boot extends Logger {
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
       Menu(Loc("EditConversation","editConversation" :: Nil,"Edit Conversation")),
+      Menu(Loc("PrintConversation","printConversation" :: Nil,"Print Conversation")),
       Menu(Loc("SearchConversations","searchConversations" :: Nil,"Search Conversations")),
       //Menu(Loc("MeTL Collaborative Board","simpleBoard" :: Nil,"MeTL in a browser")),
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
