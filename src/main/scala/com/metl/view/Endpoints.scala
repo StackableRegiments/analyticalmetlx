@@ -207,14 +207,8 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshot(jid,"thumbnail")
     })
-    case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
-      HttpResponder.snapshotWithPrivate(jid,"thumbnail")
-    })
     case Req("printableImage" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshot(jid,"large")
-    })
-    case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
-      HttpResponder.snapshotWithPrivate(jid,"large")
     })
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
@@ -235,6 +229,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
+      HttpResponder.snapshotWithPrivate(jid,"large")
+    })
+    case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
+      HttpResponder.snapshotWithPrivate(jid,"thumbnail")
+    })
     case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listSessions"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))

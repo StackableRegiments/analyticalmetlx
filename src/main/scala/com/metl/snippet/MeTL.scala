@@ -52,7 +52,7 @@ class Metl extends Logger {
     "/printableImage/%s".format(slideId.toString)
   }
   def printSlideWithPrivateFor(conversationJid:Int,slideId:Int):String = {
-    "/printableImageWithPrivate/%s".format(slideId.toString)
+    "/printableImageWithPrivateFor/%s".format(slideId.toString)
   }
 
   def noBoard:String = {
