@@ -227,14 +227,15 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   val serializer = new GenericXmlSerializer("rest")
   serve {
     case Req("saveToOneNote" :: conversation :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
-      RedirectResponse(com.metl.snippet.OneNote.authUrl)
+      Globals.oneNoteExportSubject(Full(conversation))
+      RedirectResponse(OneNote.authUrl)
     })
     case Req("permitOneNote" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.permitOneNote",{
-      val token = S.param("code").openOr("not_found")
-      println("oneNote")
-      println(token)
-      Globals.oneNoteAuthToken(Full(token))
-      RedirectResponse("/board?authToken=%s".format(token))
+      for(
+        token <- S.param("code");
+        conversation <- Globals.oneNoteExportSubject;
+        result <- OneNote.export(conversation,token)
+      ) yield RedirectResponse("/board")
     })
     case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listSessions"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
