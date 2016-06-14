@@ -196,13 +196,22 @@ class Metl extends Logger {
         val pageIndexes = specificPageRange.split(",").flatMap(seq => {
           seq.split("-").toList match {
             case Nil => Nil
-            case List(i) => List(i.toInt)
-    //        case List(a,b) => Range.inclusive(a,b).toList
+            case List(i) => {
+              try {
+              List(i.toInt)
+              } catch {
+                case e:Exception => Nil
+              }
+            }
             case l:List[String] => {
-              val sorted = l.map(_.toInt).sortWith((a,b) => a < b)
-              val start = sorted.head
-              val end = sorted.reverse.head
-              Range.inclusive(start,end).toList
+              try {
+                val sorted = l.map(_.toInt).sortWith((a,b) => a < b)
+                val start = sorted.head
+                val end = sorted.reverse.head
+                Range.inclusive(start,end).toList
+              } catch {
+                case e:Exception => Nil
+              }
             }
           }
         }).distinct
