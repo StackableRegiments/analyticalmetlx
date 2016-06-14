@@ -104,11 +104,13 @@ object Globals extends PropertyReader with Logger {
   object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
   object currentUser extends SessionVar[String](casState.is.username)
 
+  val printDpi = 100
   val ThumbnailSize = new RenderDescription(320,240)
   val SmallSize = new RenderDescription(640,480)
   val MediumSize = new RenderDescription(1024,768)
   val LargeSize = new RenderDescription(1920,1080)
-  val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize)
+  val PrintSize = new RenderDescription(21 * printDpi, 29 * printDpi)
+  val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize/*,PrintSize*/)
 }
 
 //object CurrentSlide extends SessionVar[Box[String]](Empty)

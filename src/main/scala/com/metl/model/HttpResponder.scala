@@ -24,6 +24,7 @@ object HttpResponder extends HttpCacher with Logger {
       case "small" => Globals.SmallSize
       case "medium" => Globals.MediumSize
       case "large" => Globals.LargeSize
+      case "print" => Globals.PrintSize
       case _ => Globals.ThumbnailSize
     })
     debug("getSnapshot: (%s => %s, %s) => %s".format(jid, room, size,snap))
@@ -41,6 +42,7 @@ object HttpResponder extends HttpCacher with Logger {
         case "small" => Globals.SmallSize
         case "medium" => Globals.MediumSize
         case "large" => Globals.LargeSize
+        case "print" => Globals.PrintSize
         case _ => Globals.ThumbnailSize
       },
       "presentationSpace")

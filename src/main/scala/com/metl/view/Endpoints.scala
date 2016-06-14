@@ -208,7 +208,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       HttpResponder.snapshot(jid,"thumbnail")
     })
     case Req("printableImage" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
-      HttpResponder.snapshot(jid,"large")
+      HttpResponder.snapshot(jid,"print")
     })
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
@@ -230,7 +230,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   val serializer = new GenericXmlSerializer("rest")
   serve {
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
-      HttpResponder.snapshotWithPrivate(jid,"large")
+      HttpResponder.snapshotWithPrivate(jid,"print")
     })
     case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"thumbnail")

@@ -538,25 +538,27 @@ function screenBounds(worldBounds){
         screenHeight:screenHeight
     };
 }
-function drawImage(image){
+function drawImage(image,incCanvasContext){
+	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         if (image.canvas != undefined){
             var sBounds = screenBounds(image.bounds);
             visibleBounds.push(image.bounds);
             var borderW = sBounds.screenWidth * 0.10;
             var borderH = sBounds.screenHeight * 0.10;
-            boardContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+            canvasContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
         }
     }
     catch(e){
         console.log("drawImage exception",e);
     }
 }
-function drawText(text){
+function drawText(text,incCanvasContext){
+	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-        boardContext.drawImage(text.canvas,
+        canvasContext.drawImage(text.canvas,
 			       sBounds.screenPos.x,
 			       sBounds.screenPos.y,
 			       sBounds.screenWidth,
@@ -566,10 +568,11 @@ function drawText(text){
         console.log("drawText exception",e);
     }
 }
-function drawInk(ink){
+function drawInk(ink,incCanvasContext){
+	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
-    boardContext.drawImage(ink.canvas,
+    canvasContext.drawImage(ink.canvas,
                            sBounds.screenPos.x,sBounds.screenPos.y,
                            sBounds.screenWidth,sBounds.screenHeight);
 }

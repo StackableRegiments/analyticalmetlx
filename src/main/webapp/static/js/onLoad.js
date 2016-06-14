@@ -61,7 +61,9 @@ var WorkQueue = (function(){
                 blit();
                 blitNeeded = false;
             }
-            Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
+						if ("Conversations" in window){
+							Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
+						}
         }
     };
     var pauseFunction = function(){
@@ -269,7 +271,7 @@ var TweenController = (function(){
         viewboxY = finalY;
         viewboxWidth = finalWidth;
         viewboxHeight = finalHeight;
-				console.log("instantTweening:",finalX,finalY,finalWidth,finalHeight);
+				//console.log("instantTweening:",finalX,finalY,finalWidth,finalHeight);
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
@@ -329,12 +331,12 @@ var TweenController = (function(){
             tween.stop();
             tween = false;
         }
-				console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
+				//console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
         tween = new TWEEN.Tween({x:0,y:0,w:0,h:0})
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
-							console.log("easingTweening: ",this.x,this.y,this.w,this.h);
+							//console.log("easingTweening: ",this.x,this.y,this.w,this.h);
                 viewboxX = startX + this.x;
                 viewboxY = startY + this.y;
                 viewboxWidth = startWidth + this.w;
@@ -359,7 +361,7 @@ var TweenController = (function(){
             }
         };
         requestAnimationFrame(update);
-        if(Conversations.isAuthor()){
+        if("Conversations" in window && Conversations.isAuthor()){
             if(notFollowable || shouldAvoidUpdatingRequestedViewbox){
                 //console.log("not following viewbox update");
             }
@@ -645,8 +647,10 @@ $(function(){
 					submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
 			}
 		});
-		$("#enableSync").on("click",Conversations.enableSyncMove);
-		$("#disableSync").on("click",Conversations.disableSyncMove);
+		if ("Conversations" in window){
+			$("#enableSync").on("click",Conversations.enableSyncMove);
+			$("#disableSync").on("click",Conversations.disableSyncMove);
+		}
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
 

@@ -430,7 +430,16 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   })
   override def getSnapshot(size:RenderDescription) = {
     showInterest
-    snapshots.get(size).getOrElse(Array.empty[Byte])
+    snapshots.get(size).getOrElse({
+      roomMetaData match {
+        case s:SlideRoom => {
+          SlideRenderer.render(getHistory,size,"presentationSpace")
+        }
+        case _ => {
+          Array.empty[Byte]
+        }
+      }
+    })
   }
   override def getThumbnail = {
     getSnapshot(Globals.ThumbnailSize)

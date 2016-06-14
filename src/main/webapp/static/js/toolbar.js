@@ -1252,8 +1252,13 @@ var Modes = (function(){
             }
             var resetImageUpload = function(){
                 insertOptions.hide();
-                imageFileChoice.wrap("<form>").closest("form").get(0).reset();
-                imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+								var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
+								if (imageForm != undefined){
+									imageForm.reset();
+								}
+								if (imageUploadThumbnail[0] != undefined){
+									imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+								}
                 imageUploadX.text("");
                 imageUploadY.text("");
                 imageUploadWidth.text("");
@@ -1338,18 +1343,20 @@ var Modes = (function(){
                     imageUploadHeight = $("#imageUploadHeight");
                     imageInsertOptionsClose.on("click",resetImageUpload);
                     imageFileChoice.attr("accept","image/*");
-                    imageFileChoice[0].addEventListener("change",function(e){
-                        if ("type" in currentImage && currentImage.type == "imageDefinition"){
-                            var files = e.target.files || e.dataTransfer.files;
-                            var limit = files.length;
-                            var file = files[0];
-                            if (file.type.indexOf("image") == 0) {
-                                currentImage.fileUpload = file;
-                                currentImage.thumbnailSize = imageSizeChoices[0];
-                                updateImageEditor();
-                            }
-                        }
-                    },false);
+										if (imageFileChoice[0] != undefined){
+											imageFileChoice[0].addEventListener("change",function(e){
+													if ("type" in currentImage && currentImage.type == "imageDefinition"){
+															var files = e.target.files || e.dataTransfer.files;
+															var limit = files.length;
+															var file = files[0];
+															if (file.type.indexOf("image") == 0) {
+																	currentImage.fileUpload = file;
+																	currentImage.thumbnailSize = imageSizeChoices[0];
+																	updateImageEditor();
+															}
+													}
+											},false);
+										}
                     var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
                     imageSizeChoiceSelector.empty();
                     imageSizeChoices.map(function(isc){
@@ -1450,7 +1457,7 @@ var Modes = (function(){
 												$("#ban").addClass("disabledButton");
                     }
 
-										if (Conversations.shouldModifyConversation()){
+										if ("Conversations" in window && Conversations.shouldModifyConversation()){
 											$("#ban").show();
 											$("#administerContent").show();	
 										} else {

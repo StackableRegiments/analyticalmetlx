@@ -15,6 +15,11 @@ import com.metl.comet._
 import com.metl.model._
 import Globals._
 
+import net.liftweb.http.js._
+import net.liftweb.http.js.JE._
+import net.liftweb.http.js.JsCmds._
+import net.liftweb.json.JsonAST._
+
 object Metl extends Metl
 class Metl extends Logger {
   val config = ServerConfiguration.default
@@ -246,6 +251,45 @@ class Metl extends Logger {
               case true => ".pageImage [src]" #> printSlideWithPrivateFor(conv.jid,page.id)
               case false => ".pageImage [src]" #> printSlideFor(conv.jid,page.id)
             }
+          }
+        })
+      }
+    }).getOrElse({
+      ".pagesContainer *" #> Text("conversation and/or pageRange not specified")
+    })
+  }
+  val serializer = new JsonSerializer("frontend")
+  def clientSidePrintConversation = {
+    (for (
+      jid <- S.param("conversationJid");
+      pageRange <- S.param("pageRange");
+      conv = config.detailsOfConversation(jid);
+      pagesToPrint = getPagesFromPageRange(pageRange,conv)
+    ) yield {
+      val pageCount = conv.slides.length
+      val includePrivate = S.param("includePrivateContent").map(_.toBoolean).getOrElse(false)
+      val includeConvTitle = S.param("includeConversationTitle").map(_.toBoolean).getOrElse(false)
+      val includePageCount = S.param("includePageCount").map(_.toBoolean).getOrElse(false)
+      ".pagesContainer *" #> {
+        ".pageContainer *" #> pagesToPrint.map(page => {
+          val uniqueId = page.id.toString
+          val pageHistoryId = "history_%s".format(uniqueId)
+          val pageCanvasId = "canvas_%s".format(uniqueId)
+          ".pageHeader *" #> orEmpty(includeConvTitle,Text(conv.title)) &
+          ".pageHeader [id]" #> "pageHeader_%s".format(uniqueId) &
+          ".pageFooter *" #> orEmpty(includePageCount,Text("%s/%s".format(page.index + 1, pageCount))) &
+          ".pageFooter [id]" #> "pageFooter_%s".format(uniqueId) &
+          ".pageImageContainer [id]" #> "pageImageContainer_%s".format(uniqueId) &
+          ".pageImageContainer *" #> {
+            ".varContainer *" #> {
+                val history = includePrivate match {
+                  case true => MeTLXConfiguration.getRoom(page.id.toString,config.name).getHistory.merge(MeTLXConfiguration.getRoom(page.id.toString+Globals.currentUser.is,config.name).getHistory)
+                  case false => MeTLXConfiguration.getRoom(page.id.toString,config.name).getHistory
+                }
+                Script(JsCrVar(pageHistoryId,serializer.fromHistory(history)))
+            } &
+            ".onLoadContainer *" #> Script(OnLoad(Call("renderCanvas",JsVar(pageHistoryId),JString(uniqueId)))) &
+            ".pageImage [id]" #> "pageImage_%s".format(uniqueId)
           }
         })
       }

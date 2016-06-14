@@ -52,7 +52,7 @@ var DeviceConfiguration = (function(){
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
 				try {
-					if (UserSettings.getIsInteractive() && "jid" in Conversations.getCurrentConversation()){
+					if (UserSettings.getIsInteractive() && "Conversations" in window && "jid" in Conversations.getCurrentConversation()){
 						DeviceConfiguration.setHeader(true);
 						DeviceConfiguration.setTools(true);
 						DeviceConfiguration.setSlides(true);
@@ -157,7 +157,7 @@ var DeviceConfiguration = (function(){
             break;
         }
 				var resultantDimensions = {height:deviceHeight,width:deviceWidth};
-				console.log("gettingDeviceDimensions",resultantDimensions);
+				//console.log("gettingDeviceDimensions",resultantDimensions);
         return resultantDimensions;
     };
     var defaultFitFunction = function(){
@@ -166,7 +166,7 @@ var DeviceConfiguration = (function(){
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
     var customizableFitFunction = function(showHeader,showTools,showSlides){
-			console.log("refiring fit:",showHeader,showTools,showSlides);
+			//console.log("refiring fit:",showHeader,showTools,showSlides);
         var toolsColumn = $("#toolsColumn");
         var tools = $("#ribbon").find(".toolbar");
         var subTools = $(".modeSpecificTool");
@@ -176,7 +176,7 @@ var DeviceConfiguration = (function(){
 						var value = parseInt(str.split("px")[0]);
 						return isNaN(value) ? 0 : value;
 					} catch(e){
-						console.log("parseInt failed",e);
+						//console.log("parseInt failed",e);
 						return 0;
 					}
 				};
@@ -251,9 +251,9 @@ var DeviceConfiguration = (function(){
 										bwidth = width - marginsFor([boardColumn]).x - gutterWidth;
 										bheight = bwidth - gutterHeight;
 									}
-									console.log(flexDirection);
-									console.log(width,toolsColumn.width(), thumbsColumn.width(), marginsFor([toolsColumn]).x,marginsFor([thumbsColumn]).x,marginsFor([boardColumn]).x);
-									console.log(height,masterHeader.height(), marginsFor([masterHeader]).y,marginsFor([boardColumn]).y);
+									//console.log(flexDirection);
+									//console.log(width,toolsColumn.width(), thumbsColumn.width(), marginsFor([toolsColumn]).x,marginsFor([thumbsColumn]).x,marginsFor([boardColumn]).x);
+									//console.log(height,masterHeader.height(), marginsFor([masterHeader]).y,marginsFor([boardColumn]).y);
 									if (bheight < 0 || bwidth < 0){
 										throw "retrying because of negativeValues";
 									}
@@ -273,7 +273,7 @@ var DeviceConfiguration = (function(){
 								boardContext.height = bheight;
 								boardWidth = bwidth; 
 								boardHeight = bheight;
-								console.log("refiring fit:",bwidth,bheight);
+								//console.log("refiring fit:",bwidth,bheight);
             }
             performRemeasure();
             IncludeView.default();
@@ -282,7 +282,7 @@ var DeviceConfiguration = (function(){
         catch(e){
             console.log("exception in fit",e);
 						_.defer(function(){
-							customizableFitFunction(showHeader,showTools,showSlides);
+							_.delay(customizableFitFunction,250,(showHeader,showTools,showSlides));
 						});
         }
 				window.scrollTo(1,1);
@@ -320,7 +320,7 @@ var DeviceConfiguration = (function(){
             initialized = true;
         }
         catch(e){
-            console.log("Progress.historyRedceived.DeviceConfiguration_showChrome",e);
+            console.log("Progress.historyReceived.DeviceConfiguration_showChrome",e);
         }
 				tryToDetermineCurrentDevice();
 				actOnCurrentDevice();
