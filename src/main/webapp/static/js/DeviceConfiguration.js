@@ -378,6 +378,9 @@ var DeviceConfiguration = (function(){
             setDefaultOptions();
             break;
         case "projector":
+						if (ContentFilter != undefined && "setFilter" in ContentFilter){
+							ContentFilter.setFilter("myPrivate",false);
+						};
             setProjectorOptions();
             break;
         case "iPhone":

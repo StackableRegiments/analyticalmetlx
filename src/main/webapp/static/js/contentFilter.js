@@ -128,8 +128,14 @@ var ContentFilter = (function(){
         }
         renderContentFilters();
     };
-    var setFilterFunction = function(){
-        blit();
+    var setFilterFunction = function(id,enabled){
+			_.each(getFiltersFunction(),function(fil){
+				if (fil.id == id){
+					fil.enabled = enabled;
+				}
+			});
+			renderContentFilters();
+			blit();
     };
     Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
     Progress.onConversationJoin["ContentFilter"] = conversationJoined;

@@ -1095,7 +1095,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
       JNull
     },Empty)
   )
-  private def editableQuizNodeSeq(quiz:MeTLQuiz):InteractableMessage = {
+  protected def editableQuizNodeSeq(quiz:MeTLQuiz):InteractableMessage = {
     InteractableMessage((i) => {
       var tempQuiz = quiz
       var answerProvided = false
@@ -1104,7 +1104,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
       <label for="quizQuestion">Question</label>
       <div>
       {
-        textarea(tempQuiz.question,(input:String) => {
+        ajaxTextarea(tempQuiz.question,(input:String) => {
           if (input.length > 0){
             tempQuiz = tempQuiz.replaceQuestion(input)
           } else {
@@ -1131,7 +1131,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
           </label>
           <div class="flex-container-responsive">
           {
-            textarea(qo.text, (input:String) => {
+            ajaxTextarea(qo.text, (input:String) => {
               if (input.length > 0){
                 tempQuiz = tempQuiz.replaceOption(qo.name,input)
               } else {
