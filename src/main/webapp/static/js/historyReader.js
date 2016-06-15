@@ -75,13 +75,8 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             }
 						console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
             hideBackstage();
-
-						try {
-							clearBoard(canvasContext[0].getContext("2d"),{x:0,y:0,w:boardWidth,h:boardHeight});
-						} catch (e){
-							console.log("exception while getting 2dcontext",e);
-						}
-            render(boardContent,canvasContext[0].getContext("2d"));
+						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
+            render(boardContent,canvasContext);
             blitMark = Date.now();
 						if (afterFunc != undefined){
 							afterFunc();
@@ -646,7 +641,7 @@ function render(content,incCanvasContext,incViewBounds){
                 textsRenderedMark = Date.now();
                 renderRichTexts(content.multiWordTexts);
                 richTextsRenderedMark = Date.now();
-                renderInks(boardContent.inks);
+                renderInks(content.inks);
                 inksRenderedMark = Date.now();
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
@@ -654,11 +649,7 @@ function render(content,incCanvasContext,incViewBounds){
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
             //clearBoard();
-						try {
-							clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-						} catch (e){
-							console.log("exception while getting 2dcontext",e);
-						}
+						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             fitMark = Date.now();
             $.each(content.images,function(id,image){
                 try{
