@@ -52,14 +52,16 @@ var DeviceConfiguration = (function(){
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
 				try {
-					if (UserSettings.getIsInteractive() && "Conversations" in window && "jid" in Conversations.getCurrentConversation()){
-						DeviceConfiguration.setHeader(true);
-						DeviceConfiguration.setTools(true);
-						DeviceConfiguration.setSlides(true);
-					} else {
-						DeviceConfiguration.setHeader(false);
-						DeviceConfiguration.setTools(false);
-						DeviceConfiguration.setSlides(false);
+					if ("Conversations" in window && "jid" in Conversations.getCurrentConversation()){
+						if ("UserSettings" in window && UserSettings.getIsInteractive()){
+							DeviceConfiguration.setHeader(true);
+							DeviceConfiguration.setTools(true);
+							DeviceConfiguration.setSlides(true);
+						} else {
+							DeviceConfiguration.setHeader(false);
+							DeviceConfiguration.setTools(false);
+							DeviceConfiguration.setSlides(false);
+						}
 					}
 				} catch(e){
 					console.log("error while trying to fix the layout:",e);
@@ -71,6 +73,9 @@ var DeviceConfiguration = (function(){
         Conversations.enableSyncMove();
         UserSettings.setIsInteractive(false);
         currentDevice = "projector";
+				setSectionVisibility("tools",false);
+				setSectionVisibility("slides",false);
+				setSectionVisibility("header",false);
         fitFunction = projectorFitFunction;
         zoomToFit();
         $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
@@ -165,7 +170,10 @@ var DeviceConfiguration = (function(){
 		};
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
-    var customizableFitFunction = function(showHeader,showTools,showSlides){
+    var customizableFitFunction = function(_showHeader,_showTools,_showSlides){
+			var showHeader = sectionsVisible.header;
+			var showTools = sectionsVisible.tools;
+			var showSlides = sectionsVisible.slides;
 			//console.log("refiring fit:",showHeader,showTools,showSlides);
         var toolsColumn = $("#toolsColumn");
         var tools = $("#ribbon").find(".toolbar");
@@ -245,8 +253,8 @@ var DeviceConfiguration = (function(){
 								//if (currentDevice == "IE11+"){
 									var flexDirection = flexContainer.css("flex-direction");
 									if (flexDirection == "row"){
-									bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-									bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
+										bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
+										bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
 									} else {
 										bwidth = width - marginsFor([boardColumn]).x - gutterWidth;
 										bheight = bwidth - gutterHeight;
@@ -255,7 +263,15 @@ var DeviceConfiguration = (function(){
 									//console.log(width,toolsColumn.width(), thumbsColumn.width(), marginsFor([toolsColumn]).x,marginsFor([thumbsColumn]).x,marginsFor([boardColumn]).x);
 									//console.log(height,masterHeader.height(), marginsFor([masterHeader]).y,marginsFor([boardColumn]).y);
 									if (bheight < 0 || bwidth < 0){
-										throw "retrying because of negativeValues";
+										throw {
+											message: "retrying because of negativeValues",
+											bheight:bheight,
+											bwidth:bwidth,
+											width:width,
+											height:height,
+											marginsForBoard:marginsFor([boardColumn]),
+											flexDirection:flexDirection
+										};
 									}
 									bwidth = Math.round(bwidth);
 									bheight = Math.round(bheight);
@@ -302,6 +318,7 @@ var DeviceConfiguration = (function(){
     Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
             if("UserSettings" in window && UserSettings.getIsInteractive()){
+							console.log("enabling tools and slides");
 							DeviceConfiguration.setSlides(true);
 							DeviceConfiguration.setTools(true);
 							if(!initialized && "Modes" in window){
@@ -311,6 +328,7 @@ var DeviceConfiguration = (function(){
 									}
 							}
             } else {
+							console.log("disabling because it's not interactive");
 							DeviceConfiguration.setSlides(false);
 							DeviceConfiguration.setTools(false);
 							if(!initialized){
