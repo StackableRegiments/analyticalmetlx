@@ -1,18 +1,18 @@
 <serverConfiguration>
-  <defaultServerConfiguration>saintleo</defaultServerConfiguration>
+  <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
   <serverConfigurations>
     <server>
       <type>MeTL2011</type>
       <name>demo.stackable</name>
       <host>demo.stackableregiments.com</host>
       <meggleUrl>unused</meggleUrl>
-			<xmppDomainName>local.temp</xmppDomainName>
-			<httpUsername>exampleUser</httpUsername>
-			<httpPassword>examplePassword<httpPassword>
-			<messageBusUsernamePrefix>exampleUser</messageBusUsernamePrefix>
-			<messageBusPassword>examplePassword</messageBusPassword>
-			<conversationListenerUsernamePrefix>exampleUser</conversationListenerUsernamePrefix>
-			<conversationListenerPassword>examplePassword</conversationListenerPassword>
+      <xmppDomainName>local.temp</xmppDomainName>
+      <httpUsername>exampleUsername</httpUsername>
+      <httpPassword>examplePassword<httpPassword>
+      <messageBusUsernamePrefix>exampleUsername</messageBusUsernamePrefix>
+      <messageBusPassword>examplePassword</messageBusPassword>
+      <conversationListenerUsernamePrefix>exampleUsername</conversationListenerUsernamePrefix>
+      <conversationListenerPassword>examplePassword</conversationListenerPassword>
     </server>
     <server>
       <type>transientLoopback</type>

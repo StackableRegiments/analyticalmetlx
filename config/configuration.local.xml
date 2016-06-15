@@ -1,99 +1,108 @@
 <serverConfiguration>
-	<metl2011InstallUrl>http://setup.stackableregiments.com/windowsClients/sluBeta/</metl2011InstallUrl>
-	<serverAddress>
-		<scheme>http</scheme>
-		<hostname>localhost</hostname>
-		<port>8080</port>
-	</serverAddress>
+  <metl2011InstallUrl>http://setup.stackableregiments.com/windowsClients/sluBeta/</metl2011InstallUrl>
+  <serverAddress>
+    <scheme>http</scheme>
+    <hostname>localhost</hostname>
+    <port>8080</port>
+  </serverAddress>
   <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
-	<serverConfigurations>
+  <serverConfigurations>
     <server>
       <type>sql</type>
-			<name>sqlAdaptor</name>
-			<driver>org.h2.Driver</driver>
-			<url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
+      <name>sqlAdaptor</name>
+      <driver>org.h2.Driver</driver>
+      <url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
     </server>
-		<!--
-    <server>
-      <type>localH2</type>
-			<name>localH2</name>
-			<filename>./testdb.h2</filename>
-		</server>
--->
+    <!--
+        <server>
+        <type>localH2</type>
+        <name>localH2</name>
+        <filename>./testdb.h2</filename>
+        </server>
+    -->
     <server>
       <type>transientLoopback</type>
     </server>
     <server>
       <type>frontend</type>
     </server>
-	</serverConfigurations>
-	<caches>
-		<roomLifetime miliseconds="3600000"/>
-		<resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
-	</caches>
-	<importerPerformance parallelism="8"/>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
+  </serverConfigurations>
+  <liftConfiguration>
+    <cometRequestTimeout>25</cometRequestTimeout>
+    <maxMimeSize>1048576000</maxMimeSize>
+    <maxMimeFileSize>524288000</maxMimeFileSize>
+    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
+    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
+    <allowParallelSnippets>true</allowParallelSnippets>
+  </liftConfiguration>
+  <caches>
+    <roomLifetime miliseconds="3600000"/>
+    <resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
+  </caches>
+  <importerPerformance parallelism="8"/>
+  <clientConfig>
+    <xmppDomain>local.temp</xmppDomain>
+    <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+  </clientConfig>
 
-	<!--		 -->
-	<!--	
-  <defaultServerConfiguration>devmetl.saintleo</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
+  <!--           -->
+  <!--
+      <defaultServerConfiguration>devmetl.saintleo</defaultServerConfiguration>
+      <serverConfigurations>
+      <server>
       <type>MeTL2015</type>
-			<name>devmetl.saintleo</name>
+      <name>devmetl.saintleo</name>
       <host>devmetl.saintleo.edu</host>
-			<xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
-    </server>
-    <server>
+      <xmppDomainName>metl.adm.monash.edu.au</xmppDomainName>
+      </server>
+      <server>
       <type>transientLoopback</type>
-    </server>
-    <server>
+      </server>
+      <server>
       <type>frontend</type>
-    </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppDomain>metl.adm.monash.edu.au</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	-->
-<!--
-  <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
+      </server>
+      </serverConfigurations>
+      <clientConfig>
+      <xmppDomain>metl.adm.monash.edu.au</xmppDomain>
+      <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+      </clientConfig>
+  -->
+  <!--
+      <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
+      <serverConfigurations>
+      <server>
       <type>MeTL2015</type>
-			<name>demo.stackable</name>
+      <name>demo.stackable</name>
       <host>demo.stackableregiments.com</host>
-			<xmppDomainName>local.temp</xmppDomainName>
-    </server>
-    <server>
+      <xmppDomainName>local.temp</xmppDomainName>
+      </server>
+      <server>
       <type>transientLoopback</type>
-    </server>
-    <server>
+      </server>
+      <server>
       <type>frontend</type>
-    </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
--->
-<!--  
-  <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
+      </server>
+      </serverConfigurations>
+      <clientConfig>
+      <xmppDomain>local.temp</xmppDomain>
+      <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+      </clientConfig>
+  -->
+  <!--
+      <defaultServerConfiguration>localAgainstDemo</defaultServerConfiguration>
+      <serverConfigurations>
+      <server>
       <type>MeTL2015</type>
-			<name>localAgainstDemo</name>
+      <name>localAgainstDemo</name>
       <host>demo.stackableregiments.com</host>
-			<xmppDomainName>local.temp</xmppDomainName>
-    </server>
-    <server>
+      <xmppDomainName>local.temp</xmppDomainName>
+      </server>
+      <server>
       <type>transientLoopback</type>
-    </server>
-    <server>
+      </server>
+      <server>
       <type>frontend</type>
+<<<<<<< HEAD
     </server>
 	</serverConfigurations>
 	<clientConfig>
@@ -141,4 +150,11 @@
 		<embeddedXmppServer keystorePath="examplePath" keystorePassword="examplePassword" />
 	</clientAdaptors>
 	<cloudConverterApiKey>exampleKey</cloudConverterApiKey>
+  <oneNote>
+    <clientId>exampleOneNoteClientId</clientId>
+    <clientSecret>exampleClientSecret</clientSecret>
+    <redirectUrl>http://localhost:8080/permitOneNote</redirectUrl>
+    <!--<redirectUrl>https://login.live.com/oauth20_desktop.srf</redirectUrl>-->
+    <scopes>wl.signin wl.basic office.onenote_create</scopes>
+  </oneNote>
 </serverConfiguration>

@@ -254,14 +254,14 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
 
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
-    case _ => warn("MeTLRoom recieved unknown message")
+    case _ => warn("MeTLRoom received unknown message")
   }
   def getChildren:List[Tuple3[String,String,LiftActor]] = Stopwatch.time("MeTLRoom.getChildren",{
     joinedUsers.toList
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",{
     trace("stanza received: %s".format(a))
-    (a,roomMetaData) match {
+      (a,roomMetaData) match {
       case (m:MeTLCommand,_) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
         com.metl.comet.MeTLConversationSearchActorManager ! m
         com.metl.comet.MeTLSlideDisplayActorManager ! m
@@ -322,7 +322,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   })
   protected def showInterest:Unit = lastInterest = new Date().getTime
   private def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest",{
-    idleTimeout.map(it => (new Date().getTime - lastInterest) < it).getOrElse(true) // if no interest timeout is specified, then don't expire the room 
+    idleTimeout.map(it => (new Date().getTime - lastInterest) < it).getOrElse(true) // if no interest timeout is specified, then don't expire the room
   })
   override def toString = "MeTLRoom(%s,%s,%s)".format(configName,location,creator)
 }
@@ -471,8 +471,6 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
 class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends HistoryCachingRoom(configName,location,creator,roomMetaData,idleTimeout) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
-    //stanzasToIgnore = stanzasToIgnore ::: List(s)
-    //trace("xmppBridge, sending to server: %s".format(s))
     trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
     sendStanzaToServer(s)
   })

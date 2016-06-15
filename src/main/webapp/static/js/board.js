@@ -81,7 +81,6 @@ function strokeCollected(spoints){
     }
 }
 function batchTransform(){
-
     var currentSlide = Conversations.getCurrentSlideJid();
     return {
         type:"moveDelta",
@@ -93,6 +92,7 @@ function batchTransform(){
         timestamp:Date.now(),
         inkIds:[],
         textIds:[],
+        multiWordTextIds:[],
         imageIds:[],
         xOrigin:0,
         yOrigin:0,
@@ -120,6 +120,57 @@ function sendInk(ink){
     updateStrokesPending(1,ink.identity);
     sendStanza(ink);
 }
+function hexToRgb(hex) {
+    if(typeof hex == "string") hex = [hex,255];
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
+    return {
+        alpha: hex[1],
+        red: parseInt(result[1], 16),
+        green: parseInt(result[2], 16),
+        blue: parseInt(result[3], 16)
+    };
+}
+function partToStanza(p){
+    var defaults = carota.runs.defaultFormatting;
+    var color = hexToRgb(p.color || defaults.color);
+    return {
+        text:p.text,
+        color:color,
+        size:p.size || defaults.size,
+        font:p.font || defaults.font,
+        justify:p.align || defaults.align,
+        bold:p.bold === true,
+        underline:p.underline === true,
+        italic:p.italic === true
+    };
+}
+
+function richTextEditorToStanza(t){
+    var bounds = t.doc.calculateBounds();
+    var text = t.doc.save();
+    return {
+        author:t.author,
+        timestamp:-1,
+        target:t.target,
+        tag:"_",
+        privacy:t.privacy,
+        slide:t.slide,
+        identity:t.identity,
+        type:t.type,
+        x:bounds[0],
+        y:bounds[1],
+        requestedWidth:bounds[2]-bounds[0],
+        width:bounds[2]-bounds[0],
+        height:bounds[3]-bounds[1],
+        words:text.map(partToStanza)
+    }
+}
+function sendRichText(t){
+    if(t.doc){
+        Modes.text.echoesToDisregard[t.identity] = true;
+        sendStanza(richTextEditorToStanza(t));
+    }
+}
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -127,6 +178,7 @@ var stanzaHandlers = {
     moveDelta:transformReceived,
     image:imageReceived,
     text:textReceived,
+    multiWordText:richTextReceived,
     command:commandReceived,
     submission:submissionReceived,
     attendance:attendanceReceived,
@@ -169,6 +221,15 @@ function commandReceived(c){
         }
         else{
         }
+    }
+}
+function richTextReceived(t){
+    if(t.identity in Modes.text.echoesToDisregard) return;
+    if(isUsable(t)){
+        WorkQueue.enqueue(function(){
+            Modes.text.editorFor(t).doc.load(t.words);
+            blit();
+        });
     }
 }
 function textReceived(t){
@@ -215,6 +276,7 @@ function actOnReceivedStanza(stanza){
     }
 }
 function transformReceived(transform){
+    console.log("transformReceived",transform);
     var op = "";
     var transformBounds = (function(){
         var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
@@ -298,6 +360,9 @@ function transformReceived(transform){
         $.each(transform.textIds,function(i,id){
             boardContent.texts[id].privacy = p;
         });
+        $.each(transform.multiWordTextIds,function(i,id){
+            boardContent.multiWordTextIds[id].privacy = p;
+        });
     }
     if(transform.isDeleted){
         op += "deleted";
@@ -312,11 +377,15 @@ function transformReceived(transform){
         $.each(transform.textIds,function(i,id){
             deleteText(p,id);
         });
+        $.each(transform.multiWordTextIds,function(i,id){
+            deleteMultiWordText(p,id);
+        });
     }
     if(transform.xScale != 1 || transform.yScale != 1){
         op += sprintf("scale (%s,%s)",transform.xScale,transform.yScale);
         var relevantInks = [];
         var relevantTexts = [];
+        var relevantMultiWordTexts = [];
         var relevantImages = [];
         $.each(transform.inkIds,function(i,id){
             relevantInks.push(boardContent.inks[id]);
@@ -327,6 +396,9 @@ function transformReceived(transform){
         });
         $.each(transform.textIds,function(i,id){
             relevantTexts.push(boardContent.texts[id]);
+        });
+        $.each(transform.multiWordTextIds,function(i,id){
+            relevantMultiWordTexts.push(boardContent.multiWordTexts[id]);
         });
         var point = function(x,y){return {"x":x,"y":y};};
         var totalBounds = point(0,0);
@@ -355,6 +427,11 @@ function transformReceived(transform){
                 }
             });
             $.each(relevantTexts,function(i,text){
+                if (text != undefined && "x" in text && "y" in text){
+                    updateRect(point(text.x,text.y));
+                }
+            });
+            $.each(relevantMultiWordTexts,function(i,text){
                 if (text != undefined && "x" in text && "y" in text){
                     updateRect(point(text.x,text.y));
                 }
@@ -431,9 +508,30 @@ function transformReceived(transform){
                 transformBounds.incorporateBounds(text.bounds);
             }
         };
+        var transformMultiWordText = function(index,text){
+            if (text != undefined){
+                text.width = text.width * transform.xScale;
+                text.height = text.height * transform.yScale;
+
+                var internalX = text.x - totalBounds.x;
+                var internalY = text.y - totalBounds.y;
+                var offsetX = -(internalX - (internalX * transform.xScale));
+                var offsetY = -(internalY - (internalY * transform.yScale));
+                text.x = text.x + offsetX;
+                text.y = text.y + offsetY;
+
+                text.size = text.size * transform.yScale;
+                text.font = sprintf("%spx %s",text.size,text.family);
+                if(text.identity in boardContent.multiWordTexts){
+                    delete boardContent.multiWordTexts[text.identity];
+                }
+                transformBounds.incorporateBounds(text.bounds);
+            }
+        };
         $.each(relevantInks,transformInk);
         $.each(relevantImages,transformImage);
         $.each(relevantTexts,transformText);
+        $.each(relevantMultiWordTexts,transformMultiWordText);
     }
     if(transform.xTranslate || transform.yTranslate){
         var deltaX = transform.xTranslate;
@@ -468,12 +566,21 @@ function transformReceived(transform){
             calculateTextBounds(text);
             transformBounds.incorporateBounds(text.bounds);
         });
+        $.each(transform.multiWordTextIds,function(i,id){
+            var text = boardContent.multiWordTexts[id];
+	    var doc = text.doc;
+            doc.position.x += transform.xTranslate;
+            doc.position.y += transform.yTranslate;
+	    text.bounds = doc.calculateBounds();
+            transformBounds.incorporateBounds(text.bounds);
+        });
     }
     transformBounds.incorporateBoardBounds();
-    updateStatus(sprintf("%s %s %s %s",
+    updateStatus(sprintf("%s %s %s %s %s",
                          op,
                          transform.imageIds.length,
                          transform.textIds.length,
+                         transform.multiWordTextIds.length,
                          transform.inkIds.length));
     blit();
 }
@@ -490,6 +597,9 @@ function moveReceived(move){
     });
     $.each(move.texts,function(id,text){
         boardContent.texts[id] = text;
+    });
+    $.each(move.multiWordTexts,function(id,text){
+        boardContent.multiWordTexts[id] = text;
     });
     blit();
 }
@@ -511,6 +621,12 @@ function deleteText(privacy,id){
     var text = boardContent.texts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.texts[id];
+    }
+}
+function deleteMultiWordText(privacy,id){
+    var text = boardContent.multiWordTexts[id];
+    if(text.privacy.toUpperCase() == privacy.toUpperCase()){
+        delete boardContent.multiWordTexts[id];
     }
 }
 function dirtyInkReceived(dirtyInk){

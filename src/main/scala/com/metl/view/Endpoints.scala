@@ -235,6 +235,17 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"thumbnail")
     })
+    case Req("saveToOneNote" :: conversation :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
+      Globals.oneNoteExportSubject(Full(conversation))
+      RedirectResponse(OneNote.authUrl)
+    })
+    case Req("permitOneNote" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.permitOneNote",{
+      for(
+        token <- S.param("code");
+        conversation <- Globals.oneNoteExportSubject;
+        result <- OneNote.export(conversation,token)
+      ) yield RedirectResponse("/board")
+    })
     case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listSessions"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))

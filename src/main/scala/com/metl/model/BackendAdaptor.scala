@@ -172,7 +172,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     }).toList:_*)
 
     SAMLconfiguration(
-      idpMetaDataPath = idpMetadataFileName, //getClass.getResource("/%s".format(idpMetadataFileName)).getPath,
+      idpMetaDataPath = idpMetadataFileName,
       serverScheme = serverScheme,
       serverName = serverName,
       serverPort = serverPort.toInt,

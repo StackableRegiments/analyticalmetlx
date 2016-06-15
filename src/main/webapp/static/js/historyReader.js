@@ -17,7 +17,7 @@ function loadSlide(jid){
 function receiveHistory(json,incCanvasContext,afterFunc){
     try{
 			var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
-        var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark, historyDecoratorsMark, blitMark;
+        var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
         boardContent = json;
         boardContent.minX = 0;
@@ -41,6 +41,10 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             }
         });
         prerenderTextMark = Date.now();
+        _.each(boardContent.multiWordTexts,function(text,i){
+            Modes.text.editorFor(text).doc.load(text.words);
+        });
+        renderMultiWordMark = Date.now();
 
         boardContent.width = boardContent.maxX - boardContent.minX;
         boardContent.height = boardContent.maxY - boardContent.minY;
@@ -394,19 +398,19 @@ function prerenderInk(ink){
 
     context.moveTo(x,y);
     context.beginPath();
- 		var x = points[0] + contentOffsetX;
-		var y = points[1] + contentOffsetY;
-		_.each(_.chunk(points,3),function(point){
-			context.beginPath();
-			context.moveTo(x,y);
-			x = point[0] + contentOffsetX;
-			y = point[1] + contentOffsetY;
-			context.lineTo(x,y);
-			context.lineWidth = ink.thickness * (point[2] / 256);
-			context.lineCap = "round";
-			context.stroke();
-		});
-		return true;
+    var x = points[0] + contentOffsetX;
+    var y = points[1] + contentOffsetY;
+    _.each(_.chunk(points,3),function(point){
+        context.beginPath();
+        context.moveTo(x,y);
+        x = point[0] + contentOffsetX;
+        y = point[1] + contentOffsetY;
+        context.lineTo(x,y);
+        context.lineWidth = ink.thickness * (point[2] / 256);
+        context.lineCap = "round";
+        context.stroke();
+    });
+    return true;
 }
 function alertCanvas(canvas,label){
     var url = canvas.toDataURL();
@@ -499,21 +503,21 @@ function prerenderText(text){
     var yOffset = 0;
     var runs = [];
     var breaking = false;
-		$.each(text.text.split(''),function(i,c){
-				if(c.match(newline)){
-						runs.push(""+run);
-						run = "";
-						return;
-				}
-				else if(breaking && c == " "){
-						runs.push(run);
-						run = "";
-						return;
-				}
-				var w = context.measureText(run).width;
-				breaking = w >= text.width - 80;
-				run += c;
-		});
+    $.each(text.text.split(''),function(i,c){
+        if(c.match(newline)){
+            runs.push(""+run);
+            run = "";
+            return;
+        }
+        else if(breaking && c == " "){
+            runs.push(run);
+            run = "";
+            return;
+        }
+        var w = context.measureText(run).width;
+        breaking = w >= text.width - 80;
+        run += c;
+    });
     runs.push(run);
     runs = runs.map(function(r){
         return r.trim();
@@ -578,6 +582,7 @@ var boardContent = {
     images:{},
     highlighters:{},
     texts:{},
+    multiWordTexts:{},
     inks:{}
 };
 var pressureSimilarityThreshold = 32,
@@ -598,7 +603,7 @@ function render(content,incCanvasContext,incViewBounds){
 	}
     if(content){
         var startMark = Date.now();
-        var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,inksRenderedMark,renderDecoratorsMark;
+        var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
         try{
             var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
 						//console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
@@ -618,6 +623,18 @@ function render(content,incCanvasContext,incViewBounds){
                     });
                 }
             }
+            var renderRichTexts = function(texts){
+                if(texts){
+                    $.each(texts,function(i,text){
+                        if(!text.bounds){
+                            text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
+                        }
+                        if(intersectRect(text.bounds,viewBounds)){
+                            Modes.text.draw(text);
+                        }
+                    });
+                }
+            }
             var renderImmediateContent = function(){
                 renderInks(content.highlighters);
                 highlightersRenderedMark = Date.now();
@@ -627,11 +644,12 @@ function render(content,incCanvasContext,incViewBounds){
                     }
                 });
                 textsRenderedMark = Date.now();
-                renderInks(content.inks);
+                renderRichTexts(content.multiWordTexts);
+                richTextsRenderedMark = Date.now();
+                renderInks(boardContent.inks);
                 inksRenderedMark = Date.now();
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
-                //console.log("renderImmediateContent");
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;

@@ -109,11 +109,11 @@ function worldToScreen(x,y){
  * */
 
 function detectPointerEvents(){
-	try {
-		return (("pointerEnabled" in Navigator && Navigator.pointerEnabled == true) || PointerEvent != undefined);
-	} catch(e) {
-		return false;
-	}
+    try {
+        return (("pointerEnabled" in Navigator && Navigator.pointerEnabled == true) || PointerEvent != undefined);
+    } catch(e) {
+        return false;
+    }
 }
 
 function registerPositionHandlers(contexts,down,move,up){
@@ -123,7 +123,7 @@ function registerPositionHandlers(contexts,down,move,up){
             shift:e.shiftKey,
             ctrl:e.ctrlKey,
             alt:e.altKey,
-						eraser:isErasing
+            eraser:isErasing
         }
     }
     $.each(contexts,function(i,_context){
@@ -131,344 +131,343 @@ function registerPositionHandlers(contexts,down,move,up){
         var offset = function(){
             return context.offset();
         }
-				context.css({"touch-action":"none"});
-				var isGesture = false;
-				var trackedTouches = {};
-				var updatePoint = function(pointerEvent){
-					var pointId = pointerEvent.originalEvent.pointerId;
-					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
-					var o = offset();
-					var x = pointerEvent.pageX - o.left;
-					var y = pointerEvent.pageY - o.top;
-					var z = pointerEvent.originalEvent.pressure || 0.5;
-					var worldPos = screenToWorld(x,y);
-					var newPoint = {
-						"x":worldPos.x,
-						"y":worldPos.y,
-						"screenX":x,
-						"screenY":y,
-						"z":z
-					};
-					var pointItem = trackedTouches[pointId] || {
-						"pointerId":pointId,
-						"pointerType":pointerEvent.originalEvent.pointerType,
-						"eraser":isEraser,
-						"points":[]
-					};
-					pointItem.points.push(newPoint);
-					pointItem.eraser = pointItem.eraser || isEraser;
-					trackedTouches[pointId] = pointItem;
-					if (_.size(trackedTouches) > 1){
-						if (isGesture == false){
-							_.each(trackedTouches,function(series){
-								series.points = [_.last(series.points)];
-							});
-						}
-						isGesture = true;
-					}
-					return {
-						"pointerType":pointerEvent.pointerType,
-						"eraser":pointItem.eraser,
-						"x":x,
-						"y":y,
-						"z":z,
-						"worldPos":worldPos
-					};	
-				};
-				var releasePoint = function(pointerEvent){
-					var pointId = pointerEvent.originalEvent.pointerId;
-					var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
-					var o = offset();
-					var x = pointerEvent.pageX - o.left;
-					var y = pointerEvent.pageY - o.top;
-					var z = pointerEvent.originalEvent.pressure || 0.5;
-					var worldPos = screenToWorld(x,y);
-					delete trackedTouches[pointId];
-					if (isGesture && _.size(trackedTouches) == 0){
-						isGesture = false;
-						isDown = false;
-					}
-					return {
-						"pointerType":pointerEvent.pointerType,
-						"eraser":isEraser,
-						"x":x,
-						"y":y,
-						"z":z,
-						"worldPos":worldPos
-					};	
-				}
-				if (detectPointerEvents()){
-					var performGesture = _.throttle(function(){
-						if (_.size(trackedTouches) > 1){
-							takeControlOfViewbox();
-							
-							var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
-								var first = _.first(item.points);
-								var last = _.last(item.points);
-								return [first,last];
-							});
-							trackedTouches = {};
-							var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
-							var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+        context.css({"touch-action":"none"});
+        var isGesture = false;
+        var trackedTouches = {};
+        var updatePoint = function(pointerEvent){
+            var pointId = pointerEvent.originalEvent.pointerId;
+            var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
+            var o = offset();
+            var x = pointerEvent.pageX - o.left;
+            var y = pointerEvent.pageY - o.top;
+            var z = pointerEvent.originalEvent.pressure || 0.5;
+            var worldPos = screenToWorld(x,y);
+            var newPoint = {
+                "x":worldPos.x,
+                "y":worldPos.y,
+                "screenX":x,
+                "screenY":y,
+                "z":z
+            };
+            var pointItem = trackedTouches[pointId] || {
+                "pointerId":pointId,
+                "pointerType":pointerEvent.originalEvent.pointerType,
+                "eraser":isEraser,
+                "points":[]
+            };
+            pointItem.points.push(newPoint);
+            pointItem.eraser = pointItem.eraser || isEraser;
+            trackedTouches[pointId] = pointItem;
+            if (_.size(trackedTouches) > 1){
+                if (isGesture == false){
+                    _.each(trackedTouches,function(series){
+                        series.points = [_.last(series.points)];
+                    });
+                }
+                isGesture = true;
+            }
+            return {
+                "pointerType":pointerEvent.pointerType,
+                "eraser":pointItem.eraser,
+                "x":x,
+                "y":y,
+                "z":z,
+                "worldPos":worldPos
+            };
+        };
+        var releasePoint = function(pointerEvent){
+            var pointId = pointerEvent.originalEvent.pointerId;
+            var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
+            var o = offset();
+            var x = pointerEvent.pageX - o.left;
+            var y = pointerEvent.pageY - o.top;
+            var z = pointerEvent.originalEvent.pressure || 0.5;
+            var worldPos = screenToWorld(x,y);
+            delete trackedTouches[pointId];
+            if (isGesture && _.size(trackedTouches) == 0){
+                isGesture = false;
+                isDown = false;
+            }
+            return {
+                "pointerType":pointerEvent.pointerType,
+                "eraser":isEraser,
+                "x":x,
+                "y":y,
+                "z":z,
+                "worldPos":worldPos
+            };
+        }
+        if (detectPointerEvents()){
+            var performGesture = _.throttle(function(){
+                if (_.size(trackedTouches) > 1){
+                    takeControlOfViewbox();
 
-							Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+                    var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+                        var first = _.first(item.points);
+                        var last = _.last(item.points);
+                        return [first,last];
+                    });
+                    trackedTouches = {};
+                    var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+                    var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-							var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;})); 
-							var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;})); 
-							var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;})); 
-							var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;})); 
-							var prevYScale = prevNorthMost - prevSouthMost;
-							var prevXScale = prevWestMost - prevEastMost;
+                    Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
 
-							var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;})); 
-							var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;})); 
-							var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;})); 
-							var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;})); 
-							var yScale = northMost - southMost;
-							var xScale = westMost - eastMost;
-							
-							var previousScale = (prevXScale + prevYScale)	/ 2;
-							var currentScale = (xScale + yScale)	/ 2;
-							//console.log("scaling:",previousScale,currentScale);
-							Zoom.scale(previousScale / currentScale);
-						}
-					},25);
-					context.bind("pointerdown",function(e){
-						var point = updatePoint(e);
-						e.preventDefault();
-						WorkQueue.pause();
-						if (_.size(trackedTouches) == 1 && !isGesture){
-							isDown = true;
-							down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
-						}
-					});
-					context.bind("pointermove",function(e){
-						var point = updatePoint(e);
-						e.preventDefault();
-						if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
-							performGesture();
-						}
-						if (_.size(trackedTouches) == 1 && !isGesture){
-							if(isDown){
-								move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
-							}
-						}
-					});
-					context.bind("pointerup",function(e){
-						var point = releasePoint(e);
-						WorkQueue.gracefullyResume();
-						e.preventDefault();
-						if(isDown && !isGesture){
-								up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
-						}
-						isDown = false;
-					});
-					var pointerOut = function(x,y){
-							trackedTouches = {};
-							WorkQueue.gracefullyResume();
-							var worldPos = screenToWorld(x,y);
-							var worldX = worldPos.x;
-							var worldY = worldPos.y;
-							if(worldX < viewboxX){
-									takeControlOfViewbox();
-									Extend.left();
-							}
-							else if(worldX >= (viewboxX + viewboxWidth)){
-									takeControlOfViewbox();
-									Extend.right();
-							}
-							else if(worldY < viewboxY){
-									takeControlOfViewbox();
-									Extend.up();
-							}
-							else if(worldY >= (viewboxY + viewboxHeight)){
-									takeControlOfViewbox();
-									Extend.down();
-							}
-							isDown = false;
-					}
-					var pointerClose = function(e){
-						var point = releasePoint(e);
-						WorkQueue.gracefullyResume();
-						e.preventDefault();
-						if(isDown){
-								pointerOut(e.offsetX,e.offsetY);
-						}
-						isDown = false;
-					};
-					context.bind("pointerout",pointerClose);
-					context.bind("pointerleave",pointerClose);
-					context.bind("pointercancel",pointerClose);
+                    var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                    var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                    var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                    var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                    var prevYScale = prevNorthMost - prevSouthMost;
+                    var prevXScale = prevWestMost - prevEastMost;
 
-				} else {
-					context.bind("mousedown",function(e){
-							WorkQueue.pause();
-							var o = offset();
-							e.preventDefault();
-							isDown = true;
-							var x = e.pageX - o.left;
-							var y = e.pageY - o.top;
-							var z = 0.5;
-							var worldPos = screenToWorld(x,y);
-							down(x,y,z,worldPos,modifiers(e));
-					});
-					context.bind("mousemove",function(e){
-							if(isDown){
-									var o = offset();
-									e.preventDefault();
-									var x = e.pageX - o.left;
-									var y = e.pageY - o.top;
-									var z = 0.5;
-									move(x,y,z,screenToWorld(x,y),modifiers(e));
-							}
-					});
-					context.bind("mouseup",function(e){
-							WorkQueue.gracefullyResume();
-							e.preventDefault();
-							if(isDown){
-									var o = offset();
-									var x = e.pageX - o.left;
-									var y = e.pageY - o.top;
-									var z = 0.5;
-									var worldPos = screenToWorld(x,y);
-									up(x,y,z,worldPos,modifiers(e));
-							}
-							isDown = false;
-					});
-					var mouseOut = function(x,y){
-							WorkQueue.gracefullyResume();
-							var worldPos = screenToWorld(x,y);
-							var worldX = worldPos.x;
-							var worldY = worldPos.y;
-							if(worldX < viewboxX){
-									takeControlOfViewbox();
-									Extend.left();
-							}
-							else if(worldX >= (viewboxX + viewboxWidth)){
-									takeControlOfViewbox();
-									Extend.right();
-							}
-							else if(worldY < viewboxY){
-									takeControlOfViewbox();
-									Extend.up();
-							}
-							else if(worldY >= (viewboxY + viewboxHeight)){
-									takeControlOfViewbox();
-									Extend.down();
-							}
-							isDown = false;
-					}
-					context.bind("mouseout",function(e){
-							WorkQueue.gracefullyResume();
-							e.preventDefault();
-							if(isDown){
-									mouseOut(e.offsetX,e.offsetY);
-							}
-							isDown = false;
-					});
-					var touches;
-					var masterTouch;
-					var prevPos;
-					var touchesToWorld = function(touches){
-							return touches.map(function(t){
-									return screenToWorld(t.x,t.y);
-							});
-					}
-					var averagePos = function(touches){
-							return {
-									x:average(_.map(touches,"x")),
-									y:average(_.map(touches,"y"))
-							};
-					}
-					var offsetTouches = function(ts){
-							var touches = [];
-							var o = offset();
-							$.each(ts,function(i,touch){
-									touches.push({
-											x: touch.pageX - o.left,
-											y: touch.pageY - o.top,
-											identifier:touch.identifier
-									});
-							});
-							return touches;
-					}
-					context.bind("touchstart",function(e){
-							WorkQueue.pause();
-							e.preventDefault();
-							var touches = offsetTouches(e.originalEvent.touches);
-							if(touches.length == 1){
-									var t = touches[0];
-									var worldPos = screenToWorld(t.x,t.y);
-									isDown = true;
-									var z = 0.5;
-									down(t.x,t.y,z,worldPos,modifiers(e));
-							}
-							else{
-									var avg = averagePos(touches);
-									prevPos = avg;
-							}
-					});
-					var distance = function(p1,p2){
-							return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
-					}
-					context.bind("touchmove",function(e){
-							e.preventDefault();
-							var touches = offsetTouches(e.originalEvent.touches);
-							switch(touches.length){
-							case 0 : break;
-							case 1:
-									if(isDown){
-											var t = touches[0];
-											var z = 0.5;
-											move(t.x,t.y,z,screenToWorld(t.x,t.y),modifiers(e));
-									}
-									break;
-							default:
-									var pos = averagePos(touches);
-									var xDelta = pos.x - prevPos.x;
-									var yDelta =  pos.y - prevPos.y;
-									prevPos = pos;
-									takeControlOfViewbox();
-									Pan.translate(-1 * xDelta,-1 * yDelta);
-									break;
-							}
-					});
-					context.bind("touchend",function(e){
-							WorkQueue.gracefullyResume();
-							e.preventDefault();
-							if(isDown){
-									var o = offset();
-									var t = e.originalEvent.changedTouches[0];
-									var x = t.pageX - o.left;
-									var y = t.pageY - o.top;
-									var z = 0.5;
-									if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
-											mouseOut(x,y);
-									}
-									else{
-											up(x,y,z,screenToWorld(x,y),modifiers(e));
-									}
-							}
-							isDown = false;
-					});
-					var previousScale = 1.0;
-					var changeFactor = 0.1;
-					context.bind("gesturechange",function(e){
-							WorkQueue.pause();
-							e.preventDefault();
-							isDown = false;
-							var scale = e.originalEvent.scale;
-							//Zoom.scale(previousScale / scale,true);
-							// I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
-							takeControlOfViewbox();
-							Zoom.scale(previousScale / scale);
-							previousScale = scale;
-					});
-					context.bind("gestureend",function(){
-							WorkQueue.gracefullyResume();
-							previousScale = 1.0;
-					});
-				}
+                    var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                    var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                    var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                    var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                    var yScale = northMost - southMost;
+                    var xScale = westMost - eastMost;
+
+                    var previousScale = (prevXScale + prevYScale)       / 2;
+                    var currentScale = (xScale + yScale)        / 2;
+                    Zoom.scale(previousScale / currentScale);
+                }
+            },25);
+            context.bind("pointerdown",function(e){
+                var point = updatePoint(e);
+                e.preventDefault();
+                WorkQueue.pause();
+                if (_.size(trackedTouches) == 1 && !isGesture){
+                    isDown = true;
+                    down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                }
+            });
+            context.bind("pointermove",function(e){
+                var point = updatePoint(e);
+                e.preventDefault();
+                if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+                    performGesture();
+                }
+                if (_.size(trackedTouches) == 1 && !isGesture){
+                    if(isDown){
+                        move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                    }
+                }
+            });
+            context.bind("pointerup",function(e){
+                var point = releasePoint(e);
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown && !isGesture){
+                    up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                }
+                isDown = false;
+            });
+            var pointerOut = function(x,y){
+                trackedTouches = {};
+                WorkQueue.gracefullyResume();
+                var worldPos = screenToWorld(x,y);
+                var worldX = worldPos.x;
+                var worldY = worldPos.y;
+                if(worldX < viewboxX){
+                    takeControlOfViewbox();
+                    Extend.left();
+                }
+                else if(worldX >= (viewboxX + viewboxWidth)){
+                    takeControlOfViewbox();
+                    Extend.right();
+                }
+                else if(worldY < viewboxY){
+                    takeControlOfViewbox();
+                    Extend.up();
+                }
+                else if(worldY >= (viewboxY + viewboxHeight)){
+                    takeControlOfViewbox();
+                    Extend.down();
+                }
+                isDown = false;
+            }
+            var pointerClose = function(e){
+                var point = releasePoint(e);
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    pointerOut(e.offsetX,e.offsetY);
+                }
+                isDown = false;
+            };
+            context.bind("pointerout",pointerClose);
+            context.bind("pointerleave",pointerClose);
+            context.bind("pointercancel",pointerClose);
+
+        } else {
+            context.bind("mousedown",function(e){
+                WorkQueue.pause();
+                var o = offset();
+                e.preventDefault();
+                isDown = true;
+                var x = e.pageX - o.left;
+                var y = e.pageY - o.top;
+                var z = 0.5;
+                var worldPos = screenToWorld(x,y);
+                down(x,y,z,worldPos,modifiers(e));
+            });
+            context.bind("mousemove",function(e){
+                if(isDown){
+                    var o = offset();
+                    e.preventDefault();
+                    var x = e.pageX - o.left;
+                    var y = e.pageY - o.top;
+                    var z = 0.5;
+                    move(x,y,z,screenToWorld(x,y),modifiers(e));
+                }
+            });
+            context.bind("mouseup",function(e){
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    var o = offset();
+                    var x = e.pageX - o.left;
+                    var y = e.pageY - o.top;
+                    var z = 0.5;
+                    var worldPos = screenToWorld(x,y);
+                    up(x,y,z,worldPos,modifiers(e));
+                }
+                isDown = false;
+            });
+            var mouseOut = function(x,y){
+                WorkQueue.gracefullyResume();
+                var worldPos = screenToWorld(x,y);
+                var worldX = worldPos.x;
+                var worldY = worldPos.y;
+                if(worldX < viewboxX){
+                    takeControlOfViewbox();
+                    Extend.left();
+                }
+                else if(worldX >= (viewboxX + viewboxWidth)){
+                    takeControlOfViewbox();
+                    Extend.right();
+                }
+                else if(worldY < viewboxY){
+                    takeControlOfViewbox();
+                    Extend.up();
+                }
+                else if(worldY >= (viewboxY + viewboxHeight)){
+                    takeControlOfViewbox();
+                    Extend.down();
+                }
+                isDown = false;
+            }
+            context.bind("mouseout",function(e){
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    mouseOut(e.offsetX,e.offsetY);
+                }
+                isDown = false;
+            });
+            var touches;
+            var masterTouch;
+            var prevPos;
+            var touchesToWorld = function(touches){
+                return touches.map(function(t){
+                    return screenToWorld(t.x,t.y);
+                });
+            }
+            var averagePos = function(touches){
+                return {
+                    x:average(_.map(touches,"x")),
+                    y:average(_.map(touches,"y"))
+                };
+            }
+            var offsetTouches = function(ts){
+                var touches = [];
+                var o = offset();
+                $.each(ts,function(i,touch){
+                    touches.push({
+                        x: touch.pageX - o.left,
+                        y: touch.pageY - o.top,
+                        identifier:touch.identifier
+                    });
+                });
+                return touches;
+            }
+            context.bind("touchstart",function(e){
+                WorkQueue.pause();
+                e.preventDefault();
+                var touches = offsetTouches(e.originalEvent.touches);
+                if(touches.length == 1){
+                    var t = touches[0];
+                    var worldPos = screenToWorld(t.x,t.y);
+                    isDown = true;
+                    var z = 0.5;
+                    down(t.x,t.y,z,worldPos,modifiers(e));
+                }
+                else{
+                    var avg = averagePos(touches);
+                    prevPos = avg;
+                }
+            });
+            var distance = function(p1,p2){
+                return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
+            }
+            context.bind("touchmove",function(e){
+                e.preventDefault();
+                var touches = offsetTouches(e.originalEvent.touches);
+                switch(touches.length){
+                case 0 : break;
+                case 1:
+                    if(isDown){
+                        var t = touches[0];
+                        var z = 0.5;
+                        move(t.x,t.y,z,screenToWorld(t.x,t.y),modifiers(e));
+                    }
+                    break;
+                default:
+                    var pos = averagePos(touches);
+                    var xDelta = pos.x - prevPos.x;
+                    var yDelta =  pos.y - prevPos.y;
+                    prevPos = pos;
+                    takeControlOfViewbox();
+                    Pan.translate(-1 * xDelta,-1 * yDelta);
+                    break;
+                }
+            });
+            context.bind("touchend",function(e){
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    var o = offset();
+                    var t = e.originalEvent.changedTouches[0];
+                    var x = t.pageX - o.left;
+                    var y = t.pageY - o.top;
+                    var z = 0.5;
+                    if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
+                        mouseOut(x,y);
+                    }
+                    else{
+                        up(x,y,z,screenToWorld(x,y),modifiers(e));
+                    }
+                }
+                isDown = false;
+            });
+            var previousScale = 1.0;
+            var changeFactor = 0.1;
+            context.bind("gesturechange",function(e){
+                WorkQueue.pause();
+                e.preventDefault();
+                isDown = false;
+                var scale = e.originalEvent.scale;
+                //Zoom.scale(previousScale / scale,true);
+                // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
+                takeControlOfViewbox();
+                Zoom.scale(previousScale / scale);
+                previousScale = scale;
+            });
+            context.bind("gestureend",function(){
+                WorkQueue.gracefullyResume();
+                previousScale = 1.0;
+            });
+        }
     });
     return function(forceDown){
         isDown = forceDown;
@@ -611,7 +610,7 @@ function clampToView(point) {
     }
     return {
         x:x,
-        y:y,
+        y:y
     };
 }
 function drawSelectionBounds(item){
@@ -663,470 +662,243 @@ var Modes = (function(){
         currentMode:noneMode,
         none:noneMode,
         text:(function(){
-            var currentText = {};
-            var marquee = undefined;
-            var typingTimer = undefined;
-            var selectedTexts = [];
-            var typingDelay = 1000;
-            var typingTicks = 100;
-            var startTime = Date.now();
-            var changeToTextBoxMade = false;
-            var currentCaretPos = undefined;
-            var currentScrollTop = 0;
-            var lineWithSeparatorRatio = 1.3; //magic number?
-            var oldText = "";
-            var newText = "";
-            var currentFamily = Fonts.getAllFamilies()[0];
-            var currentSize = Fonts.getAllSizes()[2];
-            var typingTimerElapsed = function(){
-                WorkQueue.gracefullyResume();
-                clearTimeout(typingTimer);
-                typingTimer = undefined;
-                var subject = $.extend({},currentText);
-                subject.text = oldText;
-                delete subject.canvas;
-		console.log(subject);
-                sendStanza(subject);
-            }
-            var checkTyping = function(){
-                WorkQueue.pause();
-                var oldTextTest = oldText;
-                oldText = newText;
-                var scrollHeight = textEditorInput.prop("scrollHeight");
-                if(scrollHeight > textEditorInput.height()){
-                    textEditorInput.height(scrollHeight);
-                }
-                currentText.text = newText;
-                currentText.width = textEditorInput.width();
-                currentText.height = textEditorInput.height();
-                selectedTexts = [currentText];
-                Progress.call("onSelectionChanged",[Modes.select.text]);
-                var el = textEditorInput;
-                if(!el){return;}
-                if ("selectionStart" in el){
-                    currentCaretPos = el.selectionStart;
-                    currentScrollTop = el.scrollTop;
-                }
-                var t = Date.now();
-                var elapsed = t - startTime;
-                if(oldTextTest == newText || changeToTextBoxMade){
-                    if(elapsed > typingDelay){
-                        changeToTextBoxMade = false;
-                        typingTimerElapsed();
-                    }
-                    else{
-                        clearTimeout(typingTimer);
-                        typingTimer = setTimeout(checkTyping,typingTicks);
-                    }
-                }
-                else{
-                    startTime = Date.now();
-                    clearTimeout(typingTimer);
-                    typingTimer = setTimeout(checkTyping,typingTicks);
-                }
-            };
-            var hasInitialized = false;
+            var texts = [];
+            var noop = function(){};
+            var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
+                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen;
 
-            var textEditor = undefined;
-            var textDropdowns = undefined;
-            var textEditorInput = undefined;
-            var fontFamilySelector = undefined;
-            var fontSizeSelector = undefined;
-            var fontColorSelector = undefined;
-            var fontBoldSelector = undefined;
-            var fontItalicSelector = undefined;
-            var fontUnderlineSelector = undefined;
-
-            var updateTextFont = function(t){
-                t.font = sprintf("%spx %s",t.size,t.family);
-            }
-            var updateTextEditor = function(){
-                if ("type" in currentText && currentText.type == "text"){
-                    var h = undefined;
-                    prerenderText(currentText);
-                    if ("runs" in currentText && !(_.size(currentText.runs) == 1 && currentText.runs[0] == "")){
-                        h = px(currentText.runs.length * currentText.size * lineWithSeparatorRatio);
-                        textEditorInput.val(currentText.runs.join("\n"));
-                    } else {
-                        h = px(currentText.size);
-                        textEditorInput.val(currentText.text);
-                    }
-                    textEditorInput.width(currentText.width);
-                    textEditorInput.height(currentText.height);
-
-                    var screenPos = worldToScreen(currentText.x,currentText.y);
-                    var possiblyAdjustedHeight = Math.max(currentText.height,h);
-                    var possiblyAdjustedWidth = currentText.width;//HUH?  This is just, like, this crazy bug.  Why would we want it to grow every time it's updated? * 1.1;
-                    var possiblyAdjustedX = screenPos.x;
-                    var possiblyAdjustedY = screenPos.y;
-                    var acceptableMinY = 30;
-                    var acceptableMaxX = boardWidth - 100;
-                    //var acceptableMaxY = boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
-                    var acceptableMaxY = boardHeight - textEditor.height();//boardHeight - 100; //this should check the size of the updatedTextEditor, to ensure that it doesn't go off the bottom of the screen
-                    if (possiblyAdjustedX > acceptableMaxX){
-                        /*The screen should move, not the box*/
-                        possiblyAdjustedX = screenPos.x - textEditor.width();
-                    }
-                    if (possiblyAdjustedY < acceptableMinY){
-                        possiblyAdjustedY = acceptableMinY;
-                    }
-                    if ((possiblyAdjustedY + possiblyAdjustedHeight) > acceptableMaxY){
-                        possiblyAdjustedY = acceptableMaxY - possiblyAdjustedHeight;
-                    }
-                    // there is now only one spot the textEditor is located on the screen, and it's here, if you want to move it about or keep it on screen, etc.
-                    textEditorInput.css({
-                        width:px(possiblyAdjustedWidth),
-                        "font-weight": currentText.weight,
-                        "font-style": currentText.style,
-                        "text-decoration": currentText.decoration,
-                        "color": currentText.color[0],
-                        "min-height":h,
-                        "font-family":currentText.family,
-                        "font-size":px(currentText.size),
-                        position:"absolute",
-                        left:px(possiblyAdjustedX),
-                        top:px(possiblyAdjustedY),
-                        padding:0,
-                        border:0,
-                        background:"white"
-                        /*width:px(possiblyAdjustedWidth),*/
-                        /*"min-width":px(240)*/
-                    });
-                    updateTextFont(currentText);
-                    if ("setSelectionRange" in textEditorInput){
-                        textEditorInput.setSelectionRange(currentCaretPos,currentCaretPos);
-                        $(textEditorInput).scrollTop(currentScrollTop);
-                    }
-                    $("#textEditorClose").on("click",function(){
-                        textEditor.hide();
-                    });
-                    fontFamilySelector.val(currentText["family"]);
-                    fontSizeSelector.val(currentText["size"]);
-                    fontColorSelector.val(currentText["color"]);
-                    if (currentText.weight == "bold"){
-                        fontBoldSelector.addClass("active");
-                    } else {
-                        fontBoldSelector.removeClass("active");
-                    }
-                    if (currentText.style == "italic"){
-                        fontItalicSelector.addClass("active");
-                    } else {
-                        fontItalicSelector.removeClass("active");
-                    }
-                    if (currentText.decoration == "underline"){
-                        fontUnderlineSelector.addClass("active");
-                    } else {
-                        fontUnderlineSelector.removeClass("active");
-                    }
-                    textEditor.show();
-                    //textDropdowns.show();
-                    textEditorInput.focus();
-                } else {
-                    textEditor.hide();
-                    //textDropdowns.hide();
-                    textEditorInput.hide();
-                }
-            };
-            if (!hasInitialized){
-                $(function(){
-                    hasInitialized = true;
-                    textEditor = $("#textEditor");
-                    textDropdowns = $("#textDropdowns");
-                    textEditorInput = $("#textEditorInputArea");
-                    fontFamilySelector = $("#fontFamilySelector");
-                    fontSizeSelector = $("#fontSizeSelector");
-                    fontColorSelector = $("#fontColorSelector");
-                    fontBoldSelector = $("#fontBoldSelector");
-                    fontItalicSelector = $("#fontItalicSelector");
-                    fontUnderlineSelector = $("#fontUnderlineSelector");
-                    /*
-                     textEditorInput.resizable({
-                     handles:"ne se nw sw",
-                     stop:function(event,ui){
-                     currentText.width = ui.width;
-                     currentText.height = ui.height;
-                     prerenderText(currentText);
-                     }
-                     });
-                     */
-                    textEditorInput.hide();
-                    textEditor.hide();
-                    //textDropdowns.hide();
-                    var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
-                    fontFamilySelector.empty();
-                    Fonts.getAllFamilies().map(function(family){
-                        fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
-                    });
-                    fontFamilySelector.on("change",function(e){
-                        var newFamily = $(this).val();
-                        currentFamily = newFamily;
-                        if ("family" in currentText){
-                            currentText["family"] = newFamily;
-                            typingTimerElapsed();
-                        }
-                        updateTextEditor();
-                    });
-                    var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
-                    fontSizeSelector.empty();
-                    Fonts.getAllSizes().map(function(size){
-                        fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
-                    });
-                    fontSizeSelector.on("change",function(e){
-                        var newSizeInt = parseInt($(this).val());
-                        currentSize = newSizeInt;
-                        if ("size" in currentText){
-                            currentText["size"] = newSizeInt;
-                            typingTimerElapsed();
-                        }
-                        updateTextEditor();
-                    });
-                    var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
-                    fontColorSelector.empty();
-                    Colors.getAllNamedColors().map(function(color){
-                        fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
-                    });
-                    fontColorSelector.on("change",function(e){
-                        var newColor = $(this).val();
-                        if ("color" in currentText){
-                            currentText["color"] = Colors.getColorForName(newColor);
-                            typingTimerElapsed();
-                        }
-                        updateTextEditor();
-                    });
-                    fontBoldSelector.on("click",function(){
-                        if ("weight" in currentText){
-                            currentText["weight"] = !fontBoldSelector.hasClass("active") ? "bold" : "Normal";
-                            typingTimerElapsed();
-                        }
-                        updateTextEditor();
-                    });
-                    fontItalicSelector.on("click",function(){
-                        if ("style" in currentText){
-                            currentText["style"] = !fontItalicSelector.hasClass("active") ? "italic" : "Normal";
-                            typingTimerElapsed();
-                        }
-                        updateTextEditor();
-                    });
-                    fontUnderlineSelector.on("click",function(){
-                        if ("decoration" in currentText){
-                            currentText["decoration"] = !fontUnderlineSelector.hasClass("active") ? "underline" : "Normal";
-                        }
-                        updateTextEditor();
-                        typingTimerElapsed();
-                    });
-                    textEditorInput.keyup(function(e){
-                        if ("type" in currentText && currentText.type == "text"){
-                            e.stopPropagation();
-                            var el = $(this).get(0);
-                            if ("selectionStart" in el && currentCaretPos != undefined){
-                                currentCaretPos = el.selectionStart;
-                                currentScrollTop = el.scrollTop;
-                            }
-                            if (e.ctrlKey){
-                                if(e.keyCode == 73) {
-                                    if(currentText.style == "Normal"){
-                                        currentText["style"] = "italic";
-                                    }
-                                    else {
-                                        currentText["style"] = "Normal";
-                                    }
-                                    updateTextEditor();
-                                    sendText();
-                                }
-                                if (e.keyCode == 66){
-                                    if (currentText.weight == "Normal"){
-                                        currentText["weight"] = "bold";
-                                    } else {
-                                        currentText["weight"] = "Normal";
-                                    }
-                                    updateTextEditor();
-                                    typingTimerElapsed();
-                                }
-                            } else {
-                                newText = $(this).val();
-                                checkTyping();
-                            }
-                        }
-                    }).keydown(function(e){
-                        if ("type" in currentText && currentText.type == "text"){
-                            e.stopPropagation();
-                        }
-                    });
-                    textEditorInput.bind("paste",function(e){
-                        if ("type" in currentText && currentText.type == "text"){
-                            var thisBox = $(this);
-                            if ("type" in e && e.type == "paste"){
-                                window.setTimeout(function(){
-                                    newText = thisBox.val();
-                                    checkTyping();
-                                },0);
-                            }
-                        }
-                    });
-                });
-            }
-            var removeTextEditor = function(){
-                if(typingTimer){
-                    typingTimerElapsed();
-                }
-                currentText = {};
-                textEditor.hide();
-                //textDropdowns.hide();
-            };
+            var echoesToDisregard = {};
             var createBlankText = function(worldPos){
-                var id = sprintf("%s%s",UserSettings.getUsername(),Date.now());
-                var currentSlide = Conversations.getCurrentSlideJid();
-                var text = {
-                    author:UserSettings.getUsername(),
-                    color:Colors.getColorForName("black"),
-                    decoration:"None",
-                    identity:id,
-                    privacy:Privacy.getCurrentPrivacy(),
-                    family:currentFamily,
-                    size:currentSize,
-                    slide:currentSlide,
-                    style:"Normal",
-                    tag:id,
-                    width:200,
-                    caret:0,
-                    height:60,
+                return Modes.text.editorFor({
+                    bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
+                    identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
+                    requestedWidth:300,
+                    width:0,
+                    height:0,
                     x:worldPos.x,
                     y:worldPos.y,
-                    target:"presentationSpace",
-                    text:"",
-                    timestamp:Date.now(),
-                    type:"text",
-                    weight:"Normal"
-                };
-                selectedTexts = [text];
-                prerenderText(text);
-                currentText = text;
-                updateTextEditor();
-                return text;
-            };
-            var alteredText = function(t){
-                changeToTextBoxMade = true;
-                updateTextFont(t);
-                prerenderText(t);
-                checkTyping();
-                return t;
-            };
-
-            var editText = function(text){
-                oldText = text.text;
-                var inputContents = "";
-                if (oldText.runs != undefined){
-                    inputContents = oldText.runs.join("\n");
-                } else {
-                    inputContents = oldText;
-                }
-                newText = inputContents;
-                startTime = Date.now();
-                /*
-                 var chars = Math.max.apply(Math,_.map(text.runs,"length"));
-                 var xInset = (boardWidth / 2 - text.width / 2);
-                 var yInset = (boardHeight / 2 - text.height / 2);
-                 var xDelta = text.bounds[0] - viewboxX - xInset;
-                 var yDelta = text.bounds[1] - viewboxY - yInset;
-                 */
-                prerenderText(text);
-                updateTextEditor();
-            }
-            var possiblyClearEditBoxesFunction = _.debounce(function(){
-                var newSelectedTexts = [];
-                _.forEach(selectedTexts,function(st){
-                    if ("texts" in boardContent && "identity" in st && st.identity in boardContent.texts && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-                        newSelectedTexts.push(st);
-                    } else if ("runs" in st && _.size(st.runs) == 1 && st.runs[0] == "" && "slide" in st && st.slide.toLowerCase() == Conversations.getCurrentSlideJid().toLowerCase()){
-                        newSelectedTexts.push(st);
-                    }
+                    type:"multiWordText",
+                    author:UserSettings.getUsername(),
+                    words:[]
                 });
-                selectedTexts = newSelectedTexts;
-                if (Modes.currentMode == Modes.text){
-                    if (_.size(selectedTexts) > 0 ){
-                        $("#selectionAdorner").empty();
-                        selectedTexts[0] = currentText;
-                        var view = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxWidth];
-                        if (intersectRect(currentText.bounds,view)){
-                            editText(currentText);
-                            drawSelectionBounds(currentText);
-                        } else {
-                            removeTextEditor();
-                        }
-                    } else {
-                        removeTextEditor();
+            };
+            $(function(){
+                fontFamilySelector = $("#fontFamilySelector");
+                fontSizeSelector = $("#fontSizeSelector");
+                fontColorSelector = $("#fontColorSelector");
+                fontBoldSelector = $("#fontBoldSelector");
+                fontItalicSelector = $("#fontItalicSelector");
+                fontUnderlineSelector = $("#fontUnderlineSelector");
+                justifySelector = $("#justifySelector");
+                presetFitToText = $("#presetFitToText");
+                presetRunToEdge = $("#presetRunToEdge");
+                presetNarrow = $("#presetNarrow");
+                presetWiden = $("#presetWiden");
+                presetFullscreen = $("#presetFullscreen");
+                presetCenterOnScreen = $("#presetCenterOnScreen");
+                var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
+                var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
+                var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
+                Fonts.getAllFamilies().map(function(family){
+                    fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
+                });
+                Fonts.getAllSizes().map(function(size){
+                    fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
+                });
+                Colors.getAllNamedColors().map(function(color){
+                    fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
+                });
+                var toggleFormattingProperty = function(prop){
+                    return function(){
+                        _.each(boardContent.multiWordTexts,function(t){
+                            if(t.doc.isActive){
+                                var selRange = t.doc.selectedRange();
+                                selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
+                                if(t.doc.save().length > 0){
+                                    sendRichText(t);
+                                }
+                            }
+                        });
                     }
                 }
-            },200);
-            Progress.onBoardContentChanged["Modes.text"] = possiblyClearEditBoxesFunction;
-            Progress.onSelectionChanged["Modes.text"] = possiblyClearEditBoxesFunction;
-            Progress.historyReceived["Modes.text"] = possiblyClearEditBoxesFunction;
-            Progress.onViewboxChanged["Modes.text"] = possiblyClearEditBoxesFunction;
-            var noop = function(){};
+                var setFormattingProperty = function(prop){
+                    return function(){
+                        var newValue = $(this).val();
+                        _.each(boardContent.multiWordTexts,function(t){
+                            if(t.doc.isActive){
+                                t.doc.selectedRange().setFormatting(prop,newValue);
+                                if(t.doc.save().length > 0){
+                                    sendRichText(t);
+                                }
+                            }
+                        });
+                    }
+                };
+                var adoptPresetWidth = function(preset){
+                    return function(){
+                        _.each(boardContent.multiWordTexts,function(t){
+                            if(t.doc.isActive){
+                                switch(preset){
+                                case "runToEdge":
+                                    var logicalBoardWidth = screenToWorld(boardWidth,0);
+                                    t.doc.width((logicalBoardWidth.x + viewboxX - t.x));
+                                    break;
+                                case "fitToText":
+                                    t.doc.width(t.doc.frame.actualWidth());
+                                    break;
+                                case "widen":
+                                    t.doc.width(t.doc.frame.actualWidth() * 1.6);
+                                    break;
+                                case "narrow":
+                                    t.doc.width(t.doc.frame.actualWidth() * 0.6);
+                                    break;
+                                case "centerOnScreen":
+                                    t.doc.width(screenToWorld(boardWidth,0).x);
+                                    t.doc.selectedRange().setFormatting("align","center");
+                                    t.doc.position.x = viewboxX;
+                                    break;
+                                case "fullscreen":
+                                    t.doc.position.x = viewboxX;
+                                    t.doc.position.y = viewboxY;
+                                    t.doc.width(screenToWorld(boardWidth,0).x);
+                                    t.doc.select(0,t.doc.frame.length - 1);
+                                    t.doc.selectedRange().setFormatting("align","center");
+                                    t.doc.selectedRange().setFormatting("bold",true);
+                                    var content = t.doc.documentRange().save();
+                                    content.push({
+                                        text:"\n"
+                                    });
+                                    content.push({
+                                        text:"\n"
+                                    });
+                                    t.doc.load(content);
+                                    var startOfPara = t.doc.frame.length - 1;
+                                    t.doc.select(startOfPara,startOfPara);
+                                    break;
+                                }
+                                t.doc.contentChanged.fire();
+                            }
+                        });
+                    };
+                }
+                fontBoldSelector.click(toggleFormattingProperty("bold"));
+                fontItalicSelector.click(toggleFormattingProperty("italic"));
+                fontUnderlineSelector.click(toggleFormattingProperty("underline"));
+                fontFamilySelector.change(setFormattingProperty("font"));
+                fontSizeSelector.change(setFormattingProperty("size"));
+                fontColorSelector.change(setFormattingProperty("color"));
+                justifySelector.change(setFormattingProperty("align"));
+                presetFitToText.click(adoptPresetWidth("fitToText"));
+                presetRunToEdge.click(adoptPresetWidth("runToEdge"));
+                presetNarrow.click(adoptPresetWidth("narrow"));
+                presetWiden.click(adoptPresetWidth("widen"));
+                presetCenterOnScreen.click(adoptPresetWidth("centerOnScreen"));
+                presetFullscreen.click(adoptPresetWidth("fullscreen"));
+            });
             return {
+                echoesToDisregard:{},
+                editorFor:function(t){
+                    var editor = boardContent.multiWordTexts[t.identity];
+                    if(!editor){
+                        editor = boardContent.multiWordTexts[t.identity] = t;
+                    }
+                    if(!editor.doc){
+                        var isAuthor = t.author == UserSettings.getUsername();
+                        editor.doc = carota.editor.create(
+                            $("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
+                            board[0],
+                            isAuthor? function(){render(boardContent)} : noop);
+                        if(isAuthor){
+                            editor.doc.contentChanged(function(){
+                                var source = boardContent.multiWordTexts[editor.identity];
+                                source.privacy = Privacy.getCurrentPrivacy();
+                                source.target = "presentationSpace";
+                                source.slide = Conversations.getCurrentSlideJid();
+                                if(editor.doc.save().length > 0){
+                                    sendRichText(source);
+                                }
+                            });
+                            editor.doc.selectionChanged(function(formatReport){
+                                var format = formatReport();
+                                fontBoldSelector.toggleClass("active",format.bold == true);
+                                fontItalicSelector.toggleClass("active",format.italic == true);
+                                fontUnderlineSelector.toggleClass("active",format.underline == true);
+                                fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
+                                fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
+                                fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
+                                justifySelector.val(format.align || carota.runs.defaultFormatting.align);
+
+                            });
+                        }
+                    }
+                    editor.doc.position = {x:t.x,y:t.y};
+                    editor.doc.width(t.requestedWidth);
+                    return editor;
+                },
+                draw:function(t){
+                    if(t && t.doc){
+                        carota.editor.paint(board[0],t.doc,true);
+                    }
+                },
                 activate:function(){
-                    marquee = $("#textMarquee");
+                    var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
-                    $("#minorText").click(function(){});
-                    $("#deleteTextUnderEdit").unbind("click").on("click",bounceAnd(function(){
-                        deletedStanza = selectedTexts[0];
-                        updateStatus(sprintf("Deleted %s",deletedStanza.identity));
-                        var deleteTransform = batchTransform();
-                        deleteTransform.isDeleted = true;
-                        deleteTransform.textIds = [deletedStanza.identity];
-                        sendStanza(deleteTransform);
-                    }));
-                    updateStatus("Text input mode");
+                    var lastClick = Date.now();
                     var up = function(x,y,z,worldPos){
-                        if(typingTimer){
-                            typingTimerElapsed();
-                        }
-                        textEditorInput.show();
-                        //textDropdowns.show();
-                        marquee.show();
-                        marquee.css({
-                            left:px(x),
-                            top:px(y)
-                        });
-                        oldText = "";
-                        newText = "";
-                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
                         var threshold = 10;
                         var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        currentCaretPos = 0;
-                        currentScrollTop = 0;
-                        selectedTexts = _.values(boardContent.texts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
+                        var selectedTexts = _.values(boardContent.multiWordTexts).filter(function(text){
+                            /*This checks against the maximum possible bound of the textbox rather than the space occupied.
+                             This is because justification makes visual comparison very hard.*/
+                            var bounds = text.doc.calculateBounds();
+                            return intersectRect(bounds,ray) && text.author == UserSettings.getUsername();
                         });
+                        _.each(boardContent.multiWordTexts,function(t){
+                            t.doc.isActive = false;
+                            if(t.doc.save().length == 0){
+                                delete boardContent.multiWordTexts[t.identity];
+                            }
+                        });
+                        console.log("Selected texts",selectedTexts);
                         if (selectedTexts.length > 0){
-                            currentText = selectedTexts[0];
-                            editText(currentText);
+                            var editor = selectedTexts[0].doc;
+                            editor.isActive = true;
+                            var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
+                            var clickTime = Date.now();
+                            var node = editor.byCoordinate(relativePos.x,relativePos.y);
+                            editor.mouseupHandler(node);
+                            if(clickTime - lastClick <= doubleClickThreshold){
+                                editor.dblclickHandler(node);
+                            }
+                            lastClick = clickTime;
                         } else {
-                            var newText = createBlankText(worldPos);
-                            currentText = newText;
-                            selectedTexts.push(newText);
-                            editText(newText);
+                            var newEditor = createBlankText(worldPos).doc;
+                            newEditor.load([]);
+                            newEditor.isActive = true;
+                            newEditor.mouseupHandler(newEditor.byOrdinal(0));
                         }
-                        Modes.select.texts = [currentText];
+                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                            Modes.text.echoesToDisregard = {};
+                        };
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     }
                     registerPositionHandlers(board,noop,noop,up);
                 },
                 deactivate:function(){
-                    removeTextEditor();
-                    textEditorInput.hide();
-                    selectedTexts = [];
-                    $("#selectionAdorner").empty();
-                    unregisterPositionHandlers(board);
                     removeActiveMode();
+                    _.each(boardContent.multiWordTexts,function(t){
+                        t.doc.isActive = false;
+                    });
+                    unregisterPositionHandlers(board);
+                    /*Necessary to ensure that no carets or marquees remain on the editors*/
+                    blit();
                 }
-            };
+            }
         })(),
-
         image:(function(){
             var marquee = undefined;
             var noop = function(){};
@@ -1428,7 +1200,7 @@ var Modes = (function(){
             }
         },
         select:(function(){
-						var isAdministeringContent = false;
+            var isAdministeringContent = false;
             var updateSelectionVisualState = function(sel){
                 if(sel){
                     Modes.select.selected = sel;
@@ -1439,6 +1211,8 @@ var Modes = (function(){
                             return true;
                         } else if ("texts" in sel && _.size(sel.texts) > 0){
                             return true;
+                        } else if ("multiWordTexts" in sel && _.size(sel.multiWordTexts) > 0){
+                            return true;
                         } else {
                             return false;
                         }
@@ -1446,15 +1220,15 @@ var Modes = (function(){
                     if (shouldShowButtons()){
                         $("#delete").removeClass("disabledButton");
                         $("#resize").removeClass("disabledButton");
-												if (isAdministeringContent){
-													$("#ban").removeClass("disabledButton");
-												} else {
-													$("#ban").addClass("disabledButton");
-												}
+                        if (isAdministeringContent){
+                            $("#ban").removeClass("disabledButton");
+                        } else {
+                            $("#ban").addClass("disabledButton");
+                        }
                     } else {
                         $("#delete").addClass("disabledButton");
                         $("#resize").addClass("disabledButton");
-												$("#ban").addClass("disabledButton");
+                        $("#ban").addClass("disabledButton");
                     }
 
 										if ("Conversations" in window && Conversations.shouldModifyConversation()){
@@ -1471,7 +1245,7 @@ var Modes = (function(){
 										}
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
-                        _.forEach(["images","texts","inks","highlighters"],function(category){
+                        _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
                             if (category in sel){
                                 $.each(sel[category],function(i,item){
                                     drawSelectionBounds(item);
@@ -1482,11 +1256,11 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{}};
+                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
-                _.forEach(["images","texts","inks","highlighters"],function(catName){
+                _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(catName){
                     var selCatName = catName == "highlighters" ? "inks" : catName;
                     var boardCatName = catName;
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
@@ -1510,60 +1284,62 @@ var Modes = (function(){
                 });
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             },100);
-						var banContentFunction = function(){
-							 if (Modes.select.selected != undefined && isAdministeringContent){
-									var s = Modes.select.selected;			 
-										banContent(
-											Conversations.getCurrentConversationJid(),
-											Conversations.getCurrentSlideJid(),
-											_.uniq(_.map(s.inks,function(e){return e.identity;})),
-											_.uniq(_.map(s.texts,function(e){return e.identity;})),
-											_.uniq(_.map(s.images,function(e){return e.identity;}))
-										);
-								}
-								clearSelectionFunction();
-						};
-						var administerContentFunction = function(){
-							isAdministeringContent = Conversations.shouldModifyConversation() ? !isAdministeringContent : false;
-							if (isAdministeringContent){
-								$("#administerContent").removeClass("disabledButton");
-							} else {
-								$("#administerContent").addClass("disabledButton");
-							}
-							clearSelectionFunction();
-						};	
+            var banContentFunction = function(){
+                if (Modes.select.selected != undefined && isAdministeringContent){
+                    var s = Modes.select.selected;
+                    banContent(
+                        Conversations.getCurrentConversationJid(),
+                        Conversations.getCurrentSlideJid(),
+                        _.uniq(_.map(s.inks,function(e){return e.identity;})),
+                        _.uniq(_.map(s.texts,function(e){return e.identity;})),
+                        _.uniq(_.map(s.multiWordTexts,function(e){return e.identity;})),
+                        _.uniq(_.map(s.images,function(e){return e.identity;}))
+                    );
+                }
+                clearSelectionFunction();
+            };
+            var administerContentFunction = function(){
+                isAdministeringContent = Conversations.shouldModifyConversation() ? !isAdministeringContent : false;
+                if (isAdministeringContent){
+                    $("#administerContent").removeClass("disabledButton");
+                } else {
+                    $("#administerContent").addClass("disabledButton");
+                }
+                clearSelectionFunction();
+            };
 
             Progress.onBoardContentChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
-						Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
-							if (isAdministeringContent && Conversations.shouldModifyConversation()){
-								isAdministeringContent = false;
-							}
-							if (Conversations.shouldModifyConversation()){
-								$("#ban").show();
-								$("#administerContent").show();	
-								$("#administerContent").bind("click",administerContentFunction);
-								$("#ban").bind("click",banContentFunction);
-							} else {
-								$("#ban").hide();
-								$("#administerContent").hide();	
-								$("#administerContent").unbind("click");
-								$("#ban").unbind("click");
-							}
-							if (isAdministeringContent){
-								$("#administerContent").removeClass("disabledButton");
-							} else {
-								$("#administerContent").addClass("disabledButton");
-							}
-						};
+            Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+                if (isAdministeringContent && Conversations.shouldModifyConversation()){
+                    isAdministeringContent = false;
+                }
+                if (Conversations.shouldModifyConversation()){
+                    $("#ban").show();
+                    $("#administerContent").show();
+                    $("#administerContent").bind("click",administerContentFunction);
+                    $("#ban").bind("click",banContentFunction);
+                } else {
+                    $("#ban").hide();
+                    $("#administerContent").hide();
+                    $("#administerContent").unbind("click");
+                    $("#ban").unbind("click");
+                }
+                if (isAdministeringContent){
+                    $("#administerContent").removeClass("disabledButton");
+                } else {
+                    $("#administerContent").addClass("disabledButton");
+                }
+            };
             return {
                 name:"select",
                 selected:{
                     images:{},
                     texts:{},
-                    inks:{}
+                    inks:{},
+                    multiWordTexts:{}
                 },
                 clearSelection:clearSelectionFunction,
                 activate:function(){
@@ -1596,6 +1372,9 @@ var Modes = (function(){
                             if ("images" in Modes.select.selected){
                                 deleteTransform.imageIds = _.keys(Modes.select.selected.images);
                             }
+                            if ("multiWordTexts" in Modes.select.selected){
+                                deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                            }
                             sendStanza(deleteTransform);
                         }
                         clearSelectionFunction();
@@ -1603,13 +1382,14 @@ var Modes = (function(){
                     var threshold = 30;
                     var resizeHandle = [0,0,0,0];
                     var initialHeight = 0;
-										$("#administerContent").bind("click",administerContentFunction);
-										$("#ban").bind("click",banContentFunction);
+                    $("#administerContent").bind("click",administerContentFunction);
+                    $("#ban").bind("click",banContentFunction);
                     $("#resize").bind("click",function(){
                         var items = _.flatten([
                             _.values(Modes.select.selected.images),
                             _.values(Modes.select.selected.texts),
-                            _.values(Modes.select.selected.inks)]);
+                            _.values(Modes.select.selected.inks),
+                            _.values(Modes.select.selected.multiWordTexts)]);
                         if(items.length > 0){
                             var x1 = Math.min.apply(Math,items.map(function(item){
                                 return item.bounds[0];
@@ -1645,6 +1425,7 @@ var Modes = (function(){
                     var categories = function(func){
                         func("images");
                         func("texts");
+                        func("multiWordTexts");
                         func("inks");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
@@ -1676,7 +1457,7 @@ var Modes = (function(){
                                     }
                                 });
                             }
-                            dragging = _.some(["images","texts","inks"],isDragHandle);
+                            dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
                         }
                         marqueeWorldOrigin = worldPos;
                         if(dragging){
@@ -1737,6 +1518,7 @@ var Modes = (function(){
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
+                            moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             dragging = false;
                             sendStanza(moved);
                         }
@@ -1756,11 +1538,16 @@ var Modes = (function(){
                                 totalBounds.x = Math.min(image.bounds[0]);
                                 totalBounds.y = Math.min(image.bounds[1]);
                             });
+                            _.forEach(Modes.select.selected.multiWordTexts,function(image){
+                                totalBounds.x = Math.min(image.bounds[0]);
+                                totalBounds.y = Math.min(image.bounds[1]);
+                            });
                             resized.xOrigin = totalBounds.x;
                             resized.yOrigin = totalBounds.y;
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
+                            resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             resized.xScale = xScale;
                             if (modifiers.ctrl){
                                 var yScale = y / resizeHandle[0];
@@ -1777,7 +1564,8 @@ var Modes = (function(){
                             var intersected = {
                                 images:{},
                                 texts:{},
-                                inks:{}
+                                inks:{},
+                                multiWordTexts:{}
                             };
                             var intersectAuthors = {};
                             var overlapThreshold = 0.5;
@@ -1804,17 +1592,16 @@ var Modes = (function(){
                                     var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
                                     var overlap = overlapRect(selectionBounds,item.bounds);
                                     if(overlap >= selectionThreshold){
-                                        //if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
-																				if (isAdministeringContent){
-																					if(item.author != UserSettings.getUsername()){
-																							intersected[category][item.identity] = item;
-																					}
-																				} else {
-																					if(item.author == UserSettings.getUsername()){
-																							intersected[category][item.identity] = item;
-																					}
-																				}
+                                        if (isAdministeringContent){
+                                            if(item.author != UserSettings.getUsername()){
+                                                intersected[category][item.identity] = item;
+                                            }
+                                        } else {
+                                            if(item.author == UserSettings.getUsername()){
+                                                intersected[category][item.identity] = item;
+                                            }
+                                        }
                                     }
                                 });
                             }
@@ -1822,15 +1609,15 @@ var Modes = (function(){
                             $.each(boardContent.highlighters,function(i,item){
                                 if(intersectRect(item.bounds,selectionBounds)){
                                     incrementKey(intersectAuthors,item.author);
-																		if (isAdministeringContent){
-																			if(item.author != UserSettings.getUsername()){
-																					intersected.inks[item.identity] = item;
-																			}
-																		} else {
-																			if(item.author == UserSettings.getUsername()){
-																					intersected.inks[item.identity] = item;
-																			}
-																		}
+                                    if (isAdministeringContent){
+                                        if(item.author != UserSettings.getUsername()){
+                                            intersected.inks[item.identity] = item;
+                                        }
+                                    } else {
+                                        if(item.author == UserSettings.getUsername()){
+                                            intersected.inks[item.identity] = item;
+                                        }
+                                    }
                                 }
                             });
                             if(modifiers.ctrl){
@@ -1848,7 +1635,7 @@ var Modes = (function(){
                             else{
                                 Modes.select.selected = intersected;
                             }
-                            var status = sprintf("Selected %s images, %s texts, %s inks ",
+                            var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,
                                                  _.keys(Modes.select.selected.inks).length);
@@ -1875,8 +1662,8 @@ var Modes = (function(){
                     $("#resize").unbind("click");
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
-										$("#administerContent").unbind("click");
-										$("#ban").unbind("click");
+                    $("#administerContent").unbind("click");
+                    $("#ban").unbind("click");
                 }
             }
         })(),
@@ -2139,7 +1926,7 @@ var Modes = (function(){
                             boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
                             currentStroke = [x, y, mousePressure * z];
                         } else {
-												}
+                        }
                     };
                     var raySpan = 10;
                     var deleted = [];
@@ -2167,14 +1954,14 @@ var Modes = (function(){
                             boardContext.globalAlpha = 1.0;
                         }
                         else{
-														var oldWidth = boardContext.lineWidth;
-														var newWidth = Modes.draw.drawingAttributes.width * z;
+                            var oldWidth = boardContext.lineWidth;
+                            var newWidth = Modes.draw.drawingAttributes.width * z;
                             boardContext.beginPath();
-														boardContext.lineCap = "round";
+                            boardContext.lineCap = "round";
                             boardContext.lineWidth = newWidth;
-														var lastPoint = _.takeRight(currentStroke,3);
-														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
-														boardContext.lineTo(x,y);
+                            var lastPoint = _.takeRight(currentStroke,3);
+                            boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                            boardContext.lineTo(x,y);
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                         }
@@ -2187,13 +1974,13 @@ var Modes = (function(){
                             deleteTransform.inkIds = deleted;
                             sendStanza(deleteTransform);
                         } else {
-														var newWidth = Modes.draw.drawingAttributes.width * z;
+                            var newWidth = Modes.draw.drawingAttributes.width * z;
                             boardContext.lineWidth = newWidth;
                             boardContext.beginPath();
                             boardContext.lineWidth = newWidth;
-														boardContext.lineCap = "round";
-														var lastPoint = _.takeRight(currentStroke,3);
-														boardContext.moveTo(lastPoint[0],lastPoint[1]);                            
+                            boardContext.lineCap = "round";
+                            var lastPoint = _.takeRight(currentStroke,3);
+                            boardContext.moveTo(lastPoint[0],lastPoint[1]);
                             boardContext.lineTo(x,y);
                             boardContext.stroke();
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);

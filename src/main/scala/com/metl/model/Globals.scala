@@ -104,6 +104,9 @@ object Globals extends PropertyReader with Logger {
   object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
   object currentUser extends SessionVar[String](casState.is.username)
 
+  object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
+  object oneNoteExportSubject extends SessionVar[Box[String]](Empty)
+
   val printDpi = 100
   val ThumbnailSize = new RenderDescription(320,240)
   val SmallSize = new RenderDescription(640,480)
