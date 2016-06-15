@@ -1,0 +1,77 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+	<script>
+function progress(){
+	return {
+		max:function(unused){
+			return this;
+		},
+		element:$("<span/>"),
+		value:function(unused){
+			return this;
+		}
+	};
+}
+	</script>
+	<script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
+	<script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+	<script src="static/js/stable/lodash-4.12.0.js"></script>	
+	<script src="static/js/stable/Tween.js"></script>
+
+	<script src="static/js/standaloneBoard.js"></script>
+	<link rel="stylesheet" href="static/css/board.css"></link>	
+	<script>
+function renderCanvas(history,pageId){
+	var canvasId = "canvas_"+pageId;
+	var headerId = "pageHeader_"+pageId;
+	var footerId = "pageFooter_"+pageId;
+	var pageContainerId = "pageContainer_"+pageId;
+	var pageImageContainerId = "pageImageContainer_"+pageId;
+	var pageImageId = "pageImage_"+pageId;
+	var pageContainer = $("#"+pageContainerId);
+	var pageImageContainer = $("#"+pageImageContainerId);
+	var b = board();
+	b.progress.postRender["printer"] = function(sizedHistory){
+		delete b.progress.postRender["printer"];
+		var hw = Math.round(sizedHistory.width);
+		var hh = Math.round(sizedHistory.height);
+		console.log("postRender",hw,hh,sizedHistory);
+		b.resizeCanvas(hw,hh);
+		b.requestViewbox(sizedHistory.minX,sizedHistory.minY,hw,hh,function(){
+			var dataUri = b.getCanvas()[0].toDataURL("image/png");
+			var pageImage = $("#"+pageImageId);
+			pageImage.attr("src",dataUri);
+			console.log("renderingCanvas:",history,b);
+		});
+	};
+	b.historyReceived(history);
+}
+	</script>
+	<style>
+.pageImageConatiner {
+	width:100%;
+	height:100%;
+}
+.pageImage {
+	width:100%;
+	height:100%;
+}
+#board {
+	display:none;
+	width:0px;
+	height:0px;
+}
+	</style>
+	<div class="lift:Metl.clientSidePrintConversation">
+		<div class="pagesContainer">
+			<div class="pageContainer">
+				<div class="pageHeader"></div>
+				<div class="pageImageContainer">
+					<div class="varContainer"></div>
+					<div class="onLoadContainer"></div>
+					<img class="pageImage"></img>
+				</div>
+				<div class="pageFooter"></div>
+			</div>
+		</div>
+	</div>
+</div>

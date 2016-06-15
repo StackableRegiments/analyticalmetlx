@@ -1,9 +1,9 @@
-function board(container,options){
+function board(options){
 	var getPref = function(name,defaultValue){
-		return (name in options) ? options[name] : defaultValue;
+		return (options != undefined && name in options) ? options[name] : defaultValue;
 	}
-	var boardContext = {};
-	var boardContent = {};
+	var canvasElement = $("<canvas/>");
+	var boardContext = canvasElement[0].getContext("2d");
 
 	var boardContent = {
 			images:{},
@@ -39,6 +39,608 @@ function board(container,options){
 	var maxX = getPref("maxX",2147483647);
 	var maxY = getPref("maxY",2147483647);
 	var visibleBounds = [];
+
+	var Progress = (function(){
+    return {
+        call:function(key,args){
+            args = args || [];
+            $.each(Progress[key],function(k,f){
+                try{
+                    f.apply(f,args);
+                }
+                catch(e){
+                    console.log("exception",key,k,e);
+                }
+            });
+        },
+        onPrivacyChanged:{},
+        onConversationJoin:{},
+        onSelectionChanged:{},
+        onBoardContentChanged:{},
+        onViewboxChanged:{},
+        onLayoutUpdated:{},
+        postRender:{},
+        historyReceived:{},
+        stanzaReceived:{},
+        currentConversationJidReceived:{},
+        currentSlideJidReceived:{},
+        conversationDetailsReceived:{},
+        newConversationDetailsReceived:{},
+        conversationsReceived:{},
+        syncMoveReceived:{},
+        userGroupsReceived:{},
+        usernameReceived:{},
+        userOptionsReceived:{}
+    }
+	})();
+	var proportion = function(width,height){
+    var targetWidth = boardWidth;
+    var targetHeight = boardHeight;
+    return (width / height) / (targetWidth / targetHeight);
+	}
+	var scaleScreenToWorld = function(i){
+    var p = proportion(boardWidth,boardHeight);
+    var scale;
+    if(p > 1){//Viewbox wider than board
+        scale = viewboxWidth / boardWidth;
+    }
+    else{//Viewbox narrower than board
+        scale = viewboxHeight / boardHeight;
+    }
+    return i * scale;
+	}
+	var scaleWorldToScreen = function(i){
+    var p = proportion(boardWidth,boardHeight);
+    var scale;
+    if(p > 1){//Viewbox wider than board
+        scale = viewboxWidth / boardWidth;
+    }
+    else{//Viewbox narrower than board
+        scale = viewboxHeight / boardHeight;
+    }
+    return i / scale;
+	}
+
+	var screenToWorld = function(x,y){
+    var worldX = scaleScreenToWorld(x) + viewboxX;
+    var worldY = scaleScreenToWorld(y) + viewboxY;
+    return {x:worldX,y:worldY};
+	}
+	var worldToScreen = function(x,y){
+    var screenX = scaleWorldToScreen(x - viewboxX);
+    var screenY = scaleWorldToScreen(y - viewboxY);
+    return {x:screenX,y:screenY};
+	}
+/*
+ RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
+ * */
+
+	var detectPointerEvents = function(){
+    try {
+        return (("pointerEnabled" in Navigator && Navigator.pointerEnabled == true) || PointerEvent != undefined);
+    } catch(e) {
+        return false;
+    }
+	}
+
+	var registerPositionHandlers = function(contexts,down,move,up){
+    var isDown = false;
+    var modifiers = function(e,isErasing){
+        return {
+            shift:e.shiftKey,
+            ctrl:e.ctrlKey,
+            alt:e.altKey,
+            eraser:isErasing
+        }
+    }
+    $.each(contexts,function(i,_context){
+        var context = $(_context);//Might have to rewrap single jquerys
+        var offset = function(){
+            return context.offset();
+        }
+        context.css({"touch-action":"none"});
+        var isGesture = false;
+        var trackedTouches = {};
+        var updatePoint = function(pointerEvent){
+            var pointId = pointerEvent.originalEvent.pointerId;
+            var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
+            var o = offset();
+            var x = pointerEvent.pageX - o.left;
+            var y = pointerEvent.pageY - o.top;
+            var z = pointerEvent.originalEvent.pressure || 0.5;
+            var worldPos = screenToWorld(x,y);
+            var newPoint = {
+                "x":worldPos.x,
+                "y":worldPos.y,
+                "screenX":x,
+                "screenY":y,
+                "z":z
+            };
+            var pointItem = trackedTouches[pointId] || {
+                "pointerId":pointId,
+                "pointerType":pointerEvent.originalEvent.pointerType,
+                "eraser":isEraser,
+                "points":[]
+            };
+            pointItem.points.push(newPoint);
+            pointItem.eraser = pointItem.eraser || isEraser;
+            trackedTouches[pointId] = pointItem;
+            if (_.size(trackedTouches) > 1){
+                if (isGesture == false){
+                    _.each(trackedTouches,function(series){
+                        series.points = [_.last(series.points)];
+                    });
+                }
+                isGesture = true;
+            }
+            return {
+                "pointerType":pointerEvent.pointerType,
+                "eraser":pointItem.eraser,
+                "x":x,
+                "y":y,
+                "z":z,
+                "worldPos":worldPos
+            };
+        };
+        var releasePoint = function(pointerEvent){
+            var pointId = pointerEvent.originalEvent.pointerId;
+            var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
+            var o = offset();
+            var x = pointerEvent.pageX - o.left;
+            var y = pointerEvent.pageY - o.top;
+            var z = pointerEvent.originalEvent.pressure || 0.5;
+            var worldPos = screenToWorld(x,y);
+            delete trackedTouches[pointId];
+            if (isGesture && _.size(trackedTouches) == 0){
+                isGesture = false;
+                isDown = false;
+            }
+            return {
+                "pointerType":pointerEvent.pointerType,
+                "eraser":isEraser,
+                "x":x,
+                "y":y,
+                "z":z,
+                "worldPos":worldPos
+            };
+        }
+        if (detectPointerEvents()){
+            var performGesture = _.throttle(function(){
+                if (_.size(trackedTouches) > 1){
+                    takeControlOfViewbox();
+
+                    var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+                        var first = _.first(item.points);
+                        var last = _.last(item.points);
+                        return [first,last];
+                    });
+                    trackedTouches = {};
+                    var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+                    var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+
+                    Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+
+                    var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                    var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                    var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                    var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                    var prevYScale = prevNorthMost - prevSouthMost;
+                    var prevXScale = prevWestMost - prevEastMost;
+
+                    var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                    var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                    var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                    var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                    var yScale = northMost - southMost;
+                    var xScale = westMost - eastMost;
+
+                    var previousScale = (prevXScale + prevYScale)       / 2;
+                    var currentScale = (xScale + yScale)        / 2;
+                    Zoom.scale(previousScale / currentScale);
+                }
+            },25);
+            context.bind("pointerdown",function(e){
+                var point = updatePoint(e);
+                e.preventDefault();
+                WorkQueue.pause();
+                if (_.size(trackedTouches) == 1 && !isGesture){
+                    isDown = true;
+                    down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                }
+            });
+            context.bind("pointermove",function(e){
+                var point = updatePoint(e);
+                e.preventDefault();
+                if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+                    performGesture();
+                }
+                if (_.size(trackedTouches) == 1 && !isGesture){
+                    if(isDown){
+                        move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                    }
+                }
+            });
+            context.bind("pointerup",function(e){
+                var point = releasePoint(e);
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown && !isGesture){
+                    up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                }
+                isDown = false;
+            });
+            var pointerOut = function(x,y){
+                trackedTouches = {};
+                WorkQueue.gracefullyResume();
+                var worldPos = screenToWorld(x,y);
+                var worldX = worldPos.x;
+                var worldY = worldPos.y;
+                if(worldX < viewboxX){
+                    takeControlOfViewbox();
+                    Extend.left();
+                }
+                else if(worldX >= (viewboxX + viewboxWidth)){
+                    takeControlOfViewbox();
+                    Extend.right();
+                }
+                else if(worldY < viewboxY){
+                    takeControlOfViewbox();
+                    Extend.up();
+                }
+                else if(worldY >= (viewboxY + viewboxHeight)){
+                    takeControlOfViewbox();
+                    Extend.down();
+                }
+                isDown = false;
+            }
+            var pointerClose = function(e){
+                var point = releasePoint(e);
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    pointerOut(e.offsetX,e.offsetY);
+                }
+                isDown = false;
+            };
+            context.bind("pointerout",pointerClose);
+            context.bind("pointerleave",pointerClose);
+            context.bind("pointercancel",pointerClose);
+
+        } else {
+            context.bind("mousedown",function(e){
+                WorkQueue.pause();
+                var o = offset();
+                e.preventDefault();
+                isDown = true;
+                var x = e.pageX - o.left;
+                var y = e.pageY - o.top;
+                var z = 0.5;
+                var worldPos = screenToWorld(x,y);
+                down(x,y,z,worldPos,modifiers(e));
+            });
+            context.bind("mousemove",function(e){
+                if(isDown){
+                    var o = offset();
+                    e.preventDefault();
+                    var x = e.pageX - o.left;
+                    var y = e.pageY - o.top;
+                    var z = 0.5;
+                    move(x,y,z,screenToWorld(x,y),modifiers(e));
+                }
+            });
+            context.bind("mouseup",function(e){
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    var o = offset();
+                    var x = e.pageX - o.left;
+                    var y = e.pageY - o.top;
+                    var z = 0.5;
+                    var worldPos = screenToWorld(x,y);
+                    up(x,y,z,worldPos,modifiers(e));
+                }
+                isDown = false;
+            });
+            var mouseOut = function(x,y){
+                WorkQueue.gracefullyResume();
+                var worldPos = screenToWorld(x,y);
+                var worldX = worldPos.x;
+                var worldY = worldPos.y;
+                if(worldX < viewboxX){
+                    takeControlOfViewbox();
+                    Extend.left();
+                }
+                else if(worldX >= (viewboxX + viewboxWidth)){
+                    takeControlOfViewbox();
+                    Extend.right();
+                }
+                else if(worldY < viewboxY){
+                    takeControlOfViewbox();
+                    Extend.up();
+                }
+                else if(worldY >= (viewboxY + viewboxHeight)){
+                    takeControlOfViewbox();
+                    Extend.down();
+                }
+                isDown = false;
+            }
+            context.bind("mouseout",function(e){
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    mouseOut(e.offsetX,e.offsetY);
+                }
+                isDown = false;
+            });
+            var touches;
+            var masterTouch;
+            var prevPos;
+            var touchesToWorld = function(touches){
+                return touches.map(function(t){
+                    return screenToWorld(t.x,t.y);
+                });
+            }
+            var averagePos = function(touches){
+                return {
+                    x:average(_.map(touches,"x")),
+                    y:average(_.map(touches,"y"))
+                };
+            }
+            var offsetTouches = function(ts){
+                var touches = [];
+                var o = offset();
+                $.each(ts,function(i,touch){
+                    touches.push({
+                        x: touch.pageX - o.left,
+                        y: touch.pageY - o.top,
+                        identifier:touch.identifier
+                    });
+                });
+                return touches;
+            }
+            context.bind("touchstart",function(e){
+                WorkQueue.pause();
+                e.preventDefault();
+                var touches = offsetTouches(e.originalEvent.touches);
+                if(touches.length == 1){
+                    var t = touches[0];
+                    var worldPos = screenToWorld(t.x,t.y);
+                    isDown = true;
+                    var z = 0.5;
+                    down(t.x,t.y,z,worldPos,modifiers(e));
+                }
+                else{
+                    var avg = averagePos(touches);
+                    prevPos = avg;
+                }
+            });
+            var distance = function(p1,p2){
+                return Math.sqrt(Math.pow(p2.pageX - p1.pageX,2) + Math.pow(p2.pageY - p1.pageY,2));
+            }
+            context.bind("touchmove",function(e){
+                e.preventDefault();
+                var touches = offsetTouches(e.originalEvent.touches);
+                switch(touches.length){
+                case 0 : break;
+                case 1:
+                    if(isDown){
+                        var t = touches[0];
+                        var z = 0.5;
+                        move(t.x,t.y,z,screenToWorld(t.x,t.y),modifiers(e));
+                    }
+                    break;
+                default:
+                    var pos = averagePos(touches);
+                    var xDelta = pos.x - prevPos.x;
+                    var yDelta =  pos.y - prevPos.y;
+                    prevPos = pos;
+                    takeControlOfViewbox();
+                    Pan.translate(-1 * xDelta,-1 * yDelta);
+                    break;
+                }
+            });
+            context.bind("touchend",function(e){
+                WorkQueue.gracefullyResume();
+                e.preventDefault();
+                if(isDown){
+                    var o = offset();
+                    var t = e.originalEvent.changedTouches[0];
+                    var x = t.pageX - o.left;
+                    var y = t.pageY - o.top;
+                    var z = 0.5;
+                    if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
+                        mouseOut(x,y);
+                    }
+                    else{
+                        up(x,y,z,screenToWorld(x,y),modifiers(e));
+                    }
+                }
+                isDown = false;
+            });
+            var previousScale = 1.0;
+            var changeFactor = 0.1;
+            context.bind("gesturechange",function(e){
+                WorkQueue.pause();
+                e.preventDefault();
+                isDown = false;
+                var scale = e.originalEvent.scale;
+                //Zoom.scale(previousScale / scale,true);
+                // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
+                takeControlOfViewbox();
+                Zoom.scale(previousScale / scale);
+                previousScale = scale;
+            });
+            context.bind("gestureend",function(){
+                WorkQueue.gracefullyResume();
+                previousScale = 1.0;
+            });
+        }
+    });
+    return function(forceDown){
+        isDown = forceDown;
+    }
+	}
+	var aspectConstrainedDimensions = function(width,height){
+    var proportion = boardHeight / boardWidth;
+    var comparisonProportion = height / width;
+    var dims = {
+        height:height,
+        width:width
+    };
+    if(comparisonProportion > proportion){
+        dims.height = width * proportion;
+    }
+    else{
+        dims.width = height / proportion;
+    }
+    return dims;
+	}
+	var aspectConstrainedRect = function(rect,hAlign,vAlign){ // vAlign and hAlign are strings to determine how to align the position of the aspect constrained rect within itself after adjusting the proportion.  It should be "top","bottom","center" and "left","right","center".
+    var proportion = boardHeight / boardWidth;
+    var comparisonProportion = rect.height / rect.width;
+    var dims = {
+        left:rect.left,
+        top:rect.top,
+        right:rect.right,
+        bottom:rect.bottom,
+        width:rect.width,
+        height:rect.height
+    };
+    if (comparisonProportion > proportion){
+        dims.height = rect.width * proportion;
+        if (vAlign){
+            var vOffset = rect.height - dims.height;
+            if (vAlign == "center"){
+                dims.top += vOffset / 2;
+            } else if (vAlign == "bottom"){
+                dims.top += vOffset;
+            }
+        }
+    }
+    else {
+        dims.width = rect.height / proportion;
+        if (hAlign){
+            var hOffset = rect.width - dims.width;
+            if (hAlign == "center"){
+                dims.left += hOffset / 2;
+            } else if (hAlign == "right"){
+                dims.left += hOffset;
+            }
+        }
+    }
+    dims.right = dims.left + dims.width;
+    dims.bottom = dims.top + dims.height;
+    return dims;
+	}
+	var copyBuffer = function(buffer){
+    var tmp = document.createElement("canvas");
+    tmp.width = buffer.width;
+    tmp.height = buffer.height;
+    tmp.getContext("2d").drawImage(buffer,
+                                   0,0,buffer.width,buffer.height,
+                                   0,0,buffer.width,buffer.height);
+    return tmp;
+	}
+	var intersectRect = function(r1, r2) {//Left,top,right,bottom
+//	console.log("intersectRect",r1,r2);
+    if (typeof(r1) != "undefined" && typeof(r2) != "undefined"){
+        return !(r2[0] > r1[2] ||
+                 r2[2] < r1[0] ||
+                 r2[1] > r1[3] ||
+                 r2[3] < r1[1]);
+    } else {
+        return false;
+    }
+	}
+	var overlapRect = function(r1,r2){
+    if(!intersectRect(r1,r2)){
+        return 0;
+    }
+    return (Math.max(r1[0], r2[0]) - Math.min(r1[2], r2[2])) * (Math.max(r1[1], r2[1]) - Math.min(r1[3], r2[3]));
+	}
+	var rectFromTwoPoints = function(pointA,pointB){
+    var topLeft = {x:0,y:0};
+    var bottomRight = {x:0,y:0};
+    if (pointA.x < pointB.x){
+        topLeft.x = pointA.x;
+        bottomRight.x = pointB.x;
+    } else {
+        topLeft.x = pointB.x;
+        bottomRight.x = pointA.x;
+    }
+    if (pointA.y < pointB.y){
+        topLeft.y = pointA.y;
+        bottomRight.y = pointB.y;
+    } else {
+        topLeft.y = pointB.y;
+        bottomRight.y = pointA.y;
+    }
+    return {
+        left:topLeft.x,
+        top:topLeft.y,
+        right:bottomRight.x,
+        bottom:bottomRight.y,
+        width:Math.abs(bottomRight.x - topLeft.x),
+        height:Math.abs(bottomRight.y - topLeft.y)
+    };
+	}
+	var updateMarquee = function(marquee,pointA,pointB){
+    var rect = rectFromTwoPoints(pointA,pointB);
+    var selectionAdorner = $("#selectionAdorner");
+    if (!(jQuery.contains(selectionAdorner,marquee))){
+        selectionAdorner.append(marquee);
+    }
+    if (!(marquee.is(":visible"))){
+        marquee.show();
+    }
+    marquee.css({
+        left:px(rect.left),
+        top:px(rect.top),
+        width:px(rect.width),
+        height:px(rect.height)
+    });
+	}
+	var clampToView = function(point) {
+    var x = point.x;
+    var y = point.y;
+    if (point.x < 0){
+        x = 0;
+    }
+    if (point.x > boardWidth){
+        x = boardWidth;
+    }
+    if (point.y < 0){
+        y = 0;
+    }
+    if (point.y > boardHeight){
+        y = boardHeight;
+    }
+    return {
+        x:x,
+        y:y
+    };
+	}
+	var drawSelectionBounds = function(item){
+    var origin = clampToView(worldToScreen(item.bounds[0],item.bounds[1]));
+    var end = clampToView(worldToScreen(item.bounds[2],item.bounds[3]));
+    var originalWidth = end.x-origin.x;
+    var originalHeight = end.y-origin.y;
+    var bd = clampToView(item.bounds[0],item.bounds[1],item.bounds[2],item.bounds[3]);
+    $("#selectionAdorner").prepend($("<div />").addClass("selectionAdorner").css({
+        left:origin.x,
+        top:origin.y,
+        width:originalWidth,
+        height:originalHeight
+    }).data("originalWidth",originalWidth).data("originalHeight",originalHeight));
+	}
+
+
+	var unregisterPositionHandlers = function(context){
+			$.each("pointerdown pointermove pointerup pointerout pointerleave pointercancel mouseup mousemove mousedown touchstart touchmove touchend touchcancelled mouseout touchleave gesturechange gesturestart".split(" "),function(i,evt){
+					context.unbind(evt);
+			});
+			WorkQueue.gracefullyResume();
+	}
 
 	var incorporateBoardBounds = function(bounds){
     if (!isNaN(bounds[0])){
@@ -97,96 +699,346 @@ function board(container,options){
         y:py + y2
     }
 	}
-	var renderHull = function(ink){
-    if(ink.points.length < 6){
-        return;
+
+	var WorkQueue = (function(){
+    var isAbleToWork = true;
+    var work = [];
+    var blitNeeded = false;
+    var popState = function(){
+        var f = work.pop();
+        if(f){
+            blitNeeded = blitNeeded || f();
+            popState();
+        }
+        else{
+            if(blitNeeded){
+                blit();
+                blitNeeded = false;
+            }
+						if ("Conversations" in window){
+							Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
+						}
+        }
+    };
+    var pauseFunction = function(){
+        stopResume();
+        canWorkFunction(false);
+    };
+    var canWorkFunction = function(state){
+        isAbleToWork = state;
+        if(state){
+            popState();
+        }
+    };
+    var stopResume = function(){
+        if (gracefullyResumeTimeout){
+            window.clearTimeout(gracefullyResumeTimeout);
+            gracefullyResumeTimeout = undefined;
+        }
     }
-    var context = ink.canvas.getContext("2d");
-    var b = ink.bounds;
-    var minX = Infinity;
-    var minY = Infinity;
-    var pts = ink.points;
-    var ps = [];
-    var i;
-    var p;
-    for(i = 0; i < pts.length; i += 3){
-        minX = Math.min(minX,pts[i]);
-        minY = Math.min(minY,pts[i+1]);
-    }
-    minX -= ink.thickness / 2;
-    minY -= ink.thickness / 2;
-    for(i = 0; i < pts.length; i += 3){
-        ps.push(pts[i] - minX);
-        ps.push(pts[i+1] - minY);
-        ps.push(pts[i+2]);
-    }
-    var v1,v2,v3,v4;
-    var x1,y1,x2,y2;
-    var p1,p2;
-    var bulge1,bulge2;
-    var left = [];
-    var right = [];
-    try{
-        for(i = 0; i < ps.length - 3; i += 3){
-            x1 = ps[i];
-            y1 = ps[i+1];
-            p1 = ps[i+2];
-            x2 = ps[i+3];
-            y2 = ps[i+4];
-            p2 = ps[i+5];
-            var xDelta = x2 - x1;
-            var yDelta = y2 - y1;
-            if(xDelta == 0 || yDelta == 0){}
+    var gracefullyResumeDelay = 1000;
+    var gracefullyResumeTimeout = undefined;
+    var gracefullyResumeFunction = function(){
+        stopResume();
+        gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
+    };
+    return {
+        pause:pauseFunction,
+        gracefullyResume:gracefullyResumeFunction,
+        enqueue:function(func){//A function returning a bool, blit needed or not.
+            if(isAbleToWork){
+                if(func()){
+                    blit();
+                };
+            }
             else{
-                var normalDistance = 1 / Math.sqrt(xDelta*xDelta + yDelta*yDelta);
-                bulge1 = ink.thickness / p1 * 64;
-                bulge2 = ink.thickness / p2 * 64;
-                v1 = leftPoint(xDelta,yDelta,normalDistance,x2,y2,bulge2);
-                v2 = rightPoint(xDelta,yDelta,normalDistance,x2,y2,bulge2);
-                v3 = leftPoint(-xDelta,-yDelta,normalDistance,x1,y1,bulge1);
-                v4 = rightPoint(-xDelta,-yDelta,normalDistance,x1,y1,bulge1);
-                left.push(v4);
-                left.push(v1);
-                right.push(v3);
-                right.push(v2);
+                work.push(function(){
+                    return func();
+                });
             }
         }
-        var l = ps.length;
-        context.fillStyle = ink.color[0];
-        context.globalAlpha = ink.color[1] / 255;
-        context.beginPath();
-        var head = left[0];
-        context.moveTo(head.x,head.y);
-        for(i = 0; i < left.length; i++){
-            p = left[i];
-            context.lineTo(p.x,p.y);
-        }
-        for(i = right.length - 1; i >= 0; i--){
-            p = right[i];
-            context.lineTo(p.x,p.y);
-        }
-        context.fill();
-        context.closePath();
+    };
+	})();
+	var Pan = {
+    pan:function(xDelta,yDelta){
+        var xScale = viewboxWidth / boardWidth;
+        var yScale = viewboxHeight / boardHeight;
         /*
-         var dot = function(p){
-         context.beginPath();
-         context.arc(p.x,p.y,5,0,Math.PI*2);
-         context.fill();
-         context.closePath();
-         }
-         context.fillStyle = "red";
-         left.map(dot);
-         context.fillStyle = "blue";
-         right.map(dot);
+         viewboxX -= xDelta * xScale;
+         viewboxY -= yDelta * yScale;
+         blit();
          */
-    }
-    catch(e){
-        console.log("Couldn't render hull for",ink.points);
+        TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
+    },
+    translate:function(xDelta,yDelta){
+        var xScale = viewboxWidth / boardWidth;
+        var yScale = viewboxHeight / boardHeight;
+        /*
+         viewboxX -= xDelta * xScale;
+         viewboxY -= yDelta * yScale;
+         blit();
+         */
+        TweenController.translateViewboxRelative(xDelta * xScale, yDelta * yScale);
     }
 	}
+	var Zoom = (function(){
+    var zoomFactor = 1.2;
+    var maxZoomOut = 3;
+    var maxZoomIn = 0.1;
+    var getMaxViewboxSizeFunction = function(){
+        return {
+            width:boardContent.width * maxZoomOut,
+            height:boardContent.height * maxZoomOut
+        }
+    };
+    var getMinViewboxSizeFunction = function(){
+        return {
+            width:boardWidth * maxZoomIn,
+            height:boardHeight * maxZoomIn
+        }
+    };
+    var constrainRequestedViewboxFunction = function(vb){
+        var maxClamped = getMaxViewboxSizeFunction();
+        var minClamped = getMinViewboxSizeFunction();
+        var outW = undefined;
+        var outH = undefined;
+        var outX = undefined;
+        var outY = undefined;
+        if ("width" in vb){
+            outW = vb.width;
+            if (outW > maxClamped.width){
+                outW = maxClamped.width;
+            }
+            if (outW < minClamped.width){
+                outW = minClamped.width;
+            }
+        }
+        if ("height" in vb){
+            outH = vb.height;
+            if (outH > maxClamped.height){
+                outH = maxClamped.height;
+            }
+            if (outH < minClamped.height){
+                outH = minClamped.height;
+            }
+        }
+        if ("x" in vb){
+            outX = vb.x;
+            if (outW != vb.width){
+                outX +=  (vb.width - outW) / 2;
+            }
+        }
+        if ("y" in vb && outH){
+            outY = vb.y;
+            if (outH != vb.height){
+                outY += (vb.height - outH) / 2;
+            }
+        }
+        return {width:outW,height:outH,x:outX,y:outY};
+    }
+    return {
+        scale:function(scale,ignoreLimits){
+            var requestedWidth = viewboxWidth * scale;
+            var requestedHeight = viewboxHeight * scale;
+            if(!ignoreLimits){
+                var constrained = constrainRequestedViewboxFunction({height:requestedHeight,width:requestedWidth});
+                requestedWidth = constrained.width;
+                requestedHeight = constrained.height;
+            }
+            var ow = viewboxWidth;
+            var oh = viewboxHeight;
+            var xDelta = (ow - requestedWidth) / 2;
+            var yDelta = (oh - requestedHeight) / 2;
+            var finalX = xDelta + viewboxX;
+            var finalY = yDelta + viewboxY;
+            TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
+        },
+        zoom:function(scale,ignoreLimits,onComplete){
+            var requestedWidth = viewboxWidth * scale;
+            var requestedHeight = viewboxHeight * scale;
+            if(!ignoreLimits){
+                var constrained = constrainRequestedViewboxFunction({height:requestedHeight,width:requestedWidth});
+                requestedWidth = constrained.width;
+                requestedHeight = constrained.height;
+            }
+            var ow = viewboxWidth;
+            var oh = viewboxHeight;
+            var wDelta = requestedWidth - ow;
+            var hDelta = requestedHeight - oh;
+            var xDelta = -1 * (wDelta / 2);
+            var yDelta = -1 * (hDelta / 2);
+            TweenController.zoomAndPanViewboxRelative(xDelta,yDelta,wDelta,hDelta,onComplete);
+        },
+        out:function(){
+            Zoom.zoom(zoomFactor);
+        },
+        "in":function(){
+            Zoom.zoom(1 / zoomFactor);
+        },
+        constrainRequestedViewbox:constrainRequestedViewboxFunction
+    };
+	})();
+	var TweenController = (function(){
+    var updateRequestedPosition = function(){
+        requestedViewboxX = viewboxX;
+        requestedViewboxY = viewboxY;
+        requestedViewboxWidth = viewboxWidth;
+        requestedViewboxHeight = viewboxHeight;
+    };
+    var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
+				if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+                if (onComplete){
+                    onComplete();
+                }
+					return;
+				}
+        if(tween){
+            //console.log("instantAlterViewboxFunc stopped tween");
+            tween.stop();
+        }
+        tween = false;
+        viewboxX = finalX;
+        viewboxY = finalY;
+        viewboxWidth = finalWidth;
+        viewboxHeight = finalHeight;
+				//console.log("instantTweening:",finalX,finalY,finalWidth,finalHeight);
+        if (!shouldAvoidUpdatingRequestedViewbox){
+            updateRequestedPosition();
+        }
+        clearBoard();
+        render(boardContent);
+        if (onComplete){
+            onComplete();
+        }
+        //console.log("sending viewbox update");
+        Progress.call("onViewboxChanged",[finalX,finalY,finalWidth,finalHeight]);
+    };
+    var tween;
+    var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
+				if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+                if (onComplete){
+                    onComplete();
+                }
+					return;
+				}
+        var interval = 300;//milis
+        var startX = viewboxX;
+        var startY = viewboxY;
+        var startWidth = viewboxWidth;
+        var startHeight = viewboxHeight;
+        var xDelta = finalX - startX;
+        var yDelta = finalY - startY;
+        var widthDelta = finalWidth - startWidth;
+        var heightDelta = finalHeight - startHeight;
+        var hasChanged = function(){
+            return (finalX != undefined && finalY != undefined && finalWidth > 0 && finalHeight > 0) && (xDelta != 0 || yDelta != 0 || widthDelta != 0 || heightDelta != 0);
+        };
+        if (tween){
+            tween.stop();
+            tween = false;
+        }
+				//console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
+        tween = new TWEEN.Tween({x:0,y:0,w:0,h:0})
+            .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(function(){
+							//console.log("easingTweening: ",this.x,this.y,this.w,this.h);
+                viewboxX = startX + this.x;
+                viewboxY = startY + this.y;
+                viewboxWidth = startWidth + this.w;
+                viewboxHeight = startHeight + this.h;
+            }).onComplete(function(){
+                //console.log("easingAlterViewboxFunction complete",onComplete);
+                tween = false;
+                if (!shouldAvoidUpdatingRequestedViewbox){
+                    updateRequestedPosition();
+                }
+                if (onComplete){
+                    onComplete();
+                }
+                Progress.call("onViewboxChanged",[finalX,finalY,finalWidth,finalHeight]);
+            }).start();
+        var update = function(t){
+            if (tween){
+                requestAnimationFrame(update);
+                TWEEN.update();
+                clearBoard();
+                render(boardContent);
+            }
+        };
+        requestAnimationFrame(update);
+    };
+    var panViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return easingAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var translateViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return instantAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var panViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return easingAlterViewboxFunction(xDelta + viewboxX,yDelta + viewboxY,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var translateViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return instantAlterViewboxFunction(xDelta + viewboxX,yDelta + viewboxY,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var zoomAndPanViewboxFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
+        return easingAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable);
+    };
+    var zoomAndPanViewboxRelativeFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return easingAlterViewboxFunction(xDelta + viewboxX,yDelta + viewboxY,widthDelta + viewboxWidth,heightDelta + viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var scaleAndTranslateViewboxFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return instantAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var scaleAndTranslateViewboxRelativeFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        return instantAlterViewboxFunction(xDelta + viewboxX,yDelta + viewboxY,widthDelta + viewboxWidth,heightDelta + viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+
+    return {
+        panViewbox:panViewboxFunction,
+        translateViewbox:translateViewboxFunction,
+        zoomAndPanViewbox:zoomAndPanViewboxFunction,
+        scaleAndTranslateViewbox:scaleAndTranslateViewboxFunction,
+        panViewboxRelative:panViewboxRelativeFunction,
+        translateViewboxRelative:translateViewboxRelativeFunction,
+        zoomAndPanViewboxRelative:zoomAndPanViewboxRelativeFunction,
+        scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction,
+				changeViewbox:instantAlterViewboxFunction,
+				easeViewbox:easingAlterViewboxFunction
+    }
+	})();
+	var Extend = (function(){
+    var factor = 0.6;
+    var xExtension = function(){
+        return Math.floor(viewboxWidth * factor);
+    }
+    var yExtension = function(){
+        return Math.floor(viewboxHeight * factor);
+    }
+    return {
+        up:function(){
+            TweenController.panViewboxRelative(0,-yExtension());
+        },
+        down:function(){
+            TweenController.panViewboxRelative(0,yExtension());
+        },
+        left:function(){
+            TweenController.panViewboxRelative(-xExtension(),0);
+        },
+        right:function(){
+            TweenController.panViewboxRelative(xExtension(),0);
+        },
+        shift:TweenController.panViewboxRelative,
+        center:function(x,y,onComplete){
+            var targetX = x - viewboxWidth / 2;
+            var targetY = y - viewboxHeight / 2;
+            TweenController.panViewboxRelative(targetX - viewboxX,targetY - viewboxY,onComplete);
+        }
+    }
+	})();
+
 	var historyReceivedFunction = function(json){
     try{
-			var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+			currentSlide = parseInt(json.jid);
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
         boardContent = json;
@@ -219,7 +1071,7 @@ function board(container,options){
         boardContent.width = boardContent.maxX - boardContent.minX;
         boardContent.height = boardContent.maxY - boardContent.minY;
         var startRender = function(){
-					console.log("rendering:",json,boardContent,canvasContext);
+					console.log("rendering:",json,boardContent,boardContext);
             imagesLoadedMark = Date.now();
             Progress.call("historyReceived",[json]);
             historyDecoratorsMark = Date.now();
@@ -244,13 +1096,10 @@ function board(container,options){
                 IncludeView.default();
             }
 						console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
-            hideBackstage();
-						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-            render(boardContent,canvasContext);
+						clearBoard();
+            render(boardContent);
             blitMark = Date.now();
-						if (afterFunc != undefined){
-							afterFunc();
-						}
+						Progress.call("postRender",[boardContent]);
         }
         if(_.keys(boardContent.images).length == 0){
             _.defer(startRender);
@@ -310,7 +1159,7 @@ function board(container,options){
 
 	var determineCanvasConstants = _.once(function(){
 		return {x:maxX,y:maxY};
-	};
+	});
 	var determineScaling = function(inX,inY){
     var outputX = inX;
     var outputY = inY;
@@ -419,7 +1268,8 @@ function board(container,options){
     });
     return true;
 	}
-	var alertCanvas = function(canvas,label){
+	var alertCanvas = function(label){
+		var canvas = canvasElement[0];
     var url = canvas.toDataURL();
     window.open(url,label,sprintf("width=%s, height=%s",canvas.width,canvas.height));
 	}
@@ -584,16 +1434,12 @@ function board(container,options){
     });
     incorporateBoardBounds(text.bounds);
 	}
-	var render = function(content,incCanvasContext,incViewBounds){
-		var canvasContext = incCanvasContext;
-		if (canvasContext == undefined){
-			canvasContext = boardContext;
-		}
+	var render = function(content){
     if(content){
         var startMark = Date.now();
         var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
         try{
-            var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
+            var viewBounds = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
 						//console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
             visibleBounds = [];
             var scale = content.maxX / viewboxWidth;
@@ -602,7 +1448,7 @@ function board(container,options){
                     $.each(inks,function(i,ink){
                         try{
                             if(intersectRect(ink.bounds,viewBounds)){
-                                drawInk(ink,canvasContext);
+                                drawInk(ink);
                             }
                         }
                         catch(e){
@@ -628,7 +1474,7 @@ function board(container,options){
                 highlightersRenderedMark = Date.now();
                 $.each(content.texts,function(i,text){
                     if(intersectRect(text.bounds,viewBounds)){
-                        drawText(text,canvasContext);
+                        drawText(text);
                     }
                 });
                 textsRenderedMark = Date.now();
@@ -636,18 +1482,18 @@ function board(container,options){
                 richTextsRenderedMark = Date.now();
                 renderInks(content.inks);
                 inksRenderedMark = Date.now();
-                Progress.call("postRender");
+                Progress.call("postRender",[boardContent]);
                 renderDecoratorsMark = Date.now();
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
             //clearBoard();
-						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
+						clearBoard();
             fitMark = Date.now();
             $.each(content.images,function(id,image){
                 try{
                     if(intersectRect(image.bounds,viewBounds)){
-                        drawImage(image,canvasContext);
+                        drawImage(image);
                     }
                 }
                 catch(e){
@@ -663,9 +1509,9 @@ function board(container,options){
         Progress.call("onViewboxChanged");
     }
 	}
-	var blit = function(canvasContext,content){
+	var blit = function(){
 		try {
-			render(content == undefined ? boardContent : content,canvasContext == undefined ? boardContext : canvasContext);
+			render(boardContent);
 		} catch(e){
 			console.log("exception in render:",e);
 		}
@@ -682,14 +1528,8 @@ function board(container,options){
 	var unpix = function(str){
     return str.slice(0,str.length-2);
 	}
-	var clearBoard = function(incContext,rect){
-		try {
-			var ctx = incContext == undefined ? boardContext : incContext;
-			var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
-			ctx.clearRect(r.x,r.y,r.w,r.h);
-		} catch(e){
-			console.log("exception while clearing board:",e,incContext,rect);
-		}
+	var clearBoard = function(){
+		boardContext.clearRect(0,0,boardWidth,boardHeight);
 	}
 	var IncludeView = (function(){
     var fitToRequested = function(incX,incY,incW,incH){//Include at least this much content in your view
@@ -899,7 +1739,7 @@ function board(container,options){
 	}
 	var commandReceived = function(c){
     if(c.command == "/TEACHER_VIEW_MOVED"){
-        if(c.parameters[5] != Conversations.getCurrentSlideJid()){
+        if(c.parameters[5] != currentSlide){
             return;
         }
         var ps = c.parameters.map(parseFloat);
@@ -910,7 +1750,7 @@ function board(container,options){
         if(ps[4] == DeviceConfiguration.getIdentity()){
             return;
         }
-        if(Conversations.getIsSyncedToTeacher()){
+        if("Conversations" in window && Conversations.getIsSyncedToTeacher()){
             var f = function(){
                 zoomToPage();
                 TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
@@ -1358,27 +2198,25 @@ function board(container,options){
         screenHeight:screenHeight
     };
 	}
-	var drawImage = function(image,incCanvasContext){
-		var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+	var drawImage = function(image){
     try{
         if (image.canvas != undefined){
             var sBounds = screenBounds(image.bounds);
             visibleBounds.push(image.bounds);
             var borderW = sBounds.screenWidth * 0.10;
             var borderH = sBounds.screenHeight * 0.10;
-            canvasContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+            boardContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
         }
     }
     catch(e){
         console.log("drawImage exception",e);
     }
-}
-function drawText(text,incCanvasContext){
-	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+	}
+	var drawText = function(text){
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-        canvasContext.drawImage(text.canvas,
+        boardContext.drawImage(text.canvas,
 			       sBounds.screenPos.x,
 			       sBounds.screenPos.y,
 			       sBounds.screenWidth,
@@ -1387,16 +2225,15 @@ function drawText(text,incCanvasContext){
     catch(e){
         console.log("drawText exception",e);
     }
-}
-function drawInk(ink,incCanvasContext){
-	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+	}
+	var drawInk = function(ink){
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
-    canvasContext.drawImage(ink.canvas,
+    boardContext.drawImage(ink.canvas,
                            sBounds.screenPos.x,sBounds.screenPos.y,
                            sBounds.screenWidth,sBounds.screenHeight);
-}
-function imageReceived(image){
+	}
+	var imageReceived = function(image){
     var dataImage = new Image();
     image.imageData = dataImage;
     dataImage.onload = function(){
@@ -1427,8 +2264,8 @@ function imageReceived(image){
         });
     }
     dataImage.src = calculateImageSource(image);
-}
-function inkReceived(ink){
+	}
+	var inkReceived = function(ink){
     calculateInkBounds(ink);
     updateStrokesPending(-1,ink.identity);
     if(prerenderInk(ink)){
@@ -1449,26 +2286,26 @@ function inkReceived(ink){
             }
         });
     }
-}
-function takeControlOfViewbox(){
+	}
+	var takeControlOfViewbox = function(){
     delete Progress.onBoardContentChanged.autoZooming;
     UserSettings.setUserPref("followingTeacherViewbox",true);
-}
-function zoomToFit(){
+	}
+	var zoomToFit = function(){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
     requestedViewboxWidth = boardContent.width;
     requestedViewboxHeight = boardContent.height;
     IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height);
-}
-function zoomToOriginal(){
+	}
+	var zoomToOriginal = function(){
     takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
     requestedViewboxHeight = boardHeight;
     IncludeView.specific(0,0,boardWidth,boardHeight);
-}
-function zoomToPage(){
+	}
+	var zoomToPage = function(){
     takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
@@ -1477,8 +2314,26 @@ function zoomToPage(){
     var xPos = viewboxX + ((oldReqVBW - requestedViewboxWidth) / 2);
     var yPos = viewboxY + ((oldReqVBH - requestedViewboxHeight) / 2);
     IncludeView.specific(xPos,yPos,boardWidth,boardHeight);
-}
-
+	}
+	var resizeCanvasFunction = function(w,h){
+		var rw = Math.round(w);
+		var rh = Math.round(h);
+		var oldWidth = canvasElement[0].width;
+		var oldHeight = canvasElement[0].height;
+		if (oldHeight != rh || oldWidth != rw){
+			boardWidth = rw;
+			boardHeight = rh;
+			canvasElement.width = rw;
+			canvasElement.height = rh;
+			canvasElement[0].width = rw;
+			canvasElement[0].height = rh;
+			console.log("resizing canvas:",oldWidth,rw,oldHeight,rh,boardContext);
+			blit();
+		}
+	};
+	var requestViewboxFunction = function(x,y,w,h,onComplete){
+		TweenController.changeViewbox(x,y,w,h,onComplete);
+	}
 	return {
 		setZoomMode:function(zoomMode){
 		},
@@ -1487,6 +2342,11 @@ function zoomToPage(){
 		},
 		stanzaReceived:function(stanza){
 			actOnReceivedStanza(stanza);
-		}
+		},
+		progress:Progress,
+		getCanvas:function(){return canvasElement;},
+		requestViewbox:requestViewboxFunction,
+		resizeCanvas:resizeCanvasFunction,
+		alertCanvas:alertCanvas
 	};
 }
