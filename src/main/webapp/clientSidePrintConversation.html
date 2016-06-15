@@ -1,5 +1,6 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
 	<script>
+/*
 function progress(){
 	return {
 		max:function(unused){
@@ -11,6 +12,7 @@ function progress(){
 		}
 	};
 }
+*/
 	</script>
 	<script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
 	<script src="static/js/stable/sprintf-0.7-beta1.js"></script>
@@ -34,13 +36,11 @@ function renderCanvas(history,pageId){
 		delete b.progress.postRender["printer"];
 		var hw = Math.round(sizedHistory.width);
 		var hh = Math.round(sizedHistory.height);
-		console.log("postRender",hw,hh,sizedHistory);
 		b.resizeCanvas(hw,hh);
 		b.requestViewbox(sizedHistory.minX,sizedHistory.minY,hw,hh,function(){
 			var dataUri = b.getCanvas()[0].toDataURL("image/png");
 			var pageImage = $("#"+pageImageId);
 			pageImage.attr("src",dataUri);
-			console.log("renderingCanvas:",history,b);
 		});
 	};
 	b.historyReceived(history);
