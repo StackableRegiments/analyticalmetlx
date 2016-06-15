@@ -301,10 +301,10 @@ var DeviceConfiguration = (function(){
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
     Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
-            if(UserSettings.getIsInteractive()){
+            if("UserSettings" in window && UserSettings.getIsInteractive()){
 							DeviceConfiguration.setSlides(true);
 							DeviceConfiguration.setTools(true);
-							if(!initialized){
+							if(!initialized && "Modes" in window){
 									Modes.draw.activate();
 									if(DeviceConfiguration.getCurrentDevice() == "iPad"){
 											$("#panMode").remove();

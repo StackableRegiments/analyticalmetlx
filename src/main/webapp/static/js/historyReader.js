@@ -378,6 +378,7 @@ function prerenderInk(ink){
             y = points[p+1]+contentOffsetY;
             context.lineTo(x,y);
         }
+        context.lineCap = "round";
         context.stroke();
         context.closePath();
         context.strokeStyle = "white";
