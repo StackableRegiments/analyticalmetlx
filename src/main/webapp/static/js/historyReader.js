@@ -75,6 +75,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             }
 						console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
             hideBackstage();
+
 						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             render(boardContent,canvasContext);
             blitMark = Date.now();
