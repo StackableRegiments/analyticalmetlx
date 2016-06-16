@@ -167,15 +167,18 @@ class SlideRenderer extends Logger {
   def measureWord(word:MeTLTextWord,g:Graphics2D,frc:FontRenderContext) = {
     val weighted = if(word.bold) Font.BOLD else Font.PLAIN
     val italicised = if(word.italic) weighted + Font.ITALIC else weighted
-    val baseFont = new Font(word.font, italicised, correctFontSizeForOsDpi(word.size).toInt)
+    val adjustedSize = correctFontSizeForOsDpi(word.size)
+    val baseFont = new Font(word.font, italicised, adjustedSize.toInt).deriveFont(adjustedSize.floatValue)
     val metrics = g.getFontMetrics(baseFont)
     var blankLineHeight:Float = metrics.getHeight.floatValue
     val styledText = new AttributedString(word.text)
     val textLayout = new TextLayout(styledText.getIterator, frc)
     val bounds = textLayout.getBounds
-    PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
+//    PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
+    PreparedTextRun(word.text,textLayout,word.color,0,0,textLayout.getAdvance().toFloat,metrics.getHeight().toFloat,metrics)
   }
   protected def measureTextLines(metlText:MeTLMultiWordText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureMultiWordTextLines",{
+    val originX = metlText.x.floatValue
     val limit = metlText.x + metlText.width
     val frc = g.getFontRenderContext()
     val lexicalWords = metlText.words.flatMap(multiWord => multiWord.text.split(" ")
@@ -185,12 +188,12 @@ class SlideRenderer extends Logger {
         .filterNot(_.isEmpty)
         .map(fragment => multiWord.copy(text = fragment))))
 
-    val _lateralRuns = lexicalWords.foldLeft((List.empty[List[PreparedTextRun]],List.empty[PreparedTextRun],metlText.x)){
+    val _lateralRuns = lexicalWords.foldLeft((List.empty[List[PreparedTextRun]],List.empty[PreparedTextRun],originX)){
       case ((complete,partial,extent),word) => {
         val textRun = measureWord(word,g,frc)
-        val space = textRun.metrics.stringWidth(" ")
+        val space = measureWord(word.copy(text = "i"),g,frc).width //textRun.metrics.stringWidth(" ") // many fontmetrics use "i" as the width indicator
         if(extent + textRun.width > limit){
-          (complete ::: List(partial), List(textRun.copy(x = metlText.x.floatValue)), metlText.x + textRun.width + space)
+          (complete ::: List(partial), List(textRun.copy(x = originX)), originX + textRun.width + space)
         }
         else {
           (complete, partial ::: List(textRun.copy(x = extent.floatValue)), extent + textRun.width + space)
@@ -200,12 +203,13 @@ class SlideRenderer extends Logger {
     val lateralRuns = _lateralRuns._1 ::: List(_lateralRuns._2);
     val verticalRuns = lateralRuns.foldLeft((List.empty[PreparedTextLine],metlText.y)){
       case ((lines,yOffset), runs) => {
-        val maxRun = runs.sortBy(_.height).headOption//.map(_.metrics.getLeading).getOrDefault(0)
-        val runHeight = maxRun.map(_.height.floatValue).getOrElse(0f)
+        val maxRun = runs.sortBy(_.height).reverse.headOption
+        val runHeight = maxRun.map(_.height).getOrElse(0f)
         val lineMetrics = maxRun.map(r => r.metrics.getLineMetrics(r.text,g))
-        val descent =  lineMetrics.map(_.getDescent).getOrElse(0f)
-        val ascent =  lineMetrics.map(_.getAscent).getOrElse(0f)
-        (lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue + ascent)),metlText.x.floatValue,yOffset.floatValue + ascent,runs.map(_.width).sum, runHeight)),yOffset + runHeight + ascent + descent)
+        val leading =  lineMetrics.map(_.getLeading()).getOrElse(0f)
+        val descent =  lineMetrics.map(_.getDescent()).getOrElse(0f)
+        val ascent =  lineMetrics.map(_.getAscent()).getOrElse(0f)
+        (lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue + ascent)),originX,yOffset.floatValue,runs.map(_.width).sum, runHeight)),yOffset + descent + leading)
       }
     }
     verticalRuns._1
