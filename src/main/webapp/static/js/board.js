@@ -568,10 +568,10 @@ function transformReceived(transform){
         });
         $.each(transform.multiWordTextIds,function(i,id){
             var text = boardContent.multiWordTexts[id];
-	    var doc = text.doc;
+            var doc = text.doc;
             doc.position.x += transform.xTranslate;
             doc.position.y += transform.yTranslate;
-	    text.bounds = doc.calculateBounds();
+            text.bounds = doc.calculateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
     }
@@ -655,7 +655,7 @@ function screenBounds(worldBounds){
     };
 }
 function drawImage(image,incCanvasContext){
-	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         if (image.canvas != undefined){
             var sBounds = screenBounds(image.bounds);
@@ -670,27 +670,27 @@ function drawImage(image,incCanvasContext){
     }
 }
 function drawText(text,incCanvasContext){
-	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
         canvasContext.drawImage(text.canvas,
-			       sBounds.screenPos.x,
-			       sBounds.screenPos.y,
-			       sBounds.screenWidth,
-			       sBounds.screenHeight);
+                                sBounds.screenPos.x,
+                                sBounds.screenPos.y,
+                                sBounds.screenWidth,
+                                sBounds.screenHeight);
     }
     catch(e){
         console.log("drawText exception",e);
     }
 }
 function drawInk(ink,incCanvasContext){
-	var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
     canvasContext.drawImage(ink.canvas,
-                           sBounds.screenPos.x,sBounds.screenPos.y,
-                           sBounds.screenWidth,sBounds.screenHeight);
+                            sBounds.screenPos.x,sBounds.screenPos.y,
+                            sBounds.screenWidth,sBounds.screenHeight);
 }
 function imageReceived(image){
     var dataImage = new Image();

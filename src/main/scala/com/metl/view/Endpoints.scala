@@ -235,8 +235,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"thumbnail")
     })
-    /*
-     // commenting these out until Chris commits the OneNote sourcefile, which is presently missing.
     case Req("saveToOneNote" :: conversation :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
       Globals.oneNoteExportSubject(Full(conversation))
       RedirectResponse(OneNote.authUrl)
@@ -248,7 +246,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         result <- OneNote.export(conversation,token)
       ) yield RedirectResponse("/board")
     })
-    */
     case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listSessions"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))

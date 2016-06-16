@@ -154,10 +154,67 @@ class SlideRenderer extends Logger {
     }
   })
 
+  protected def measureText(metlText:MeTLMultiWordText,g:Graphics2D):Dimensions = Stopwatch.time("SlideRenderer.measureMultiWordText",{
+    val (l,r,t,b) = measureTextLines(metlText,g).foldLeft((metlText.x,metlText.y,metlText.x,metlText.y))((internalAcc,internalItem) => {
+      val newLeft = Math.min(internalAcc._1,internalItem.x)
+      val newRight = Math.max(internalAcc._2,internalItem.x+internalItem.width)
+      val newTop = Math.min(internalAcc._3,internalItem.y)
+      val newBottom = Math.max(internalAcc._4,internalItem.y+internalItem.height)
+      (newLeft,newRight,newTop,newBottom)
+    })
+    Dimensions(l,t,r,b,r-l,b-t)
+  })
+  def measureWord(word:MeTLTextWord,g:Graphics2D,frc:FontRenderContext) = {
+    val weighted = if(word.bold) Font.BOLD else Font.PLAIN
+    val italicised = if(word.italic) weighted + Font.ITALIC else weighted
+    val baseFont = new Font(word.font, italicised, correctFontSizeForOsDpi(word.size).toInt)
+    val metrics = g.getFontMetrics(baseFont)
+    var blankLineHeight:Float = metrics.getHeight.floatValue
+    val styledText = new AttributedString(word.text)
+    val textLayout = new TextLayout(styledText.getIterator, frc)
+    val bounds = textLayout.getBounds
+    PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
+  }
+  protected def measureTextLines(metlText:MeTLMultiWordText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureMultiWordTextLines",{
+    val limit = metlText.x + metlText.width
+    val frc = g.getFontRenderContext()
+    val lexicalWords = metlText.words.flatMap(multiWord => multiWord.text.split(" ")
+      .flatMap(lexicalWord => lexicalWord.split("\n").toList
+        .zip(Stream.continually("\n"))
+        .flatMap{case (a,b) => List(a,b)}
+        .filterNot(_.isEmpty)
+        .map(fragment => multiWord.copy(text = fragment))))
+
+    val _lateralRuns = lexicalWords.foldLeft((List.empty[List[PreparedTextRun]],List.empty[PreparedTextRun],metlText.x)){
+      case ((complete,partial,extent),word) => {
+        val textRun = measureWord(word,g,frc)
+        val space = textRun.metrics.stringWidth(" ")
+        if(extent + textRun.width > limit){
+          (complete ::: List(partial), List(textRun.copy(x = metlText.x.floatValue)), metlText.x + textRun.width + space)
+        }
+        else {
+          (complete, partial ::: List(textRun.copy(x = extent.floatValue)), extent + textRun.width + space)
+        }
+      }
+    }
+    val lateralRuns = _lateralRuns._1 ::: List(_lateralRuns._2);
+    val verticalRuns = lateralRuns.foldLeft((List.empty[PreparedTextLine],metlText.y)){
+      case ((lines,yOffset), runs) => {
+        val maxRun = runs.sortBy(_.height).headOption//.map(_.metrics.getLeading).getOrDefault(0)
+        val runHeight = maxRun.map(_.height.floatValue).getOrElse(0f)
+        val lineMetrics = maxRun.map(r => r.metrics.getLineMetrics(r.text,g))
+        val descent =  lineMetrics.map(_.getDescent).getOrElse(0f)
+        val ascent =  lineMetrics.map(_.getAscent).getOrElse(0f)
+        (lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue + ascent)),metlText.x.floatValue,yOffset.floatValue + ascent,runs.map(_.width).sum, runHeight)),yOffset + runHeight + ascent + descent)
+      }
+    }
+    verticalRuns._1
+  })
 
   case class PreparedTextLine(textRuns:List[PreparedTextRun],x:Float,y:Float,width:Float,height:Float)
-  case class PreparedTextRun(text:String,layout:TextLayout,color:Color,x:Float,y:Float,width:Float,height:Float)
+  case class PreparedTextRun(text:String,layout:TextLayout,color:Color,x:Float,y:Float,width:Float,height:Float,metrics:FontMetrics)
   def measureText(metlText:MeTLText):Dimensions = measureText(metlText,defaultObserver)
+  def measureText(metlText:MeTLMultiWordText):Dimensions = measureText(metlText,defaultObserver)
   protected def measureText(metlText:MeTLText,g:Graphics2D):Dimensions = Stopwatch.time("SlideRenderer.measureText",{
     val (l,r,t,b) = measureTextLines(metlText,g).foldLeft((metlText.x,metlText.y,metlText.x,metlText.y))((internalAcc,internalItem) => {
       val newLeft = Math.min(internalAcc._1,internalItem.x)
@@ -293,7 +350,7 @@ class SlideRenderer extends Logger {
                     val innerNextY:Float = y+blankLineHeight
                     val thisX:Float = offsetX
                     offsetX += textLayout.getBounds.getWidth.toFloat
-                    acc ::: List(PreparedTextRun(runs.map(_.text).mkString(""),textLayout,metlText.color,metlText.x.toFloat + thisX,y,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat))
+                    acc ::: List(PreparedTextRun(runs.map(_.text).mkString(""),textLayout,metlText.color,metlText.x.toFloat + thisX,y,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat,g.getFontMetrics(font)))
                   })
                   val newLine = PreparedTextLine(preparedTextRuns,metlText.x.toFloat,y,preparedTextRuns.map(_.width).sum,preparedTextRuns.map(_.height).max)
                   (List(newLine),y + blankLineHeight)
@@ -322,7 +379,7 @@ class SlideRenderer extends Logger {
                       if (textLayout != null){
                         val currentY:Float = lineY + textLayout.getAscent()
                         val totalHeight:Float = textLayout.getDescent + textLayout.getLeading
-                        val preparedTextRun:PreparedTextRun = PreparedTextRun(run.text.take(measurer.getPosition()),textLayout,run.color,(metlText.x + runOffsetX).toFloat,currentY,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat)
+                        val preparedTextRun:PreparedTextRun = PreparedTextRun(run.text.take(measurer.getPosition()),textLayout,run.color,(metlText.x + runOffsetX).toFloat,currentY,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat,g.getFontMetrics(font))
                         runOffsetX += textLayout.getBounds.getWidth
                         val newLine = PreparedTextLine(List(preparedTextRun),preparedTextRun.x,preparedTextRun.y,preparedTextRun.width,preparedTextRun.height)
                         val newLines:List[PreparedTextLine] = freshLine match {
@@ -419,7 +476,7 @@ class SlideRenderer extends Logger {
                 case w:Double if (w.isNaN || w < 0) => {
                   val textLayout = new TextLayout(styledText.getIterator,frc)
                   val innerNextY = y+blankLineHeight
-                  val newLine = PreparedTextLine(List(PreparedTextRun(line,textLayout,metlText.color,metlText.x.toFloat,innerNextY,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat)),metlText.x.toFloat,innerNextY,textLayout.getBounds.getWidth.toFloat,blankLineHeight)
+                  val newLine = PreparedTextLine(List(PreparedTextRun(line,textLayout,metlText.color,metlText.x.toFloat,innerNextY,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat,g.getFontMetrics(font))),metlText.x.toFloat,innerNextY,textLayout.getBounds.getWidth.toFloat,blankLineHeight)
                   (List(newLine),innerNextY)
                 }
                 case _ =>{
@@ -432,7 +489,7 @@ class SlideRenderer extends Logger {
                         val currentY = lineY + textLayout.getAscent()
                         val totalHeight = textLayout.getDescent + textLayout.getLeading
 
-                        val newLines = PreparedTextLine(List(PreparedTextRun(line,textLayout,metlText.color,metlText.x.toFloat,currentY,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat)),metlText.x.toFloat,currentY,textLayout.getBounds.getWidth.toFloat,totalHeight) :: internalPreparedLines
+                        val newLines = PreparedTextLine(List(PreparedTextRun(line,textLayout,metlText.color,metlText.x.toFloat,currentY,textLayout.getBounds.getWidth.toFloat,textLayout.getBounds.getHeight.toFloat,g.getFontMetrics(font))),metlText.x.toFloat,currentY,textLayout.getBounds.getWidth.toFloat,totalHeight) :: internalPreparedLines
                         renderLine(newLines,currentY+totalHeight, wraps + 1)
                       }
                       else (internalPreparedLines,lineY + blankLineHeight)
@@ -472,6 +529,7 @@ class SlideRenderer extends Logger {
   })
 
   protected def renderMultiWordText(text:MeTLMultiWordText,g:Graphics2D) = Stopwatch.time("SlideRenderer.renderMultiWordText",{
+    renderText(measureTextLines(text,g),g)
   })
 
   protected val ratioConst = 0.75
@@ -513,7 +571,8 @@ class SlideRenderer extends Logger {
     }
   })
   def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], multiWordTexts:List[MeTLMultiWordText],target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems",{
-    val nativeScaleTextBoxes = filterAccordingToTarget[MeTLText](target,texts).map(t => measureText(t))
+    val nativeScaleTextBoxes = filterAccordingToTarget[MeTLText](target,texts).map(t => measureText(t)) :::
+    filterAccordingToTarget[MeTLMultiWordText](target,multiWordTexts).map(t => measureText(t))
     val td = nativeScaleTextBoxes.foldLeft(Dimensions(h.getLeft,h.getTop,h.getRight,h.getBottom,0.0,0.0))((acc,item) => {
       val newLeft = Math.min(acc.left,item.left)
       val newTop = Math.min(acc.top,item.top)

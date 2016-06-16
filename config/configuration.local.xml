@@ -102,56 +102,56 @@
       </server>
       <server>
       <type>frontend</type>
-<<<<<<< HEAD
-    </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	 -->
-	<securityProvider>
-		<stableKeyProvider /> 
-		<!--		<stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
-		<!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
-		<!-- <staticKeyProvider ejabberdPassword="examplePassword" yawsPassword="examplePassword" /> -->
-		<!--		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />-->
-	</securityProvider>
-	<authentication>
-		<!--
-		<google clientId="exampleKey"/>
--->
-		<mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
-			<template>
-				<div>
-					<h2>Login to MeTL</h2>
-					<div>Please choose a password.  Use only alphanumeric characters.
-					</div>
-					<form id="loginForm">
-						<label for="usernameInput">Username</label>
-						<input type="text" id="usernameInput"></input>
-						<input type="hidden" id="passwordInput" value="mockPassword"></input>
-						<input type="submit" value="Login">c</input>
-					</form>
-				</div>
-			</template>
-		</mock>
+      <<<<<<< HEAD
+      </server>
+      </serverConfigurations>
+      <clientConfig>
+      <xmppDomain>local.temp</xmppDomain>
+      <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+      </clientConfig>
+  -->
+  <securityProvider>
+    <stableKeyProvider />
+    <!--                <stableKeyWithRemoteCheckerProvider localScheme="http" localPort="8080" remoteBackendHost="demo.stackableregiments.com" remoteBackendPort="80"/> -->
+    <!--<staticKeyProvider ejabberdUsername="" ejabberdPassword="" yawsUsername="" yawsPassword="" />-->
+    <!-- <staticKeyProvider ejabberdPassword="examplePassword" yawsPassword="examplePassword" /> -->
+    <!--                <staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUsername" yawsPassword="examplePassword" />-->
+  </securityProvider>
+  <authentication>
+    <!--
+        <google clientId="exampleKey"/>
+    -->
+    <mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
+      <template>
+        <div>
+          <h2>Login to MeTL</h2>
+          <div>Please choose a password.  Use only alphanumeric characters.
+          </div>
+          <form id="loginForm">
+            <label for="usernameInput">Username</label>
+            <input type="text" id="usernameInput"></input>
+            <input type="hidden" id="passwordInput" value="mockPassword"></input>
+            <input type="submit" value="Login">c</input>
+          </form>
+        </div>
+      </template>
+    </mock>
   </authentication>
   <groupsProvider>
-		<selfGroups/>
-		<flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
-		<flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
-			<wantsSubgroups username="jeff.borden"/>
-			<wantsSubgroups username="greg.kunzweiler"/>
-		</flatFileGroups>
-		<flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
-	</groupsProvider>
-	<clientAdaptors>
-		<embeddedXmppServer keystorePath="examplePath" keystorePassword="examplePassword" />
-	</clientAdaptors>
-	<cloudConverterApiKey>exampleKey</cloudConverterApiKey>
+    <selfGroups/>
+    <flatFileGroups format="globalOverrides" location="/stackable/analyticalmetlx/config/globalOverrides.txt" refreshPeriod="5 minutes"/>
+    <flatFileGroups format="stLeo" location="/stackable/analyticalmetlx/config/stLeo.txt" refreshPeriod="5 minutes">
+      <wantsSubgroups username="jeff.borden"/>
+      <wantsSubgroups username="greg.kunzweiler"/>
+    </flatFileGroups>
+    <flatFileGroups format="specificOverrides" location="/stackable/analyticalmetlx/config/specificOverrides.txt" refreshPeriod="5 minutes"/>
+  </groupsProvider>
+  <clientAdaptors>
+    <embeddedXmppServer keystorePath="config/metl.jks" keystorePassword="helpme" />
+  </clientAdaptors>
+  <cloudConverterApiKey>exampleKey</cloudConverterApiKey>
   <oneNote>
-    <clientId>exampleOneNoteClientId</clientId>
+    <clientId>9d77de87-0c11-41a8-bb51-4535663fb8f5</clientId>
     <clientSecret>exampleClientSecret</clientSecret>
     <redirectUrl>http://localhost:8080/permitOneNote</redirectUrl>
     <!--<redirectUrl>https://login.live.com/oauth20_desktop.srf</redirectUrl>-->
