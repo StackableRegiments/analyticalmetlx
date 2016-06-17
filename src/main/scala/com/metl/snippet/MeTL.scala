@@ -61,7 +61,7 @@ class Metl extends Logger {
   }
 
   def noBoard:String = {
-    "/"//conversationSearch()
+    conversationSearch()
   }
   def editConversation(conversationJid:Int):String = {
     "/editConversation?conversationJid=%s".format(conversationJid.toString)
