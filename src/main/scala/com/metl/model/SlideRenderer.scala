@@ -25,8 +25,36 @@ class RenderDescription(val width:Int,val height:Int)
 object SlideRenderer extends SlideRenderer
 
 class SlideRenderer extends Logger {
+  ///*
   protected val JAVA_DEFAULT_DPI = 72.0
   protected val WINDOWS_DEFAULT_DPI = 96.0
+  //*/
+  /*
+  protected val JAVA_DEFAULT_DPI = 72.0
+  protected val WINDOWS_DEFAULT_DPI = {
+    try {
+      java.awt.Toolkit.getDefaultToolkit().getScreenResolution()
+    } catch {
+      case e:Exception => {
+        96.0
+      }
+    }
+  } 
+  */
+ /*
+  protected val WINDOWS_DEFAULT_DPI = 96.0
+  protected val JAVA_DEFAULT_DPI = {
+    try {
+      java.awt.Toolkit.getDefaultToolkit().getScreenResolution()
+    } catch {
+      case e:Exception => {
+        72.0
+      }
+    }
+  } 
+*/
+  println("new awt dpi: %s :: %s".format(WINDOWS_DEFAULT_DPI,JAVA_DEFAULT_DPI))
+  //protected val WINDOWS_DEFAULT_DPI = 96.0
 
   protected def makeBlankImage(width:Int,height:Int) = Stopwatch.time("SlideRenderer.makeBlankImage",{
     val blankImage = new BufferedImage(width,height,BufferedImage.TYPE_3BYTE_BGR)
@@ -51,9 +79,14 @@ class SlideRenderer extends Logger {
 
   //We assume it came from windows, and that any headful dev env is Windows.
   protected def correctFontSizeForOsDpi(size:Double):Double = {
+    /*
     if(java.awt.GraphicsEnvironment.isHeadless)
       Math.round(size * JAVA_DEFAULT_DPI / WINDOWS_DEFAULT_DPI)
     else size
+    */
+      //Math.round(size * JAVA_DEFAULT_DPI / WINDOWS_DEFAULT_DPI)
+      //size
+      size * (WINDOWS_DEFAULT_DPI / JAVA_DEFAULT_DPI)
   }
 
   def toAwtColor(c:Color,overrideAlpha:Int = -1):AWTColor = {
@@ -168,16 +201,25 @@ class SlideRenderer extends Logger {
     val weighted = if(word.bold) Font.BOLD else Font.PLAIN
     val italicised = if(word.italic) weighted + Font.ITALIC else weighted
     val adjustedSize = correctFontSizeForOsDpi(word.size)
+    //val adjustedSize = word.size
     val baseFont = new Font(word.font, italicised, adjustedSize.toInt).deriveFont(adjustedSize.floatValue)
     val metrics = g.getFontMetrics(baseFont)
     var blankLineHeight:Float = metrics.getHeight.floatValue
     val styledText = new AttributedString(word.text)
+    styledText.addAttribute(TextAttribute.FONT,baseFont)
+    if(word.underline){
+      styledText.addAttribute(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON, 0, word.text.length)
+    }
+    /*
+    if(run.isStrikethrough)
+      styledText.addAttribute(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON, runOffset, runLength)
+*/
     val textLayout = new TextLayout(styledText.getIterator, frc)
     val bounds = textLayout.getBounds
-//    PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
-    PreparedTextRun(word.text,textLayout,word.color,0,0,textLayout.getAdvance().toFloat,metrics.getHeight().toFloat,metrics)
+    PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
   }
   protected def measureTextLines(metlText:MeTLMultiWordText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureMultiWordTextLines",{
+    println("measureTextLines: %s".format(metlText))
     val originX = metlText.x.floatValue
     val limit = metlText.x + metlText.width
     val frc = g.getFontRenderContext()
@@ -209,7 +251,9 @@ class SlideRenderer extends Logger {
         val leading =  lineMetrics.map(_.getLeading()).getOrElse(0f)
         val descent =  lineMetrics.map(_.getDescent()).getOrElse(0f)
         val ascent =  lineMetrics.map(_.getAscent()).getOrElse(0f)
-        (lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue + ascent)),originX,yOffset.floatValue,runs.map(_.width).sum, runHeight)),yOffset + descent + leading)
+        //(lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue + ascent)),originX,yOffset.floatValue,runs.map(_.width).sum, runHeight)),yOffset + descent + leading)
+        //(lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue)),originX,yOffset.floatValue, runs.map(_.width).sum, runHeight)),yOffset + runHeight + leading)
+        (lines ::: List(PreparedTextLine(runs.map(_.copy(y = yOffset.floatValue)),originX,yOffset.floatValue,runs.reverse.headOption.map(r => r.x + r.width - originX).getOrElse(runs.map(_.width).sum), runHeight)),yOffset + runHeight + leading)
       }
     }
     verticalRuns._1

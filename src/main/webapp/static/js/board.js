@@ -136,7 +136,7 @@ function partToStanza(p){
     return {
         text:p.text,
         color:color,
-        size:p.size || defaults.size,
+        size:parseFloat(p.size) || parseFloat(defaults.size),
         font:p.font || defaults.font,
         justify:p.align || defaults.align,
         bold:p.bold === true,

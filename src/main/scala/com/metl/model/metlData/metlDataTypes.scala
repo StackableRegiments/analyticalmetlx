@@ -309,7 +309,9 @@ object MeTLCanvasContent{
   def empty = MeTLCanvasContent(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","")
 }
 
-case class MeTLTextWord(text:String,bold:Boolean,underline:Boolean,italic:Boolean,justify:String,color:Color,font:String,size:Double)
+case class MeTLTextWord(text:String,bold:Boolean,underline:Boolean,italic:Boolean,justify:String,color:Color,font:String,size:Double){
+  def scale(factor:Double):MeTLTextWord = copy(size=size * factor)
+}
 case class MeTLMultiWordText(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,height:Double,width:Double,requestedWidth:Double,x:Double,y:Double,tag:String,override val identity:String,override val target:String,override val privacy:Privacy,override val slide:String,words:Seq[MeTLTextWord],override val audiences:List[Audience] = Nil,override val scaleFactorX:Double = 1.0,override val scaleFactorY:Double = 1.0) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY) {
   override def isDirtiedBy(other:MeTLCanvasContent) = other match {
     case o:MeTLDirtyText => matches(o) && o.timestamp > timestamp
@@ -322,7 +324,15 @@ case class MeTLMultiWordText(override val server:ServerConfiguration,override va
   override def scale(factor:Double):MeTLMultiWordText = scale(factor,factor)
   override def scale(xScale:Double,yScale:Double):MeTLMultiWordText = Stopwatch.time("MeTLMultiWordText.scale",{
     val averageFactor = (xScale + yScale) / 2
-    copy(height = height * yScale, width = width * xScale, x = x * xScale, y = y * yScale, scaleFactorX = scaleFactorX * xScale, scaleFactorY = scaleFactorY * yScale)
+    copy(
+      height = height * yScale, 
+      width = width * xScale, 
+      x = x * xScale, 
+      y = y * yScale, 
+      scaleFactorX = scaleFactorX * xScale, 
+      scaleFactorY = scaleFactorY * yScale,
+      words = words.map(_.scale(averageFactor))
+    )
   })
   override def alterPrivacy(possiblyNewPrivacy:Privacy):MeTLMultiWordText = Stopwatch.time("MeTLMultiWordText.alterPrivacy",{
     possiblyNewPrivacy match {
