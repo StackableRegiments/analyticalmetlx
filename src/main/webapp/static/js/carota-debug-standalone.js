@@ -930,15 +930,15 @@
 
                 var currentTo = Date.now();
 
-                var paint = exports.paint = function(canvas,doc,hasFocus){
-                    var screenPos = worldToScreen(doc.position.x,doc.position.y),
+                var paint = exports.paint = function(canvas,doc,hasFocus,thisBoard){
+                    var screenPos = thisBoard.worldToScreen(doc.position.x,doc.position.y),
                         logicalWidth = canvas.width,
                         logicalHeight = canvas.height;
 
                     var ctx = canvas.getContext('2d');
                     ctx.save();
                     var output =  rect(0, 0, logicalWidth, logicalHeight);
-                    var s = scale();
+                    var s = thisBoard.scale();
                     ctx.translate(screenPos.x,screenPos.y);
                     ctx.scale(s,s);
                     doc.draw(ctx, output);
