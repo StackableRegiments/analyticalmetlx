@@ -11,13 +11,14 @@ import org.apache.http.conn._
 import org.apache.http.conn.ssl._
 import org.apache.http.conn.scheme._
 import org.apache.http.impl.client._
+import org.apache.http.entity.ContentType
+import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.impl.conn._
 import org.apache.http.impl.conn.tsccm._
 import java.util.concurrent._
 import java.util.concurrent.TimeUnit._
 import javax.net.ssl._
 import java.security.cert._
-//import scala.actors.Futures._
 import java.util.ArrayList
 import org.apache.http.protocol.HTTP
 import java.net.URLEncoder
@@ -62,6 +63,9 @@ trait IMeTLHttpClient {
   def postForm(uri:String,postItemList:List[(String,String)]):Array[Byte] = postForm(uri, postItemList, List.empty[(String,String)])
   def postForm(uri:String,postItemList:List[(String,String)],additionalHeaders:List[(String,String)]):Array[Byte]
   def postFormExpectingHTTPResponse(uri:String,postItemList:List[(String,String)],additionalHeaders:List[(String,String)]):HTTPResponse
+
+
+  def postMultipart(uri:String,binaryParts:List[(String,Array[Byte])],stringParts:List[(String,String)],additionalHeaders:List[(String,String)]):Array[Byte]
 
   def postUnencodedForm(uri:String,postItemList:List[(String,String)]):Array[Byte] = postUnencodedForm(uri, postItemList, List.empty[(String,String)])
   def postUnencodedForm(uri:String,postItemList:List[(String,String)],additionalHeaders:List[(String,String)]):Array[Byte]
@@ -270,6 +274,22 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
     }
     executeHttpConnAction(uri,unencodedFormPostingPost)
   })
+
+  override def postMultipart(uri:String,binaryParts:List[(String,Array[Byte])],stringParts:List[(String,String)],additionalHeaders:List[(String,String)]):Array[Byte] = {
+    val entitySpec = stringParts.foldLeft(
+      binaryParts.foldLeft(MultipartEntityBuilder.create){
+        case (builder,(name,bytes)) => builder.addBinaryBody(name,bytes)
+      }){
+      case (builder,(name,string)) => builder.addTextBody(name,string,ContentType.TEXT_HTML)
+    }
+    val uploadFile = new HttpPost(uri)
+    addAdditionalHeaders(uploadFile,additionalHeaders)
+    uploadFile.setEntity(entitySpec.build)
+    val response = execute(uploadFile)
+    val entity = response.getEntity
+    IOUtils.toByteArray(entity.getContent)
+  }
+
   override def get(uri:String,additionalHeaders:List[(String,String)] = List.empty[(String,String)]):String = Stopwatch.time("Http.get", {
     getAsString(uri,additionalHeaders)
   })
@@ -346,7 +366,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
     val uri = response.requestUrl
     val tempOutput = response.bytes
     response.statusCode match {
-      case 200 => response
+      case 200 | 201 => response
       case 300 | 301 | 302 | 303 => {
         val newLoc = response.headers("Location")
         val newLocUri = new URI(newLoc)

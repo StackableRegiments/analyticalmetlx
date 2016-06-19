@@ -105,7 +105,6 @@ object Globals extends PropertyReader with Logger {
   object currentUser extends SessionVar[String](casState.is.username)
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
-  object oneNoteExportSubject extends SessionVar[Box[String]](Empty)
 
   val printDpi = 100
   val ThumbnailSize = new RenderDescription(320,240)

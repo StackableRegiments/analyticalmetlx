@@ -152,9 +152,8 @@
   <cloudConverterApiKey>exampleKey</cloudConverterApiKey>
   <oneNote>
     <clientId>9d77de87-0c11-41a8-bb51-4535663fb8f5</clientId>
-    <clientSecret>exampleClientSecret</clientSecret>
+    <clientSecret>40zBQHg9sfRkU3gUeaFfmAi</clientSecret>
     <redirectUrl>http://localhost:8080/permitOneNote</redirectUrl>
-    <!--<redirectUrl>https://login.live.com/oauth20_desktop.srf</redirectUrl>-->
     <scopes>wl.signin wl.basic office.onenote_create</scopes>
   </oneNote>
 </serverConfiguration>

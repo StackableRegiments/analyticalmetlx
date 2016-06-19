@@ -52,6 +52,7 @@ libraryDependencies ++= {
     "org.specs2" %% "specs2" % "3.3.1" % "test",
     "org.mockito" % "mockito-core" % "1.9.0" % "test",
     "commons-io" % "commons-io" % "1.4",
+    "org.apache.httpcomponents" % "httpmime" % "4.5.2",
     "org.apache.vysper" % "vysper" % "0.7",
     "org.apache.vysper" % "vysper-core" % "0.7",
     "org.apache.vysper" % "vysper-server" % "0.7",

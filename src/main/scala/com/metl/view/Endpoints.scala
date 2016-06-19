@@ -4,6 +4,7 @@ import com.metl.data._
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
 import javax.xml.bind.DatatypeConverter;
+import net.liftweb.json._
 
 import net.liftweb.util._
 import net.liftweb.common._
@@ -236,15 +237,19 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       HttpResponder.snapshotWithPrivate(jid,"thumbnail")
     })
     case Req("saveToOneNote" :: conversation :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
-      Globals.oneNoteExportSubject(Full(conversation))
-      RedirectResponse(OneNote.authUrl)
+      Globals.oneNoteAuthToken.get match {
+        case Full(token) => JsonResponse(JString(OneNote.export(conversation,token).toString))
+        case _ => RedirectResponse(OneNote.authUrl)
+      }
     })
     case Req("permitOneNote" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.permitOneNote",{
       for(
         token <- S.param("code");
-        conversation <- Globals.oneNoteExportSubject;
-        result <- OneNote.export(conversation,token)
-      ) yield RedirectResponse("/board")
+        referer <- S.referer
+      ) yield {
+        Globals.oneNoteAuthToken(Full(OneNote.claimToken(token)))
+        RedirectResponse(referer)
+      }
     })
     case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listSessions"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)

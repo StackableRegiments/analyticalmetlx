@@ -17,7 +17,7 @@ object HttpResponder extends HttpCacher with Logger {
   private val quizImageExpiry = 30 seconds
   protected val server = ServerConfiguration.default
   debug("HttpResponder for server: %s".format(server))
-  protected def getSnapshot(jid:String,size:String) = {
+  def getSnapshot(jid:String,size:String) = {
     val room = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
     val snap = room.getSnapshot(size.trim.toLowerCase match {
       case "thumbnail" => Globals.ThumbnailSize
@@ -30,7 +30,7 @@ object HttpResponder extends HttpCacher with Logger {
     debug("getSnapshot: (%s => %s, %s) => %s".format(jid, room, size,snap))
     snap
   }
-  protected def getSnapshotWithPrivate(jid:String,size:String) = {
+  def getSnapshotWithPrivate(jid:String,size:String) = {
     val publicRoom = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
     val privateRoom = MeTLXConfiguration.getRoom(jid+Globals.currentUser.is,server.name,RoomMetaDataUtils.fromJid(jid+Globals.currentUser.is))
     val merged = publicRoom.getHistory.merge(privateRoom.getHistory)
