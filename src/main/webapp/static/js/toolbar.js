@@ -535,7 +535,7 @@ function copyBuffer(buffer){
     return tmp;
 }
 function intersectRect(r1, r2) {//Left,top,right,bottom
-//	console.log("intersectRect",r1,r2);
+    //  console.log("intersectRect",r1,r2);
     if (typeof(r1) != "undefined" && typeof(r2) != "undefined"){
         return !(r2[0] > r1[2] ||
                  r2[2] < r1[0] ||
@@ -1024,13 +1024,13 @@ var Modes = (function(){
             }
             var resetImageUpload = function(){
                 insertOptions.hide();
-								var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
-								if (imageForm != undefined){
-									imageForm.reset();
-								}
-								if (imageUploadThumbnail[0] != undefined){
-									imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
-								}
+                var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
+                if (imageForm != undefined){
+                    imageForm.reset();
+                }
+                if (imageUploadThumbnail[0] != undefined){
+                    imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
+                }
                 imageUploadX.text("");
                 imageUploadY.text("");
                 imageUploadWidth.text("");
@@ -1074,13 +1074,13 @@ var Modes = (function(){
                                 y:currentImage.y
                             };
                             resetImageUpload();
-														updateTracking(newIdentity,function(){
-															var newX = Math.min(imageStanza.x,viewboxX);
-															var newY = Math.min(imageStanza.y,viewboxY);
-															var newW = Math.max(imageStanza.x + imageStanza.width,viewboxWidth);
-															var newH = Math.max(imageStanza.y + imageStanza.height,viewboxHeight);	
-															IncludeView.specific(newX,newY,newW,newH);
-														});
+                            updateTracking(newIdentity,function(){
+                                var newX = Math.min(imageStanza.x,viewboxX);
+                                var newY = Math.min(imageStanza.y,viewboxY);
+                                var newW = Math.max(imageStanza.x + imageStanza.width,viewboxWidth);
+                                var newH = Math.max(imageStanza.y + imageStanza.height,viewboxHeight);
+                                IncludeView.specific(newX,newY,newW,newH);
+                            });
                             sendStanza(imageStanza);
                             WorkQueue.gracefullyResume();
                         },
@@ -1115,20 +1115,20 @@ var Modes = (function(){
                     imageUploadHeight = $("#imageUploadHeight");
                     imageInsertOptionsClose.on("click",resetImageUpload);
                     imageFileChoice.attr("accept","image/*");
-										if (imageFileChoice[0] != undefined){
-											imageFileChoice[0].addEventListener("change",function(e){
-													if ("type" in currentImage && currentImage.type == "imageDefinition"){
-															var files = e.target.files || e.dataTransfer.files;
-															var limit = files.length;
-															var file = files[0];
-															if (file.type.indexOf("image") == 0) {
-																	currentImage.fileUpload = file;
-																	currentImage.thumbnailSize = imageSizeChoices[0];
-																	updateImageEditor();
-															}
-													}
-											},false);
-										}
+                    if (imageFileChoice[0] != undefined){
+                        imageFileChoice[0].addEventListener("change",function(e){
+                            if ("type" in currentImage && currentImage.type == "imageDefinition"){
+                                var files = e.target.files || e.dataTransfer.files;
+                                var limit = files.length;
+                                var file = files[0];
+                                if (file.type.indexOf("image") == 0) {
+                                    currentImage.fileUpload = file;
+                                    currentImage.thumbnailSize = imageSizeChoices[0];
+                                    updateImageEditor();
+                                }
+                            }
+                        },false);
+                    }
                     var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
                     imageSizeChoiceSelector.empty();
                     imageSizeChoices.map(function(isc){
@@ -1231,20 +1231,23 @@ var Modes = (function(){
                         $("#ban").addClass("disabledButton");
                     }
 
-										if ("Conversations" in window && Conversations.shouldModifyConversation()){
-											$("#ban").show();
-											$("#administerContent").show();	
-										} else {
-											$("#ban").hide();
-											$("#administerContent").hide();	
-										}
-										if (isAdministeringContent){
-											$("#administerContent").removeClass("disabledButton");
-										} else {
-											$("#administerContent").addClass("disabledButton");
-										}
+                    if ("Conversations" in window && Conversations.shouldModifyConversation()){
+                        $("#ban").show();
+                        $("#administerContent").show();
+                    } else {
+                        $("#ban").hide();
+                        $("#administerContent").hide();
+                    }
+                    if (isAdministeringContent){
+                        $("#administerContent").removeClass("disabledButton");
+                    } else {
+                        $("#administerContent").addClass("disabledButton");
+                    }
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
+                        _.forEach(boardContent.multiWordTexts,function(text){
+                            text.bounds = text.doc.calculateBounds();
+                        });
                         _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
                             if (category in sel){
                                 $.each(sel[category],function(i,item){
