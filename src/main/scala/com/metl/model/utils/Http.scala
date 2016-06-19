@@ -278,7 +278,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
   override def postMultipart(uri:String,binaryParts:List[(String,Array[Byte])],stringParts:List[(String,String)],additionalHeaders:List[(String,String)]):Array[Byte] = {
     val entitySpec = stringParts.foldLeft(
       binaryParts.foldLeft(MultipartEntityBuilder.create){
-        case (builder,(name,bytes)) => builder.addBinaryBody(name,bytes)
+        case (builder,(name,bytes)) => builder.addBinaryBody(name,bytes,ContentType.create("image/jpeg","utf-8"),name)
       }){
       case (builder,(name,string)) => builder.addTextBody(name,string,ContentType.TEXT_HTML)
     }

@@ -53,7 +53,6 @@ class SlideRenderer extends Logger {
     }
   } 
 */
-  println("new awt dpi: %s :: %s".format(WINDOWS_DEFAULT_DPI,JAVA_DEFAULT_DPI))
   //protected val WINDOWS_DEFAULT_DPI = 96.0
 
   protected def makeBlankImage(width:Int,height:Int) = Stopwatch.time("SlideRenderer.makeBlankImage",{
@@ -219,7 +218,6 @@ class SlideRenderer extends Logger {
     PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
   }
   protected def measureTextLines(metlText:MeTLMultiWordText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureMultiWordTextLines",{
-    println("measureTextLines: %s".format(metlText))
     val originX = metlText.x.floatValue
     val limit = metlText.x + metlText.width
     val frc = g.getFontRenderContext()

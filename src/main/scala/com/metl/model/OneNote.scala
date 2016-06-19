@@ -7,7 +7,9 @@ import com.metl.data._
 import com.metl.view._
 import com.metl.utils._
 import net.liftweb.json._
-import JsonDSL._
+import net.liftweb.json.JsonDSL._
+import java.util.Date
+import java.text.SimpleDateFormat
 
 case class Notebook(name:String,id:String,sections:Seq[NotebookSection])
 case class NotebookSection(name:String,id:String,pagesUrl:String)
@@ -70,7 +72,7 @@ object OneNote {
     }
   }
   def blockName(slide:Slide) = "IMAGE%s".format(slide.id)
-  def html(content:Seq[Node]) = (<html>{content}</html>).toString
+  def html(title:String,content:Seq[Node]) = (<html><head><title>{title}</title></head><body>{content}</body></html>).toString
   def image(slide:Slide,width:String="1024",height:String="768") = {
     val src = "name:%s".format(blockName(slide))
     <div>
@@ -83,11 +85,12 @@ object OneNote {
     inMeTLNotebook(token, notebook => {
       val details = config.detailsOfConversation(conversationJid)
       inSection(details,token,notebook, section => {
+        val pageTitle = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date())
         details.slides.sortBy(_.index).grouped(bucketSize).map(slides =>
           new String(client.postMultipart(
             pages.format(section.id),
             slides.map(s => (blockName(s), HttpResponder.getSnapshotWithPrivate(s.id.toString,"medium"))),
-            List(("Presentation",html(slides.map(s => image(s))))),
+            List(("Presentation",html(pageTitle,slides.map(s => image(s))))),
             bearer(token)
           ))
         ).toList.headOption
@@ -112,8 +115,6 @@ object OneNote {
     token
   }
   def loadNotebooks(token:String) = {
-    val json = load(token)(notebooks)
-    println(json)
-      (json \ "value").extract[List[Notebook]]
+    (load(token)(notebooks)\ "value").extract[List[Notebook]]
   }
 }
