@@ -613,19 +613,6 @@ function clampToView(point) {
         y:y
     };
 }
-function drawSelectionBounds(item){
-    var origin = clampToView(worldToScreen(item.bounds[0],item.bounds[1]));
-    var end = clampToView(worldToScreen(item.bounds[2],item.bounds[3]));
-    var originalWidth = end.x-origin.x;
-    var originalHeight = end.y-origin.y;
-    var bd = clampToView(item.bounds[0],item.bounds[1],item.bounds[2],item.bounds[3]);
-    $("#selectionAdorner").prepend($("<div />").addClass("selectionAdorner").css({
-        left:origin.x,
-        top:origin.y,
-        width:originalWidth,
-        height:originalHeight
-    }).data("originalWidth",originalWidth).data("originalHeight",originalHeight));
-}
 var bounceButton = function(button){
     var b = $(button);
     var c = "activeBrush";
@@ -1248,6 +1235,7 @@ var Modes = (function(){
                         _.forEach(boardContent.multiWordTexts,function(text){
                             text.bounds = text.doc.calculateBounds();
                         });
+			/*
                         _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
                             if (category in sel){
                                 $.each(sel[category],function(i,item){
@@ -1255,6 +1243,7 @@ var Modes = (function(){
                                 });
                             }
                         });
+			*/
                     }
                 }
             };
@@ -1647,11 +1636,11 @@ var Modes = (function(){
                             });
                             updateStatus(status);
                         }
-
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                         marquee.css(
                             {width:0,height:0}
                         ).hide();
+			blit();
                     }
                     dragging = false;
                     resizing = false;

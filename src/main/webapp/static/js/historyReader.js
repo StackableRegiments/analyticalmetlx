@@ -16,7 +16,7 @@ function loadSlide(jid){
 
 function receiveHistory(json,incCanvasContext,afterFunc){
     try{
-			var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+        var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
         boardContent = json;
@@ -49,7 +49,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         boardContent.width = boardContent.maxX - boardContent.minX;
         boardContent.height = boardContent.maxY - boardContent.minY;
         var startRender = function(){
-					console.log("rendering:",json,boardContent,canvasContext);
+            console.log("rendering:",json,boardContent,canvasContext);
             imagesLoadedMark = Date.now();
             Progress.call("historyReceived",[json]);
             historyDecoratorsMark = Date.now();
@@ -73,15 +73,15 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                 requestedViewboxHeight = boardContent.height;
                 IncludeView.default();
             }
-						console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
+            console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
             hideBackstage();
 
-						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
+            clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             render(boardContent,canvasContext);
             blitMark = Date.now();
-						if (afterFunc != undefined){
-							afterFunc();
-						}
+            if (afterFunc != undefined){
+                afterFunc();
+            }
         }
         if(_.keys(boardContent.images).length == 0){
             _.defer(startRender);
@@ -130,10 +130,10 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     catch(e){
         console.log("receiveHistory exception",e);
     }
-		if (!UserSettings.getIsInteractive()){
-			//projector mode should always start viewing the entire slide
-			zoomToFit();
-		}
+    if (!UserSettings.getIsInteractive()){
+        //projector mode should always start viewing the entire slide
+        zoomToFit();
+    }
 }
 var lineDrawingThreshold = 25;
 function incorporateBoardBounds(bounds){
@@ -594,16 +594,16 @@ var pressureSimilarityThreshold = 32,
 
 var visibleBounds = [];
 function render(content,incCanvasContext,incViewBounds){
-	var canvasContext = incCanvasContext;
-	if (canvasContext == undefined){
-		canvasContext = boardContext;
-	}
+    var canvasContext = incCanvasContext;
+    if (canvasContext == undefined){
+        canvasContext = boardContext;
+    }
     if(content){
         var startMark = Date.now();
         var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
         try{
             var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
-						//console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
+            //console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
             visibleBounds = [];
             var scale = content.maxX / viewboxWidth;
             var renderInks = function(inks){
@@ -648,10 +648,25 @@ function render(content,incCanvasContext,incViewBounds){
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
             }
+            var renderSelectionManipulators = function(){
+		boardContext.save();
+                _.forEach(Modes.select.selected,function(category){
+                    _.forEach(category,function(item){
+                        var bounds = item.bounds;
+			var tl = worldToScreen(bounds[0],bounds[1]);
+			var br = worldToScreen(bounds[2],bounds[3]);
+                        if(bounds){
+                            boardContext.setLineDash([5]);
+                            boardContext.strokeStyle = "blue";
+                            boardContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+                        }
+                    });
+                });
+		boardContext.restore();
+            }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
-            //clearBoard();
-						clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
+            clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             fitMark = Date.now();
             $.each(content.images,function(id,image){
                 try{
@@ -665,6 +680,7 @@ function render(content,incCanvasContext,incViewBounds){
             });
             imagesRenderedMark = Date.now();
             renderImmediateContent();
+            renderSelectionManipulators();
         }
         catch(e){
             console.log("Render exception",e);
@@ -689,11 +705,11 @@ function monashBlueGradient(context,width,height){
     return bgd;
 }
 var blit = function(canvasContext,content){
-	try {
-    render(content == undefined ? boardContent : content,canvasContext == undefined ? boardContext : canvasContext);
-	} catch(e){
-		console.log("exception in render:",e);
-	}
+    try {
+        render(content == undefined ? boardContent : content,canvasContext == undefined ? boardContext : canvasContext);
+    } catch(e){
+        console.log("exception in render:",e);
+    }
 };
 function pica(value){
     return value / 128;
@@ -711,13 +727,13 @@ function updateConversationHeader(){
     $("#heading").text(Conversations.getCurrentConversation().title);
 }
 function clearBoard(incContext,rect){
-	try {
-		var ctx = incContext == undefined ? boardContext : incContext;
-		var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
-		ctx.clearRect(r.x,r.y,r.w,r.h);
-	} catch(e){
-		console.log("exception while clearing board:",e,incContext,rect);
-	}
+    try {
+        var ctx = incContext == undefined ? boardContext : incContext;
+        var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
+        ctx.clearRect(r.x,r.y,r.w,r.h);
+    } catch(e){
+        console.log("exception while clearing board:",e,incContext,rect);
+    }
 }
 var IncludeView = (function(){
     var fitToRequested = function(incX,incY,incW,incH){//Include at least this much content in your view
