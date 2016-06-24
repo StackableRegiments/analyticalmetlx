@@ -645,24 +645,40 @@ function render(content,incCanvasContext,incViewBounds){
                 richTextsRenderedMark = Date.now();
                 renderInks(content.inks);
                 inksRenderedMark = Date.now();
+
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
             }
+            var renderDragHandle = function(pos,size){
+                var xOffset = size / 2;
+                var yOffset = xOffset / 3 * 2;
+                boardContext.font = sprintf("%spx FontAwesome",size);
+                boardContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
+            }
+            var renderResizeHandle = function(pos,size){
+                var xOffset = size / 2;
+                var yOffset = xOffset / 3 * 2;
+                boardContext.font = sprintf("%spx FontAwesome",size);
+                boardContext.fillText("\uF065",pos.x - xOffset,pos.y + yOffset);
+            }
             var renderSelectionManipulators = function(){
-		boardContext.save();
+		var size = 30;
+                boardContext.save();
                 _.forEach(Modes.select.selected,function(category){
                     _.forEach(category,function(item){
                         var bounds = item.bounds;
-			var tl = worldToScreen(bounds[0],bounds[1]);
-			var br = worldToScreen(bounds[2],bounds[3]);
+                        var tl = worldToScreen(bounds[0],bounds[1]);
+                        var br = worldToScreen(bounds[2],bounds[3]);
                         if(bounds){
                             boardContext.setLineDash([5]);
                             boardContext.strokeStyle = "blue";
                             boardContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+                            renderDragHandle(tl,size);
+                            renderResizeHandle(br,size);
                         }
                     });
                 });
-		boardContext.restore();
+                boardContext.restore();
             }
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
@@ -681,6 +697,7 @@ function render(content,incCanvasContext,incViewBounds){
             imagesRenderedMark = Date.now();
             renderImmediateContent();
             renderSelectionManipulators();
+            imagesRenderedMark = Date.now();
         }
         catch(e){
             console.log("Render exception",e);

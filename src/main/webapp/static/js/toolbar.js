@@ -1235,15 +1235,15 @@ var Modes = (function(){
                         _.forEach(boardContent.multiWordTexts,function(text){
                             text.bounds = text.doc.calculateBounds();
                         });
-			/*
-                        _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
-                            if (category in sel){
-                                $.each(sel[category],function(i,item){
-                                    drawSelectionBounds(item);
-                                });
-                            }
-                        });
-			*/
+                        /*
+                         _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
+                         if (category in sel){
+                         $.each(sel[category],function(i,item){
+                         drawSelectionBounds(item);
+                         });
+                         }
+                         });
+                         */
                     }
                 }
             };
@@ -1502,6 +1502,7 @@ var Modes = (function(){
                         }
                     };
                     var up = function(x,y,z,worldPos,modifiers){
+                        console.log("Select up");
                         WorkQueue.gracefullyResume();
                         if(dragging){
                             var moved = batchTransform();
@@ -1581,7 +1582,7 @@ var Modes = (function(){
                                         }
                                     }
                                     var b = item.bounds;
-                                    var selectionThreshold = Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
+                                    var selectionThreshold = 10;//Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
                                     var overlap = overlapRect(selectionBounds,item.bounds);
                                     if(overlap >= selectionThreshold){
                                         incrementKey(intersectAuthors,item.author);
@@ -1630,20 +1631,22 @@ var Modes = (function(){
                             var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,
+                                                 _.keys(Modes.select.selected.multiWordTexts).length,
                                                  _.keys(Modes.select.selected.inks).length);
                             $.each(intersectAuthors,function(author,count){
                                 status += sprintf("%s:%s ",author, count);
                             });
-                            updateStatus(status);
+                            console.log(status);
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                         marquee.css(
                             {width:0,height:0}
                         ).hide();
-			blit();
+                        blit();
                     }
                     dragging = false;
                     resizing = false;
+                    console.log("Registering position handlers");
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
@@ -1701,10 +1704,16 @@ var Modes = (function(){
                 }
                 var up = function(x,y,z,worldPos){
                     WorkQueue.gracefullyResume();
+                    var touchWidth = 50;
+                    var tooSmallToUse = touchWidth * touchWidth;
                     marquee.hide();
                     var currentPoint = {x:contentOffsetX + worldPos.x,y:contentOffsetY + worldPos.y};
                     var startingWorldPoint = {x:contentOffsetX + startWorldPos.x,y:contentOffsetY + startWorldPos.y};
                     var rect = rectFromTwoPoints(currentPoint,startingWorldPoint);
+                    var touchArea = scale() * rect.width * rect.height;
+                    if(touchArea < tooSmallToUse){
+                        return;
+                    }
                     var hAlign = "left";
                     var vAlign = "top";
                     if (currentPoint.x == rect.left){
