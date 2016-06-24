@@ -656,13 +656,21 @@ function render(content,incCanvasContext,incViewBounds){
                 boardContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
             }
             var renderResizeHandle = function(pos,size){
-                var xOffset = size / 2;
-                var yOffset = xOffset / 3 * 2;
+                var inset = 4;
+                var xOffset = inset;
+                var yOffset = size - inset * 2;
+                boardContext.setLineDash([]);
+                boardContext.strokeStyle = "black";
+                boardContext.fillStyle = "white";
+                boardContext.strokeWidth = 2;
+                boardContext.fillRect(pos.x ,pos.y,size + inset * 2,size + inset * 2);
+                boardContext.strokeRect(pos.x,pos.y,size,size);
                 boardContext.font = sprintf("%spx FontAwesome",size);
-                boardContext.fillText("\uF065",pos.x - xOffset,pos.y + yOffset);
+                boardContext.fillStyle = "black";
+                boardContext.fillText("\uF065",pos.x + xOffset,pos.y + yOffset);
             }
             var renderSelectionManipulators = function(){
-		var size = 30;
+                var size = 50;
                 boardContext.save();
                 _.forEach(Modes.select.selected,function(category){
                     _.forEach(category,function(item){
@@ -673,13 +681,38 @@ function render(content,incCanvasContext,incViewBounds){
                             boardContext.setLineDash([5]);
                             boardContext.strokeStyle = "blue";
                             boardContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
-                            renderDragHandle(tl,size);
                             renderResizeHandle(br,size);
                         }
                     });
                 });
                 boardContext.restore();
             }
+            var renderSelectionGhosts = function(){
+                if(Modes.select.dragging){
+                    boardContext.save();
+                    boardContext.translate(Modes.select.offset.x,Modes.select.offset.y);
+                    boardContext.globalAlpha = 0.7;
+                    _.forEach(Modes.select.selected,function(category,name){
+                        _.forEach(category,function(item){
+                            switch(name){
+                            case "images":
+                                drawImage(item,canvasContext);
+                                break;
+			    case "texts":
+				drawText(item,canvasContext);
+				break;
+                            case "multiWordTexts":
+				Modes.text.draw(item);
+                                break;
+			    case "inks":
+				drawInk(item,canvasContext);
+				break;
+                            }
+                        });
+                    });
+                    boardContext.restore();
+                }
+            };
             var loadedCount = 0;
             var loadedLimit = Object.keys(content.images).length;
             clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
@@ -697,6 +730,7 @@ function render(content,incCanvasContext,incViewBounds){
             imagesRenderedMark = Date.now();
             renderImmediateContent();
             renderSelectionManipulators();
+            renderSelectionGhosts();
             imagesRenderedMark = Date.now();
         }
         catch(e){

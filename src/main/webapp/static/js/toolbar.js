@@ -309,6 +309,8 @@ function registerPositionHandlers(contexts,down,move,up){
                 var y = e.pageY - o.top;
                 var z = 0.5;
                 var worldPos = screenToWorld(x,y);
+                _.each(Modes.select.selected,function(category){
+                });
                 down(x,y,z,worldPos,modifiers(e));
             });
             context.bind("mousemove",function(e){
@@ -1235,15 +1237,6 @@ var Modes = (function(){
                         _.forEach(boardContent.multiWordTexts,function(text){
                             text.bounds = text.doc.calculateBounds();
                         });
-                        /*
-                         _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(category){
-                         if (category in sel){
-                         $.each(sel[category],function(i,item){
-                         drawSelectionBounds(item);
-                         });
-                         }
-                         });
-                         */
                     }
                 }
             };
@@ -1333,6 +1326,9 @@ var Modes = (function(){
                     inks:{},
                     multiWordTexts:{}
                 },
+                offset:{x:0,y:0},
+                resizing:false,
+                dragging:false,
                 clearSelection:clearSelectionFunction,
                 activate:function(){
                     Modes.currentMode.deactivate();
@@ -1349,8 +1345,6 @@ var Modes = (function(){
                         id:"selectMarquee"
                     });
                     var adorner = $("#selectionAdorner");
-                    var dragging = false;
-                    var resizing = false;
                     $("#delete").bind("click",function(){
                         if (Modes.select.selected != undefined){
                             var deleteTransform = batchTransform();
@@ -1421,8 +1415,8 @@ var Modes = (function(){
                         func("inks");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
-                        resizing = false;
-                        dragging = false;
+                        Modes.select.resizing = false;
+                        Modes.select.dragging = false;
                         originPoint = {x:x,y:y};
                         marqueeOriginX = x;
                         marqueeOriginY = y;
@@ -1435,11 +1429,7 @@ var Modes = (function(){
                             worldPos.x + threshold,
                             worldPos.y + threshold
                         ];
-                        if(intersectRect(resizeHandle,[x-threshold,y-threshold,x+threshold,y+threshold])){
-                            updateStatus("Resizing");
-                            resizing = true;
-                        }
-                        else if (!(modifiers.ctrl)){//You can't ctrl-click to drag
+                        if (!(modifiers.ctrl)){
                             var isDragHandle = function(property){
                                 return _.some(Modes.select.selected[property],function(el){
                                     if (el){
@@ -1449,13 +1439,13 @@ var Modes = (function(){
                                     }
                                 });
                             }
-                            dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
+                            Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
                         }
                         marqueeWorldOrigin = worldPos;
-                        if(dragging){
+                        if(Modes.select.dragging){
                             updateStatus("SELECT -> DRAG");
                         }
-                        else if(resizing){
+                        else if(Modes.select.resizing){
                             updateStatus("SELECT -> RESIZE");
                         }
                         else{
@@ -1467,35 +1457,24 @@ var Modes = (function(){
                     };
                     var move = function(x,y,z,worldPos,modifiers){
                         var currentPoint = {x:x,y:y};
+                        var xTranslate = worldPos.x - marqueeWorldOrigin.x;
+                        var yTranslate = worldPos.y - marqueeWorldOrigin.y;
+			var screenTranslate = worldToScreen(xTranslate,yTranslate);
+			Modes.select.offset = {x:xTranslate,y:yTranslate};
                         var xDelta = x - lastX;
                         var yDelta = y - lastY;
                         lastX = x;
                         lastY = y;
-                        if(resizing){
+                        if(Modes.select.resizing){
                             var xScale = x / resizeHandle[0];
                             var yScale = xScale;
                             if (modifiers.ctrl){
                                 yScale = y / resizeHandle[0];
                             }
                             updateStatus(sprintf("Resizing %s%%",xScale * 100));
-                            $(".selectionAdorner").map(function(){
-                                var a = $(this);
-                                a.css({
-                                    width:a.data("originalWidth") * xScale,
-                                    height:a.data("originalHeight") * yScale
-                                });
-                            });
                         }
-                        else if(dragging){
-                            $(".selectionAdorner").map(function(){
-                                var a = $(this);
-                                var left = px(parseInt(a.css("left"))+xDelta);
-                                var top = px(parseInt(a.css("top"))+yDelta);
-                                a.css({
-                                    left:left,
-                                    top:top
-                                });
-                            });
+                        else if(Modes.select.dragging){
+                            blit();
                         }
                         else{
                             updateMarquee(marquee,originPoint,currentPoint);
@@ -1504,7 +1483,8 @@ var Modes = (function(){
                     var up = function(x,y,z,worldPos,modifiers){
                         console.log("Select up");
                         WorkQueue.gracefullyResume();
-                        if(dragging){
+                        Modes.select.offset = {x:0,y:0};
+                        if(Modes.select.dragging){
                             var moved = batchTransform();
                             moved.xTranslate = worldPos.x - marqueeWorldOrigin.x;
                             moved.yTranslate = worldPos.y - marqueeWorldOrigin.y;
@@ -1512,10 +1492,10 @@ var Modes = (function(){
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
                             moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-                            dragging = false;
+                            Modes.select.dragging = false;
                             sendStanza(moved);
                         }
-                        else if(resizing){
+                        else if(Modes.select.resizing){
                             var resized = batchTransform();
                             var xScale = x / resizeHandle[0];
                             var totalBounds = {x:Infinity,y:Infinity};
@@ -1549,7 +1529,7 @@ var Modes = (function(){
                                 resized.yScale = xScale;
                             }
                             sendStanza(resized);
-                            resizing = false;
+                            Modes.select.resizing = false;
                         }
                         else{
                             var selectionRect = rectFromTwoPoints(marqueeWorldOrigin,worldPos);
@@ -1644,9 +1624,8 @@ var Modes = (function(){
                         ).hide();
                         blit();
                     }
-                    dragging = false;
-                    resizing = false;
-                    console.log("Registering position handlers");
+                    Modes.select.dragging = false;
+                    Modes.select.resizing = false;
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
