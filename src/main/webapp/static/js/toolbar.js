@@ -537,7 +537,6 @@ function copyBuffer(buffer){
     return tmp;
 }
 function intersectRect(r1, r2) {//Left,top,right,bottom
-    //  console.log("intersectRect",r1,r2);
     if (typeof(r1) != "undefined" && typeof(r2) != "undefined"){
         return !(r2[0] > r1[2] ||
                  r2[2] < r1[0] ||
@@ -1326,6 +1325,26 @@ var Modes = (function(){
                     inks:{},
                     multiWordTexts:{}
                 },
+                resizeHandleSize:50,
+                totalSelectedBounds:function(){
+                    var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
+                    var incorporate = function(item){
+                        var bounds = item.bounds;
+                        totalBounds.x = Math.min(totalBounds.x,bounds[0]);
+                        totalBounds.y = Math.min(totalBounds.y,bounds[1]);
+                        totalBounds.x2 = Math.max(totalBounds.x2,bounds[2]);
+                        totalBounds.y2 = Math.max(totalBounds.y2,bounds[3]);
+                    };
+                    _.forEach(Modes.select.selected.inks,incorporate);
+                    _.forEach(Modes.select.selected.texts,incorporate);
+                    _.forEach(Modes.select.selected.images,incorporate);
+                    _.forEach(Modes.select.selected.multiWordTexts,incorporate);
+                    totalBounds.width = totalBounds.x2 - totalBounds.x;
+                    totalBounds.height = totalBounds.y2 - totalBounds.y;
+                    totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
+                    totalBounds.br = worldToScreen(totalBounds.x2,totalBounds.y2);
+                    return totalBounds;
+                },
                 offset:{x:0,y:0},
                 resizing:false,
                 dragging:false,
@@ -1334,7 +1353,6 @@ var Modes = (function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.select;
                     setActiveMode("#selectTools","#selectMode");
-                    updateStatus("SELECT");
                     var originPoint = {x:0,y:0};
                     var marqueeOriginX;
                     var marqueeOriginY;
@@ -1370,44 +1388,6 @@ var Modes = (function(){
                     var initialHeight = 0;
                     $("#administerContent").bind("click",administerContentFunction);
                     $("#ban").bind("click",banContentFunction);
-                    $("#resize").bind("click",function(){
-                        var items = _.flatten([
-                            _.values(Modes.select.selected.images),
-                            _.values(Modes.select.selected.texts),
-                            _.values(Modes.select.selected.inks),
-                            _.values(Modes.select.selected.multiWordTexts)]);
-                        if(items.length > 0){
-                            var x1 = Math.min.apply(Math,items.map(function(item){
-                                return item.bounds[0];
-                            }))
-                            var y1 = Math.min.apply(Math,items.map(function(item){
-                                return item.bounds[1];
-                            }))
-                            var x2 = Math.max.apply(Math,items.map(function(item){
-                                return item.bounds[2];
-                            }));
-                            var y2 = Math.max.apply(Math,items.map(function(item){
-                                return item.bounds[3];
-                            }));
-                            var screenTopLeft = worldToScreen(x1,y1);
-                            var screenBottomRight = worldToScreen(x2,y2);
-                            initialHeight = screenBottomRight.y - screenTopLeft.y;
-                            var resizeLeft = screenBottomRight.x;
-                            var resizeTop = screenTopLeft.y;
-                            resizeHandle = [resizeLeft - threshold, resizeTop - threshold, resizeLeft + threshold, resizeTop + threshold];
-                            adorner.append($("<img />",{
-                                src:"/static/images/resize.png",
-                                class:"resizeHandle"
-                            }).css({
-                                width:px(30),
-                                height:px(30),
-                                position:"absolute",
-                                left:px(resizeLeft),
-                                top:px(resizeTop)
-                            }));
-
-                        }
-                    });
                     var categories = function(func){
                         func("images");
                         func("texts");
@@ -1422,7 +1402,7 @@ var Modes = (function(){
                         marqueeOriginY = y;
                         lastX = x;
                         lastY = y;
-                        var threshold = 10;
+                        var threshold = 10 / scale();
                         var ray = [
                             worldPos.x - threshold,
                             worldPos.y - threshold,
@@ -1440,10 +1420,22 @@ var Modes = (function(){
                                 });
                             }
                             Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
+                            marqueeWorldOrigin = worldPos;
+                            var s = Modes.select.resizeHandleSize / scale();
+                            var tb = Modes.select.totalSelectedBounds();
+                            if(tb.x != Infinity){
+                                var resizeHandle = [tb.x2 - s, tb.y2 - s, tb.x2, tb.y2];
+                                console.log("Testing",s,resizeHandle,ray);
+                                if(intersectRect(resizeHandle,ray)){
+                                    Modes.select.dragging = false;
+                                    Modes.select.resizing = true;
+                                    console.log("Resizing");
+                                }
+                            }
                         }
-                        marqueeWorldOrigin = worldPos;
                         if(Modes.select.dragging){
                             updateStatus("SELECT -> DRAG");
+
                         }
                         else if(Modes.select.resizing){
                             updateStatus("SELECT -> RESIZE");
@@ -1459,29 +1451,20 @@ var Modes = (function(){
                         var currentPoint = {x:x,y:y};
                         var xTranslate = worldPos.x - marqueeWorldOrigin.x;
                         var yTranslate = worldPos.y - marqueeWorldOrigin.y;
-			var screenTranslate = worldToScreen(xTranslate,yTranslate);
-			Modes.select.offset = {x:xTranslate,y:yTranslate};
-                        var xDelta = x - lastX;
-                        var yDelta = y - lastY;
+                        var screenTranslate = worldToScreen(xTranslate,yTranslate);
+                        Modes.select.offset = {x:xTranslate,y:yTranslate};
                         lastX = x;
                         lastY = y;
-                        if(Modes.select.resizing){
-                            var xScale = x / resizeHandle[0];
-                            var yScale = xScale;
-                            if (modifiers.ctrl){
-                                yScale = y / resizeHandle[0];
-                            }
-                            updateStatus(sprintf("Resizing %s%%",xScale * 100));
-                        }
-                        else if(Modes.select.dragging){
+                        if(Modes.select.dragging){
                             blit();
                         }
+			else if(Modes.select.resizing){
+			}
                         else{
                             updateMarquee(marquee,originPoint,currentPoint);
                         }
                     };
                     var up = function(x,y,z,worldPos,modifiers){
-                        console.log("Select up");
                         WorkQueue.gracefullyResume();
                         Modes.select.offset = {x:0,y:0};
                         if(Modes.select.dragging){
@@ -1497,37 +1480,20 @@ var Modes = (function(){
                         }
                         else if(Modes.select.resizing){
                             var resized = batchTransform();
-                            var xScale = x / resizeHandle[0];
-                            var totalBounds = {x:Infinity,y:Infinity};
-                            _.forEach(Modes.select.selected.inks,function(ink){
-                                totalBounds.x = Math.min(ink.bounds[0]);
-                                totalBounds.y = Math.min(ink.bounds[1]);
-                            });
-                            _.forEach(Modes.select.selected.texts,function(text){
-                                totalBounds.x = Math.min(text.bounds[0]);
-                                totalBounds.y = Math.min(text.bounds[1]);
-                            });
-                            _.forEach(Modes.select.selected.images,function(image){
-                                totalBounds.x = Math.min(image.bounds[0]);
-                                totalBounds.y = Math.min(image.bounds[1]);
-                            });
-                            _.forEach(Modes.select.selected.multiWordTexts,function(image){
-                                totalBounds.x = Math.min(image.bounds[0]);
-                                totalBounds.y = Math.min(image.bounds[1]);
-                            });
+                            var totalBounds = Modes.select.totalSelectedBounds();
+                            var originalWidth = totalBounds.x2 - totalBounds.x;
+                            var originalHeight = totalBounds.y2 - totalBounds.y;
+                            var requestedWidth = worldPos.x - totalBounds.x;
+                            var requestedHeight = worldPos.y - totalBounds.y;
+                            resized.xScale = requestedWidth / originalWidth;
+                            resized.yScale = requestedHeight / originalHeight;
                             resized.xOrigin = totalBounds.x;
                             resized.yOrigin = totalBounds.y;
+			    console.log("Resized up",resized.xScale,resized.yScale);
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
                             resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-                            resized.xScale = xScale;
-                            if (modifiers.ctrl){
-                                var yScale = y / resizeHandle[0];
-                                resized.yScale = yScale;
-                            } else {
-                                resized.yScale = xScale;
-                            }
                             sendStanza(resized);
                             Modes.select.resizing = false;
                         }

@@ -656,35 +656,43 @@ function render(content,incCanvasContext,incViewBounds){
                 boardContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
             }
             var renderResizeHandle = function(pos,size){
-                var inset = 4;
-                var xOffset = inset;
-                var yOffset = size - inset * 2;
+		var inset = size / 10;
+                var xOffset = -1 * size;
+                var yOffset = -1 * size;
                 boardContext.setLineDash([]);
                 boardContext.strokeStyle = "black";
                 boardContext.fillStyle = "white";
                 boardContext.strokeWidth = 2;
-                boardContext.fillRect(pos.x ,pos.y,size + inset * 2,size + inset * 2);
-                boardContext.strokeRect(pos.x,pos.y,size,size);
+                boardContext.fillRect(pos.x + xOffset ,pos.y + yOffset,size,size);
+                boardContext.strokeRect(pos.x + yOffset,pos.y + yOffset,size,size);
                 boardContext.font = sprintf("%spx FontAwesome",size);
                 boardContext.fillStyle = "black";
-                boardContext.fillText("\uF065",pos.x + xOffset,pos.y + yOffset);
+                boardContext.fillText("\uF065",pos.x + xOffset + inset,pos.y - inset - 1);
             }
             var renderSelectionManipulators = function(){
-                var size = 50;
+                var size = Modes.select.resizeHandleSize;
                 boardContext.save();
+                var multipleItems = [];
                 _.forEach(Modes.select.selected,function(category){
                     _.forEach(category,function(item){
                         var bounds = item.bounds;
                         var tl = worldToScreen(bounds[0],bounds[1]);
                         var br = worldToScreen(bounds[2],bounds[3]);
+                        multipleItems.push([tl,br]);
                         if(bounds){
                             boardContext.setLineDash([5]);
                             boardContext.strokeStyle = "blue";
                             boardContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
-                            renderResizeHandle(br,size);
                         }
                     });
                 });
+                var tb = Modes.select.totalSelectedBounds();
+                if(multipleItems.length > 0){
+                    boardContext.strokeStyle = "blue";
+                    boardContext.strokeWidth = 3;
+                    boardContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
+                }
+                renderResizeHandle(tb.br,size);
                 boardContext.restore();
             }
             var renderSelectionGhosts = function(){
@@ -698,15 +706,15 @@ function render(content,incCanvasContext,incViewBounds){
                             case "images":
                                 drawImage(item,canvasContext);
                                 break;
-			    case "texts":
-				drawText(item,canvasContext);
-				break;
-                            case "multiWordTexts":
-				Modes.text.draw(item);
+                            case "texts":
+                                drawText(item,canvasContext);
                                 break;
-			    case "inks":
-				drawInk(item,canvasContext);
-				break;
+                            case "multiWordTexts":
+                                Modes.text.draw(item);
+                                break;
+                            case "inks":
+                                drawInk(item,canvasContext);
+                                break;
                             }
                         });
                     });
