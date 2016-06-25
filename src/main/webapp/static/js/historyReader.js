@@ -592,10 +592,7 @@ var pressureSimilarityThreshold = 32,
 
 var visibleBounds = [];
 function render(content,incCanvasContext,incViewBounds){
-    var canvasContext = incCanvasContext;
-    if (canvasContext == undefined){
-        canvasContext = boardContext;
-    }
+    var canvasContext = incCanvasContext || boardContext;
     if(content){
         var startMark = Date.now();
         var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
@@ -650,22 +647,22 @@ function render(content,incCanvasContext,incViewBounds){
             var renderDragHandle = function(pos,size){
                 var xOffset = size / 2;
                 var yOffset = xOffset / 3 * 2;
-                boardContext.font = sprintf("%spx FontAwesome",size);
-                boardContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
+                canvasContext.font = sprintf("%spx FontAwesome",size);
+                canvasContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
             }
             var renderResizeHandle = function(pos,size){
-		var inset = size / 10;
+                var inset = size / 10;
                 var xOffset = -1 * size;
                 var yOffset = -1 * size;
-                boardContext.setLineDash([]);
-                boardContext.strokeStyle = "black";
-                boardContext.fillStyle = "white";
-                boardContext.strokeWidth = 2;
-                boardContext.fillRect(pos.x + xOffset ,pos.y + yOffset,size,size);
-                boardContext.strokeRect(pos.x + yOffset,pos.y + yOffset,size,size);
-                boardContext.font = sprintf("%spx FontAwesome",size);
-                boardContext.fillStyle = "black";
-                boardContext.fillText("\uF065",pos.x + xOffset + inset,pos.y - inset - 1);
+                canvasContext.setLineDash([]);
+                canvasContext.strokeStyle = "black";
+                canvasContext.fillStyle = "white";
+                canvasContext.strokeWidth = 2;
+                canvasContext.fillRect(pos.x + xOffset ,pos.y + yOffset,size,size);
+                canvasContext.strokeRect(pos.x + yOffset,pos.y + yOffset,size,size);
+                canvasContext.font = sprintf("%spx FontAwesome",size);
+                canvasContext.fillStyle = "black";
+                canvasContext.fillText("\uF065",pos.x + xOffset + inset,pos.y - inset - 1);
             }
             var renderSelectionManipulators = function(){
                 var size = Modes.select.resizeHandleSize;
@@ -678,26 +675,29 @@ function render(content,incCanvasContext,incViewBounds){
                         var br = worldToScreen(bounds[2],bounds[3]);
                         multipleItems.push([tl,br]);
                         if(bounds){
-                            boardContext.setLineDash([5]);
-                            boardContext.strokeStyle = "blue";
-                            boardContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+                            canvasContext.setLineDash([5]);
+                            canvasContext.strokeStyle = "blue";
+                            canvasContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
                         }
                     });
                 });
                 var tb = Modes.select.totalSelectedBounds();
                 if(multipleItems.length > 0){
-                    boardContext.strokeStyle = "blue";
-                    boardContext.strokeWidth = 3;
-                    boardContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
+                    canvasContext.strokeStyle = "blue";
+                    canvasContext.strokeWidth = 3;
+                    canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
                 }
                 renderResizeHandle(tb.br,size);
-                boardContext.restore();
+                canvasContext.restore();
             }
             var renderSelectionGhosts = function(){
+                var zero = Modes.select.marqueeWorldOrigin;
                 if(Modes.select.dragging){
-                    boardContext.save();
-                    boardContext.translate(Modes.select.offset.x,Modes.select.offset.y);
-                    boardContext.globalAlpha = 0.7;
+                    canvasContext.save();
+                    var x = Modes.select.offset.x - zero.x;
+                    var y = Modes.select.offset.y - zero.y;
+                    canvasContext.translate(x,y);
+                    canvasContext.globalAlpha = 0.7;
                     _.forEach(Modes.select.selected,function(category,name){
                         _.forEach(category,function(item){
                             switch(name){
@@ -716,7 +716,52 @@ function render(content,incCanvasContext,incViewBounds){
                             }
                         });
                     });
-                    boardContext.restore();
+                    canvasContext.restore();
+                }
+                else if(Modes.select.resizing){
+                    var totalBounds = Modes.select.totalSelectedBounds();
+                    var originalWidth = totalBounds.x2 - totalBounds.x;
+                    var originalHeight = totalBounds.y2 - totalBounds.y;
+                    var requestedWidth = Modes.select.offset.x - totalBounds.x;
+                    var requestedHeight = Modes.select.offset.y - totalBounds.y;
+                    var xScale = requestedWidth / originalWidth;
+                    var yScale = requestedHeight / originalHeight;
+                    var transform = function(x,y,func){
+                        canvasContext.save();
+                        canvasContext.globalAlpha = 0.7;
+                        canvasContext.translate(x,y);
+                        canvasContext.scale(xScale,yScale);
+                        canvasContext.translate(-x,-y);
+                        func();
+                        canvasContext.restore();
+                    };
+                    _.forEach(Modes.select.selected,function(category,name){
+                        _.forEach(category,function(item){
+                            var bounds = item.bounds;
+                            var screenPos = worldToScreen(bounds[0],bounds[1]);
+                            var x = screenPos.x;
+                            var y = screenPos.y;
+                            switch(name){
+                            case "images":
+                                transform(x,y,function(){
+                                    drawImage(item,canvasContext);
+                                });
+                                break;
+                            case "texts":
+                                transform(x,y,function(){
+                                    drawText(item,canvasContext);
+                                });
+                                break;
+                            case "multiWordTexts":
+                                break;
+                            case "inks":
+                                transform(x,y,function(){
+                                    drawInk(item,canvasContext);
+                                });
+                                break;
+                            }
+                        });
+                    });
                 }
             };
             var loadedCount = 0;

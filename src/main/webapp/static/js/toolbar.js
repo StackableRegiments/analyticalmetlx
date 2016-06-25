@@ -1348,6 +1348,7 @@ var Modes = (function(){
                     return totalBounds;
                 },
                 offset:{x:0,y:0},
+		marqueeWorldOrigin:{x:0,y:0},
                 resizing:false,
                 dragging:false,
                 clearSelection:clearSelectionFunction,
@@ -1360,7 +1361,6 @@ var Modes = (function(){
                     var marqueeOriginY;
                     var lastX;
                     var lastY;
-                    var marqueeWorldOrigin;
                     var marquee = $("<div/>",{
                         id:"selectMarquee"
                     });
@@ -1404,7 +1404,7 @@ var Modes = (function(){
                         marqueeOriginY = y;
                         lastX = x;
                         lastY = y;
-                        marqueeWorldOrigin = worldPos;
+                        Modes.select.marqueeWorldOrigin = worldPos;
                         if (!(modifiers.ctrl)){
                             var tb = Modes.select.totalSelectedBounds();
                             if(tb.x != Infinity){
@@ -1430,6 +1430,7 @@ var Modes = (function(){
                                 if(intersectRect(resizeHandle,ray)){
                                     Modes.select.dragging = false;
                                     Modes.select.resizing = true;
+				    console.log("Resizing invoked");
                                 }
                             }
                         }
@@ -1449,8 +1450,8 @@ var Modes = (function(){
                     };
                     var move = function(x,y,z,worldPos,modifiers){
                         var currentPoint = {x:x,y:y};
-                        var xTranslate = worldPos.x - marqueeWorldOrigin.x;
-                        var yTranslate = worldPos.y - marqueeWorldOrigin.y;
+                        var xTranslate = worldPos.x;
+                        var yTranslate = worldPos.y;
                         var screenTranslate = worldToScreen(xTranslate,yTranslate);
                         Modes.select.offset = {x:xTranslate,y:yTranslate};
                         lastX = x;
@@ -1459,6 +1460,7 @@ var Modes = (function(){
                             blit();
                         }
                         else if(Modes.select.resizing){
+                            blit();
                         }
                         else{
                             updateMarquee(marquee,originPoint,currentPoint);
@@ -1469,8 +1471,8 @@ var Modes = (function(){
                         Modes.select.offset = {x:0,y:0};
                         if(Modes.select.dragging){
                             var moved = batchTransform();
-                            moved.xTranslate = worldPos.x - marqueeWorldOrigin.x;
-                            moved.yTranslate = worldPos.y - marqueeWorldOrigin.y;
+                            moved.xTranslate = worldPos.x - Modes.select.marqueeWorldOrigin.x;
+                            moved.yTranslate = worldPos.y - Modes.select.marqueeWorldOrigin.y;
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
@@ -1484,7 +1486,6 @@ var Modes = (function(){
                             var originalWidth = totalBounds.x2 - totalBounds.x;
                             var originalHeight = totalBounds.y2 - totalBounds.y;
                             var requestedWidth = worldPos.x - totalBounds.x;
-                            console.log("Requested resize from",originalWidth,"to",requestedWidth);
                             var requestedHeight = worldPos.y - totalBounds.y;
                             resized.xScale = requestedWidth / originalWidth;
                             resized.yScale = requestedHeight / originalHeight;
@@ -1498,7 +1499,7 @@ var Modes = (function(){
                             Modes.select.resizing = false;
                         }
                         else{
-                            var selectionRect = rectFromTwoPoints(marqueeWorldOrigin,worldPos);
+                            var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos);
                             var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
                             var intersected = {
                                 images:{},
@@ -1971,3 +1972,4 @@ var Modes = (function(){
         }
     }
 })();
+ 
