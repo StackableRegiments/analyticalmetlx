@@ -466,7 +466,7 @@
                         return [
                             pos.x + bounds.l,
                             pos.y + bounds.t,
-                            pos.x + bounds.w,
+                            pos.x + this.frame.actualWidth(),
                             pos.y + bounds.h];
                     },
                     load: function(runs) {
@@ -477,7 +477,7 @@
                         this.words = per(characters(runs)).per(split(self.codes)).map(function(w) {
                             return word(w, self.codes);
                         }).all();
-			this.words.push(word());/*EOF*/
+                        this.words.push(word());/*EOF*/
                         this.layout();
                     },
                     layout: function() {
@@ -943,15 +943,7 @@
                     ctx.scale(s,s);
                     doc.draw(ctx, output);
                     if(doc.isActive && Modes.currentMode == Modes.text){
-                        if(doc.frame){
-                            doc.drawSelection(ctx, hasFocus);
-                            var bounds = doc.frame.bounds();
-                            if(bounds){
-                                ctx.setLineDash([5]);
-                                ctx.strokeStyle = "red";
-                                ctx.strokeRect(0,0,bounds.w,bounds.h);
-                            }
-                        }
+                        doc.drawSelection(ctx, hasFocus);
                     }
                     ctx.restore();
                 };
@@ -1390,15 +1382,15 @@
                         var top = viewPort ? viewPort.t : 0;
                         var bottom = viewPort ? (viewPort.t + viewPort.h) : Number.MAX_VALUE;
                         this.lines.some(function(line) {
-			    /*  Removing viewport understanding from this element because the MeTL viewer handles it
-                            var b = line.bounds();
-                            if (b.t + b.h < top) {
-                                return false;
-                            }
-                            if (b.t > bottom) {
-                                return true;
-                            }
-			     */
+                            /*  Removing viewport understanding from this element because the MeTL viewer handles it
+                             var b = line.bounds();
+                             if (b.t + b.h < top) {
+                             return false;
+                             }
+                             if (b.t > bottom) {
+                             return true;
+                             }
+                             */
                             line.draw(ctx, viewPort);
                         });
                     },

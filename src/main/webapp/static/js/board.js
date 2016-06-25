@@ -168,7 +168,14 @@ function richTextEditorToStanza(t){
 function sendRichText(t){
     if(t.doc){
         Modes.text.echoesToDisregard[t.identity] = true;
-        sendStanza(richTextEditorToStanza(t));
+	var d = t.doc;
+	t.doc.position = {x:t.x,y:t.y};
+	console.log("sendRichText");
+	/*Now that we're ignoring the echoes, we need to update our own register so we agree with our peers about what's in the box*/
+	var stanza = richTextEditorToStanza(t);
+	boardContent.multiWordTexts[t.identity] = stanza;
+	boardContent.multiWordTexts[t.identity].doc = d;
+        sendStanza(stanza);
     }
 }
 var stanzaHandlers = {
@@ -276,7 +283,6 @@ function actOnReceivedStanza(stanza){
     }
 }
 function transformReceived(transform){
-    console.log("transformReceived",transform);
     var op = "";
     var transformBounds = (function(){
         var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
@@ -510,21 +516,23 @@ function transformReceived(transform){
         };
         var transformMultiWordText = function(index,text){
             if (text != undefined){
-                text.width = text.width * transform.xScale;
-                text.height = text.height * transform.yScale;
+                var newWidth = (text.width || text.requestedWidth) * transform.xScale;
+                text.requestedWidth = newWidth;
+                text.width = text.requestedWidth;
+                text.doc.width(text.width);
+                _.each(text.words,function(word){
+                    word.size = word.size * transform.xScale;
+                });
 
                 var internalX = text.x - totalBounds.x;
                 var internalY = text.y - totalBounds.y;
+
                 var offsetX = -(internalX - (internalX * transform.xScale));
                 var offsetY = -(internalY - (internalY * transform.yScale));
-                text.x = text.x + offsetX;
-                text.y = text.y + offsetY;
-
-                text.size = text.size * transform.yScale;
-                text.font = sprintf("%spx %s",text.size,text.family);
-                if(text.identity in boardContent.multiWordTexts){
-                    delete boardContent.multiWordTexts[text.identity];
-                }
+                text.doc.position = {x:text.x + offsetX,y:text.y + offsetY};
+		console.log("Positioning box at",offsetX,offsetY);
+                text.doc.load(text.words);
+                text.bounds = text.doc.calculateBounds();
                 transformBounds.incorporateBounds(text.bounds);
             }
         };
@@ -571,6 +579,8 @@ function transformReceived(transform){
             var doc = text.doc;
             doc.position.x += transform.xTranslate;
             doc.position.y += transform.yTranslate;
+	    text.x = doc.position.x;
+	    text.y = doc.position.y;
             text.bounds = doc.calculateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });

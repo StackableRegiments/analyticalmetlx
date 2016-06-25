@@ -24,7 +24,6 @@ var Conversations = (function(){
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
         var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
-            console.log("fetching",slide.id)
             var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
             var storeThumb = function(data){
                 cache[slide.id] = {
@@ -45,7 +44,6 @@ var Conversations = (function(){
         var paintThumb = function(slide,slideContainer){
             var slideImage = slideContainer.find("img");
             if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                console.log("cached",slide.id)
                 slideImage.attr("src",cache[slide.id].data);
             } else {
                 fetchAndPaintThumb(slide,slideContainer,slideImage);
@@ -90,7 +88,6 @@ var Conversations = (function(){
             cache = {};
         };
         var paintAllThumbsFunc = function(){
-            console.log("Paint all thumbs")
             _.forEach(currentConversation.slides,function(slide){
                 var img = $(sprintf("#slideContainer_%s img",slide.id));
                 if (img.height() == 0 || img.height() == undefined){
@@ -293,7 +290,6 @@ var Conversations = (function(){
                 currentTeacherSlide = jid;
                 if (Conversations.getIsSyncedToTeacher()){
                     if (currentSlide != jid){
-                        console.log("syncMove moving to",jid);
                         currentSlide = jid;
                         doMoveToSlide(jid);
                     }
@@ -538,7 +534,6 @@ var Conversations = (function(){
     var doMoveToSlide = function(slideId){
         delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
         WorkQueue.enqueue(function(){
-            console.log("doMoveToslide",slideId);
             indicateActiveSlide(slideId);
             loadSlide(slideId);
             return true;

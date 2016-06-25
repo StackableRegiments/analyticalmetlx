@@ -49,7 +49,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         boardContent.width = boardContent.maxX - boardContent.minX;
         boardContent.height = boardContent.maxY - boardContent.minY;
         var startRender = function(){
-            console.log("rendering:",json,boardContent,canvasContext);
             imagesLoadedMark = Date.now();
             Progress.call("historyReceived",[json]);
             historyDecoratorsMark = Date.now();
@@ -73,7 +72,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                 requestedViewboxHeight = boardContent.height;
                 IncludeView.default();
             }
-            console.log("startRender",requestedViewboxX,requestedViewboxY,requestedViewboxWidth,requestedViewboxHeight);
             hideBackstage();
 
             clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});

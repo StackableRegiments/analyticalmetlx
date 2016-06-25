@@ -661,7 +661,7 @@ var Modes = (function(){
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     requestedWidth:300,
-                    width:0,
+                    width:300,
                     height:0,
                     x:worldPos.x,
                     y:worldPos.y,
@@ -820,7 +820,7 @@ var Modes = (function(){
                         }
                     }
                     editor.doc.position = {x:t.x,y:t.y};
-                    editor.doc.width(t.requestedWidth);
+                    editor.doc.width(t.width);
                     return editor;
                 },
                 draw:function(t){
@@ -851,7 +851,6 @@ var Modes = (function(){
                                 delete boardContent.multiWordTexts[t.identity];
                             }
                         });
-                        console.log("Selected texts",selectedTexts);
                         if (selectedTexts.length > 0){
                             var editor = selectedTexts[0].doc;
                             editor.isActive = true;
@@ -1338,7 +1337,10 @@ var Modes = (function(){
                     _.forEach(Modes.select.selected.inks,incorporate);
                     _.forEach(Modes.select.selected.texts,incorporate);
                     _.forEach(Modes.select.selected.images,incorporate);
-                    _.forEach(Modes.select.selected.multiWordTexts,incorporate);
+                    _.forEach(Modes.select.selected.multiWordTexts,function(text){
+                        text.bounds = text.doc.calculateBounds();
+                        incorporate(text);
+                    });
                     totalBounds.width = totalBounds.x2 - totalBounds.x;
                     totalBounds.height = totalBounds.y2 - totalBounds.y;
                     totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
@@ -1402,34 +1404,32 @@ var Modes = (function(){
                         marqueeOriginY = y;
                         lastX = x;
                         lastY = y;
-                        var threshold = 10 / scale();
-                        var ray = [
-                            worldPos.x - threshold,
-                            worldPos.y - threshold,
-                            worldPos.x + threshold,
-                            worldPos.y + threshold
-                        ];
+                        marqueeWorldOrigin = worldPos;
                         if (!(modifiers.ctrl)){
-                            var isDragHandle = function(property){
-                                return _.some(Modes.select.selected[property],function(el){
-                                    if (el){
-                                        return intersectRect(el.bounds,ray);
-                                    } else {
-                                        return false;
-                                    }
-                                });
-                            }
-                            Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
-                            marqueeWorldOrigin = worldPos;
-                            var s = Modes.select.resizeHandleSize / scale();
                             var tb = Modes.select.totalSelectedBounds();
                             if(tb.x != Infinity){
+                                var threshold = 10 / scale();
+                                var ray = [
+                                    worldPos.x - threshold,
+                                    worldPos.y - threshold,
+                                    worldPos.x + threshold,
+                                    worldPos.y + threshold
+                                ];
+                                var isDragHandle = function(property){
+                                    return _.some(Modes.select.selected[property],function(el){
+                                        if (el){
+                                            return intersectRect(el.bounds,ray);
+                                        } else {
+                                            return false;
+                                        }
+                                    });
+                                }
+                                Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
+                                var s = Modes.select.resizeHandleSize / scale();
                                 var resizeHandle = [tb.x2 - s, tb.y2 - s, tb.x2, tb.y2];
-                                console.log("Testing",s,resizeHandle,ray);
                                 if(intersectRect(resizeHandle,ray)){
                                     Modes.select.dragging = false;
                                     Modes.select.resizing = true;
-                                    console.log("Resizing");
                                 }
                             }
                         }
@@ -1458,8 +1458,8 @@ var Modes = (function(){
                         if(Modes.select.dragging){
                             blit();
                         }
-			else if(Modes.select.resizing){
-			}
+                        else if(Modes.select.resizing){
+                        }
                         else{
                             updateMarquee(marquee,originPoint,currentPoint);
                         }
@@ -1484,12 +1484,12 @@ var Modes = (function(){
                             var originalWidth = totalBounds.x2 - totalBounds.x;
                             var originalHeight = totalBounds.y2 - totalBounds.y;
                             var requestedWidth = worldPos.x - totalBounds.x;
+                            console.log("Requested resize from",originalWidth,"to",requestedWidth);
                             var requestedHeight = worldPos.y - totalBounds.y;
                             resized.xScale = requestedWidth / originalWidth;
                             resized.yScale = requestedHeight / originalHeight;
                             resized.xOrigin = totalBounds.x;
                             resized.yOrigin = totalBounds.y;
-			    console.log("Resized up",resized.xScale,resized.yScale);
                             resized.inkIds = _.keys(Modes.select.selected.inks);
                             resized.textIds = _.keys(Modes.select.selected.texts);
                             resized.imageIds = _.keys(Modes.select.selected.images);
@@ -1582,7 +1582,6 @@ var Modes = (function(){
                             $.each(intersectAuthors,function(author,count){
                                 status += sprintf("%s:%s ",author, count);
                             });
-                            console.log(status);
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                         marquee.css(
