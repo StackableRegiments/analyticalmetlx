@@ -552,7 +552,8 @@ function overlapRect(r1,r2){
     }
     return (Math.max(r1[0], r2[0]) - Math.min(r1[2], r2[2])) * (Math.max(r1[1], r2[1]) - Math.min(r1[3], r2[3]));
 }
-function rectFromTwoPoints(pointA,pointB){
+function rectFromTwoPoints(pointA,pointB,minimumSideLength){
+    minimumSideLength = minimumSideLength || 0;
     var topLeft = {x:0,y:0};
     var bottomRight = {x:0,y:0};
     if (pointA.x < pointB.x){
@@ -569,13 +570,23 @@ function rectFromTwoPoints(pointA,pointB){
         topLeft.y = pointB.y;
         bottomRight.y = pointA.y;
     }
+    var width = bottomRight.x - topLeft.x;
+    var height = bottomRight.y - topLeft.y;
+    if(width < minimumSideLength){
+        bottomRight.x += minimumSideLength - width;
+        width = bottomRight.x - topLeft.x;
+    }
+    if(height < minimumSideLength){
+        bottomRight.y += minimumSideLength - height;
+        height = bottomRight.y - topLeft.y;
+    }
     return {
         left:topLeft.x,
         top:topLeft.y,
         right:bottomRight.x,
         bottom:bottomRight.y,
-        width:Math.abs(bottomRight.x - topLeft.x),
-        height:Math.abs(bottomRight.y - topLeft.y)
+        width:width,
+        height:height
     };
 }
 function updateMarquee(marquee,pointA,pointB){
@@ -1348,7 +1359,7 @@ var Modes = (function(){
                     return totalBounds;
                 },
                 offset:{x:0,y:0},
-		marqueeWorldOrigin:{x:0,y:0},
+                marqueeWorldOrigin:{x:0,y:0},
                 resizing:false,
                 dragging:false,
                 clearSelection:clearSelectionFunction,
@@ -1430,7 +1441,7 @@ var Modes = (function(){
                                 if(intersectRect(resizeHandle,ray)){
                                     Modes.select.dragging = false;
                                     Modes.select.resizing = true;
-				    console.log("Resizing invoked");
+                                    console.log("Resizing invoked");
                                 }
                             }
                         }
@@ -1469,10 +1480,16 @@ var Modes = (function(){
                     var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
                         Modes.select.offset = {x:0,y:0};
+                        var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
+                        var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
+			var dragThreshold = 15;
+			if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
+			    Modes.select.dragging = false;
+			}
                         if(Modes.select.dragging){
                             var moved = batchTransform();
-                            moved.xTranslate = worldPos.x - Modes.select.marqueeWorldOrigin.x;
-                            moved.yTranslate = worldPos.y - Modes.select.marqueeWorldOrigin.y;
+                            moved.xTranslate = xDelta;
+                            moved.yTranslate = yDelta;
                             moved.inkIds = _.keys(Modes.select.selected.inks);
                             moved.textIds = _.keys(Modes.select.selected.texts);
                             moved.imageIds = _.keys(Modes.select.selected.images);
@@ -1499,7 +1516,7 @@ var Modes = (function(){
                             Modes.select.resizing = false;
                         }
                         else{
-                            var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos);
+                            var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
                             var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
                             var intersected = {
                                 images:{},
@@ -1508,7 +1525,7 @@ var Modes = (function(){
                                 multiWordTexts:{}
                             };
                             var intersectAuthors = {};
-                            var overlapThreshold = 0.5;
+                            var intersections = {};
                             var intersectCategory = function(category){
                                 $.each(boardContent[category],function(i,item){
                                     if (!("bounds" in item)){
@@ -1529,10 +1546,11 @@ var Modes = (function(){
                                         }
                                     }
                                     var b = item.bounds;
-                                    var selectionThreshold = 10;//Math.abs(overlapThreshold * ((b[2] - b[0]) * (b[3] - b[1])));
+                                    var selectionThreshold = 1;
                                     var overlap = overlapRect(selectionBounds,item.bounds);
                                     if(overlap >= selectionThreshold){
                                         incrementKey(intersectAuthors,item.author);
+                                        incrementKey(intersections,"any");
                                         if (isAdministeringContent){
                                             if(item.author != UserSettings.getUsername()){
                                                 intersected[category][item.identity] = item;
@@ -1560,19 +1578,18 @@ var Modes = (function(){
                                     }
                                 }
                             });
-                            if(modifiers.ctrl){
-                                var toggleCategory = function(category){
-                                    $.each(intersected[category],function(id,item){
-                                        if(id in Modes.select.selected[category]){
-                                            delete Modes.select.selected[category][id];
-                                        } else {
-                                            Modes.select.selected[category][id] = item;
-                                        }
-                                    });
-                                }
-                                categories(toggleCategory);
+                            /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
+                            var toggleCategory = function(category){
+                                $.each(intersected[category],function(id,item){
+                                    if(id in Modes.select.selected[category]){
+                                        delete Modes.select.selected[category][id];
+                                    } else {
+                                        Modes.select.selected[category][id] = item;
+                                    }
+                                });
                             }
-                            else{
+                            categories(toggleCategory);
+                            if(!intersections.any){
                                 Modes.select.selected = intersected;
                             }
                             var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
@@ -1972,4 +1989,3 @@ var Modes = (function(){
         }
     }
 })();
- 
