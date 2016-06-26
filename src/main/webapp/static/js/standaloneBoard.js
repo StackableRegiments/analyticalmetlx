@@ -1593,7 +1593,7 @@ var board = function(options){
                             text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
                         }
                         if(intersectRect(text.bounds,viewBounds)){
-                            Modes.text.draw(text);
+			    drawMultiwordText(text);
                         }
                     });
                 }

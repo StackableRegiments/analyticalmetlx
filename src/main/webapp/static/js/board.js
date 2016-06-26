@@ -168,13 +168,13 @@ function richTextEditorToStanza(t){
 function sendRichText(t){
     if(t.doc){
         Modes.text.echoesToDisregard[t.identity] = true;
-	var d = t.doc;
-	t.doc.position = {x:t.x,y:t.y};
-	console.log("sendRichText");
-	/*Now that we're ignoring the echoes, we need to update our own register so we agree with our peers about what's in the box*/
-	var stanza = richTextEditorToStanza(t);
-	boardContent.multiWordTexts[t.identity] = stanza;
-	boardContent.multiWordTexts[t.identity].doc = d;
+        var d = t.doc;
+        t.doc.position = {x:t.x,y:t.y};
+        console.log("sendRichText");
+        /*Now that we're ignoring the echoes, we need to update our own register so we agree with our peers about what's in the box*/
+        var stanza = richTextEditorToStanza(t);
+        boardContent.multiWordTexts[t.identity] = stanza;
+        boardContent.multiWordTexts[t.identity].doc = d;
         sendStanza(stanza);
     }
 }
@@ -530,7 +530,7 @@ function transformReceived(transform){
                 var offsetX = -(internalX - (internalX * transform.xScale));
                 var offsetY = -(internalY - (internalY * transform.yScale));
                 text.doc.position = {x:text.x + offsetX,y:text.y + offsetY};
-		console.log("Positioning box at",offsetX,offsetY);
+                console.log("Positioning box at",offsetX,offsetY);
                 text.doc.load(text.words);
                 text.bounds = text.doc.calculateBounds();
                 transformBounds.incorporateBounds(text.bounds);
@@ -579,8 +579,8 @@ function transformReceived(transform){
             var doc = text.doc;
             doc.position.x += transform.xTranslate;
             doc.position.y += transform.yTranslate;
-	    text.x = doc.position.x;
-	    text.y = doc.position.y;
+            text.x = doc.position.x;
+            text.y = doc.position.y;
             text.bounds = doc.calculateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
@@ -678,6 +678,10 @@ function drawImage(image,incCanvasContext){
     catch(e){
         console.log("drawImage exception",e);
     }
+}
+
+function drawMultiwordText(item){
+    Modes.text.draw(item);
 }
 function drawText(text,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;

@@ -43,6 +43,8 @@ var ContentFilter = (function(){
         };
     };
     var applyFilters = function(stanza){
+	var observed = Participants.getParticipants()[stanza.author];
+	if(observed && !observed.following) return false;
         return _.some(filters,function(filter){
             return ("enabled" in filter && filter.enabled == true) ? filter.filterStanza(stanza) : false ;
         });
@@ -50,11 +52,8 @@ var ContentFilter = (function(){
     var filtered = function(func){
         return function(stanza){
             if (applyFilters(stanza)){
-                //console.log("showed:",stanza);
                 func(stanza);
-            } else {
-                console.log("hiding:",stanza);
-            };
+            }
         };
     };
     var filters = [];
@@ -65,10 +64,12 @@ var ContentFilter = (function(){
         var internalDrawInk = drawInk;
         var internalDrawText = drawText;
         var internalDrawImage = drawImage;
+        var internalDrawMultiwordText = drawMultiwordText;
 
         drawInk = filtered(internalDrawInk);
         drawText = filtered(internalDrawText);
         drawImage = filtered(internalDrawImage);
+        drawMultiwordText = filtered(internalDrawMultiwordText);
 
         $("#menuContentFilter").on("click",function(){
             showBackstage("contentFilter");
@@ -129,13 +130,13 @@ var ContentFilter = (function(){
         renderContentFilters();
     };
     var setFilterFunction = function(id,enabled){
-			_.each(getFiltersFunction(),function(fil){
-				if (fil.id == id){
-					fil.enabled = enabled;
-				}
-			});
-			renderContentFilters();
-			blit();
+        _.each(getFiltersFunction(),function(fil){
+            if (fil.id == id){
+                fil.enabled = enabled;
+            }
+        });
+        renderContentFilters();
+        blit();
     };
     Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
     Progress.onConversationJoin["ContentFilter"] = conversationJoined;

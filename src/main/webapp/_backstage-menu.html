@@ -10,25 +10,25 @@
         <!--<div id="applicationMenuPopup" class="backstageHeader">
             <div class="lift:embed?what=_futureApplicationButton" ></div>
         </div>-->
-				<div id="settingsPopup" class="backstage">
-					<div class="slidesToggleButtonContainer">
-						<button type="button" id="slidesToggleButton" class="toolbar btn-icon fa fa-film"><div>Show Slides</div></button>
-					</div>
-					<div class="toolsToggleButtonContainer">
-						<button type="button" id="toolsToggleButton" class="toolbar btn-icon fa fa-wrench"><div>Show tools</div></button>
-					</div>
-				</div>
+        <div id="settingsPopup" class="backstage">
+          <div class="slidesToggleButtonContainer">
+            <button type="button" id="slidesToggleButton" class="toolbar btn-icon fa fa-film"><div>Show Slides</div></button>
+          </div>
+          <div class="toolsToggleButtonContainer">
+            <button type="button" id="toolsToggleButton" class="toolbar btn-icon fa fa-wrench"><div>Show tools</div></button>
+          </div>
+        </div>
         <div id="blacklistPopup" class="backstage">
           <h2 class="nmt">Manage banned content</h2>
           <div class="flex-container-row img-resp">
-						<div id="currentBlacklistAuthorList" class="mr quarter">
-							<div class="blacklistAuthorContainer">
-								<div class="blacklistAuthor">
-									<span class="blacklistAuthorName"></span>
-									<span class="blacklistAuthorUnbanButton">Unban</span>
-								</div>
-							</div>
-						</div>
+            <div id="currentBlacklistAuthorList" class="mr quarter">
+              <div class="blacklistAuthorContainer">
+                <div class="blacklistAuthor">
+                  <span class="blacklistAuthorName"></span>
+                  <span class="blacklistAuthorUnbanButton">Unban</span>
+                </div>
+              </div>
+            </div>
             <div id="blacklistListing" class="mr quarter">
               <!-- many ".blacklistSummary"s are cloned from JS -->
               <div class="blacklistSummary">
@@ -43,12 +43,12 @@
               <div class="blacklistContainer">
                 <div class="blacklistDescription"></div>
                 <image class="blacklistImage"></image>
-								<div class="blacklistAuthors">
-									<div class="blacklistAuthor">
-										<span class="blacklistAuthorColor" width="10px" height="10px">&nbsp;</span>
-										<span class="blacklistAuthorName"></span>
-									</div>
-								</div>
+                <div class="blacklistAuthors">
+                  <div class="blacklistAuthor">
+                    <span class="blacklistAuthorColor" width="10px" height="10px">&nbsp;</span>
+                    <span class="blacklistAuthorName"></span>
+                  </div>
+                </div>
                 <span class="blacklistTeacherControls">
                   <input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
                 </span>
@@ -103,17 +103,21 @@
         <section id="participantsPopup" class="backstage box-model-block">
           <h2 class="align-left mrh nmt">Participants</h2>
           <div id="participantsListingContainer" class="clear">
-						<div class="participation">
-							<span class="user"></span>
-							<span class="attendanceCount"></span>
-							<span class="imagesCount"></span>
-							<span class="inksCount"></span>
-							<span class="highlightersCount"></span>
-							<span class="textsCount"></span>
-							<span class="submissionsCount"></span>
-							<span class="quizResponsesCount"></span>
-						</div>
-					</div>
+            <div class="participation">
+              <span class="followControls">
+                <input type="checkbox" class="followValue"></input>
+                <label class="followLabel">View</label>
+              </span>
+              <span class="user"></span>
+              <span class="attendanceCount"></span>
+              <span class="imagesCount"></span>
+              <span class="inksCount"></span>
+              <span class="highlightersCount"></span>
+              <span class="textsCount"></span>
+              <span class="submissionsCount"></span>
+              <span class="quizResponsesCount"></span>
+            </div>
+          </div>
         </section>
         <section id="quizzesPopup" class="backstage box-model-block">
           <h2 class="align-left mrh nmt">Polls</h2>
@@ -232,11 +236,11 @@
                   <button class="conversationSearchButton toolbar button-transparent-border mlrh" id="createConversationButton" name="createConversationButton" type="button">
                     <span>Create conversation</span>
                   </button>
-								</div>
-								<div id="importConversationContainer">
-									<button class="conversationSearchButton toolbar button-transparent-border mlrh" id="importConversationButton" name="importConversationButton" type="button">
-										<span>Import conversation</span>
-									</button>
+                </div>
+                <div id="importConversationContainer">
+                  <button class="conversationSearchButton toolbar button-transparent-border mlrh" id="importConversationButton" name="importConversationButton" type="button">
+                    <span>Import conversation</span>
+                  </button>
                 </div>
                 <button id="myConversationsButton" class="conversationSearchButton toolbar button-transparent-border mlrh" type="button"><span>All my conversations</span></button>
               </div>

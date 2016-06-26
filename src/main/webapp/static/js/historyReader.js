@@ -622,7 +622,7 @@ function render(content,incCanvasContext,incViewBounds){
                             text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
                         }
                         if(intersectRect(text.bounds,viewBounds)){
-                            Modes.text.draw(text);
+			    drawMultiwordText(text);
                         }
                     });
                 }
@@ -708,7 +708,7 @@ function render(content,incCanvasContext,incViewBounds){
                                 drawText(item,canvasContext);
                                 break;
                             case "multiWordTexts":
-                                Modes.text.draw(item);
+				drawMultiwordText(item);
                                 break;
                             case "inks":
                                 drawInk(item,canvasContext);
