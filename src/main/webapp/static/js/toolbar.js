@@ -898,7 +898,6 @@ var Modes = (function(){
             }
         })(),
         image:(function(){
-            var marquee = undefined;
             var noop = function(){};
             var currentImage = {};
             var insertOptions = undefined;
@@ -942,17 +941,17 @@ var Modes = (function(){
                                 y:currentImage.y
                             };
                             updateTracking(newIdentity,function(){
-				var roomForControls = 50
+                                var roomForControls = 50
                                 var newX = Math.min(imageStanza.x,viewboxX);
                                 var newY = Math.min(imageStanza.y,viewboxY);
                                 var newW = Math.max(imageStanza.x + imageStanza.width,viewboxWidth);
                                 var newH = Math.max(imageStanza.y + imageStanza.height,viewboxHeight);
-				Modes.select.activate();
-				Modes.select.selected.images[imageStanza.identity] = imageStanza;
+                                Modes.select.activate();
+                                Modes.select.selected.images[imageStanza.identity] = imageStanza;
                                 IncludeView.specific(newX,newY,newW + roomForControls,newH + roomForControls);
                             });
                             sendStanza(imageStanza);
-			    console.log("Tracking updated",imageStanza);
+                            console.log("Tracking updated",imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
                         },
@@ -974,7 +973,7 @@ var Modes = (function(){
                 if (!hasInitialized){
                     hasInitialized = true;
                     insertOptions = $("#imageInsertOptions").css({position:"absolute",left:0,top:0});
-                    insertOptionsClose = $("#imageInsertOptionsClose").click(resetImageUpload);
+                    insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
                         var files = e.target.files || e.dataTransfer.files;
@@ -998,8 +997,8 @@ var Modes = (function(){
                                     height: px(h)
                                 });
                                 renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-				currentImage.width = w;
-				currentImage.height = h;
+                                currentImage.width = w;
+                                currentImage.height = h;
                                 currentImage.resizedImage = renderCanvas[0].toDataURL();
                                 sendImageToServer();
                             };
@@ -1007,7 +1006,7 @@ var Modes = (function(){
                         };
                         reader.readAsDataURL(currentImage.fileUpload);
                     },false);
-		    resetImageUpload();
+                    resetImageUpload();
                 }
             });
             return {

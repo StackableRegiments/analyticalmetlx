@@ -35,15 +35,14 @@
       <button class="toolbar btn-icon fa fa-pencil" type="button" id="drawMode" style="display:block"><div class="icon-txt">Ink</div></button>
       <!--<button class="toolbar btn-icon fa fa-plus" type="button" id="insertMode"><div class="icon-txt">Insert</div></button>-->
       <button class="toolbar btn-icon fa fa-font" type="button" id="insertText" data-insertMode="text" ><div class="icon-txt">Text</div></button>
-      <button class="toolbar btn-icon fa fa-picture-o" type="button" id="insertImage" data-insertMode="image"><div class="icon-txt">Image</div></button>
       <button class="toolbar btn-icon fa fa-comment" type="button" id="feedbackMode"><div class="icon-txt">Feedback</div></button>
       <button class="toolbar btn-icon fa fa-search" type="button" id="zoomMode"><div class="icon-txt">Zoom</div></button>
       <button class="toolbar btn-icon fa fa-arrows" type="button" id="panMode"><div class="icon-txt">Pan</div></button>
     </div>
     <div id="minorModesColumn">
       <div id="selectTools" class="inactiveMode flex-container-responsive-rev">
+        <button class="modeSpecificTool btn-icon fa fa-picture-o" type="button" id="insertImage" data-insertMode="image"><div class="icon-txt">Image</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-trash" type="button" id="delete"><div class="icon-txt">Delete</div></button>
-        <button class="modeSpecificTool disabledButton btn-icon fa fa-expand" type="button" id="resize"><div class="icon-txt">Resize</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-eye" type="button" id="publicize"><div class="icon-txt">Show</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-eye-slash" type="button" id="privatize"><div class="icon-txt">Hide</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-graduation-cap" type="button" id="administerContent"><div class="icon-txt">Administer Content</div></button>
@@ -121,7 +120,6 @@
       <div id="zoomTools" class="inactiveMode flex-container-responsive-rev">
         <button id="zoomToOriginal" class="modeSpecificTool btn-icon fa fa-?"><div class="icon-txt">Reset</div></button>
         <button id="zoomToFull" class="modeSpecificTool btn-icon fa fa-arrows-alt"><div class="icon-txt">Auto fit</div></button>
-        <button id="zoomToPage" class="modeSpecificTool btn-icon fa fa-?"><div class="icon-txt">1:1</div></button>
         <button id="in" class="quickMove modeSpecificTool btn-icon fa fa-search-plus"><div class="icon-txt">In</div></button>
         <button id="out" class="quickMove modeSpecificTool btn-icon fa fa-search-minus"><div class="icon-txt">Out</div></button>
       </div>
