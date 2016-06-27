@@ -15,9 +15,7 @@
     margin-right:0;
     padding-right:0;
 }
-#thumbsColumn{
-    padding-left:2em;
-}
+
 #upload{
     z-index:1;
     position:absolute;
@@ -52,4 +50,13 @@
 }
 #slideContainer{
     max-width:10000px;
+    margin-right:10px;
+}
+#thumbColumnDragHandle{
+    order:0;
+    height:calc(100vh - 120px);
+}
+#thumbScrollContainer{
+    order:1;
+    overflow-x:hidden;
 }

@@ -242,6 +242,9 @@ var DeviceConfiguration = (function(){
                 var boardContainer = $("#boardContainer");
                 var board = $("#board");
                 var masterHeader = $("#masterHeader");
+		$("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
+                thumbs.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
+                thumbs.height(DeviceConfiguration.preferredSizes.thumbColumn.height);
 
                 var bwidth = boardContainer.width();
                 var bheight = boardContainer.height();
@@ -379,13 +382,13 @@ var DeviceConfiguration = (function(){
             var dragThreshold = 10;
             var widthIncludes = function(x){
                 func(source,x - downPos.x);
+                fitFunction();
             }
             var down = function(x){
                 downPos.x = x;
+                resizing = true;
             };
             var move = function(x){
-                //Clicking slides must not force remeasure
-                resizing = (Math.abs(x - downPos.x) > dragThreshold)
                 if(resizing){
                     widthIncludes(x);
                 }
@@ -396,19 +399,19 @@ var DeviceConfiguration = (function(){
                         console.log("Resizing thumbs up");
                         resizing = false;
                         widthIncludes(x);
-                        fitFunction();
                     });
                 }
             }
             registerPositionHandlers(source,down,move,up);
         };
-        resizeable("#thumbsColumn",function(el,delta){
+        resizeable("#thumbColumnDragHandle",function(el,delta){
             //Right to left so negative X
             var thumbs = $(".thumbnail");
             var aspectRatio = 0.75;
             var effectiveWidth = thumbs.width() - delta;
             var effectiveHeight = effectiveWidth * aspectRatio;
-            thumbs.width(effectiveWidth).height(effectiveHeight);
+            DeviceConfiguration.preferredSizes.thumbColumn.width = effectiveWidth;
+            DeviceConfiguration.preferredSizes.thumbColumn.height = effectiveHeight;
         });
     });
     var actOnCurrentDevice = function(){
@@ -453,7 +456,6 @@ var DeviceConfiguration = (function(){
     return {
         getCurrentDevice:returnCurrentDeviceFunction,
         setCurrentDevice:alterCurrentDeviceFunction,
-        columnHandleWidth:40,
         applyFit:function(){
             defaultFitIfMissing();
             fitFunction();
@@ -477,6 +479,14 @@ var DeviceConfiguration = (function(){
         resetCurrentDevice:function(){
             tryToDetermineCurrentDevice();
             actOnCurrentDevice();
+        },
+        preferredSizes:{
+	    handles:50,
+            thumbColumn:{
+                width:100,
+                height:75
+            },
+            toolsColumn:100
         }
     };
 })();

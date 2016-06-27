@@ -555,7 +555,6 @@ var Conversations = (function(){
             alt:sprintf("Slide %s",slideIndex),
             title:sprintf("Slide %s (%s)",slideIndex,slide.id)
         }).on("click",function(e){
-            console.log("Thumbnail click");
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());
         }).appendTo(newSlide);
