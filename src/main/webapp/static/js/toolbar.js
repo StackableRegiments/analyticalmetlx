@@ -902,147 +902,17 @@ var Modes = (function(){
             var noop = function(){};
             var currentImage = {};
             var insertOptions = undefined;
-            var imageInsertOptionsClose = undefined;
             var imageFileChoice = undefined;
-            var imageSizeControls = undefined;
-            var imageSizeChoiceSelector = undefined;
-            var imageUploadThumbnail = undefined;
-            var imageProgressContainer = undefined;
-            var imageUploadButton = undefined;
-            var imageUploadX = undefined;
-            var imageUploadY = undefined;
-            var imageUploadWidth = undefined;
-            var imageUploadHeight = undefined;
-            var imageSizeChoices = [
-                {name:"160*120",func:function(w,h){return {w:160,h:120}}},
-                {name:"320*240",func:function(w,h){return {w:320,h:240}}},
-                {name:"25%",func:function(w,h){return {w:w / 4, h:h / 4}}},
-                {name:"50%",func:function(w,h){return {w:w / 2, h:h / 2}}},
-                {name:"75%",func:function(w,h){return {w:(w / 4) * 3, h:(h / 4) * 3}}},
-                {name:"Native",func:function(w,h){return {w:w,h:h}}}
-            ];
-            var updateImageEditor = function(){
-                if ("type" in currentImage && currentImage.type == "imageDefinition"){
-                    // there is now only one place that the imageOptions dialog gets positioned, and it's here, so if you want to move it about, etc, do it right here.
-                    insertOptions.css({
-                        position:"absolute",
-                        left:px(currentImage.screenX - 30),
-                        top:px(currentImage.screenY)
-                    });
-                    if ("fileUpload" in currentImage){
-                        imageFileChoice.hide();
-                        imageSizeControls.show();
-                        $.map(imageSizeChoiceSelector.find(".imageSizeChoice"),function(elem){
-                            if ("thumbnailSize" in currentImage && currentImage.thumbnailSize.name == $(elem).text()){
-                                $(elem).addClass("active");
-                            } else {
-                                $(elem).removeClass("active");
-                            }
-                        });
-                        var reader = new FileReader();
-                        reader.onload = function(e){
-                            if (!("thumbnailSize" in currentImage)){
-                                currentImage.thumbnailSize = imageSizeChoices[0];
-                            }
-                            imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
-                            var img = new Image();
-                            img.onload = function(e){
-                                var resizedDimensions = currentImage.thumbnailSize.func(img.width,img.height);
-                                var w = resizedDimensions.w;
-                                var h = resizedDimensions.h;
-
-                                var scaledHeight = h;
-                                var scaledWidth = w;
-                                if (w < h){
-                                    //height is larger
-                                    var scaleFactor = h / 300;
-                                    scaledHeight = 300;
-                                    scaledWidth = w / scaleFactor;
-                                } else {
-                                    var sf = w / 300;
-                                    scaledWidth = 300;
-                                    scaledHeight = h / sf;
-                                }
-                                imageUploadThumbnail.attr("width",scaledWidth);
-                                imageUploadThumbnail.attr("height",scaledHeight);
-                                imageUploadThumbnail.css({
-                                    width:px(scaledWidth),
-                                    height: px(scaledHeight)
-                                });
-
-                                imageUploadThumbnail[0].getContext("2d").drawImage(img,0,0,scaledWidth,scaledHeight);
-
-                                imageUploadX.text(currentImage.x);
-                                imageUploadY.text(currentImage.y);
-                                imageUploadWidth.text(w);
-                                imageUploadHeight.text(h);
-
-                                //render canvas is responsible for the resizing.  The other canvas is a thumbnail.
-                                var renderCanvas = $("<canvas/>");
-                                renderCanvas.attr("width",w);
-                                renderCanvas.attr("height",h);
-                                renderCanvas.css({
-                                    width:px(w),
-                                    height: px(h)
-                                });
-                                renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                                currentImage.width = w;
-                                currentImage.height = h;
-                                currentImage.resizedImage = renderCanvas[0].toDataURL();
-                                if ("resizedImage" in currentImage){
-                                    imageUploadButton.show();
-                                }
-                            };
-                            img.src = e.target.result;
-                        };
-                        reader.readAsDataURL(currentImage.fileUpload);
-                        if ("resizedImage" in currentImage){
-                            imageUploadButton.show();
-                        } else {
-                            imageUploadButton.hide();
-                        }
-                    } else {
-                        imageFileChoice.show();
-                        imageSizeControls.hide();
-                    }
-                    insertOptions.show();
-                } else {
-                    resetImageUpload();
-                }
-            };
-            var newInsertOptions = function(x,y,worldPos,onImage){
-                currentImage = {
-                    "type":"imageDefinition",
-                    "screenX":x,
-                    "screenY":y,
-                    "x":worldPos.x,
-                    "y":worldPos.y
-                }
-                updateImageEditor();
-            }
             var resetImageUpload = function(){
                 insertOptions.hide();
                 var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
                 if (imageForm != undefined){
                     imageForm.reset();
                 }
-                if (imageUploadThumbnail[0] != undefined){
-                    imageUploadThumbnail[0].getContext("2d").clearRect(0,0,imageUploadThumbnail.width(),imageUploadThumbnail.height());
-                }
-                imageUploadX.text("");
-                imageUploadY.text("");
-                imageUploadWidth.text("");
-                imageUploadHeight.text("");
                 imageFileChoice.unwrap();
-                currentImage = {};
-                imageUploadButton
-                    .text("Upload")
-                    .unbind("click")
-                    .on("click",actOnImageButtonClick);
             };
-            var actOnImageButtonClick = function(){
-                imageUploadButton.unbind("click").text("Uploading");
-                if ("type" in currentImage && currentImage.type == "imageDefinition" && "resizedImage" in currentImage){
+            var sendImageToServer = function(){
+                if (currentImage.type == "imageDefinition"){
                     WorkQueue.pause();
                     var worldPos = {x:currentImage.x,y:currentImage.y};
                     var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
@@ -1054,7 +924,6 @@ var Modes = (function(){
                         url: url,
                         type: 'POST',
                         success: function(e){
-                            updateTracking(identity);
                             var newIdentity = $(e).find("resourceUrl").text();
                             var imageStanza = {
                                 type:"image",
@@ -1071,18 +940,23 @@ var Modes = (function(){
                                 x:currentImage.x,
                                 y:currentImage.y
                             };
-                            resetImageUpload();
                             updateTracking(newIdentity,function(){
+				var roomForControls = 50
                                 var newX = Math.min(imageStanza.x,viewboxX);
                                 var newY = Math.min(imageStanza.y,viewboxY);
                                 var newW = Math.max(imageStanza.x + imageStanza.width,viewboxWidth);
                                 var newH = Math.max(imageStanza.y + imageStanza.height,viewboxHeight);
-                                IncludeView.specific(newX,newY,newW,newH);
+				Modes.select.activate();
+				Modes.select.selected.images[imageStanza.identity] = imageStanza;
+                                IncludeView.specific(newX,newY,newW + roomForControls,newH + roomForControls);
                             });
                             sendStanza(imageStanza);
+			    console.log("Tracking updated",imageStanza);
+                            resetImageUpload();
                             WorkQueue.gracefullyResume();
                         },
                         error: function(e){
+                            console.log(e);
                             resetImageUpload();
                             alert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
@@ -1098,47 +972,42 @@ var Modes = (function(){
             $(function(){
                 if (!hasInitialized){
                     hasInitialized = true;
-                    marquee = $("imageMarquee");
-                    insertOptions = $("#imageInsertOptions");
-                    imageInsertOptionsClose = $("#imageInsertOptionsClose");
-                    imageFileChoice = $("#imageFileChoice");
-                    imageSizeControls = $("#imageSizeControls");
-                    imageSizeChoiceSelector = $("#imageSizeChoiceSelector");
-                    imageUploadThumbnail = $("#imageUploadThumbnail");
-                    imageProgressContainer = $("#imageProgressContainer");
+                    insertOptions = $("#imageInsertOptions").css({position:"absolute",left:0,top:0});
+                    imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageUploadButton = $("#imageUploadButton");
-                    imageUploadX = $("#imageUploadX");
-                    imageUploadY = $("#imageUploadY");
-                    imageUploadWidth = $("#imageUploadWidth");
-                    imageUploadHeight = $("#imageUploadHeight");
-                    imageInsertOptionsClose.on("click",resetImageUpload);
-                    imageFileChoice.attr("accept","image/*");
-                    if (imageFileChoice[0] != undefined){
-                        imageFileChoice[0].addEventListener("change",function(e){
-                            if ("type" in currentImage && currentImage.type == "imageDefinition"){
-                                var files = e.target.files || e.dataTransfer.files;
-                                var limit = files.length;
-                                var file = files[0];
-                                if (file.type.indexOf("image") == 0) {
-                                    currentImage.fileUpload = file;
-                                    currentImage.thumbnailSize = imageSizeChoices[0];
-                                    updateImageEditor();
-                                }
-                            }
-                        },false);
-                    }
-                    var imageSizeOptionTemplate = imageSizeChoiceSelector.find(".imageSizeChoice").clone();
-                    imageSizeChoiceSelector.empty();
-                    imageSizeChoices.map(function(isc){
-                        var thisChoice = imageSizeOptionTemplate.clone().text(isc.name).on("click",function(){
-                            if ("type" in currentImage && currentImage.type == "imageDefinition"){
-                                currentImage.thumbnailSize = isc;
-                                updateImageEditor();
-                            }
-                        });
-                        imageSizeChoiceSelector.append(thisChoice);
-                    });
-                    resetImageUpload();
+                    imageFileChoice[0].addEventListener("change",function(e){
+                        var files = e.target.files || e.dataTransfer.files;
+                        var limit = files.length;
+                        var file = files[0];
+                        if (file.type.indexOf("image") == 0) {
+                            currentImage.fileUpload = file;
+                        }
+                        imageFileChoice.hide();
+                        var reader = new FileReader();
+                        reader.onload = function(e){
+                            var img = new Image();
+                            img.onload = function(e){
+                                var w = img.width;
+                                var h = img.height;
+
+                                var renderCanvas = $("<canvas/>");
+                                renderCanvas.attr("width",w);
+                                renderCanvas.attr("height",h);
+                                renderCanvas.css({
+                                    width:px(w),
+                                    height: px(h)
+                                });
+                                renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+				currentImage.width = w;
+				currentImage.height = h;
+                                currentImage.resizedImage = renderCanvas[0].toDataURL();
+                                sendImageToServer();
+                            };
+                            img.src = e.target.result;
+                        };
+                        reader.readAsDataURL(currentImage.fileUpload);
+                    },false);
+		    resetImageUpload();
                 }
             });
             return {
@@ -1146,24 +1015,21 @@ var Modes = (function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
                     setActiveMode("#imageTools","#insertImage");
-                    resetImageUpload();
-                    Progress.call("onLayoutUpdated");
-                    var up = function(x,y,z,worldPos){
-                        marquee.show();
-                        marquee.css({
-                            left:px(x),
-                            top:px(y)
-                        });
-                        resetImageUpload();
-                        var newScreenPos = worldToScreen(worldPos.x,worldPos.y);
-                        var threshold = 10;
-                        var options = newInsertOptions(newScreenPos.x,newScreenPos.y,worldPos);
+                    var x = 10;
+                    var y = 10;
+                    var worldPos = screenToWorld(x,y);
+                    currentImage = {
+                        "type":"imageDefinition",
+                        "screenX":x,
+                        "screenY":y,
+                        "x":worldPos.x,
+                        "y":worldPos.y
                     }
-                    registerPositionHandlers(board,noop,noop,up);
+                    Progress.call("onLayoutUpdated");
+                    insertOptions.show();
                 },
                 deactivate:function(){
                     resetImageUpload();
-                    unregisterPositionHandlers(board);
                     removeActiveMode();
                 }
             };
@@ -1441,7 +1307,6 @@ var Modes = (function(){
                                 if(intersectRect(resizeHandle,ray)){
                                     Modes.select.dragging = false;
                                     Modes.select.resizing = true;
-                                    console.log("Resizing invoked");
                                 }
                             }
                         }
@@ -1482,10 +1347,10 @@ var Modes = (function(){
                         Modes.select.offset = {x:0,y:0};
                         var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
                         var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
-			var dragThreshold = 15;
-			if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
-			    Modes.select.dragging = false;
-			}
+                        var dragThreshold = 15;
+                        if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
+                            Modes.select.dragging = false;
+                        }
                         if(Modes.select.dragging){
                             var moved = batchTransform();
                             moved.xTranslate = xDelta;
