@@ -10,25 +10,6 @@
       <h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert image</label></strong></h2>
       <button id="imageInsertOptionsClose" class=" btn-close fa fa-times nmt"><span class="hidden">Close</span></button>
       <input type="file" id="imageFileChoice"></input>
-      <div id="imageSizeControls">
-        <h3>Select size</h3>
-        <div id="imageSizeChoiceSelector" class="flex-container-row tools bg-tools">
-          <button class="imageSizeChoice"></button>
-        </div>
-        <button id="imageUploadButton" value="Upload" class="button-transparent-border">Upload</button>
-        <h3>Preview</h3>
-        <div class="smallest-txt">(Max preview size of 300px)</div>
-        <div id="imageUploadDescription">
-          <div>
-            <span>X: <span id="imageUploadX"></span>, </span>
-            <span>Y: <span id="imageUploadY"></span>, </span>
-            <span>Width: <span id="imageUploadWidth"></span>, </span>
-            <span>Height: <span id="imageUploadHeight"></span></span>
-          </div>
-          <!-- this canvas never gets bigger than 300px square, and represents the image in the aspect ratio of the eventually pasted image -->
-          <canvas id="imageUploadThumbnail"></canvas>
-        </div>
-      </div>
     </div>
   </div>
   <div id="loadingSlidePopup" class="loading-spinner" style="display:none;">

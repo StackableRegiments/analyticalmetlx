@@ -903,6 +903,7 @@ var Modes = (function(){
             var currentImage = {};
             var insertOptions = undefined;
             var imageFileChoice = undefined;
+            var insertOptionsClose = undefined;
             var resetImageUpload = function(){
                 insertOptions.hide();
                 var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
@@ -973,8 +974,8 @@ var Modes = (function(){
                 if (!hasInitialized){
                     hasInitialized = true;
                     insertOptions = $("#imageInsertOptions").css({position:"absolute",left:0,top:0});
+                    insertOptionsClose = $("#imageInsertOptionsClose").click(resetImageUpload);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
-                    imageUploadButton = $("#imageUploadButton");
                     imageFileChoice[0].addEventListener("change",function(e){
                         var files = e.target.files || e.dataTransfer.files;
                         var limit = files.length;
@@ -982,7 +983,6 @@ var Modes = (function(){
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
                         }
-                        imageFileChoice.hide();
                         var reader = new FileReader();
                         reader.onload = function(e){
                             var img = new Image();

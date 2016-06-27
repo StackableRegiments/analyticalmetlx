@@ -1,6 +1,6 @@
 var DeviceConfiguration = (function(){
-	var gutterHeight = 10;
-	var gutterWidth = 2;
+    var gutterHeight = 10;
+    var gutterWidth = 2;
     var identity = Date.now();
     var currentDevice = "browser";
     var orientation = "landscape";
@@ -8,27 +8,26 @@ var DeviceConfiguration = (function(){
         return currentDevice;
     };
     var allowedToHideHeader = false;
-    // the default states of the various sections
-		var allowShowingChrome = function(){
-			var isInConversation = false;
-			try {
-				isInConversation = "jid" in Conversations.getCurrentConversation();
-			} catch(e) {
-				isInConversation = false;
-			}
-			return currentDevice != "projector" && isInConversation; 
-		}
+    var allowShowingChrome = function(){
+        var isInConversation = false;
+        try {
+            isInConversation = "jid" in Conversations.getCurrentConversation();
+        } catch(e) {
+            isInConversation = false;
+        }
+        return currentDevice != "projector" && isInConversation;
+    }
     var sectionsVisible = {//All false because the application's start state is the search screen.  onHistory will restore them.
         tools:false,
         slides:false,
-        header:false,
+        header:false
     };
     var setSectionVisibility = function(section,visible){
-			if (allowShowingChrome){
-					if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
-							sectionsVisible[section] = visible;
-					}
-			}
+        if (allowShowingChrome){
+            if ((allowedToHideHeader || section != "header") && (visible == true || visible == false)){
+                sectionsVisible[section] = visible;
+            }
+        }
     };
     var alterCurrentDeviceFunction = function(newDevice){
         currentDevice = newDevice;
@@ -44,28 +43,28 @@ var DeviceConfiguration = (function(){
         } else {
             currentDevice = "browser";
         }
-				console.log("device:",currentDevice);
+        console.log("device:",currentDevice);
     };
     var setDefaultOptions = function(){
         tryToDetermineCurrentDevice();
         $("#absoluteCloseButton").removeClass("closeButton").text("").click(bounceAnd(function(){}));
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
-				try {
-					if ("Conversations" in window && "jid" in Conversations.getCurrentConversation()){
-						if ("UserSettings" in window && UserSettings.getIsInteractive()){
-							DeviceConfiguration.setHeader(true);
-							DeviceConfiguration.setTools(true);
-							DeviceConfiguration.setSlides(true);
-						} else {
-							DeviceConfiguration.setHeader(false);
-							DeviceConfiguration.setTools(false);
-							DeviceConfiguration.setSlides(false);
-						}
-					}
-				} catch(e){
-					console.log("error while trying to fix the layout:",e);
-				}
+        try {
+            if ("Conversations" in window && "jid" in Conversations.getCurrentConversation()){
+                if ("UserSettings" in window && UserSettings.getIsInteractive()){
+                    DeviceConfiguration.setHeader(true);
+                    DeviceConfiguration.setTools(true);
+                    DeviceConfiguration.setSlides(true);
+                } else {
+                    DeviceConfiguration.setHeader(false);
+                    DeviceConfiguration.setTools(false);
+                    DeviceConfiguration.setSlides(false);
+                }
+            }
+        } catch(e){
+            console.log("error while trying to fix the layout:",e);
+        }
         zoomToPage();
         fitFunction();
     };
@@ -73,14 +72,14 @@ var DeviceConfiguration = (function(){
         Conversations.enableSyncMove();
         UserSettings.setIsInteractive(false);
         currentDevice = "projector";
-				setSectionVisibility("tools",false);
-				setSectionVisibility("slides",false);
-				setSectionVisibility("header",false);
+        setSectionVisibility("tools",false);
+        setSectionVisibility("slides",false);
+        setSectionVisibility("header",false);
         fitFunction = projectorFitFunction;
         zoomToFit();
         $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
-					UserSettings.setIsInteractive(true);
-					setDefaultOptions();
+            UserSettings.setIsInteractive(true);
+            setDefaultOptions();
         }));
         $("#applicationMenuButton").hide();
         Modes.none.activate();
@@ -148,12 +147,12 @@ var DeviceConfiguration = (function(){
                 deviceHeight -= 20;
             }
             break;
-						/*
-				case "IE11+":
-            deviceHeight = window.innerHeight * (screen.logicalYDPI / screen.deviceYDPI);
-            deviceWidth = window.innerWidth * (screen.logicalXDPI / screen.deviceXDPI);
-						break;
-				*/		
+            /*
+             case "IE11+":
+             deviceHeight = window.innerHeight * (screen.logicalYDPI / screen.deviceYDPI);
+             deviceWidth = window.innerWidth * (screen.logicalXDPI / screen.deviceXDPI);
+             break;
+             */
         default:
             //deviceHeight = window.innerHeight;
             //deviceWidth = window.innerWidth;
@@ -161,54 +160,52 @@ var DeviceConfiguration = (function(){
             deviceWidth = $(window).width();
             break;
         }
-				var resultantDimensions = {height:deviceHeight,width:deviceWidth};
-				//console.log("gettingDeviceDimensions",resultantDimensions);
+        var resultantDimensions = {height:deviceHeight,width:deviceWidth};
+        //console.log("gettingDeviceDimensions",resultantDimensions);
         return resultantDimensions;
     };
     var defaultFitFunction = function(){
-			customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);
-		};
+        customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);
+    };
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
     var customizableFitFunction = function(_showHeader,_showTools,_showSlides){
-			var showHeader = sectionsVisible.header;
-			var showTools = sectionsVisible.tools;
-			var showSlides = sectionsVisible.slides;
-			//console.log("refiring fit:",showHeader,showTools,showSlides);
+        var showHeader = sectionsVisible.header;
+        var showTools = sectionsVisible.tools;
+        var showSlides = sectionsVisible.slides;
         var toolsColumn = $("#toolsColumn");
         var tools = $("#ribbon").find(".toolbar");
         var subTools = $(".modeSpecificTool");
 
-				var dropPx = function(str){
-					try {
-						var value = parseInt(str.split("px")[0]);
-						return isNaN(value) ? 0 : value;
-					} catch(e){
-						//console.log("parseInt failed",e);
-						return 0;
-					}
-				};
-				var marginsFor = function(items){
-					return {
-						x:_.sum(_.map(items,function(item){
-							var l = dropPx(item.css("margin-left")) + dropPx(item.css("padding-left")) + dropPx(item.css("border"));
-							var r = dropPx(item.css("margin-right")) + dropPx(item.css("padding-right"))  + dropPx(item.css("border"));
-							return l + r;	
-						})),
-						y:_.sum(_.map(items,function(item){
-							var t = dropPx(item.css("margin-top")) + dropPx(item.css("padding-top")) + dropPx(item.css("border"));
-							var b = dropPx(item.css("margin-bottom")) + dropPx(item.css("padding-bottom")) + dropPx(item.css("border"));
-							return t + b;	
-						}))
-					};
-				};
+        var dropPx = function(str){
+            try {
+                var value = parseInt(str.split("px")[0]);
+                return isNaN(value) ? 0 : value;
+            } catch(e){
+                return 0;
+            }
+        };
+        var marginsFor = function(items){
+            return {
+                x:_.sum(_.map(items,function(item){
+                    var l = dropPx(item.css("margin-left")) + dropPx(item.css("padding-left")) + dropPx(item.css("border"));
+                    var r = dropPx(item.css("margin-right")) + dropPx(item.css("padding-right"))  + dropPx(item.css("border"));
+                    return l + r;
+                })),
+                y:_.sum(_.map(items,function(item){
+                    var t = dropPx(item.css("margin-top")) + dropPx(item.css("padding-top")) + dropPx(item.css("border"));
+                    var b = dropPx(item.css("margin-bottom")) + dropPx(item.css("padding-bottom")) + dropPx(item.css("border"));
+                    return t + b;
+                }))
+            };
+        };
 
-				var flexContainer = $("#masterLayout");
+        var flexContainer = $("#masterLayout");
 
         var boardHeader = $("#boardHeader");
         var applicationMenu = $("#applicationMenu");
         var container = $("#boardContainer");
-				var boardColumn = $("#boardColumn");
+        var boardColumn = $("#boardColumn");
 
         var thumbsColumn = $("#thumbsColumn");
         var slideContainer = $("#slideContainer");
@@ -217,7 +214,7 @@ var DeviceConfiguration = (function(){
 
         var deviceDimensions = getDeviceDimensions();
         var width = deviceDimensions.width;
-				var height = deviceDimensions.height;
+        var height = deviceDimensions.height;
         try{
             var performRemeasure = function(){
                 if (showHeader == true){
@@ -230,7 +227,7 @@ var DeviceConfiguration = (function(){
 
                 if (showTools == true){
                     tools.show();
-										subTools.show();
+                    subTools.show();
                     toolsColumn.show();
                 } else {
                     subTools.hide();
@@ -242,67 +239,57 @@ var DeviceConfiguration = (function(){
                 } else {
                     thumbsColumn.hide();
                 }
-								var boardContainer = $("#boardContainer");
-								var board = $("#board");
-								//var bwidth = board.width();
-								//var bheight = board.height();
-								var masterHeader = $("#masterHeader");
+                var boardContainer = $("#boardContainer");
+                var board = $("#board");
+                var masterHeader = $("#masterHeader");
 
-								var bwidth = boardContainer.width();
-								var bheight = boardContainer.height();
-								//if (currentDevice == "IE11+"){
-									var flexDirection = flexContainer.css("flex-direction");
-									if (flexDirection == "row"){
-										bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-										bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
-									} else {
-										bwidth = width - marginsFor([boardColumn]).x - gutterWidth;
-										bheight = bwidth - gutterHeight;
-									}
-									//console.log(flexDirection);
-									//console.log(width,toolsColumn.width(), thumbsColumn.width(), marginsFor([toolsColumn]).x,marginsFor([thumbsColumn]).x,marginsFor([boardColumn]).x);
-									//console.log(height,masterHeader.height(), marginsFor([masterHeader]).y,marginsFor([boardColumn]).y);
-									if (bheight < 0 || bwidth < 0){
-										throw {
-											message: "retrying because of negativeValues",
-											bheight:bheight,
-											bwidth:bwidth,
-											width:width,
-											height:height,
-											marginsForBoard:marginsFor([boardColumn]),
-											flexDirection:flexDirection
-										};
-									}
-									bwidth = Math.round(bwidth);
-									bheight = Math.round(bheight);
-									//boardContainer.width(bwidth);
-									//boardContainer.height(bheight);
-								//}
-								var selectionAdorner = $("#selectionAdorner");
-								var radar = $("#radar");
-								var marquee = $("#marquee");									
-								var textAdorner = $("#textAdorner");
-								var imageAdorner = $("#imageAdorner");
-								boardContext.canvas.width = bwidth;
-								boardContext.canvas.height = bheight;
-								boardContext.width = bwidth;
-								boardContext.height = bheight;
-								boardWidth = bwidth; 
-								boardHeight = bheight;
-								//console.log("refiring fit:",bwidth,bheight);
+                var bwidth = boardContainer.width();
+                var bheight = boardContainer.height();
+                var flexDirection = flexContainer.css("flex-direction");
+                if (flexDirection == "row"){
+                    bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
+                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
+                } else {
+                    bwidth = width - marginsFor([boardColumn]).x - gutterWidth;
+                    bheight = bwidth - gutterHeight;
+                }
+                if (bheight < 0 || bwidth < 0){
+                    throw {
+                        message: "retrying because of negativeValues",
+                        bheight:bheight,
+                        bwidth:bwidth,
+                        width:width,
+                        height:height,
+                        marginsForBoard:marginsFor([boardColumn]),
+                        flexDirection:flexDirection
+                    };
+                }
+                bwidth = Math.round(bwidth);
+                bheight = Math.round(bheight);
+                var selectionAdorner = $("#selectionAdorner");
+                var radar = $("#radar");
+                var marquee = $("#marquee");
+                var textAdorner = $("#textAdorner");
+                var imageAdorner = $("#imageAdorner");
+                boardContext.canvas.width = bwidth;
+                boardContext.canvas.height = bheight;
+                boardContext.width = bwidth;
+                boardContext.height = bheight;
+                boardWidth = bwidth;
+                boardHeight = bheight;
             }
             performRemeasure();
             IncludeView.default();
-						blit();
+            blit();
         }
         catch(e){
             console.log("exception in fit",e);
-						_.defer(function(){
-							_.delay(customizableFitFunction,250,(showHeader,showTools,showSlides));
-						});
+            _.defer(function(){
+                _.delay(customizableFitFunction,250,(showHeader,showTools,showSlides));
+            });
         }
-				window.scrollTo(1,1);
-				window.scrollTo(0,0);
+        window.scrollTo(1,1);
+        window.scrollTo(0,0);
     };
     var innerFit = function(){
         if (fitFunction){
@@ -311,58 +298,55 @@ var DeviceConfiguration = (function(){
     }
     var outerFit = function(){
         innerFit();
-        //                      _.throttle(_.debounce(innerFit,150,false),100)();
     };
     var initialized = false;
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
     Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
             if("UserSettings" in window && UserSettings.getIsInteractive()){
-							console.log("enabling tools and slides");
-							DeviceConfiguration.setSlides(true);
-							DeviceConfiguration.setTools(true);
-							if(!initialized && "Modes" in window){
-									Modes.draw.activate();
-									if(DeviceConfiguration.getCurrentDevice() == "iPad"){
-											$("#panMode").remove();
-									}
-							}
+                console.log("enabling tools and slides");
+                DeviceConfiguration.setSlides(true);
+                DeviceConfiguration.setTools(true);
+                if(!initialized && "Modes" in window){
+                    Modes.draw.activate();
+                    if(DeviceConfiguration.getCurrentDevice() == "iPad"){
+                        $("#panMode").remove();
+                    }
+                }
             } else {
-							console.log("disabling because it's not interactive");
-							DeviceConfiguration.setSlides(false);
-							DeviceConfiguration.setTools(false);
-							if(!initialized){
-									Modes.none.activate();
-							}
+                console.log("disabling because it's not interactive");
+                DeviceConfiguration.setSlides(false);
+                DeviceConfiguration.setTools(false);
+                if(!initialized){
+                    Modes.none.activate();
+                }
             }
             initialized = true;
         }
         catch(e){
             console.log("Progress.historyReceived.DeviceConfiguration_showChrome",e);
         }
-				tryToDetermineCurrentDevice();
-				actOnCurrentDevice();
-				outerFit();
+        tryToDetermineCurrentDevice();
+        actOnCurrentDevice();
+        outerFit();
     }
 
-		var updateToolsToggleButton = function(){
-			var button = $("#slidesToggleButton");
-			if (sectionsVisible.slides){
-				button.removeClass("disabledButton");
-			} else {
-				button.addClass("disabledButton");
-			}
-		};
-		var updateSlidesToggleButton = function(){
-			var button = $("#toolsToggleButton");
-			if (sectionsVisible.tools){
-				button.removeClass("disabledButton");
-			} else {
-				button.addClass("disabledButton");
-			}
-		};
-			
-
+    var updateToolsToggleButton = function(){
+        var button = $("#slidesToggleButton");
+        if (sectionsVisible.slides){
+            button.removeClass("disabledButton");
+        } else {
+            button.addClass("disabledButton");
+        }
+    };
+    var updateSlidesToggleButton = function(){
+        var button = $("#toolsToggleButton");
+        if (sectionsVisible.tools){
+            button.removeClass("disabledButton");
+        } else {
+            button.addClass("disabledButton");
+        }
+    };
     $(function(){
         // set up orientation and resize handlers
         var w = $(window);
@@ -380,15 +364,52 @@ var DeviceConfiguration = (function(){
          */
         $("#toolsToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("tools",!sectionsVisible.tools);
-						updateToolsToggleButton();
+            updateToolsToggleButton();
             outerFit();
         }));
         $("#slidesToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("slides",!sectionsVisible.slides);
-						updateSlidesToggleButton();
+            updateSlidesToggleButton();
             outerFit();
         }));
-				//_.defer(outerFit)();
+        var resizeable = function(selector,func){
+            var source = $(selector);
+            var resizing = false;
+            var downPos = {x:0};
+            var dragThreshold = 10;
+            var widthIncludes = function(x){
+                func(source,x - downPos.x);
+            }
+            var down = function(x){
+                downPos.x = x;
+            };
+            var move = function(x){
+                //Clicking slides must not force remeasure
+                resizing = (Math.abs(x - downPos.x) > dragThreshold)
+                if(resizing){
+                    widthIncludes(x);
+                }
+            }
+            var up = function(x){
+                if(resizing){
+                    _.defer(function(){
+                        console.log("Resizing thumbs up");
+                        resizing = false;
+                        widthIncludes(x);
+                        fitFunction();
+                    });
+                }
+            }
+            registerPositionHandlers(source,down,move,up);
+        };
+        resizeable("#thumbsColumn",function(el,delta){
+            //Right to left so negative X
+            var thumbs = $(".thumbnail");
+            var aspectRatio = 0.75;
+            var effectiveWidth = thumbs.width() - delta;
+            var effectiveHeight = effectiveWidth * aspectRatio;
+            thumbs.width(effectiveWidth).height(effectiveHeight);
+        });
     });
     var actOnCurrentDevice = function(){
         switch (currentDevice){
@@ -396,9 +417,9 @@ var DeviceConfiguration = (function(){
             setDefaultOptions();
             break;
         case "projector":
-						if (ContentFilter != undefined && "setFilter" in ContentFilter){
-							ContentFilter.setFilter("myPrivate",false);
-						};
+            if (ContentFilter != undefined && "setFilter" in ContentFilter){
+                ContentFilter.setFilter("myPrivate",false);
+            };
             setProjectorOptions();
             break;
         case "iPhone":
@@ -432,6 +453,7 @@ var DeviceConfiguration = (function(){
     return {
         getCurrentDevice:returnCurrentDeviceFunction,
         setCurrentDevice:alterCurrentDeviceFunction,
+        columnHandleWidth:40,
         applyFit:function(){
             defaultFitIfMissing();
             fitFunction();

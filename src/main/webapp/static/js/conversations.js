@@ -129,7 +129,7 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).append(constructAddSlideButton());
+        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).prepend(constructAddSlideButton());
         slideContainer.off("scroll");
         slideContainer.on("scroll",paintThumbs);
         Progress.call("onLayoutUpdated");
@@ -358,24 +358,24 @@ var Conversations = (function(){
             DeviceConfiguration.setCurrentDevice("projector");
             return false;
         }));
-				if (targetConversationJid == "" || currentSlide == 0){
-					$("#projectorViewLink").empty();
-					$("#slideDeepLink").empty();
-					$("#conversationDeepLink").empty();
-				} else {
-					$("#projectorViewLink").html($("<a/>",{
-						href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
-						text:"Project this conversation"
-					}));
-					$("#slideDeepLink").html($("<a/>",{
-						href:sprintf("/board?conversationJid=%s&slideId=%s",targetConversationJid,currentSlide),
-						text:"DeepLink this slide"
-					}));
-					$("#conversationDeepLink").html($("<a/>",{
-						href:sprintf("/board?conversationJid=%s",targetConversationJid),
-						text:"Deeplink this conversation"
-					}));
-				}
+        if (targetConversationJid == "" || currentSlide == 0){
+            $("#projectorViewLink").empty();
+            $("#slideDeepLink").empty();
+            $("#conversationDeepLink").empty();
+        } else {
+            $("#projectorViewLink").html($("<a/>",{
+                href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
+                text:"Project this conversation"
+            }));
+            $("#slideDeepLink").html($("<a/>",{
+                href:sprintf("/board?conversationJid=%s&slideId=%s",targetConversationJid,currentSlide),
+                text:"DeepLink this slide"
+            }));
+            $("#conversationDeepLink").html($("<a/>",{
+                href:sprintf("/board?conversationJid=%s",targetConversationJid),
+                text:"Deeplink this conversation"
+            }));
+        }
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
@@ -459,12 +459,12 @@ var Conversations = (function(){
             return false;
         }
     };
-		var getIsBannedFunction = function(conversation){
-			if (!conversation){
-					conversation = currentConversation;
-			}
-			return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
-		};
+    var getIsBannedFunction = function(conversation){
+        if (!conversation){
+            conversation = currentConversation;
+        }
+        return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
+    };
     var shouldDisplayConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
@@ -532,9 +532,9 @@ var Conversations = (function(){
         }
     }
     var doMoveToSlide = function(slideId){
+        indicateActiveSlide(slideId);
         delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
         WorkQueue.enqueue(function(){
-            indicateActiveSlide(slideId);
             loadSlide(slideId);
             return true;
         });
@@ -554,7 +554,8 @@ var Conversations = (function(){
             class:"thumbnail",
             alt:sprintf("Slide %s",slideIndex),
             title:sprintf("Slide %s (%s)",slideIndex,slide.id)
-        }).on("click",function(){
+        }).on("click",function(e){
+            console.log("Thumbnail click");
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());
         }).appendTo(newSlide);
@@ -617,9 +618,9 @@ var Conversations = (function(){
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
-				$("#importConversationButton").on("click",bounceAnd(function(){
-						importConversation();
-				}));
+        $("#importConversationButton").on("click",bounceAnd(function(){
+            importConversation();
+        }));
         $("#createConversationButton").on("click",bounceAnd(function(){
             createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
         }));
@@ -687,7 +688,7 @@ var Conversations = (function(){
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
         updateThumbnail :updateThumbnailFor,
-				getIsBanned : getIsBannedFunction
+        getIsBanned : getIsBannedFunction
     };
 })();
 
