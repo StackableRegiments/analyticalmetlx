@@ -36,14 +36,14 @@ PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
       <param-name>useFileMappedBuffer</param-name>
       <param-value>false</param-value>
     </init-param>
-	</servlet>
-	<session-config>
-		<cookie-config>
-			<name>JSESSIONID</name>
-			<!-- leaving http-only cookies turned off until the C# client is dead -->
-			<!--			<http-only>true</http-only>-->
-			<!--<secure>true</secure>-->
-		</cookie-config>
+  </servlet>
+  <session-config>
+    <cookie-config>
+      <name>JSESSIONID</name>
+      <!-- leaving http-only cookies turned off until the C# client is dead -->
+      <!--                      <http-only>true</http-only>-->
+      <!--<secure>true</secure>-->
+    </cookie-config>
     <session-timeout>60</session-timeout>
-</session-config>
+  </session-config>
 </web-app>

@@ -42,7 +42,10 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         });
         prerenderTextMark = Date.now();
         _.each(boardContent.multiWordTexts,function(text,i){
-            Modes.text.editorFor(text).doc.load(text.words);
+            var editor = Modes.text.editorFor(text).doc;
+            editor.load(text.words);
+	    text.bounds = editor.calculateBounds();
+	    incorporateBoardBounds(text.bounds);
         });
         renderMultiWordMark = Date.now();
 
@@ -622,7 +625,7 @@ function render(content,incCanvasContext,incViewBounds){
                             text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
                         }
                         if(intersectRect(text.bounds,viewBounds)){
-			    drawMultiwordText(text);
+                            drawMultiwordText(text);
                         }
                     });
                 }
@@ -708,7 +711,7 @@ function render(content,incCanvasContext,incViewBounds){
                                 drawText(item,canvasContext);
                                 break;
                             case "multiWordTexts":
-				drawMultiwordText(item);
+                                drawMultiwordText(item);
                                 break;
                             case "inks":
                                 drawInk(item,canvasContext);
