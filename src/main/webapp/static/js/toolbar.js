@@ -671,6 +671,7 @@ var Modes = (function(){
                 return Modes.text.editorFor({
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
+                    privacy:Privacy.getCurrentPrivacy(),
                     requestedWidth:300,
                     width:300,
                     height:0,
@@ -874,10 +875,10 @@ var Modes = (function(){
                             }
                             lastClick = clickTime;
                         } else {
-                            var newEditor = createBlankText(worldPos).doc;
-                            newEditor.load([]);
-                            newEditor.isActive = true;
-                            newEditor.mouseupHandler(newEditor.byOrdinal(0));
+                            var newEditor = createBlankText(worldPos);
+                            var newDoc = newEditor.doc;
+                            newDoc.load([]);
+                            newDoc.mouseupHandler(newDoc.byOrdinal(0));
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
@@ -951,7 +952,6 @@ var Modes = (function(){
                                 IncludeView.specific(newX,newY,newW + roomForControls,newH + roomForControls);
                             });
                             sendStanza(imageStanza);
-                            console.log("Tracking updated",imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
                         },

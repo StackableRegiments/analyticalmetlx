@@ -943,6 +943,7 @@
                     ctx.scale(s,s);
                     doc.draw(ctx, output);
                     if(doc.isActive && Modes.currentMode == Modes.text){
+			console.log("doc painting",doc);
                         doc.drawSelection(ctx, hasFocus);
                     }
                     ctx.restore();
@@ -1309,9 +1310,8 @@
                     doc.mouseupHandler = function(node) {
                         keyboardX = null;
                         doc.select(node.ordinal, node.ordinal);
-                        isActive = true;
+			doc.isActive = true;
                         updateTextArea();
-                        textArea.focus();
                     };
 
                     var nextCaretToggle = new Date().getTime(),

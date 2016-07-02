@@ -622,7 +622,7 @@ function render(content,incCanvasContext,incViewBounds){
                 if(texts){
                     $.each(texts,function(i,text){
                         if(!text.bounds){
-                            text.bounds = [text.x,text.y,text.x + text.width,text.y + text.height];
+                            text.bounds = text.doc.calculateBounds();
                         }
                         if(intersectRect(text.bounds,viewBounds)){
                             drawMultiwordText(text);
