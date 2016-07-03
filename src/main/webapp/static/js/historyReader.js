@@ -44,8 +44,8 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         _.each(boardContent.multiWordTexts,function(text,i){
             var editor = Modes.text.editorFor(text).doc;
             editor.load(text.words);
-	    text.bounds = editor.calculateBounds();
-	    incorporateBoardBounds(text.bounds);
+            text.bounds = editor.calculateBounds();
+            incorporateBoardBounds(text.bounds);
         });
         renderMultiWordMark = Date.now();
 
@@ -654,18 +654,25 @@ function render(content,incCanvasContext,incViewBounds){
                 canvasContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
             }
             var renderResizeHandle = function(pos,size){
+                canvasContext.save();
                 var inset = size / 10;
                 var xOffset = -1 * size;
                 var yOffset = -1 * size;
+                var rot = 90;
                 canvasContext.setLineDash([]);
                 canvasContext.strokeStyle = "black";
                 canvasContext.fillStyle = "white";
                 canvasContext.strokeWidth = 2;
-                canvasContext.fillRect(pos.x + xOffset ,pos.y + yOffset,size,size);
-                canvasContext.strokeRect(pos.x + yOffset,pos.y + yOffset,size,size);
+                canvasContext.translate(pos.x + xOffset,pos.y + yOffset);
+                canvasContext.rotate(rot * Math.PI / 180);
+                /*Now the x and y are reversed*/
+                canvasContext.fillRect(0,xOffset,size,size);
+                canvasContext.strokeRect(0,xOffset,size,size);
                 canvasContext.font = sprintf("%spx FontAwesome",size);
                 canvasContext.fillStyle = "black";
-                canvasContext.fillText("\uF065",pos.x + xOffset + inset,pos.y - inset - 1);
+                canvasContext.fillText("\uF065",inset,-1 * inset);
+                console.log("resize");
+                canvasContext.restore();
             }
             var renderSelectionManipulators = function(){
                 var size = Modes.select.resizeHandleSize;
@@ -689,8 +696,8 @@ function render(content,incCanvasContext,incViewBounds){
                     canvasContext.strokeStyle = "blue";
                     canvasContext.strokeWidth = 3;
                     canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
+                    renderResizeHandle(tb.br,size);
                 }
-                renderResizeHandle(tb.br,size);
                 canvasContext.restore();
             }
             var renderSelectionGhosts = function(){

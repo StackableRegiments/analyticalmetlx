@@ -5,11 +5,17 @@
       <div class="lift:embed?what=_futureApplicationButton"></div>
     </div>
     <div class="backstage-content mtb mlr grow">
+      <div class="headerRow1">
+        <span id="username" ></span>
+        <span> is working </span>
+        <span id="currentPrivacyStatus"></span>
+        <span id="currentlyBanned"></span>
+        <span> in </span>
+        <span id="currentConversationTitle" ></span>
+        <span> with </span>
+        <span id="currentConversationState"></span>
+      </div>
       <div id="backstageContainer" class="box-model-block">
-
-        <!--<div id="applicationMenuPopup" class="backstageHeader">
-            <div class="lift:embed?what=_futureApplicationButton" ></div>
-        </div>-->
         <div id="settingsPopup" class="backstage">
           <div class="slidesToggleButtonContainer">
             <button type="button" id="slidesToggleButton" class="toolbar btn-icon fa fa-film"><div>Show Slides</div></button>
@@ -56,7 +62,17 @@
             </div>
           </div>
         </div>
+        <div id="integrationsPopup" class="backstage">
+          <h2 class="nmt">Integration options</h2>
+          <div class="flex-container-row img-resp">
+            <div class="conversationLinks">
+              <div id="projectorViewLink"></div>
+              <!--<span id="conversationDeepLink"></span>-->
+              <div id="slideDeepLink"></div>
+            </div>
 
+          </div>
+        </div>
         <div id="submissionsPopup" class="backstage">
           <h2 class="nmt">Submissions</h2>
           <div class="flex-container-row img-resp">

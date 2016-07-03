@@ -3,7 +3,6 @@
     <button class="privacyButton fa fa-user" type="button" id="privateMode"><div class="icon-txt">Private</div></button>
     <button class="privacyButton fa fa-globe" type="button" id="publicMode"><div class="icon-txt">Public</div></button>
   </div>
-  <!-- hi Jodi - here're two things to style -->
   <div class="permission-states">
     <input type="checkbox" id="studentsCanPublishCheckbox"></input>
     <label for="studentsCanPublishCheckbox"><span class="icon-txt">Students can publish</span></label>
@@ -33,7 +32,7 @@
     <div id="majorModesColumn" class="flex-container-responsive-rev">
       <button class="toolbar btn-icon fa fa-mouse-pointer" type="button" id="selectMode"><div class="icon-txt">Select</div></button>
       <button class="toolbar btn-icon fa fa-pencil" type="button" id="drawMode" style="display:block"><div class="icon-txt">Ink</div></button>
-      <!--<button class="toolbar btn-icon fa fa-plus" type="button" id="insertMode"><div class="icon-txt">Insert</div></button>-->
+      <button class="toolbar btn-icon fa fa-picture-o" type="button" id="imageMode"><div class="icon-txt">Insert</div></button>
       <button class="toolbar btn-icon fa fa-font" type="button" id="insertText" data-insertMode="text" ><div class="icon-txt">Text</div></button>
       <button class="toolbar btn-icon fa fa-comment" type="button" id="feedbackMode"><div class="icon-txt">Feedback</div></button>
       <button class="toolbar btn-icon fa fa-search" type="button" id="zoomMode"><div class="icon-txt">Zoom</div></button>
@@ -41,7 +40,6 @@
     </div>
     <div id="minorModesColumn">
       <div id="selectTools" class="inactiveMode flex-container-responsive-rev">
-        <button class="modeSpecificTool btn-icon fa fa-picture-o" type="button" id="insertImage" data-insertMode="image"><div class="icon-txt">Image</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-trash" type="button" id="delete"><div class="icon-txt">Delete</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-eye" type="button" id="publicize"><div class="icon-txt">Show</div></button>
         <button class="modeSpecificTool disabledButton btn-icon fa fa-eye-slash" type="button" id="privatize"><div class="icon-txt">Hide</div></button>
@@ -63,7 +61,11 @@
             <button id="insertImage" insertMode="image" class="modeSpecificTool btn-icon fa fa-picture-o" style="display:none;"><div class="icon-txt">Image</div></button>
           </div>
           -->
-      <div id="imageTools" class="inactiveMode flex-container-responsive-rev"></div>
+      <div id="imageTools" class="inactiveMode flex-container-responsive-rev">
+        <button class="modeSpecificTool btn-icon fa" id="pen1Button"><div class="icon-txt">Optimized</div></button>
+        <button class="modeSpecificTool btn-icon fa" id="pen2Button"><div class="icon-txt">High def</div></button>
+        <button class="modeSpecificTool btn-icon fa" id="pen3Button"><div class="icon-txt">Native</div></button>
+      </div>
       <div id="textTools" class="inactiveMode flex-container-responsive-rev">
         <div class="popout-container">
 

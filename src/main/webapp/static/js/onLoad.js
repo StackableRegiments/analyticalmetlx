@@ -61,9 +61,9 @@ var WorkQueue = (function(){
                 blit();
                 blitNeeded = false;
             }
-						if ("Conversations" in window){
-							Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
-						}
+            if ("Conversations" in window){
+                Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
+            }
         }
     };
     var pauseFunction = function(){
@@ -256,12 +256,12 @@ var TweenController = (function(){
         requestedViewboxHeight = viewboxHeight;
     };
     var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
-				if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
-                if (onComplete){
-                    onComplete();
-                }
-					return;
-				}
+        if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+            if (onComplete){
+                onComplete();
+            }
+            return;
+        }
         if(tween){
             //console.log("instantAlterViewboxFunc stopped tween");
             tween.stop();
@@ -271,7 +271,7 @@ var TweenController = (function(){
         viewboxY = finalY;
         viewboxWidth = finalWidth;
         viewboxHeight = finalHeight;
-				//console.log("instantTweening:",finalX,finalY,finalWidth,finalHeight);
+        //console.log("instantTweening:",finalX,finalY,finalWidth,finalHeight);
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
@@ -309,12 +309,12 @@ var TweenController = (function(){
     },300);
     var tween;
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
-				if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
-                if (onComplete){
-                    onComplete();
-                }
-					return;
-				}
+        if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+            if (onComplete){
+                onComplete();
+            }
+            return;
+        }
         var interval = 300;//milis
         var startX = viewboxX;
         var startY = viewboxY;
@@ -331,12 +331,12 @@ var TweenController = (function(){
             tween.stop();
             tween = false;
         }
-				//console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
+        //console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
         tween = new TWEEN.Tween({x:0,y:0,w:0,h:0})
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
-							//console.log("easingTweening: ",this.x,this.y,this.w,this.h);
+                //console.log("easingTweening: ",this.x,this.y,this.w,this.h);
                 viewboxX = startX + this.x;
                 viewboxY = startY + this.y;
                 viewboxWidth = startWidth + this.w;
@@ -501,12 +501,6 @@ $(function(){
             Modes.text.activate();
         }
     });
-
-    $("#insertImage").click(function(){
-        if(Modes.currentMode != Modes.image){
-            Modes.image.activate();
-        }
-    });
     /*
      $("#insertMode").click(function(){
      if(Modes.currentMode != Modes.insert){
@@ -518,6 +512,11 @@ $(function(){
     $("#panMode").click(function(){
         if(Modes.currentMode != Modes.pan){
             Modes.pan.activate();
+        }
+    });
+    $("#imageMode").click(function(){
+        if(Modes.currentMode != Modes.image){
+            Modes.image.activate();
         }
     });
     $("#zoomMode").click(function(){
@@ -555,7 +554,7 @@ $(function(){
         }
         else{
             showBackstage("settings");//applicationMenu");
-						updateActiveMenu($("#menuSettings"));
+            updateActiveMenu($("#menuSettings"));
         }
     });
     loadSlidesAtNativeZoom = UserSettings.getUserPref("loadSlidesAtNativeZoom") == "true";
@@ -647,10 +646,10 @@ $(function(){
             submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
         }
     });
-		if ("Conversations" in window){
-			$("#enableSync").on("click",Conversations.enableSyncMove);
-			$("#disableSync").on("click",Conversations.disableSyncMove);
-		}
+    if ("Conversations" in window){
+        $("#enableSync").on("click",Conversations.enableSyncMove);
+        $("#disableSync").on("click",Conversations.disableSyncMove);
+    }
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
 
@@ -671,12 +670,16 @@ $(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
     });
-		$('#menuBlacklist').click(function(){
-			showBackstage("blacklist");
-			updateActiveMenu(this);
-		});
-		$('#menuSettings').click(function(){
-			showBackstage("settings");
-			updateActiveMenu(this);
-		});
+    $('#menuBlacklist').click(function(){
+        showBackstage("blacklist");
+        updateActiveMenu(this);
+    });
+    $('#menuSettings').click(function(){
+        showBackstage("settings");
+        updateActiveMenu(this);
+    });
+    $('#menuIntegrations').click(function(){
+        showBackstage("integrations");
+        updateActiveMenu(this);
+    });
 });

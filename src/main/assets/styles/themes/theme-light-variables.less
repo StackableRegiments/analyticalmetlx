@@ -4,10 +4,11 @@
 @theme-light: #f4f4f5;
 
 @body-bg: #f4f4f5;
+@body-backgroundimage: url("/static/themes/slu/main-bg.jpg");
 @block-bg: #fff;
 @block-borders:#C4C3D0; 
 
-@highlight: #D03873;
+@highlight: rgb(247,200,91);
 @subtle: #777;
 
 /* type */
@@ -63,14 +64,14 @@
 @toggle-active-bg: @highlight;
 @toggle-disabled-bg: #eee;
 @toggle-fg: black;
-@toggle-active-fg: white;
+@toggle-active-fg: black;
 @toggle-disabled-fg: #777;
 @toggle-border: @highlight;
 @toggle-active-border: transparent;
 
 @subtool-bg: white;
-@subtool-active-bg: white;
-@subtool-fg: @highlight;
+@subtool-active-bg: @highlight;
+@subtool-fg: black;
 @toolbar-btn-height: 50px;
 @toolbar-btn-width: 50px;
 
@@ -83,5 +84,5 @@
 
 /* metl specific */
 @slide-container-width: 100px;
-@slide-active: fade(@highlight,50%);
+@slide-active: @highlight;
 @edit-poll-btn-width: 80px;
