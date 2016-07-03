@@ -84,7 +84,8 @@ libraryDependencies ++= {
     "org.apache.shiro" % "shiro-core" % "1.2.4",
     "org.apache.shiro" % "shiro-web" % "1.2.4",
     "org.apache.commons" % "commons-compress" % "1.1",
-    "io.github.stackableregiments" %% "lift-extensions" % "0.2.+"
+    "io.github.stackableregiments" %% "lift-extensions" % "0.2.+",
+    "org.imsglobal" % "basiclti-util" % "1.1.1"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
