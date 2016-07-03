@@ -848,30 +848,55 @@ var Modes = (function(){
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
                     var lastClick = Date.now();
-                    var up = function(x,y,z,worldPos){
-                        var threshold = 10;
+                    var threshold = 10;
+                    var editorAt = function(x,y,z,worldPos){
                         var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        var selectedTexts = _.values(boardContent.multiWordTexts).filter(function(text){
-                            /*This checks against the maximum possible bound of the textbox rather than the space occupied.
-                             This is because justification makes visual comparison very hard.*/
-                            var bounds = text.doc.calculateBounds();
-                            return intersectRect(bounds,ray) && text.author == UserSettings.getUsername();
-                        });
+                        var texts = _.take(_.values(boardContent.multiWordTexts).filter(function(text){
+                            return intersectRect(text.doc.calculateBounds(),ray) && text.author == UserSettings.getUsername();
+                        }));
+			if(texts.length > 0){
+			    return texts[0].doc;
+			}
+			else{
+			    return false;
+			}
+                    }
+                    var contextFor = function(editor,worldPos){
+                        var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
+                        var node = editor.byCoordinate(relativePos.x,relativePos.y);
+                        return {
+                            node:node,
+                            relativePos:relativePos
+                        }
+                    }
+                    var down = function(x,y,z,worldPos){
+                        var editor = editorAt(x,y,z,worldPos);
+                        if (editor){
+			    editor.isActive = true;
+			    editor.caretVisible = true;
+                            editor.mousedownHandler(contextFor(editor,worldPos).node);
+                        };
+                    }
+                    var move = function(x,y,z,worldPos){
+                        var editor = editorAt(x,y,z,worldPos);
+                        if (editor){
+                            editor.mousemoveHandler(contextFor(editor,worldPos).node);
+                        }
+                    };
+                    var up = function(x,y,z,worldPos){
+                        var clickTime = Date.now();
+                        var editor = editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
-                            t.doc.isActive = false;
+                            t.doc.isActive = t.doc == editor;
                             if(t.doc.save().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
                             }
                         });
-                        if (selectedTexts.length > 0){
-                            var editor = selectedTexts[0].doc;
-                            editor.isActive = true;
-                            var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
-                            var clickTime = Date.now();
-                            var node = editor.byCoordinate(relativePos.x,relativePos.y);
-                            editor.mouseupHandler(node);
+                        if (editor){
+                            var context = contextFor(editor,worldPos);
+                            editor.mouseupHandler(context.node);
                             if(clickTime - lastClick <= doubleClickThreshold){
-                                editor.dblclickHandler(node);
+                                editor.dblclickHandler(context.node);
                             }
                             lastClick = clickTime;
                         } else {
@@ -884,8 +909,8 @@ var Modes = (function(){
                             Modes.text.echoesToDisregard = {};
                         };
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
-                    }
-                    registerPositionHandlers(board,noop,noop,up);
+                    };
+                    registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
                     removeActiveMode();

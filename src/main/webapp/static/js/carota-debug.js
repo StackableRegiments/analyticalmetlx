@@ -768,7 +768,8 @@
                     },
                     drawSelection: function(ctx, hasFocus) {
                         if (this.selection.end === this.selection.start) {
-                            if (this.selectionJustChanged || hasFocus && this.caretVisible) {
+			    var drawCaret = this.selectionJustChanged || this.caretVisible;
+                            if (drawCaret) {
                                 var caret = this.getCaretCoords(this.selection.start);
                                 if (caret) {
                                     ctx.save();
@@ -809,8 +810,6 @@
                             typeof ordinalEnd === 'number' ? ordinalEnd : this.selection.start,
                             this.frame.length - 1
                         );
-                        this.selectionJustChanged = true;
-                        this.caretVisible = true;
                         this.nextInsertFormatting = {};
 
                         /*  NB. always fire this even if the positions stayed the same. The
@@ -819,6 +818,7 @@
                          altering the formatting)
                          */
                         this.notifySelectionChanged(takeFocus);
+                        this.selectionJustChanged = true;
                     },
                     performUndo: function(redo) {
                         var fromStack = redo ? this.redo : this.undo,
@@ -926,6 +926,7 @@
                 var carotaDoc = require('./doc');
                 var dom = require('./dom');
                 var rect = require('./rect');
+                var selectDragStart = null;
 
 
                 var currentTo = Date.now();
@@ -943,8 +944,7 @@
                     ctx.scale(s,s);
                     doc.draw(ctx, output);
                     if(doc.isActive && Modes.currentMode == Modes.text){
-			console.log("doc painting",doc);
-                        doc.drawSelection(ctx, hasFocus);
+                        doc.drawSelection(ctx, selectDragStart || hasFocus);
                     }
                     ctx.restore();
                 };
@@ -1294,23 +1294,32 @@
                         }
                     });
 
-                    function registerMouseEvent(name, handler) {
-                        dom.handleMouseEvent(canvas, name, function(ev, x, y) {
-                            handler(doc.byCoordinate(x, y - getVerticalOffset()));
-                        });
-                    }
-
                     doc.dblclickHandler = function(node) {
                         node = node.parent();
                         if (node) {
-                            doc.select(node.ordinal, node.ordinal +
-                                       (node.word ? node.word.text.length : node.length));
+                            doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
+                        }
+                    };
+                    doc.mousedownHandler = function(node) {
+                        selectDragStart = node.ordinal;
+                        doc.select(node.ordinal, node.ordinal);
+                        keyboardX = null;
+                    }
+                    doc.mousemoveHandler = function(node) {
+                        if (selectDragStart !== null) {
+                            if (node) {
+                                focusChar = node.ordinal;
+                                if (selectDragStart > node.ordinal) {
+                                    doc.select(node.ordinal, selectDragStart);
+                                } else {
+                                    doc.select(selectDragStart, node.ordinal);
+                                }
+                            }
                         }
                     };
                     doc.mouseupHandler = function(node) {
                         keyboardX = null;
-                        doc.select(node.ordinal, node.ordinal);
-			doc.isActive = true;
+                        doc.isActive = true;
                         updateTextArea();
                     };
 
