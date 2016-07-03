@@ -242,7 +242,7 @@ var DeviceConfiguration = (function(){
                 var boardContainer = $("#boardContainer");
                 var board = $("#board");
                 var masterHeader = $("#masterHeader");
-		$("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
+                $("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
                 thumbs.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
                 thumbs.height(DeviceConfiguration.preferredSizes.thumbColumn.height);
 
@@ -375,13 +375,13 @@ var DeviceConfiguration = (function(){
             updateSlidesToggleButton();
             outerFit();
         }));
+        var originalSize = DeviceConfiguration.preferredSizes.handles;
         var resizeable = function(selector,func){
             var source = $(selector);
             var resizing = false;
             var downPos = {x:0};
-            var dragThreshold = 10;
             var widthIncludes = function(x){
-                func(source,x - downPos.x);
+                func(source,x - (downPos.x));
                 fitFunction();
             }
             var down = function(x){
@@ -396,7 +396,6 @@ var DeviceConfiguration = (function(){
             var up = function(x){
                 if(resizing){
                     _.defer(function(){
-                        console.log("Resizing thumbs up");
                         resizing = false;
                         widthIncludes(x);
                     });
@@ -481,7 +480,7 @@ var DeviceConfiguration = (function(){
             actOnCurrentDevice();
         },
         preferredSizes:{
-	    handles:50,
+            handles:50,
             thumbColumn:{
                 width:100,
                 height:75

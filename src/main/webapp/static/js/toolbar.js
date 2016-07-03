@@ -664,7 +664,7 @@ var Modes = (function(){
             var texts = [];
             var noop = function(){};
             var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
-                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen;
+                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions;
 
             var echoesToDisregard = {};
             var createBlankText = function(worldPos){
@@ -683,6 +683,8 @@ var Modes = (function(){
                 });
             };
             $(function(){
+                fontOptions= $("#textDropdowns");
+                fontOptionsToggle = $("#fontOptions");
                 fontFamilySelector = $("#fontFamilySelector");
                 fontSizeSelector = $("#fontSizeSelector");
                 fontColorSelector = $("#fontColorSelector");
@@ -794,6 +796,7 @@ var Modes = (function(){
                 presetWiden.click(adoptPresetWidth("widen"));
                 presetCenterOnScreen.click(adoptPresetWidth("centerOnScreen"));
                 presetFullscreen.click(adoptPresetWidth("fullscreen"));
+		fontOptionsToggle.click(function(){fontOptions.toggle()});
             });
             return {
                 echoesToDisregard:{},
@@ -915,6 +918,7 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     removeActiveMode();
+		    fontOptions.hide();
                     unregisterPositionHandlers(board);
                     /*Necessary to ensure that no carets or marquees remain on the editors*/
                     blit();
