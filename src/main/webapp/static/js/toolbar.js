@@ -854,12 +854,12 @@ var Modes = (function(){
                         var texts = _.take(_.values(boardContent.multiWordTexts).filter(function(text){
                             return intersectRect(text.doc.calculateBounds(),ray) && text.author == UserSettings.getUsername();
                         }));
-			if(texts.length > 0){
-			    return texts[0].doc;
-			}
-			else{
-			    return false;
-			}
+                        if(texts.length > 0){
+                            return texts[0].doc;
+                        }
+                        else{
+                            return false;
+                        }
                     }
                     var contextFor = function(editor,worldPos){
                         var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
@@ -872,8 +872,8 @@ var Modes = (function(){
                     var down = function(x,y,z,worldPos){
                         var editor = editorAt(x,y,z,worldPos);
                         if (editor){
-			    editor.isActive = true;
-			    editor.caretVisible = true;
+                            editor.isActive = true;
+                            editor.caretVisible = true;
                             editor.mousedownHandler(contextFor(editor,worldPos).node);
                         };
                     }
@@ -887,7 +887,7 @@ var Modes = (function(){
                         var clickTime = Date.now();
                         var editor = editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
-                            t.doc.isActive = t.doc == editor;
+                            t.doc.isActive = t.doc.identity == editor.identity;
                             if(t.doc.save().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
                             }
@@ -903,6 +903,7 @@ var Modes = (function(){
                             var newEditor = createBlankText(worldPos);
                             var newDoc = newEditor.doc;
                             newDoc.load([]);
+                            newDoc.select(0,0);
                             newDoc.mouseupHandler(newDoc.byOrdinal(0));
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
@@ -914,9 +915,6 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     removeActiveMode();
-                    _.each(boardContent.multiWordTexts,function(t){
-                        t.doc.isActive = false;
-                    });
                     unregisterPositionHandlers(board);
                     /*Necessary to ensure that no carets or marquees remain on the editors*/
                     blit();
