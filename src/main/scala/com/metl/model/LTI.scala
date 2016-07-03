@@ -2,9 +2,11 @@ package com.metl.model
 
 import net.liftweb._
 import util._
+import Helpers._
 import common._
 import http._
-import provider.servlet._
+import provider._
+import servlet._
 
 import org.imsglobal._
 import org.imsglobal.lti._
@@ -16,7 +18,7 @@ import org.apache.http.client.methods.HttpPost
 case class LtiLaunchResult(success:Boolean, message:String, result:Either[Exception,LtiLaunch])
 case class LtiLaunch(user:Any,version:String,messageType:String,resourceLinkId:String,contextId:String,launchPresentationReturnUrl:String,toolConsumerInstanceGuid:String)
 
-class LtiIntegration {
+class LtiIntegration extends Logger {
   val consumerKeyParamName = "oauth_consumer_key"
   def getSecretForKey(key:String):String = {
     val secret = "secret" //this is about having a corresponding secret for a given key
@@ -29,9 +31,9 @@ class LtiIntegration {
     Left(new Exception("not yet implemented"))
   }
 
-  def verifyLtiLaunch:Either[Exception,LtiLaunchResult] = {
+  def verifyLtiLaunch(reqBox:Box[HTTPRequest] = S.containerRequest):Either[Exception,LtiLaunchResult] = {
     try {
-      S.containerRequest match {
+      reqBox match {
         case Full(req) => req match {
           case hrs:HTTPRequestServlet => {
             val cReq:HttpServletRequest = hrs.req
@@ -66,3 +68,24 @@ class LtiIntegration {
   }
 }
 
+class BrightSparkIntegration extends LtiIntegration {
+  def handleLtiRequest(in:Req,onSuccess:LtiLaunchResult=>LiftResponse,onFailure:Exception=>LiftResponse):LiftResponse = {
+    verifyLtiLaunch(Full(in).map(_.request)) match {
+      case Left(e) => {
+        onFailure(e)
+      }
+      case Right(res) => {
+        onSuccess(res)
+      }
+    }
+  }
+  def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
+    RedirectResponse("%s?content=%s".format(returnUrl,urlEncode(htmlContent)))
+  }
+  def generateQuickLinkResponse(returnUrl:String,url:String,title:String,target:String):LiftResponse = {
+    RedirectResponse("%s?quickLink=%s&title=%s&target=%s".format(returnUrl,urlEncode(url),urlEncode(title),urlEncode(target)))
+  }
+  def generateResponse(returnUrl:String):LiftResponse = {
+    RedirectResponse(returnUrl)
+  }
+}
