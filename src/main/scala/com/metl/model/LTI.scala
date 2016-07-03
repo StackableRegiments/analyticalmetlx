@@ -7,6 +7,7 @@ import common._
 import http._
 import provider._
 import servlet._
+import rest._
 
 import org.imsglobal._
 import org.imsglobal.lti._
@@ -18,7 +19,10 @@ import org.apache.http.client.methods.HttpPost
 case class LtiLaunchResult(success:Boolean, message:String, result:Either[Exception,LtiLaunch])
 case class LtiLaunch(user:Any,version:String,messageType:String,resourceLinkId:String,contextId:String,launchPresentationReturnUrl:String,toolConsumerInstanceGuid:String)
 
+case class RemotePluginSession(token:String,secret:String,key:String,launch:LtiLaunchResult)
+
 class LtiIntegration extends Logger {
+  object sessionStore extends SessionVar[Map[String,RemotePluginSession]](Map.empty[String,RemotePluginSession])
   val consumerKeyParamName = "oauth_consumer_key"
   def getSecretForKey(key:String):String = {
     val secret = "secret" //this is about having a corresponding secret for a given key
@@ -31,7 +35,7 @@ class LtiIntegration extends Logger {
     Left(new Exception("not yet implemented"))
   }
 
-  def verifyLtiLaunch(reqBox:Box[HTTPRequest] = S.containerRequest):Either[Exception,LtiLaunchResult] = {
+  def verifyLtiLaunch(reqBox:Box[HTTPRequest] = S.containerRequest):Either[Exception,RemotePluginSession] = {
     try {
       reqBox match {
         case Full(req) => req match {
@@ -42,12 +46,13 @@ class LtiIntegration extends Logger {
               case key :: Nil => {
                 val secret = getSecretForKey(key)
                 val result:LtiVerificationResult = verifier.verify(cReq,secret)
-                Right(LtiLaunchResult(result.getSuccess,result.getMessage,(result.getError,result.getLtiLaunchResult) match {
+                val token = nextFuncName
+                Right(RemotePluginSession(token,secret,key,LtiLaunchResult(result.getSuccess,result.getMessage,(result.getError,result.getLtiLaunchResult) match {
                   case (err,res) if res.getUser != null && res.getUser != "" => {
                     Right(LtiLaunch(res.getUser,res.getVersion,res.getMessageType,res.getResourceLinkId,res.getContextId,res.getLaunchPresentationReturnUrl,res.getToolConsumerInstanceGuid))
                   }
                   case (err,_) => Left(new Exception(err.toString))
-                }))
+                })))
               }
               case notAKey => {
                 Left(new Exception("request parameter not found: %s => %s".format(consumerKeyParamName,notAKey)))
@@ -66,19 +71,20 @@ class LtiIntegration extends Logger {
       case e:Exception => Left(e)
     }
   }
-}
-
-class BrightSparkIntegration extends LtiIntegration {
-  def handleLtiRequest(in:Req,onSuccess:LtiLaunchResult=>LiftResponse,onFailure:Exception=>LiftResponse):LiftResponse = {
+  def handleLtiRequest(in:Req,onSuccess:RemotePluginSession=>Box[LiftResponse]/*,onFailure:Exception=>LiftResponse*/):Box[LiftResponse] = {
     verifyLtiLaunch(Full(in).map(_.request)) match {
       case Left(e) => {
-        onFailure(e)
+        Failure(e.getMessage,Full(e),Empty)
       }
-      case Right(res) => {
-        onSuccess(res)
+      case Right(pluginSession) => {
+        sessionStore(sessionStore.updated(pluginSession.token,pluginSession))
+        onSuccess(pluginSession)
       }
     }
   }
+}
+
+class BrightSparkIntegration extends LtiIntegration {
   def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
     RedirectResponse("%s?content=%s".format(returnUrl,urlEncode(htmlContent)))
   }
@@ -87,5 +93,16 @@ class BrightSparkIntegration extends LtiIntegration {
   }
   def generateResponse(returnUrl:String):LiftResponse = {
     RedirectResponse(returnUrl)
+  }
+}
+
+class BrightSparkIntegrationDispatch extends RestHelper {
+  val lti = new BrightSparkIntegration
+  serve {
+    case req@Req("token" :: "lti" :: Nil,_,_) => () => {
+      lti.handleLtiRequest(req,pluginSession => {
+        Full(RedirectResponse("/ltiRemotePlugin?token=%s".format(pluginSession.token)))
+      })
+    }
   }
 }
