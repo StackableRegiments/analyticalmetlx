@@ -1040,7 +1040,7 @@ var Modes = (function(){
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
-                    setActiveMode("#imageTools","#insertImage");
+                    setActiveMode("#imageTools","#imageMode");
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);
