@@ -85,6 +85,8 @@ object Globals extends PropertyReader with Logger {
     LiftRules.handleMimeFile = net.liftweb.http.OnDiskFileParamHolder.apply
   })
 
+  val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
+
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)

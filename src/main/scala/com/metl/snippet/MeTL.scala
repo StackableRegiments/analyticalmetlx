@@ -59,7 +59,12 @@ class Metl extends Logger {
   def printSlideWithPrivateFor(conversationJid:Int,slideId:Int):String = {
     "/printableImageWithPrivateFor/%s".format(slideId.toString)
   }
-
+  def remotePluginConversationChooser(ltiToken:String):String = {
+    "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
+  }
+  def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
+    "/remotePluginConversationChosen?ltiToken=%s&conversationJid:%s".format(conversationJid.toString)
+  }
   def noBoard:String = {
     conversationSearch()
   }
@@ -125,7 +130,13 @@ class Metl extends Logger {
         }
       }
     })
+    S.param("ltiToken").foreach(ltiToken => {
+      name += "_LTITOKEN:%s".format(ltiToken)
+    })
     name
+  }
+  def getLtiTokenFromName(in:String):Option[String] = {
+    in.split("_").map(_.split(":")).find(_(0) == "LTITOKEN").map(_.drop(1).mkString(":"))
   }
   def getShowToolsFromName(in:String):Option[Boolean] = {
     in.split("_").map(_.split(":")).find(_(0) == "SHOWTOOLS").map(_.drop(1).mkString(":")).flatMap(showToolsString => {
@@ -190,6 +201,13 @@ class Metl extends Logger {
   def specific(in:NodeSeq):NodeSeq = {
     val name = generateName
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    warn("generating comet html: %s".format(output))
+    output
+  }
+  def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
+    val name = generateName
+    val clazz = "lift:comet?type=RemotePluginConversationChooserActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating comet html: %s".format(output))
     output

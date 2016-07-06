@@ -24,8 +24,10 @@ case class RemotePluginSession(token:String,secret:String,key:String,launch:LtiL
 class LtiIntegration extends Logger {
   object sessionStore extends SessionVar[Map[String,RemotePluginSession]](Map.empty[String,RemotePluginSession])
   val consumerKeyParamName = "oauth_consumer_key"
+  val secretMap = Map(Globals.ltiIntegrations:_*)
   def getSecretForKey(key:String):String = {
-    val secret = "secret" //this is about having a corresponding secret for a given key
+    val secret = secretMap.get(key).getOrElse("secret")
+    println("getting secret: %s => %s".format(key,secret))
     secret
   }
 
@@ -84,6 +86,8 @@ class LtiIntegration extends Logger {
   }
 }
 
+object RemotePluginIntegration extends BrightSparkIntegration
+
 class BrightSparkIntegration extends LtiIntegration {
   def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
     RedirectResponse("%s?content=%s".format(returnUrl,urlEncode(htmlContent)))
@@ -97,12 +101,43 @@ class BrightSparkIntegration extends LtiIntegration {
 }
 
 class BrightSparkIntegrationDispatch extends RestHelper {
-  val lti = new BrightSparkIntegration
+  val lti = RemotePluginIntegration
+  val config = com.metl.data.ServerConfiguration.default
   serve {
     case req@Req("token" :: "lti" :: Nil,_,_) => () => {
       lti.handleLtiRequest(req,pluginSession => {
-        Full(RedirectResponse("/ltiRemotePlugin?token=%s".format(pluginSession.token)))
+        Full(RedirectResponse(com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)))
       })
+    }
+    case req@Req("remotePluginConversationChosen" :: Nil,_,_) => () => {
+      for (
+        ltiToken <- req.param("ltiToken");
+        convJid <- req.param("conversationJid");
+        details = config.detailsOfConversation(convJid);
+        remotePluginSession <- lti.sessionStore.is.get(ltiToken);
+        launch <- remotePluginSession.launch.result.right.toOption
+      ) yield {
+        val request = req.request
+        val url = new java.net.URI(request.url)
+        val rootUrl = "%s://%s:%s".format(
+          url.getScheme,
+          url.getHost,
+          url.getPort match {
+            case i:Int if i < 1 => url.getScheme match {
+              case "https" => "443"
+              case "http" => "80"
+              case _ => "443"
+            }
+            case portNumber => portNumber
+          }
+        )
+        val imageUrl = "%s/thumbnail/%s".format(rootUrl,convJid)
+        val title = details.title
+        val targetUrl = "%s/board?conversationJid=%s".format(rootUrl,convJid)
+        val responseUrl = lti.generateQuickLinkResponse(launch.launchPresentationReturnUrl,imageUrl,title,targetUrl)
+        println("redirecting to: %s".format(responseUrl))
+        responseUrl
+      }
     }
   }
 }

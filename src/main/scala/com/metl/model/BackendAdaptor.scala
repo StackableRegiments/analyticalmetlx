@@ -607,6 +607,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
+    LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     info(configs)
   }
   def listRooms(configName:String):List[String] = configs(configName)._2.list

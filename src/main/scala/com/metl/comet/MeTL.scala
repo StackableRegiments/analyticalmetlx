@@ -315,8 +315,40 @@ class MeTLConversationSearchActor extends StronglyTypedJsonActor with CometListe
   }
 }
 */
-class BrightSparkConversationChooserActor extends MeTLConversationChooserActor(
-  (conv:Conversation) => {
+class RemotePluginConversationChooserActor extends MeTLConversationChooserActor {
+  protected var ltiToken:Option[String] = None
+  override def localSetup = {
+    super.localSetup
+    name.foreach(nameString => {
+      warn("localSetup for [%s]".format(name))
+      ltiToken = com.metl.snippet.Metl.getLtiTokenFromName(nameString)
+    })
+  }
+  override def perConversationAction(conv:Conversation) = {
+    ".conversationAnchor [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid)) &
+    ".conversationTitle *" #> conv.title &
+    ".conversationAuthor *" #> conv.author &
+    ".conversationJid *" #> conv.jid &
+    ".conversationEditingContainer" #> {
+      shouldModifyConversation(Globals.currentUser.is,conv) match {
+        case true => ".editConversationLink [href]" #> editConversation(conv.jid)
+        case false => ".conversationEditingContainer" #> NodeSeq.Empty
+      }
+    } /* &
+    ".slidesContainer" #> {
+      ".slide" #> conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
+        ".slideIndex *" #> slide.index &
+        ".slideId *" #> slide.id &
+        ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+      })
+    } */
+  }
+  override def perImportAction(conv:Conversation) = {
+    ".importSuccess [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid))
+  }
+}
+class MeTLConversationSearchActor extends MeTLConversationChooserActor {
+  override def perConversationAction(conv:Conversation) = {
     ".conversationAnchor [href]" #> boardFor(conv.jid) &
     ".conversationTitle *" #> conv.title &
     ".conversationAuthor *" #> conv.author &
@@ -334,37 +366,15 @@ class BrightSparkConversationChooserActor extends MeTLConversationChooserActor(
         ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
       })
     }
-  },
-  (conv:Conversation) => {
+  }
+  override def perImportAction(conv:Conversation) = {
     ".importSuccess [href]" #> boardFor(conv.jid)
   }
-)
-class MeTLConversationSearchActor extends MeTLConversationChooserActor(
-  (conv:Conversation) => {
-    ".conversationAnchor [href]" #> boardFor(conv.jid) &
-    ".conversationTitle *" #> conv.title &
-    ".conversationAuthor *" #> conv.author &
-    ".conversationJid *" #> conv.jid &
-    ".conversationEditingContainer" #> {
-      shouldModifyConversation(Globals.currentUser.is,conv) match {
-        case true => ".editConversationLink [href]" #> editConversation(conv.jid)
-        case false => ".conversationEditingContainer" #> NodeSeq.Empty
-      }
-    } &
-    ".slidesContainer" #> {
-      ".slide" #> conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
-        ".slideIndex *" #> slide.index &
-        ".slideId *" #> slide.id &
-        ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
-      })
-    }
-  },
-  (conv:Conversation) => {
-    ".importSuccess [href]" #> boardFor(conv.jid)
-  }
-)
+}
 
-class MeTLConversationChooserActor(perConversationAction:Conversation=>CssSel,perImportAction:Conversation=>CssSel) extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
+abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
+  protected def perConversationAction(conv:Conversation):CssSel 
+  protected def perImportAction(conv:Conversation):CssSel 
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true

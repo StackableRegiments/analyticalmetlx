@@ -105,7 +105,7 @@ class Boot extends Logger {
       Menu(Loc("SlideTitle","slideTitle" :: Nil,"Slide Title",Hidden)),
       Menu(Loc("Quiz","quiz" :: Nil,"Quiz",Hidden)),
       Menu(Loc("Quizzes","quizzes" :: Nil,"Quizzes",Hidden)),
-      Menu(Loc("LtiRemotePlugin","ltiRemotePlugin" :: Nil,"LTI Remote Plugin",Hidden)),
+      Menu(Loc("RemotePluginConversationChooser","remotePluginConversationChooser" :: Nil,"LTI Remote Plugin",Hidden)),
       //Default
       Menu(Loc("Static", Link(List("static"), true, "/static/index"), "Static Content", Hidden)))
 
