@@ -95,6 +95,7 @@ object RemotePluginIntegration extends BrightSparkIntegration
 
 class BrightSparkIntegration extends LtiIntegration {
 //  import com.d2lvalence.idkeyauth._
+  import com.metl.data._
   import com.d2lvalence.idkeyauth.implementation._
   val uriKey:Tuple3[String,String,String] = Globals.brightSpaceValenceIntegrations // (url,appId,appKey)
   def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
@@ -105,6 +106,13 @@ class BrightSparkIntegration extends LtiIntegration {
   }
   def generateResponse(returnUrl:String):LiftResponse = {
     RedirectResponse(returnUrl)
+  }
+  protected def postToD2L(ltiToken:String,requestFunc:String=>Unit):Unit = {
+    val appUrl = uriKey._1
+    val appId = uriKey._2
+    val appKey = uriKey._3
+//    val appContext = ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,appUrl)
+
   }
   def insertConversationIFrame(ltiToken:String,conversation:Conversation):Unit = {
   }
