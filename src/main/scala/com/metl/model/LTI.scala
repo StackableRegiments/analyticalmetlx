@@ -76,9 +76,11 @@ class LtiIntegration extends Logger {
   def handleLtiRequest(in:Req,onSuccess:RemotePluginSession=>Box[LiftResponse]/*,onFailure:Exception=>LiftResponse*/):Box[LiftResponse] = {
     verifyLtiLaunch(Full(in).map(_.request)) match {
       case Left(e) => {
+        error("error while parsing lti request",e)
         Failure(e.getMessage,Full(e),Empty)
       }
       case Right(pluginSession) => {
+        println("establishing LTI session: %s => %s".format(in,pluginSession))
         sessionStore(sessionStore.updated(pluginSession.token,pluginSession))
         onSuccess(pluginSession)
       }
@@ -107,12 +109,16 @@ class BrightSparkIntegrationDispatch extends RestHelper {
   val config = com.metl.data.ServerConfiguration.default
   serve {
     case req@Req("testRemotePlugin" :: Nil,_,_) => () => {
-      lti.handleLtiRequest(req,pluginSession => {
-        pluginSession.launch.result match {
-          case Left(e) => Full(JsonResponse(JObject(List(JField("result_code",JString("FAILURE")),JField("result_description",JString("%s :: %s".format(e.getMessage,e.getStackTraceString)))))))
-          case Right(launchResult) => Full(JsonResponse(JObject(List(JField("result_code",JString("OK")),JField("result_description",JString("logged in as: %s, with token: %s".format(pluginSession.token,launchResult.user)))))))
+      val response = lti.handleLtiRequest(req,pluginSession => {
+        val (resultCode,resultDescription) = pluginSession.launch.result match {
+          case Left(e) => ("FAILURE","%s :: %s".format(e.getMessage,e.getStackTraceString))
+          case Right(launchResult) => ("OK","logged in as: %s, with token: %s".format(pluginSession.token,launchResult.user))
         }
+        val jObject = JObject(List(JField("result_code",JString(resultCode)),JField("result_description",JString(resultDescription))))
+        println("jsonResponse from testRemotePlugin: %s".format(jObject))
+        Full(JsonResponse(jObject))
       })
+      response
     }
     case req@Req("token" :: "lti" :: Nil,_,_) => () => {
       lti.handleLtiRequest(req,pluginSession => {
