@@ -63,7 +63,7 @@ class Metl extends Logger {
     "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
   }
   def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
-    "/remotePluginConversationChosen?ltiToken=%s&conversationJid:%s".format(conversationJid.toString)
+    "/remotePluginConversationChosen?ltiToken=%s&conversationJid:%s".format(ltiToken,conversationJid.toString)
   }
   def noBoard:String = {
     conversationSearch()
