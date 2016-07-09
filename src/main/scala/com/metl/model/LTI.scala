@@ -94,6 +94,9 @@ class LtiIntegration extends Logger {
 object RemotePluginIntegration extends BrightSparkIntegration
 
 class BrightSparkIntegration extends LtiIntegration {
+//  import com.d2lvalence.idkeyauth._
+  import com.d2lvalence.idkeyauth.implementation._
+  val uriKey:Tuple3[String,String,String] = Globals.brightSpaceValenceIntegrations // (url,appId,appKey)
   def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
     RedirectResponse("%s?content=%s".format(returnUrl,urlEncode(htmlContent)))
   }
@@ -102,6 +105,14 @@ class BrightSparkIntegration extends LtiIntegration {
   }
   def generateResponse(returnUrl:String):LiftResponse = {
     RedirectResponse(returnUrl)
+  }
+  def insertConversationIFrame(ltiToken:String,conversation:Conversation):Unit = {
+  }
+  def insertConversationQuickLink(ltiToken:String,conversation:Conversation):Unit = {
+  }
+  def insertConversationSlideIFrame(ltiToken:String,conversation:Conversation,slide:Slide):Unit = {
+  }
+  def insertConversationSlideQuickLink(ltiToken:String,conversation:Conversation,slide:Slide):Unit = {
   }
 }
 class BrightSparkIntegrationStatelessDispatch extends RestHelper {

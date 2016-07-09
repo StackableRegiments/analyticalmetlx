@@ -86,6 +86,10 @@ object Globals extends PropertyReader with Logger {
   })
 
   val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
+  val brightSpaceValenceIntegrations = {
+    val bsvin = readNode("brightSpaceValence")
+    (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
+  }
 
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
 
