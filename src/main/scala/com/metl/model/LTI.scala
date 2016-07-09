@@ -73,7 +73,7 @@ class LtiIntegration extends Logger {
       case e:Exception => Left(e)
     }
   }
-  def handleLtiRequest(in:Req,onSuccess:RemotePluginSession=>Box[LiftResponse]/*,onFailure:Exception=>LiftResponse*/):Box[LiftResponse] = {
+  def handleLtiRequest(in:Req,onSuccess:RemotePluginSession=>Box[LiftResponse],storeSession:Boolean = true):Box[LiftResponse] = {
     verifyLtiLaunch(Full(in).map(_.request)) match {
       case Left(e) => {
         error("error while parsing lti request",e)
@@ -81,7 +81,9 @@ class LtiIntegration extends Logger {
       }
       case Right(pluginSession) => {
         println("establishing LTI session: %s => %s".format(in,pluginSession))
-        sessionStore(sessionStore.updated(pluginSession.token,pluginSession))
+        if (storeSession){
+          sessionStore(sessionStore.updated(pluginSession.token,pluginSession))
+        }
         onSuccess(pluginSession)
       }
     }
@@ -101,8 +103,7 @@ class BrightSparkIntegration extends LtiIntegration {
     RedirectResponse(returnUrl)
   }
 }
-
-class BrightSparkIntegrationDispatch extends RestHelper {
+class BrightSparkIntegrationStatelessDispatch extends RestHelper {
   import net.liftweb.json.JsonAST._
   import com.metl.snippet.Metl._
   val lti = RemotePluginIntegration
@@ -117,9 +118,17 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         val jObject = JObject(List(JField("result_code",JString(resultCode)),JField("result_description",JString(resultDescription))))
         println("jsonResponse from testRemotePlugin: %s".format(jObject))
         Full(JsonResponse(jObject))
-      })
+      },false)
       response
     }
+  }
+}
+class BrightSparkIntegrationDispatch extends RestHelper {
+  import net.liftweb.json.JsonAST._
+  import com.metl.snippet.Metl._
+  val lti = RemotePluginIntegration
+  val config = com.metl.data.ServerConfiguration.default
+  serve {
     case req@Req("token" :: "lti" :: Nil,_,_) => () => {
       lti.handleLtiRequest(req,pluginSession => {
         Full(RedirectResponse(com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)))
