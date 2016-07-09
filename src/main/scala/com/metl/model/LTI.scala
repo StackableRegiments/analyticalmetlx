@@ -101,9 +101,19 @@ class BrightSparkIntegration extends LtiIntegration {
 }
 
 class BrightSparkIntegrationDispatch extends RestHelper {
+  import net.liftweb.json.JsonAST._
+  import com.metl.snippet.Metl._
   val lti = RemotePluginIntegration
   val config = com.metl.data.ServerConfiguration.default
   serve {
+    case req@Req("testRemotePlugin" :: Nil,_,_) => () => {
+      lti.handleLtiRequest(req,pluginSession => {
+        pluginSession.launch.result match {
+          case Left(e) => Full(JsonResponse(JObject(List(JField("result_code",JString("FAILURE")),JField("result_description",JString("%s :: %s".format(e.getMessage,e.getStackTraceString)))))))
+          case Right(launchResult) => Full(JsonResponse(JObject(List(JField("result_code",JString("OK")),JField("result_description",JString("logged in as: %s, with token: %s".format(pluginSession.token,launchResult.user)))))))
+        }
+      })
+    }
     case req@Req("token" :: "lti" :: Nil,_,_) => () => {
       lti.handleLtiRequest(req,pluginSession => {
         Full(RedirectResponse(com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)))
@@ -131,10 +141,12 @@ class BrightSparkIntegrationDispatch extends RestHelper {
             case portNumber => portNumber
           }
         )
-        val imageUrl = "%s/thumbnail/%s".format(rootUrl,convJid)
-        val title = details.title
-        val targetUrl = "%s/board?conversationJid=%s".format(rootUrl,convJid)
-        val responseUrl = lti.generateQuickLinkResponse(launch.launchPresentationReturnUrl,imageUrl,title,targetUrl)
+        val targetUrl = rootUrl + boardFor(details.jid)
+        //val title = details.title
+        //val imageUrl = rootUrl + thumbnailFor(details.jid,details.slides.sortBy(_.index).headOption.map(_.id).getOrElse(0))
+        //val responseUrl = lti.generateQuickLinkResponse(launch.launchPresentationReturnUrl,imageUrl,title,targetUrl)
+        val iframeContent = <iframe src={targetUrl}></iframe>
+        val responseUrl = lti.generateContentResponse(launch.launchPresentationReturnUrl,iframeContent.toString)
         println("redirecting to: %s".format(responseUrl))
         responseUrl
       }
