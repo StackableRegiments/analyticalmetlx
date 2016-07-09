@@ -16,8 +16,9 @@ import javax.servlet.http.HttpServletRequest
 import org.imsglobal.pox.IMSPOXRequest
 import org.apache.http.client.methods.HttpPost
 
+case class LtiUser(id:String,roles:List[String])
 case class LtiLaunchResult(success:Boolean, message:String, result:Either[Exception,LtiLaunch])
-case class LtiLaunch(user:Any,version:String,messageType:String,resourceLinkId:String,contextId:String,launchPresentationReturnUrl:String,toolConsumerInstanceGuid:String)
+case class LtiLaunch(user:LtiUser,version:String,messageType:String,resourceLinkId:String,contextId:String,launchPresentationReturnUrl:String,toolConsumerInstanceGuid:String)
 
 case class RemotePluginSession(token:String,secret:String,key:String,launch:LtiLaunchResult)
 
@@ -50,8 +51,8 @@ class LtiIntegration extends Logger {
                 val result:LtiVerificationResult = verifier.verify(cReq,secret)
                 val token = nextFuncName
                 Right(RemotePluginSession(token,secret,key,LtiLaunchResult(result.getSuccess,result.getMessage,(result.getError,result.getLtiLaunchResult) match {
-                  case (err,res) if res.getUser != null && res.getUser != "" => {
-                    Right(LtiLaunch(res.getUser,res.getVersion,res.getMessageType,res.getResourceLinkId,res.getContextId,res.getLaunchPresentationReturnUrl,res.getToolConsumerInstanceGuid))
+                  case (err,res) if res.getUser != null && res.getUser.getId != "" => {
+                    Right(LtiLaunch(LtiUser(res.getUser.getId,res.getUser.getRoles.toArray.toList.map(_.toString)),res.getVersion,res.getMessageType,res.getResourceLinkId,res.getContextId,res.getLaunchPresentationReturnUrl,res.getToolConsumerInstanceGuid))
                   }
                   case (err,_) => Left(new Exception(err.toString))
                 })))
@@ -113,7 +114,7 @@ class BrightSparkIntegrationStatelessDispatch extends RestHelper {
       val response = lti.handleLtiRequest(req,pluginSession => {
         val (resultCode,resultDescription) = pluginSession.launch.result match {
           case Left(e) => ("FAILURE","%s :: %s".format(e.getMessage,e.getStackTraceString))
-          case Right(launchResult) => ("OK","logged in as: %s, with token: %s".format(pluginSession.token,launchResult.user))
+          case Right(launchResult) => ("OK","logged in with Token: %s => %s".format(pluginSession.token,launchResult.user))
         }
         val jObject = JObject(List(JField("result_code",JString(resultCode)),JField("result_description",JString(resultDescription))))
         println("jsonResponse from testRemotePlugin: %s".format(jObject))
