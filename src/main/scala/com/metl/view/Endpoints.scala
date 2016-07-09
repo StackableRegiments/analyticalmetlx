@@ -236,7 +236,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case Req("thumbnailWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"thumbnail")
     })
-    case Req("saveToOneNote" :: conversation :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
+    case Req("saveToOneNote" :: conversation :: _,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
       Globals.oneNoteAuthToken.get match {
         case Full(token) => JsonResponse(JString(OneNote.export(conversation,token).toString))
         case _ => RedirectResponse(OneNote.authUrl)
@@ -248,6 +248,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         referer <- S.referer
       ) yield {
         Globals.oneNoteAuthToken(Full(OneNote.claimToken(token)))
+        println("permitOneNote: %s -> %s",token,referer)
         RedirectResponse(referer)
       }
     })

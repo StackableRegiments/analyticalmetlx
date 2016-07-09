@@ -363,6 +363,7 @@ var Conversations = (function(){
             $("#projectorViewLink").empty();
             $("#slideDeepLink").empty();
             $("#conversationDeepLink").empty();
+            $("#oneNoteExport").empty();
         } else {
             $("#projectorViewLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
@@ -376,6 +377,10 @@ var Conversations = (function(){
                 href:sprintf("/board?conversationJid=%s",targetConversationJid),
                 text:"Deeplink this conversation"
             }));
+            $("#oneNoteExport").html($("<a/>",{
+		href:sprintf("/saveToOneNote/%s",targetConversationJid),
+		text:"Export this conversation"
+	    }));
         }
     };
     var updatePermissionButtons = function(details){

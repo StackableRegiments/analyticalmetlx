@@ -9,10 +9,13 @@
 }
 #slideControls{
     position:fixed;
-    background:white;
+    margin-top:-2px;
 }
 #slideControls .toolbar{
     color:black;
+    background:white;
+    border:1px solid black;
+    margin:1px;
 }
 .thumbnail{
     margin-right:0;

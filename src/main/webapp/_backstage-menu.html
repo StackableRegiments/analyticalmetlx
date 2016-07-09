@@ -7,6 +7,7 @@
     <div class="backstage-content mt mlr grow">
       <div id="backstageContainer" class="box-model-block">
         <div id="settingsPopup" class="backstage">
+          <h2 class="nmt">Settings</h2>
           <button type="button" id="slidesToggleButton" class="toolbar btn-icon fa fa-film"><div>Show Slides</div></button>
           <button type="button" id="toolsToggleButton" class="toolbar btn-icon fa fa-wrench"><div>Show tools</div></button>
         </div>
@@ -50,13 +51,19 @@
         </div>
         <div id="integrationsPopup" class="backstage">
           <h2 class="nmt">Integration options</h2>
-          <div class="flex-container-row img-resp">
-            <div class="conversationLinks">
-              <div id="projectorViewLink"></div>
-              <!--<span id="conversationDeepLink"></span>-->
-              <div id="slideDeepLink"></div>
+          <div>
+            <div>
+              <h3>Direct links to this location</h3>
+              <div class="conversationLinks">
+                <div id="projectorViewLink"></div>
+                <div id="conversationDeepLink"></div>
+                <div id="slideDeepLink"></div>
+              </div>
             </div>
-
+            <div>
+              <h3>Copy this conversation to OneNote</h3>
+              <div id="oneNoteExport"></div>
+            </div>
           </div>
         </div>
         <div id="submissionsPopup" class="backstage">
