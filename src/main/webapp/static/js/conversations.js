@@ -129,7 +129,8 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).prepend(constructAddSlideButton());
+        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
+	var slideControls = $("#slideControls").html([constructPrevSlideButton(),constructNextSlideButton(),constructAddSlideButton()]);
         slideContainer.off("scroll");
         slideContainer.on("scroll",paintThumbs);
         Progress.call("onLayoutUpdated");
@@ -504,33 +505,47 @@ var Conversations = (function(){
             console.log("refreshConversationSearchResults",e);
         }
     };
-    var constructAddSlideButton = function(){
-        if (shouldModifyConversationFunction()){
+    var constructSlideButton = function(name,label,icon,behaviour,teacherOnlyFunction){
+        if (teacherOnlyFunction(currentConversation)){
             return $("<button/>",{
-                id: "addSlideButton",
-                class:"toolbar fa fa-plus btn-icon nmt",
-                name: "addSlideButton",
+                id: name,
+                class:sprintf("toolbar fa %s btn-icon nmt",icon),
+                name: name,
                 type: "button"
-            }).append($("<div class='icon-txt'>Add Slide</div>")).on("click",bounceAnd(function(){
-                var currentJid = currentConversation.jid;
-                var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
-                var newIndex = currentSlideIndex + 1;
-                addSlideToConversationAtIndex(currentConversation.jid,newIndex);
-                Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
-                    if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
-                        if ("slides" in incomingDetails){
-                            var newSlide = _.find(incomingDetails.slides,function(s){
-                                return s.index == newIndex && s.id != currentSlide;
-                            });
-                            doMoveToSlide(newSlide.id.toString());
-                        }
-                    }
-                };
-            }));
+            }).append($("<div class='icon-txt' />",{
+                text:label
+            })).on("click",bounceAnd(behaviour));
         } else {
             return $("<div/>");
         }
     }
+    var addSlideFunction = function(){
+        var currentJid = currentConversation.jid;
+        var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
+        var newIndex = currentSlideIndex + 1;
+        addSlideToConversationAtIndex(currentConversation.jid,newIndex);
+        Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+            if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
+                if ("slides" in incomingDetails){
+                    var newSlide = _.find(incomingDetails.slides,function(s){
+                        return s.index == newIndex && s.id != currentSlide;
+                    });
+                    doMoveToSlide(newSlide.id.toString());
+                }
+            }
+        };
+    };
+    var always = function(){return true;}
+    var constructPrevSlideButton = function(){
+        return constructSlideButton("addSlideButton","Add Slide","fa-angle-left",goToPrevSlideFunction,always);
+    }
+    var constructAddSlideButton = function(){
+        return constructSlideButton("prevSlideButton","Prev Slide","fa-plus",addSlideFunction,shouldModifyConversationFunction);
+    }
+    var constructNextSlideButton = function(){
+        return constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",goToNextSlideFunction,always);
+    }
+
     var doMoveToSlide = function(slideId){
         indicateActiveSlide(slideId);
         delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];

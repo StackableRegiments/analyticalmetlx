@@ -438,6 +438,7 @@ function showBackstage(id){
     $("#applicationMenuButton").addClass(active);
     $("#hideBackstage").show();
     $(".dedicatedClose").click(hideBackstage);
+    $("#masterLayout").css({"opacity":0.3});
 }
 function hideBackstage(){
     window.currentBackstage = noActiveBackstage;
@@ -454,6 +455,7 @@ function hideBackstage(){
     $("#notices").show();
     $(".modeSpecificTool").removeClass(active);
     hideSpinner();
+    $("#masterLayout").css({"opacity":1.0});
 };
 function showSpinner() {
     $("#loadingSlidePopup").show();

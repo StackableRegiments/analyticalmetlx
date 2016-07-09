@@ -7,9 +7,12 @@
 }
 .simpleDropdownInteractableMessageDropdown{
 }
-#addSlideButton{
+#slideControls{
     position:fixed;
     background:white;
+}
+#slideControls .toolbar{
+    color:black;
 }
 .thumbnail{
     margin-right:0;

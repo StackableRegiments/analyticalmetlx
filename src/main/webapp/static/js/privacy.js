@@ -8,7 +8,7 @@ var Privacy = (function(){
                 $("#"+id).removeClass("activePrivacy active");
             }
         });
-				$("#currentlyBanned").text(Conversations.getIsBanned() == true ? "(banned because of inappropriate content)" : "");
+        $("#currentlyBanned").text(Conversations.getIsBanned() == true ? "(banned because of inappropriate content)" : "");
         $("#currentPrivacyStatus").text(privacy == "PUBLIC"?
                                         "publicly" : "privately");
     };
@@ -38,7 +38,7 @@ var Privacy = (function(){
             $("#publicMode").addClass("disabledButton");
             attemptToSetPrivacy("PRIVATE");//You must be forced into private mode if the conversation changes mode under you
         }
-				setPrivacyIndicators();
+        setPrivacyIndicators();
     };
     var adjustButtonsToIndicateSelection = function(selection){
         if(selection){
@@ -95,7 +95,7 @@ var Privacy = (function(){
     Progress.onConversationJoin["privacy"] = function(){
         adjustPrivacyForConversation();
         attemptToSetPrivacy("PUBLIC");
-				setPrivacyIndicators();
+        setPrivacyIndicators();
     }
     Progress.onSelectionChanged["privacy"] = adjustButtonsToIndicateSelection;
     return {
