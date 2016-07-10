@@ -16,11 +16,17 @@ import javax.servlet.http.HttpServletRequest
 import org.imsglobal.pox.IMSPOXRequest
 import org.apache.http.client.methods.HttpPost
 
+//brightspark valence
+import com.d2lvalence.idkeyauth._
+import com.d2lvalence.idkeyauth.implementation._
+
 case class LtiUser(id:String,roles:List[String])
 case class LtiLaunchResult(success:Boolean, message:String, result:Either[Exception,LtiLaunch])
 case class LtiLaunch(user:LtiUser,version:String,messageType:String,resourceLinkId:String,contextId:String,launchPresentationReturnUrl:String,toolConsumerInstanceGuid:String)
 
-case class RemotePluginSession(token:String,secret:String,key:String,launch:LtiLaunchResult)
+case class RemotePluginSession(token:String,secret:String,key:String,launch:LtiLaunchResult,valenceContext:Option[BrightsparkValenceContext] = None)
+
+case class BrightsparkValenceContext(appContext:ID2LAppContext, userContext: Option[ID2LUserContext] = None)
 
 class LtiIntegration extends Logger {
   object sessionStore extends SessionVar[Map[String,RemotePluginSession]](Map.empty[String,RemotePluginSession])
@@ -97,7 +103,6 @@ class BrightSparkIntegration extends LtiIntegration {
 //  import com.d2lvalence.idkeyauth._
   import com.metl.data._
   import com.d2lvalence.idkeyauth.implementation._
-  val uriKey:Tuple3[String,String,String] = Globals.brightSpaceValenceIntegrations // (url,appId,appKey)
   def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
     RedirectResponse("%s?content=%s".format(returnUrl,urlEncode(htmlContent)))
   }
@@ -107,10 +112,15 @@ class BrightSparkIntegration extends LtiIntegration {
   def generateResponse(returnUrl:String):LiftResponse = {
     RedirectResponse(returnUrl)
   }
-  protected def postToD2L(ltiToken:String,requestFunc:String=>Unit):Unit = {
-    val appUrl = uriKey._1
-    val appId = uriKey._2
-    val appKey = uriKey._3
+  protected def postToD2L(ltiToken:String,method:String,apiUrl:String,parameters:Map[String,String]):Unit = {
+    for (
+      pluginSession <- sessionStore.is.get(ltiToken);
+      valenceContext <- pluginSession.valenceContext;
+      userContext <- valenceContext.userContext
+    ) yield {
+      val uri = userContext.createAuthenticatedUri(apiUrl,method)
+      println("making API call: %s".format(uri))
+    }
 //    val appContext = ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,appUrl)
 
   }
@@ -126,7 +136,7 @@ class BrightSparkIntegration extends LtiIntegration {
 class BrightSparkIntegrationStatelessDispatch extends RestHelper {
   import net.liftweb.json.JsonAST._
   import com.metl.snippet.Metl._
-  val lti = RemotePluginIntegration
+  val lti:BrightSparkIntegration = RemotePluginIntegration
   val config = com.metl.data.ServerConfiguration.default
   serve {
     case req@Req("testRemotePlugin" :: Nil,_,_) => () => {
@@ -146,15 +156,71 @@ class BrightSparkIntegrationStatelessDispatch extends RestHelper {
 class BrightSparkIntegrationDispatch extends RestHelper {
   import net.liftweb.json.JsonAST._
   import com.metl.snippet.Metl._
-  val lti = RemotePluginIntegration
+  import java.net.URI
+  val lti:BrightSparkIntegration = RemotePluginIntegration
   val config = com.metl.data.ServerConfiguration.default
+  val d2lMeTLAppId = Globals.brightSpaceValenceIntegrations._2
+  val d2lMeTLAppKey = Globals.brightSpaceValenceIntegrations._3
+  val d2lBaseUrl = Globals.brightSpaceValenceIntegrations._1
+  protected val brightSparkContextEndpoint = "brightSpark"
+  protected val handleUserContextEndpoint = "handleUserContext"
+  protected def getBaseUrlFromReq(req:Req):String = {
+    val request = req.request
+    val url = new URI(request.url)
+    "%s://%s:%s".format(
+      url.getScheme,
+      url.getHost,
+      url.getPort match {
+        case i:Int if i < 1 => url.getScheme match {
+          case "https" => "443"
+          case "http" => "80"
+          case _ => "443"
+        }
+        case portNumber => portNumber
+      }
+    )
+  }
   serve {
-    case req@Req("token" :: "lti" :: Nil,_,_) => () => {
+    case req@Req(brightSparkContextEndpoint :: "getConversationChooser" :: Nil,_,_) => {
+      println("getConversationChooser: %s".format(req))
       lti.handleLtiRequest(req,pluginSession => {
-        Full(RedirectResponse(com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)))
+        val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(d2lMeTLAppId,d2lMeTLAppKey,d2lBaseUrl)
+        val token = pluginSession.token
+        val vctx = BrightsparkValenceContext(appContext)
+        val newPluginSession = pluginSession.copy(valenceContext = Some(vctx))
+        lti.sessionStore(lti.sessionStore.is.updated(token,newPluginSession))
+        val baseUrl = getBaseUrlFromReq(req)
+        val redirectUrl = "%s/%s/%s?ltiToken=%s".format(baseUrl,handleUserContextEndpoint,token)
+        val getUserContextUrl = appContext.createWebUrlForAuthentication(new URI(redirectUrl))
+        println("redirecting to D2L to get userContext: %s => %s\r\n%s".format(req,getUserContextUrl,newPluginSession))
+        Full(RedirectResponse(getUserContextUrl.toString))
       })
     }
-    case req@Req("remotePluginConversationChosen" :: Nil,_,_) => () => {
+    case req@Req(brightSparkContextEndpoint :: handleUserContextEndpoint :: Nil,_,_) => () => {
+      println("handleUserContext: %s".format(req))
+      for (
+        token <- req.param("ltiToken");
+        response <- lti.handleLtiRequest(req,pluginSession => {
+          println("receivedHandleUserContextEndpoint: %s => %s".format(req,pluginSession))
+          for (
+            userId <- req.param("userId");
+            userKey <- req.param("userKey");
+            valenceContext <- pluginSession.valenceContext;
+            appContext = valenceContext.appContext
+          ) yield {
+            val uctx = appContext.createUserContext(userId,userKey)
+            val newPluginSession = pluginSession.copy(valenceContext = Some(valenceContext.copy(userContext = Some(uctx))))
+            lti.sessionStore(lti.sessionStore.is.updated(token,newPluginSession))
+            println("redirecting to remoteConversationChooser: %s => %s".format(newPluginSession))
+            val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(token)
+            RedirectResponse(redirectUrl)
+          }
+        })
+      ) yield {
+        response
+      }
+    }
+    case req@Req(brightSparkContextEndpoint :: "remotePluginConversationChosen" :: Nil,_,_) => () => {
       for (
         ltiToken <- req.param("ltiToken");
         convJid <- req.param("conversationJid");
@@ -163,19 +229,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         launch <- remotePluginSession.launch.result.right.toOption
       ) yield {
         val request = req.request
-        val url = new java.net.URI(request.url)
-        val rootUrl = "%s://%s:%s".format(
-          url.getScheme,
-          url.getHost,
-          url.getPort match {
-            case i:Int if i < 1 => url.getScheme match {
-              case "https" => "443"
-              case "http" => "80"
-              case _ => "443"
-            }
-            case portNumber => portNumber
-          }
-        )
+        val rootUrl = getBaseUrlFromReq(req)
         val targetUrl = rootUrl + boardFor(details.jid)
         //val title = details.title
         //val imageUrl = rootUrl + thumbnailFor(details.jid,details.slides.sortBy(_.index).headOption.map(_.id).getOrElse(0))
