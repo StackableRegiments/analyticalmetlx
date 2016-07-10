@@ -337,7 +337,7 @@ class RemotePluginConversationChooserActor extends MeTLConversationChooserActor 
         case true => ".editConversationLink [href]" #> editConversation(conv.jid)
         case false => ".conversationEditingContainer" #> NodeSeq.Empty
       }
-    } &
+    } /*&
     ".conversationChoosingContainer" #> {
       ".quickLinkButton [onclick]" #> {
         ajaxCall(JsRaw("this"),(s:String) => {
@@ -350,6 +350,7 @@ class RemotePluginConversationChooserActor extends MeTLConversationChooserActor 
         })
       }
     }
+    */
   }
   override def perImportAction(conv:Conversation) = {
     ".importSuccess [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid))
