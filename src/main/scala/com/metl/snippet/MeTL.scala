@@ -63,7 +63,7 @@ class Metl extends Logger {
     "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
   }
   def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
-    "/brightSpark/remotePluginConversationChosen?ltiToken=%s&conversationJid:%s".format(ltiToken,conversationJid.toString)
+    "/brightSpark/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid.toString)
   }
   def noBoard:String = {
     conversationSearch()

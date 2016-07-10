@@ -228,6 +228,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
       }
     }
     case req@Req(brightSparkContextEndpoint :: "remotePluginConversationChosen" :: Nil,_,_) => () => {
+      println("remotePluginConversationChosen: %s".format(req))
       for (
         ltiToken <- req.param("ltiToken");
         convJid <- req.param("conversationJid");
@@ -235,6 +236,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         remotePluginSession <- lti.sessionStore.is.get(ltiToken);
         launch <- remotePluginSession.launch.result.right.toOption
       ) yield {
+        println("remotePluginConversationChosen in block: %s\r\n%s\r\n%s".format(req,remotePluginSession,details))
         val request = req.request
         val rootUrl = getBaseUrlFromReq(req)
         val targetUrl = rootUrl + boardFor(details.jid)
