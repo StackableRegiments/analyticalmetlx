@@ -181,7 +181,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
     )
   }
   serve {
-    case req@Req(brightSparkContextEndpoint :: "getConversationChooser" :: Nil,_,_) => {
+    case req@Req(brightSparkContextEndpoint :: "getConversationChooserWithValence" :: Nil,_,_) => {
       println("getConversationChooser: %s".format(req))
       lti.handleLtiRequest(req,pluginSession => {
         val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(d2lMeTLAppId,d2lMeTLAppKey,d2lBaseUrl)
@@ -194,6 +194,13 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         val getUserContextUrl = appContext.createWebUrlForAuthentication(new URI(redirectUrl))
         println("redirecting to D2L to get userContext: %s => %s\r\n%s".format(req,getUserContextUrl,newPluginSession))
         Full(RedirectResponse(getUserContextUrl.toString))
+      })
+    }
+    case req@Req(brightSparkContextEndpoint :: "getConversationChooser" :: Nil,_,_) => {
+      println("getConversationChooser: %s".format(req))
+      lti.handleLtiRequest(req,pluginSession => {
+        val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)
+        Full(RedirectResponse(redirectUrl))
       })
     }
     case req@Req(brightSparkContextEndpoint :: handleUserContextEndpoint :: Nil,_,_) => () => {
