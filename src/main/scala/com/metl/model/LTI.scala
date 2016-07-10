@@ -103,11 +103,19 @@ class BrightSparkIntegration extends LtiIntegration {
 //  import com.d2lvalence.idkeyauth._
   import com.metl.data._
   import com.d2lvalence.idkeyauth.implementation._
+  protected def ampOrQuestion(url:String):String = {
+    val uri = new java.net.URI(url)
+    uri.getQuery.trim match {
+      case null => "?"
+      case "" => "?"
+      case other => "&"
+    }
+  }
   def generateContentResponse(returnUrl:String,htmlContent:String):LiftResponse = {
-    RedirectResponse("%s?content=%s".format(returnUrl,urlEncode(htmlContent)))
+    RedirectResponse("%s%scontent=%s".format(returnUrl,ampOrQuestion(returnUrl),urlEncode(htmlContent)))
   }
   def generateQuickLinkResponse(returnUrl:String,url:String,title:String,target:String):LiftResponse = {
-    RedirectResponse("%s?quickLink=%s&title=%s&target=%s".format(returnUrl,urlEncode(url),urlEncode(title),urlEncode(target)))
+    RedirectResponse("%s%squickLink=%s&title=%s&target=%s".format(returnUrl,ampOrQuestion(returnUrl),urlEncode(url),urlEncode(title),urlEncode(target)))
   }
   def generateResponse(returnUrl:String):LiftResponse = {
     RedirectResponse(returnUrl)
