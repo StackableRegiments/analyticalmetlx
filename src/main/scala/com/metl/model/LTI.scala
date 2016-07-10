@@ -181,7 +181,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
     )
   }
   serve {
-    case req@Req(brightSparkContextEndpoint :: "getConversationChooserWithValence" :: Nil,_,_) => {
+    case req@Req(bsce :: "getConversationChooserWithValence" :: Nil,_,_) if bsce == brightSparkContextEndpoint => {
       println("getConversationChooser: %s".format(req))
       lti.handleLtiRequest(req,pluginSession => {
         val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(d2lMeTLAppId,d2lMeTLAppKey,d2lBaseUrl)
@@ -196,14 +196,14 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         Full(RedirectResponse(getUserContextUrl.toString))
       })
     }
-    case req@Req(brightSparkContextEndpoint :: "getConversationChooser" :: Nil,_,_) => {
+    case req@Req(bsce :: "getConversationChooser" :: Nil,_,_) if bsce == brightSparkContextEndpoint => {
       println("getConversationChooser: %s".format(req))
       lti.handleLtiRequest(req,pluginSession => {
         val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)
         Full(RedirectResponse(redirectUrl))
       })
     }
-    case req@Req(brightSparkContextEndpoint :: handleUserContextEndpoint :: Nil,_,_) => () => {
+    case req@Req(bsce :: huce :: Nil,_,_) if bsce == brightSparkContextEndpoint && huce == handleUserContextEndpoint => () => {
       println("handleUserContext: %s".format(req))
       for (
         token <- req.param("ltiToken");
@@ -227,7 +227,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         response
       }
     }
-    case req@Req(brightSparkContextEndpoint :: "remotePluginConversationChosen" :: Nil,_,_) => () => {
+    case req@Req(bsce :: "remotePluginConversationChosen" :: Nil,_,_) if bsce == brightSparkContextEndpoint => () => {
       println("remotePluginConversationChosen: %s".format(req))
       for (
         ltiToken <- req.param("ltiToken");
