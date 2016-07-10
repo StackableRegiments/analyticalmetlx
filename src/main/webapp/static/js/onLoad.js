@@ -438,7 +438,7 @@ function showBackstage(id){
     $("#applicationMenuButton").addClass(active);
     $("#hideBackstage").show();
     $(".dedicatedClose").click(hideBackstage);
-    $("#masterLayout").css({"opacity":0.3});
+    $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
 }
 function hideBackstage(){
     window.currentBackstage = noActiveBackstage;
