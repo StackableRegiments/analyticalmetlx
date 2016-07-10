@@ -190,7 +190,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         val newPluginSession = pluginSession.copy(valenceContext = Some(vctx))
         lti.sessionStore(lti.sessionStore.is.updated(token,newPluginSession))
         val baseUrl = getBaseUrlFromReq(req)
-        val redirectUrl = "%s/%s/%s?ltiToken=%s".format(baseUrl,handleUserContextEndpoint,token)
+        val redirectUrl = "%s/%s/%s?ltiToken=%s".format(baseUrl,brithSparkContextEndpoint,handleUserContextEndpoint,token)
         val getUserContextUrl = appContext.createWebUrlForAuthentication(new URI(redirectUrl))
         println("redirecting to D2L to get userContext: %s => %s\r\n%s".format(req,getUserContextUrl,newPluginSession))
         Full(RedirectResponse(getUserContextUrl.toString))
