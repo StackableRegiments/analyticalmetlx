@@ -653,30 +653,9 @@ function render(content,incCanvasContext,incViewBounds){
                 canvasContext.font = sprintf("%spx FontAwesome",size);
                 canvasContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
             }
-            var renderResizeHandle = function(pos,size){
-                canvasContext.save();
-                var inset = size / 10;
-                var xOffset = -1 * size;
-                var yOffset = -1 * size;
-                var rot = 90;
-                canvasContext.setLineDash([]);
-                canvasContext.strokeStyle = "black";
-                canvasContext.fillStyle = "white";
-                canvasContext.strokeWidth = 2;
-                canvasContext.translate(pos.x + xOffset,pos.y + yOffset);
-                canvasContext.rotate(rot * Math.PI / 180);
-                /*Now the x and y are reversed*/
-                canvasContext.fillRect(0,xOffset,size,size);
-                canvasContext.strokeRect(0,xOffset,size,size);
-                canvasContext.font = sprintf("%spx FontAwesome",size);
-                canvasContext.fillStyle = "black";
-                canvasContext.fillText("\uF065",inset,-1 * inset);
-                console.log("resize");
-                canvasContext.restore();
-            }
-            var renderSelectionManipulators = function(){
+            var renderSelectionOutlines = function(){
                 var size = Modes.select.resizeHandleSize;
-                boardContext.save();
+                canvasContext.save();
                 var multipleItems = [];
                 _.forEach(Modes.select.selected,function(category){
                     _.forEach(category,function(item){
@@ -696,9 +675,17 @@ function render(content,incCanvasContext,incViewBounds){
                     canvasContext.strokeStyle = "blue";
                     canvasContext.strokeWidth = 3;
                     canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
-                    renderResizeHandle(tb.br,size);
                 }
                 canvasContext.restore();
+            }
+            var renderCanvasInteractables = function(){
+                _.each(Modes.canvasInteractables,function(category){
+                    _.each(category,function(interactable){
+                        canvasContext.save();
+                        interactable.render(canvasContext);
+                        canvasContext.restore();
+                    });
+                });
             }
             var renderSelectionGhosts = function(){
                 var zero = Modes.select.marqueeWorldOrigin;
@@ -790,8 +777,9 @@ function render(content,incCanvasContext,incViewBounds){
             });
             imagesRenderedMark = Date.now();
             renderImmediateContent();
-            renderSelectionManipulators();
+            renderSelectionOutlines();
             renderSelectionGhosts();
+            renderCanvasInteractables();
             imagesRenderedMark = Date.now();
         }
         catch(e){

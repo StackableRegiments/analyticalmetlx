@@ -118,6 +118,28 @@ function detectPointerEvents(){
 
 function registerPositionHandlers(contexts,down,move,up){
     var isDown = false;
+
+    var touchTolerance = 10;
+    var noInteractableConsumed = function(worldPos,event){
+        var worldRay = [
+            worldPos.x - touchTolerance,
+            worldPos.y - touchTolerance,
+            worldPos.x + touchTolerance,
+            worldPos.y + touchTolerance
+        ];
+        var unconsumed = true;;
+        _.each(Modes.canvasInteractables,function(category,label){
+            _.each(category,function(interactable){
+                if(event in interactable){
+                    if(interactable.activated || intersectRect(worldRay,interactable.bounds)){
+                        unconsumed = unconsumed && interactable[event](worldPos);
+                    }
+                }
+            });
+        });
+        console.log("No interactable consumed",unconsumed);
+        return unconsumed;
+    }
     var modifiers = function(e,isErasing){
         return {
             shift:e.shiftKey,
@@ -238,7 +260,9 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.pause();
                 if (_.size(trackedTouches) == 1 && !isGesture){
                     isDown = true;
-                    down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                    if(noInteractableConsumed(point.worldPos,"down")){
+                        down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                    }
                 }
             });
             context.bind("pointermove",function(e){
@@ -248,8 +272,10 @@ function registerPositionHandlers(contexts,down,move,up){
                     performGesture();
                 }
                 if (_.size(trackedTouches) == 1 && !isGesture){
-                    if(isDown){
-                        move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                    if(noInteractableConsumed(point.worldPos,"move")){
+                        if(isDown){
+                            move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                        }
                     }
                 }
             });
@@ -257,8 +283,10 @@ function registerPositionHandlers(contexts,down,move,up){
                 var point = releasePoint(e);
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
-                if(isDown && !isGesture){
-                    up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                if(noInteractableConsumed(point.worldPos,"up")){
+                    if(isDown && !isGesture){
+                        up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                    }
                 }
                 isDown = false;
             });
@@ -303,36 +331,41 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("mousedown",function(e){
                 WorkQueue.pause();
                 var o = offset();
-                e.preventDefault();
                 isDown = true;
                 var x = e.pageX - o.left;
                 var y = e.pageY - o.top;
                 var z = 0.5;
                 var worldPos = screenToWorld(x,y);
-                _.each(Modes.select.selected,function(category){
-                });
-                down(x,y,z,worldPos,modifiers(e));
+                if(noInteractableConsumed(worldPos,"down")){
+                    down(x,y,z,worldPos,modifiers(e));
+                }
+                e.preventDefault();
             });
             context.bind("mousemove",function(e){
-                if(isDown){
-                    var o = offset();
-                    e.preventDefault();
-                    var x = e.pageX - o.left;
-                    var y = e.pageY - o.top;
-                    var z = 0.5;
-                    move(x,y,z,screenToWorld(x,y),modifiers(e));
+                var o = offset();
+                e.preventDefault();
+                var x = e.pageX - o.left;
+                var y = e.pageY - o.top;
+                var z = 0.5;
+                var worldPos = screenToWorld(x,y);
+                if(noInteractableConsumed(worldPos,"move")){
+                    if(isDown){
+                        move(x,y,z,worldPos,modifiers(e));
+                    }
                 }
             });
             context.bind("mouseup",function(e){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
-                if(isDown){
-                    var o = offset();
-                    var x = e.pageX - o.left;
-                    var y = e.pageY - o.top;
-                    var z = 0.5;
-                    var worldPos = screenToWorld(x,y);
-                    up(x,y,z,worldPos,modifiers(e));
+                var o = offset();
+                var x = e.pageX - o.left;
+                var y = e.pageY - o.top;
+                var z = 0.5;
+                var worldPos = screenToWorld(x,y);
+                if(noInteractableConsumed(worldPos,"up")){
+                    if(isDown){
+                        up(x,y,z,worldPos,modifiers(e));
+                    }
                 }
                 isDown = false;
             });
@@ -402,7 +435,9 @@ function registerPositionHandlers(contexts,down,move,up){
                     var worldPos = screenToWorld(t.x,t.y);
                     isDown = true;
                     var z = 0.5;
-                    down(t.x,t.y,z,worldPos,modifiers(e));
+                    if(noInteractableConsumed(worldPos,"down")){
+                        down(t.x,t.y,z,worldPos,modifiers(e));
+                    }
                 }
                 else{
                     var avg = averagePos(touches);
@@ -418,10 +453,13 @@ function registerPositionHandlers(contexts,down,move,up){
                 switch(touches.length){
                 case 0 : break;
                 case 1:
-                    if(isDown){
-                        var t = touches[0];
-                        var z = 0.5;
-                        move(t.x,t.y,z,screenToWorld(t.x,t.y),modifiers(e));
+                    if(noInteractableConsumed(worldPos,"move")){
+                        if(isDown){
+                            var worldPos = screenToWorld(t.x,t.y);
+                            var t = touches[0];
+                            var z = 0.5;
+                            move(t.x,t.y,z,worldPos,modifiers(e));
+                        }
                     }
                     break;
                 default:
@@ -437,17 +475,21 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("touchend",function(e){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
-                if(isDown){
-                    var o = offset();
-                    var t = e.originalEvent.changedTouches[0];
-                    var x = t.pageX - o.left;
-                    var y = t.pageY - o.top;
-                    var z = 0.5;
-                    if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
-                        mouseOut(x,y);
-                    }
-                    else{
-                        up(x,y,z,screenToWorld(x,y),modifiers(e));
+
+                if(noInteractableConsumed(worldPos,"up")){
+                    if(isDown){
+                        var o = offset();
+                        var t = e.originalEvent.changedTouches[0];
+                        var x = t.pageX - o.left;
+                        var y = t.pageY - o.top;
+                        var z = 0.5;
+                        var worldPos = screenToWorld(x,y);
+                        if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
+                            mouseOut(x,y);
+                        }
+                        else{
+                            up(x,y,z,worldPos,modifiers(e));
+                        }
                     }
                 }
                 isDown = false;
@@ -657,9 +699,18 @@ var Modes = (function(){
             unregisterPositionHandlers(board);
         }
     };
+    var pushCanvasInteractable = function(category,interaction){
+        console.log("Pushing interactable",interaction.bounds);
+        if(!(category in Modes.canvasInteractables)){
+            Modes.canvasInteractables[category] = [];
+        }
+        Modes.canvasInteractables[category].push(interaction);
+        blit();
+    }
     return {
         currentMode:noneMode,
         none:noneMode,
+        canvasInteractables:{},
         text:(function(){
             var texts = [];
             var noop = function(){};
@@ -796,7 +847,7 @@ var Modes = (function(){
                 presetWiden.click(adoptPresetWidth("widen"));
                 presetCenterOnScreen.click(adoptPresetWidth("centerOnScreen"));
                 presetFullscreen.click(adoptPresetWidth("fullscreen"));
-		fontOptionsToggle.click(function(){fontOptions.toggle()});
+                fontOptionsToggle.click(function(){fontOptions.toggle()});
             });
             return {
                 echoesToDisregard:{},
@@ -918,7 +969,7 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     removeActiveMode();
-		    fontOptions.hide();
+                    fontOptions.hide();
                     unregisterPositionHandlers(board);
                     /*Necessary to ensure that no carets or marquees remain on the editors*/
                     blit();
@@ -1143,6 +1194,8 @@ var Modes = (function(){
             };
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
+                delete Modes.canvasInteractables.resizeFree;
+                delete Modes.canvasInteractables.resizeAspectLocked;
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1328,12 +1381,6 @@ var Modes = (function(){
                                     });
                                 }
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
-                                var s = Modes.select.resizeHandleSize / scale();
-                                var resizeHandle = [tb.x2 - s, tb.y2 - s, tb.x2, tb.y2];
-                                if(intersectRect(resizeHandle,ray)){
-                                    Modes.select.dragging = false;
-                                    Modes.select.resizing = true;
-                                }
                             }
                         }
                         if(Modes.select.dragging){
@@ -1371,6 +1418,8 @@ var Modes = (function(){
                     var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
                         Modes.select.offset = {x:0,y:0};
+                        delete Modes.canvasInteractables.resizeFree;
+                        delete Modes.canvasInteractables.resizeAspectLocked;
                         var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
                         var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
                         var dragThreshold = 15;
@@ -1387,24 +1436,6 @@ var Modes = (function(){
                             moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             Modes.select.dragging = false;
                             sendStanza(moved);
-                        }
-                        else if(Modes.select.resizing){
-                            var resized = batchTransform();
-                            var totalBounds = Modes.select.totalSelectedBounds();
-                            var originalWidth = totalBounds.x2 - totalBounds.x;
-                            var originalHeight = totalBounds.y2 - totalBounds.y;
-                            var requestedWidth = worldPos.x - totalBounds.x;
-                            var requestedHeight = worldPos.y - totalBounds.y;
-                            resized.xScale = requestedWidth / originalWidth;
-                            resized.yScale = requestedHeight / originalHeight;
-                            resized.xOrigin = totalBounds.x;
-                            resized.yOrigin = totalBounds.y;
-                            resized.inkIds = _.keys(Modes.select.selected.inks);
-                            resized.textIds = _.keys(Modes.select.selected.texts);
-                            resized.imageIds = _.keys(Modes.select.selected.images);
-                            resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-                            sendStanza(resized);
-                            Modes.select.resizing = false;
                         }
                         else{
                             var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
@@ -1483,6 +1514,82 @@ var Modes = (function(){
                             if(!intersections.any){
                                 Modes.select.selected = intersected;
                             }
+                            else{
+                                var root = Modes.select.totalSelectedBounds();
+                                var s = Modes.select.resizeHandleSize;
+                                var x1 = root.x2 - s;
+                                var y1 = root.y2 - s;
+                                var x2 = root.x2;
+                                var y2 = root.y2;
+                                var interactable = {
+				    activated:false,
+                                    bounds:[x1,y1,x2,y2],
+                                    down:function(worldPos){
+					interactable.activated = true;
+                                        Modes.select.dragging = false;
+                                        Modes.select.resizing = true;
+                                        blit();
+					return false;
+                                    },
+                                    move:function(worldPos){
+                                        if(interactable.activated){
+                                            interactable.bounds = [
+                                                worldPos.x - s,
+                                                worldPos.y - s,
+                                                worldPos.x + s,
+                                                worldPos.y + s
+                                            ];
+                                            blit();
+                                        }
+					return true;
+                                    },
+                                    up:function(worldPos){
+                                        console.log("Interactable up");
+					interactable.activated = false;
+                                        Modes.select.resizing = false;
+                                        var resized = batchTransform();
+                                        var totalBounds = Modes.select.totalSelectedBounds();
+                                        var originalWidth = totalBounds.x2 - totalBounds.x;
+                                        var originalHeight = totalBounds.y2 - totalBounds.y;
+                                        var requestedWidth = worldPos.x - totalBounds.x;
+                                        var requestedHeight = worldPos.y - totalBounds.y;
+                                        resized.xScale = requestedWidth / originalWidth;
+                                        resized.yScale = requestedHeight / originalHeight;
+                                        resized.xOrigin = totalBounds.x;
+                                        resized.yOrigin = totalBounds.y;
+                                        resized.inkIds = _.keys(Modes.select.selected.inks);
+                                        resized.textIds = _.keys(Modes.select.selected.texts);
+                                        resized.imageIds = _.keys(Modes.select.selected.images);
+                                        resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                        sendStanza(resized);
+                                        blit();
+					return false;
+                                    },
+                                    render:function(canvasContext){
+                                        var tl = worldToScreen(interactable.bounds[0],interactable.bounds[1]);
+                                        var br = worldToScreen(interactable.bounds[2],interactable.bounds[3]);
+                                        var size = br.x - tl.x;
+                                        var inset = size / 10;
+                                        var xOffset = -1 * size;
+                                        var yOffset = -1 * size;
+                                        var rot = 90;
+                                        canvasContext.setLineDash([]);
+                                        canvasContext.strokeStyle = "black";
+                                        canvasContext.fillStyle = "white";
+                                        canvasContext.strokeWidth = 2;
+                                        canvasContext.translate(tl.x,tl.y);
+                                        canvasContext.rotate(rot * Math.PI / 180);
+                                        /*Now the x and y are reversed*/
+                                        canvasContext.fillRect(0,xOffset,size,size);
+                                        canvasContext.strokeRect(0,xOffset,size,size);
+                                        canvasContext.font = sprintf("%spx FontAwesome",size);
+                                        canvasContext.fillStyle = "black";
+                                        canvasContext.fillText("\uF065",inset,-1 * inset);
+                                    }
+                                };
+                                pushCanvasInteractable("resizeFree",interactable);
+                            }
+
                             var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,
