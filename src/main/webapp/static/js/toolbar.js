@@ -137,7 +137,6 @@ function registerPositionHandlers(contexts,down,move,up){
                 }
             });
         });
-        console.log("No interactable consumed",unconsumed);
         return unconsumed;
     }
     var modifiers = function(e,isErasing){
@@ -700,7 +699,6 @@ var Modes = (function(){
         }
     };
     var pushCanvasInteractable = function(category,interaction){
-        console.log("Pushing interactable",interaction.bounds);
         if(!(category in Modes.canvasInteractables)){
             Modes.canvasInteractables[category] = [];
         }
@@ -1522,14 +1520,16 @@ var Modes = (function(){
                                 var x2 = root.x2;
                                 var y2 = root.y2;
                                 var interactable = {
-				    activated:false,
+                                    activated:false,
                                     bounds:[x1,y1,x2,y2],
                                     down:function(worldPos){
-					interactable.activated = true;
+                                        interactable.activated = true;
                                         Modes.select.dragging = false;
                                         Modes.select.resizing = true;
+					var pos = worldToScreen(worldPos.x,worldPos.y);
+                                        Modes.select.offset = {x:pos.x,y:pos.y};
                                         blit();
-					return false;
+                                        return false;
                                     },
                                     move:function(worldPos){
                                         if(interactable.activated){
@@ -1541,11 +1541,11 @@ var Modes = (function(){
                                             ];
                                             blit();
                                         }
-					return true;
+                                        return true;
                                     },
                                     up:function(worldPos){
                                         console.log("Interactable up");
-					interactable.activated = false;
+                                        interactable.activated = false;
                                         Modes.select.resizing = false;
                                         var resized = batchTransform();
                                         var totalBounds = Modes.select.totalSelectedBounds();
@@ -1563,7 +1563,7 @@ var Modes = (function(){
                                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                                         sendStanza(resized);
                                         blit();
-					return false;
+                                        return false;
                                     },
                                     render:function(canvasContext){
                                         var tl = worldToScreen(interactable.bounds[0],interactable.bounds[1]);

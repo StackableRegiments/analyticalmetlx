@@ -603,7 +603,6 @@ function render(content,incCanvasContext,incViewBounds){
             var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
             //console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
             visibleBounds = [];
-            var scale = content.maxX / viewboxWidth;
             var renderInks = function(inks){
                 if (inks != undefined){
                     $.each(inks,function(i,ink){
@@ -691,9 +690,12 @@ function render(content,incCanvasContext,incViewBounds){
                 var zero = Modes.select.marqueeWorldOrigin;
                 if(Modes.select.dragging){
                     canvasContext.save();
+		    var s = scale();
                     var x = Modes.select.offset.x - zero.x;
                     var y = Modes.select.offset.y - zero.y;
-                    canvasContext.translate(x,y);
+		    var screenOffset = worldToScreen(x,y);
+		    console.log(x,y);
+                    canvasContext.translate(screenOffset.x,screenOffset.y);
                     canvasContext.globalAlpha = 0.7;
                     _.forEach(Modes.select.selected,function(category,name){
                         _.forEach(category,function(item){
