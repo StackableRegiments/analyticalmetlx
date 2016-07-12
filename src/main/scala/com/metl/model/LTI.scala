@@ -175,16 +175,17 @@ class BrightSparkIntegrationDispatch extends RestHelper {
   protected def getBaseUrlFromReq(req:Req):String = {
     val request = req.request
     val url = new URI(request.url)
-    "%s://%s:%s".format(
+    "%s://%s%s".format(
       url.getScheme,
       url.getHost,
       url.getPort match {
-        case i:Int if i < 1 => url.getScheme match {
-          case "https" => "443"
-          case "http" => "80"
-          case _ => "443"
+        case i:Int if i < 1 && request.url.contains(":%s/".format(i.toString)) => url.getScheme match {
+          case "https"  => ":443"
+          case "http" => ":80"
+          case _ => ""
         }
-        case portNumber => portNumber
+        case portNumber if request.url.contains(":%s/".format(portNumber)) => ":%s".format(portNumber)
+        case portNumber => ""
       }
     )
   }
