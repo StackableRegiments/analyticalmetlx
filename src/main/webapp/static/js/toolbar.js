@@ -1514,7 +1514,6 @@ var Modes = (function(){
                                 var y2 = root.y2;
                                 var resizeAspectLocked = {
                                     activated:false,
-                                    bounds:[x1,root.y,x2,root.y + s],
                                     originalHeight:1,
                                     originalWidth:1,
                                     down:function(worldPos){
@@ -1561,6 +1560,7 @@ var Modes = (function(){
                                         resized.textIds = _.keys(Modes.select.selected.texts);
                                         resized.imageIds = _.keys(Modes.select.selected.images);
                                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                        resizeFree.rehome(worldPos);
                                         sendStanza(resized);
                                         blit();
                                         return false;
@@ -1585,11 +1585,20 @@ var Modes = (function(){
                                         canvasContext.font = sprintf("%spx FontAwesome",size);
                                         canvasContext.fillStyle = "black";
                                         canvasContext.fillText("\uF0B2",inset,-1 * inset);
+                                    },
+                                    rehome:function(worldPos){
+                                        var root = Modes.select.totalSelectedBounds();
+                                        var s = Modes.select.resizeHandleSize;
+                                        resizeAspectLocked.bounds = [
+                                            worldPos.x - s,
+                                            root.y,
+                                            worldPos.x,
+                                            root.y2
+                                        ];
                                     }
                                 };
                                 var resizeFree = {
                                     activated:false,
-                                    bounds:[x1,y1,x2,y2],
                                     down:function(worldPos){
                                         resizeFree.activated = true;
                                         Modes.select.dragging = false;
@@ -1629,6 +1638,7 @@ var Modes = (function(){
                                         resized.textIds = _.keys(Modes.select.selected.texts);
                                         resized.imageIds = _.keys(Modes.select.selected.images);
                                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                        resizeAspectLocked.rehome(worldPos);
                                         sendStanza(resized);
                                         blit();
                                         return false;
@@ -1653,8 +1663,26 @@ var Modes = (function(){
                                         canvasContext.font = sprintf("%spx FontAwesome",size);
                                         canvasContext.fillStyle = "black";
                                         canvasContext.fillText("\uF065",inset,-1 * inset);
+                                    },
+                                    rehome:function(worldPos){
+                                        var root = Modes.select.totalSelectedBounds();
+                                        var s = Modes.select.resizeHandleSize;
+                                        var originalWidth = root.x2 - root.x;
+                                        var requestedWidth = worldPos.x - root.x;
+                                        var ratio = requestedWidth / originalWidth;
+					var originalHeight = root.y2 - root.y;
+					var requestedHeight = originalHeight * ratio;
+					console.log(ratio,originalHeight,requestedHeight);
+                                        resizeFree.bounds = [
+                                            worldPos.x - s,
+                                            root.y + requestedHeight - s,
+                                            worldPos.x,
+                                            root.y + requestedHeight
+                                        ];
                                     }
                                 };
+                                resizeFree.rehome({x:root.x2,y:root.y2});
+                                resizeAspectLocked.rehome({x:root.x2,y:root.y2});
                                 pushCanvasInteractable("resizeFree",resizeFree);
                                 pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
                             }
