@@ -90,12 +90,13 @@ object SecurityListener extends Logger {
 
 class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) with Logger {
   debug("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
-  override def constructResponseWithMessages(req:Req,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
+  override def constructResponseWithMessages(req:Req,originalRequestId:String,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
       val loginPageNode = (
         "%s [method]".format(formSelector) #> "POST" &
         "%s [action]".format(formSelector) #> "/formLogon" &
         "%s *".format(formSelector) #> {(formNode:NodeSeq) => {
           <input type="hidden" name="path" value={makeUrlFromReq(req)}></input> ++ 
+          <input type="hidden" name="originalRequestId" value={originalRequestId}></input> ++ 
           additionalMessages.foldLeft(NodeSeq.Empty)((acc,am) => {
             acc ++ <div class="loginError">{am}</div>
           }) ++ (

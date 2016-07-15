@@ -73,10 +73,10 @@ libraryDependencies ++= {
     //"io.github.stackableregiments" %% "metl2011" % "3.12.+",
     //"io.github.stackableregiments" %% "metl-h2" % "3.28.+",
     //"io.github.stackableregiments" %% "common-utils" % "0.4.+",
-    "io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
-    "io.github.stackableregiments" %% "form-authentication" % "0.4.+",
-    "io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
-    "io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
+    //"io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
+    //"io.github.stackableregiments" %% "form-authentication" % "0.4.+",
+    //"io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
+    //"io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "xmpp" % "3.5.+" ,
     "com.h2database" % "h2" % "1.4.189",
     "mysql" % "mysql-connector-java" % "5.1.38",
@@ -86,6 +86,9 @@ libraryDependencies ++= {
     "org.apache.commons" % "commons-compress" % "1.1",
     "io.github.stackableregiments" %% "lift-extensions" % "0.2.+",
     "org.imsglobal" % "basiclti-util" % "1.1.1",
+    //for google openId connect authentication
+    "com.google.api-client" % "google-api-client" % "1.21.0",
+    "io.github.stackableregiments" %% "ldap" % "0.3.+",
     // for brightspark integration
     "commons-codec" % "commons-codec" % "1.7"
   )
