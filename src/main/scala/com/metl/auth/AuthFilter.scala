@@ -11,14 +11,82 @@ import scala.collection.JavaConversions._
 import net.liftweb.mocks.MockHttpServletRequest
 import org.apache.commons.io.IOUtils
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream,ByteArrayInputStream,InputStreamReader,BufferedReader,Reader}
 //import org.apache.commons.httpclient.methods.multipart.MultiPartRequestEntity
 import org.apache.commons.httpclient.params.HttpMethodParams
 
+
+class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpServletRequestWrapper(request){
+  protected val cachedData = IOUtils.toByteArray(request.getInputStream)
+  class CachedServletInputStream extends ServletInputStream {
+    val bis = new ByteArrayInputStream(cachedData)
+    override def read():Int = bis.read
+    override def read(b:Array[Byte]):Int = bis.read(b)
+    override def read(b:Array[Byte],off:Int,len:Int):Int = bis.read(b,off,len)
+    override def reset = bis.reset
+    override def skip(n:Long) = bis.skip(n)
+    override def available:Int = bis.available
+    override def close = bis.close
+    override def mark(readlimit:Int) = bis.mark(readlimit)
+    override def markSupported:Boolean = bis.markSupported
+  }
+  override def getInputStream:ServletInputStream = {
+    new CachedServletInputStream
+  }
+  override def getReader:BufferedReader = {
+    new BufferedReader(new InputStreamReader(getInputStream))
+  }
+  protected lazy val paramMap:Map[String,Array[String]] = Map(getParameterMap.toList:_*)
+  override def getParameterMap:java.util.Map[String,Array[String]] = {
+    var qpMap:Map[String,Array[String]] = Map(super.getParameterMap().asInstanceOf[java.util.Map[String,Array[String]]].toList:_*)
+    try {
+      val charset = getCharacterEncoding match {
+        case null => "UTF-8"
+        case other => other
+      }
+      println("decoding body: %s".format(charset))
+      val bodyString = new String(cachedData,charset)
+      Some(getContentType).filterNot(_ == null).map(_.trim.toLowerCase) match {
+        case Some("application/x-www-form-urlencoded") => {
+          bodyString.split("&").toList.foreach(line => {
+            var key :: values = line.split("=").toList
+            var value:String = values.mkString("=")
+            val priorValues = qpMap.get(key).map(_.toList).getOrElse(List.empty[String])
+            qpMap = qpMap.updated(key,(value :: priorValues).toArray)
+          })
+          println("decoding urlencoded: %s".format(bodyString))
+        }
+        case Some("multipart/form-data") => {
+          println("decoding multipart: %s".format(bodyString))
+          //got to decode multipart data next, which includes decoding files, oh what fun.  there must be a library about which does all of this neatly.
+        }
+        case _ => {}
+      }
+    } catch {
+      case e:Exception => {
+        println("exception while reading params: %s %s\r\n%s".format(e,e.getMessage,e.getStackTraceString))
+      }
+    }
+    println("getting parameterMap: %s".format(qpMap.toList))
+    qpMap
+  }
+  override def getParameter(key:String):String = {
+    paramMap.get(key).flatMap(_.headOption).getOrElse(null)
+  }
+  override def getParameterValues(key:String):Array[String] = {
+    paramMap.get(key).toList.flatMap(_.toList).toArray
+  }
+  override def getParameterNames:java.util.Enumeration[String] = {
+    paramMap.keys.toList.iterator
+  }
+}
+
 class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends HttpServletRequestWrapper(request){
+  protected val cachedData = IOUtils.toByteArray(getInputStream)
   def duplicate:CloneableHttpServletRequestWrapper = {
     val clonedReq = new MockHttpServletRequest(new java.net.URL(request.getRequestURL.toString),request.getContextPath)
     clonedReq.session = request.getSession
+    clonedReq.parameters = parameters
     val bytes = getBytes
     clonedReq.contentType = getContentType
     clonedReq.charEncoding = getCharacterEncoding
@@ -28,45 +96,38 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
     clonedReq.localAddr = request.getLocalAddr
     clonedReq.remoteAddr = request.getRemoteAddr
     clonedReq.servletPath = request.getServletPath
-    clonedReq.parameters = request.getParameterNames.toList.flatMap(p => {
-      val pn:String = p.toString
-      request.getParameterValues(pn).toList.map(pv => (pn,pv.toString))
-    })
-    clonedReq.headers = Map(request.getHeaderNames.toList.map(h => {
-      val hn:String = h.toString
-      (hn,request.getHeaders(hn).map(_.toString).toList)
-    }):_*)
-    clonedReq.cookies = request.getCookies.toList
-    clonedReq.attributes = Map(request.getAttributeNames.toList.map(a => {
-      val an:String = a.toString
-      (an,request.getAttribute(an))
-    }):_*)
+    clonedReq.headers = headers
+    clonedReq.cookies = cookies
+    clonedReq.attributes = attributes
     new CloneableHttpServletRequestWrapper(clonedReq)
   }
   lazy val getBytes:Array[Byte] = {
-    /*try {
-      val baos = new ByteArrayOutputStream()
-      val mpre = new MultiPartRequestEntity(this.getParts().toArray(),new HttpMethodParams())
-      mpre.writeRequest(baos)
-      baos.toByteArray()
-    } catch {
-      case e:Exception => {
-        */
-        IOUtils.toByteArray(request.getInputStream)
-        /*
-      }
-    }
-    */
+    cachedData
+  }
+  lazy val attributes = Map(request.getAttributeNames.toList.map(a => {
+    val an:String = a.toString
+    (an,request.getAttribute(an))
+  }):_*)
+  lazy val cookies = request.getCookies.toList
+  lazy val parameters = request.getParameterNames.toList.flatMap(p => {
+    val pn:String = p.toString
+    request.getParameterValues(pn).toList.map(pv => (pn,pv.asInstanceOf[String]))
+  })
+  lazy val headers:Map[String,List[String]] = {
+    Map(request.getHeaderNames.toList.map(h => {
+      val hn:String = h.toString
+      (hn,request.getHeaders(hn).map(_.asInstanceOf[String]).toList)
+    }):_*)
   }
   def freeze:CloneableHttpServletRequestWrapper = {
     this.finalize
     this
   }
   override def toString:String = {
-    "Req(%s,%s)[%s]==[%s]".format(getMethod,getRequestURI,request.getParameterNames.toList.flatMap(p => {
+    "Req(method=%s,uri=%s,params=%s,bytes=%s,attributes=%s,cookies=%s,headers=%s]".format(getMethod,getRequestURI,request.getParameterNames.toList.flatMap(p => {
       val pn:String = p.toString
       request.getParameterValues(pn).toList.map(pv => (pn,pv.toString))
-    }),new String(getBytes,"UTF-8"))
+    }),new String(getBytes,"UTF-8"),attributes,cookies,headers)
   }
 }
 
@@ -239,7 +300,7 @@ case class FormProgress(id:String,username:Option[String] = None)
 
 class FormAuthenticator extends FilterAuthenticator {
   override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
-    val fp = FormInProgress(authSession.session,new CloneableHttpServletRequestWrapper(req).duplicate)
+    val fp = FormInProgress(authSession.session,new CloneableHttpServletRequestWrapper(new CachingHttpServletRequestWrapper(req)).duplicate)
     println("generating form progress: %s".format(fp))
     fp
   }
