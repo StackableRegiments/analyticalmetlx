@@ -56,6 +56,33 @@ object LiftAuthAuthentication {
   }
   */
   def attachAuthenticator(mod:LiftAuthenticationSystem):Unit = {
+
+    LiftRules.dispatch.append {
+      case r@Req(List("testForm"),_,_) => () => Full({
+        (for (
+          a <- r.param("a");
+          b <- r.param("b")
+        ) yield {
+          PlainTextResponse("form posted okay\r\na:%s\r\nb:%s".format(a,b))
+        }).getOrElse({
+          val nodes = 
+            <html>
+              <body>
+                <form action="/testForm" method="post">
+                  <label for="a">a</label>
+                  <input name="a" type="text"/>
+                  <label for="b">b</label>
+                  <input name="b" type="text"/>
+                  <input type="submit" value="testSubmit"/>
+                </form>
+              </body>
+            </html>
+          val response = LiftRules.convertResponse(((nodes,200), S.getHeaders(LiftRules.defaultHeaders((nodes,r))), r.cookies, r))
+          response
+        })
+      })
+    }
+
     /*
     LiftRules.earlyInStateful.prepend {
       case req@Req(OriginalReqPath,_,_) => () => {
