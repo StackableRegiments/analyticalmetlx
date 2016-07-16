@@ -1202,7 +1202,6 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                console.log("clearSelectionFunction");
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
                 delete Modes.canvasInteractables.resizeFree;
                 delete Modes.canvasInteractables.resizeAspectLocked;
@@ -1235,9 +1234,7 @@ var Modes = (function(){
                         });
                     }
                 });
-                if(changed){
-                    Progress.call("onSelectionChanged",[Modes.select.selected]);
-                }
+                Progress.call("onSelectionChanged",[Modes.select.selected]);
             },100);
             var banContentFunction = function(){
                 if (Modes.select.selected != undefined && isAdministeringContent){
@@ -1306,18 +1303,18 @@ var Modes = (function(){
                     var s = Modes.select.resizeHandleSize;
                     var resizeAspectLocked = (
                         function(){
-                            var rehome = function(worldPos){
+                            var rehome = function(){
                                 var root = Modes.select.totalSelectedBounds();
-                                worldPos = worldPos || {x:root.x2,y:root.y2};
                                 var s = Modes.select.resizeHandleSize;
                                 resizeAspectLocked.bounds = [
-                                    worldPos.x - s,
+                                    root.x2 - s,
                                     root.y,
-                                    worldPos.x,
-                                    root.y2
+                                    root.x2,
+                                    root.y
                                 ];
+                                blit();
                             }
-                            Progress.onSelectionChanged["resizeAspectLocked"] = /*Do not be tempted to inline this, an argument will go to a default pos and be wrong*/function(){rehome()};
+                            Progress.onSelectionChanged["resizeAspectLocked"] = rehome;
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1395,22 +1392,18 @@ var Modes = (function(){
                             };
                         })();
                     var resizeFree = (function(){
-                        var rehome = function(worldPos){
+                        var rehome = function(){
                             var root = Modes.select.totalSelectedBounds();
-                            worldPos = worldPos || {x:root.x2,y:root.y2};
-                            var originalWidth = root.x2 - root.x;
-                            var requestedWidth = worldPos.x - root.x;
-                            var ratio = requestedWidth / originalWidth;
-                            var originalHeight = root.y2 - root.y;
-                            var requestedHeight = originalHeight * ratio;
+                            var s = Modes.select.resizeHandleSize;
                             resizeFree.bounds = [
-                                worldPos.x - s,
-                                root.y + requestedHeight - s,
-                                worldPos.x,
-                                root.y + requestedHeight
+                                root.x2 - s,
+                                root.y2 - s,
+                                root.x2,
+                                root.y2
                             ];
+                            blit();
                         }
-                        Progress.onSelectionChanged["resizeFree"] = /*Do not be tempted to inline this, an argument will go to a default pos and be wrong*/function(){rehome()};
+                        Progress.onSelectionChanged["resizeFree"] = rehome;
                         return {
                             activated:false,
                             down:function(worldPos){
