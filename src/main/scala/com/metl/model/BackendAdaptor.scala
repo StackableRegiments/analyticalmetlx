@@ -87,7 +87,7 @@ object SecurityListener extends Logger {
     }
   }
 }
-
+/*
 class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) with Logger {
   debug("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
   override def constructResponseWithMessages(req:Req,originalRequestId:String,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
@@ -115,7 +115,7 @@ class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSele
       )
   })
 }
-
+*/
 
 import java.nio.file.attribute.UserPrincipal
 import javax.security.auth._
@@ -298,6 +298,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       exs
     })
   }
+  /*
   def setupAuthenticatorsFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
@@ -489,7 +490,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
           )
         )
     // )
-      }}/*,
+      }}*//*,
       "openIdAuthenticator" -> {(n:NodeSeq) => {
         OpenIdAuthenticator.attachOpenIdAuthenticator(
           new OpenIdAuthenticator(
@@ -509,8 +510,10 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         )
       }}
       */
+     /*
     ))
   }
+  */
   def setupCachesFromFile(filePath:String) = {
     import net.sf.ehcache.config.{MemoryUnit}
     import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
@@ -594,7 +597,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
 
     setupAuthorizersFromFile(Globals.configurationFileLocation)
-    setupAuthenticatorsFromFile(Globals.configurationFileLocation)
+   // setupAuthenticatorsFromFile(Globals.configurationFileLocation)
     setupClientConfigFromFile(Globals.configurationFileLocation)
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))

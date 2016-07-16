@@ -90,7 +90,8 @@ libraryDependencies ++= {
     "com.google.api-client" % "google-api-client" % "1.21.0",
     "io.github.stackableregiments" %% "ldap" % "0.3.+",
     // for brightspark integration
-    "commons-codec" % "commons-codec" % "1.7"
+    "commons-codec" % "commons-codec" % "1.7",
+    "commons-fileupload" % "commons-fileupload" % "1.3.2"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 

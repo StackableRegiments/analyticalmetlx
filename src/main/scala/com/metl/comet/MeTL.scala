@@ -785,7 +785,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
     ClientSideFunctionDefinition("changeUser",List("username"),(args) => {
       val newUsername = getArgAsString(args(0))
       if (Globals.isDevMode){
-        Globals.currentUser(newUsername)
+        //Can't change the username anymore.
+        //Globals.currentUser(newUsername)
       }
       JString(username)
     }, Full(RECEIVE_USERNAME)),

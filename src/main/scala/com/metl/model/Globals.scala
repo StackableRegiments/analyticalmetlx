@@ -107,8 +107,27 @@ object Globals extends PropertyReader with Logger {
     casState.is.eligibleGroups.toList
   }
   var groupsProviders:List[GroupsProvider] = Nil
-  object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
-  object currentUser extends SessionVar[String](casState.is.username)
+
+  object casState {
+    import com.metl.liftAuthenticator._
+    import net.liftweb.http.S
+    def is:LiftAuthStateData = {
+      S.containerSession.map(s => {
+        val username = s.attribute("user").asInstanceOf[String]
+        val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
+        val userGroups = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],userGroups,userAttributes)
+      }).getOrElse({
+        LiftAuthStateDataForbidden
+      })
+    }
+  }
+  object currentUser {
+    def is:String = casState.is.username
+  }
+  //object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
+  //object currentUser extends SessionVar[String](casState.is.username)
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 

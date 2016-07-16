@@ -61,18 +61,25 @@ object LiftAuthAuthentication {
       case r@Req(List("testForm"),_,_) => () => Full({
         (for (
           a <- r.param("a");
-          b <- r.param("b")
+          b <- r.param("b");
+          files = r.uploadedFiles
         ) yield {
-          PlainTextResponse("form posted okay\r\na:%s\r\nb:%s".format(a,b))
+          PlainTextResponse("form posted okay\r\na:%s\r\nb:%s\r\nfiles:%s".format(a,b,files.map(f => {
+            "%s => %s (%s) %s bytes".format(f.name,f.fileName,f.mimeType,f.length)
+          })))
         }).getOrElse({
           val nodes = 
             <html>
               <body>
-                <form action="/testForm" method="post">
+                <form action="/testForm" method="post" enctype="multipart/form-data">
                   <label for="a">a</label>
                   <input name="a" type="text"/>
                   <label for="b">b</label>
                   <input name="b" type="text"/>
+                  <label for="file1">file1</label>
+                  <input name="file1" type="file"/>
+                  <label for="file2">file1</label>
+                  <input name="file2" type="file"/>
                   <input type="submit" value="testSubmit"/>
                 </form>
               </body>

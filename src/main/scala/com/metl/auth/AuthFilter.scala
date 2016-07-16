@@ -57,7 +57,7 @@ class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpS
           println("decoding urlencoded: %s".format(bodyString))
         }
         case Some("multipart/form-data") => {
-          println("decoding multipart: %s".format(bodyString))
+          //println("decoding multipart: %s".format(bodyString))
           //got to decode multipart data next, which includes decoding files, oh what fun.  there must be a library about which does all of this neatly.
         }
         case _ => {}
@@ -124,16 +124,13 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
     this
   }
   override def toString:String = {
-    "Req(method=%s,uri=%s,params=%s,bytes=%s,attributes=%s,cookies=%s,headers=%s]".format(getMethod,getRequestURI,request.getParameterNames.toList.flatMap(p => {
-      val pn:String = p.toString
-      request.getParameterValues(pn).toList.map(pv => (pn,pv.toString))
-    }),new String(getBytes,"UTF-8"),attributes,cookies,headers)
+    "Req(method=%s,uri=%s,params=%s,bytes=%s,attributes=%s,cookies=%s,headers=%s]".format(getMethod,getRequestURI,parameters,new String(getBytes,"UTF-8").take(40),attributes,cookies,headers)
   }
 }
 
 abstract class AuthSession(val session:HttpSession)
 
-case class HealthyAuthSession(override val session:HttpSession,originalRequest:Option[HttpServletRequest] = None,username:String) extends AuthSession(session)
+case class HealthyAuthSession(override val session:HttpSession,originalRequest:Option[HttpServletRequest] = None,username:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil) extends AuthSession(session)
 abstract class InProgressAuthSession(override val session:HttpSession,val originalRequest:HttpServletRequest) extends AuthSession(session)
 case class EmptyAuthSession(override val session:HttpSession) extends AuthSession(session)
 
@@ -257,7 +254,7 @@ class LoggedInFilter extends Filter {
         }
         case Right(s) => {
           s match {
-            case HealthyAuthSession(Session,request,username) => { //let the request through 
+            case HealthyAuthSession(Session,request,username,groups,attrs) => { //let the request through 
               completeAuthentication(httpReq,Session,username)
               request.map(originalReq => {
                 /*
@@ -283,9 +280,12 @@ class LoggedInFilter extends Filter {
       }
     }
   }
-  protected def completeAuthentication(req:HttpServletRequest,session:HttpSession,user:String):Unit = {
+  protected def completeAuthentication(req:HttpServletRequest,session:HttpSession,user:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil):Unit = {
 //    req.login(user,"") // it claims this isn't available, but it's definitely in the javadoc, so I'm not yet sure what's happening here.
+    session.setAttribute("authenticated",true)
     session.setAttribute("user",user)
+    session.setAttribute("userGroups",groups)
+    session.setAttribute("userAttributes",attrs)
   }
 }
 
@@ -318,7 +318,7 @@ class FormAuthenticator extends FilterAuthenticator {
           println("switching to healthy because this has completed")
           LowLevelSessionStore.updateSession(authSession.session,s => HealthyAuthSession(s.session,Some(or),u))
           true 
-        }).getOrElse(generateForm(res))
+        }).getOrElse(generateForm(res,or))
       }
       case (fip@FormInProgress(s,or,progress),"POST",_) => {
         println("about to validate form: %s".format(fip))
@@ -326,21 +326,21 @@ class FormAuthenticator extends FilterAuthenticator {
       }
       case other => {
         println("generating form: %s".format(other))
-        generateForm(res)
+        generateForm(res,req)
       }
     }
   }
-  def generateForm(res:HttpServletResponse):Boolean = {
+  def generateForm(res:HttpServletResponse,req:HttpServletRequest):Boolean = {
     val writer = res.getWriter
     println("writing form")
     writer.println(
 """<html>
-  <form method="post" action="/">
+  <form method="post" action="%s">
     <label for="username">username</label>
     <input name="username" type="text"/>
     <input type="submit" value"login"/>
   </form>
-</html>"""
+</html>""".format(req.getRequestURI)
     )
     res.setContentType("text/html")
     res.setStatus(200)
@@ -353,7 +353,7 @@ class FormAuthenticator extends FilterAuthenticator {
       LowLevelSessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),username))
       true
     } else {
-      generateForm(res)
+      generateForm(res,authSession.originalRequest)
       false
     }
   }
