@@ -1304,15 +1304,17 @@ var Modes = (function(){
                     var resizeAspectLocked = (
                         function(){
                             var rehome = function(){
-                                var root = Modes.select.totalSelectedBounds();
-                                var s = Modes.select.resizeHandleSize;
-                                resizeAspectLocked.bounds = [
-                                    root.x2 - s,
-                                    root.y,
-                                    root.x2,
-                                    root.y
-                                ];
-                                blit();
+                                if(!resizeAspectLocked.activated){
+                                    var root = Modes.select.totalSelectedBounds();
+                                    var s = Modes.select.resizeHandleSize;
+                                    resizeAspectLocked.bounds = [
+                                        root.x2 - s,
+                                        root.y,
+                                        root.x2,
+                                        root.y + s
+                                    ];
+                                    blit();
+                                }
                             }
                             Progress.onSelectionChanged["resizeAspectLocked"] = rehome;
                             return {
@@ -1387,21 +1389,22 @@ var Modes = (function(){
                                     canvasContext.font = sprintf("%spx FontAwesome",size);
                                     canvasContext.fillStyle = "black";
                                     canvasContext.fillText("\uF0B2",inset,-1 * inset);
-                                },
-                                rehome:rehome
+                                }
                             };
                         })();
                     var resizeFree = (function(){
                         var rehome = function(){
-                            var root = Modes.select.totalSelectedBounds();
-                            var s = Modes.select.resizeHandleSize;
-                            resizeFree.bounds = [
-                                root.x2 - s,
-                                root.y2 - s,
-                                root.x2,
-                                root.y2
-                            ];
-                            blit();
+                            if(!resizeFree.activated){
+                                var root = Modes.select.totalSelectedBounds();
+                                var s = Modes.select.resizeHandleSize;
+                                resizeFree.bounds = [
+                                    root.x2 - s,
+                                    root.y2 - s,
+                                    root.x2,
+                                    root.y2
+                                ];
+                                blit();
+                            }
                         }
                         Progress.onSelectionChanged["resizeFree"] = rehome;
                         return {
@@ -1469,15 +1472,11 @@ var Modes = (function(){
                                 canvasContext.font = sprintf("%spx FontAwesome",size);
                                 canvasContext.fillStyle = "black";
                                 canvasContext.fillText("\uF065",inset,-1 * inset);
-                            },
-                            rehome:rehome
+                            }
                         };
                     })();
-                    resizeFree.rehome();
-                    resizeAspectLocked.rehome();
                     pushCanvasInteractable("resizeFree",resizeFree);
                     pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
-                    console.log("Add handles");
                 },
                 totalSelectedBounds:function(){
                     var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
