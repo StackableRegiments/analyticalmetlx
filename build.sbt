@@ -41,10 +41,15 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
+  val jettyVersion = "9.3.10.v20160621"
   Seq(
-    "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-    "org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
-    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
+    //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
+    //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
+    //"org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
+    "org.eclipse.jetty" % "jetty-webapp"  % jettyVersion % "container,test",
+    "org.eclipse.jetty" %  "jetty-server"   % jettyVersion % "container,test", // _for _jetty _config
+    "org.eclipse.jetty" %  "jetty-util"   % jettyVersion % "container,test", // _for _jetty _config
+    "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % "container,test", // artifacts Artifact("javax.servlet", "jar", "jar"),
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",

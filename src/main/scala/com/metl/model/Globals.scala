@@ -16,6 +16,8 @@ import net.liftweb.util.Props
 import scala.xml._
 import com.metl.renderer.RenderDescription
 
+import net.liftweb.http._
+
 case class PropertyNotFoundException(key: String) extends Exception(key) {
   override def getMessage: String = "Property not found: " + key
 }
@@ -138,6 +140,41 @@ object Globals extends PropertyReader with Logger {
   val LargeSize = new RenderDescription(1920,1080)
   val PrintSize = new RenderDescription(21 * printDpi, 29 * printDpi)
   val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize/*,PrintSize*/)
+
+  //this is for testing
+  //
+  LiftRules.dispatch.append {
+    case r@Req(List("testForm"),_,_) => () => Full({
+      (for (
+        a <- r.param("a");
+        b <- r.param("b");
+        files = r.uploadedFiles
+      ) yield {
+        PlainTextResponse("form posted okay\r\na:%s\r\nb:%s\r\nfiles:%s".format(a,b,files.map(f => {
+          "%s => %s (%s) %s bytes".format(f.name,f.fileName,f.mimeType,f.length)
+        })))
+      }).getOrElse({
+        val nodes = 
+          <html>
+            <body>
+              <form action="/testForm" method="post" enctype="multipart/form-data">
+                <label for="a">a</label>
+                <input name="a" type="text"/>
+                <label for="b">b</label>
+                <input name="b" type="text"/>
+                <label for="file1">file1</label>
+                <input name="file1" type="file"/>
+                <label for="file2">file1</label>
+                <input name="file2" type="file"/>
+                <input type="submit" value="testSubmit"/>
+              </form>
+            </body>
+          </html>
+        val response = LiftRules.convertResponse(((nodes,200), S.getHeaders(LiftRules.defaultHeaders((nodes,r))), r.cookies, r))
+        response
+      })
+    })
+  }
 }
 
 //object CurrentSlide extends SessionVar[Box[String]](Empty)
