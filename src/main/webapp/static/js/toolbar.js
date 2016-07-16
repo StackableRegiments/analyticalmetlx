@@ -907,7 +907,7 @@ var Modes = (function(){
                             return intersectRect(text.doc.calculateBounds(),ray) && text.author == UserSettings.getUsername();
                         }));
                         if(texts.length > 0){
-                            return texts[0].doc;
+                            return texts[0];
                         }
                         else{
                             return false;
@@ -922,7 +922,7 @@ var Modes = (function(){
                         }
                     }
                     var down = function(x,y,z,worldPos){
-                        var editor = editorAt(x,y,z,worldPos);
+                        var editor = editorAt(x,y,z,worldPos).doc;
                         if (editor){
                             editor.isActive = true;
                             editor.caretVisible = true;
@@ -930,7 +930,7 @@ var Modes = (function(){
                         };
                     }
                     var move = function(x,y,z,worldPos){
-                        var editor = editorAt(x,y,z,worldPos);
+                        var editor = editorAt(x,y,z,worldPos).doc;
                         if (editor){
                             editor.mousemoveHandler(contextFor(editor,worldPos).node);
                         }
@@ -945,18 +945,29 @@ var Modes = (function(){
                             }
                         });
                         if (editor){
-                            var context = contextFor(editor,worldPos);
-                            editor.mouseupHandler(context.node);
+                            var doc = editor.doc;
+                            var context = contextFor(doc,worldPos);
+                            doc.mouseupHandler(context.node);
                             if(clickTime - lastClick <= doubleClickThreshold){
-                                editor.dblclickHandler(context.node);
+                                doc.dblclickHandler(context.node);
                             }
                             lastClick = clickTime;
+                            var sel = {
+                                multiWordTexts:{}
+                            };
+                            sel.multiWordTexts[editor.identity] = editor;
+                            Modes.select.setSelection(sel);
                         } else {
                             var newEditor = createBlankText(worldPos);
                             var newDoc = newEditor.doc;
                             newDoc.load([]);
                             newDoc.select(0,0);
                             newDoc.mouseupHandler(newDoc.byOrdinal(0));
+                            var sel = {
+                                multiWordTexts:{}
+                            };
+                            sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+                            Modes.select.setSelection(sel);
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
@@ -1191,12 +1202,16 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
+                console.log("clearSelectionFunction");
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
                 delete Modes.canvasInteractables.resizeFree;
                 delete Modes.canvasInteractables.resizeAspectLocked;
+                delete Progress.onSelectionChanged.resizeFree;
+                delete Progress.onSelectionChanged.resizeAspectLocked;
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
+                var changed = false;
                 _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(catName){
                     var selCatName = catName == "highlighters" ? "inks" : catName;
                     var boardCatName = catName;
@@ -1206,6 +1221,7 @@ var Modes = (function(){
                             if (cat && boardCatName in boardContent && i.identity in boardContent[boardCatName]){
                                 cat[i.identity] = boardContent[boardCatName][i.identity];
                             } else {
+                                changed = true;
                                 if (selCatName == "inks"){
                                     if (boardCatName == "highlighters" && i.identity in cat && cat[i.identity].isHighlighter == true){
                                         delete cat[i.identity];
@@ -1219,7 +1235,9 @@ var Modes = (function(){
                         });
                     }
                 });
-                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                if(changed){
+                    Progress.call("onSelectionChanged",[Modes.select.selected]);
+                }
             },100);
             var banContentFunction = function(){
                 if (Modes.select.selected != undefined && isAdministeringContent){
@@ -1279,6 +1297,195 @@ var Modes = (function(){
                     multiWordTexts:{}
                 },
                 resizeHandleSize:50,
+                setSelection:function(selected){
+                    Modes.select.clearSelection();
+                    Modes.select.selected = _.merge(Modes.select.selected,selected);
+                    Modes.select.addHandles();
+                },
+                addHandles:function(){
+                    var s = Modes.select.resizeHandleSize;
+                    var resizeAspectLocked = (
+                        function(){
+                            var rehome = function(worldPos){
+                                var root = Modes.select.totalSelectedBounds();
+                                worldPos = worldPos || {x:root.x2,y:root.y2};
+                                var s = Modes.select.resizeHandleSize;
+                                resizeAspectLocked.bounds = [
+                                    worldPos.x - s,
+                                    root.y,
+                                    worldPos.x,
+                                    root.y2
+                                ];
+                            }
+                            Progress.onSelectionChanged["resizeAspectLocked"] = /*Do not be tempted to inline this, an argument will go to a default pos and be wrong*/function(){rehome()};
+                            return {
+                                activated:false,
+                                originalHeight:1,
+                                originalWidth:1,
+                                down:function(worldPos){
+                                    resizeAspectLocked.activated = true;
+                                    Modes.select.dragging = false;
+                                    Modes.select.resizing = true;
+                                    var root = Modes.select.totalSelectedBounds();
+                                    Modes.select.offset = {x:root.x2,y:root.y2};
+                                    blit();
+                                    return false;
+                                },
+                                move:function(worldPos){
+                                    if(resizeAspectLocked.activated){
+                                        resizeAspectLocked.bounds = [
+                                            worldPos.x - s,
+                                            resizeAspectLocked.bounds[1],
+                                            worldPos.x + s,
+                                            resizeAspectLocked.bounds[3]
+                                        ];
+                                        var totalBounds = Modes.select.totalSelectedBounds();
+                                        var originalWidth = totalBounds.x2 - totalBounds.x;
+                                        var requestedWidth = worldPos.x - totalBounds.x;
+                                        var xScale = requestedWidth / originalWidth;
+                                        Modes.select.offset = {
+                                            x:worldPos.x,
+                                            y:totalBounds.y + totalBounds.height * xScale
+                                        };
+                                        blit();
+                                    }
+                                    return false;
+                                },
+                                up:function(worldPos){
+                                    resizeAspectLocked.activated = false;
+                                    Modes.select.resizing = false;
+                                    var resized = batchTransform();
+                                    var totalBounds = Modes.select.totalSelectedBounds();
+                                    var originalWidth = totalBounds.x2 - totalBounds.x;
+                                    var requestedWidth = worldPos.x - totalBounds.x;
+                                    resized.xScale = requestedWidth / originalWidth;
+                                    resized.yScale = resized.xScale;
+                                    resized.xOrigin = totalBounds.x;
+                                    resized.yOrigin = totalBounds.y;
+                                    resized.inkIds = _.keys(Modes.select.selected.inks);
+                                    resized.textIds = _.keys(Modes.select.selected.texts);
+                                    resized.imageIds = _.keys(Modes.select.selected.images);
+                                    resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                    sendStanza(resized);
+                                    blit();
+                                    return false;
+                                },
+                                render:function(canvasContext){
+                                    var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
+                                    var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
+                                    var size = br.x - tl.x;
+                                    var inset = size / 10;
+                                    var xOffset = -1 * size;
+                                    var yOffset = -1 * size;
+                                    var rot = 90;
+                                    canvasContext.setLineDash([]);
+                                    canvasContext.strokeStyle = "black";
+                                    canvasContext.fillStyle = "white";
+                                    canvasContext.strokeWidth = 2;
+                                    canvasContext.translate(tl.x,tl.y);
+                                    canvasContext.rotate(rot * Math.PI / 180);
+                                    /*Now the x and y are reversed*/
+                                    canvasContext.fillRect(0,xOffset,size,size);
+                                    canvasContext.strokeRect(0,xOffset,size,size);
+                                    canvasContext.font = sprintf("%spx FontAwesome",size);
+                                    canvasContext.fillStyle = "black";
+                                    canvasContext.fillText("\uF0B2",inset,-1 * inset);
+                                },
+                                rehome:rehome
+                            };
+                        })();
+                    var resizeFree = (function(){
+                        var rehome = function(worldPos){
+                            var root = Modes.select.totalSelectedBounds();
+                            worldPos = worldPos || {x:root.x2,y:root.y2};
+                            var originalWidth = root.x2 - root.x;
+                            var requestedWidth = worldPos.x - root.x;
+                            var ratio = requestedWidth / originalWidth;
+                            var originalHeight = root.y2 - root.y;
+                            var requestedHeight = originalHeight * ratio;
+                            resizeFree.bounds = [
+                                worldPos.x - s,
+                                root.y + requestedHeight - s,
+                                worldPos.x,
+                                root.y + requestedHeight
+                            ];
+                        }
+                        Progress.onSelectionChanged["resizeFree"] = /*Do not be tempted to inline this, an argument will go to a default pos and be wrong*/function(){rehome()};
+                        return {
+                            activated:false,
+                            down:function(worldPos){
+                                resizeFree.activated = true;
+                                Modes.select.dragging = false;
+                                Modes.select.resizing = true;
+                                var root = Modes.select.totalSelectedBounds();
+                                Modes.select.offset = {x:root.x2,y:root.y2};
+                                blit();
+                                return false;
+                            },
+                            move:function(worldPos){
+                                if(resizeFree.activated){
+                                    resizeFree.bounds = [
+                                        worldPos.x - s,
+                                        worldPos.y - s,
+                                        worldPos.x + s,
+                                        worldPos.y + s
+                                    ];
+                                    Modes.select.offset = {x:worldPos.x,y:worldPos.y};
+                                    blit();
+                                }
+                                return false;
+                            },
+                            up:function(worldPos){
+                                resizeFree.activated = false;
+                                Modes.select.resizing = false;
+                                var resized = batchTransform();
+                                var totalBounds = Modes.select.totalSelectedBounds();
+                                var originalWidth = totalBounds.x2 - totalBounds.x;
+                                var originalHeight = totalBounds.y2 - totalBounds.y;
+                                var requestedWidth = worldPos.x - totalBounds.x;
+                                var requestedHeight = worldPos.y - totalBounds.y;
+                                resized.xScale = requestedWidth / originalWidth;
+                                resized.yScale = requestedHeight / originalHeight;
+                                resized.xOrigin = totalBounds.x;
+                                resized.yOrigin = totalBounds.y;
+                                resized.inkIds = _.keys(Modes.select.selected.inks);
+                                resized.textIds = _.keys(Modes.select.selected.texts);
+                                resized.imageIds = _.keys(Modes.select.selected.images);
+                                resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                sendStanza(resized);
+                                blit();
+                                return false;
+                            },
+                            render:function(canvasContext){
+                                var tl = worldToScreen(resizeFree.bounds[0],resizeFree.bounds[1]);
+                                var br = worldToScreen(resizeFree.bounds[2],resizeFree.bounds[3]);
+                                var size = br.x - tl.x;
+                                var inset = size / 10;
+                                var xOffset = -1 * size;
+                                var yOffset = -1 * size;
+                                var rot = 90;
+                                canvasContext.setLineDash([]);
+                                canvasContext.strokeStyle = "black";
+                                canvasContext.fillStyle = "white";
+                                canvasContext.strokeWidth = 2;
+                                canvasContext.translate(tl.x,tl.y);
+                                canvasContext.rotate(rot * Math.PI / 180);
+                                /*Now the x and y are reversed*/
+                                canvasContext.fillRect(0,xOffset,size,size);
+                                canvasContext.strokeRect(0,xOffset,size,size);
+                                canvasContext.font = sprintf("%spx FontAwesome",size);
+                                canvasContext.fillStyle = "black";
+                                canvasContext.fillText("\uF065",inset,-1 * inset);
+                            },
+                            rehome:rehome
+                        };
+                    })();
+                    resizeFree.rehome();
+                    resizeAspectLocked.rehome();
+                    pushCanvasInteractable("resizeFree",resizeFree);
+                    pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
+                    console.log("Add handles");
+                },
                 totalSelectedBounds:function(){
                     var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
                     var incorporate = function(item){
@@ -1506,187 +1713,8 @@ var Modes = (function(){
                                 Modes.select.selected = intersected;
                             }
                             else{
-                                var root = Modes.select.totalSelectedBounds();
-                                var s = Modes.select.resizeHandleSize;
-                                var x1 = root.x2 - s;
-                                var y1 = root.y2 - s;
-                                var x2 = root.x2;
-                                var y2 = root.y2;
-                                var resizeAspectLocked = {
-                                    activated:false,
-                                    originalHeight:1,
-                                    originalWidth:1,
-                                    down:function(worldPos){
-                                        resizeAspectLocked.activated = true;
-                                        Modes.select.dragging = false;
-                                        Modes.select.resizing = true;
-                                        var root = Modes.select.totalSelectedBounds();
-                                        Modes.select.offset = {x:root.x2,y:root.y2};
-                                        blit();
-                                        return false;
-                                    },
-                                    move:function(worldPos){
-                                        if(resizeAspectLocked.activated){
-                                            resizeAspectLocked.bounds = [
-                                                worldPos.x - s,
-                                                resizeAspectLocked.bounds[1],
-                                                worldPos.x + s,
-                                                resizeAspectLocked.bounds[3]
-                                            ];
-                                            var totalBounds = Modes.select.totalSelectedBounds();
-                                            var originalWidth = totalBounds.x2 - totalBounds.x;
-                                            var requestedWidth = worldPos.x - totalBounds.x;
-                                            var xScale = requestedWidth / originalWidth;
-                                            Modes.select.offset = {
-                                                x:worldPos.x,
-                                                y:totalBounds.y + totalBounds.height * xScale
-                                            };
-                                            blit();
-                                        }
-                                        return false;
-                                    },
-                                    up:function(worldPos){
-                                        resizeAspectLocked.activated = false;
-                                        Modes.select.resizing = false;
-                                        var resized = batchTransform();
-                                        var totalBounds = Modes.select.totalSelectedBounds();
-                                        var originalWidth = totalBounds.x2 - totalBounds.x;
-                                        var requestedWidth = worldPos.x - totalBounds.x;
-                                        resized.xScale = requestedWidth / originalWidth;
-                                        resized.yScale = resized.xScale;
-                                        resized.xOrigin = totalBounds.x;
-                                        resized.yOrigin = totalBounds.y;
-                                        resized.inkIds = _.keys(Modes.select.selected.inks);
-                                        resized.textIds = _.keys(Modes.select.selected.texts);
-                                        resized.imageIds = _.keys(Modes.select.selected.images);
-                                        resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-                                        resizeFree.rehome(worldPos);
-                                        sendStanza(resized);
-                                        blit();
-                                        return false;
-                                    },
-                                    render:function(canvasContext){
-                                        var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
-                                        var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
-                                        var size = br.x - tl.x;
-                                        var inset = size / 10;
-                                        var xOffset = -1 * size;
-                                        var yOffset = -1 * size;
-                                        var rot = 90;
-                                        canvasContext.setLineDash([]);
-                                        canvasContext.strokeStyle = "black";
-                                        canvasContext.fillStyle = "white";
-                                        canvasContext.strokeWidth = 2;
-                                        canvasContext.translate(tl.x,tl.y);
-                                        canvasContext.rotate(rot * Math.PI / 180);
-                                        /*Now the x and y are reversed*/
-                                        canvasContext.fillRect(0,xOffset,size,size);
-                                        canvasContext.strokeRect(0,xOffset,size,size);
-                                        canvasContext.font = sprintf("%spx FontAwesome",size);
-                                        canvasContext.fillStyle = "black";
-                                        canvasContext.fillText("\uF0B2",inset,-1 * inset);
-                                    },
-                                    rehome:function(worldPos){
-                                        var root = Modes.select.totalSelectedBounds();
-                                        var s = Modes.select.resizeHandleSize;
-                                        resizeAspectLocked.bounds = [
-                                            worldPos.x - s,
-                                            root.y,
-                                            worldPos.x,
-                                            root.y2
-                                        ];
-                                    }
-                                };
-                                var resizeFree = {
-                                    activated:false,
-                                    down:function(worldPos){
-                                        resizeFree.activated = true;
-                                        Modes.select.dragging = false;
-                                        Modes.select.resizing = true;
-                                        var root = Modes.select.totalSelectedBounds();
-                                        Modes.select.offset = {x:root.x2,y:root.y2};
-                                        blit();
-                                        return false;
-                                    },
-                                    move:function(worldPos){
-                                        if(resizeFree.activated){
-                                            resizeFree.bounds = [
-                                                worldPos.x - s,
-                                                worldPos.y - s,
-                                                worldPos.x + s,
-                                                worldPos.y + s
-                                            ];
-                                            Modes.select.offset = {x:worldPos.x,y:worldPos.y};
-                                            blit();
-                                        }
-                                        return false;
-                                    },
-                                    up:function(worldPos){
-                                        resizeFree.activated = false;
-                                        Modes.select.resizing = false;
-                                        var resized = batchTransform();
-                                        var totalBounds = Modes.select.totalSelectedBounds();
-                                        var originalWidth = totalBounds.x2 - totalBounds.x;
-                                        var originalHeight = totalBounds.y2 - totalBounds.y;
-                                        var requestedWidth = worldPos.x - totalBounds.x;
-                                        var requestedHeight = worldPos.y - totalBounds.y;
-                                        resized.xScale = requestedWidth / originalWidth;
-                                        resized.yScale = requestedHeight / originalHeight;
-                                        resized.xOrigin = totalBounds.x;
-                                        resized.yOrigin = totalBounds.y;
-                                        resized.inkIds = _.keys(Modes.select.selected.inks);
-                                        resized.textIds = _.keys(Modes.select.selected.texts);
-                                        resized.imageIds = _.keys(Modes.select.selected.images);
-                                        resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-                                        resizeAspectLocked.rehome(worldPos);
-                                        sendStanza(resized);
-                                        blit();
-                                        return false;
-                                    },
-                                    render:function(canvasContext){
-                                        var tl = worldToScreen(resizeFree.bounds[0],resizeFree.bounds[1]);
-                                        var br = worldToScreen(resizeFree.bounds[2],resizeFree.bounds[3]);
-                                        var size = br.x - tl.x;
-                                        var inset = size / 10;
-                                        var xOffset = -1 * size;
-                                        var yOffset = -1 * size;
-                                        var rot = 90;
-                                        canvasContext.setLineDash([]);
-                                        canvasContext.strokeStyle = "black";
-                                        canvasContext.fillStyle = "white";
-                                        canvasContext.strokeWidth = 2;
-                                        canvasContext.translate(tl.x,tl.y);
-                                        canvasContext.rotate(rot * Math.PI / 180);
-                                        /*Now the x and y are reversed*/
-                                        canvasContext.fillRect(0,xOffset,size,size);
-                                        canvasContext.strokeRect(0,xOffset,size,size);
-                                        canvasContext.font = sprintf("%spx FontAwesome",size);
-                                        canvasContext.fillStyle = "black";
-                                        canvasContext.fillText("\uF065",inset,-1 * inset);
-                                    },
-                                    rehome:function(worldPos){
-                                        var root = Modes.select.totalSelectedBounds();
-                                        var s = Modes.select.resizeHandleSize;
-                                        var originalWidth = root.x2 - root.x;
-                                        var requestedWidth = worldPos.x - root.x;
-                                        var ratio = requestedWidth / originalWidth;
-					var originalHeight = root.y2 - root.y;
-					var requestedHeight = originalHeight * ratio;
-					console.log(ratio,originalHeight,requestedHeight);
-                                        resizeFree.bounds = [
-                                            worldPos.x - s,
-                                            root.y + requestedHeight - s,
-                                            worldPos.x,
-                                            root.y + requestedHeight
-                                        ];
-                                    }
-                                };
-                                resizeFree.rehome({x:root.x2,y:root.y2});
-                                resizeAspectLocked.rehome({x:root.x2,y:root.y2});
-                                pushCanvasInteractable("resizeFree",resizeFree);
-                                pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
+                                Modes.select.addHandles();
                             }
-
                             var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
                                                  _.keys(Modes.select.selected.images).length,
                                                  _.keys(Modes.select.selected.texts).length,

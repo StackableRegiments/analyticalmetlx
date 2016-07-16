@@ -694,7 +694,6 @@ function render(content,incCanvasContext,incViewBounds){
                     var x = Modes.select.offset.x - zero.x;
                     var y = Modes.select.offset.y - zero.y;
 		    var screenOffset = worldToScreen(x,y);
-		    console.log(x,y);
                     canvasContext.translate(screenOffset.x,screenOffset.y);
                     canvasContext.globalAlpha = 0.7;
                     _.forEach(Modes.select.selected,function(category,name){
