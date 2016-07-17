@@ -1355,7 +1355,7 @@ var Modes = (function(){
                                     Modes.select.dragging = true;
                                     Modes.select.resizing = false;
                                     var root = Modes.select.totalSelectedBounds();
-                                    Modes.select.offset = {x:root.x2,y:root.y2};
+                                    Modes.select.offset = worldPos;
                                     Modes.select.marqueeWorldOrigin = worldPos;
                                     blit();
                                     return false;
