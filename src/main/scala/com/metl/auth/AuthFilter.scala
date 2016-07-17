@@ -227,6 +227,7 @@ class LoggedInFilter extends Filter {
       chain.doFilter(req,res)
     } else {
       val httpResp = res.asInstanceOf[HttpServletResponse]
+
       val Session = httpReq.getSession
 
       LowLevelSessionStore.getValidSession(Session) match {
@@ -256,10 +257,12 @@ class LoggedInFilter extends Filter {
                 val originalSession = originalReq.getSession()
                 originalSession.setAttribute("user",Session.getAttribute("user"))
                 */
-                LowLevelSessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username)) // clear the rewrite
+                LowLevelSessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
+                println("Session: %s\r\nReq: %s => %s".format(Session,httpReq,originalReq))
                 chain.doFilter(originalReq,httpResp)
                 //super.doFilter(originalReq,httpResp,chain)
               }).getOrElse({
+                println("Session: %s\r\nReq: %s".format(Session,httpReq))
                 chain.doFilter(httpReq,httpResp)
                 //super.doFilter(httpReq,httpResp,chain)
               })
