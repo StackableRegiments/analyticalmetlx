@@ -252,7 +252,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         //val title = details.title
         //val imageUrl = rootUrl + thumbnailFor(details.jid,details.slides.sortBy(_.index).headOption.map(_.id).getOrElse(0))
         //val responseUrl = lti.generateQuickLinkResponse(launch.launchPresentationReturnUrl,imageUrl,title,targetUrl)
-        val iframeContent = <iframe src={targetUrl}></iframe>
+        val iframeContent = <iframe width="100%" height="600px" src={targetUrl}></iframe>
         val responseUrl = lti.generateContentResponse(launch.launchPresentationReturnUrl,iframeContent.toString)
         println("redirecting to: %s".format(responseUrl))
         responseUrl
