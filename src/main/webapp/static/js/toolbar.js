@@ -321,6 +321,9 @@ function registerPositionHandlers(contexts,down,move,up){
                     pointerOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
+                _.each(Modes.canvasInteractables,function(interactable){
+                    if(interactable.deactivate){interactable.deactivate()};
+                });
             };
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
@@ -429,6 +432,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.pause();
                 e.preventDefault();
                 var touches = offsetTouches(e.originalEvent.touches);
+                console.log("touchstart length",touches.length)
                 if(touches.length == 1){
                     var t = touches[0];
                     var worldPos = screenToWorld(t.x,t.y);
@@ -449,13 +453,14 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("touchmove",function(e){
                 e.preventDefault();
                 var touches = offsetTouches(e.originalEvent.touches);
+                console.log("touchmove length",touches.length)
                 switch(touches.length){
                 case 0 : break;
                 case 1:
+                    var t = touches[0];
+                    var worldPos = screenToWorld(t.x,t.y);
                     if(noInteractableConsumed(worldPos,"move")){
                         if(isDown){
-                            var worldPos = screenToWorld(t.x,t.y);
-                            var t = touches[0];
                             var z = 0.5;
                             move(t.x,t.y,z,worldPos,modifiers(e));
                         }
@@ -474,15 +479,15 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("touchend",function(e){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
-
+                console.log("touchend")
+                var o = offset();
+                var t = e.originalEvent.changedTouches[0];
+                var x = t.pageX - o.left;
+                var y = t.pageY - o.top;
+                var worldPos = screenToWorld(x,y);
                 if(noInteractableConsumed(worldPos,"up")){
                     if(isDown){
-                        var o = offset();
-                        var t = e.originalEvent.changedTouches[0];
-                        var x = t.pageX - o.left;
-                        var y = t.pageY - o.top;
                         var z = 0.5;
-                        var worldPos = screenToWorld(x,y);
                         if(x < 0 || y < 0 || x > boardWidth || y > boardHeight){
                             mouseOut(x,y);
                         }
@@ -1350,9 +1355,12 @@ var Modes = (function(){
                                     }
                                     return false;
                                 },
-                                up:function(worldPos){
+                                deactivate:function(){
                                     resizeAspectLocked.activated = false;
                                     Modes.select.resizing = false;
+                                },
+                                up:function(worldPos){
+                                    resizeAspectLocked.deactivate();
                                     var resized = batchTransform();
                                     var totalBounds = Modes.select.totalSelectedBounds();
                                     var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -1431,9 +1439,12 @@ var Modes = (function(){
                                 }
                                 return false;
                             },
-                            up:function(worldPos){
+                            deactivate:function(){
                                 resizeFree.activated = false;
                                 Modes.select.resizing = false;
+                            },
+                            up:function(worldPos){
+                                resizeFree.deactivate();
                                 var resized = batchTransform();
                                 var totalBounds = Modes.select.totalSelectedBounds();
                                 var originalWidth = totalBounds.x2 - totalBounds.x;
