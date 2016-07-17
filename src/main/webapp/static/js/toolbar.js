@@ -1210,8 +1210,10 @@ var Modes = (function(){
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
                 delete Modes.canvasInteractables.resizeFree;
                 delete Modes.canvasInteractables.resizeAspectLocked;
+                delete Modes.canvasInteractables.manualMove;
                 delete Progress.onSelectionChanged.resizeFree;
                 delete Progress.onSelectionChanged.resizeAspectLocked;
+                delete Progress.onSelectionChanged.manualMove;
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1298,7 +1300,7 @@ var Modes = (function(){
                     inks:{},
                     multiWordTexts:{}
                 },
-                resizeHandleSize:50,
+                resizeHandleSize:80,
                 setSelection:function(selected){
                     Modes.select.clearSelection();
                     Modes.select.selected = _.merge(Modes.select.selected,selected);
@@ -1306,16 +1308,117 @@ var Modes = (function(){
                 },
                 addHandles:function(){
                     var s = Modes.select.resizeHandleSize;
+                    var isTooSmallForInternalHandles = function(bounds){
+                        var width = bounds.br.x - bounds.tl.x;
+                        var height = bounds.br.y - bounds.tl.y;
+                        return width < 200 || height < 100;
+                    }
+                    var manualMove = (
+                        function(){
+                            var rehome = function(){
+                                if(!manualMove.activated){
+                                    var root = Modes.select.totalSelectedBounds();
+                                    var s = Modes.select.resizeHandleSize;
+                                    var x = root.x;
+                                    var y = root.y;
+                                    var width = root.x2 - root.x;
+                                    var center = root.x + s / 2;
+                                    if(isTooSmallForInternalHandles(root)){
+                                        y -= s;
+                                    }
+                                    manualMove.bounds = [
+                                        center - s / 2,
+                                        root.y - s,
+                                        center + s / 2,
+                                        root.y
+                                    ];
+                                    blit();
+                                }
+                            }
+                            Progress.onSelectionChanged["manualMove"] = rehome;
+                            return {
+                                activated:false,
+                                originalHeight:1,
+                                originalWidth:1,
+                                down:function(worldPos){
+                                    manualMove.activated = true;
+                                    Modes.select.dragging = true;
+                                    Modes.select.resizing = false;
+                                    var root = Modes.select.totalSelectedBounds();
+                                    Modes.select.offset = {x:root.x2,y:root.y2};
+                                    blit();
+                                    return false;
+                                },
+                                move:function(worldPos){
+                                    if(manualMove.activated){
+                                        manualMove.bounds = [
+                                            worldPos.x - s,
+                                            worldPos.y,
+                                            worldPos.x + s,
+                                            worldPos.y
+                                        ];
+                                        Modes.select.offset = {
+                                            x:worldPos.x,
+                                            y:worldPos.y
+                                        };
+                                        blit();
+                                    }
+                                    return false;
+                                },
+                                deactivate:function(){
+                                    manualMove.activated = false;
+                                    Modes.select.dragging = false;
+                                },
+                                up:function(worldPos){
+                                    manualMove.deactivate();
+                                    var moved = batchTransform();
+                                    var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
+                                    var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
+                                    moved.xTranslate = xDelta;
+                                    moved.yTranslate = yDelta;
+                                    moved.inkIds = _.keys(Modes.select.selected.inks);
+                                    moved.textIds = _.keys(Modes.select.selected.texts);
+                                    moved.imageIds = _.keys(Modes.select.selected.images);
+                                    moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                    Modes.select.dragging = false;
+                                    sendStanza(moved);
+                                    blit();
+                                    return false;
+                                },
+                                render:function(canvasContext){
+                                    if(manualMove.bounds){
+                                        var tl = worldToScreen(manualMove.bounds[0],manualMove.bounds[1]);
+                                        var br = worldToScreen(manualMove.bounds[2],manualMove.bounds[3]);
+                                        var size = br.x - tl.x;
+                                        var x = tl.x;
+                                        var y = tl.y;
+                                        canvasContext.setLineDash([]);
+                                        canvasContext.strokeStyle = "black";
+                                        canvasContext.fillStyle = "white";
+                                        canvasContext.strokeWidth = 2;
+                                        canvasContext.fillRect(x,y,size,size);
+                                        canvasContext.strokeRect(x,y,size,size);
+                                        canvasContext.font = sprintf("%spx FontAwesome",size);
+                                        canvasContext.fillStyle = "black";
+                                        canvasContext.fillText("\uF047",x,y+size - 4); 
+                                    }
+                                }
+                            };
+                        })();
                     var resizeAspectLocked = (
                         function(){
                             var rehome = function(){
                                 if(!resizeAspectLocked.activated){
                                     var root = Modes.select.totalSelectedBounds();
                                     var s = Modes.select.resizeHandleSize;
+                                    var x = root.x2;
+                                    if(isTooSmallForInternalHandles(root)){
+                                        x += s;
+                                    }
                                     resizeAspectLocked.bounds = [
-                                        root.x2 - s,
+                                        x - s,
                                         root.y,
-                                        root.x2,
+                                        x,
                                         root.y + s
                                     ];
                                     blit();
@@ -1378,25 +1481,27 @@ var Modes = (function(){
                                     return false;
                                 },
                                 render:function(canvasContext){
-                                    var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
-                                    var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
-                                    var size = br.x - tl.x;
-                                    var inset = size / 10;
-                                    var xOffset = -1 * size;
-                                    var yOffset = -1 * size;
-                                    var rot = 90;
-                                    canvasContext.setLineDash([]);
-                                    canvasContext.strokeStyle = "black";
-                                    canvasContext.fillStyle = "white";
-                                    canvasContext.strokeWidth = 2;
-                                    canvasContext.translate(tl.x,tl.y);
-                                    canvasContext.rotate(rot * Math.PI / 180);
-                                    /*Now the x and y are reversed*/
-                                    canvasContext.fillRect(0,xOffset,size,size);
-                                    canvasContext.strokeRect(0,xOffset,size,size);
-                                    canvasContext.font = sprintf("%spx FontAwesome",size);
-                                    canvasContext.fillStyle = "black";
-                                    canvasContext.fillText("\uF0B2",inset,-1 * inset);
+                                    if(resizeAspectLocked.bounds){
+                                        var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
+                                        var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
+                                        var size = br.x - tl.x;
+                                        var inset = size / 10;
+                                        var xOffset = -1 * size;
+                                        var yOffset = -1 * size;
+                                        var rot = 90;
+                                        canvasContext.setLineDash([]);
+                                        canvasContext.strokeStyle = "black";
+                                        canvasContext.fillStyle = "white";
+                                        canvasContext.strokeWidth = 2;
+                                        canvasContext.translate(tl.x,tl.y);
+                                        canvasContext.rotate(rot * Math.PI / 180);
+                                        /*Now the x and y are reversed*/
+                                        canvasContext.fillRect(0,xOffset,size,size);
+                                        canvasContext.strokeRect(0,xOffset,size,size);
+                                        canvasContext.font = sprintf("%spx FontAwesome",size);
+                                        canvasContext.fillStyle = "black";
+                                        canvasContext.fillText("\uF0B2",inset,-1 * inset);
+                                    }
                                 }
                             };
                         })();
@@ -1405,10 +1510,14 @@ var Modes = (function(){
                             if(!resizeFree.activated){
                                 var root = Modes.select.totalSelectedBounds();
                                 var s = Modes.select.resizeHandleSize;
+                                var x = root.x2;
+                                if(isTooSmallForInternalHandles(root)){
+                                    x += s;
+                                }
                                 resizeFree.bounds = [
-                                    root.x2 - s,
+                                    x - s,
                                     root.y2 - s,
-                                    root.x2,
+                                    x,
                                     root.y2
                                 ];
                                 blit();
@@ -1464,28 +1573,31 @@ var Modes = (function(){
                                 return false;
                             },
                             render:function(canvasContext){
-                                var tl = worldToScreen(resizeFree.bounds[0],resizeFree.bounds[1]);
-                                var br = worldToScreen(resizeFree.bounds[2],resizeFree.bounds[3]);
-                                var size = br.x - tl.x;
-                                var inset = size / 10;
-                                var xOffset = -1 * size;
-                                var yOffset = -1 * size;
-                                var rot = 90;
-                                canvasContext.setLineDash([]);
-                                canvasContext.strokeStyle = "black";
-                                canvasContext.fillStyle = "white";
-                                canvasContext.strokeWidth = 2;
-                                canvasContext.translate(tl.x,tl.y);
-                                canvasContext.rotate(rot * Math.PI / 180);
-                                /*Now the x and y are reversed*/
-                                canvasContext.fillRect(0,xOffset,size,size);
-                                canvasContext.strokeRect(0,xOffset,size,size);
-                                canvasContext.font = sprintf("%spx FontAwesome",size);
-                                canvasContext.fillStyle = "black";
-                                canvasContext.fillText("\uF065",inset,-1 * inset);
+                                if(resizeFree.bounds){
+                                    var tl = worldToScreen(resizeFree.bounds[0],resizeFree.bounds[1]);
+                                    var br = worldToScreen(resizeFree.bounds[2],resizeFree.bounds[3]);
+                                    var size = br.x - tl.x;
+                                    var inset = size / 10;
+                                    var xOffset = -1 * size;
+                                    var yOffset = -1 * size;
+                                    var rot = 90;
+                                    canvasContext.setLineDash([]);
+                                    canvasContext.strokeStyle = "black";
+                                    canvasContext.fillStyle = "white";
+                                    canvasContext.strokeWidth = 2;
+                                    canvasContext.translate(tl.x,tl.y);
+                                    canvasContext.rotate(rot * Math.PI / 180);
+                                    /*Now the x and y are reversed*/
+                                    canvasContext.fillRect(0,xOffset,size,size);
+                                    canvasContext.strokeRect(0,xOffset,size,size);
+                                    canvasContext.font = sprintf("%spx FontAwesome",size);
+                                    canvasContext.fillStyle = "black";
+                                    canvasContext.fillText("\uF065",inset,-1 * inset);
+                                }
                             }
                         };
                     })();
+                    pushCanvasInteractable("manualMove",manualMove);
                     pushCanvasInteractable("resizeFree",resizeFree);
                     pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
                 },
@@ -1548,8 +1660,6 @@ var Modes = (function(){
                         clearSelectionFunction();
                     });
                     var threshold = 30;
-                    var resizeHandle = [0,0,0,0];
-                    var initialHeight = 0;
                     $("#administerContent").bind("click",administerContentFunction);
                     $("#ban").bind("click",banContentFunction);
                     var categories = function(func){
@@ -1622,6 +1732,7 @@ var Modes = (function(){
                         Modes.select.offset = {x:0,y:0};
                         delete Modes.canvasInteractables.resizeFree;
                         delete Modes.canvasInteractables.resizeAspectLocked;
+                        delete Modes.canvasInteractables.manualMove;
                         var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
                         var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
                         var dragThreshold = 15;
@@ -1638,7 +1749,7 @@ var Modes = (function(){
                             moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             Modes.select.dragging = false;
                             sendStanza(moved);
-			    Modes.select.addHandles();
+                            Modes.select.addHandles();
                         }
                         else{
                             var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
