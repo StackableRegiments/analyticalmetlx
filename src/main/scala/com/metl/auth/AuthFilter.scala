@@ -15,6 +15,11 @@ import java.io.{ByteArrayOutputStream,ByteArrayInputStream,InputStreamReader,Buf
 //import org.apache.commons.httpclient.methods.multipart.MultiPartRequestEntity
 import org.apache.commons.httpclient.params.HttpMethodParams
 
+import com.metl.saml._
+import net.liftweb.util._
+import net.liftweb.common._
+import net.liftweb.util.Helpers._
+import scala.collection.JavaConverters._
 
 class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpServletRequestWrapper(request){
   protected val cachedData = IOUtils.toByteArray(request.getInputStream)
@@ -145,9 +150,14 @@ class LowLevelSessionStore {
   def getValidSession(session:HttpSession):Either[Exception,AuthSession] = {
     val sessionId = session.getId
     val res = sessionStore.get(sessionId) match {
-      case None => Left(SessionNotFound)
+      case None => {
+        println("no sessino found by sessionId: %s".format(session))
+        Left(SessionNotFound)
+      }
       case Some(s) if isExpired(s) => {
         //we're checking this ourselves, because we might hold onto a reference to a session after it should otherwise have been expired, so we'd best check whether it should still be valid.
+        //
+        println("expiring session: %s".format(s))
         sessionStore - sessionId
         Left(SessionExpired) 
       }
@@ -172,10 +182,10 @@ class LowLevelSessionStore {
 
 
 class LoggedInFilter extends Filter {
+  import scala.xml._
   protected val sessionStore = new LowLevelSessionStore
-  object FilterAuthenticators {
-    //var authenticators:List[FilterAuthenticator[_]] = List.empty[FilterAuthenticator[_]]
-    var authenticators:List[FilterAuthenticator] = List(new UsernameSettingForm(sessionStore))//FormAuthenticator)
+  protected object FilterAuthenticators {
+    var authenticators:List[FilterAuthenticator] = Nil
 
     def passToAuthenticators(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
       authenticators.find(_.shouldHandle(authSession,req,session)).map(_.handle(authSession,req,res,session)).getOrElse({
@@ -203,12 +213,10 @@ class LoggedInFilter extends Filter {
     }
   }
 
-
-
   protected val exclusions:List[HttpServletRequest => Boolean] = List(
     (r) => {
       val path = r.getRequestURI
-      path.startsWith("/static/") || path.startsWith("/favicon.ico")
+      path.startsWith("/static/") || path.startsWith("/favicon.ico") || path.startsWith("/serverStatus")
     }
   )
   protected val rejectWhenNotAuthenticated:List[HttpServletRequest => Boolean] = List(
@@ -218,10 +226,157 @@ class LoggedInFilter extends Filter {
     }
   )
 
-  protected var config:Map[String,String] = Map.empty[String,String]
-
   override def init(filterConfig:FilterConfig) = {
-    config = Map(filterConfig.getInitParameterNames.map(_.toString).toList.map(n => (n,filterConfig.getInitParameter(n))):_*)
+    val filterConfigMap:Map[String,String] = Map(filterConfig.getInitParameterNames.map(_.toString).toList.map(n => (n,filterConfig.getInitParameter(n))):_*)
+    val environmentVariables:Map[String,String] = System.getenv.asScala.toMap
+    def trimSystemProp(in:String):Option[String] = {
+      try {
+        var value = in.trim
+        if (value.startsWith("\"")){
+          value = value.drop(1)
+        }
+        if (value.endsWith("\"")){
+          value = value.reverse.drop(1).reverse
+        }
+        Some(value)
+      } catch {
+        case e:Exception => None
+      }
+    }
+    def getProp(systemEnvName:String,javaPropName:String):Option[String] = {
+      val envProp = environmentVariables.get(systemEnvName).filterNot(v => v == null || v == "").map(v => trimSystemProp(v))
+      envProp.getOrElse({
+        val sysProp = net.liftweb.util.Props.get(javaPropName).map(v => Full(v)).openOr(Full(System.getProperty(javaPropName)))
+        sysProp
+      })
+    }
+    for (
+      configPathVariable <- filterConfigMap.get("configPathVariableName");
+      configPath <- getProp(configPathVariable,configPathVariable);
+      configRoot <- tryo(XML.load(configPath))
+    ) yield {
+      FilterAuthenticators.authenticators = ((configRoot \\ "serverConfiguration" \\ "authentication").theSeq.flatMap{
+        case e:Elem => e.child.toList 
+        case _ => Nil
+      }.flatMap{
+        case n:Elem if (n.label == "saml") => {
+          for (
+            serverScheme <- (n \\ "serverScheme").headOption.map(_.text);
+            serverName <- (n \\ "serverName").headOption.map(_.text);
+            serverPort <- (n \\ "serverPort").headOption.map(_.text.toInt);
+            samlCallbackUrl <- (n \\ "callbackUrl").headOption.map(_.text);
+            idpMetadataFileName <- (n \\ "idpMetadataFileName").headOption.map(_.text);
+            optionOfKeyStoreInfo = {
+              for (
+                keystorePath <- (n \\ "keystorePath").headOption.map(_.text);
+                keystorePassword <- (n \\ "keystorePassword").headOption.map(_.text);
+                privateKeyPassword <- (n \\ "keystorePrivateKeyPassword").headOption.map(_.text)
+              ) yield {
+                keyStoreInfo(keystorePath,keystorePassword,privateKeyPassword)
+              }
+            };
+            optionOfSettingsForADFS = {
+              for (
+                maximumAuthenticationLifetime <- (n \\ "maximumAuthenticationLifetime").headOption.map(_.text.toInt)
+              ) yield {
+                SettingsForADFS(maximumAuthenticationLifetime = maximumAuthenticationLifetime)
+              }
+            };
+            protectedRoutes = (n \\ "protectedRoutes" \\ "route").map(pr => pr.text :: Nil);
+            attrTransformers = (n \\ "informationAttributes" \\ "informationAttribute").flatMap(elem => {
+              for (
+                attrName <- (elem \\ "@samlAttribute").headOption.map(_.text);
+                attrValue <- (elem \\ "@attributeType").headOption.map(_.text)
+              ) yield {
+                (attrName,attrValue)
+              }
+            });
+            groupMap = (n \\ "eligibeGroups" \\ "eligibleGroup").flatMap(group => {
+              for (
+                attrName <- (group \\ "@samlAttribute").headOption.map(_.text);
+                groupType <- (group \\ "@groupType").headOption.map(_.text)
+              ) yield {
+                (attrName,groupType)
+              }
+            })
+          ) yield {
+            new SAMLFilterAuthenticator(sessionStore,SAMLConfiguration(
+              idpMetaDataPath = idpMetadataFileName,
+              serverScheme = serverScheme,
+              serverName = serverName,
+              serverPort = serverPort.toInt,
+              callBackUrl = samlCallbackUrl,
+              protectedRoutes = protectedRoutes.toList,
+              optionOfSettingsForADFS = optionOfSettingsForADFS,
+              eligibleGroups = Map(groupMap:_*),
+              attributeTransformers = Map(attrTransformers:_*),
+              optionOfKeyStoreInfo = optionOfKeyStoreInfo
+            ))
+          }
+        }
+        case n:Elem if (n.label == "mock") => Some(new UsernameSettingForm(sessionStore,n.child.map(_.text).mkString("")))
+        case n:Elem if (n.label == "google") => {
+          None
+          /*
+          LiftAuthAuthentication.attachAuthenticator(
+            new OpenIdConnectAuthenticationSystem(
+              googleClientId = (n \\ "@clientId").text,
+              googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text),
+              alreadyLoggedIn = () => Globals.casState.authenticated,
+              onSuccess = (la:LiftAuthStateData) => {
+                if ( la.authenticated ) {
+                  //setUserPrincipal(la.username)
+                  Globals.currentUser(la.username)
+                  SecurityListener.login
+                  var existingGroups:List[Tuple2[String,String]] = Nil
+                  if (Globals.groupsProviders != null){
+                    Globals.groupsProviders.foreach(gp => {
+                      val newGroups = gp.getGroupsFor(la.username)
+                      if (newGroups != null){
+                        existingGroups = existingGroups ::: newGroups
+                      }
+                    })
+                  }
+                  Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
+                }
+              }
+            )
+          )
+        */
+        }
+        case n:Elem if (n.label == "cas") => {
+          for (
+            loginUrl <- (n \\ "@loginUrl").headOption.map(_.text);
+            validateUrl <- (n \\ "@validateUrl").headOption.map(_.text)
+          ) yield {
+            new CASFilterAuthenticator(sessionStore,loginUrl,validateUrl)
+          }
+        }
+        case n:Elem if (n.label == "openIdAuthenticator") => {
+          None
+          /*
+          OpenIdAuthenticator.attachOpenIdAuthenticator(
+            new OpenIdAuthenticator(
+              alreadyLoggedIn = () => Globals.casState.authenticated,
+              onSuccess = (la:LiftAuthStateData) => {
+                if ( la.authenticated ) {
+                  Globals.currentUser(la.username)
+                  SecurityListener.login
+                  Globals.casState.set(new CASStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
+                }
+              },
+              (n \\ "openIdEndpoint").map(eXml => OpenIdEndpoint((eXml \\ "@name").text,(s) => (eXml \\ "@formattedEndpoint").text.format(s),(eXml \\ "@imageSrc").text,Empty)) match {
+                case Nil => Empty
+                case specificEndpoints => Full(specificEndpoints)
+              }
+            )
+          )
+        */
+        }
+        case _ => None
+      }).toList
+      println("authenticators: %s".format(FilterAuthenticators.authenticators))
+    }
   }
   override def destroy = {}
 
@@ -262,11 +417,9 @@ class LoggedInFilter extends Filter {
                 originalSession.setAttribute("user",Session.getAttribute("user"))
                 */
                 sessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
-                //println("Session: %s\r\nReq: %s => %s".format(has,httpReq,originalReq))
                 chain.doFilter(originalReq,httpResp)
                 //super.doFilter(originalReq,httpResp,chain)
               }).getOrElse({
-                //println("Session: %s\r\nReq: %s".format(has,httpReq))
                 chain.doFilter(httpReq,httpResp)
                 //super.doFilter(httpReq,httpResp,chain)
               })
@@ -289,19 +442,19 @@ class LoggedInFilter extends Filter {
     session.setAttribute("userAttributes",attrs)
     //req.authenticate(res)
     //req.login(user,"")
-    //println("User: %s".format(req.getRemoteUser))
   }
 }
 
 abstract class FilterAuthenticator(sessionStore:LowLevelSessionStore) {
   protected def freezeRequest(req:HttpServletRequest):HttpServletRequest = new CloneableHttpServletRequestWrapper(new CachingHttpServletRequestWrapper(req)).duplicate
+  protected def getRequestRedirect(req:HttpServletRequest):String = req.getRequestURL.toString
   def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession
   def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = false
   def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = true //the boolean represents whether the req should then be passed down the chain
 }
 
 
-class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]]) extends FilterAuthenticator(sessionStore) {
+class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]],descriptiveHtml:String) extends FilterAuthenticator(sessionStore) {
   case class FormInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,gensymMap:Map[String,String]) extends InProgressAuthSession(session,originalRequest)
   override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
     val securedFormNamesLookup = Map(fields.map(f => (f,nextFuncName)):_*)
@@ -326,14 +479,14 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
     }
   }
   def generateForm(authSession:FormInProgress,res:HttpServletResponse,req:HttpServletRequest):Boolean = {
-    val writer = res.getWriter
-    writer.println(
+    res.getWriter.println(
 """<html>
+  %s
   <form method="post" action="%s">
     %s
     <input type="submit" value"login"/>
   </form>
-</html>""".format(req.getRequestURI,fields.flatMap(f => {
+</html>""".format(descriptiveHtml,getRequestRedirect(req),fields.flatMap(f => {
       authSession.gensymMap.get(f).map(securedName => {
       
       """<label for="%s">%s</label><input name="%s" type="text"/>""".format(securedName,f,securedName)
@@ -358,13 +511,10 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
   }
 }
 
-class UsernameSettingForm(sessionStore:LowLevelSessionStore) extends FormAuthenticator(sessionStore,List("username"),(m:Map[String,String]) => {
+class UsernameSettingForm(sessionStore:LowLevelSessionStore,descriptiveHtml:String) extends FormAuthenticator(sessionStore,List("username"),(m:Map[String,String]) => {
   m.get("username").filterNot(s => s == null || s.trim == "").map(username => (username,Nil,Nil))
-})
+},descriptiveHtml)
 
-import com.metl.saml._
-import net.liftweb.util._
-import net.liftweb.common._
 
 class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguration:SAMLConfiguration) extends FilterAuthenticator(sessionStore) with Logger {
   import org.pac4j.core.client.RedirectAction
@@ -372,9 +522,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   import org.pac4j.core.exception.RequiresHttpAction
   import org.pac4j.saml.client.Saml2Client
   import org.pac4j.saml.profile.Saml2Profile
-  import scala.collection.JavaConverters._
-  import scala.collection.immutable.List
-  import scala.collection.mutable.{Map => scalaMutableMap}
+//  import scala.collection.immutable.List
   case class SAMLProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest)
   override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = SAMLProgress(authSession.session,freezeRequest(req))
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
@@ -558,3 +706,43 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   }
 }
 
+class CASFilterAuthenticator(sessionStore:LowLevelSessionStore,casLoginUrl:String,casServiceValidatePath:String) extends FilterAuthenticator(sessionStore){
+  import com.metl.utils._
+  case class CASProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest)
+  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = CASProgress(authSession.session,freezeRequest(req))
+  override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
+    case CASProgress(s,or) => true
+    case _ => false
+  }
+  override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+    (authSession,req.getParameter("ticket")) match {
+      case (sp@CASProgress(s,or),ticket) if ticket != null && ticket.trim != "" => validateTicket(sp,req,res,session,ticket)
+      case (sp@CASProgress(s,or),_) => redirectToCasBaseUrl(sp,req,res,session)
+      case _ => {
+        res.sendError(403,"forbidden\r\ncas authentication still in progress")
+        false
+      }
+    }
+  }
+  protected def getHttpClient: IMeTLHttpClient = Http.getClient
+  protected def redirectToCasBaseUrl(sp:CASProgress,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+    res.sendRedirect(casLoginUrl + "?service=%s".format(getService(req)))
+    false
+  }
+  protected def getService(req:HttpServletRequest):String = java.net.URLEncoder.encode(req.getRequestURL.toString,"utf-8")
+  protected def validateTicket(authSession:CASProgress,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession,ticket:String):Boolean = {
+    val verifyUrl = casServiceValidatePath +"?ticket=%s&service=%s".format(ticket,getService(req))
+    val casValidityResponse = getHttpClient.getAsString(verifyUrl)
+    val casValidityResponseXml = xml.XML.loadString(casValidityResponse)
+    (for (
+      success <- (casValidityResponseXml \\ "authenticationSuccess").headOption;
+      user <- (success \\ "user").headOption.map(_.text)
+    ) yield {
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),user,Nil,Nil))
+      true
+    }).getOrElse({
+      res.sendError(403,"forbidden")
+      false
+    })
+  }
+}
