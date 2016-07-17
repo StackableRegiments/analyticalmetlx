@@ -1308,10 +1308,20 @@ var Modes = (function(){
                 },
                 addHandles:function(){
                     var s = Modes.select.resizeHandleSize;
-                    var isTooSmallForInternalHandles = function(bounds){
+                    var adjustForTinyBoxes = function(x,bounds){
                         var width = bounds.br.x - bounds.tl.x;
                         var height = bounds.br.y - bounds.tl.y;
-                        return width < 200 || height < 100;
+                        var offset = 0;
+                        if(width < 50){
+                            offset = Modes.select.resizeHandleSize * 2;
+                        }
+                        else if(width < 200){
+                            offset = Modes.select.resizeHandle;
+                        }
+                        return {
+                            x:x + offset,
+                            adjusted:offset
+                        };
                     }
                     var manualMove = (
                         function(){
@@ -1323,7 +1333,7 @@ var Modes = (function(){
                                     var y = root.y;
                                     var width = root.x2 - root.x;
                                     var center = root.x + s / 2;
-                                    if(isTooSmallForInternalHandles(root)){
+                                    if(adjustForTinyBoxes(x,root).adjusted){
                                         y -= s;
                                     }
                                     manualMove.bounds = [
@@ -1346,6 +1356,7 @@ var Modes = (function(){
                                     Modes.select.resizing = false;
                                     var root = Modes.select.totalSelectedBounds();
                                     Modes.select.offset = {x:root.x2,y:root.y2};
+                                    Modes.select.marqueeWorldOrigin = worldPos;
                                     blit();
                                     return false;
                                 },
@@ -1357,10 +1368,7 @@ var Modes = (function(){
                                             worldPos.x + s,
                                             worldPos.y
                                         ];
-                                        Modes.select.offset = {
-                                            x:worldPos.x,
-                                            y:worldPos.y
-                                        };
+                                        Modes.select.offset = worldPos;
                                         blit();
                                     }
                                     return false;
@@ -1400,7 +1408,7 @@ var Modes = (function(){
                                         canvasContext.strokeRect(x,y,size,size);
                                         canvasContext.font = sprintf("%spx FontAwesome",size);
                                         canvasContext.fillStyle = "black";
-                                        canvasContext.fillText("\uF047",x,y+size - 4); 
+                                        canvasContext.fillText("\uF047",x,y+size - 4);
                                     }
                                 }
                             };
@@ -1411,10 +1419,7 @@ var Modes = (function(){
                                 if(!resizeAspectLocked.activated){
                                     var root = Modes.select.totalSelectedBounds();
                                     var s = Modes.select.resizeHandleSize;
-                                    var x = root.x2;
-                                    if(isTooSmallForInternalHandles(root)){
-                                        x += s;
-                                    }
+                                    var x = adjustForTinyBoxes(root.x2,root).x;
                                     resizeAspectLocked.bounds = [
                                         x - s,
                                         root.y,
@@ -1510,10 +1515,7 @@ var Modes = (function(){
                             if(!resizeFree.activated){
                                 var root = Modes.select.totalSelectedBounds();
                                 var s = Modes.select.resizeHandleSize;
-                                var x = root.x2;
-                                if(isTooSmallForInternalHandles(root)){
-                                    x += s;
-                                }
+                                var x = adjustForTinyBoxes(root.x2,root).x;
                                 resizeFree.bounds = [
                                     x - s,
                                     root.y2 - s,
@@ -1714,9 +1716,7 @@ var Modes = (function(){
                     };
                     var move = function(x,y,z,worldPos,modifiers){
                         var currentPoint = {x:x,y:y};
-                        var xTranslate = worldPos.x;
-                        var yTranslate = worldPos.y;
-                        Modes.select.offset = {x:xTranslate,y:yTranslate};
+                        Modes.select.offset = worldPos;
                         if(Modes.select.dragging){
                             blit();
                         }
@@ -1729,7 +1729,6 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
-                        Modes.select.offset = {x:0,y:0};
                         delete Modes.canvasInteractables.resizeFree;
                         delete Modes.canvasInteractables.resizeAspectLocked;
                         delete Modes.canvasInteractables.manualMove;
