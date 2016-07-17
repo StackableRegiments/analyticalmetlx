@@ -57,7 +57,7 @@ class LtiIntegration extends Logger {
                 val result:LtiVerificationResult = verifier.verify(cReq,secret)
                 val token = nextFuncName
                 Right(RemotePluginSession(token,secret,key,LtiLaunchResult(result.getSuccess,result.getMessage,(result.getError,result.getLtiLaunchResult) match {
-                  case (err,res) if res.getUser != null && res.getUser.getId != "" => {
+                  case (err,res) if res != null && res.getUser != null && res.getUser.getId != null && res.getUser.getId != "" => {
                     Right(LtiLaunch(LtiUser(res.getUser.getId,res.getUser.getRoles.toArray.toList.map(_.toString)),res.getVersion,res.getMessageType,res.getResourceLinkId,res.getContextId,res.getLaunchPresentationReturnUrl,res.getToolConsumerInstanceGuid))
                   }
                   case (err,_) => Left(new Exception(err.toString))
