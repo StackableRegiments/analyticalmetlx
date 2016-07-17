@@ -1,7 +1,7 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-import monash.SAML._
+import com.metl.saml._
 
 import com.metl.cas._
 import com.metl.data._
@@ -172,7 +172,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       case _ => None
     }).toList:_*)
 
-    SAMLconfiguration(
+    SAMLConfiguration(
       idpMetaDataPath = idpMetadataFileName,
       serverScheme = serverScheme,
       serverName = serverName,

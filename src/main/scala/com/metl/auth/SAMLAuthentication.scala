@@ -1,4 +1,4 @@
-package monash.SAML
+package com.metl.saml 
 
 import com.metl.liftAuthenticator._
 import net.liftweb.common._
@@ -39,7 +39,7 @@ case class keyStoreInfo(
   privateKeyPassword:String
 )
 
-case class SAMLconfiguration(
+case class SAMLConfiguration(
   optionOfKeyStoreInfo:Option[keyStoreInfo] = None,
   idpMetaDataPath:String,
   serverScheme:String,
@@ -53,10 +53,11 @@ case class SAMLconfiguration(
   attributeTransformers:Map[String,String] = Map.empty[String,String]
 )
 
+
 class SAMLAuthenticator (
   alreadyLoggedIn:() => Boolean,
   onSuccess:(LiftAuthStateData) => Unit,
-  samlConfiguration: SAMLconfiguration
+  samlConfiguration: SAMLConfiguration
 ) extends LiftAuthenticator(alreadyLoggedIn,onSuccess) with Logger
 {
   protected val overrideHost: Box[String] = Empty
@@ -75,7 +76,7 @@ class SAMLAuthenticator (
     port = samlConfiguration.serverPort
   )
 
-  protected def getSaml2Client(samlConfiguration: SAMLconfiguration) = {
+  protected def getSaml2Client(samlConfiguration: SAMLConfiguration) = {
     val samlClient: Saml2Client = new Saml2Client {
 
       // Override method "getStateParameter" to retrieve RelayState from the current request
