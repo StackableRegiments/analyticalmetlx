@@ -133,7 +133,7 @@ case class HealthyAuthSession(override val session:HttpSession,originalRequest:O
 abstract class InProgressAuthSession(override val session:HttpSession,val originalRequest:HttpServletRequest) extends AuthSession(session)
 case class EmptyAuthSession(override val session:HttpSession) extends AuthSession(session)
 
-object LowLevelSessionStore {
+class LowLevelSessionStore {
   val SessionNotFound = new Exception("session not found")
   val SessionExpired = new Exception("session expired")
   protected val sessionStore:scala.collection.mutable.Map[String,AuthSession] = scala.collection.mutable.Map.empty[String,AuthSession] 
@@ -170,45 +170,48 @@ object LowLevelSessionStore {
   }
 }
 
-object FilterAuthenticators {
-  //var authenticators:List[FilterAuthenticator[_]] = List.empty[FilterAuthenticator[_]]
-  var authenticators:List[FilterAuthenticator] = List(new UsernameSettingForm)//FormAuthenticator)
 
-  def passToAuthenticators(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
-    authenticators.find(_.shouldHandle(authSession,req,session)).map(_.handle(authSession,req,res,session)).getOrElse({
-      refuseAuthentication(authSession,req,res,session)
-    })
-  }
-  def refuseAuthentication(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
-    res.sendError(403,"forbidden, and no available authenticators willing to authenticate this request")
-    false
-  }
-  def requestNewAuthenticator(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
-    authenticators match {
-      case List(auth) => {
-        LowLevelSessionStore.updateSession(session,(s:AuthSession) => {
-          val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),req)
-          newAuthSession
-        })
-        true
-      }
-      case _ => {
-        throw new Exception("not the right number of authenticators")
-        false
+class LoggedInFilter extends Filter {
+  protected val sessionStore = new LowLevelSessionStore
+  object FilterAuthenticators {
+    //var authenticators:List[FilterAuthenticator[_]] = List.empty[FilterAuthenticator[_]]
+    var authenticators:List[FilterAuthenticator] = List(new UsernameSettingForm(sessionStore))//FormAuthenticator)
+
+    def passToAuthenticators(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+      authenticators.find(_.shouldHandle(authSession,req,session)).map(_.handle(authSession,req,res,session)).getOrElse({
+        refuseAuthentication(authSession,req,res,session)
+      })
+    }
+    def refuseAuthentication(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+      res.sendError(403,"forbidden, and no available authenticators willing to authenticate this request")
+      false
+    }
+    def requestNewAuthenticator(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+      authenticators match {
+        case List(auth) => {
+          sessionStore.updateSession(session,(s:AuthSession) => {
+            val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),req)
+            newAuthSession
+          })
+          true
+        }
+        case _ => {
+          throw new Exception("not the right number of authenticators")
+          false
+        }
       }
     }
   }
-}
 
-class LoggedInFilter extends Filter {
 
-  val exclusions:List[HttpServletRequest => Boolean] = List(
+
+  protected val exclusions:List[HttpServletRequest => Boolean] = List(
     (r) => {
       val path = r.getRequestURI
       path.startsWith("/static/") || path.startsWith("/favicon.ico")
     }
   )
-  val rejectWhenNotAuthenticated:List[HttpServletRequest => Boolean] = List(
+  protected val rejectWhenNotAuthenticated:List[HttpServletRequest => Boolean] = List(
     (r) => {
       val path = r.getRequestURI
       path.startsWith("/comet_request/") || path.startsWith("/ajax_request/")
@@ -231,13 +234,13 @@ class LoggedInFilter extends Filter {
 
       val Session = httpReq.getSession
 
-      LowLevelSessionStore.getValidSession(Session) match {
+      sessionStore.getValidSession(Session) match {
         case Left(e) => {
           if (rejectWhenNotAuthenticated.exists(_.apply(httpReq))){
             httpResp.sendError(403,"forbidden.  please authenticate")
           } else {
             e match {
-              case LowLevelSessionStore.SessionNotFound => {
+              case sessionStore.SessionNotFound => {
                 if (FilterAuthenticators.requestNewAuthenticator(httpReq,httpResp,Session)){
                   doFilter(req,res,chain)
                 }
@@ -258,12 +261,12 @@ class LoggedInFilter extends Filter {
                 val originalSession = originalReq.getSession()
                 originalSession.setAttribute("user",Session.getAttribute("user"))
                 */
-                LowLevelSessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
-                println("Session: %s\r\nReq: %s => %s".format(has,httpReq,originalReq))
+                sessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
+                //println("Session: %s\r\nReq: %s => %s".format(has,httpReq,originalReq))
                 chain.doFilter(originalReq,httpResp)
                 //super.doFilter(originalReq,httpResp,chain)
               }).getOrElse({
-                println("Session: %s\r\nReq: %s".format(has,httpReq))
+                //println("Session: %s\r\nReq: %s".format(has,httpReq))
                 chain.doFilter(httpReq,httpResp)
                 //super.doFilter(httpReq,httpResp,chain)
               })
@@ -286,11 +289,11 @@ class LoggedInFilter extends Filter {
     session.setAttribute("userAttributes",attrs)
     //req.authenticate(res)
     //req.login(user,"")
-    println("User: %s".format(req.getRemoteUser))
+    //println("User: %s".format(req.getRemoteUser))
   }
 }
 
-trait FilterAuthenticator {
+abstract class FilterAuthenticator(sessionStore:LowLevelSessionStore) {
   protected def freezeRequest(req:HttpServletRequest):HttpServletRequest = new CloneableHttpServletRequestWrapper(new CachingHttpServletRequestWrapper(req)).duplicate
   def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession
   def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = false
@@ -298,24 +301,31 @@ trait FilterAuthenticator {
 }
 
 
-class FormAuthenticator(fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]]) extends FilterAuthenticator {
-  case class FormInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest)
-  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = FormInProgress(authSession.session,freezeRequest(req))
+class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]]) extends FilterAuthenticator(sessionStore) {
+  case class FormInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,gensymMap:Map[String,String]) extends InProgressAuthSession(session,originalRequest)
+  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
+    val securedFormNamesLookup = Map(fields.map(f => (f,nextFuncName)):_*)
+    FormInProgress(authSession.session,freezeRequest(req),securedFormNamesLookup)
+  }
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
-    case FormInProgress(s,or) => true
+    case FormInProgress(s,or,fieldMap) => true
     case _ => false
   }
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
     (authSession,req.getMethod.toUpperCase.trim,req.getRequestURL) match {
-      case (fip@FormInProgress(s,or),"POST",_) => {
+      case (fip@FormInProgress(s,or,fieldMap),"POST",_) => {
         validateForm(fip,req,res)
       }
+      case (fip@FormInProgress(s,or,fieldMap),_,_) => {
+        generateForm(fip,res,req)
+      }
       case other => {
-        generateForm(res,req)
+        res.sendError(500,"session state lost")
+        false
       }
     }
   }
-  def generateForm(res:HttpServletResponse,req:HttpServletRequest):Boolean = {
+  def generateForm(authSession:FormInProgress,res:HttpServletResponse,req:HttpServletRequest):Boolean = {
     val writer = res.getWriter
     writer.println(
 """<html>
@@ -323,9 +333,11 @@ class FormAuthenticator(fields:List[String],validateFunc:Map[String,String]=>Opt
     %s
     <input type="submit" value"login"/>
   </form>
-</html>""".format(req.getRequestURI,fields.map(f => {
-  """<label for="%s">%s</label>
-     <input name="%s" type="text"/>""".format(f,f,f)
+</html>""".format(req.getRequestURI,fields.flatMap(f => {
+      authSession.gensymMap.get(f).map(securedName => {
+      
+      """<label for="%s">%s</label><input name="%s" type="text"/>""".format(securedName,f,securedName)
+      })
 }).mkString(""))
     )
     res.setContentType("text/html")
@@ -333,17 +345,20 @@ class FormAuthenticator(fields:List[String],validateFunc:Map[String,String]=>Opt
     false
   }
   def validateForm(authSession:FormInProgress,req:HttpServletRequest,res:HttpServletResponse):Boolean = {
-    validateFunc(Map(fields.map(f => (f,req.getParameter(f))):_*)).map(userTup => {
-      LowLevelSessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),userTup._1,userTup._2,userTup._3))
+    val fieldMap = Map(fields.flatMap(f => {
+      authSession.gensymMap.get(f).map(securedName => (f,req.getParameter(securedName)))
+    }):_*)
+    validateFunc(fieldMap).map(userTup => {
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),userTup._1,userTup._2,userTup._3))
       true
     }).getOrElse({
-      generateForm(res,authSession.originalRequest)
+      generateForm(authSession,res,authSession.originalRequest)
       false
     })
   }
 }
 
-class UsernameSettingForm extends FormAuthenticator(List("username"),(m:Map[String,String]) => {
+class UsernameSettingForm(sessionStore:LowLevelSessionStore) extends FormAuthenticator(sessionStore,List("username"),(m:Map[String,String]) => {
   m.get("username").filterNot(s => s == null || s.trim == "").map(username => (username,Nil,Nil))
 })
 
@@ -351,7 +366,7 @@ import com.metl.saml._
 import net.liftweb.util._
 import net.liftweb.common._
 
-class SAMLFilterAuthenticator(samlConfiguration:SAMLConfiguration) extends FilterAuthenticator with Logger {
+class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguration:SAMLConfiguration) extends FilterAuthenticator(sessionStore) with Logger {
   import org.pac4j.core.client.RedirectAction
   import org.pac4j.core.context._
   import org.pac4j.core.exception.RequiresHttpAction
@@ -532,7 +547,7 @@ class SAMLFilterAuthenticator(samlConfiguration:SAMLConfiguration) extends Filte
       }).toList
 
       debug("firing onSuccess")
-      LowLevelSessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),userProfile.getId,groups,attributes ::: transformedAttrs))
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),userProfile.getId,groups,attributes ::: transformedAttrs))
       true
     } catch {
       case e:Exception => {
