@@ -48,8 +48,9 @@ class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpS
       Some(getContentType).filterNot(_ == null).map(_.trim.toLowerCase) match {
         case Some("application/x-www-form-urlencoded") => {
           bodyString.split("&").toList.foreach(line => {
-            var key :: values = line.split("=").toList
-            var value:String = values.mkString("=")
+            val rawKey :: values = line.split("=").toList
+            val key = net.liftweb.util.Helpers.urlDecode(rawKey)
+            val value:String = net.liftweb.util.Helpers.urlDecode(values.mkString("="))
             val priorValues = qpMap.get(key).map(_.toList).getOrElse(List.empty[String])
             qpMap = qpMap.updated(key,(value :: priorValues).toArray)
           })
