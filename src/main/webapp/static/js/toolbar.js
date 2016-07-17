@@ -1588,6 +1588,7 @@ var Modes = (function(){
                             }
                         }
                         if(Modes.select.dragging){
+                            Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
 
                         }
@@ -1637,6 +1638,7 @@ var Modes = (function(){
                             moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             Modes.select.dragging = false;
                             sendStanza(moved);
+			    Modes.select.addHandles();
                         }
                         else{
                             var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
