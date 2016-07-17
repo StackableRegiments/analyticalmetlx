@@ -249,7 +249,7 @@ class LoggedInFilter extends Filter {
         }
         case Right(s) => {
           s match {
-            case HealthyAuthSession(Session,request,username,groups,attrs) => { //let the request through 
+            case has@HealthyAuthSession(Session,request,username,groups,attrs) => { //let the request through 
               completeAuthentication(httpReq,httpResp,Session,username,groups,attrs)
               request.map(originalReq => {
                 /*
@@ -258,11 +258,11 @@ class LoggedInFilter extends Filter {
                 originalSession.setAttribute("user",Session.getAttribute("user"))
                 */
                 LowLevelSessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
-                println("Session: %s\r\nReq: %s => %s".format(Session,httpReq,originalReq))
+                println("Session: %s\r\nReq: %s => %s".format(has,httpReq,originalReq))
                 chain.doFilter(originalReq,httpResp)
                 //super.doFilter(originalReq,httpResp,chain)
               }).getOrElse({
-                println("Session: %s\r\nReq: %s".format(Session,httpReq))
+                println("Session: %s\r\nReq: %s".format(has,httpReq))
                 chain.doFilter(httpReq,httpResp)
                 //super.doFilter(httpReq,httpResp,chain)
               })
