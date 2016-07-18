@@ -724,7 +724,8 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 //    </saml2:Issuer>
 //  </saml2p:AuthnRequest>
 
-    (tryo { samlClient.getRedirectAction(liftWebContext(request,resp), true, false) }).map(redirectAction => {
+    try {
+      val redirectAction = samlClient.getRedirectAction(liftWebContext(request,resp), true, false) 
       redirectAction.getType match {
         case RedirectAction.RedirectType.REDIRECT => {
           resp.sendRedirect(redirectAction.getLocation)
@@ -737,10 +738,12 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
           resp.sendError(400,"bad redirect type")
         }
       }
-
-    }).openOr({
-      resp.sendError(500,"unknown error during SAML request sending")
-    })
+    } catch {
+      case e:Exception => {
+        println("error during saml request: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+        resp.sendError(500,"unknown error during SAML request sending")
+      }
+    }
     false
   }
 
