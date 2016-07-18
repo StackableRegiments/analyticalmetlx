@@ -1300,35 +1300,47 @@ var Modes = (function(){
                     inks:{},
                     multiWordTexts:{}
                 },
-                resizeHandleSize:80,
+                resizeHandleSize:40,
                 setSelection:function(selected){
                     Modes.select.clearSelection();
                     Modes.select.selected = _.merge(Modes.select.selected,selected);
                     Modes.select.addHandles();
                 },
                 addHandles:function(){
-                    var s = Modes.select.resizeHandleSize;
+                    var handlesAtZoom = function(){
+                        var zoom = scale();
+                        return Modes.select.resizeHandleSize / zoom;
+                    }
+                    var s = handlesAtZoom();
                     var adjustForTinyBoxes = function(x,bounds){
                         var width = bounds.br.x - bounds.tl.x;
                         var height = bounds.br.y - bounds.tl.y;
                         var offset = 0;
+                        var s = handlesAtZoom();
                         if(width < 50){
-                            offset = Modes.select.resizeHandleSize * 2;
+                            offset = s * 2;
                         }
                         else if(width < 200){
-                            offset = Modes.select.resizeHandle;
+                            offset = s;
                         }
                         return {
                             x:x + offset,
                             adjusted:offset
                         };
                     }
+                    var blitAnd = function(f){
+                        return function(){
+                            f();
+                            blit();
+                        };
+                    }
+                    var handleAlpha = 0.3;
                     var manualMove = (
                         function(){
                             var rehome = function(){
                                 if(!manualMove.activated){
                                     var root = Modes.select.totalSelectedBounds();
-                                    var s = Modes.select.resizeHandleSize;
+                                    var s = handlesAtZoom();
                                     var x = root.x;
                                     var y = root.y;
                                     var width = root.x2 - root.x;
@@ -1342,10 +1354,10 @@ var Modes = (function(){
                                         center + s / 2,
                                         root.y
                                     ];
-                                    blit();
                                 }
                             }
-                            Progress.onSelectionChanged["manualMove"] = rehome;
+                            Progress.onSelectionChanged["manualMove"] = blitAnd(rehome);
+                            Progress.onViewboxChanged["manualMove"] = rehome;
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1400,6 +1412,7 @@ var Modes = (function(){
                                         var size = br.x - tl.x;
                                         var x = tl.x;
                                         var y = tl.y;
+                                        canvasContext.globalAlpha = handleAlpha;
                                         canvasContext.setLineDash([]);
                                         canvasContext.strokeStyle = "black";
                                         canvasContext.fillStyle = "white";
@@ -1418,7 +1431,7 @@ var Modes = (function(){
                             var rehome = function(){
                                 if(!resizeAspectLocked.activated){
                                     var root = Modes.select.totalSelectedBounds();
-                                    var s = Modes.select.resizeHandleSize;
+                                    var s = handlesAtZoom();
                                     var x = adjustForTinyBoxes(root.x2,root).x;
                                     resizeAspectLocked.bounds = [
                                         x - s,
@@ -1426,10 +1439,10 @@ var Modes = (function(){
                                         x,
                                         root.y + s
                                     ];
-                                    blit();
                                 }
                             }
-                            Progress.onSelectionChanged["resizeAspectLocked"] = rehome;
+                            Progress.onSelectionChanged["resizeAspectLocked"] = blitAnd(rehome);
+                            Progress.onViewboxChanged["resizeAspectLocked"] = rehome;
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1494,6 +1507,7 @@ var Modes = (function(){
                                         var xOffset = -1 * size;
                                         var yOffset = -1 * size;
                                         var rot = 90;
+                                        canvasContext.globalAlpha = handleAlpha;
                                         canvasContext.setLineDash([]);
                                         canvasContext.strokeStyle = "black";
                                         canvasContext.fillStyle = "white";
@@ -1514,7 +1528,7 @@ var Modes = (function(){
                         var rehome = function(){
                             if(!resizeFree.activated){
                                 var root = Modes.select.totalSelectedBounds();
-                                var s = Modes.select.resizeHandleSize;
+                                var s = handlesAtZoom();
                                 var x = adjustForTinyBoxes(root.x2,root).x;
                                 resizeFree.bounds = [
                                     x - s,
@@ -1522,10 +1536,10 @@ var Modes = (function(){
                                     x,
                                     root.y2
                                 ];
-                                blit();
                             }
                         }
-                        Progress.onSelectionChanged["resizeFree"] = rehome;
+                        Progress.onSelectionChanged["resizeFree"] = blitAnd(rehome);
+                        Progress.onViewboxChanged["resizeFree"] = rehome;
                         return {
                             activated:false,
                             down:function(worldPos){
@@ -1583,6 +1597,7 @@ var Modes = (function(){
                                     var xOffset = -1 * size;
                                     var yOffset = -1 * size;
                                     var rot = 90;
+                                    canvasContext.globalAlpha = handleAlpha;
                                     canvasContext.setLineDash([]);
                                     canvasContext.strokeStyle = "black";
                                     canvasContext.fillStyle = "white";
