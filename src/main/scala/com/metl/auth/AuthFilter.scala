@@ -638,7 +638,16 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     override def getServerPort: Int = req.getServerPort
     override def getSessionAttribute(name: String): AnyRef = req.getSession.getAttribute(name)
     override def getScheme: String = req.getScheme
-    override def getFullRequestURL: String = req.getRequestURL.toString
+    override def getFullRequestURL: String = {
+      val servletReqURL = req.getRequestURL.toString
+      val generatedReqURL = "%s://%s%s/%s".format(getScheme, getServerName, getServerPort match {
+        case 80 => ""
+        case 443 => ""
+        case other => ":%s".format(other)
+      }, req.getRequestURI)
+    println("content.getFullRequestURL: req(%s) gen(%s) passed(%s %s %s %s)".format(servletReqURL,generatedReqURL,samlConfiguration.serverScheme,samlConfiguration.serverName,samlConfiguration.serverPort,samlConfiguration.callBackUrl))
+      generatedReqURL
+    }
   }
 
   protected def redirectHome(resp:HttpServletResponse) = resp.sendRedirect("/")
@@ -697,7 +706,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   }
 
   def getSAMLClient = samlClient
-  def isRequestForSAMLCallbackUrl(request: HttpServletRequest): Boolean = request.getRequestURI.startsWith(samlConfiguration.callBackUrl)
+  def isRequestForSAMLCallbackUrl(request: HttpServletRequest): Boolean = request.getRequestURI.startsWith("/" + samlConfiguration.callBackUrl)
 
   def sendSAMLRequest(authSession:InProgressAuthSession,request: HttpServletRequest, resp: HttpServletResponse,session:HttpSession): Boolean  = { 
     /***********************************
@@ -728,7 +737,9 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       val redirectAction = samlClient.getRedirectAction(liftWebContext(request,resp), true, false) 
       redirectAction.getType match {
         case RedirectAction.RedirectType.REDIRECT => {
-          resp.sendRedirect(redirectAction.getLocation)
+          val redirectLoc = redirectAction.getLocation
+          println("relaying to: %s".format(redirectLoc))
+          resp.sendRedirect(redirectLoc)
         }
         case RedirectAction.RedirectType.SUCCESS => {
           resp.getWriter.write(redirectAction.getContent)
