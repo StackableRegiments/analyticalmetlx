@@ -112,7 +112,11 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
     val an:String = a.toString
     (an,request.getAttribute(an))
   }):_*)
-  lazy val cookies = request.getCookies.toList
+  lazy val cookies = request.getCookies match {
+    case null => Nil
+    case Array() => Nil
+    case other => other.toList
+  }
   lazy val parameters = request.getParameterNames.toList.flatMap(p => {
     val pn:String = p.toString
     request.getParameterValues(pn).toList.map(pv => (pn,pv.asInstanceOf[String]))
@@ -135,7 +139,7 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
 abstract class AuthSession(val session:HttpSession)
 
 case class HealthyAuthSession(override val session:HttpSession,originalRequest:Option[HttpServletRequest] = None,username:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil) extends AuthSession(session)
-abstract class InProgressAuthSession(override val session:HttpSession,val originalRequest:HttpServletRequest) extends AuthSession(session)
+abstract class InProgressAuthSession(override val session:HttpSession,val originalRequest:HttpServletRequest,val authenticator:String) extends AuthSession(session)
 case class EmptyAuthSession(override val session:HttpSession) extends AuthSession(session)
 
 class LowLevelSessionStore {
@@ -185,20 +189,20 @@ class LoggedInFilter extends Filter {
   import scala.xml._
   protected val sessionStore = new LowLevelSessionStore
   protected object FilterAuthenticators {
-    var authenticators:List[FilterAuthenticator] = Nil
+    var authenticator:Option[FilterAuthenticator] = None
 
     def passToAuthenticators(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
-      authenticators.find(_.shouldHandle(authSession,req,session)).map(_.handle(authSession,req,res,session)).getOrElse({
+      authenticator.filter(_.shouldHandle(authSession,req,session)).map(_.handle(authSession,req,res,session)).getOrElse({
         refuseAuthentication(authSession,req,res,session)
       })
     }
     def refuseAuthentication(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
-      res.sendError(403,"forbidden, and no available authenticators willing to authenticate this request")
+      res.sendError(403,"forbidden, and no available authenticator willing to authenticate this request")
       false
     }
     def requestNewAuthenticator(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
-      authenticators match {
-        case List(auth) => {
+      authenticator match {
+        case Some(auth) => {
           sessionStore.updateSession(session,(s:AuthSession) => {
             val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),req)
             newAuthSession
@@ -206,7 +210,7 @@ class LoggedInFilter extends Filter {
           true
         }
         case _ => {
-          throw new Exception("not the right number of authenticators")
+          throw new Exception("no configured authenticator")
           false
         }
       }
@@ -255,127 +259,132 @@ class LoggedInFilter extends Filter {
       configPath <- getProp(configPathVariable,configPathVariable);
       configRoot <- tryo(XML.load(configPath))
     ) yield {
-      FilterAuthenticators.authenticators = ((configRoot \\ "serverConfiguration" \\ "authentication").theSeq.flatMap{
+      FilterAuthenticators.authenticator = Some(new MultiAuthenticator(sessionStore,(configRoot \\ "serverConfiguration" \\ "authentication").theSeq.flatMap{
         case e:Elem => e.child.toList 
         case _ => Nil
-      }.flatMap{
-        case n:Elem if (n.label == "saml") => {
-          for (
-            serverScheme <- (n \\ "serverScheme").headOption.map(_.text);
-            serverName <- (n \\ "serverName").headOption.map(_.text);
-            serverPort <- (n \\ "serverPort").headOption.map(_.text.toInt);
-            samlCallbackUrl <- (n \\ "callbackUrl").headOption.map(_.text);
-            idpMetadataFileName <- (n \\ "idpMetadataFileName").headOption.map(_.text);
-            optionOfKeyStoreInfo = {
-              for (
-                keystorePath <- (n \\ "keystorePath").headOption.map(_.text);
-                keystorePassword <- (n \\ "keystorePassword").headOption.map(_.text);
-                privateKeyPassword <- (n \\ "keystorePrivateKeyPassword").headOption.map(_.text)
-              ) yield {
-                keyStoreInfo(keystorePath,keystorePassword,privateKeyPassword)
-              }
-            };
-            optionOfSettingsForADFS = {
-              for (
-                maximumAuthenticationLifetime <- (n \\ "maximumAuthenticationLifetime").headOption.map(_.text.toInt)
-              ) yield {
-                SettingsForADFS(maximumAuthenticationLifetime = maximumAuthenticationLifetime)
-              }
-            };
-            protectedRoutes = (n \\ "protectedRoutes" \\ "route").map(pr => pr.text :: Nil);
-            attrTransformers = (n \\ "informationAttributes" \\ "informationAttribute").flatMap(elem => {
-              for (
-                attrName <- (elem \\ "@samlAttribute").headOption.map(_.text);
-                attrValue <- (elem \\ "@attributeType").headOption.map(_.text)
-              ) yield {
-                (attrName,attrValue)
-              }
-            });
-            groupMap = (n \\ "eligibeGroups" \\ "eligibleGroup").flatMap(group => {
-              for (
-                attrName <- (group \\ "@samlAttribute").headOption.map(_.text);
-                groupType <- (group \\ "@groupType").headOption.map(_.text)
-              ) yield {
-                (attrName,groupType)
-              }
-            })
-          ) yield {
-            new SAMLFilterAuthenticator(sessionStore,SAMLConfiguration(
-              idpMetaDataPath = idpMetadataFileName,
-              serverScheme = serverScheme,
-              serverName = serverName,
-              serverPort = serverPort.toInt,
-              callBackUrl = samlCallbackUrl,
-              protectedRoutes = protectedRoutes.toList,
-              optionOfSettingsForADFS = optionOfSettingsForADFS,
-              eligibleGroups = Map(groupMap:_*),
-              attributeTransformers = Map(attrTransformers:_*),
-              optionOfKeyStoreInfo = optionOfKeyStoreInfo
-            ))
+      }.flatMap(elem => {
+        val name = (elem \\ "@name").headOption.map(_.text).getOrElse("unlabelled authenticator")
+        val imageUrl = (elem \\ "@imageUrl").headOption.map(_.text).getOrElse("")
+        val prefix = (elem \\ "@prefix").headOption.map(_.text).getOrElse("")
+        (elem match {
+          case n:Elem if (n.label == "saml") => {
+            for (
+              serverScheme <- (n \\ "serverScheme").headOption.map(_.text);
+              serverName <- (n \\ "serverName").headOption.map(_.text);
+              serverPort <- (n \\ "serverPort").headOption.map(_.text.toInt);
+              samlCallbackUrl <- (n \\ "callbackUrl").headOption.map(_.text);
+              idpMetadataFileName <- (n \\ "idpMetadataFileName").headOption.map(_.text);
+              optionOfKeyStoreInfo = {
+                for (
+                  keystorePath <- (n \\ "keystorePath").headOption.map(_.text);
+                  keystorePassword <- (n \\ "keystorePassword").headOption.map(_.text);
+                  privateKeyPassword <- (n \\ "keystorePrivateKeyPassword").headOption.map(_.text)
+                ) yield {
+                  keyStoreInfo(keystorePath,keystorePassword,privateKeyPassword)
+                }
+              };
+              optionOfSettingsForADFS = {
+                for (
+                  maximumAuthenticationLifetime <- (n \\ "maximumAuthenticationLifetime").headOption.map(_.text.toInt)
+                ) yield {
+                  SettingsForADFS(maximumAuthenticationLifetime = maximumAuthenticationLifetime)
+                }
+              };
+              protectedRoutes = (n \\ "protectedRoutes" \\ "route").map(pr => pr.text :: Nil);
+              attrTransformers = (n \\ "informationAttributes" \\ "informationAttribute").flatMap(elem => {
+                for (
+                  attrName <- (elem \\ "@samlAttribute").headOption.map(_.text);
+                  attrValue <- (elem \\ "@attributeType").headOption.map(_.text)
+                ) yield {
+                  (attrName,attrValue)
+                }
+              });
+              groupMap = (n \\ "eligibeGroups" \\ "eligibleGroup").flatMap(group => {
+                for (
+                  attrName <- (group \\ "@samlAttribute").headOption.map(_.text);
+                  groupType <- (group \\ "@groupType").headOption.map(_.text)
+                ) yield {
+                  (attrName,groupType)
+                }
+              })
+            ) yield {
+              new SAMLFilterAuthenticator(sessionStore,SAMLConfiguration(
+                idpMetaDataPath = idpMetadataFileName,
+                serverScheme = serverScheme,
+                serverName = serverName,
+                serverPort = serverPort.toInt,
+                callBackUrl = samlCallbackUrl,
+                protectedRoutes = protectedRoutes.toList,
+                optionOfSettingsForADFS = optionOfSettingsForADFS,
+                eligibleGroups = Map(groupMap:_*),
+                attributeTransformers = Map(attrTransformers:_*),
+                optionOfKeyStoreInfo = optionOfKeyStoreInfo
+              ))
+            }
           }
-        }
-        case n:Elem if (n.label == "mock") => Some(new UsernameSettingForm(sessionStore,n.child.map(_.text).mkString("")))
-        case n:Elem if (n.label == "google") => {
-          None
-          /*
-          LiftAuthAuthentication.attachAuthenticator(
-            new OpenIdConnectAuthenticationSystem(
-              googleClientId = (n \\ "@clientId").text,
-              googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text),
-              alreadyLoggedIn = () => Globals.casState.authenticated,
-              onSuccess = (la:LiftAuthStateData) => {
-                if ( la.authenticated ) {
-                  //setUserPrincipal(la.username)
-                  Globals.currentUser(la.username)
-                  SecurityListener.login
-                  var existingGroups:List[Tuple2[String,String]] = Nil
-                  if (Globals.groupsProviders != null){
-                    Globals.groupsProviders.foreach(gp => {
-                      val newGroups = gp.getGroupsFor(la.username)
-                      if (newGroups != null){
-                        existingGroups = existingGroups ::: newGroups
-                      }
-                    })
+          case n:Elem if (n.label == "mock") => Some(new UsernameSettingForm(sessionStore,n.child.map(_.text).mkString("")))
+          case n:Elem if (n.label == "google") => {
+            None
+            /*
+            LiftAuthAuthentication.attachAuthenticator(
+              new OpenIdConnectAuthenticationSystem(
+                googleClientId = (n \\ "@clientId").text,
+                googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text),
+                alreadyLoggedIn = () => Globals.casState.authenticated,
+                onSuccess = (la:LiftAuthStateData) => {
+                  if ( la.authenticated ) {
+                    //setUserPrincipal(la.username)
+                    Globals.currentUser(la.username)
+                    SecurityListener.login
+                    var existingGroups:List[Tuple2[String,String]] = Nil
+                    if (Globals.groupsProviders != null){
+                      Globals.groupsProviders.foreach(gp => {
+                        val newGroups = gp.getGroupsFor(la.username)
+                        if (newGroups != null){
+                          existingGroups = existingGroups ::: newGroups
+                        }
+                      })
+                    }
+                    Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
                   }
-                  Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
                 }
-              }
+              )
             )
-          )
-        */
-        }
-        case n:Elem if (n.label == "cas") => {
-          for (
-            loginUrl <- (n \\ "@loginUrl").headOption.map(_.text);
-            validateUrl <- (n \\ "@validateUrl").headOption.map(_.text)
-          ) yield {
-            new CASFilterAuthenticator(sessionStore,loginUrl,validateUrl)
+          */
           }
-        }
-        case n:Elem if (n.label == "openIdAuthenticator") => {
-          None
-          /*
-          OpenIdAuthenticator.attachOpenIdAuthenticator(
-            new OpenIdAuthenticator(
-              alreadyLoggedIn = () => Globals.casState.authenticated,
-              onSuccess = (la:LiftAuthStateData) => {
-                if ( la.authenticated ) {
-                  Globals.currentUser(la.username)
-                  SecurityListener.login
-                  Globals.casState.set(new CASStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
+          case n:Elem if (n.label == "cas") => {
+            for (
+              loginUrl <- (n \\ "@loginUrl").headOption.map(_.text);
+              validateUrl <- (n \\ "@validateUrl").headOption.map(_.text)
+            ) yield {
+              new CASFilterAuthenticator(sessionStore,loginUrl,validateUrl)
+            }
+          }
+          case n:Elem if (n.label == "openIdAuthenticator") => {
+            None
+            /*
+            OpenIdAuthenticator.attachOpenIdAuthenticator(
+              new OpenIdAuthenticator(
+                alreadyLoggedIn = () => Globals.casState.authenticated,
+                onSuccess = (la:LiftAuthStateData) => {
+                  if ( la.authenticated ) {
+                    Globals.currentUser(la.username)
+                    SecurityListener.login
+                    Globals.casState.set(new CASStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
+                  }
+                },
+                (n \\ "openIdEndpoint").map(eXml => OpenIdEndpoint((eXml \\ "@name").text,(s) => (eXml \\ "@formattedEndpoint").text.format(s),(eXml \\ "@imageSrc").text,Empty)) match {
+                  case Nil => Empty
+                  case specificEndpoints => Full(specificEndpoints)
                 }
-              },
-              (n \\ "openIdEndpoint").map(eXml => OpenIdEndpoint((eXml \\ "@name").text,(s) => (eXml \\ "@formattedEndpoint").text.format(s),(eXml \\ "@imageSrc").text,Empty)) match {
-                case Nil => Empty
-                case specificEndpoints => Full(specificEndpoints)
-              }
+              )
             )
-          )
-        */
-        }
-        case _ => None
-      }).toList
-      println("authenticators: %s".format(FilterAuthenticators.authenticators))
+          */
+          }
+          case _ => None
+        }).map(auth => DescribedAuthenticator(name,imageUrl,prefix,auth))
+      }).toList,""))
+      println("authenticators: %s".format(FilterAuthenticators.authenticator))
     }
   }
   override def destroy = {}
@@ -446,22 +455,97 @@ class LoggedInFilter extends Filter {
 }
 
 abstract class FilterAuthenticator(sessionStore:LowLevelSessionStore) {
+  val identifier = nextFuncName
   protected def freezeRequest(req:HttpServletRequest):HttpServletRequest = new CloneableHttpServletRequestWrapper(new CachingHttpServletRequestWrapper(req)).duplicate
   protected def getRequestRedirect(req:HttpServletRequest):String = req.getRequestURL.toString
+  def getSessionStore = sessionStore
   def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession
   def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = false
   def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = true //the boolean represents whether the req should then be passed down the chain
 }
 
+case class DescribedAuthenticator(name:String,imageUrl:String,prefix:String,authenticator:FilterAuthenticator) extends FilterAuthenticator(authenticator.getSessionStore) {
+  override val identifier = authenticator.identifier
+  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = authenticator.generateStore(authSession,req)
+  override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authenticator.shouldHandle(authSession,req,session)
+  override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = authenticator.handle(authSession,req,res,session)
+}
+
+class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[DescribedAuthenticator],descriptiveHtml:String = "") extends FilterAuthenticator(sessionStore) {
+  case class MultiChoiceInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,choice:Option[DescribedAuthenticator]) extends InProgressAuthSession(session,originalRequest,identifier)
+  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
+    MultiChoiceInProgress(authSession.session,freezeRequest(req),None)
+  }
+  override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
+    case mcip@MultiChoiceInProgress(s,or,choice) if mcip.authenticator == identifier => true // if this is the one handling it all
+    case _ => authenticators.exists(_.authenticator.shouldHandle(authSession,req,session)) 
+  }
+  override def toString = "MultiAuthenticator(%s)".format(authenticators)
+  override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+    (authSession,req.getMethod.toUpperCase,req.getRequestURI.split("/").toList.dropWhile(_ == "")) match {
+      case (mcip@MultiChoiceInProgress(session,origReq,None),"GET","choice" :: choice :: Nil) => {
+        println("looking for choice: %s".format(choice))
+        authenticators.find(_.identifier == choice).map(authenticator => {
+          println("choosing authenticator: %s".format(authenticator))
+          sessionStore.updateSession(authSession.session,s => mcip.copy(choice = Some(authenticator)))
+          res.sendRedirect(origReq.getRequestURL.toString)
+          false
+        }).getOrElse({
+          println("no valid authenticator found")
+          res.sendRedirect(origReq.getRequestURL.toString)
+          false
+        })
+      }
+      case (mcip@MultiChoiceInProgress(session,origReq,Some(describedAuthenticator)),_,_) => {
+        println("updating with %s's store".format(describedAuthenticator))
+        sessionStore.updateSession(authSession.session,s => describedAuthenticator.generateStore(authSession,origReq))
+        true
+      }
+      case other => {
+        authenticators.find(_.shouldHandle(authSession,req,session)).map(describedAuthenticator => {
+          println("passing upstream to higher authenticator: %s".format(describedAuthenticator))
+          val result = describedAuthenticator.handle(authSession,req,res,session)
+          sessionStore.getValidSession(session) match {
+            case Right(has@HealthyAuthSession(session,originalRequest,user,groups,attrs)) => {
+              println("adding prefix to username: %s + %s".format(describedAuthenticator.prefix,user))
+              sessionStore.updateSession(authSession.session,s => has.copy(username = "%s%s".format(describedAuthenticator.prefix,user)))
+              true
+            }
+            case _ => result
+          }
+        }).getOrElse({
+          println("no choice yet, sending choice form: %s".format(other))
+          res.getWriter.write("""<html>
+  %s
+  %s
+  </html>""".format(
+              descriptiveHtml,
+              authenticators.foldLeft("")((acc,item) => {
+                """%s<div class="authenticatorChoice">
+    <a href="/choice/%s">
+      <img class="authenticatorImage" src="%s"/>
+      <div class="authenticatorName">%s</div>
+    </a>
+    </div>""".format(acc,item.identifier,item.imageUrl,item.name)
+              })
+            )
+          )
+          res.setStatus(200)
+          false
+        })
+      }
+    }
+  }
+}
 
 class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]],descriptiveHtml:String) extends FilterAuthenticator(sessionStore) {
-  case class FormInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,gensymMap:Map[String,String]) extends InProgressAuthSession(session,originalRequest)
+  case class FormInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,gensymMap:Map[String,String]) extends InProgressAuthSession(session,originalRequest,identifier)
   override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
     val securedFormNamesLookup = Map(fields.map(f => (f,nextFuncName)):_*)
     FormInProgress(authSession.session,freezeRequest(req),securedFormNamesLookup)
   }
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
-    case FormInProgress(s,or,fieldMap) => true
+    case fip@FormInProgress(s,or,fieldMap) if fip.authenticator == identifier => true
     case _ => false
   }
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
@@ -523,10 +607,10 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   import org.pac4j.saml.client.Saml2Client
   import org.pac4j.saml.profile.Saml2Profile
 //  import scala.collection.immutable.List
-  case class SAMLProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest)
+  case class SAMLProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest,identifier)
   override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = SAMLProgress(authSession.session,freezeRequest(req))
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
-    case SAMLProgress(s,or) => true
+    case sp@SAMLProgress(s,or) if sp.authenticator == identifier => true
     case _ => false
   }
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
@@ -708,10 +792,10 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 
 class CASFilterAuthenticator(sessionStore:LowLevelSessionStore,casLoginUrl:String,casServiceValidatePath:String) extends FilterAuthenticator(sessionStore){
   import com.metl.utils._
-  case class CASProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest)
+  case class CASProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest,identifier)
   override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = CASProgress(authSession.session,freezeRequest(req))
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
-    case CASProgress(s,or) => true
+    case cp@CASProgress(s,or) if cp.authenticator == identifier => true
     case _ => false
   }
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
