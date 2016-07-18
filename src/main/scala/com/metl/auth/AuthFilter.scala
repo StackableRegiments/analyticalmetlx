@@ -640,13 +640,16 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     override def getScheme: String = req.getScheme
     override def getFullRequestURL: String = {
       val servletReqURL = req.getRequestURL.toString
-      val generatedReqURL = "%s://%s%s/%s".format(getScheme, getServerName, getServerPort match {
+      servletReqURL
+      /*
+      val generatedReqURL = "%s://%s%s%s".format(getScheme, getServerName, getServerPort match {
         case 80 => ""
         case 443 => ""
         case other => ":%s".format(other)
       }, req.getRequestURI)
     println("content.getFullRequestURL: req(%s) gen(%s) passed(%s %s %s %s)".format(servletReqURL,generatedReqURL,samlConfiguration.serverScheme,samlConfiguration.serverName,samlConfiguration.serverPort,samlConfiguration.callBackUrl))
       generatedReqURL
+      */
     }
   }
 
