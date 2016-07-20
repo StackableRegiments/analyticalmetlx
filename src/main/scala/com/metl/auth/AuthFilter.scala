@@ -472,9 +472,11 @@ class LoggedInFilter extends Filter {
       while (!finished){
         baseReq match {
           case rw:HttpServletRequestWrapper => {
-            baseReq = rw
+            println("drilling down: %s".format(rw))
+            baseReq = rw.getRequest
           }
-          case _ => {
+          case r => {
+            println("got the original request: %s (%s)".format(r,r.getClass.toString))
             finished = true
           }
         }
