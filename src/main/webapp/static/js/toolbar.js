@@ -874,6 +874,7 @@ var Modes = (function(){
                                 if(editor.doc.save().length > 0){
                                     sendRichText(source);
                                 }
+                                Progress.call("onSelectionChanged",[Modes.select.selected]);
                             });
                             editor.doc.selectionChanged(function(formatReport){
                                 var format = formatReport();
@@ -884,7 +885,6 @@ var Modes = (function(){
                                 fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
                                 fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
                                 justifySelector.val(format.align || carota.runs.defaultFormatting.align);
-
                             });
                         }
                     }
@@ -962,6 +962,7 @@ var Modes = (function(){
                             };
                             sel.multiWordTexts[editor.identity] = editor;
                             Modes.select.setSelection(sel);
+			    console.log(Modes.select.totalSelectedBounds());
                         } else {
                             var newEditor = createBlankText(worldPos);
                             var newDoc = newEditor.doc;
@@ -973,15 +974,18 @@ var Modes = (function(){
                             };
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
                             Modes.select.setSelection(sel);
+			    console.log(Modes.select.totalSelectedBounds());
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
                         };
+			console.log("Clicked in text mode",sel,editor);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
+                    Modes.select.clearSelection();
                     removeActiveMode();
                     fontOptions.hide();
                     unregisterPositionHandlers(board);
@@ -1208,12 +1212,12 @@ var Modes = (function(){
             };
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
-                delete Modes.canvasInteractables.resizeFree;
-                delete Modes.canvasInteractables.resizeAspectLocked;
-                delete Modes.canvasInteractables.manualMove;
-                delete Progress.onSelectionChanged.resizeFree;
-                delete Progress.onSelectionChanged.resizeAspectLocked;
-                delete Progress.onSelectionChanged.manualMove;
+                _.each(["resizeFree","resizeAspectLocked","manualMove"],function(key){
+                    delete Modes.canvasInteractables[key];
+                    delete Progress.onSelectionChanged[key];
+                    delete Progress.onViewboxChanged[key];
+                });
+
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1241,7 +1245,9 @@ var Modes = (function(){
                         });
                     }
                 });
-                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                if(changed){
+                    Progress.call("onSelectionChanged",[Modes.select.selected]);
+                }
             },100);
             var banContentFunction = function(){
                 if (Modes.select.selected != undefined && isAdministeringContent){
@@ -1357,7 +1363,6 @@ var Modes = (function(){
                                 }
                             }
                             Progress.onSelectionChanged["manualMove"] = blitAnd(rehome);
-                            Progress.onViewboxChanged["manualMove"] = rehome;
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1442,7 +1447,6 @@ var Modes = (function(){
                                 }
                             }
                             Progress.onSelectionChanged["resizeAspectLocked"] = blitAnd(rehome);
-                            Progress.onViewboxChanged["resizeAspectLocked"] = rehome;
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1500,26 +1504,31 @@ var Modes = (function(){
                                 },
                                 render:function(canvasContext){
                                     if(resizeAspectLocked.bounds){
-                                        var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
-                                        var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
-                                        var size = br.x - tl.x;
-                                        var inset = size / 10;
-                                        var xOffset = -1 * size;
-                                        var yOffset = -1 * size;
-                                        var rot = 90;
-                                        canvasContext.globalAlpha = handleAlpha;
-                                        canvasContext.setLineDash([]);
-                                        canvasContext.strokeStyle = "black";
-                                        canvasContext.fillStyle = "white";
-                                        canvasContext.strokeWidth = 2;
-                                        canvasContext.translate(tl.x,tl.y);
-                                        canvasContext.rotate(rot * Math.PI / 180);
-                                        /*Now the x and y are reversed*/
-                                        canvasContext.fillRect(0,xOffset,size,size);
-                                        canvasContext.strokeRect(0,xOffset,size,size);
-                                        canvasContext.font = sprintf("%spx FontAwesome",size);
-                                        canvasContext.fillStyle = "black";
-                                        canvasContext.fillText("\uF0B2",inset,-1 * inset);
+                                        try{
+                                            var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
+                                            var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
+                                            var size = br.x - tl.x;
+                                            var inset = size / 10;
+                                            var xOffset = -1 * size;
+                                            var yOffset = -1 * size;
+                                            var rot = 90;
+                                            canvasContext.globalAlpha = handleAlpha;
+                                            canvasContext.setLineDash([]);
+                                            canvasContext.strokeStyle = "black";
+                                            canvasContext.fillStyle = "white";
+                                            canvasContext.strokeWidth = 2;
+                                            canvasContext.translate(tl.x,tl.y);
+                                            canvasContext.rotate(rot * Math.PI / 180);
+                                            /*Now the x and y are reversed*/
+                                            canvasContext.fillRect(0,xOffset,size,size);
+                                            canvasContext.strokeRect(0,xOffset,size,size);
+                                            canvasContext.font = sprintf("%spx FontAwesome",size);
+                                            canvasContext.fillStyle = "black";
+                                            canvasContext.fillText("\uF0B2",inset,-1 * inset);
+                                        }
+                                        catch(e){
+                                            console.log("render",e);
+                                        }
                                     }
                                 }
                             };
@@ -1539,7 +1548,6 @@ var Modes = (function(){
                             }
                         }
                         Progress.onSelectionChanged["resizeFree"] = blitAnd(rehome);
-                        Progress.onViewboxChanged["resizeFree"] = rehome;
                         return {
                             activated:false,
                             down:function(worldPos){
@@ -1632,6 +1640,7 @@ var Modes = (function(){
                     _.forEach(Modes.select.selected.images,incorporate);
                     _.forEach(Modes.select.selected.multiWordTexts,function(text){
                         text.bounds = text.doc.calculateBounds();
+			console.log("totalSelectedBounds text",text.bounds);
                         incorporate(text);
                     });
                     totalBounds.width = totalBounds.x2 - totalBounds.x;

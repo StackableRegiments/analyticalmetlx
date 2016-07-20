@@ -20,27 +20,27 @@
     <server>
       <type>frontend</type>
     </server>
-	</serverConfigurations>
-	<clientConfig>
-		<xmppHost>demo.stackableregiments.com</xmppHost>
-		<xmppPort>5222</xmppPort>
-		<xmppDomain>local.temp</xmppDomain>
-		<conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
-		<webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
-		<thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
-		<resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-		<historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-		<structureDirectory>Structure</structureDirectory>
-		<resourceDirectory>Resources</resourceDirectory>
-		<uploadPath>upload_nested.yaws</uploadPath>
-		<primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-		<cryptoKey>exampleKey</cryptoKey>
-		<cryptoIV>exampleIV</cryptoIV>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	<securityProvider>
-		<staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUser" yawsPassword="examplePassword" />
-	</securityProvider>
+  </serverConfigurations>
+  <clientConfig>
+    <xmppHost>demo.stackableregiments.com</xmppHost>
+    <xmppPort>5222</xmppPort>
+    <xmppDomain>local.temp</xmppDomain>
+    <conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
+    <webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
+    <thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
+    <resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
+    <historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
+    <structureDirectory>Structure</structureDirectory>
+    <resourceDirectory>Resources</resourceDirectory>
+    <uploadPath>upload_nested.yaws</uploadPath>
+    <primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+    <cryptoKey>exampleKey</cryptoKey>
+    <cryptoIV>exampleIV</cryptoIV>
+    <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+  </clientConfig>
+  <securityProvider>
+    <staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUser" yawsPassword="examplePassword" />
+  </securityProvider>
   <authentication>
     <saml>
       <serverScheme>https</serverScheme>

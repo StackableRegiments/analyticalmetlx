@@ -1337,7 +1337,7 @@
 
                         doc.update = function() {
                             if(Conversations.getCurrentSlideJid() == doc.slide){
-				/*Expire the timeouts once we're in a different spot*/
+                                /*Expire the timeouts once we're in a different spot*/
                                 if(doc.isActive){
                                     var now = new Date().getTime();
                                     if (now > nextCaretToggle) {
@@ -1362,9 +1362,11 @@
 
                     var prototype = node.derive({
                         bounds: function() {
-                            if (!this._bounds) {
+			    var b = this._bounds;
+			    var valid = b && b.l && b.t && b.w && b.h;
+                            if(!valid) {
                                 var left = 0, top = 0, right = 0, bottom = 0;
-                                if (this.lines.length) {
+                                if (this.lines && this.lines.length) {
                                     var first = this.lines[0].bounds();
                                     left = first.l;
                                     top = first.t;
@@ -1381,11 +1383,13 @@
                         actualWidth: function() {
                             if (!this._actualWidth) {
                                 var result = 0;
-                                this.lines.forEach(function(line) {
-                                    if (typeof line.actualWidth === 'number') {
-                                        result = Math.max(result, line.actualWidth);
-                                    }
-                                });
+                                if(this.lines){
+                                    this.lines.forEach(function(line) {
+                                        if (typeof line.actualWidth === 'number') {
+                                            result = Math.max(result, line.actualWidth);
+                                        }
+                                    });
+                                }
                                 this._actualWidth = result;
                             }
                             return this._actualWidth;
@@ -1399,18 +1403,20 @@
                         draw: function(ctx, viewPort) {
                             var top = viewPort ? viewPort.t : 0;
                             var bottom = viewPort ? (viewPort.t + viewPort.h) : Number.MAX_VALUE;
-                            this.lines.some(function(line) {
-                                /*  Removing viewport understanding from this element because the MeTL viewer handles it
-                                 var b = line.bounds();
-                                 if (b.t + b.h < top) {
-                                 return false;
-                                 }
-                                 if (b.t > bottom) {
-                                 return true;
-                                 }
-                                 */
-                                line.draw(ctx, viewPort);
-                            });
+                            if(this.lines){
+                                this.lines.some(function(line) {
+                                    /*  Removing viewport understanding from this element because the MeTL viewer handles it
+                                     var b = line.bounds();
+                                     if (b.t + b.h < top) {
+                                     return false;
+                                     }
+                                     if (b.t > bottom) {
+                                     return true;
+                                     }
+                                     */
+                                    line.draw(ctx, viewPort);
+                                });
+                            }
                         },
                         type: 'frame'
                     });
