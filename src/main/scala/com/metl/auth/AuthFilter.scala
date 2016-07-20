@@ -20,6 +20,16 @@ import net.liftweb.util._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import scala.collection.JavaConverters._
+import java.security.Principal
+
+case class MeTLPrincipal(authenticated:Boolean,username:String,groups:List[Tuple2[String,String]],attrs:List[Tuple2[String,String]]) extends Principal {
+  override def getName:String = username
+}
+class AuthenticedHttpServletRequestWrapper(request:HttpServletRequest,authenticated:Boolean,username:String,groups:List[Tuple2[String,String]],attrs:List[Tuple2[String,String]]) extends HttpServletRequestWrapper(request){
+  override def getRemoteUser:String = username
+  override def getUserPrincipal:Principal = MeTLPrincipal(authenticated,username,groups,attrs)
+  override def getAuthType:String = "MeTL"
+}
 
 class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpServletRequestWrapper(request){
   protected val cachedData = IOUtils.toByteArray(request.getInputStream)
@@ -418,7 +428,6 @@ class LoggedInFilter extends Filter {
         case Right(s) => {
           s match {
             case has@HealthyAuthSession(Session,request,username,groups,attrs) => { //let the request through 
-              completeAuthentication(httpReq,httpResp,Session,username,groups,attrs)
               request.map(originalReq => {
                 /*
                  // not sure whether this is necessary - I think the implementation will turn out that the req has only the sessionId attribute, and it looks up in the container's sessionStore, so if I've updated the session has the sessionId the original req has, then it should apply to the original req I've deferred.
@@ -426,10 +435,12 @@ class LoggedInFilter extends Filter {
                 originalSession.setAttribute("user",Session.getAttribute("user"))
                 */
                 sessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
-                chain.doFilter(originalReq,httpResp)
+                val authedReq = completeAuthentication(originalReq,httpResp,Session,username,groups,attrs)
+                chain.doFilter(authedReq,httpResp)
                 //super.doFilter(originalReq,httpResp,chain)
               }).getOrElse({
-                chain.doFilter(httpReq,httpResp)
+                val authedReq = completeAuthentication(httpReq,httpResp,Session,username,groups,attrs)
+                chain.doFilter(authedReq,httpResp)
                 //super.doFilter(httpReq,httpResp,chain)
               })
             }
@@ -443,14 +454,13 @@ class LoggedInFilter extends Filter {
       }
     }
   }
-  protected def completeAuthentication(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession,user:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil):Unit = {
+  protected def completeAuthentication(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession,user:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil):HttpServletRequest = {
 //    req.login(user,"") // it claims this isn't available, but it's definitely in the javadoc, so I'm not yet sure what's happening here.
     session.setAttribute("authenticated",true)
     session.setAttribute("user",user)
     session.setAttribute("userGroups",groups)
     session.setAttribute("userAttributes",attrs)
-    //req.authenticate(res)
-    //req.login(user,"")
+    new AuthenticedHttpServletRequestWrapper(req,true,user,groups,attrs)
   }
 }
 
