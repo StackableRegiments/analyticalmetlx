@@ -195,7 +195,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     case _ => warn("MeTLSlideDisplayActor received unknown message")
   }
 }
-
+/*
 class MeTLConversationSearchActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
@@ -291,6 +291,196 @@ class MeTLConversationSearchActor extends StronglyTypedJsonActor with CometListe
             ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
           })
         }
+      })
+    }
+  }
+  override def lowPriority = {
+    case id:ImportDescription => {
+      if (id.author == username){
+        warn("received importDescription: %s".format(id))
+        imports = id :: imports
+        reRender
+      }
+    }
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
+      warn("receivedCommand: %s".format(c))
+      val newJid = c.commandParameters(0).toInt
+      val newConv = serverConfig.detailsOfConversation(newJid.toString)
+      if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
+        listing = query.map(q => serverConfig.searchForConversation(q)).getOrElse(Nil)
+        reRender
+      }
+    }
+    case _ => warn("MeTLConversationSearchActor received unknown message")
+  }
+}
+*/
+class RemotePluginConversationChooserActor extends MeTLConversationChooserActor {
+  protected val ltiIntegration:BrightSparkIntegration = RemotePluginIntegration
+  protected var ltiToken:Option[String] = None
+  protected var ltiSession:Option[RemotePluginSession] = None 
+  override def localSetup = {
+    super.localSetup
+    name.foreach(nameString => {
+      warn("localSetup for [%s]".format(name))
+      ltiToken = com.metl.snippet.Metl.getLtiTokenFromName(nameString)
+      ltiSession = ltiToken.flatMap(token => ltiIntegration.sessionStore.is.get(token))
+    })
+  }
+  override def perConversationAction(conv:Conversation) = {
+    ".conversationAnchor [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid)) &
+    ".conversationTitle *" #> conv.title &
+    ".conversationAuthor *" #> conv.author &
+    ".conversationJid *" #> conv.jid &
+    ".conversationEditingContainer" #> {
+      shouldModifyConversation(Globals.currentUser.is,conv) match {
+        case true => ".editConversationLink [href]" #> editConversation(conv.jid)
+        case false => ".conversationEditingContainer" #> NodeSeq.Empty
+      }
+    } /*&
+    ".conversationChoosingContainer" #> {
+      ".quickLinkButton [onclick]" #> {
+        ajaxCall(JsRaw("this"),(s:String) => {
+          Alert("clicked quickLink: (%s) => %s \r\n%s".format(s,conv,ltiSession))
+        })
+      } &
+      ".iFrameButton [onclick]" #> {
+        ajaxCall(JsRaw("this"),(s:String) => {
+          Alert("clicked iFrame: (%s) => %s \r\n%s".format(s,conv,ltiSession))
+        })
+      }
+    }
+    */
+  }
+  override def perImportAction(conv:Conversation) = {
+    ".importSuccess [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid))
+  }
+}
+class MeTLConversationSearchActor extends MeTLConversationChooserActor {
+  override def perConversationAction(conv:Conversation) = {
+    ".conversationAnchor [href]" #> boardFor(conv.jid) &
+    ".conversationTitle *" #> conv.title &
+    ".conversationAuthor *" #> conv.author &
+    ".conversationJid *" #> conv.jid &
+    ".conversationEditingContainer" #> {
+      shouldModifyConversation(Globals.currentUser.is,conv) match {
+        case true => ".editConversationLink [href]" #> editConversation(conv.jid)
+        case false => ".conversationEditingContainer" #> NodeSeq.Empty
+      }
+    } &
+    ".slidesContainer" #> {
+      ".slide" #> conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
+        ".slideIndex *" #> slide.index &
+        ".slideId *" #> slide.id &
+        ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+      })
+    }
+  }
+  override def perImportAction(conv:Conversation) = {
+    ".importSuccess [href]" #> boardFor(conv.jid)
+  }
+}
+
+abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
+  protected def perConversationAction(conv:Conversation):CssSel 
+  protected def perImportAction(conv:Conversation):CssSel 
+  private val serializer = new JsonSerializer("frontend")
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
+  override def autoIncludeJsonCode = true
+  private lazy val RECEIVE_USERNAME = "receiveUsername"
+  private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
+  private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
+      serializer.fromConversationList(serverConfig.searchForConversation(args(0).toString))
+    },Full(RECEIVE_CONVERSATIONS))
+  )
+
+  override def registerWith = MeTLConversationSearchActorManager 
+  override def lifespan = Full(5 minutes)
+  protected val username = Globals.currentUser.is
+  protected lazy val serverConfig = ServerConfiguration.default
+  protected var query:Option[String] = None
+  protected var listing:List[Conversation] = Nil
+  override def localSetup = {
+    super.localSetup
+    query = Some(Globals.currentUser.is)
+    listing = query.map(q => serverConfig.searchForConversation(q)).getOrElse(Nil)
+  }
+  protected def queryApplies(c:Conversation):Boolean = {
+    listing.exists(_.jid == c.jid) || c.author == Globals.currentUser.is || query.map(_.toLowerCase.trim).exists(q => c.author.toLowerCase.trim == q || c.title.toLowerCase.trim.contains(q))
+  }
+  protected var imports:List[ImportDescription] = Nil
+  override def render = {
+    "#createConversationContainer" #> {
+      "#createConversationButton [onclick]" #> ajaxCall(JsNull,(_s:String) => {
+        val title = "%s at %s".format(Globals.currentUser.is,new java.util.Date())
+        val newConv = serverConfig.createConversation(title,Globals.currentUser.is)
+        reRender
+      })
+    } &
+    "#conversationSearchBox *" #> ajaxText(query.getOrElse(""),(q:String) => {
+      query = Some(q)
+      listing = query.map(q => serverConfig.searchForConversation(q)).getOrElse(Nil)
+      reRender
+    }) &
+    "#activeImportsListing *" #> imports.groupBy(_.id).values.flatMap(_.sortWith((a,b) => a.timestamp.getTime > b.timestamp.getTime).headOption).map(imp => {
+      ".importContainer" #> {
+        ".importId *" #> Text(imp.id) &
+        ".importName *" #> Text(imp.name) &
+        ".importAuthor *" #> Text(imp.author) & 
+        { 
+          imp.result match {
+            case None => {
+              ".importOverallProgressContainer *" #> {
+                ".importProgressDescriptor *" #> imp.overallProgress.map(_.name) &
+                ".importProgressProgressBar [style]" #> imp.overallProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator))
+              } &
+              ".importStageProgressContainer *" #> {
+                ".importProgressDescriptor *" #> imp.stageProgress.map(_.name) &
+                ".importProgressProgressBar [style]" #> imp.stageProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator)) 
+              } &
+              ".importResultContainer" #> NodeSeq.Empty
+            }
+            case Some(Left(e)) => {
+              ".importProgressContainer" #> NodeSeq.Empty & 
+              ".importError *" #> e.getMessage & 
+              ".importSuccess" #> NodeSeq.Empty
+            }
+            case Some(Right(conv)) => {
+              ".importProgressContainer" #> NodeSeq.Empty & 
+              ".importError" #> NodeSeq.Empty & 
+              perImportAction(conv)
+            }
+          }
+        }
+      }
+    }) &
+    "#conversationListing *" #> {
+      ".conversationContainer" #> listing.map(conv => {
+        perConversationAction(conv)
+        /*
+        ".conversationAnchor [href]" #> boardFor(conv.jid) &
+        ".conversationTitle *" #> conv.title &
+        ".conversationAuthor *" #> conv.author &
+        ".conversationJid *" #> conv.jid &
+        ".conversationEditingContainer" #> {
+          shouldModifyConversation(Globals.currentUser.is,conv) match {
+            case true => ".editConversationLink [href]" #> editConversation(conv.jid)
+            case false => ".conversationEditingContainer" #> NodeSeq.Empty
+          }
+        } &
+        ".slidesContainer" #> {
+          ".slide" #> conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
+            ".slideIndex *" #> slide.index &
+            ".slideId *" #> slide.id &
+            ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+          })
+        }
+        */
       })
     }
   }
@@ -595,7 +785,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
     ClientSideFunctionDefinition("changeUser",List("username"),(args) => {
       val newUsername = getArgAsString(args(0))
       if (Globals.isDevMode){
-        Globals.currentUser(newUsername)
+        //Can't change the username anymore.
+        //Globals.currentUser(newUsername)
       }
       JString(username)
     }, Full(RECEIVE_USERNAME)),

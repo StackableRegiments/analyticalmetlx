@@ -27,6 +27,7 @@ object SystemRestHelper extends RestHelper with Stemmer with Logger {
   warn("SystemRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case r@Req("getRemoteUser" :: Nil,_,_) => () => Full(PlainTextResponse(S.containerRequest.map(r => (r.asInstanceOf[net.liftweb.http.provider.servlet.HTTPRequestServlet]).req.getRemoteUser).getOrElse("unknown")))
     case r@Req(List("api","v1","serverStatus"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
         Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))

@@ -1,7 +1,7 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-import monash.SAML._
+import com.metl.saml._
 
 import com.metl.cas._
 import com.metl.data._
@@ -87,15 +87,16 @@ object SecurityListener extends Logger {
     }
   }
 }
-
+/*
 class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) with Logger {
   debug("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
-  override def constructResponseWithMessages(req:Req,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
+  override def constructResponseWithMessages(req:Req,originalRequestId:String,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
       val loginPageNode = (
         "%s [method]".format(formSelector) #> "POST" &
         "%s [action]".format(formSelector) #> "/formLogon" &
         "%s *".format(formSelector) #> {(formNode:NodeSeq) => {
           <input type="hidden" name="path" value={makeUrlFromReq(req)}></input> ++ 
+          <input type="hidden" name="originalRequestId" value={originalRequestId}></input> ++ 
           additionalMessages.foldLeft(NodeSeq.Empty)((acc,am) => {
             acc ++ <div class="loginError">{am}</div>
           }) ++ (
@@ -114,7 +115,7 @@ class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSele
       )
   })
 }
-
+*/
 
 import java.nio.file.attribute.UserPrincipal
 import javax.security.auth._
@@ -171,7 +172,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       case _ => None
     }).toList:_*)
 
-    SAMLconfiguration(
+    SAMLConfiguration(
       idpMetaDataPath = idpMetadataFileName,
       serverScheme = serverScheme,
       serverName = serverName,
@@ -297,6 +298,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       exs
     })
   }
+  /*
   def setupAuthenticatorsFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
@@ -488,7 +490,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
           )
         )
     // )
-      }}/*,
+      }}*//*,
       "openIdAuthenticator" -> {(n:NodeSeq) => {
         OpenIdAuthenticator.attachOpenIdAuthenticator(
           new OpenIdAuthenticator(
@@ -508,8 +510,10 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         )
       }}
       */
+     /*
     ))
   }
+  */
   def setupCachesFromFile(filePath:String) = {
     import net.sf.ehcache.config.{MemoryUnit}
     import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
@@ -593,7 +597,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
 
     setupAuthorizersFromFile(Globals.configurationFileLocation)
-    setupAuthenticatorsFromFile(Globals.configurationFileLocation)
+   // setupAuthenticatorsFromFile(Globals.configurationFileLocation)
     setupClientConfigFromFile(Globals.configurationFileLocation)
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
@@ -607,6 +611,8 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
+    LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
+    LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
     info(configs)
   }
   def listRooms(configName:String):List[String] = configs(configName)._2.list

@@ -1,4 +1,4 @@
-package monash.SAML
+package com.metl.saml
 
 import net.liftweb.common.{Logger, Empty, Full}
 import net.liftweb.http.Req

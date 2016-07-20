@@ -1,7 +1,7 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-import monash.SAML._
+import com.metl.saml._
 
 import com.metl.data._
 import com.metl.utils._
@@ -15,6 +15,8 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
 import scala.xml._
 import com.metl.renderer.RenderDescription
+
+import net.liftweb.http._
 
 case class PropertyNotFoundException(key: String) extends Exception(key) {
   override def getMessage: String = "Property not found: " + key
@@ -85,6 +87,12 @@ object Globals extends PropertyReader with Logger {
     LiftRules.handleMimeFile = net.liftweb.http.OnDiskFileParamHolder.apply
   })
 
+  val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
+  val brightSpaceValenceIntegrations = {
+    val bsvin = readNode(propFile,"brightSpaceValence")
+    (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
+  }
+
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
@@ -101,8 +109,27 @@ object Globals extends PropertyReader with Logger {
     casState.is.eligibleGroups.toList
   }
   var groupsProviders:List[GroupsProvider] = Nil
-  object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
-  object currentUser extends SessionVar[String](casState.is.username)
+
+  object casState {
+    import com.metl.liftAuthenticator._
+    import net.liftweb.http.S
+    def is:LiftAuthStateData = {
+      S.containerSession.map(s => {
+        val username = s.attribute("user").asInstanceOf[String]
+        val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
+        val userGroups = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],userGroups,userAttributes)
+      }).getOrElse({
+        LiftAuthStateDataForbidden
+      })
+    }
+  }
+  object currentUser {
+    def is:String = casState.is.username
+  }
+  //object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
+  //object currentUser extends SessionVar[String](casState.is.username)
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
@@ -113,6 +140,41 @@ object Globals extends PropertyReader with Logger {
   val LargeSize = new RenderDescription(1920,1080)
   val PrintSize = new RenderDescription(21 * printDpi, 29 * printDpi)
   val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize/*,PrintSize*/)
+
+  //this is for testing
+  //
+  LiftRules.dispatch.append {
+    case r@Req(List("testForm"),_,_) => () => Full({
+      (for (
+        a <- r.param("a");
+        b <- r.param("b");
+        files = r.uploadedFiles
+      ) yield {
+        PlainTextResponse("form posted okay\r\na:%s\r\nb:%s\r\nfiles:%s".format(a,b,files.map(f => {
+          "%s => %s (%s) %s bytes".format(f.name,f.fileName,f.mimeType,f.length)
+        })))
+      }).getOrElse({
+        val nodes = 
+          <html>
+            <body>
+              <form action="/testForm" method="post" enctype="multipart/form-data">
+                <label for="a">a</label>
+                <input name="a" type="text"/>
+                <label for="b">b</label>
+                <input name="b" type="text"/>
+                <label for="file1">file1</label>
+                <input name="file1" type="file"/>
+                <label for="file2">file1</label>
+                <input name="file2" type="file"/>
+                <input type="submit" value="testSubmit"/>
+              </form>
+            </body>
+          </html>
+        val response = LiftRules.convertResponse(((nodes,200), S.getHeaders(LiftRules.defaultHeaders((nodes,r))), r.cookies, r))
+        response
+      })
+    })
+  }
 }
 
 //object CurrentSlide extends SessionVar[Box[String]](Empty)

@@ -1,4 +1,4 @@
-package monash.SAML
+package com.metl.saml 
 
 import com.metl.liftAuthenticator._
 import net.liftweb.common._
@@ -25,8 +25,8 @@ case class InternalServerErrorResponseWithContent(content:String) extends LiftRe
 class SAMLAuthenticationSystem(samlAuthenticator:SAMLAuthenticator) extends LiftAuthenticationSystem {
   override def dispatchTableItemFilter = (request) =>
     samlAuthenticator.isRequestForSAMLCallbackUrl(request) || ( samlAuthenticator.isRequestForProtectedRoute(request) && !samlAuthenticator.checkWhetherAlreadyLoggedIn )
-  override def dispatchTableItem(request:Req) =
-    Full(samlAuthenticator.constructResponse(request))
+  override def dispatchTableItem(request:Req,reqId:String) =
+    Full(samlAuthenticator.constructResponse(request,reqId))
 }
 
 case class SettingsForADFS(
@@ -39,7 +39,7 @@ case class keyStoreInfo(
   privateKeyPassword:String
 )
 
-case class SAMLconfiguration(
+case class SAMLConfiguration(
   optionOfKeyStoreInfo:Option[keyStoreInfo] = None,
   idpMetaDataPath:String,
   serverScheme:String,
@@ -53,10 +53,11 @@ case class SAMLconfiguration(
   attributeTransformers:Map[String,String] = Map.empty[String,String]
 )
 
+
 class SAMLAuthenticator (
   alreadyLoggedIn:() => Boolean,
   onSuccess:(LiftAuthStateData) => Unit,
-  samlConfiguration: SAMLconfiguration
+  samlConfiguration: SAMLConfiguration
 ) extends LiftAuthenticator(alreadyLoggedIn,onSuccess) with Logger
 {
   protected val overrideHost: Box[String] = Empty
@@ -75,7 +76,7 @@ class SAMLAuthenticator (
     port = samlConfiguration.serverPort
   )
 
-  protected def getSaml2Client(samlConfiguration: SAMLconfiguration) = {
+  protected def getSaml2Client(samlConfiguration: SAMLConfiguration) = {
     val samlClient: Saml2Client = new Saml2Client {
 
       // Override method "getStateParameter" to retrieve RelayState from the current request
@@ -143,20 +144,20 @@ class SAMLAuthenticator (
 
   override def checkWhetherAlreadyLoggedIn: Boolean = alreadyLoggedIn() || InSessionLiftAuthState.is.authenticated
 
-  override def constructResponse(request: Req): LiftResponse = {
+  override def constructResponse(request: Req, reqId:String): LiftResponse = {
     request match {
       case Req(samlConfiguration.callBackUrl :: Nil, _, _) =>
         handleSAMLResponseCallback(request)
       case Req("favicon" :: Nil, _, _) =>
         ForbiddenResponse("Forbidden")
       case Req(_, _, _) =>
-        sendSAMLRequest(request)
+        sendSAMLRequest(request,reqId)
       case _ =>
         ForbiddenResponse("Forbidden")
     }
   }
 
-  def sendSAMLRequest(request: Req): LiftResponse = {
+  def sendSAMLRequest(request: Req,reqId:String): LiftResponse = { // got to set the relayState to use the reqId, instead of the pac4j generated relayState
 
     /***********************************
     ************************************
