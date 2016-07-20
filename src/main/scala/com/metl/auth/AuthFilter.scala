@@ -470,7 +470,11 @@ class LoggedInFilter extends Filter {
     val principal = MeTLPrincipal(true,user,groups,attrs)
     try {
       val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
-      (req.asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
+      var baseReq:ServletRequest = req
+      while (baseReq.isInstanceOf[HttpServletRequestWrapper]){
+        baseReq = baseReq.asInstanceOf[HttpServletRequestWrapper].getRequest
+      }
+      (baseReq.asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
     } catch {
       case e:Exception => {
         println("exception while attempting to set jetty's remoteUser: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
