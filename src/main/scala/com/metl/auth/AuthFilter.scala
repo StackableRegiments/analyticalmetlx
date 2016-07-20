@@ -25,9 +25,15 @@ import java.security.Principal
 case class MeTLPrincipal(authenticated:Boolean,username:String,groups:List[Tuple2[String,String]],attrs:List[Tuple2[String,String]]) extends Principal {
   override def getName:String = username
 }
-class AuthenticedHttpServletRequestWrapper(request:HttpServletRequest,authenticated:Boolean,username:String,groups:List[Tuple2[String,String]],attrs:List[Tuple2[String,String]]) extends HttpServletRequestWrapper(request){
-  override def getRemoteUser:String = username
-  override def getUserPrincipal:Principal = MeTLPrincipal(authenticated,username,groups,attrs)
+class AuthenticedHttpServletRequestWrapper(request:HttpServletRequest,principal:MeTLPrincipal) extends HttpServletRequestWrapper(request){
+  override def getRemoteUser:String = {
+    if (principal.authenticated){
+      principal.username
+    } else {
+      null
+    }
+  }
+  override def getUserPrincipal:Principal = principal
   override def getAuthType:String = "MeTL"
 }
 
@@ -460,8 +466,17 @@ class LoggedInFilter extends Filter {
     session.setAttribute("user",user)
     session.setAttribute("userGroups",groups)
     session.setAttribute("userAttributes",attrs)
-    res.setHeader("REMOTE_USER",user)
-    new AuthenticedHttpServletRequestWrapper(req,true,user,groups,attrs)
+    //res.setHeader("REMOTE_USER",user) //I was hoping that this would drive the logger's remoteUser behaviour, but it doesn't appear to.
+    val principal = MeTLPrincipal(true,user,groups,attrs)
+    try {
+      val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
+      (req.asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
+    } catch {
+      case e:Exception => {
+        println("exception while attempting to set jetty's remoteUser: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
+      }
+    }
+    new AuthenticedHttpServletRequestWrapper(req,principal)
   }
 }
 
