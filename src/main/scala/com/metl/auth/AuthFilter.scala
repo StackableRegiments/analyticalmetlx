@@ -465,6 +465,7 @@ class LoggedInFilter extends Filter {
     session.setAttribute("userAttributes",attrs)
     //res.setHeader("REMOTE_USER",user) //I was hoping that this would drive the logger's remoteUser behaviour, but it doesn't appear to.
     val principal = MeTLPrincipal(true,user,groups,attrs)
+    /*  //no, this entire block won't work.  Jetty now (didn't used to, and doesn't when embedded) correctly implements a particular JSR which specifies that all server/container libraries should be hidden from the servlet, and it does so by subtly changing the class of the outer servlet code from the libraries inside, such that the org.eclipse.jetty.server.Request is not the same type as the one given to us by the server.
     try { //Jetty specific code for setting the remoteUser, though the final pattern match is probably an appropriate place to handle other containers as well.
       var baseReq:ServletRequest = req
       var finished = false
@@ -486,7 +487,7 @@ class LoggedInFilter extends Filter {
           val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
           r.setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
         }
-        case r:ServletRequest if r.isInstanceOf[org.eclipse.jetty.server.Request] => {
+        case r:ServletRequest if r.getClass.toString == "org.eclipse.jetty.server.Request" => {
           println("trying to cast it: %s".format(r))
           val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
           (r.asInstanceOf[HttpServletRequest].asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
@@ -500,6 +501,7 @@ class LoggedInFilter extends Filter {
         println("exception while attempting to set jetty's remoteUser: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
       }
     }
+    */
     new AuthenticedHttpServletRequestWrapper(req,principal)
   }
 }
