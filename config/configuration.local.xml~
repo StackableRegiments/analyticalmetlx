@@ -1,0 +1,90 @@
+<serverConfiguration>
+  <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
+  <serverConfigurations>
+    <server>
+      <type>MeTL2011</type>
+      <name>demo.stackable</name>
+      <host>demo.stackableregiments.com</host>
+      <meggleUrl>unused</meggleUrl>
+      <xmppDomainName>local.temp</xmppDomainName>
+      <httpUsername>exampleUsername</httpUsername>
+      <httpPassword>examplePassword<httpPassword>
+      <messageBusUsernamePrefix>exampleUsername</messageBusUsernamePrefix>
+      <messageBusPassword>examplePassword</messageBusPassword>
+      <conversationListenerUsernamePrefix>exampleUsername</conversationListenerUsernamePrefix>
+      <conversationListenerPassword>examplePassword</conversationListenerPassword>
+    </server>
+    <server>
+      <type>transientLoopback</type>
+    </server>
+    <server>
+      <type>frontend</type>
+    </server>
+  </serverConfigurations>
+  <clientConfig>
+    <xmppHost>demo.stackableregiments.com</xmppHost>
+    <xmppPort>5222</xmppPort>
+    <xmppDomain>local.temp</xmppDomain>
+    <conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
+    <webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
+    <thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
+    <resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
+    <historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
+    <structureDirectory>Structure</structureDirectory>
+    <resourceDirectory>Resources</resourceDirectory>
+    <uploadPath>upload_nested.yaws</uploadPath>
+    <primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
+    <cryptoKey>exampleKey</cryptoKey>
+    <cryptoIV>exampleIV</cryptoIV>
+    <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+  </clientConfig>
+  <securityProvider>
+    <staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUser" yawsPassword="examplePassword" />
+  </securityProvider>
+  <authentication>
+    <saml>
+      <serverScheme>https</serverScheme>
+      <serverName>devmetl.saintleo.edu</serverName>
+      <serverPort>8443</serverPort>
+      <maximumAuthenticationLifetime>
+        28800 <!-- in seconds, must match corresponding settings in IDP -->
+      </maximumAuthenticationLifetime>
+      <expectedAttributes>
+        <emailAddress>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</emailAddress>
+        <group>http://schemas.xmlsoap.org/claims/Group</group>
+      </expectedAttributes>
+      <callbackUrl>saml-callback</callbackUrl>
+      <protectedRoutes>
+        <route>authenticationState</route>
+        <route>board</route>
+        <route>future</route>
+        <route>metlviewer</route>
+        <route>summaries</route>
+        <route>conversation</route>
+        <route>slide</route>
+        <route>slideNext</route>
+        <route>slidePrev</route>
+        <route>slideNavigation</route>
+        <route>quiz</route>
+        <route>quizzes</route>
+      </protectedRoutes>
+      <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
+      <keystorePath>examplePath</keystorePath>
+      <keystorePassword>examplePassword</keystorePassword>
+      <keystorePrivateKeyPassword>examplePassword</keystorePrivateKeyPassword>
+      <informationAttributes>
+        <informationAttribute samlAttribute="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" attributeType="email" />
+      </informationAttributes>
+      <eligibleGroups>
+        <eligibleGroup samlAttribute="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" groupType="ou" />
+      </eligibleGroups>
+    </saml>
+  </authentication>
+  <groupsProvider>
+    <selfGroups/>
+    <flatFileGroups format="stLeo" location="" refreshPeriod=""/>
+    <flatFileGroups format="globalOverrides" location="" refreshPeriod=""/>
+    <flatFileGroups format="specificOverrides" location="" refreshPeriod=""/>
+  </groupsProvider>
+  <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
+</serverConfiguration>

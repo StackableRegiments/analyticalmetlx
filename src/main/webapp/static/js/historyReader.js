@@ -601,7 +601,6 @@ function render(content,incCanvasContext,incViewBounds){
         var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
         try{
             var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
-            //console.log("viewbounds",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
             visibleBounds = [];
             var renderInks = function(inks){
                 if (inks != undefined){
@@ -645,12 +644,6 @@ function render(content,incCanvasContext,incViewBounds){
 
                 Progress.call("postRender");
                 renderDecoratorsMark = Date.now();
-            }
-            var renderDragHandle = function(pos,size){
-                var xOffset = size / 2;
-                var yOffset = xOffset / 3 * 2;
-                canvasContext.font = sprintf("%spx FontAwesome",size);
-                canvasContext.fillText("\uF047",pos.x - xOffset,pos.y + yOffset);
             }
             var renderSelectionOutlines = function(){
                 var size = Modes.select.resizeHandleSize;

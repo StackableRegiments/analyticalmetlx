@@ -92,6 +92,7 @@ var DeviceConfiguration = (function(){
         setDefaultOptions();
     };
     var getDeviceDimensions = function(){
+	return W.getViewportDimensions();
         var deviceHeight = 0;
         var deviceWidth = 0;
         var matchMetaTag = function(metaName,metaValue){

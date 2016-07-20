@@ -170,7 +170,6 @@ function sendRichText(t){
         Modes.text.echoesToDisregard[t.identity] = true;
         var d = t.doc;
         t.doc.position = {x:t.x,y:t.y};
-        console.log("sendRichText");
         /*Now that we're ignoring the echoes, we need to update our own register so we agree with our peers about what's in the box*/
         var stanza = richTextEditorToStanza(t);
         boardContent.multiWordTexts[t.identity] = stanza;
