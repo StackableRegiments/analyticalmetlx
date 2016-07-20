@@ -17,6 +17,7 @@ var Progress = (function(){
         onBoardContentChanged:{},
         onViewboxChanged:{},
         onLayoutUpdated:{},
+        totalSelectionChanged:{},
         postRender:{},
         historyReceived:{},
         stanzaReceived:{},
