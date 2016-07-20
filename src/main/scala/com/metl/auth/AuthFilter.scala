@@ -488,6 +488,7 @@ class LoggedInFilter extends Filter {
         }
         case r:ServletRequest if r.isInstanceOf[org.eclipse.jetty.server.Request] => {
           println("trying to cast it: %s".format(r))
+          val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
           (r.asInstanceOf[HttpServletRequest].asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
         }
         case otherReq => {
