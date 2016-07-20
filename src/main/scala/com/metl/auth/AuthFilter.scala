@@ -443,11 +443,9 @@ class LoggedInFilter extends Filter {
                 sessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
                 val authedReq = completeAuthentication(originalReq,httpResp,Session,username,groups,attrs)
                 chain.doFilter(authedReq,httpResp)
-                //super.doFilter(originalReq,httpResp,chain)
               }).getOrElse({
                 val authedReq = completeAuthentication(httpReq,httpResp,Session,username,groups,attrs)
                 chain.doFilter(authedReq,httpResp)
-                //super.doFilter(httpReq,httpResp,chain)
               })
             }
             case ipas:InProgressAuthSession => {
@@ -469,12 +467,28 @@ class LoggedInFilter extends Filter {
     //res.setHeader("REMOTE_USER",user) //I was hoping that this would drive the logger's remoteUser behaviour, but it doesn't appear to.
     val principal = MeTLPrincipal(true,user,groups,attrs)
     try {
-      val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
       var baseReq:ServletRequest = req
-      while (baseReq.isInstanceOf[HttpServletRequestWrapper]){
-        baseReq = baseReq.asInstanceOf[HttpServletRequestWrapper].getRequest
+      var finished = false
+      while (!finished){
+        baseReq match {
+          case rw:HttpServletRequestWrapper => {
+            baseReq = rw
+          }
+          case _ => {
+            finished = true
+          }
+        }
       }
-      (baseReq.asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
+      baseReq match {
+        case r:org.eclipse.jetty.server.Request => {
+          println("setting remote user")
+          val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
+          r.setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
+        }
+        case otherReq => {
+          println("not setting the remoteUser because the req is a %s".format(otherReq))
+        }
+      }
     } catch {
       case e:Exception => {
         println("exception while attempting to set jetty's remoteUser: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
