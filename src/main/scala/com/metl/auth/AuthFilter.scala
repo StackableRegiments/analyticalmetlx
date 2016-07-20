@@ -119,7 +119,6 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
     new CloneableHttpServletRequestWrapper(clonedReq){
       override def getRequest = request
     }
-
   }
   lazy val getBytes:Array[Byte] = {
     cachedData
@@ -466,7 +465,7 @@ class LoggedInFilter extends Filter {
     session.setAttribute("userAttributes",attrs)
     //res.setHeader("REMOTE_USER",user) //I was hoping that this would drive the logger's remoteUser behaviour, but it doesn't appear to.
     val principal = MeTLPrincipal(true,user,groups,attrs)
-    try {
+    try { //Jetty specific code for setting the remoteUser, though the final pattern match is probably an appropriate place to handle other containers as well.
       var baseReq:ServletRequest = req
       var finished = false
       while (!finished){
@@ -487,8 +486,12 @@ class LoggedInFilter extends Filter {
           val userId = new org.eclipse.jetty.security.DefaultUserIdentity(null,principal,null)
           r.setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
         }
+        case r:ServletRequest if r.isInstanceOf[org.eclipse.jetty.server.Request] => {
+          println("trying to cast it: %s".format(r))
+          (r.asInstanceOf[HttpServletRequest].asInstanceOf[org.eclipse.jetty.server.Request]).setAuthentication(new org.eclipse.jetty.security.UserAuthentication(null,userId))
+        }
         case otherReq => {
-          println("not setting the remoteUser because the req is a %s".format(otherReq))
+          println("not setting the remoteUser because baseReq is a %s (%s)".format(otherReq,otherReq.getClass.toString))
         }
       }
     } catch {
