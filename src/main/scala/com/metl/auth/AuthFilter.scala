@@ -460,6 +460,7 @@ class LoggedInFilter extends Filter {
     session.setAttribute("user",user)
     session.setAttribute("userGroups",groups)
     session.setAttribute("userAttributes",attrs)
+    res.setHeader("REMOTE_USER",user)
     new AuthenticedHttpServletRequestWrapper(req,true,user,groups,attrs)
   }
 }
