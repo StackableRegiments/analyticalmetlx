@@ -1428,9 +1428,9 @@ var Modes = (function(){
                                     var s = handlesAtZoom();
                                     var x = root.x2;
                                     resizeAspectLocked.bounds = [
-                                        x - s,
-                                        root.y,
                                         x,
+                                        root.y,
+                                        x + s,
                                         root.y + s
                                     ];
                                 }
@@ -1532,9 +1532,9 @@ var Modes = (function(){
                                 var s = handlesAtZoom();
                                 var x = root.x2;
                                 resizeFree.bounds = [
-                                    x - s,
-                                    root.y2 - s,
                                     x,
+                                    root.y2 - s,
+                                    x + s,
                                     root.y2
                                 ];
                             }
