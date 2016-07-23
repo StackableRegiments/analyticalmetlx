@@ -664,6 +664,49 @@ $(function(){
         showBackstage("customizeBrush");
         updateActiveMenu(this);
     });
+		$('#menuPrint').click(function(){
+			showBackstage("print");
+			updateActiveMenu(this);
+			var conversationJid = Conversations.getCurrentConversationJid();
+			var rangeAllRadio = $("#rangeAll");
+			var rangeSpecifiedRadio = $("#rangeSpecified");
+			var rangeThisSlideRadio = $("#rangeThisSlide");
+			var rangeSpecifiedInput = $("#rangeSpecifiedInput");
+			var printButton = $("#printButton");
+			var uncheckAll = function(){
+				_.forEach([rangeSpecifiedRadio,rangeAllRadio,rangeThisSlideRadio],function(item){
+					item.prop("checked",false);
+				});
+				rangeSpecifiedInput.prop("disabled",true);
+			};
+			uncheckAll();
+			rangeThisSlideRadio.prop("checked",true);
+			rangeSpecifiedInput.val(Conversations.getCurrentSlide().index + 1);
+			var updatePrintState = function(pageRange){
+				printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s",conversationJid,pageRange));
+			};
+			updatePrintState(Conversations.getCurrentSlide().index + 1);
+			rangeAllRadio.on("click",function(){
+				uncheckAll();
+				$(this).prop("checked",true);
+				updatePrintState("all");
+			});
+			rangeSpecifiedRadio.on("click",function(){
+				uncheckAll();
+				$(this).prop("checked",true);
+				rangeSpecifiedInput.prop("disabled",false);
+				updatePrintState(rangeSpecifiedInput.val());
+			});
+			rangeSpecifiedInput.on("change",function(){
+				var text = $(this).val();
+				updatePrintState(text);
+			});
+			rangeThisSlideRadio.on("click",function(){
+				uncheckAll();
+				$(this).prop("checked",true);
+				updatePrintState(Conversations.getCurrentSlide().index + 1);
+			});
+		});
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
