@@ -1,18 +1,11 @@
 <serverConfiguration>
-  <defaultServerConfiguration>demo.stackable</defaultServerConfiguration>
+  <defaultServerConfiguration>local</defaultServerConfiguration>
   <serverConfigurations>
     <server>
-      <type>MeTL2011</type>
-      <name>demo.stackable</name>
-      <host>demo.stackableregiments.com</host>
-      <meggleUrl>unused</meggleUrl>
-      <xmppDomainName>local.temp</xmppDomainName>
-      <httpUsername>exampleUsername</httpUsername>
-      <httpPassword>examplePassword<httpPassword>
-      <messageBusUsernamePrefix>exampleUsername</messageBusUsernamePrefix>
-      <messageBusPassword>examplePassword</messageBusPassword>
-      <conversationListenerUsernamePrefix>exampleUsername</conversationListenerUsernamePrefix>
-      <conversationListenerPassword>examplePassword</conversationListenerPassword>
+      <type>sql</type>
+      <name>local</name>
+      <driver>org.h2.Driver</driver>
+      <url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
     </server>
     <server>
       <type>transientLoopback</type>
@@ -21,64 +14,28 @@
       <type>frontend</type>
     </server>
   </serverConfigurations>
+  <liftConfiguration>
+    <cometRequestTimeout>25</cometRequestTimeout>
+    <maxMimeSize>1048576000</maxMimeSize>
+    <maxMimeFileSize>524288000</maxMimeFileSize>
+    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
+    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
+    <allowParallelSnippets>true</allowParallelSnippets>
+  </liftConfiguration>
+  <caches>
+    <roomLifetime miliseconds="3600000" />
+    <resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
+  </caches>
+  <importerPerformance parallelism="8" />
   <clientConfig>
-    <xmppHost>demo.stackableregiments.com</xmppHost>
-    <xmppPort>5222</xmppPort>
     <xmppDomain>local.temp</xmppDomain>
-    <conversationSearchUrl>https://demo.stackableregiments.com/search?query=</conversationSearchUrl>
-    <webAuthenticationUrl>https://demo.stackableregiments.com/authenticationState</webAuthenticationUrl>
-    <thumbnailUrl>https://demo.stackableregiments.com/thumbnail/</thumbnailUrl>
-    <resourceUrl>https://demo.stackableregiments.com:1188/</resourceUrl>
-    <historyUrl>https://demo.stackableregiments.com:1749/</historyUrl>
-    <structureDirectory>Structure</structureDirectory>
-    <resourceDirectory>Resources</resourceDirectory>
-    <uploadPath>upload_nested.yaws</uploadPath>
-    <primaryKeyGenerator>primarykey.yaws</primaryKeyGenerator>
-    <cryptoKey>exampleKey</cryptoKey>
-    <cryptoIV>exampleIV</cryptoIV>
     <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
   </clientConfig>
   <securityProvider>
-    <staticKeyProvider ejabberdPassword="examplePassword" yawsUsername="exampleUser" yawsPassword="examplePassword" />
+    <stableKeyProvider />
   </securityProvider>
   <authentication>
-    <saml>
-      <serverScheme>https</serverScheme>
-      <serverName>devmetl.saintleo.edu</serverName>
-      <serverPort>8443</serverPort>
-      <maximumAuthenticationLifetime>
-        28800 <!-- in seconds, must match corresponding settings in IDP -->
-      </maximumAuthenticationLifetime>
-      <expectedAttributes>
-        <emailAddress>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</emailAddress>
-        <group>http://schemas.xmlsoap.org/claims/Group</group>
-      </expectedAttributes>
-      <callbackUrl>saml-callback</callbackUrl>
-      <protectedRoutes>
-        <route>authenticationState</route>
-        <route>board</route>
-        <route>future</route>
-        <route>metlviewer</route>
-        <route>summaries</route>
-        <route>conversation</route>
-        <route>slide</route>
-        <route>slideNext</route>
-        <route>slidePrev</route>
-        <route>slideNavigation</route>
-        <route>quiz</route>
-        <route>quizzes</route>
-      </protectedRoutes>
-      <idpMetadataFileName>federationmetadata.xml</idpMetadataFileName>
-      <keystorePath>examplePath</keystorePath>
-      <keystorePassword>examplePassword</keystorePassword>
-      <keystorePrivateKeyPassword>examplePassword</keystorePrivateKeyPassword>
-      <informationAttributes>
-        <informationAttribute samlAttribute="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" attributeType="email" />
-      </informationAttributes>
-      <eligibleGroups>
-        <eligibleGroup samlAttribute="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" groupType="ou" />
-      </eligibleGroups>
-    </saml>
+    <mock />
   </authentication>
   <groupsProvider>
     <selfGroups/>
@@ -86,5 +43,15 @@
     <flatFileGroups format="globalOverrides" location="" refreshPeriod=""/>
     <flatFileGroups format="specificOverrides" location="" refreshPeriod=""/>
   </groupsProvider>
+  <cloudConverterApiKey>exampleKey</cloudConverterApiKey>
+  <oneNote>
+    <clientId></clientId>
+    <clientSecret></clientSecret>
+    <redirectUrl></redirectUrl>
+    <scopes>wl.signin wl.basic office.onenote_create</scopes>
+  </oneNote>
+  <lti>
+    <remotePlugin key="" secret="" />
+  </lti>
   <stackAdaptor enabled="true" mongoHost="127.0.0.1" mongoPort="27017" mongoDb="stack"/>
 </serverConfiguration>

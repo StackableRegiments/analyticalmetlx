@@ -10,11 +10,11 @@ var Colors = (function(){
     ];
     var defaultColor = colors[0];
     var toHex = function(inputNumber){
-        n = parseInt(inputNumber,10);
+        var n = parseInt(inputNumber,10);
         if (isNaN(n)) return "00";
-        nValue = Math.max(0,Math.min(n,255));
+        var nValue = Math.max(0,Math.min(n,255));
         var toHexChar = function(inputN){
-            internalN = Math.max(0,Math.min(inputN,15));
+            var internalN = Math.max(0,Math.min(inputN,15));
             return "0123456789ABCDEF".charAt(internalN);
         }
         return (toHexChar((n-n%16)/16) + toHexChar(n%16)).toLowerCase();
