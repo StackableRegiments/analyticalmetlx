@@ -1,0 +1,1 @@
+(function(a){a.event.special.load={add:function(b){1===this.nodeType&&"img"===this.tagName.toLowerCase()&&""!==this.src&&(this.complete||4===this.readyState?b.handler.apply(this):"uninitialized"===this.readyState&&0===this.src.indexOf("data:")?a(this).trigger("error"):a(this).bind("load",b.handler))}}})(jQuery);

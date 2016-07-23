@@ -1,0 +1,1 @@
+var Guilds=function(){}(),Peers=function(){for(var a=[],b=function(){return{act:function(){},react:function(a){}}},c=0;100>c;c++)a.push(b());return{}}();function dialog(a,b){a.dialog(b).prev(".ui-dialog-titlebar").find("a").hide()};
