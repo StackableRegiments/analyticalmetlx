@@ -1,0 +1,1 @@
+java -jar /lang/closureCompiler/closure-compiler-v20160713.jar --js toolbar.js --js_output_file=toolbar.min.js
