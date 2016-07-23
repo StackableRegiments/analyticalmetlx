@@ -1,166 +1,119 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
-	<script src="static/js/stable/lodash-4.12.0.js"></script>
-	<script src="/static/js/stable/jquery-sortable-min.js"></script>
-	<script>
-function serverResponse(response){
-	console.log("serverResponse:",response);
-}
-function receiveUsername(username){
-	console.log("receiveUsername:",username);
-}
-function receiveUserGroups(userGroups){
-	console.log("receiveUserGroups:",userGroups);
-} 
-function receiveConversationDetails(details){
-	if (currentConversation != undefined && details != undefined && "jid" in currentConversation && "jid" in details && details.jid == currentConversation.jid) {
-		console.log("receiveConversationDetails:",details);
-		currentConversation = details;
-	}
-}
-function receiveNewConversationDetails(details){
-	console.log("receiveNewConversationDetails:",details);
-}
-$(function(){
-	$("ol.conversationSlidesContainer").sortable({
-		onDrop: function(item,container,_super){
-			var slideId = $(item).find(".slideId").text();
-			console.log("onDrop:",item,container,_super,slideId);
-			_super(item,container);
-			//bad news, they haven't yet moved in the DOM, so this doesn't work.
-			console.log("inDom:",_.map($(".slideContainer"),function(slide){
-				var index = $($(slide).find(".slideIndex")).text();
-				var id = $($(slide).find(".slideId")).text();
-				return {index:index,id:id};
-			}));
-			try {
-				if (currentConversation != undefined && "jid" in currentConversation && "slides" in currentConversation) {
-				var oldSlides = currentConversation.slides;
-				var newIndex = 0;
-				var newSlides = _.map($(".slideId"),function(el){
-					var slideId = parseInt($(el).text());
-					console.log("searching for:",slideId);
-					var returnedSlide = _.find(currentConversation.slides,function(slide){
-						if (slide.id == slideId){
-							console.log("found:",slide);
-							return true;
-						} else {
-							return false;
-						}
-					});
-					if (!("groupSet" in returnedSlide)){
-						returnedSlide.groupSet = [];
-					}
-					returnedSlide.index = newIndex;
-					newIndex = newIndex + 1;
-					return returnedSlide;
-				})
-				console.log("reordering slides:",oldSlides,newSlides);
-				reorderSlidesOfCurrentConversation(currentConversation.jid,newSlides);
-				}
-			} catch(e){
-				console.log("exception while reordering slides",e);
-			}
-		}
-	});
-});
-	</script>
-	<style>
-body.dragging, body.dragging * {
-  cursor: move !important;
-}
+  <script src="static/js/stable/lodash-4.12.0.js"></script>
+  <script src="/static/js/stable/jquery-sortable-min.js"></script>
+  <script src="/static/js/editConversation.js"></script>
+  <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+  <style>
+    body.dragging, body.dragging * {
+    cursor: move !important;
+    }
 
-.dragged {
-  position: absolute;
-  opacity: 0.5;
-  z-index: 2000;
-}
+    .dragged {
+    position: absolute;
+    opacity: 0.5;
+    z-index: 2000;
+    }
 
-ol.conversationSlidesContainer li.placeholder {
-  position: relative;
-  /** More li styles **/
-}
-ol.conversationSlidesContainer li.placeholder:before {
-  position: absolute;
-  /** Define arrowhead **/
-}
-	</style>
-	<div class="lift:Metl.specificEditConversation">
-		<div class="editConversationContainer">
-			<script class="currentConversationVar"></script>
-			<div>
-				<span>Title: </span>
-				<span class="conversationTitle"></span>
-			</div>
-			<div>
-				<span>Jid: </span>
-				<span class="conversationJid"></span>
-			</div>
-			<div>
-				<span>Author: </span>
-				<span class="conversationAuthor"></span>
-			</div>
-			<div>
-				<span>Subject: </span>
-				<span class="conversationSubject"></span>
-			</div>
-			<div>
-				<span>Tag: </span>
-				<span class="conversationTag"></span>
-			</div>
-			<div>
-				<span>Created: </span>
-				<span class="conversationCreated"></span>
-			</div>
-			<div>
-				<span>Last Modified: </span>
-				<span class="conversationLastModified"></span>
-			</div>
-			<div>
-				<span>Sharing: </span>
-				<div class="conversationSharing">
-					<div class="conversationSharingChoiceContainer">
-						<input class="conversationSharingChoiceInputElement"></input>
-						<label class="conversationSharingChoiceLabel"></label>
-						<br></br>
-					</div>
-				</div>
-			</div>
-			<div>
-				<span class="conversationDelete"></span>
-			</div>
-			<div>
-				<span class="conversationDuplicate"></span>
-			</div>
-			<div>
-				<span>Join Conversation: </span>
-				<a class="conversationFollowLink"></a>
-			</div>
-			<div>
-				<span>Project Conversation: </span>
-				<a class="conversationProjectorLink"></a>
-			</div>
-			<ol class="conversationSlidesContainer">
-				<li class="slideContainer">
-					<a class="slideAnchor">
-						<img class="slideThumbnail"></img>
-						<span>
-							<span>Id: </span>
-							<span class="slideId"></span>
-						</span>
-						<span>
-							<span>Type: </span>
-							<span class="slideType"></span>
-						</span>
-						<span>
-							<span>Index: </span>
-							<span class="slideIndex"></span>
-						</span>
-					</a>
-					<span class="duplicateSlideButton"></span>
-					<span class="addSlideAfterButton"></span>
-					<span class="addSlideBeforeButton"></span>
-				</li>
-			</ol>
-		</div>
-	</div>
+    ol.conversationSlidesContainer li.placeholder {
+    position: relative;
+    /** More li styles **/
+    }
+    ol.conversationSlidesContainer li.placeholder:before {
+    position: absolute;
+    /** Define arrowhead **/
+    }
+  </style>
+  <div class="lift:Metl.specificEditConversation indent directlyOnBackground">
+    <h1>Edit conversation</h1>
+    <div class="editConversationContainer">
+      <h2>Fixed attributes</h2>
+      <table class="indent">
+        <tr>
+          <th>Jid: </th>
+          <td class="conversationJid"></td>
+        </tr>
+        <tr>
+          <th>Author: </th>
+          <td class="conversationAuthor"></td>
+        </tr>
+        <tr>
+          <th>Created: </th>
+          <td class="conversationCreated"></td>
+        </tr>
+        <tr>
+          <th>Last Modified: </th>
+          <td class="conversationLastModified"></td>
+        </tr>
+      </table>
+      <script class="currentConversationVar"></script>
+      <h2>Editable attributes</h2>
+      <table class="indent">
+        <tr>
+          <th>Sharing: </th>
+          <td class="conversationSharing">
+            <div class="conversationSharingChoiceContainer">
+              <input class="conversationSharingChoiceInputElement"></input>
+              <label class="conversationSharingChoiceLabel"></label>
+              <br></br>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>Title: </th>
+          <td class="conversationTitle"></td>
+        </tr>
+      </table>
+      <h2>Conversation level actions</h2>
+      <div class="indent">
+        <div>
+          <span class="conversationDelete"></span>
+        </div>
+        <div>
+          <span class="conversationDuplicate"></span>
+        </div>
+      </div>
+      <h2>Conversation bookmarks</h2>
+      <table class="indent">
+        <tr>
+          <th>Join Conversation: </th>
+          <td class="conversationFollowLink"></td>
+        </tr>
+        <tr>
+          <th>Project Conversation: </th>
+          <td class="conversationProjectorLink"></td>
+        </tr>
+      </table>
+      <h2>Slide level actions</h2>
+      <table class="conversationSlidesContainer indent">
+        <tr class="slideContainer">
+          <td>
+            <table>
+              <tr>
+                <th>Id: </th>
+                <td class="slideId"></td>
+              </tr>
+              <tr>
+                <th>Type: </th>
+                <td class="slideType"></td>
+              </tr>
+              <tr>
+                <th>Index: </th>
+                <td class="slideIndex"></td>
+              </tr>
+            </table>
+          </td>
+          <td>
+            <a class="slideAnchor">
+              <img class="slideThumbnail"></img>
+            </a>
+          </td>
+          <td>
+            <span class="duplicateSlideButton"></span>
+            <span class="addSlideAfterButton"></span>
+            <span class="addSlideBeforeButton"></span>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </div>

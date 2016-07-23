@@ -1,43 +1,10 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
-  <style>
-    .importProgressBarContainer {
-    height: 2em;
-    width: 20em;
-    background:white;
-    border:1px solid black;
-    }
-    .importProgressProgressBar {
-    height:2em;
-    background:green;
-    border:1px solid silver;
-    }
-    .directlyOnBackground{
-    color:white;
-    }
-    input, input[type="search"], textarea, button, .input-box{
-    background-color:buttonface;
-    }
-    .indent{
-    margin:0 2em;
-    }
-    .label{
-    margin: 1em 0 0.5em 0;
-    }
-    html{
-    overflow:visible;
-    }
-    #conversationListing table{
-    width:100%;
-    }
-    tr:nth-child(even){
-    background-color:rgba(255,255,255,0.1);
-    }
-  </style>
   <script data-lift="with-resource-id" src="static/js/stable/jquery.ui.widget.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/jquery.iframe-transport.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/jquery.fileupload.js"></script>
   <script src="static/js/conversationSearch.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
+  <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
   <div id="masterLayout" class="flex-container-responsive directlyOnBackground">
     <div class="lift:comet?type=MeTLConversationSearchActor indent">
       <h1>Join a conversation</h1>
