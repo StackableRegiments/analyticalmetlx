@@ -357,6 +357,10 @@ class RemotePluginConversationChooserActor extends MeTLConversationChooserActor 
   }
 }
 class MeTLConversationSearchActor extends MeTLConversationChooserActor {
+  override def aggregateConversationAction(convs:Seq[Conversation]) = ".count *" #> (convs.length match {
+    case 1 => "0 search result"
+    case n => "%s search results".format(n)
+  })
   override def perConversationAction(conv:Conversation) = {
     ".conversationAnchor [href]" #> boardFor(conv.jid) &
     ".conversationTitle *" #> conv.title &
@@ -384,6 +388,7 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
 abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
   protected def perConversationAction(conv:Conversation):CssSel 
   protected def perImportAction(conv:Conversation):CssSel 
+  protected def aggregateConversationAction(convs:Seq[Conversation]):CssSel  = ClearClearable
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
@@ -460,6 +465,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       }
     }) &
     "#conversationListing *" #> {
+      ".aggregateContainer *" #> aggregateConversationAction(listing) &
       ".conversationContainer" #> listing.map(conv => {
         perConversationAction(conv)
         /*
