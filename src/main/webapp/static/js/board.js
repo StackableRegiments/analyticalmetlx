@@ -121,6 +121,7 @@ function sendInk(ink){
     sendStanza(ink);
 }
 function hexToRgb(hex) {
+    if(typeof hex == "object" && hex.alpha) return hex;
     if(typeof hex == "string") hex = [hex,255];
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
     return {

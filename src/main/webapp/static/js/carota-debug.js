@@ -1362,8 +1362,8 @@
 
                     var prototype = node.derive({
                         bounds: function() {
-			    var b = this._bounds;
-			    var valid = b && b.l && b.t && b.w && b.h;
+                            var b = this._bounds;
+                            var valid = b && b.l && b.t && b.w && b.h;
                             if(!valid) {
                                 var left = 0, top = 0, right = 0, bottom = 0;
                                 if (this.lines && this.lines.length) {
@@ -2167,6 +2167,12 @@
                             // Special case: expand selection to surrounding paragraphs
                             range = range.doc.paragraphRange(range.start, range.end);
                         }
+			if(attribute === "color"){
+			    // The font selector does not provide the right types for this editor
+			    if(typeof value == "string"){
+				value = [value,255];
+			    }
+			}
                         if (range.start === range.end) {
                             range.doc.modifyInsertFormatting(attribute, value);
                         } else {
@@ -2505,6 +2511,7 @@
                     /* Generates the value for a CSS style attribute
                      */
                     exports.getRunStyle = function(run) {
+			console.log(run.color,run.color ? run.color[0] : "");
                         var parts = [
                             'font: ', getFontString(run),
                             '; color: ', ((run && run.color && run.color[0]) || runs.defaultFormatting.color[0])

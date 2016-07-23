@@ -779,6 +779,7 @@ var Modes = (function(){
                         var newValue = $(this).val();
                         _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
+				console.log(newValue);
                                 t.doc.selectedRange().setFormatting(prop,newValue);
                                 if(t.doc.save().length > 0){
                                     sendRichText(t);
