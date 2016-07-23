@@ -2511,7 +2511,6 @@
                     /* Generates the value for a CSS style attribute
                      */
                     exports.getRunStyle = function(run) {
-			console.log(run.color,run.color ? run.color[0] : "");
                         var parts = [
                             'font: ', getFontString(run),
                             '; color: ', ((run && run.color && run.color[0]) || runs.defaultFormatting.color[0])
