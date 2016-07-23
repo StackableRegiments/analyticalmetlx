@@ -17,11 +17,13 @@ function receiveNewConversationDetails(details){
     console.log("receiveNewConversationDetails:",details);
 }
 $(function(){
+    $('#activeImportsListing').hide();
     $('#importConversationInputElement').fileupload({
         dataType: 'json',
         add: function (e,data) {
             $('#importConversationProgress').css('width', '0%');
             $('#importConversationProgressBar').show();
+            $('#activeImportsListing').show();
             data.submit();
         },
         progressall: function (e, data) {

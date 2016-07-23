@@ -45,9 +45,9 @@
   </groupsProvider>
   <cloudConverterApiKey>exampleKey</cloudConverterApiKey>
   <oneNote>
-    <clientId></clientId>
-    <clientSecret></clientSecret>
-    <redirectUrl></redirectUrl>
+    <clientId>9d77de87-0c11-41a8-bb51-4535663fb8f5</clientId>
+    <clientSecret>40zBQHg9sfRkU3gUeaFfmAi</clientSecret>
+    <redirectUrl>https://d2l-metl-test.stackableregiments.com/permitOneNote</redirectUrl>
     <scopes>wl.signin wl.basic office.onenote_create</scopes>
   </oneNote>
   <lti>

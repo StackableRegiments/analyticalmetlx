@@ -1,9 +1,11 @@
 html{
     overflow:visible;
 }
+#importConversationInputElement{
+    width:100%;
+}
 .importProgressBarContainer {
     height: 2em;
-    width: 20em;
     background:white;
     border:1px solid black;
 }
@@ -35,4 +37,7 @@ tr:nth-child(even){
 }
 .slideContainer td:first-of-type{
     white-space:nowrap;
+}
+a{
+    color:white;
 }
