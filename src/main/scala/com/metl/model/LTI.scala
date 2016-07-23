@@ -30,6 +30,9 @@ case class BrightsparkValenceContext(appContext:ID2LAppContext, userContext: Opt
 
 class LtiIntegration extends Logger {
   object sessionStore extends SessionVar[Map[String,RemotePluginSession]](Map.empty[String,RemotePluginSession])
+  if (Globals.isDevMode){
+    sessionStore(sessionStore.is.updated("testToken",RemotePluginSession("testToken","testSecret","testKey",LtiLaunchResult(true,"test message",Right(LtiLaunch(LtiUser(Globals.currentUser.is,List("testUser")),"v0.test","testMessageType","testResourceLinkId","testContextId",com.metl.snippet.Metl.noBoard,"testGuid"))))))
+  }
   val consumerKeyParamName = "oauth_consumer_key"
   val secretMap = Map(Globals.ltiIntegrations:_*)
   def getSecretForKey(key:String):String = {
