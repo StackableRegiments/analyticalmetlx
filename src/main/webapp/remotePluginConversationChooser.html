@@ -5,75 +5,73 @@
   <script src="static/js/conversationSearch.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
-  <div id="masterLayout" class="flex-container-responsive directlyOnBackground">
-    <div class="lift:Metl.remotePluginConversationChooser indent">
-      <h1>Join a conversation</h1>
-      <div class="indent">
-        <div id="conversationSearchBox"></div>
-        <div id="conversationListing">
-          <div class="aggregateContainer">
-            <div class="label count">0 results</div>
-          </div>
-          <table>
-            <tr class="conversationContainer">
-              <td class="topRow">
-                <a class="conversationAnchor">
-                  <span class="conversationTitle"></span>
-                  <span class="conversationAuthor"></span>
-                  <span class="conversationJid"></span>
-                </a>
-              </td>
-              <td>
-                <span class="conversationEditingContainer">
-                  <a class="editConversationLink">Edit</a>
-                </span>
-              </td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="indent">
-      <h1>Start a conversation</h1>
-      <div class="indent">
-        <div id="createConversationContainer">
-          <button id="createConversationButton">Create</button>
-        </div>
-        <div id="importConversationContainer">
-          <label for="importConversationInputElement">Import file</label>
-          <input id="importConversationInputElement" type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
-          <div id="importConversationProgress" style="width:20em; border:1pt solid silver; display:none">
-            <div id="importConversationProgressBar" style="background: green; height: 1em; width:0%"></div>
-            <div id="activeImportsListing">
-              <div class="importContainer">
-                <span class="importId"></span>
-                <span class="importName"></span>
-                <span class="importAuthor"></span>
-                <div class="importProgressContainer">
-                  <div class="importOverallProgressContainer">
-                    <span class="importProgressDescriptor"></span>
-                    <div class="importProgressBarContainer">
-                      <div class="importProgressProgressBar"></div>
-                    </div>
-                  </div>
-                  <div class="importStageProgressContainer">
-                    <span class="importProgressDescriptor"></span>
-                    <div class="importProgressBarContainer">
-                      <div class="importProgressProgressBar"></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="importResultContainer">
-                  <div class="importResult">
-                    <span class="importError"></span>
-                    <a class="importSuccess">Join conversation</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+	<div class="lift:Metl.remotePluginConversationChooser">
+		<div id="masterLayout" class="flex-container-responsive directlyOnBackground">
+			<div class="indent">
+				<h1>Join a conversation</h1>
+				<div class="indent">
+					<div id="conversationSearchBox"></div>
+					<div id="conversationListing">
+						<div class="aggregateContainer">
+							<div class="label count">0 results</div>
+						</div>
+						<table>
+							<tr class="conversationContainer">
+								<td class="topRow">
+									<a class="conversationAnchor">
+										<span class="conversationTitle"></span>
+										<span class="conversationAuthor"></span>
+										<span class="conversationJid"></span>
+									</a>
+								</td>
+								<td>
+									<span class="conversationEditingContainer">
+										<a class="editConversationLink">Edit</a>
+									</span>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="indent">
+				<h1>Start a conversation</h1>
+				<div class="indent">
+					<div id="createConversationContainer">
+						<button id="createConversationButton">Create</button>
+					</div>
+					<div id="importConversationContainer">
+						<label for="importConversationInputElement">Import file</label>
+						<input id="importConversationInputElement" type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
+						<div id="activeImportsListing">
+							<div class="importContainer">
+								<span class="importId"></span>
+								<span class="importName"></span>
+								<span class="importAuthor"></span>
+								<div class="importProgressContainer">
+									<div class="importOverallProgressContainer">
+										<span class="importProgressDescriptor"></span>
+										<div class="importProgressBarContainer">
+											<div class="importProgressProgressBar"></div>
+										</div>
+									</div>
+									<div class="importStageProgressContainer">
+										<span class="importProgressDescriptor"></span>
+										<div class="importProgressBarContainer">
+											<div class="importProgressProgressBar"></div>
+										</div>
+									</div>
+								</div>
+								<div class="importResultContainer">
+									<div class="importResult">
+										<span class="importError"></span>
+										<a class="importSuccess">Embed conversation</a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
       </div>
     </div>
   </div>

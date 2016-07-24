@@ -384,10 +384,12 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
 abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
   protected def perConversationAction(conv:Conversation):CssSel
   protected def perImportAction(conv:Conversation):CssSel
-  protected def aggregateConversationAction(convs:Seq[Conversation]) = ".count *" #> (convs.length match {
-    case 1 => "0 search result"
-    case n => "%s search results".format(n)
-  })
+  protected def aggregateConversationAction(convs:Seq[Conversation]):CssSel = {
+    ".count *" #> (convs.length match {
+      case 1 => "0 search result"
+      case n => "%s search results".format(n)
+    })
+  }
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
@@ -439,20 +441,24 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
         {
           imp.result match {
             case None => {
-              ".importOverallProgressContainer *" #> {
-                ".importProgressDescriptor *" #> imp.overallProgress.map(_.name) &
-                ".importProgressProgressBar [style]" #> imp.overallProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator))
-              } &
-              ".importStageProgressContainer *" #> {
-                ".importProgressDescriptor *" #> imp.stageProgress.map(_.name) &
-                ".importProgressProgressBar [style]" #> imp.stageProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator))
+              ".importProgressContainer" #> {
+                ".importOverallProgressContainer *" #> {
+                  ".importProgressDescriptor *" #> imp.overallProgress.map(_.name) &
+                  ".importProgressProgressBar [style]" #> imp.overallProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator))
+                } &
+                ".importStageProgressContainer *" #> {
+                  ".importProgressDescriptor *" #> imp.stageProgress.map(_.name) &
+                  ".importProgressProgressBar [style]" #> imp.stageProgress.map(p => "width: %s%%".format((p.numerator * 100) / p.denominator))
+                }
               } &
               ".importResultContainer" #> NodeSeq.Empty
             }
             case Some(Left(e)) => {
               ".importProgressContainer" #> NodeSeq.Empty &
-              ".importError *" #> e.getMessage &
-              ".importSuccess" #> NodeSeq.Empty
+              ".importResultContainer" #> {
+                ".importError *" #> e.getMessage &
+                ".importSuccess" #> NodeSeq.Empty
+              }
             }
             case Some(Right(conv)) => {
               ".importProgressContainer" #> NodeSeq.Empty &
@@ -467,25 +473,6 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       ".aggregateContainer *" #> aggregateConversationAction(listing) &
       ".conversationContainer" #> listing.map(conv => {
         perConversationAction(conv)
-        /*
-         ".conversationAnchor [href]" #> boardFor(conv.jid) &
-         ".conversationTitle *" #> conv.title &
-         ".conversationAuthor *" #> conv.author &
-         ".conversationJid *" #> conv.jid &
-         ".conversationEditingContainer" #> {
-         shouldModifyConversation(Globals.currentUser.is,conv) match {
-         case true => ".editConversationLink [href]" #> editConversation(conv.jid)
-         case false => ".conversationEditingContainer" #> NodeSeq.Empty
-         }
-         } &
-         ".slidesContainer" #> {
-         ".slide" #> conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
-         ".slideIndex *" #> slide.index &
-         ".slideId *" #> slide.id &
-         ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
-         })
-         }
-         */
       })
     }
   }
