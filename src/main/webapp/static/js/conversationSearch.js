@@ -18,6 +18,10 @@ function receiveNewConversationDetails(details){
 }
 $(function(){
     $('#activeImportsListing').hide();
+    $("#importConversationContainer").hide();
+    $("#showImportConversationWorkflow").click(function(){
+        $("#importConversationContainer").show();
+    });
     $('#importConversationInputElement').fileupload({
         dataType: 'json',
         add: function (e,data) {
