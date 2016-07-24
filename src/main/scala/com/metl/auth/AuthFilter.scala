@@ -170,7 +170,6 @@ class LowLevelSessionStore {
     val sessionId = session.getId
     val res = sessionStore.get(sessionId) match {
       case None => {
-        println("no sessino found by sessionId: %s".format(session))
         Left(SessionNotFound)
       }
       case Some(s) if isExpired(s) => {
@@ -265,21 +264,18 @@ class LoggedInFilter extends Filter {
       configRoot <- tryo(XML.load(configPath))
     ) yield {
       def predicateFunc(e:Elem):Option[HttpServletRequest=>Boolean] = {
-        println("attempting configuration: %s".format(e))
         e.label match {
           case "requestUriStartsWith" => {
             (e \\ "@value").headOption.map(_.text).map(prefix => {
               (r:HttpServletRequest) => {
                 val value:String = r.getRequestURI
                 val result = value.startsWith(prefix)
-                println("checking prefixChecker [%s] = [%s] => %s".format(value,prefix,result))
                 result
               }
             })
           }
           case "requestUriEndsWith" => {
             (e \\ "@value").headOption.map(_.text).map(suffix => {
-              println("adding suffix func: %s".format(suffix))
               (r:HttpServletRequest) => {
                 r.getRequestURI.endsWith(suffix)
               }
@@ -426,7 +422,6 @@ class LoggedInFilter extends Filter {
           case _ => None
         }).map(auth => DescribedAuthenticator(name,imageUrl,prefix,auth))
       }).toList,""))
-      println("authenticators: %s".format(FilterAuthenticators.authenticator))
     }
   }
   override def destroy = {}
@@ -563,43 +558,35 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
     (authSession,req.getMethod.toUpperCase,req.getRequestURI.split("/").toList.dropWhile(_ == "")) match {
       case (mcip@MultiChoiceInProgress(session,origReq,None),_,_) if authenticators.length == 1 => {
-        println("choosing authenticator: %s".format(authenticators.head))
         sessionStore.updateSession(authSession.session,s => mcip.copy(choice = Some(authenticators.head)))
         res.sendRedirect(origReq.getRequestURL.toString)
         false
       }
       case (mcip@MultiChoiceInProgress(session,origReq,None),"GET","choice" :: choice :: Nil) => {
-        println("looking for choice: %s".format(choice))
         authenticators.find(_.identifier == choice).map(authenticator => {
-          println("choosing authenticator: %s".format(authenticator))
           sessionStore.updateSession(authSession.session,s => mcip.copy(choice = Some(authenticator)))
           res.sendRedirect(origReq.getRequestURL.toString)
           false
         }).getOrElse({
-          println("no valid authenticator found")
           res.sendRedirect(origReq.getRequestURL.toString)
           false
         })
       }
       case (mcip@MultiChoiceInProgress(session,origReq,Some(describedAuthenticator)),_,_) => {
-        println("updating with %s's store".format(describedAuthenticator))
         sessionStore.updateSession(authSession.session,s => describedAuthenticator.generateStore(authSession,origReq))
         true
       }
       case other => {
         authenticators.find(_.shouldHandle(authSession,req,session)).map(describedAuthenticator => {
-          println("passing upstream to higher authenticator: %s".format(describedAuthenticator))
           val result = describedAuthenticator.handle(authSession,req,res,session)
           sessionStore.getValidSession(session) match {
             case Right(has@HealthyAuthSession(session,originalRequest,user,groups,attrs)) => {
-              println("adding prefix to username: %s + %s".format(describedAuthenticator.prefix,user))
               sessionStore.updateSession(authSession.session,s => has.copy(username = "%s%s".format(describedAuthenticator.prefix,user)))
               true
             }
             case _ => result
           }
         }).getOrElse({
-          println("no choice yet, sending choice form: %s".format(other))
           res.getWriter.write("""<html>
   %s
   %s
@@ -826,7 +813,6 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       redirectAction.getType match {
         case RedirectAction.RedirectType.REDIRECT => {
           val redirectLoc = redirectAction.getLocation
-          println("relaying to: %s".format(redirectLoc))
           resp.sendRedirect(redirectLoc)
         }
         case RedirectAction.RedirectType.SUCCESS => {
@@ -839,7 +825,6 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       }
     } catch {
       case e:Exception => {
-        println("error during saml request: %s\r\n%s".format(e.getMessage,e.getStackTraceString))
         resp.sendError(500,"unknown error during SAML request sending")
       }
     }
