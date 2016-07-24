@@ -12,7 +12,6 @@ import net.liftweb.mocks.MockHttpServletRequest
 import org.apache.commons.io.IOUtils
 
 import java.io.{ByteArrayOutputStream,ByteArrayInputStream,InputStreamReader,BufferedReader,Reader}
-//import org.apache.commons.httpclient.methods.multipart.MultiPartRequestEntity
 import org.apache.commons.httpclient.params.HttpMethodParams
 
 import com.metl.saml._
@@ -78,6 +77,7 @@ class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpS
         }
         case Some("multipart/form-data") => {
           //got to decode multipart data next, which includes decoding files, oh what fun.  there must be a library about which does all of this neatly.
+          //looks like Lift does this once we pass it on, so that's fine.
         }
         case _ => {}
       }
@@ -232,18 +232,8 @@ class LoggedInFilter extends Filter {
     }
   }
 
-  protected val exclusions:List[HttpServletRequest => Boolean] = List(
-    (r) => {
-      val path = r.getRequestURI
-      path.startsWith("/static/") || path.startsWith("/favicon.ico") || path.startsWith("/serverStatus")
-    }
-  )
-  protected val rejectWhenNotAuthenticated:List[HttpServletRequest => Boolean] = List(
-    (r) => {
-      val path = r.getRequestURI
-      path.startsWith("/comet_request/") || path.startsWith("/ajax_request/")
-    }
-  )
+  protected var exclusions:List[HttpServletRequest => Boolean] = Nil
+  protected var rejectWhenNotAuthenticated:List[HttpServletRequest => Boolean] = Nil
 
   override def init(filterConfig:FilterConfig) = {
     val filterConfigMap:Map[String,String] = Map(filterConfig.getInitParameterNames.map(_.toString).toList.map(n => (n,filterConfig.getInitParameter(n))):_*)
@@ -274,6 +264,43 @@ class LoggedInFilter extends Filter {
       configPath <- getProp(configPathVariable,configPathVariable);
       configRoot <- tryo(XML.load(configPath))
     ) yield {
+      def predicateFunc(e:Elem):Option[HttpServletRequest=>Boolean] = {
+        println("attempting configuration: %s".format(e))
+        e.label match {
+          case "requestUriStartsWith" => {
+            (e \\ "@value").headOption.map(_.text).map(prefix => {
+              (r:HttpServletRequest) => {
+                val value:String = r.getRequestURI
+                val result = value.startsWith(prefix)
+                println("checking prefixChecker [%s] = [%s] => %s".format(value,prefix,result))
+                result
+              }
+            })
+          }
+          case "requestUriEndsWith" => {
+            (e \\ "@value").headOption.map(_.text).map(suffix => {
+              println("adding suffix func: %s".format(suffix))
+              (r:HttpServletRequest) => {
+                r.getRequestURI.endsWith(suffix)
+              }
+            })
+          }
+          case _ => None
+        }
+      }
+      def getChildElemsFrom(in:NodeSeq):List[Elem] = {
+        val out = in match {
+          case e:Elem => e.child.toList.flatMap{
+            case el:Elem => List(el)
+            case _ => Nil
+          }
+          case _ => Nil
+        }
+        out
+      }
+      exclusions = (configRoot \\ "serverConfiguration" \\ "authenticationConfiguration" \\ "exclusions").flatMap(exclusions => getChildElemsFrom(exclusions).flatMap(childElem => predicateFunc(childElem))).toList
+      rejectWhenNotAuthenticated = (configRoot \\ "serverConfiguration" \\ "authenticationConfiguration" \\ "rejectWhenNotAuthenticated").flatMap(rejections => getChildElemsFrom(rejections).flatMap(childElem => predicateFunc(childElem))).toList
+
       FilterAuthenticators.authenticator = Some(new MultiAuthenticator(sessionStore,(configRoot \\ "serverConfiguration" \\ "authentication").theSeq.flatMap{
         case e:Elem => e.child.toList 
         case _ => Nil
@@ -535,6 +562,12 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
   override def toString = "MultiAuthenticator(%s)".format(authenticators)
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
     (authSession,req.getMethod.toUpperCase,req.getRequestURI.split("/").toList.dropWhile(_ == "")) match {
+      case (mcip@MultiChoiceInProgress(session,origReq,None),_,_) if authenticators.length == 1 => {
+        println("choosing authenticator: %s".format(authenticators.head))
+        sessionStore.updateSession(authSession.session,s => mcip.copy(choice = Some(authenticators.head)))
+        res.sendRedirect(origReq.getRequestURL.toString)
+        false
+      }
       case (mcip@MultiChoiceInProgress(session,origReq,None),"GET","choice" :: choice :: Nil) => {
         println("looking for choice: %s".format(choice))
         authenticators.find(_.identifier == choice).map(authenticator => {
