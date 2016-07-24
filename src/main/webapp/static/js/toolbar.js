@@ -779,7 +779,7 @@ var Modes = (function(){
                         var newValue = $(this).val();
                         _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
-				console.log(newValue);
+                                console.log(newValue);
                                 t.doc.selectedRange().setFormatting(prop,newValue);
                                 if(t.doc.save().length > 0){
                                     sendRichText(t);
@@ -1205,14 +1205,17 @@ var Modes = (function(){
                     }
                 }
             };
-            var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
+            var removeHandles = function(){
                 _.each(["resizeFree","resizeAspectLocked","manualMove"],function(key){
                     delete Modes.canvasInteractables[key];
                     delete Progress.totalSelectionChanged[key];
                     delete Progress.onSelectionChanged[key];
                     delete Progress.onViewboxChanged[key];
                 });
+            };
+            var clearSelectionFunction = function(){
+                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
+		removeHandles();
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1303,11 +1306,11 @@ var Modes = (function(){
                 },
                 resizeHandleSize:40,
                 setSelection:function(selected){
-                    Modes.select.clearSelection();
                     Modes.select.selected = _.merge(Modes.select.selected,selected);
                     Modes.select.addHandles();
                 },
                 addHandles:function(){
+		    removeHandles();
                     var handlesAtZoom = function(){
                         var zoom = scale();
                         return Modes.select.resizeHandleSize / zoom;
@@ -1778,7 +1781,6 @@ var Modes = (function(){
                             sendStanza(moved);
                         }
                         else{
-                            Modes.select.clearSelection();
                             var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
                             var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
                             var intersected = {
@@ -1853,7 +1855,7 @@ var Modes = (function(){
                             }
                             categories(toggleCategory);
                             if(!intersections.any){
-                                Modes.select.selected = intersected;
+                                Modes.select.clearSelection();
                             }
                             else{
                                 Modes.select.addHandles();
