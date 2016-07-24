@@ -1,5 +1,6 @@
 var Participants = (function(){
     var participantItemTemplate = {};
+    var participantHeaderTemplate = {};
     var participantsContainer = {};
     var participants = {};
     var onHistoryReceived = function(history){
@@ -15,37 +16,49 @@ var Participants = (function(){
                 images:0,
                 quizResponses:0,
                 submissions:0,
-		following:true
+                following:true
             };
             newParticipants[author] = newParticipant;
         });
-        _.each(_.groupBy(history.inks,"author"),function(authorStanzas){
-            var author = authorStanzas[0].author;
+        _.each(_.groupBy(history.inks,"author"),function(authorStanzas,author){
             var itemToEdit = newParticipants[author];
             itemToEdit.inks = itemToEdit.inks + _.size(authorStanzas);
             newParticipants[author] = itemToEdit;
         });
-        _.each(_.groupBy(history.highlighters,"author"),function(authorStanzas){
-            var author = authorStanzas[0].author;
+        _.each(_.groupBy(history.highlighters,"author"),function(authorStanzas,author){
             var itemToEdit = newParticipants[author];
             itemToEdit.highlighters = itemToEdit.highlighters + _.size(authorStanzas);
             newParticipants[author] = itemToEdit;
         });
-        _.each(_.groupBy(history.texts,"author"),function(authorStanzas){
-            var author = authorStanzas[0].author;
+        _.each(_.groupBy(history.texts,"author"),function(authorStanzas,author){
             var itemToEdit = newParticipants[author];
             itemToEdit.texts = itemToEdit.texts + _.size(authorStanzas);
             newParticipants[author] = itemToEdit;
         });
-        _.each(_.groupBy(history.images,"author"),function(authorStanzas){
-            var author = authorStanzas[0].author;
+        _.each(_.groupBy(history.texts,"author"),function(authorStanzas,author){
+            var itemToEdit = newParticipants[author];
+            itemToEdit.texts = itemToEdit.texts + _.size(authorStanzas);
+            newParticipants[author] = itemToEdit;
+        });
+        _.each(_.groupBy(history.images,"author"),function(authorStanzas,author){
             var itemToEdit = newParticipants[author];
             itemToEdit.images = itemToEdit.images + _.size(authorStanzas);
             newParticipants[author] = itemToEdit;
         });
+        _.each(_.groupBy(history.multiWordTexts,"author"),function(authorStanzas,author){
+            var itemToEdit = newParticipants[author];
+	    _.each(authorStanzas,function(stanza){
+		newParticipants[author].texts += countTexts(stanza);
+	    });
+        });
         participants = newParticipants;
         updateParticipantsListing();
     };
+    var countTexts = function(stanza){
+	return _.reduce(stanza.words,function(acc,v,k){
+	    return acc + v.text.length;
+	},0);
+    }
     var onStanzaReceived = function(stanza){
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
@@ -61,8 +74,11 @@ var Participants = (function(){
                 itemToEdit.highlighters = itemToEdit.highlighters + 1;
                 break;
             case "text":
-                itemToEdit.texts = itemToEdit.texts + 1;
+                itemToEdit.texts = itemToEdit.texts + stanza.content.length;
                 break;
+	    case "multiWordText":
+                itemToEdit.texts += countTexts(stanza);
+		break;
             case "submission":
                 itemToEdit.submissions = itemToEdit.submissions + 1;
                 break;
@@ -79,12 +95,12 @@ var Participants = (function(){
         try {
             var replacementNodes = _.map(participants,function(participant){
                 var p = participantItemTemplate.clone();
-		var name = sprintf("participant_%s",participant.name)
-		p.find(".followLabel").attr("for",name);
+                var name = sprintf("participant_%s",participant.name)
+                p.find(".followLabel").attr("for",name);
                 p.find(".followValue").attr("id",name).prop("checked",participant.following).on("change",function(){
-		    participant.following = $(this).is(":checked");
-		    blit();
-		});
+                    participant.following = $(this).is(":checked");
+                    blit();
+                });
                 p.find(".user").text(participant.name);
                 p.find(".attendanceCount").text(_.size(participant.attendances));
                 p.find(".inksCount").text(participant.inks);
@@ -118,7 +134,7 @@ var Participants = (function(){
         updateButtons();
     };
     $(function(){
-        participantsContainer = $("#participantsListingContainer");
+        participantsContainer = $("#participantsListingContainer").find("tbody");
         participantItemTemplate = participantsContainer.find(".participation").clone();
         participantsContainer.empty();
         updateButtons();
