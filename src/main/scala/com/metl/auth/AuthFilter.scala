@@ -194,7 +194,7 @@ class LowLevelSessionStore {
 trait HttpReqUtils {
   protected val reqIdParameter = "replayRequest"  
   protected def getIdFromReq(req:HttpServletRequest):String = {
-    req.getParameter(reqIdParameter)
+    getReqId(req).getOrElse(req.getParameter(reqIdParameter))
   }
   protected def generateIdForReq(req:HttpServletRequest):String = {
     nextFuncName
@@ -409,34 +409,13 @@ class LoggedInFilter extends Filter with HttpReqUtils {
             }
           }
           case n:Elem if (n.label == "mock") => Some(new UsernameSettingForm(sessionStore,n.child.map(_.text).mkString("")))
-          case n:Elem if (n.label == "google") => {
-            None
-            /*
-            LiftAuthAuthentication.attachAuthenticator(
-              new OpenIdConnectAuthenticationSystem(
-                googleClientId = (n \\ "@clientId").text,
-                googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text),
-                alreadyLoggedIn = () => Globals.casState.authenticated,
-                onSuccess = (la:LiftAuthStateData) => {
-                  if ( la.authenticated ) {
-                    //setUserPrincipal(la.username)
-                    Globals.currentUser(la.username)
-                    SecurityListener.login
-                    var existingGroups:List[Tuple2[String,String]] = Nil
-                    if (Globals.groupsProviders != null){
-                      Globals.groupsProviders.foreach(gp => {
-                        val newGroups = gp.getGroupsFor(la.username)
-                        if (newGroups != null){
-                          existingGroups = existingGroups ::: newGroups
-                        }
-                      })
-                    }
-                    Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
-                  }
-                }
-              )
-            )
-          */
+          case n:Elem if (n.label == "openIdConnect") => {
+            for (
+              googleClientId <- (n \\ "@clientId").headOption.map(_.text);
+              googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text)
+            ) yield {
+              new OpenIdConnectAuthenticator(sessionStore,googleClientId,googleAppDomainName)
+            }
           }
           case n:Elem if (n.label == "cas") => {
             for (
@@ -445,27 +424,6 @@ class LoggedInFilter extends Filter with HttpReqUtils {
             ) yield {
               new CASFilterAuthenticator(sessionStore,loginUrl,validateUrl)
             }
-          }
-          case n:Elem if (n.label == "openIdAuthenticator") => {
-            None
-            /*
-            OpenIdAuthenticator.attachOpenIdAuthenticator(
-              new OpenIdAuthenticator(
-                alreadyLoggedIn = () => Globals.casState.authenticated,
-                onSuccess = (la:LiftAuthStateData) => {
-                  if ( la.authenticated ) {
-                    Globals.currentUser(la.username)
-                    SecurityListener.login
-                    Globals.casState.set(new CASStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
-                  }
-                },
-                (n \\ "openIdEndpoint").map(eXml => OpenIdEndpoint((eXml \\ "@name").text,(s) => (eXml \\ "@formattedEndpoint").text.format(s),(eXml \\ "@imageSrc").text,Empty)) match {
-                  case Nil => Empty
-                  case specificEndpoints => Full(specificEndpoints)
-                }
-              )
-            )
-          */
           }
           case n:Elem if (n.label == "basicInMemory") => {
             for (
@@ -521,8 +479,8 @@ class LoggedInFilter extends Filter with HttpReqUtils {
           s match {
             case has@HealthyAuthSession(Session,requests,username,groups,attrs) => { //let the request through 
               val storedReqId = getIdFromReq(httpReq) 
-              println("replayingReq: %s".format(storedReqId,has.getStoredRequests))
               requests.get(storedReqId).map(storedReq => {
+                println("replayingReq(%s): %s => %s ".format(storedReqId,storedReq,has.getStoredRequests))
                 sessionStore.updateSession(Session,s => HealthyAuthSession(Session,requests - storedReqId,username,groups,attrs)) // clear the rewrite
                 //sessionStore.updateSession(Session,s => HealthyAuthSession(Session,Map.empty[String,HttpServletRequest],username,groups,attrs)) // clear the rewrite
                 val authedReq = completeAuthentication(storedReq,httpResp,Session,username,groups,attrs)
@@ -1089,5 +1047,93 @@ class TimePeriodInMemoryBasicAuthenticator(sessionStore:LowLevelSessionStore,rea
   override def expireFailedAttempt(req:HttpServletRequest,when:Long):Boolean = {
     val now = new java.util.Date().getTime
     when < (now - period)
+  }
+}
+
+class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientId:String,googleAppDomainName:Option[String]) extends FilterAuthenticator(sessionStore){
+  import com.google.api.client.googleapis.auth.oauth2.{GoogleIdToken,GoogleIdTokenVerifier}
+  import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload
+  case class OpenIdConnectProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = OpenIdConnectProgress(authSession.session,updatedStore(authSession,reqs))
+  override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
+    case cp@OpenIdConnectProgress(s,or) if cp.authenticator == identifier => true
+    case _ => false
+  }
+  protected val EndpointUrl = """/verifyOpenIdConnectToken"""
+  override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+    (authSession,req.getRequestURI(),req.getMethod.toLowerCase) match {
+      case (sp@OpenIdConnectProgress(s,or),EndpointUrl,"post") => validateResponse(sp,req,res)
+      case (sp@OpenIdConnectProgress(s,or),_,_) => renderLoginPage(authSession,req,res)
+      case _ => renderLoginPage(authSession,req,res)
+    }
+  }
+
+  protected val transport = new com.google.api.client.http.javanet.NetHttpTransport()
+  protected val jsonFactory = new com.google.api.client.json.jackson2.JacksonFactory()
+  protected val verifier:GoogleIdTokenVerifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+      .setAudience(scala.collection.JavaConversions.asJavaCollection(List(googleClientId)))
+      .build()
+
+  protected def renderLoginPage(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse):Boolean = {
+    val originalRequestId = getIdFromReq(req)
+    val nodes = 
+"""
+      <html lang="en">
+        <head>
+          <meta name="google-signin-scope" content="profile email"></meta>
+          <meta name="google-signin-client_id" content="%s"></meta>
+          <script src="https://apis.google.com/js/platform.js" async="true" defer="true"></script>
+        </head>
+        <body>
+          <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+          <script>
+            function onSignIn(googleUser) {
+              // Useful data for your client-side scripts:
+              //var profile = googleUser.getBasicProfile();
+              //console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+              //console.log("Name: " + profile.getName());
+              //console.log("Image URL: " + profile.getImageUrl());
+              //console.log("Email: " + profile.getEmail());
+              
+              var id_token = googleUser.getAuthResponse().id_token;
+              console.log("ID Token: " + id_token);
+              var form = document.createElement("form");
+              form.setAttribute("method","post");
+              form.setAttribute("action","%s");
+              var tokenField = document.createElement("input");
+              tokenField.setAttribute("type","hidden");
+              tokenField.setAttribute("name","googleIdToken");
+              tokenField.setAttribute("value",id_token);
+              form.appendChild(tokenField);
+              var originalRequestField = document.createElement("input");
+              var originalRequestId = "%s";
+              originalRequestField.setAttribute("type","hidden");
+              originalRequestField.setAttribute("name","originalRequestId");
+              originalRequestField.setAttribute("value",originalRequestId);
+              form.appendChild(originalRequestField);
+              document.body.appendChild(form);
+              form.submit();
+            };
+          </script>
+        </body>
+      </html>""".format(googleClientId,EndpointUrl,originalRequestId)
+    res.getWriter.write(nodes)
+    res.setStatus(200)
+    false
+  }
+
+  protected def validateResponse(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse):Boolean = {
+    (for (
+      idTokenString <- Some(req.getParameter("googleIdToken")).filterNot(_ == null);
+      idToken <- Some(verifier.verify(idTokenString)).filterNot(_ == null);
+      payload:Payload = idToken.getPayload;
+      if (googleAppDomainName.map(gadn => payload.getHostedDomain() == gadn).getOrElse(true));
+      userId:String = payload.getSubject()
+    ) yield {
+      //fetch further information with:
+      //"https://www.googleapis.com/plus/v1/people/%s".format(userId)
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userId,Nil,Some(payload.getEmail).filterNot(_ == null).map(e => ("email",e)).toList))
+      true
+    }).getOrElse(renderLoginPage(authSession,req,res))
   }
 }
