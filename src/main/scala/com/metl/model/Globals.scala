@@ -1,7 +1,6 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-import com.metl.saml._
 
 import com.metl.data._
 import com.metl.utils._

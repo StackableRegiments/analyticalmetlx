@@ -14,7 +14,6 @@ import org.apache.commons.io.IOUtils
 import java.io.{ByteArrayOutputStream,ByteArrayInputStream,InputStreamReader,BufferedReader,Reader}
 import org.apache.commons.httpclient.params.HttpMethodParams
 
-import com.metl.saml._
 import net.liftweb.util._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -712,6 +711,39 @@ class UsernameSettingForm(sessionStore:LowLevelSessionStore,descriptiveHtml:Stri
   m.get("username").filterNot(s => s == null || s.trim == "").map(username => (username,Nil,Nil))
 },descriptiveHtml)
 
+trait CredentialValidator {
+  def validateCredentials(req:HttpServletRequest,username:String,password:String):Boolean
+}
+class LDAPCredentialValidator(ldap: com.metl.ldap.IMeTLLDAP) extends CredentialValidator {
+  override def validateCredentials(req:HttpServletRequest,username:String,password:String):Boolean = ldap.authenticate(username,password).getOrElse(false)
+}
+class MockCredentialValidator extends CredentialValidator {
+  override def validateCredentials(req:HttpServletRequest,username:String,password:String):Boolean = true
+}
+
+case class SettingsForADFS(
+  maximumAuthenticationLifetime:Int
+)
+
+case class keyStoreInfo(
+  keystorePath:String,
+  keystorePassword:String,
+  privateKeyPassword:String
+)
+
+case class SAMLConfiguration(
+  optionOfKeyStoreInfo:Option[keyStoreInfo] = None,
+  idpMetaDataPath:String,
+  serverScheme:String,
+  serverName:String,
+  serverPort:Int = 80,
+  callBackUrl:String,
+  optionOfSettingsForADFS:Option[SettingsForADFS] = None,
+  optionOfEntityId:Option[String] = None,
+  protectedRoutes:List[List[String]] = ("/" :: Nil) :: Nil, // Maybe think about a more complex access control system, which is represented by a List[Tuple2[List[String],Boolean]], against which the current request filters for prefixes which match it, and selects the longest of those answers to determine whether to protect or not, as represented by the boolean.
+  eligibleGroups:Map[String,String] = Map.empty[String,String],
+  attributeTransformers:Map[String,String] = Map.empty[String,String]
+)
 
 class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguration:SAMLConfiguration) extends FilterAuthenticator(sessionStore) with Logger {
   import org.pac4j.core.client.RedirectAction
@@ -751,19 +783,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     override def getServerPort: Int = req.getServerPort
     override def getSessionAttribute(name: String): AnyRef = req.getSession.getAttribute(name)
     override def getScheme: String = req.getScheme
-    override def getFullRequestURL: String = {
-      val servletReqURL = req.getRequestURL.toString
-      servletReqURL
-      /*
-      val generatedReqURL = "%s://%s%s%s".format(getScheme, getServerName, getServerPort match {
-        case 80 => ""
-        case 443 => ""
-        case other => ":%s".format(other)
-      }, req.getRequestURI)
-    println("content.getFullRequestURL: req(%s) gen(%s) passed(%s %s %s %s)".format(servletReqURL,generatedReqURL,samlConfiguration.serverScheme,samlConfiguration.serverName,samlConfiguration.serverPort,samlConfiguration.callBackUrl))
-      generatedReqURL
-      */
-    }
+    override def getFullRequestURL: String = wrapWithReqId(req,req.getRequestURL.toString)
   }
 
   protected def redirectHome(resp:HttpServletResponse) = resp.sendRedirect("/")
@@ -776,16 +796,15 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 
   protected def getSaml2Client(samlConfiguration: SAMLConfiguration):Saml2Client = {
     val saml2Client: Saml2Client = new Saml2Client {
-
+/*
       // Override method "getStateParameter" to retrieve RelayState from the current request
-      /*
       override def getStateParameter(webContext: WebContext): String = {
 
         val requestUri = CurrentReq.value.request.uri
         val boxOfQueryString = CurrentReq.value.request.queryString
 
         val relayState = requestUri + boxOfQueryString.map("?%s".format(_)).getOrElse("")
-        relayState
+        wrapWithReqId(relayState)
       }
       */
     }

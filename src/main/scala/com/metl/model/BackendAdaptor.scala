@@ -1,9 +1,7 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-import com.metl.saml._
 
-import com.metl.cas._
 import com.metl.data._
 import com.metl.metl2011._
 import com.metl.auth._
@@ -19,9 +17,6 @@ import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
-import com.metl.cas._
-import com.metl.formAuthenticator._
-//import com.metl.auth._
 import com.metl.h2._
 
 import net.liftweb.util.Props
@@ -87,35 +82,6 @@ object SecurityListener extends Logger {
     }
   }
 }
-/*
-class Gen2FormAuthenticator(loginPage:NodeSeq, formSelector:String, usernameSelector:String, passwordSelector:String, verifyCredentials:Tuple2[String,String]=>LiftAuthStateData, alreadyLoggedIn:() => Boolean,onSuccess:(LiftAuthStateData) => Unit) extends FormAuthenticator(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials,alreadyLoggedIn,onSuccess) with Logger {
-  debug("Gen2FormAuthenticator: %s\r\n%s %s %s %s".format(loginPage,formSelector,usernameSelector,passwordSelector,verifyCredentials))
-  override def constructResponseWithMessages(req:Req,originalRequestId:String,additionalMessages:List[String] = List.empty[String]) = Stopwatch.time("FormAuthenticator.constructReq",{
-      val loginPageNode = (
-        "%s [method]".format(formSelector) #> "POST" &
-        "%s [action]".format(formSelector) #> "/formLogon" &
-        "%s *".format(formSelector) #> {(formNode:NodeSeq) => {
-          <input type="hidden" name="path" value={makeUrlFromReq(req)}></input> ++ 
-          <input type="hidden" name="originalRequestId" value={originalRequestId}></input> ++ 
-          additionalMessages.foldLeft(NodeSeq.Empty)((acc,am) => {
-            acc ++ <div class="loginError">{am}</div>
-          }) ++ (
-// these next two lines aren't working, and I'm not sure why not
-            "%s [name]".format(usernameSelector) #> "username" &
-            "%s [name]".format(passwordSelector) #> "password"
-          ).apply(formNode) 
-        }} 
-      ).apply(loginPage)
-      debug("constructed: %s".format(loginPageNode))
-      LiftRules.convertResponse(
-        (loginPageNode,200),
-        S.getHeaders(LiftRules.defaultHeaders((loginPageNode,req))),
-        S.responseCookies,
-        req
-      )
-  })
-}
-*/
 
 import java.nio.file.attribute.UserPrincipal
 import javax.security.auth._
@@ -298,222 +264,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       exs
     })
   }
-  /*
-  def setupAuthenticatorsFromFile(filePath:String) = {
-    val propFile = XML.load(filePath)
-    val authenticationNodes = propFile \\ "serverConfiguration" \\ "authentication"
-    def setUserPrincipal(username:String):Unit = {
-      try {
-        S.containerRequest.foreach{
-          case sr:org.eclipse.jetty.server.Request => {
-            println("jetty request")
-            if (sr.getUserPrincipal() == null){
-              val principal = new MeTLPrincipal(username)
-              val s1 = new Subject()
-              val principalSet = s1.getPrincipals()
-              principalSet.add(principal)
-              val s2 = new Subject(true,principalSet,new java.util.HashSet[Object](),new java.util.HashSet[Object]())
-              val roles = List("USER").toArray
-              val authMethod = ""
-              val authentication = new org.eclipse.jetty.security.UserAuthentication(authMethod,
-                new org.eclipse.jetty.security.DefaultUserIdentity(
-                  s2,
-                  principal,
-                  roles
-                )
-              )
-              sr.setAuthentication(authentication)
-            }
-            println("authenticated: %s\r\n%s".format(sr.getUserPrincipal()))
-          }
-          case sr:net.liftweb.http.provider.servlet.HTTPRequestServlet => {
-            val authSubjectAttr = "javax.security.auth.subject" 
-            println("generic request")
-            val session:net.liftweb.http.provider.servlet.HTTPServletSession = sr.session
-            var subject:Subject = session.attribute(authSubjectAttr).asInstanceOf[Subject]
-            if (subject == null){
-              subject = new Subject()
-            }
-            val principals = subject.getPrincipals()
-            principals.add(new MeTLPrincipal(username))
-            principals.add(new MeTLRolePrincipal("USER"))
-            session.setAttribute(authSubjectAttr,subject)
-            //val req:javax.servlet.http.HttpServletRequest = sr.req
-            //req.login(username,"no password")
-            //println("authenticated: %s\r\n%s".format(subject,sr.req.getUserPrincipal()))
-          }
-          case other => {
-            warn("type of containerRequest not of the type expected: %s".format(other))
-          }
-        }
-      } catch {
-        case e:Throwable => {
-          error("exception while setting userPrincipal",e)
-        }
-      }
-    }
-    ifConfiguredFromGroup(authenticationNodes,Map(
-      "saml" -> {(n:NodeSeq) => {
-        def setupUserWithSamlState(la: LiftAuthStateData): Unit = {
-          trace("saml step 1: %s".format(la))
-          if ( la.authenticated ) {
-            trace("saml step 2: authed")
-            setUserPrincipal(la.username)
-            Globals.currentUser(la.username)
-            SecurityListener.login
-            trace("saml step 3: set user")
-            var existingGroups:List[Tuple2[String,String]] = Nil
-            if (Globals.groupsProviders != null){
-            trace("saml step 4: groupsProviders not null")
-              Globals.groupsProviders.foreach(gp => {
-                trace("saml step 5: groupProvider: %s".format(gp))
-                val newGroups = gp.getGroupsFor(la.username)
-                if (newGroups != null){
-                  trace("saml step 6: newGroups: %s".format(newGroups))
-                  existingGroups = existingGroups ::: newGroups
-                }
-              })
-            }
-            trace("saml step 7: allGroups %s".format(existingGroups))
-            Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
-          trace("saml step 8: completed %s".format(Globals.casState.is))
-          }
-        }
-        val samlConf = getSAMLconfiguration(n)
-        debug("samlConf: %s".format(samlConf))
-        LiftAuthAuthentication.attachAuthenticator(
-          new SAMLAuthenticationSystem(
-            new SAMLAuthenticator(
-              alreadyLoggedIn = () => Globals.casState.authenticated,
-              onSuccess = setupUserWithSamlState _,
-              samlConfiguration = samlConf
-            )
-          )
-        )
-      }},
-      "mock" -> {(n:NodeSeq) => {
-        val template = (n \\ "template" \ "_")
-        val legalCharacters = (Range.inclusive('a','z').toList ::: Range.inclusive('A','Z').toList ::: Range.inclusive('0','9').toList) ::: List('.','_','-')
-        LiftAuthAuthentication.attachAuthenticator(
-          new FormAuthenticationSystem(
-            new Gen2FormAuthenticator(
-              loginPage = template,
-              formSelector = (n \ "@formSelector").text,
-              usernameSelector = (n \ "@usernameSelector").text,
-              passwordSelector = (n \ "@passwordSelector").text,
-              verifyCredentials = (cred:Tuple2[String,String]) => {
-                val username = cred._1
-                val _password = cred._2
-                if (username.exists(c => !legalCharacters.contains(c))){
-                  throw new Exception("username contains illegal characters.  Please use only alphanumeric characters")
-                } else {
-                  LiftAuthStateData(true,username.trim.toLowerCase,Nil,Nil)
-                }
-              },
-              alreadyLoggedIn = () => Globals.casState.authenticated,
-              onSuccess = (la:LiftAuthStateData) => {
-                setUserPrincipal(la.username)
-                Globals.currentUser(la.username)
-                SecurityListener.login
-                var existingGroups:List[Tuple2[String,String]] = Nil
-                if (Globals.groupsProviders != null){
-                  Globals.groupsProviders.foreach(gp => {
-                    val newGroups = gp.getGroupsFor(la.username)
-                    if (newGroups != null){
-                      existingGroups = existingGroups ::: newGroups
-                    }
-                  })
-                }
-                Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
-              }
-            )
-          )
-        )
-      }},
-      "google" -> {(n:NodeSeq) => {
-        LiftAuthAuthentication.attachAuthenticator(
-          new OpenIdConnectAuthenticationSystem(
-            googleClientId = (n \\ "@clientId").text,
-            googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text),
-            alreadyLoggedIn = () => Globals.casState.authenticated,
-            onSuccess = (la:LiftAuthStateData) => {
-              if ( la.authenticated ) {
-                setUserPrincipal(la.username)
-                Globals.currentUser(la.username)
-                SecurityListener.login
-                var existingGroups:List[Tuple2[String,String]] = Nil
-                if (Globals.groupsProviders != null){
-                  Globals.groupsProviders.foreach(gp => {
-                    val newGroups = gp.getGroupsFor(la.username)
-                    if (newGroups != null){
-                      existingGroups = existingGroups ::: newGroups
-                    }
-                  })
-                }
-                Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
-              }
-            }
-          )
-        )
-      }},
-      "cas" -> {(n:NodeSeq) => {
-        LiftAuthAuthentication.attachAuthenticator(
-          new CASAuthenticationSystem(
-            new CASAuthenticator(
-              (n \\ "@realm").text,
-              (n \\ "@baseUrl").text,
-              None,
-              alreadyLoggedIn = () => Globals.casState.authenticated,
-              onSuccess = (la:LiftAuthStateData) => {
-                if ( la.authenticated ) {
-                  setUserPrincipal(la.username)
-                  Globals.currentUser(la.username)
-                  SecurityListener.login
-                  var existingGroups:List[Tuple2[String,String]] = Nil
-                  if (Globals.groupsProviders != null){
-                    Globals.groupsProviders.foreach(gp => {
-                      val newGroups = gp.getGroupsFor(la.username)
-                      if (newGroups != null){
-                        existingGroups = existingGroups ::: newGroups
-                      }
-                    })
-                  }
-                  Globals.casState.set(new LiftAuthStateData(true,la.username,(la.eligibleGroups.toList ::: existingGroups).distinct,la.informationGroups))
-                }
-              }
-            ){
-              //this is where we do the appropriate setup for being behind a reverse proxy and not detecting our own location correctly.  This should be set from the xml element.
-              protected override val overrideHost:Box[String] = Empty
-              protected override val overridePort:Box[Int] = Empty
-              protected override val overrideScheme:Box[String] = Empty              
-            }
-          )
-        )
-    // )
-      }}*//*,
-      "openIdAuthenticator" -> {(n:NodeSeq) => {
-        OpenIdAuthenticator.attachOpenIdAuthenticator(
-          new OpenIdAuthenticator(
-            alreadyLoggedIn = () => Globals.casState.authenticated,
-            onSuccess = (la:LiftAuthStateData) => {
-              if ( la.authenticated ) {
-                Globals.currentUser(la.username)
-                SecurityListener.login
-                Globals.casState.set(new CASStateData(true,la.username,(la.eligibleGroups.toList ::: Globals.groupsProviders.flatMap(_.getGroupsFor(la.username))).distinct,la.informationGroups))
-              }
-            },
-            (n \\ "openIdEndpoint").map(eXml => OpenIdEndpoint((eXml \\ "@name").text,(s) => (eXml \\ "@formattedEndpoint").text.format(s),(eXml \\ "@imageSrc").text,Empty)) match {
-              case Nil => Empty
-              case specificEndpoints => Full(specificEndpoints)
-            }
-          )
-        )
-      }}
-      */
-     /*
-    ))
-  }
-  */
   def setupCachesFromFile(filePath:String) = {
     import net.sf.ehcache.config.{MemoryUnit}
     import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
@@ -597,7 +347,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
 
     setupAuthorizersFromFile(Globals.configurationFileLocation)
-   // setupAuthenticatorsFromFile(Globals.configurationFileLocation)
     setupClientConfigFromFile(Globals.configurationFileLocation)
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
