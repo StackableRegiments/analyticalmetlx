@@ -151,55 +151,101 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
   }
 }
 
-abstract class AuthSession(val session:HttpSession)
+abstract class AuthSession(val session:HttpSession) {
+  def getStoredRequests:Map[String,HttpServletRequest] = Map.empty[String,HttpServletRequest]
+}
 
-case class HealthyAuthSession(override val session:HttpSession,originalRequest:Option[HttpServletRequest] = None,username:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil) extends AuthSession(session)
-abstract class InProgressAuthSession(override val session:HttpSession,val originalRequest:HttpServletRequest,val authenticator:String) extends AuthSession(session)
+case class HealthyAuthSession(override val session:HttpSession,storedRequests:Map[String,HttpServletRequest] = Map.empty[String,HttpServletRequest],username:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil) extends AuthSession(session){
+  override def getStoredRequests = storedRequests
+}
+abstract class InProgressAuthSession(override val session:HttpSession,val storedRequests:Map[String,HttpServletRequest],val authenticator:String) extends AuthSession(session){
+  override def getStoredRequests = storedRequests
+}
 case class EmptyAuthSession(override val session:HttpSession) extends AuthSession(session)
 
 class LowLevelSessionStore {
   val SessionNotFound = new Exception("session not found")
   val SessionExpired = new Exception("session expired")
-  protected val sessionStore:scala.collection.mutable.Map[String,AuthSession] = scala.collection.mutable.Map.empty[String,AuthSession] 
-
-  protected def isExpired(authSession:AuthSession):Boolean = {
-    (new Date().getTime - authSession.session.getLastAccessedTime) > (authSession.session.getMaxInactiveInterval * 1000) //the interval is in seconds, while the lastAccessed is measured in miliseconds
-  }
-
+  val UnknownAttribute = new Exception("attribute returned unknown value")
+  val storeAttr = "authSessionState"
   def getValidSession(session:HttpSession):Either[Exception,AuthSession] = {
-    val sessionId = session.getId
-    val res = sessionStore.get(sessionId) match {
-      case None => {
-        Left(SessionNotFound)
-      }
-      case Some(s) if isExpired(s) => {
-        //we're checking this ourselves, because we might hold onto a reference to a session after it should otherwise have been expired, so we'd best check whether it should still be valid.
-        //
-        println("expiring session: %s".format(s))
-        sessionStore - sessionId
-        Left(SessionExpired) 
-      }
-      case Some(s) => {
-        Right(s)
-      }
+    session.getAttribute(storeAttr) match {
+      case null => Left(SessionNotFound)
+      case a:AuthSession => Right(a)
+      case _ => Left(UnknownAttribute)
     }
-    res
   }
   def updateSession(session:HttpSession,updateFunc:AuthSession=>AuthSession):Either[Exception,AuthSession] = {
-    sessionStore.get(session.getId).map(s => {
-      val updatedSession = updateFunc(s)
-      sessionStore.update(session.getId,updatedSession)
-      Right(updatedSession)
-    }).getOrElse({
-      val newSession = updateFunc(EmptyAuthSession(session))
-      sessionStore.update(session.getId,newSession)
-      Right(newSession)
-    })
+    session.getAttribute(storeAttr) match {
+      case s:AuthSession => {
+        val updatedSession = updateFunc(s)
+        session.setAttribute(storeAttr,updatedSession)
+        Right(updatedSession)
+      }
+      case other => {
+        val newSession = updateFunc(EmptyAuthSession(session))
+        session.setAttribute(storeAttr,newSession)
+        Right(newSession)
+      }
+    }
   }
 }
 
+trait HttpReqUtils {
+  protected val reqIdParameter = "replayRequest"  
+  protected def getIdFromReq(req:HttpServletRequest):String = {
+    req.getParameter(reqIdParameter)
+  }
+  protected def generateIdForReq(req:HttpServletRequest):String = {
+    nextFuncName
+  }
+  protected def freezeRequest(req:HttpServletRequest):HttpServletRequest = new CloneableHttpServletRequestWrapper(new CachingHttpServletRequestWrapper(req)).duplicate
+  protected def getOriginalRequest(authSession:AuthSession,req:HttpServletRequest):HttpServletRequest = {
+    authSession.getStoredRequests.get(getIdFromReq(req)).getOrElse(req)
+  }
+  protected def updatedStore(authSession:AuthSession,req:HttpServletRequest):Map[String,HttpServletRequest] = {
+    val reqId = generateIdForReq(req)
+    embedReqId(req,reqId)
+    authSession.getStoredRequests.updated(reqId,freezeRequest(req))
+  }
+  protected def updatedStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):Map[String,HttpServletRequest] = {
+    authSession.getStoredRequests ++ reqs
+  }
+  protected def wrapWithReqId(req:HttpServletRequest,url:String):String = {
+    getReqId(req).map(reqId => {
+      new org.apache.http.client.utils.URIBuilder(url).addParameter(reqIdParameter,reqId).build().toString
+    }).getOrElse(url)
+  }
+  protected def getReqId(req:HttpServletRequest):Option[String] = {
+    req.getAttribute(reqIdParameter) match {
+      case null => None
+      case s:String if s.length > 0 => Some(s)
+      case other => Some(other.toString)
+    } 
+  }
+  protected def embedReqId(req:HttpServletRequest,id:String):HttpServletRequest = {
+    println("embeddingReqId: %s => %s".format(id,req))
+    req.setAttribute(reqIdParameter,id)
+    req
+  }
+  protected def possiblyGenerateStoredRequest(req:HttpServletRequest):Option[Tuple2[String,HttpServletRequest]] = {
+    val paramValue = getIdFromReq(req)
+    getReqId(req) match {
+      case Some(str) => None
+      case None if paramValue == null || paramValue.length == 0 => {
+        val reqId = generateIdForReq(req)
+        val frozenReq = freezeRequest(req)
+        Some((reqId,frozenReq))
+      }
+      case None => {
+        embedReqId(req,paramValue)
+        None
+      }
+    }
+  }
+}
 
-class LoggedInFilter extends Filter {
+class LoggedInFilter extends Filter with HttpReqUtils {
   import scala.xml._
   protected val sessionStore = new LowLevelSessionStore
   protected object FilterAuthenticators {
@@ -218,7 +264,9 @@ class LoggedInFilter extends Filter {
       authenticator match {
         case Some(auth) => {
           sessionStore.updateSession(session,(s:AuthSession) => {
-            val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),req)
+            val newId = generateIdForReq(req)
+            val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),s.getStoredRequests.updated(newId,req))
+            embedReqId(req,newId) 
             newAuthSession
           })
           true
@@ -419,6 +467,21 @@ class LoggedInFilter extends Filter {
             )
           */
           }
+          case n:Elem if (n.label == "basicInMemory") => {
+            for (
+              realm <- (n \\ "@realm").headOption.map(_.text);
+              creds = (n \\ "credential").flatMap(cNode => {
+                for (
+                  username <- (cNode \\ "@username").headOption.map(_.text);
+                  password <- (cNode \\ "@password").headOption.map(_.text)
+                ) yield {
+                  (username,password)
+                }
+              })
+            ) yield {
+              new TimePeriodInMemoryBasicAuthenticator(sessionStore,realm,Map(creds:_*))
+            }
+          }
           case _ => None
         }).map(auth => DescribedAuthenticator(name,imageUrl,prefix,auth))
       }).toList,""))
@@ -444,6 +507,8 @@ class LoggedInFilter extends Filter {
               case sessionStore.SessionNotFound => {
                 if (FilterAuthenticators.requestNewAuthenticator(httpReq,httpResp,Session)){
                   doFilter(req,res,chain)
+                } else {
+                  httpResp.sendError(500,"unable to initialize authenticator")
                 }
               }
               case other => {
@@ -454,15 +519,13 @@ class LoggedInFilter extends Filter {
         }
         case Right(s) => {
           s match {
-            case has@HealthyAuthSession(Session,request,username,groups,attrs) => { //let the request through 
-              request.map(originalReq => {
-                /*
-                 // not sure whether this is necessary - I think the implementation will turn out that the req has only the sessionId attribute, and it looks up in the container's sessionStore, so if I've updated the session has the sessionId the original req has, then it should apply to the original req I've deferred.
-                val originalSession = originalReq.getSession()
-                originalSession.setAttribute("user",Session.getAttribute("user"))
-                */
-                sessionStore.updateSession(Session,s => HealthyAuthSession(Session,None,username,groups,attrs)) // clear the rewrite
-                val authedReq = completeAuthentication(originalReq,httpResp,Session,username,groups,attrs)
+            case has@HealthyAuthSession(Session,requests,username,groups,attrs) => { //let the request through 
+              val storedReqId = getIdFromReq(httpReq) 
+              println("replayingReq: %s".format(storedReqId,has.getStoredRequests))
+              requests.get(storedReqId).map(storedReq => {
+                sessionStore.updateSession(Session,s => HealthyAuthSession(Session,requests - storedReqId,username,groups,attrs)) // clear the rewrite
+                //sessionStore.updateSession(Session,s => HealthyAuthSession(Session,Map.empty[String,HttpServletRequest],username,groups,attrs)) // clear the rewrite
+                val authedReq = completeAuthentication(storedReq,httpResp,Session,username,groups,attrs)
                 chain.doFilter(authedReq,httpResp)
               }).getOrElse({
                 val authedReq = completeAuthentication(httpReq,httpResp,Session,username,groups,attrs)
@@ -528,27 +591,29 @@ class LoggedInFilter extends Filter {
   }
 }
 
-abstract class FilterAuthenticator(sessionStore:LowLevelSessionStore) {
+abstract class FilterAuthenticator(sessionStore:LowLevelSessionStore) extends HttpReqUtils  {
   val identifier = nextFuncName
-  protected def freezeRequest(req:HttpServletRequest):HttpServletRequest = new CloneableHttpServletRequestWrapper(new CachingHttpServletRequestWrapper(req)).duplicate
   protected def getRequestRedirect(req:HttpServletRequest):String = req.getRequestURL.toString
   def getSessionStore = sessionStore
-  def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession
+  def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
+    generateStore(authSession,updatedStore(authSession,req))
+  }
+  def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession
   def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = false
   def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = true //the boolean represents whether the req should then be passed down the chain
 }
 
 case class DescribedAuthenticator(name:String,imageUrl:String,prefix:String,authenticator:FilterAuthenticator) extends FilterAuthenticator(authenticator.getSessionStore) {
   override val identifier = authenticator.identifier
-  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = authenticator.generateStore(authSession,req)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = authenticator.generateStore(authSession,reqs)
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authenticator.shouldHandle(authSession,req,session)
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = authenticator.handle(authSession,req,res,session)
 }
 
 class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[DescribedAuthenticator],descriptiveHtml:String = "") extends FilterAuthenticator(sessionStore) {
-  case class MultiChoiceInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,choice:Option[DescribedAuthenticator]) extends InProgressAuthSession(session,originalRequest,identifier)
-  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
-    MultiChoiceInProgress(authSession.session,freezeRequest(req),None)
+  case class MultiChoiceInProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest],choice:Option[DescribedAuthenticator]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = {
+    MultiChoiceInProgress(authSession.session,updatedStore(authSession,reqs),None)
   }
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
     case mcip@MultiChoiceInProgress(s,or,choice) if mcip.authenticator == identifier => true // if this is the one handling it all
@@ -557,36 +622,40 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
   override def toString = "MultiAuthenticator(%s)".format(authenticators)
   override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
     (authSession,req.getMethod.toUpperCase,req.getRequestURI.split("/").toList.dropWhile(_ == "")) match {
-      case (mcip@MultiChoiceInProgress(session,origReq,None),_,_) if authenticators.length == 1 => {
+      case (mcip@MultiChoiceInProgress(session,storedRequests,None),_,_) if authenticators.length == 1 => {
         sessionStore.updateSession(authSession.session,s => mcip.copy(choice = Some(authenticators.head)))
-        res.sendRedirect(origReq.getRequestURL.toString)
+        res.sendRedirect(wrapWithReqId(req,getOriginalRequest(authSession,req).getRequestURL.toString))
         false
       }
-      case (mcip@MultiChoiceInProgress(session,origReq,None),"GET","choice" :: choice :: Nil) => {
+      case (mcip@MultiChoiceInProgress(session,storedRequests,None),"GET","choice" :: choice :: Nil) => {
         authenticators.find(_.identifier == choice).map(authenticator => {
           sessionStore.updateSession(authSession.session,s => mcip.copy(choice = Some(authenticator)))
-          res.sendRedirect(origReq.getRequestURL.toString)
+          res.sendRedirect(wrapWithReqId(req,getOriginalRequest(authSession,req).getRequestURL.toString))
           false
         }).getOrElse({
-          res.sendRedirect(origReq.getRequestURL.toString)
+          res.sendRedirect(wrapWithReqId(req,getOriginalRequest(authSession,req).getRequestURL.toString))
           false
         })
       }
-      case (mcip@MultiChoiceInProgress(session,origReq,Some(describedAuthenticator)),_,_) => {
-        sessionStore.updateSession(authSession.session,s => describedAuthenticator.generateStore(authSession,origReq))
+      case (mcip@MultiChoiceInProgress(session,storedRequests,Some(describedAuthenticator)),_,_) => {
+        sessionStore.updateSession(authSession.session,s => describedAuthenticator.generateStore(authSession,storedRequests))
         true
       }
       case other => {
         authenticators.find(_.shouldHandle(authSession,req,session)).map(describedAuthenticator => {
           val result = describedAuthenticator.handle(authSession,req,res,session)
           sessionStore.getValidSession(session) match {
-            case Right(has@HealthyAuthSession(session,originalRequest,user,groups,attrs)) => {
+            case Right(has@HealthyAuthSession(session,storedRequests,user,groups,attrs)) => {
               sessionStore.updateSession(authSession.session,s => has.copy(username = "%s%s".format(describedAuthenticator.prefix,user)))
               true
             }
             case _ => result
           }
         }).getOrElse({
+          possiblyGenerateStoredRequest(req).foreach(reqTup => {
+            sessionStore.updateSession(authSession.session,s => generateStore(other._1,Map(reqTup._1 -> reqTup._2)))
+            embedReqId(req,reqTup._1)
+          })
           res.getWriter.write("""<html>
   %s
   %s
@@ -594,11 +663,11 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
               descriptiveHtml,
               authenticators.foldLeft("")((acc,item) => {
                 """%s<div class="authenticatorChoice">
-    <a href="/choice/%s">
+    <a href="/choice/%s%s">
       <img class="authenticatorImage" src="%s"/>
       <div class="authenticatorName">%s</div>
     </a>
-    </div>""".format(acc,item.identifier,item.imageUrl,item.name)
+  </div>""".format(acc,item.identifier,getReqId(req).map(reqId => "?%s=%s".format(reqIdParameter,reqId)).getOrElse(""),item.imageUrl,item.name)
               })
             )
           )
@@ -611,10 +680,10 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
 }
 
 class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]],descriptiveHtml:String) extends FilterAuthenticator(sessionStore) {
-  case class FormInProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest,gensymMap:Map[String,String]) extends InProgressAuthSession(session,originalRequest,identifier)
-  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = {
+  case class FormInProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest],gensymMap:Map[String,String]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = {
     val securedFormNamesLookup = Map(fields.map(f => (f,nextFuncName)):_*)
-    FormInProgress(authSession.session,freezeRequest(req),securedFormNamesLookup)
+    FormInProgress(authSession.session,updatedStore(authSession,reqs),securedFormNamesLookup)
   }
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
     case fip@FormInProgress(s,or,fieldMap) if fip.authenticator == identifier => true
@@ -635,19 +704,32 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
     }
   }
   def generateForm(authSession:FormInProgress,res:HttpServletResponse,req:HttpServletRequest):Boolean = {
+    possiblyGenerateStoredRequest(req).foreach(reqTup => {
+      sessionStore.updateSession(authSession.session,s => {
+        s match {
+          case fip:FormInProgress => fip.copy(storedRequests = fip.getStoredRequests.updated(reqTup._1,reqTup._2))
+          case other => generateStore(authSession,Map(reqTup._1 -> reqTup._2))
+        }
+      })
+      embedReqId(req,reqTup._1)
+    })
     res.getWriter.println(
 """<html>
   %s
   <form method="post" action="%s">
     %s
+    %s
     <input type="submit" value"login"/>
   </form>
-</html>""".format(descriptiveHtml,getRequestRedirect(req),fields.flatMap(f => {
-      authSession.gensymMap.get(f).map(securedName => {
-      
-      """<label for="%s">%s</label><input name="%s" type="text"/>""".format(securedName,f,securedName)
-      })
-}).mkString(""))
+</html>""".format(
+      descriptiveHtml,
+      getRequestRedirect(req),
+      getReqId(req).map(reqId => """<input type="hidden" name="%s" value="%s"/>""".format(reqIdParameter,reqId)).getOrElse(""), 
+      fields.flatMap(f => {
+        authSession.gensymMap.get(f).map(securedName => {
+          """<label for="%s">%s</label><input name="%s" type="text"/>""".format(securedName,f,securedName)
+        })
+      }).mkString(""))
     )
     res.setContentType("text/html")
     res.setStatus(200)
@@ -658,11 +740,12 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
       authSession.gensymMap.get(f).map(securedName => (f,req.getParameter(securedName)))
     }):_*)
     validateFunc(fieldMap).map(userTup => {
-      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),userTup._1,userTup._2,userTup._3))
+      println("validation succeeded")
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.storedRequests,userTup._1,userTup._2,userTup._3))
       true
     }).getOrElse({
-      generateForm(authSession,res,authSession.originalRequest)
-      false
+      println("validation failed")
+      generateForm(authSession,res,getOriginalRequest(authSession,req))
     })
   }
 }
@@ -679,8 +762,8 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   import org.pac4j.saml.client.Saml2Client
   import org.pac4j.saml.profile.Saml2Profile
 //  import scala.collection.immutable.List
-  case class SAMLProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest,identifier)
-  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = SAMLProgress(authSession.session,freezeRequest(req))
+  case class SAMLProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = SAMLProgress(authSession.session,updatedStore(authSession,reqs))
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
     case sp@SAMLProgress(s,or) if sp.authenticator == identifier => true
     case _ => false
@@ -809,14 +892,18 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 //  </saml2p:AuthnRequest>
 
     try {
+      possiblyGenerateStoredRequest(request).foreach(reqTup => {
+        sessionStore.updateSession(authSession.session,s => generateStore(authSession,Map(reqTup._1 -> reqTup._2)))
+        embedReqId(request,reqTup._1)
+      })
       val redirectAction = samlClient.getRedirectAction(liftWebContext(request,resp), true, false) 
       redirectAction.getType match {
         case RedirectAction.RedirectType.REDIRECT => {
           val redirectLoc = redirectAction.getLocation
-          resp.sendRedirect(redirectLoc)
+          resp.sendRedirect(wrapWithReqId(request,redirectLoc))
         }
         case RedirectAction.RedirectType.SUCCESS => {
-          resp.getWriter.write(redirectAction.getContent)
+          resp.getWriter.write(redirectAction.getContent) // this might be bad?
           resp.setStatus(200)
         }
         case other => {
@@ -866,7 +953,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       }).toList
 
       debug("firing onSuccess")
-      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),userProfile.getId,groups,attributes ::: transformedAttrs))
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userProfile.getId,groups,attributes ::: transformedAttrs))
       true
     } catch {
       case e:Exception => {
@@ -879,8 +966,8 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 
 class CASFilterAuthenticator(sessionStore:LowLevelSessionStore,casLoginUrl:String,casServiceValidatePath:String) extends FilterAuthenticator(sessionStore){
   import com.metl.utils._
-  case class CASProgress(override val session:HttpSession,override val originalRequest:HttpServletRequest) extends InProgressAuthSession(session,originalRequest,identifier)
-  override def generateStore(authSession:AuthSession,req:HttpServletRequest):InProgressAuthSession = CASProgress(authSession.session,freezeRequest(req))
+  case class CASProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = CASProgress(authSession.session,updatedStore(authSession,reqs))
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
     case cp@CASProgress(s,or) if cp.authenticator == identifier => true
     case _ => false
@@ -897,10 +984,14 @@ class CASFilterAuthenticator(sessionStore:LowLevelSessionStore,casLoginUrl:Strin
   }
   protected def getHttpClient: IMeTLHttpClient = Http.getClient
   protected def redirectToCasBaseUrl(sp:CASProgress,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+    possiblyGenerateStoredRequest(req).foreach(reqTup => {
+      sessionStore.updateSession(sp.session,s => generateStore(sp,Map(reqTup._1 -> reqTup._2)))
+      embedReqId(req,reqTup._1)
+    })
     res.sendRedirect(casLoginUrl + "?service=%s".format(getService(req)))
     false
   }
-  protected def getService(req:HttpServletRequest):String = java.net.URLEncoder.encode(req.getRequestURL.toString,"utf-8")
+  protected def getService(req:HttpServletRequest):String = java.net.URLEncoder.encode(wrapWithReqId(req,req.getRequestURL.toString),"utf-8")
   protected def validateTicket(authSession:CASProgress,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession,ticket:String):Boolean = {
     val verifyUrl = casServiceValidatePath +"?ticket=%s&service=%s".format(ticket,getService(req))
     val casValidityResponse = getHttpClient.getAsString(verifyUrl)
@@ -909,11 +1000,94 @@ class CASFilterAuthenticator(sessionStore:LowLevelSessionStore,casLoginUrl:Strin
       success <- (casValidityResponseXml \\ "authenticationSuccess").headOption;
       user <- (success \\ "user").headOption.map(_.text)
     ) yield {
-      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,Some(authSession.originalRequest),user,Nil,Nil))
+      sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,user,Nil,Nil))
       true
     }).getOrElse({
       res.sendError(403,"forbidden")
       false
     })
+  }
+}
+
+abstract class BasicAuthenticator(sessionStore:LowLevelSessionStore,realm:String) extends FilterAuthenticator(sessionStore){
+  import net.liftweb.util.Helpers._
+  case class BasicProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = BasicProgress(authSession.session,updatedStore(authSession,reqs))
+  override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
+    case bp@BasicProgress(s,or) if bp.authenticator == identifier => true
+    case _ => false
+  }
+  protected val authHeaderName = "Authorization"
+  override def handle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,session:HttpSession):Boolean = {
+    req.getHeader(authHeaderName) match {
+      case null => challenge(authSession,req,res)
+      case authHeader:String => {
+        authHeader.split(" ").toList match {
+          case List("Basic",b64EncodedCreds) => {
+            val creds = new String(base64Decode(b64EncodedCreds),"UTF-8")
+            creds.split(":").toList match {
+              case List(u,p) if validateCredentials(req,u,p) => {
+                sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,u,Nil,Nil))
+                true
+              }
+              case _ => {
+                challenge(authSession,req,res,true)
+              }
+            }
+          }
+          case _ => {
+            challenge(authSession,req,res)
+          }
+        }
+      }
+    }
+  }
+  protected def reject(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse) = {
+    res.sendError(403,"forbidden")
+    false
+  }
+  protected def challenge(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,failedAttempt:Boolean = false) = {
+    res.addHeader("WWW-Authenticate","""Basic realm="%s"""".format(realm))
+    res.sendError(401,"Access denied")
+    false
+  }
+  protected def validateCredentials(req:HttpServletRequest,username:String,password:String):Boolean
+}
+
+abstract class ThrottlingBasicAuthenticator(sessionStore:LowLevelSessionStore,realm:String) extends BasicAuthenticator(sessionStore,realm) {
+  case class ThrottledBasicProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest],failedAttempts:List[Tuple2[HttpServletRequest,Long]]) extends InProgressAuthSession(session,storedRequests,identifier)
+  override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = ThrottledBasicProgress(authSession.session,updatedStore(authSession,reqs),Nil)
+  override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
+    case bp@ThrottledBasicProgress(s,or,fa) if bp.authenticator == identifier => true
+    case _ => false
+  }
+  protected def shouldThrottle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse):Boolean
+  protected def expireFailedAttempt(req:HttpServletRequest,attempt:Long):Boolean
+  override def challenge(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse,failedAttempt:Boolean = false) = {
+    if (shouldThrottle(authSession,req,res)) {
+      super.reject(authSession,req,res)
+    } else {
+      authSession match {
+        case tbp@ThrottledBasicProgress(s,sr,fa) if failedAttempt => {
+          val now = new java.util.Date().getTime
+          sessionStore.updateSession(authSession.session,s => tbp.copy(failedAttempts = (freezeRequest(req),now) :: tbp.failedAttempts.filterNot(fat => expireFailedAttempt(fat._1,fat._2)).toList))
+        }
+        case _ => {}
+      }
+      super.challenge(authSession,req,res)
+    }
+  }
+}
+class TimePeriodInMemoryBasicAuthenticator(sessionStore:LowLevelSessionStore,realm:String,userMap:Map[String,String]) extends ThrottlingBasicAuthenticator(sessionStore,realm) {
+  protected val maxFailures = 5
+  protected val period = 30 * 1000
+  override def validateCredentials(req:HttpServletRequest,username:String,password:String):Boolean = userMap.get(username).exists(_ == password)
+  override def shouldThrottle(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse):Boolean = authSession match {
+    case tbp@ThrottledBasicProgress(s,sr,fa) => fa.filterNot(fat => expireFailedAttempt(fat._1,fat._2)).length > maxFailures
+    case _ => false
+  }
+  override def expireFailedAttempt(req:HttpServletRequest,when:Long):Boolean = {
+    val now = new java.util.Date().getTime
+    when < (now - period)
   }
 }
