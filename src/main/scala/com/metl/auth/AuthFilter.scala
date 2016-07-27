@@ -205,6 +205,7 @@ trait HttpReqUtils {
   protected def updatedStore(authSession:AuthSession,req:HttpServletRequest):Map[String,HttpServletRequest] = {
     val reqId = generateIdForReq(req)
     embedReqId(req,reqId)
+    println("storing: %s => %s".format(reqId,req))
     authSession.getStoredRequests.updated(reqId,freezeRequest(req))
   }
   protected def updatedStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):Map[String,HttpServletRequest] = {
@@ -264,7 +265,7 @@ class LoggedInFilter extends Filter with HttpReqUtils {
         case Some(auth) => {
           sessionStore.updateSession(session,(s:AuthSession) => {
             val newId = generateIdForReq(req)
-            val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),s.getStoredRequests.updated(newId,req))
+            val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),s.getStoredRequests.updated(newId,freezeRequest(req)))
             embedReqId(req,newId) 
             newAuthSession
           })
