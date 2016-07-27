@@ -412,21 +412,47 @@ var Extend = (function(){
     }
 })();
 
+var subcategoryMapping = {
+    metaToolbar:".metaConversationGroup",
+    roomToolbar:".inConversationGroup",
+    optsToolbar:".applicationGroup"
+};
+var categoryMapping = _.fromPairs(_.flatMap({
+    metaToolbar:"conversations integrations print",
+    optsToolbar:"customizeBrush settings",
+    roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
+},function(v,k){
+    return _.map(v.split(" "),function(backstage){
+        return [backstage,k];
+    });
+}));
+
 var active = "activeBackstageTab active";
 function showBackstage(id){
-    $(".backstage-menu").addClass('active');
-    $(".backstage").hide();
-    $(".backstageTabHeader").removeClass(active);
-    $(".backstage").removeClass(active);
-    var popup = $("#"+id+"Popup");
     window.currentBackstage = id;
-    popup.show();
+    $(".backstage").hide();
+
+    $(".backstageTabHeader").removeClass(active).hide();
+    $(".backstageCategory").removeClass("active");
+    $(".backstageCategory").removeClass(active);
     $(".modeSpecificTool").removeClass(active);
-    $("#"+id).addClass(active);
-    $(".modeSpecificTool."+id).addClass(active);
+    $(".backstage").removeClass(active);
+
+    var popup = $("#"+id+"Popup");
+    var popupParent = categoryMapping[id];
+
+    $(subcategoryMapping[popupParent]).show();
     $("#backstageContainer").show();
-    //$("#applicationMenuPopup").show().addClass('active');
+    $("#hideBackstage").show();
+    popup.show();
+
     $("#applicationMenuPopup").addClass('active');
+    $("#applicationMenuButton").addClass(active);
+    $(".modeSpecificTool."+id).addClass(active);
+    $("#"+popupParent).addClass("active");
+    $(".backstage-menu").addClass('active');
+    $("#"+id).addClass(active);
+
     if(Conversations.inConversation()){
         $("#backstageTabHeaders").show();
         $("#applicationMenuButton").show();
@@ -435,8 +461,6 @@ function showBackstage(id){
         $("#backstageTabHeaders").hide();
         $("#applicationMenuButton").hide();
     }
-    $("#applicationMenuButton").addClass(active);
-    $("#hideBackstage").show();
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
 }
@@ -463,7 +487,11 @@ function showSpinner() {
 function hideSpinner() {
     $("#loadingSlidePopup").hide();
 }
-
+function toggleSubOptions(selector){
+    return function(){
+        $(selector).eq(0).click();
+    };
+}
 $(function(){
     var heading = $("#heading");
     heading.text("Loading MeTLX...");
@@ -555,8 +583,8 @@ $(function(){
             hideBackstage();
         }
         else{
-            showBackstage("settings");//applicationMenu");
             updateActiveMenu($("#menuSettings"));
+            showBackstage("conversations");
         }
     });
     loadSlidesAtNativeZoom = UserSettings.getUserPref("loadSlidesAtNativeZoom") == "true";
@@ -652,6 +680,10 @@ $(function(){
         $("#enableSync").on("click",Conversations.enableSyncMove);
         $("#disableSync").on("click",Conversations.disableSyncMove);
     }
+    _.each(subcategoryMapping,function(v,k){
+        $("#"+k).click(toggleSubOptions(v));
+    });
+
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
 
@@ -664,49 +696,49 @@ $(function(){
         showBackstage("customizeBrush");
         updateActiveMenu(this);
     });
-		$('#menuPrint').click(function(){
-			showBackstage("print");
-			updateActiveMenu(this);
-			var conversationJid = Conversations.getCurrentConversationJid();
-			var rangeAllRadio = $("#rangeAll");
-			var rangeSpecifiedRadio = $("#rangeSpecified");
-			var rangeThisSlideRadio = $("#rangeThisSlide");
-			var rangeSpecifiedInput = $("#rangeSpecifiedInput");
-			var printButton = $("#printButton");
-			var uncheckAll = function(){
-				_.forEach([rangeSpecifiedRadio,rangeAllRadio,rangeThisSlideRadio],function(item){
-					item.prop("checked",false);
-				});
-				rangeSpecifiedInput.prop("disabled",true);
-			};
-			uncheckAll();
-			rangeThisSlideRadio.prop("checked",true);
-			rangeSpecifiedInput.val(Conversations.getCurrentSlide().index + 1);
-			var updatePrintState = function(pageRange){
-				printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s",conversationJid,pageRange));
-			};
-			updatePrintState(Conversations.getCurrentSlide().index + 1);
-			rangeAllRadio.on("click",function(){
-				uncheckAll();
-				$(this).prop("checked",true);
-				updatePrintState("all");
-			});
-			rangeSpecifiedRadio.on("click",function(){
-				uncheckAll();
-				$(this).prop("checked",true);
-				rangeSpecifiedInput.prop("disabled",false);
-				updatePrintState(rangeSpecifiedInput.val());
-			});
-			rangeSpecifiedInput.on("change",function(){
-				var text = $(this).val();
-				updatePrintState(text);
-			});
-			rangeThisSlideRadio.on("click",function(){
-				uncheckAll();
-				$(this).prop("checked",true);
-				updatePrintState(Conversations.getCurrentSlide().index + 1);
-			});
-		});
+    $('#menuPrint').click(function(){
+        showBackstage("print");
+        updateActiveMenu(this);
+        var conversationJid = Conversations.getCurrentConversationJid();
+        var rangeAllRadio = $("#rangeAll");
+        var rangeSpecifiedRadio = $("#rangeSpecified");
+        var rangeThisSlideRadio = $("#rangeThisSlide");
+        var rangeSpecifiedInput = $("#rangeSpecifiedInput");
+        var printButton = $("#printButton");
+        var uncheckAll = function(){
+            _.forEach([rangeSpecifiedRadio,rangeAllRadio,rangeThisSlideRadio],function(item){
+                item.prop("checked",false);
+            });
+            rangeSpecifiedInput.prop("disabled",true);
+        };
+        uncheckAll();
+        rangeThisSlideRadio.prop("checked",true);
+        rangeSpecifiedInput.val(Conversations.getCurrentSlide().index + 1);
+        var updatePrintState = function(pageRange){
+            printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s",conversationJid,pageRange));
+        };
+        updatePrintState(Conversations.getCurrentSlide().index + 1);
+        rangeAllRadio.on("click",function(){
+            uncheckAll();
+            $(this).prop("checked",true);
+            updatePrintState("all");
+        });
+        rangeSpecifiedRadio.on("click",function(){
+            uncheckAll();
+            $(this).prop("checked",true);
+            rangeSpecifiedInput.prop("disabled",false);
+            updatePrintState(rangeSpecifiedInput.val());
+        });
+        rangeSpecifiedInput.on("change",function(){
+            var text = $(this).val();
+            updatePrintState(text);
+        });
+        rangeThisSlideRadio.on("click",function(){
+            uncheckAll();
+            $(this).prop("checked",true);
+            updatePrintState(Conversations.getCurrentSlide().index + 1);
+        });
+    });
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
