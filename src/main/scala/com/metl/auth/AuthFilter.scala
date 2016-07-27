@@ -920,6 +920,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       }).toList
       Some(request.getParameter("relayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
         val url = new java.net.URI(relayState)
+        println("found relayState: %s => %s".format(relayState,url.getQuery))
         url.getQuery.split("&").toList.map(_.split("=").toList).flatMap{
           case List(k,v) => Some((k,v))
           case Nil => None
