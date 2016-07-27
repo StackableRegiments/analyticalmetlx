@@ -767,7 +767,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     }
   }
   
-  class ServletWebContext(req:HttpServletRequest,resp:HttpServletResponse) extends WebContext {
+  class ServletWebContext(authSession:AuthSession,req:HttpServletRequest,resp:HttpServletResponse) extends WebContext {
     override def setResponseHeader(name: String, value: String) = resp.setHeader(name,value)
     override def setResponseStatus(code: Int) = resp.setStatus(code)
     override def getRequestParameters: java.util.Map[String, Array[String]] = req.getParameterMap.asInstanceOf[java.util.Map[String,Array[String]]]
@@ -781,7 +781,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     override def getServerPort: Int = req.getServerPort
     override def getSessionAttribute(name: String): AnyRef = req.getSession.getAttribute(name)
     override def getScheme: String = req.getScheme
-    override def getFullRequestURL: String = wrapWithReqId(req,req.getRequestURL.toString)
+    override def getFullRequestURL: String = wrapWithReqId(req,getOriginalRequest(authSession,req).getRequestURL.toString)
   }
 
   protected def redirectHome(resp:HttpServletResponse) = resp.sendRedirect("/")
@@ -790,7 +790,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 
   protected def internalServerErrorResponseWithUnknownError(resp:HttpServletResponse,message:String = "unknown error"):Unit = resp.sendError(500,message)
 
-  protected def liftWebContext(req:HttpServletRequest,resp:HttpServletResponse):WebContext = new ServletWebContext(req,resp)
+  protected def liftWebContext(authSession:AuthSession,req:HttpServletRequest,resp:HttpServletResponse):WebContext = new ServletWebContext(authSession,req,resp)
 
   protected def getSaml2Client(samlConfiguration: SAMLConfiguration):Saml2Client = {
     val saml2Client: Saml2Client = new Saml2Client(){
@@ -865,7 +865,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
         sessionStore.updateSession(authSession.session,s => generateStore(authSession,Map(reqTup._1 -> reqTup._2)))
         embedReqId(request,reqTup._1)
       })
-      val redirectAction = samlClient.getRedirectAction(liftWebContext(request,resp), true, false) 
+      val redirectAction = samlClient.getRedirectAction(liftWebContext(authSession,request,resp), true, false) 
       redirectAction.getType match {
         case RedirectAction.RedirectType.REDIRECT => {
           val redirectLoc = redirectAction.getLocation
@@ -889,7 +889,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 
   def handleSAMLResponseCallback(authSession:InProgressAuthSession,request: HttpServletRequest, resp:HttpServletResponse,session:HttpSession): Boolean = {
     try {
-      val context = liftWebContext(request,resp)
+      val context = liftWebContext(authSession,request,resp)
       val credentials = samlClient.getCredentials(context)
       val userProfile: Saml2Profile = samlClient.getUserProfile(credentials, context)
 
