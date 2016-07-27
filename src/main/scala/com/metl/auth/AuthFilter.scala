@@ -912,16 +912,23 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
 
       debug("all attrs for '%s': %s\r\nroles: %s".format(userProfile.getId,attributes,userProfile.getRoles))
 
-      // This is where we might want to adjust the LiftAuthStateData to
-      // support the attributes and groups returned by the SAML packet.
       val groups = attributes.flatMap(attr => {
         samlConfiguration.eligibleGroups.get(attr._1).map(groupType => (groupType,attr._2))
       }).toList
       val transformedAttrs = attributes.flatMap(attr => {
         samlConfiguration.attributeTransformers.get(attr._1).map(attrName => (attrName,attr._2))
       }).toList
-
-      debug("firing onSuccess")
+      Some(request.getParameter("relayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
+        val url = new java.net.URI(relayState)
+        url.getQuery.split("&").toList.map(_.split("=").toList).flatMap{
+          case List(k,v) => Some((k,v))
+          case Nil => None
+          case list => Some((list.head,list.tail.mkString("=")))
+        }.find(_._1 == "replayRequest").filterNot(rs => rs == null || rs.length == 0).foreach(reqIdTup => {
+          println("reattaching reqId: %s".format(reqIdTup))
+          embedReqId(request,reqIdTup._2)
+        })
+      })
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userProfile.getId,groups,attributes ::: transformedAttrs))
       true
     } catch {
