@@ -774,12 +774,11 @@ var Modes = (function(){
                         });
                     }
                 }
-                var setFormattingProperty = function(prop){
+                var setFormattingProperty = function(prop,newValue){
                     return function(){
-                        var newValue = $(this).val();
+                        newValue = newValue || $(this).val();
                         _.each(boardContent.multiWordTexts,function(t){
                             if(t.doc.isActive){
-                                console.log(newValue);
                                 t.doc.selectedRange().setFormatting(prop,newValue);
                                 if(t.doc.save().length > 0){
                                     sendRichText(t);
@@ -841,6 +840,9 @@ var Modes = (function(){
                 fontFamilySelector.change(setFormattingProperty("font"));
                 fontSizeSelector.change(setFormattingProperty("size"));
                 fontColorSelector.change(setFormattingProperty("color"));
+                _.each(["red","blue","black"],function(color){
+                    $(sprintf("#%sText",color)).click(setFormattingProperty("color",color));
+                });
                 justifySelector.change(setFormattingProperty("align"));
                 presetFitToText.click(adoptPresetWidth("fitToText"));
                 presetRunToEdge.click(adoptPresetWidth("runToEdge"));
@@ -1215,7 +1217,7 @@ var Modes = (function(){
             };
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
-		removeHandles();
+                removeHandles();
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -1310,7 +1312,7 @@ var Modes = (function(){
                     Modes.select.addHandles();
                 },
                 addHandles:function(){
-		    removeHandles();
+                    removeHandles();
                     var handlesAtZoom = function(){
                         var zoom = scale();
                         return Modes.select.resizeHandleSize / zoom;
@@ -2143,7 +2145,7 @@ var Modes = (function(){
                         });
                         container.find(".advancedTools").on("click",function(){
                             drawAdvancedTools(currentBrush);
-			    $("#drawDropdowns").toggle();
+                            $("#drawDropdowns").toggle();
                         });
                     }
                     setActiveMode("#drawTools","#drawMode");

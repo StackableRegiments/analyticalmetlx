@@ -27,7 +27,7 @@ a.button {
 .button-round {
     .fa-btn;
     height: 50px;
-    width: 50px;
+    max-width: 50px;
     border-radius: 3em;
     padding: 0;
     border:2px solid @menu-button-border;
@@ -118,8 +118,10 @@ a.button {
         .nm;
         .btn-icon;
         .btn-active;
+        flex-grow:1;
     }
     label {
+        flex-grow:1;
     }
 }
 @media only screen and (max-width:640px) {

@@ -511,7 +511,6 @@ $(function(){
     boardContext = board[0].getContext("2d");
     heading.text("Set up board");
     setLoadProgress(1);
-    //DeviceConfiguration.resetCurrentDevice();
     $("input.toolbar").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#slideContainer button").addClass("commandModeInactive").addClass(commandMode ? "commandModeActive" : "commandModeInactive");
     $("#up").click(bounceAnd(Extend.up));
