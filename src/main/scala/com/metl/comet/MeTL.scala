@@ -834,8 +834,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils {
 
         val nodes = <div>
         <label for={uploadId}>{Text("Select your file")}</label>
+        <div>{Text("* The conversation will appear quickly, but may take a minute or two to fill with content.")}</div>
         <input id={uploadId} type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
-        <div>{Text("The conversation will appear quickly, but may take up to a minute or two to fill with content.")}</div>
         <div id={progressId} style="width:20em; border: 1pt solid silver; display: none">
         <div id={progressBarId} style="background: green; height: 1em; width:0%"></div>
         </div>

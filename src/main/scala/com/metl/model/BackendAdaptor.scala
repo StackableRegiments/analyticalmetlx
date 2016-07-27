@@ -605,7 +605,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       getRoom("global",c._1.name,GlobalRoom(c._1.name),true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
-    setupStackAdaptorFromFile(Globals.configurationFileLocation)
+    //setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
 
     S.addAnalyzer((req,timeTaken,_entries) => {

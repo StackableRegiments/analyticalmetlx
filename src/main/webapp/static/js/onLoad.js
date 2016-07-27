@@ -429,6 +429,7 @@ var categoryMapping = _.fromPairs(_.flatMap({
 
 var active = "activeBackstageTab active";
 function showBackstage(id){
+    $("html").css("overflow-y","auto");
     window.currentBackstage = id;
     $(".backstage").hide();
 
@@ -442,7 +443,7 @@ function showBackstage(id){
     var popupParent = categoryMapping[id];
 
     $(subcategoryMapping[popupParent]).show();
-    $("#backstageContainer").show();
+    $("#backstageContainer").css("overflow-y","scroll").show();
     $("#hideBackstage").show();
     popup.show();
 
@@ -456,15 +457,18 @@ function showBackstage(id){
     if(Conversations.inConversation()){
         $("#backstageTabHeaders").show();
         $("#applicationMenuButton").show();
+	$("#roomToolbar").show();
     }
     else{
         $("#backstageTabHeaders").hide();
         $("#applicationMenuButton").hide();
+	$("#roomToolbar").hide();
     }
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
 }
 function hideBackstage(){
+    $("html").css("overflow-y","hidden");
     window.currentBackstage = noActiveBackstage;
     $(".backstage-menu").removeClass('active');
     $(".backstage").hide();

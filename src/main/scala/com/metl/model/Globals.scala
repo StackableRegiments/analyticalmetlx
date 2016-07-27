@@ -128,8 +128,6 @@ object Globals extends PropertyReader with Logger {
   object currentUser {
     def is:String = casState.is.username
   }
-  //object casState extends SessionVar[com.metl.liftAuthenticator.LiftAuthStateData](com.metl.liftAuthenticator.LiftAuthStateDataForbidden)
-  //object currentUser extends SessionVar[String](casState.is.username)
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
@@ -176,9 +174,6 @@ object Globals extends PropertyReader with Logger {
     })
   }
 }
-
-//object CurrentSlide extends SessionVar[Box[String]](Empty)
-//object CurrentConversation extends SessionVar[Box[Conversation]](Empty)
 
 object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
 
