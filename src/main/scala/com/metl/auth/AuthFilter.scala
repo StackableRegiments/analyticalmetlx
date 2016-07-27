@@ -918,20 +918,10 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       val transformedAttrs = attributes.flatMap(attr => {
         samlConfiguration.attributeTransformers.get(attr._1).map(attrName => (attrName,attr._2))
       }).toList
+      println("looking for relayState in request: %s".format(request))
       Some(request.getParameter("relayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
         println("found relayState: %s".format(relayState))
-          embedReqId(request,relayState)
-          /*
-        val url = new java.net.URI(relayState)
-        url.getQuery.split("&").toList.map(_.split("=").toList).flatMap{
-          case List(k,v) => Some((k,v))
-          case Nil => None
-          case list => Some((list.head,list.tail.mkString("=")))
-        }.find(_._1 == "replayRequest").filterNot(rs => rs == null || rs.length == 0).foreach(reqIdTup => {
-          println("reattaching reqId: %s".format(reqIdTup))
-          embedReqId(request,reqIdTup._2)
-        })
-      */
+        embedReqId(request,relayState)
       })
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userProfile.getId,groups,attributes ::: transformedAttrs))
       true
