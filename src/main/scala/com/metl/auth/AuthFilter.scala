@@ -1124,7 +1124,8 @@ class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientI
   protected def validateResponse(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse):Boolean = {
     (for (
       idTokenString <- Some(req.getParameter("googleIdToken")).filterNot(_ == null);
-      idToken <- tryo(verifier.verify(idTokenString)).filterNot(_ == null);
+      //idToken <- tryo(verifier.verify(idTokenString)).filterNot(_ == null);
+      idToken <- Some(verifier.verify(idTokenString)).filterNot(_ == null);
       payload:Payload = idToken.getPayload;
       if (googleAppDomainName.map(gadn => payload.getHostedDomain() == gadn).getOrElse(true));
       userId:String = payload.getSubject()
