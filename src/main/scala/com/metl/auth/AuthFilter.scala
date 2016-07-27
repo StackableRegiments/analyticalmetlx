@@ -920,7 +920,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       }).toList
       println("looking for RelayState in request: %s".format(request))
       Some(request.getParameter("RelayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
-        println("found RelayState: %s".format(relayState))
+        println("found RelayState: %s in %s".format(relayState,authSession.getStoredRequests))
         embedReqId(request,relayState)
       })
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userProfile.getId,groups,attributes ::: transformedAttrs))
