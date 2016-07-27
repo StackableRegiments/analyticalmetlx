@@ -793,7 +793,13 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   protected def liftWebContext(req:HttpServletRequest,resp:HttpServletResponse):WebContext = new ServletWebContext(req,resp)
 
   protected def getSaml2Client(samlConfiguration: SAMLConfiguration):Saml2Client = {
-    val saml2Client: Saml2Client = new Saml2Client()
+    val saml2Client: Saml2Client = new Saml2Client(){
+      override def getStateParameter(webContext: WebContext): String = {
+        val relayState = webContext.getFullRequestURL
+        println("generating relayState: %s".format(relayState))
+        relayState
+      }
+    }
 
     samlConfiguration.optionOfKeyStoreInfo match {
       case Some(keyStoreInfo: keyStoreInfo) => {
