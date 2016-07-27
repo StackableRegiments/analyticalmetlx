@@ -1,32 +1,32 @@
 html{
-overflow:hidden;
-min-width:351px;
+    overflow:hidden;
+    min-width:351px;
 }
 #popupCategories{
-margin-right:4px;
+    margin-right:4px;
 }
 .headerRow1{
-width:100%;
-text-align:center;
-font-weight:800;
-color:white;
-padding:0.5em;
+    width:100%;
+    text-align:center;
+    font-weight:800;
+    color:white;
+    padding:0.5em;
 }
 body{
-background-image:@body-backgroundimage;
+    background-image:@body-backgroundimage;
 }
 #startAConversation button{
-width:100%;
+    width:100%;
 }
 .main-board {
-flex-grow:1;
+    flex-grow:1;
 }
 #board {
-width:100%;
-background-color:@board-bg;
+    width:100%;
+    background-color:@board-bg;
 }
 #backstageContainer{
-width:100%;
+    width:100%;
 /*position:absolute;
 top:0px;
 left:0px;
@@ -35,209 +35,206 @@ background-color:@block-bg;
 .ptb;*/
 }
 #slideContainer {
-max-width: @slide-container-width;
+    max-width: @slide-container-width;
 }
 .slideButtonContainer {
-width:100%;
+    width:100%;
 }
 .slide-count {
-text-align:right;
-font-weight:400;
-margin-top:-15px;
+    text-align:right;
+    font-weight:400;
+    margin-top:-15px;
 }
 .activeSlide .thumbnail {
-border: 8px solid @slide-active;
+    border: 8px solid @slide-active;
 }
 .thumbnail {
-width:100px;
-height:75px;
+    width:100px;
+    height:75px;
 }
 .inactiveMode {
-display:none;
-}
-#ribbon .button-toggle {
-margin-left:2px;
+    display:none;
 }
 .tools {
-button {
-margin:2px;
-.btn-active;
-.btn-raised;
-&.disabledButton {
-.btn-raised.disabled;
-}
-}
-.activeMode button {
-.btn-subtool;
-&.activeBrush {
-.btn-subtool.active;
-}
-&.disabledButton {
-.btn-raised.disabled;
-}
-}
-.activeTool {
-display:flex;
-.btn-active.active;
-}
+    button {
+        margin:2px;
+        .btn-active;
+        .btn-raised;
+        &.disabledButton {
+            .btn-raised.disabled;
+        }
+    }
+    .activeMode button {
+        .btn-subtool;
+        &.activeBrush {
+            .btn-subtool.active;
+        }
+        &.disabledButton {
+            .btn-raised.disabled;
+        }
+    }
+    .activeTool {
+        display:flex;
+        .btn-active.active;
+    }
 }
 .button-toggle  {
-.btn-raised;
+    .btn-raised;
 }
 .bg-tools {
-background-color:@body-bg;
+    background-color:@body-bg;
 }
 .pen .icon-txt {
-color:@subtool-fg;
-text-shadow:none;
+    color:@subtool-fg;
+    text-shadow:none;
 }
 .colorDot {
-text-shadow:1px 1px #ccc;
+    text-shadow:1px 1px #ccc;
 }
 .permission-states {
-input[type="checkbox"]{
-& + label {
-padding: 0.5em 2px;
-max-width: (@toolbar-btn-width * 2) + 4;
-background-color: @toggle-bg;
-color: @toggle-fg;
-.btn-raised;
-}
-&:checked +label {
-background:@toggle-active-bg;
-color:@toggle-active-fg;
-&:before {
-content:"\f00c";
-}
-}
-&[disabled] + label {
-.btn-active.disabled;
-.btn-raised.disabled;
-}
-}
+    input[type="checkbox"]{
+        & + label {
+            padding: 0.5em 2px;
+            max-width: (@toolbar-btn-width * 2) + 4;
+            background-color: @toggle-bg;
+            color: @toggle-fg;
+            .btn-raised;
+        }
+        &:checked +label {
+            background:@toggle-active-bg;
+            color:@toggle-active-fg;
+            &:before {
+                content:"\f00c";
+            }
+        }
+        &[disabled] + label {
+            .btn-active.disabled;
+            .btn-raised.disabled;
+        }
+    }
 }
 #s2cMessageContainer {
-.block;
-position: absolute;
-top: 20%;
-left: 12%;
-width: 75%;
-border: 1px solid @block-borders;
-display:none;
-z-index:4;
+    .block;
+    position: absolute;
+    top: 20%;
+    left: 12%;
+    width: 75%;
+    border: 1px solid @block-borders;
+    display:none;
+    z-index:4;
 }
 #thumbScrollContainer {
-top:40px;
-height: calc(~"100vh - 40px");
-overflow-y: auto;
+    top:40px;
+    height: calc(~"100vh - 40px");
+    overflow-y: auto;
 }
 #shareContainer {
-position: absolute;
-top: 35%;
-left: 35%;
-z-index: 10;
-display:none;
+    position: absolute;
+    top: 35%;
+    left: 35%;
+    z-index: 10;
+    display:none;
 }
 .searchResultItem {
-justify-content:space-between;
+    justify-content:space-between;
 }
 input[type=submit]{
-.button-transparent-border;
+    .button-transparent-border;
 }
 #boardContainer{
-position:relative;
+    position:relative;
 }
 #marquee,#zoomMarquee,#selectMarquee{
-display:none;
+    display:none;
 }
 #marquee,.selectionAdorner,.resizeHandle,#zoomMarquee,#selectMarquee{
-border:1px dashed red;
-position:absolute;
-pointer-events:none;
+    border:1px dashed red;
+    position:absolute;
+    pointer-events:none;
 }
 .voting-block {
-background-color: @body-bg;
+    background-color: @body-bg;
 }
 .quizOption {
-text-align:left;
-&:hover {
-.fa {
-text-decoration: none;
-}
-}
-&.active {
-.btn-active.active;
-}
+    text-align:left;
+    &:hover {
+        .fa {
+            text-decoration: none;
+        }
+    }
+    &.active {
+        .btn-active.active;
+    }
 }
 .quizSummary.active + .quizTeacherControls {
-.btn-active.active;
-.quizSummaryEditButton {
-color:@toggle-active-fg;
-}
+    .btn-active.active;
+    .quizSummaryEditButton {
+        color:@toggle-active-fg;
+    }
 }
 #createQuizForm, .quizCreationControls {
-.btn-icon {
-width:@edit-poll-btn-width;
-height:auto;
-span {
-.font-std;
-.icon-txt;
-display:block;
-line-height:normal;
-}
-}
+    .btn-icon {
+        width:@edit-poll-btn-width;
+        height:auto;
+        span {
+            .font-std;
+            .icon-txt;
+            display:block;
+            line-height:normal;
+        }
+    }
 }
 .quizRemoveOptionButton {
-.nmt;
+    .nmt;
 }
 .quizImagePreview {
-max-width:100%;
-border: 4px solid @slide-active;
+    max-width:100%;
+    border: 4px solid @slide-active;
 }
 #customizeBrushPopup {
-.dots button{
-.btn-subtool;
-&.activeTool {
-.btn-subtool.active;
-}
-}
-#sizes button {
-height:auto;
-}
+    .dots button{
+        .btn-subtool;
+        &.activeTool {
+            .btn-subtool.active;
+        }
+    }
+    #sizes button {
+        height:auto;
+    }
 }
 /* fix this jodi! */
 
 .navigationNext, .navigationPrevious {
-a {
-.fa;
-.button-round;
-height:50px;
-width:50px;
-}
-span {
-.hidden;
-}
+    a {
+        .fa;
+        .button-round;
+        height:50px;
+        width:50px;
+    }
+    span {
+        .hidden;
+    }
 }
 .navigationNext a {
-&:before {
-content:"\f105";
-}
+    &:before {
+        content:"\f105";
+    }
 }
 .navigationPrevious a {
-&:before {
-content:"\f104";
-}
+    &:before {
+        content:"\f104";
+    }
 }
 .slideThumbnailNumber{
-background-color: @highlight;
+    background-color: @highlight;
 }
 #applicationMenuButton{
-background-color:white;
+    background-color:white;
 }
 #applicationMenuButton span{
-margin-left:0.2em;
-font-size:80%;
+    margin-left:0.2em;
+    font-size:80%;
 }
 .backstage .btn-icon{
-font-size:16px;
+    font-size:16px;
 }
