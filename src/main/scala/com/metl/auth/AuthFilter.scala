@@ -383,7 +383,7 @@ class LoggedInFilter extends Filter with HttpReqUtils {
                   (attrName,attrValue)
                 }
               });
-              groupMap = (n \\ "eligibeGroups" \\ "eligibleGroup").flatMap(group => {
+              groupMap = (n \\ "eligibleGroups" \\ "eligibleGroup").flatMap(group => {
                 for (
                   attrName <- (group \\ "@samlAttribute").headOption.map(_.text);
                   groupType <- (group \\ "@groupType").headOption.map(_.text)
@@ -409,9 +409,11 @@ class LoggedInFilter extends Filter with HttpReqUtils {
           case n:Elem if (n.label == "openIdConnect") => {
             for (
               googleClientId <- (n \\ "@clientId").headOption.map(_.text);
-              googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text)
+              googleAppDomainName = (n \\ "@appDomain").headOption.map(_.text);
+              beforeHtml = (n \\ "beforeHtml").headOption.map(_.text);
+              afterHtml = (n \\ "afterHtml").headOption.map(_.text)
             ) yield {
-              new OpenIdConnectAuthenticator(sessionStore,googleClientId,googleAppDomainName)
+              new OpenIdConnectAuthenticator(sessionStore,googleClientId,googleAppDomainName,beforeHtml.getOrElse(""),afterHtml.getOrElse(""))
             }
           }
           case n:Elem if (n.label == "cas") => {
@@ -1122,7 +1124,7 @@ class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientI
   protected def validateResponse(authSession:AuthSession,req:HttpServletRequest,res:HttpServletResponse):Boolean = {
     (for (
       idTokenString <- Some(req.getParameter("googleIdToken")).filterNot(_ == null);
-      idToken <- Some(verifier.verify(idTokenString)).filterNot(_ == null);
+      idToken <- tryo(verifier.verify(idTokenString)).filterNot(_ == null);
       payload:Payload = idToken.getPayload;
       if (googleAppDomainName.map(gadn => payload.getHostedDomain() == gadn).getOrElse(true));
       userId:String = payload.getSubject()

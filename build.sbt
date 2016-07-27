@@ -92,7 +92,7 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "lift-extensions" % "0.2.+",
     "org.imsglobal" % "basiclti-util" % "1.1.1",
     //for google openId connect authentication
-    "com.google.api-client" % "google-api-client" % "1.21.0",
+    "com.google.api-client" % "google-api-client" % "1.22.0",
     "io.github.stackableregiments" %% "ldap" % "0.3.+",
     // for brightspark integration
     "commons-codec" % "commons-codec" % "1.7",
