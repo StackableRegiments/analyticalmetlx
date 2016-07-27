@@ -781,7 +781,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     override def getServerPort: Int = req.getServerPort
     override def getSessionAttribute(name: String): AnyRef = req.getSession.getAttribute(name)
     override def getScheme: String = req.getScheme
-    override def getFullRequestURL: String = wrapWithReqId(req,getOriginalRequest(authSession,req).getRequestURL.toString)
+    override def getFullRequestURL: String = getReqId(req) //wrapWithReqId(req,getOriginalRequest(authSession,req).getRequestURL.toString)
   }
 
   protected def redirectHome(resp:HttpServletResponse) = resp.sendRedirect("/")
