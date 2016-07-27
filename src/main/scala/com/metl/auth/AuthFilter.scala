@@ -918,9 +918,9 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       val transformedAttrs = attributes.flatMap(attr => {
         samlConfiguration.attributeTransformers.get(attr._1).map(attrName => (attrName,attr._2))
       }).toList
-      println("looking for relayState in request: %s".format(request))
-      Some(request.getParameter("relayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
-        println("found relayState: %s".format(relayState))
+      println("looking for RelayState in request: %s".format(request))
+      Some(request.getParameter("RelayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
+        println("found RelayState: %s".format(relayState))
         embedReqId(request,relayState)
       })
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userProfile.getId,groups,attributes ::: transformedAttrs))
