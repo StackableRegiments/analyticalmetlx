@@ -116,15 +116,37 @@ a.button {
   }
 }
 .button-toggle {
-    width:(@toolbar-btn-width * 2) + 4;
-    height:@toolbar-btn-height + 4;
     display:-webkit-flex;
     display:flex;
-    border:2px solid @toggle-border;
+    flex-wrap:wrap;
+    justify-content:space-between;
     button {
       .nm;
       .btn-icon;
       .btn-active;
+    }
+}
+@media only screen and (max-width:640px) {
+.permission-states label{
+margin-top:0;
+margin-bottom:4px;
+}
+
+.button-toggle {
+margin:2px 0;
+    height:@toolbar-btn-height + 4;
+}
+}
+@media only screen and (min-width:641px) {
+#publicMode{
+margin-bottom:2px;
+}
+.permission-states label{
+margin-top:2px;
+margin-bottom:4px;
+}
+.button-toggle {
+    width:(@toolbar-btn-width * 2) + 4;
     }
 }
 .btn-close {
