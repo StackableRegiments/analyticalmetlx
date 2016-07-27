@@ -2029,7 +2029,7 @@ var Modes = (function(){
                     $(".activeBrush").removeClass("activeBrush");
                     var drawTools = function(){
                         var container = $("#drawTools");
-                        _.each(container.find(".pen"),function(button,i){
+                        _.each(container.find(".modeSpecificTool.pen"),function(button,i){
                             var brush = Modes.draw.brushes[i];
                             var thisButton = $(button)
                                     .css({color:brush.color})
@@ -2143,7 +2143,7 @@ var Modes = (function(){
                         });
                         container.find(".advancedTools").on("click",function(){
                             drawAdvancedTools(currentBrush);
-                            showBackstage("customizeBrush");
+			    $("#drawDropdowns").toggle();
                         });
                     }
                     setActiveMode("#drawTools","#drawMode");

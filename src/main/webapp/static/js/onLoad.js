@@ -419,7 +419,7 @@ var subcategoryMapping = {
 };
 var categoryMapping = _.fromPairs(_.flatMap({
     metaToolbar:"conversations integrations print",
-    optsToolbar:"customizeBrush settings",
+    optsToolbar:"settings",
     roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
 },function(v,k){
     return _.map(v.split(" "),function(backstage){

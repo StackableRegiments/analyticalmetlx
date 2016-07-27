@@ -30,20 +30,44 @@
         <button class="modeSpecificTool disabledButton btn-icon fa fa-legal" type="button" id="ban"><div class="icon-txt">Ban</div></button>
       </div>
       <div id="drawTools" class="inactiveMode flex-container-responsive-rev">
-        <button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen1Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
-        <button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen2Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
-        <button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen3Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
-        <button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen4Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+        <div class="popout-container">
+          <div id="drawDropdowns" class="popout compact-form" style="display:none">
+            <div id="penColor">
+              <h2 class="nmt">Choose pen color</h2>
+              <div id="colors" >
+                <div class="dots flex-container-row">
+                  <button class="colorDot nm np mrh btn-icon fa fa-circle pen" style="vertical-align:middle;"><div class="colorDotName icon-txt"></div></button>
+                </div>
+              </div>
+            </div>
+            <div id="penSize">
+              <h2>Choose pen size </h2>
+              <div id="sizes" >
+                <div class="dots flex-container-row">
+                  <button class="sizeDot nm np mrh btn-icon" style="vertical-align:middle;"><div class="icon-txt sizeDotName"></div></button>
+                </div>
+              </div>
+            </div>
+            <div id="penModes">
+              <h2>Choose pen mode</h2>
+              <div id="penMode" >
+                <div class="button-toggle">
+                  <button class="toolbar fa fa-lightbulb-o btn-icon" id="setPenToHighlighter"><div class="icon-txt">highlight</div></button>
+                  <button class="toolbar fa fa-pencil btn-icon" id="setPenToPen"><div class="icon-txt">pen</div></button>
+                </div>
+              </div>
+            </div>
+            <button class="toolbar button-transparent-border" id="resetPenButton" ></button>
+          </div>
+        </div>
+        <button class="modeSpecificTool btn-icon fa fa-tint pen" id="pen1Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+        <button class="modeSpecificTool btn-icon fa fa-tint pen" id="pen2Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+        <button class="modeSpecificTool btn-icon fa fa-tint pen" id="pen3Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
+        <button class="modeSpecificTool btn-icon fa fa-tint pen" id="pen4Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
         <button class="modeSpecificTool btn-icon fa fa-circle pen" id="pen5Button"><div class="icon-txt"><span class="widthIndicator"></span>px</div></button>
         <button class="modeSpecificTool btn-icon fa fa-eraser eraser" id="eraseTool"><div class="icon-txt">Erase</div></button>
         <button class="modeSpecificTool btn-icon fa fa-angle-double-down advancedTools" id="penCustomizationButton"><div class="icon-txt">More</div></button>
       </div>
-      <!--
-          <div id="insertTools" class="inactiveMode flex-container-column">
-            <button id="insertText" insertMode="text" class="modeSpecificTool btn-icon fa fa-font" style="display:none;"><div class="icon-txt">Text</div></button>
-            <button id="insertImage" insertMode="image" class="modeSpecificTool btn-icon fa fa-picture-o" style="display:none;"><div class="icon-txt">Image</div></button>
-          </div>
-          -->
       <div id="imageTools" class="inactiveMode flex-container-responsive-rev">
         <button class="modeSpecificTool btn-icon fa" id="pen1Button"><div class="icon-txt">Optimized</div></button>
         <button class="modeSpecificTool btn-icon fa" id="pen2Button"><div class="icon-txt">High def</div></button>
@@ -95,9 +119,9 @@
         <button type="button" id="fontBoldSelector" class="modeSpecificTool btn-icon fa fa-bold"><div class="icon-txt">Bold</div></button>
         <button type="button" id="fontItalicSelector" class="modeSpecificTool btn-icon fa fa-italic"><div class="icon-txt">Italic</div></button>
         <button type="button" id="fontUnderlineSelector" class="modeSpecificTool btn-icon fa fa-underline"><div class="icon-txt">Underline</div></button>
-        <button type="button" id="blackText" class="modeSpecificTool btn-icon fa fa-underline"><div class="icon-txt">Black</div></button>
-        <button type="button" id="redText" class="modeSpecificTool btn-icon fa fa-underline"><div class="icon-txt">Red</div></button>
-        <button type="button" id="blueText" class="modeSpecificTool btn-icon fa fa-underline"><div class="icon-txt">Blue</div></button>
+        <button type="button" id="blackText" class="modeSpecificTool btn-icon fa fa-tint"><div class="icon-txt">Black</div></button>
+        <button type="button" id="redText" class="modeSpecificTool btn-icon fa fa-tint" style="color:red;"><div class="icon-txt">Red</div></button>
+        <button type="button" id="blueText" class="modeSpecificTool btn-icon fa fa-tint" style="color:blue;"><div class="icon-txt">Blue</div></button>
         <button class="modeSpecificTool btn-icon fa fa-angle-double-down advancedTools" id="fontOptions"><div class="icon-txt">More</div></button>
       </div>
       <div id="feedbackTools" class="inactiveMode flex-container-responsive-rev">
