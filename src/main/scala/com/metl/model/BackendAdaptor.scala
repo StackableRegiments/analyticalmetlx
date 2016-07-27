@@ -106,51 +106,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     println("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
     new HistoryCachingRoomProvider(name,safetiedIdleTimeout)
   }
-
-  def getSAMLconfiguration(propertySAML:NodeSeq) = {
-    val serverScheme = readMandatoryText(propertySAML, "serverScheme")
-    val serverName = readMandatoryText(propertySAML, "serverName")
-    val serverPort = readMandatoryText(propertySAML, "serverPort")
-    val samlCallbackUrl = readMandatoryText(propertySAML, "callbackUrl")
-    val idpMetadataFileName = readMandatoryText(propertySAML, "idpMetadataFileName")
-    val maximumAuthenticationLifetime = readMandatoryText(propertySAML, "maximumAuthenticationLifetime")
-    val optionOfSettingsForADFS = tryo{ maximumAuthenticationLifetime.toInt } match {
-      case Full(number:Int) => Some(SettingsForADFS(maximumAuthenticationLifetime = number.toInt))
-      case _ => None
-    }
-    val optionOfKeyStoreInfo = for (
-      keystore <- (propertySAML \ "keystorePath").headOption.map(_.text);
-      password <- (propertySAML \ "keystorePassword").headOption.map(_.text);
-      privateKeyPassword <- (propertySAML \ "keystorePrivateKeyPassword").headOption.map(_.text)
-    ) yield {
-      keyStoreInfo(keystore,password,privateKeyPassword)
-    }
-    val nodeProtectedRoutes = readNodes(readNode(propertySAML, "protectedRoutes"),"route")
-    val protectedRoutes = nodeProtectedRoutes.map(nodeProtectedRoute => {
-      nodeProtectedRoute.text :: Nil
-    }).toList
-    val attrTransformers = Map(readNodes(readNode(propertySAML, "informationAttributes"),"informationAttribute").flatMap(elem => elem match {
-      case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"attributeType")))
-      case _ => None
-    }).toList:_*)
-    val groupMap = Map(readNodes(readNode(propertySAML, "eligibleGroups"),"eligibleGroup").flatMap(elem => elem match {
-      case e:Elem => Some((readMandatoryAttribute(e,"samlAttribute"),readMandatoryAttribute(e,"groupType")))
-      case _ => None
-    }).toList:_*)
-
-    SAMLConfiguration(
-      idpMetaDataPath = idpMetadataFileName,
-      serverScheme = serverScheme,
-      serverName = serverName,
-      serverPort = serverPort.toInt,
-      callBackUrl = samlCallbackUrl,
-      protectedRoutes = protectedRoutes,
-      optionOfSettingsForADFS = optionOfSettingsForADFS,
-      eligibleGroups = groupMap,
-      attributeTransformers = attrTransformers,
-      optionOfKeyStoreInfo = optionOfKeyStoreInfo
-    )
-  }
   protected def ifConfigured(in:NodeSeq,elementName:String,action:NodeSeq=>Unit, permitMultipleValues:Boolean = false):Unit = {
     (in \\ elementName).theSeq match {
       case Nil => {}
@@ -398,7 +353,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
 
-class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){//cacheSizeInMB:Int = 100) {
+class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
   import net.sf.ehcache.loader.{CacheLoader}
   import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
@@ -407,7 +362,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   import scala.collection.JavaConversions._
   protected val cm = CacheManager.getInstance()
   val cacheName = "%s_%s".format(name,nextFuncName)
-  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits/*MemoryUnit.MEGABYTES*/).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy/*MemoryStoreEvictionPolicy.LRU*/).diskPersistent(false).logging(false)
+  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy).diskPersistent(false).logging(false)
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {

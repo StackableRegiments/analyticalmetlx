@@ -375,7 +375,6 @@ class LoggedInFilter extends Filter with HttpReqUtils {
                   SettingsForADFS(maximumAuthenticationLifetime = maximumAuthenticationLifetime)
                 }
               };
-              protectedRoutes = (n \\ "protectedRoutes" \\ "route").map(pr => pr.text :: Nil);
               attrTransformers = (n \\ "informationAttributes" \\ "informationAttribute").flatMap(elem => {
                 for (
                   attrName <- (elem \\ "@samlAttribute").headOption.map(_.text);
@@ -399,7 +398,6 @@ class LoggedInFilter extends Filter with HttpReqUtils {
                 serverName = serverName,
                 serverPort = serverPort.toInt,
                 callBackUrl = samlCallbackUrl,
-                protectedRoutes = protectedRoutes.toList,
                 optionOfSettingsForADFS = optionOfSettingsForADFS,
                 eligibleGroups = Map(groupMap:_*),
                 attributeTransformers = Map(attrTransformers:_*),
@@ -740,7 +738,6 @@ case class SAMLConfiguration(
   callBackUrl:String,
   optionOfSettingsForADFS:Option[SettingsForADFS] = None,
   optionOfEntityId:Option[String] = None,
-  protectedRoutes:List[List[String]] = ("/" :: Nil) :: Nil, // Maybe think about a more complex access control system, which is represented by a List[Tuple2[List[String],Boolean]], against which the current request filters for prefixes which match it, and selects the longest of those answers to determine whether to protect or not, as represented by the boolean.
   eligibleGroups:Map[String,String] = Map.empty[String,String],
   attributeTransformers:Map[String,String] = Map.empty[String,String]
 )
@@ -751,7 +748,6 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   import org.pac4j.core.exception.RequiresHttpAction
   import org.pac4j.saml.client.Saml2Client
   import org.pac4j.saml.profile.Saml2Profile
-//  import scala.collection.immutable.List
   case class SAMLProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest]) extends InProgressAuthSession(session,storedRequests,identifier)
   override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = SAMLProgress(authSession.session,updatedStore(authSession,reqs))
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
@@ -795,19 +791,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
   protected def liftWebContext(req:HttpServletRequest,resp:HttpServletResponse):WebContext = new ServletWebContext(req,resp)
 
   protected def getSaml2Client(samlConfiguration: SAMLConfiguration):Saml2Client = {
-    val saml2Client: Saml2Client = new Saml2Client {
-/*
-      // Override method "getStateParameter" to retrieve RelayState from the current request
-      override def getStateParameter(webContext: WebContext): String = {
-
-        val requestUri = CurrentReq.value.request.uri
-        val boxOfQueryString = CurrentReq.value.request.queryString
-
-        val relayState = requestUri + boxOfQueryString.map("?%s".format(_)).getOrElse("")
-        wrapWithReqId(relayState)
-      }
-      */
-    }
+    val saml2Client: Saml2Client = new Saml2Client()
 
     samlConfiguration.optionOfKeyStoreInfo match {
       case Some(keyStoreInfo: keyStoreInfo) => {
@@ -877,7 +861,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       redirectAction.getType match {
         case RedirectAction.RedirectType.REDIRECT => {
           val redirectLoc = redirectAction.getLocation
-          resp.sendRedirect(wrapWithReqId(request,redirectLoc))
+          resp.sendRedirect(redirectLoc)
         }
         case RedirectAction.RedirectType.SUCCESS => {
           resp.getWriter.write(redirectAction.getContent) // this might be bad?
@@ -1069,7 +1053,7 @@ class TimePeriodInMemoryBasicAuthenticator(sessionStore:LowLevelSessionStore,rea
   }
 }
 
-class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientId:String,googleAppDomainName:Option[String]) extends FilterAuthenticator(sessionStore){
+class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientId:String,googleAppDomainName:Option[String],beforeHtml:String = "",afterHtml:String = "") extends FilterAuthenticator(sessionStore){
   import com.google.api.client.googleapis.auth.oauth2.{GoogleIdToken,GoogleIdTokenVerifier}
   import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload
   case class OpenIdConnectProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest]) extends InProgressAuthSession(session,storedRequests,identifier)
@@ -1104,16 +1088,10 @@ class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientI
           <script src="https://apis.google.com/js/platform.js" async="true" defer="true"></script>
         </head>
         <body>
+          %s
           <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
           <script>
             function onSignIn(googleUser) {
-              // Useful data for your client-side scripts:
-              //var profile = googleUser.getBasicProfile();
-              //console.log("ID: " + profile.getId()); // Don't send this directly to your server!
-              //console.log("Name: " + profile.getName());
-              //console.log("Image URL: " + profile.getImageUrl());
-              //console.log("Email: " + profile.getEmail());
-              
               var id_token = googleUser.getAuthResponse().id_token;
               console.log("ID Token: " + id_token);
               var form = document.createElement("form");
@@ -1125,17 +1103,17 @@ class OpenIdConnectAuthenticator(sessionStore:LowLevelSessionStore,googleClientI
               tokenField.setAttribute("value",id_token);
               form.appendChild(tokenField);
               var originalRequestField = document.createElement("input");
-              var originalRequestId = "%s";
               originalRequestField.setAttribute("type","hidden");
-              originalRequestField.setAttribute("name","originalRequestId");
-              originalRequestField.setAttribute("value",originalRequestId);
+              originalRequestField.setAttribute("name","%s");
+              originalRequestField.setAttribute("value","%s");
               form.appendChild(originalRequestField);
               document.body.appendChild(form);
               form.submit();
             };
           </script>
+          %s
         </body>
-      </html>""".format(googleClientId,EndpointUrl,originalRequestId)
+      </html>""".format(googleClientId,beforeHtml,EndpointUrl,reqIdParameter,originalRequestId,afterHtml)
     res.getWriter.write(nodes)
     res.setStatus(200)
     false
