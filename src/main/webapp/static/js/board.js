@@ -530,7 +530,6 @@ function transformReceived(transform){
                 var offsetX = -(internalX - (internalX * transform.xScale));
                 var offsetY = -(internalY - (internalY * transform.yScale));
                 text.doc.position = {x:text.x + offsetX,y:text.y + offsetY};
-                console.log("Positioning box at",offsetX,offsetY);
                 text.doc.load(text.words);
                 text.bounds = text.doc.calculateBounds();
                 transformBounds.incorporateBounds(text.bounds);

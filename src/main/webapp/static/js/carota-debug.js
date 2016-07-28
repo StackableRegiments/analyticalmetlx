@@ -805,7 +805,7 @@
                         },
                         select: function(ordinal, ordinalEnd, takeFocus) {
                             if (!this.frame) {
-                                // Something has gone terribly wrong - doc.transaction will rollback soon
+                                console.log("Something has gone terribly wrong - doc.transaction will rollback soon");
                                 return;
                             }
                             this.selection.start = Math.max(0, ordinal);
@@ -1405,15 +1405,6 @@
                             var bottom = viewPort ? (viewPort.t + viewPort.h) : Number.MAX_VALUE;
                             if(this.lines){
                                 this.lines.some(function(line) {
-                                    /*  Removing viewport understanding from this element because the MeTL viewer handles it
-                                     var b = line.bounds();
-                                     if (b.t + b.h < top) {
-                                     return false;
-                                     }
-                                     if (b.t > bottom) {
-                                     return true;
-                                     }
-                                     */
                                     line.draw(ctx, viewPort);
                                 });
                             }
@@ -2167,12 +2158,12 @@
                             // Special case: expand selection to surrounding paragraphs
                             range = range.doc.paragraphRange(range.start, range.end);
                         }
-			if(attribute === "color"){
-			    // The font selector does not provide the right types for this editor
-			    if(typeof value == "string"){
-				value = [value,255];
-			    }
-			}
+                        if(attribute === "color"){
+                            // The font selector does not provide the right types for this editor
+                            if(typeof value == "string"){
+                                value = [value,255];
+                            }
+                        }
                         if (range.start === range.end) {
                             range.doc.modifyInsertFormatting(attribute, value);
                         } else {

@@ -949,6 +949,8 @@ var Modes = (function(){
                                 delete boardContent.multiWordTexts[t.identity];
                             }
                         });
+                        var sel;
+                        Modes.select.clearSelection();
                         if (editor){
                             var doc = editor.doc;
                             var context = contextFor(doc,worldPos);
@@ -956,7 +958,7 @@ var Modes = (function(){
                                 doc.dblclickHandler(context.node);
                             }
                             lastClick = clickTime;
-                            var sel = {
+                            sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[editor.identity] = editor;
@@ -967,7 +969,7 @@ var Modes = (function(){
                             var newDoc = newEditor.doc;
                             newDoc.load([]);
                             newDoc.select(0,0);
-                            var sel = {
+                            sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
@@ -977,6 +979,7 @@ var Modes = (function(){
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
                         };
+                        Modes.select.addHandles();
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     registerPositionHandlers(board,down,move,up);
@@ -986,6 +989,12 @@ var Modes = (function(){
                     removeActiveMode();
                     fontOptions.hide();
                     unregisterPositionHandlers(board);
+                    _.each(boardContent.multiWordTexts,function(t){
+                        t.doc.isActive = false;
+                        if(t.doc.save().length == 0){
+                            delete boardContent.multiWordTexts[t.identity];
+                        }
+                    });
                     /*Necessary to ensure that no carets or marquees remain on the editors*/
                     blit();
                 }
@@ -1306,18 +1315,18 @@ var Modes = (function(){
                     inks:{},
                     multiWordTexts:{}
                 },
-                resizeHandleSize:40,
+                resizeHandleSize:20,
                 setSelection:function(selected){
                     Modes.select.selected = _.merge(Modes.select.selected,selected);
-                    Modes.select.addHandles();
+                },
+                handlesAtZoom:function(){
+                    var zoom = scale();
+                    return Modes.select.resizeHandleSize / zoom;
                 },
                 addHandles:function(){
                     removeHandles();
-                    var handlesAtZoom = function(){
-                        var zoom = scale();
-                        return Modes.select.resizeHandleSize / zoom;
-                    }
-                    var s = handlesAtZoom();
+
+                    var s = Modes.select.handlesAtZoom();
                     var blitAndArgs = function(f){
                         return function(args){
                             f(args);
@@ -1331,12 +1340,14 @@ var Modes = (function(){
                         };
                     }
                     var handleAlpha = 0.3;
+                    var minimumXSpan = Modes.select.resizeHandleSize;
+                    var minimumYSpan = Modes.select.resizeHandleSize;
                     var manualMove = (
                         function(){
                             var rehome = function(root){
                                 if(!manualMove.activated){
                                     root = root || Modes.select.totalSelectedBounds();
-                                    var s = handlesAtZoom();
+                                    var s = Modes.select.handlesAtZoom();
                                     var x = root.x;
                                     var y = root.y;
                                     var width = root.x2 - root.x;
@@ -1431,13 +1442,19 @@ var Modes = (function(){
                             var rehome = function(root){
                                 if(!resizeAspectLocked.activated){
                                     root = root || Modes.select.totalSelectedBounds();
-                                    var s = handlesAtZoom();
+                                    var s = Modes.select.handlesAtZoom();
                                     var x = root.x2;
+                                    var y = root.y;
+                                    root.br = root.br || {x:scaleWorldToScreen(root.x2)};
+                                    root.tl = root.tl || {x:scaleWorldToScreen(root.x)};
+                                    if(root.br.x - root.tl.x < minimumXSpan){
+                                        x = root.x + scaleScreenToWorld(minimumXSpan)
+                                    }
                                     resizeAspectLocked.bounds = [
                                         x,
-                                        root.y,
+                                        y,
                                         x + s,
-                                        root.y + s
+                                        y + s
                                     ];
                                 }
                             }
@@ -1535,13 +1552,22 @@ var Modes = (function(){
                         var rehome = function(root){
                             if(!resizeFree.activated){
                                 root = root || Modes.select.totalSelectedBounds();
-                                var s = handlesAtZoom();
+                                var s = Modes.select.handlesAtZoom();
                                 var x = root.x2;
+                                var y = root.y2;
+                                root.br = root.br || {x:scaleWorldToScreen(root.x2)};
+                                root.tl = root.tl || {x:scaleWorldToScreen(root.x)};
+                                if(root.br.x - root.tl.x < minimumXSpan){
+                                    x = root.x + scaleScreenToWorld(minimumXSpan)
+                                }
+                                if(root.br.y - root.tl.y < minimumYSpan){
+                                    y = root.y + scaleScreenToWorld(minimumYSpan)
+                                }
                                 resizeFree.bounds = [
                                     x,
-                                    root.y2 - s,
+                                    y - s,
                                     x + s,
-                                    root.y2
+                                    y
                                 ];
                             }
                         }
@@ -1645,7 +1671,9 @@ var Modes = (function(){
                     _.forEach(Modes.select.selected.texts,incorporate);
                     _.forEach(Modes.select.selected.images,incorporate);
                     _.forEach(Modes.select.selected.multiWordTexts,function(text){
-                        text.bounds = text.doc.calculateBounds();
+                        if(!_.reduce(text.bounds,function(item,acc){return item + acc})){
+                            text.bounds = text.doc.calculateBounds();
+                        }
                         incorporate(text);
                     });
                     totalBounds.width = totalBounds.x2 - totalBounds.x;
