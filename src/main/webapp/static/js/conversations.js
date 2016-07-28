@@ -421,10 +421,10 @@ var Conversations = (function(){
         ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
         if (isAuthor){
             $("#syncButtons").hide();
-            $("#syncCheckbox").hide();
+            $(".syncCheckbox").hide();
         } else {
             $("#syncButtons").show();
-            $("#syncCheckbox").show();
+            $(".syncCheckbox").show();
         }
     };
     var updateCurrentConversation = function(details){
