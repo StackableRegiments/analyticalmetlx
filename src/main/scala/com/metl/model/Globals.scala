@@ -1,7 +1,6 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-import com.metl.saml._
 
 import com.metl.data._
 import com.metl.utils._
@@ -118,8 +117,9 @@ object Globals extends PropertyReader with Logger {
         val username = s.attribute("user").asInstanceOf[String]
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
         val userGroups = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        val additionalGroupsFromProviders = Globals.groupsProviders.flatMap(_.getGroupsFor(username))
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],userGroups,userAttributes)
+        LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],userGroups ::: additionalGroupsFromProviders,userAttributes)
       }).getOrElse({
         LiftAuthStateDataForbidden
       })
