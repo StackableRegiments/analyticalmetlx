@@ -130,7 +130,7 @@ var Conversations = (function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
         slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
-	var slideControls = $("#slideControls").html([constructPrevSlideButton(),constructNextSlideButton(),constructAddSlideButton()]);
+        var slideControls = $("#slideControls").html([constructPrevSlideButton(),constructNextSlideButton(),constructAddSlideButton()]);
         slideContainer.off("scroll");
         slideContainer.on("scroll",paintThumbs);
         Progress.call("onLayoutUpdated");
@@ -378,9 +378,9 @@ var Conversations = (function(){
                 text:"Deeplink this conversation"
             }));
             $("#oneNoteExport").html($("<a/>",{
-		href:sprintf("/saveToOneNote/%s",targetConversationJid),
-		text:"Export this conversation"
-	    }));
+                href:sprintf("/saveToOneNote/%s",targetConversationJid),
+                text:"Export this conversation"
+            }));
         }
     };
     var updatePermissionButtons = function(details){

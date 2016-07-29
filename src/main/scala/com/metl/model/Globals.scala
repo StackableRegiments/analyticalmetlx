@@ -152,22 +152,22 @@ object Globals extends PropertyReader with Logger {
           "%s => %s (%s) %s bytes".format(f.name,f.fileName,f.mimeType,f.length)
         })))
       }).getOrElse({
-        val nodes = 
+        val nodes =
           <html>
-            <body>
-              <form action="/testForm" method="post" enctype="multipart/form-data">
-                <label for="a">a</label>
-                <input name="a" type="text"/>
-                <label for="b">b</label>
-                <input name="b" type="text"/>
-                <label for="file1">file1</label>
-                <input name="file1" type="file"/>
-                <label for="file2">file1</label>
-                <input name="file2" type="file"/>
-                <input type="submit" value="testSubmit"/>
-              </form>
-            </body>
-          </html>
+        <body>
+        <form action="/testForm" method="post" enctype="multipart/form-data">
+        <label for="a">a</label>
+        <input name="a" type="text"/>
+        <label for="b">b</label>
+        <input name="b" type="text"/>
+        <label for="file1">file1</label>
+        <input name="file1" type="file"/>
+        <label for="file2">file1</label>
+        <input name="file2" type="file"/>
+        <input type="submit" value="testSubmit"/>
+        </form>
+        </body>
+        </html>
         val response = LiftRules.convertResponse(((nodes,200), S.getHeaders(LiftRules.defaultHeaders((nodes,r))), r.cookies, r))
         response
       })
