@@ -1020,24 +1020,7 @@ var Modes = (function(){
                 imageFileChoice.unwrap();
             };
             var imageModes = (function(){
-                var modes = {
-                    "native":{
-                        resizeFunc:function(w,h){ return {w:w,h:h};},
-                        selector:"#imageInsertNative"
-                    },
-                    "optimized":{
-                        resizeFunc:function(w,h){ return keepUnder(1 * megaPixels,w,h);},
-                        selector:"#imageInsertOptimized"
-                    },
-                    "highDef":{
-                        resizeFunc:function(w,h){ return keepUnder(3 * megaPixels,w,h);},
-                        selector:"#imageInsertHighDef"
-                    }
-                }
-                var currentMode = modes.optimized;
-
-                var megaPixels = 1024 * 1024;
-                var keepUnder = function(threshold,incW,incH){
+                var keepUnder = function(threshold,incW,incH,quality){
                     var w = incW;
                     var h = incH;
                     var currentTotal = w * h;
@@ -1046,8 +1029,25 @@ var Modes = (function(){
                         h = h * 0.8;
                         currentTotal = w * h;
                     };
-                    return {w:w,h:h};
+                    return {w:w,h:h,q:quality};
                 }
+                var modes = {
+                    "native":{
+                        resizeFunc:function(w,h){ return {w:w,h:h,q:1.0};},
+                        selector:"#imageInsertNative"
+                    },
+                    "optimized":{
+                        resizeFunc:function(w,h){ return keepUnder(1 * megaPixels,w,h,0.4);},
+                        selector:"#imageInsertOptimized"
+                    },
+                    "highDef":{
+                        resizeFunc:function(w,h){ return keepUnder(3 * megaPixels,w,h,0.8);},
+                        selector:"#imageInsertHighDef"
+                    }
+                }
+                var currentMode = modes.optimized;
+
+                var megaPixels = 1024 * 1024;
                 var redrawModeButtons = function(){
                     _.forEach(modes,function(resizeMode){
                         var el = $(resizeMode.selector);
@@ -1088,15 +1088,20 @@ var Modes = (function(){
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
-                reader.onload = function(e){
+                reader.onload = function(readerE){
                     var renderCanvas = $("<canvas/>");
                     var img = new Image();
+                    var originalSrc = readerE.target.result;
+                    var originalSize = originalSrc.length;
                     img.onload = function(e){
                         var width = img.width;
                         var height = img.height;
                         var dims = imageModes.getResizeFunction()(width,height);
                         var w = dims.w;
                         var h = dims.h;
+                        var quality = dims.q;
+                        renderCanvas.width = w;
+                        renderCanvas.height = h;
                         renderCanvas.attr("width",w);
                         renderCanvas.attr("height",h);
                         renderCanvas.css({
@@ -1106,10 +1111,15 @@ var Modes = (function(){
                         currentImage.width = w;
                         currentImage.height = h;
                         renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                        currentImage.resizedImage = renderCanvas[0].toDataURL();
+                        currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+                        var newSize = currentImage.resizedImage.length;
+                        console.log("original => resized",originalSize,newSize);
+                        if (originalSize < newSize){
+                            currentImage.resizedImage = originalSrc;
+                        }
                         onComplete();
                     };
-                    img.src = e.target.result;
+                    img.src = originalSrc;
                 }
                 reader.readAsDataURL(currentImage.fileUpload);
             };

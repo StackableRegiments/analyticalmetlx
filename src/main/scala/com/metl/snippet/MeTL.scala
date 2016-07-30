@@ -24,13 +24,14 @@ object Metl extends Metl
 class Metl extends Logger {
   val config = ServerConfiguration.default
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
-    username.toLowerCase.trim == c.author.toLowerCase.trim && c != Conversation.empty
+    Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim && c != Conversation.empty
   }
-  def shouldDisplayConversation(c:Conversation):Boolean = {
-    (c.subject.toLowerCase == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == c.subject.toLowerCase.trim)) && c != Conversation.empty
+  def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false):Boolean = {
+    val subject = c.subject.trim.toLowerCase
+    Globals.isSuperUser || (showDeleted && c.author == Globals.currentUser.is) || ((subject == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == subject)) && c != Conversation.empty)
   }
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
-    (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username))) && c != Conversation.empty
+    Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username))) && c != Conversation.empty
   }
   def boardFor():String = {
     "/board"   
@@ -77,13 +78,13 @@ class Metl extends Logger {
 
 
   lazy val serverConfig = ServerConfiguration.default
-  protected def generateName:String = {
+  protected def generateName(showDeleted:Boolean = false):String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
     S.param("conversationJid").foreach(cj => {
       try {
         name += "_CONVERSATION:%s".format(cj.toInt)
         val conversation = serverConfig.detailsOfConversation(cj)
-        if (!shouldDisplayConversation(conversation)){
+        if (!shouldDisplayConversation(conversation,showDeleted)){
           warn("snippet.Metl is kicking the user from this conversation")
           S.redirectTo(noBoard)
         }
@@ -178,35 +179,35 @@ class Metl extends Logger {
     in.split("_").map(_.split(":")).find(_(0) == "USERNAME").map(_.drop(1).mkString(":"))
   }
   def specificSimple(in:NodeSeq):NodeSeq = {
-    val name = generateName
+    val name = generateName()
     val clazz = "lift:comet?type=SinglePageMeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating single page comet html: %s".format(output))
     output
   }
   def specificSlideDisplay(in:NodeSeq):NodeSeq = {
-    val name = generateName
+    val name = generateName()
     val clazz = "lift:comet?type=MeTLSlideDisplayActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating single page comet html: %s".format(output))
     output
   }
   def specificEditConversation(in:NodeSeq):NodeSeq = {
-    val name = generateName
+    val name = generateName(true)
     val clazz = "lift:comet?type=MeTLEditConversationActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating editConversation comet html: %s".format(output))
     output
   }
   def specific(in:NodeSeq):NodeSeq = {
-    val name = generateName
+    val name = generateName()
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating comet html: %s".format(output))
     output
   }
   def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
-    val name = generateName
+    val name = generateName()
     val clazz = "lift:comet?type=RemotePluginConversationChooserActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     warn("generating comet html: %s".format(output))
