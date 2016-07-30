@@ -175,6 +175,8 @@ function sendRichText(t){
         var stanza = richTextEditorToStanza(t);
         boardContent.multiWordTexts[t.identity] = stanza;
         boardContent.multiWordTexts[t.identity].doc = d;
+	/*We must also act as though a text had come in*/
+        Progress.call("onBoardContentChanged");
         sendStanza(stanza);
     }
 }
