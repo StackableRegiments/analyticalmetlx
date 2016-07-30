@@ -203,6 +203,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
       Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) :: Globals.groupsProviders
     },true)
+    println("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
     xmppServer = (for (

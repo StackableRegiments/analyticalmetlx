@@ -71,7 +71,7 @@ class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends Fi
         case _ => {}
       }
     })
-    debug("loaded groupData for %s: %s".format(path,rawData))
+    println("loaded groupData for %s: %s".format(path,rawData))
     rawData
   }
 }
@@ -88,7 +88,7 @@ class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends 
         case _ => {}
       }
     })
-    debug("loaded groupData for %s: %s".format(path,rawData))
+    println("loaded groupData for %s: %s".format(path,rawData))
     rawData
   }
 }
