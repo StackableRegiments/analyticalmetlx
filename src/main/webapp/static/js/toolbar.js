@@ -1465,6 +1465,7 @@ var Modes = (function(){
                                 originalHeight:1,
                                 originalWidth:1,
                                 down:function(worldPos){
+                                    Modes.select.aspectLocked = true;
                                     resizeAspectLocked.activated = true;
                                     Modes.select.dragging = false;
                                     Modes.select.resizing = true;
@@ -1499,6 +1500,7 @@ var Modes = (function(){
                                 },
                                 up:function(worldPos){
                                     resizeAspectLocked.deactivate();
+                                    Modes.select.aspectLocked = false;
                                     var resized = batchTransform();
                                     var totalBounds = Modes.select.totalSelectedBounds();
                                     var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -1686,6 +1688,7 @@ var Modes = (function(){
                 marqueeWorldOrigin:{x:0,y:0},
                 resizing:false,
                 dragging:false,
+                aspectLocked:false,
                 clearSelection:clearSelectionFunction,
                 activate:function(){
                     Modes.currentMode.deactivate();
