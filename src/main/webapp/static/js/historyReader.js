@@ -683,14 +683,14 @@ function render(content,incCanvasContext,incViewBounds){
                 var zero = Modes.select.marqueeWorldOrigin;
                 if(Modes.select.dragging){
                     canvasContext.save();
-		    var s = scale();
+                    var s = scale();
                     var x = Modes.select.offset.x - zero.x;
                     var y = Modes.select.offset.y - zero.y;
-		    var screenOffset = worldToScreen(x,y);
-		    var relativeOffset = worldToScreen(0,0);
+                    var screenOffset = worldToScreen(x,y);
+                    var relativeOffset = worldToScreen(0,0);
                     canvasContext.translate(
-			screenOffset.x - relativeOffset.x,
-			screenOffset.y - relativeOffset.y);
+                        screenOffset.x - relativeOffset.x,
+                        screenOffset.y - relativeOffset.y);
                     canvasContext.globalAlpha = 0.7;
                     _.forEach(Modes.select.selected,function(category,name){
                         _.forEach(category,function(item){
@@ -729,6 +729,7 @@ function render(content,incCanvasContext,incViewBounds){
                         func();
                         canvasContext.restore();
                     };
+                    var noop = function(){};
                     _.forEach(Modes.select.selected,function(category,name){
                         _.forEach(category,function(item){
                             var bounds = item.bounds;
@@ -747,6 +748,29 @@ function render(content,incCanvasContext,incViewBounds){
                                 });
                                 break;
                             case "multiWordTexts":
+                                canvasContext.save();
+                                canvasContext.globalAlpha = 0.7;
+                                /*Inlining of display logic from
+                                 - Modes.text.draw
+                                 - carota.editor.paint
+                                 */
+                                var scaledText = carota.editor.create(
+                                    {
+                                        querySelector:function(){
+                                            return {
+                                                addEventListener:noop
+                                            }
+                                        },
+                                        handleEvent:noop
+                                    },
+                                    canvasContext,
+                                    noop);
+                                scaledText.position = {x:bounds[0],y:bounds[1]};
+                                scaledText.load(item.doc.save());
+                                scaledText.width(item.doc.width() * xScale);
+				console.log(xScale,item.doc.width);
+                                carota.editor.paint(board[0], scaledText);
+                                canvasContext.restore();
                                 break;
                             case "inks":
                                 transform(x,y,function(){
