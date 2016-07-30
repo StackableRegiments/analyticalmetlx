@@ -768,7 +768,13 @@ function render(content,incCanvasContext,incViewBounds){
                                 scaledText.position = {x:bounds[0],y:bounds[1]};
                                 scaledText.load(item.doc.save());
                                 scaledText.width(item.doc.width() * xScale);
-				console.log(xScale,item.doc.width);
+                                if(Modes.select.aspectLocked){
+				    var source = scaledText.save();
+				    _.each(source,function(run){
+					run.size = run.size * xScale;
+				    });
+				    scaledText.load(source);
+                                }
                                 carota.editor.paint(board[0], scaledText);
                                 canvasContext.restore();
                                 break;

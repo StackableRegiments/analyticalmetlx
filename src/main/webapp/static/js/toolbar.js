@@ -1540,6 +1540,7 @@ var Modes = (function(){
                                 originalHeight:1,
                                 originalWidth:1,
                                 down:function(worldPos){
+                                    Modes.select.aspectLocked = true;
                                     resizeAspectLocked.activated = true;
                                     Modes.select.dragging = false;
                                     Modes.select.resizing = true;
@@ -1574,6 +1575,7 @@ var Modes = (function(){
                                 },
                                 up:function(worldPos){
                                     resizeAspectLocked.deactivate();
+                                    Modes.select.aspectLocked = false;
                                     var resized = batchTransform();
                                     var totalBounds = Modes.select.totalSelectedBounds();
                                     var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -1691,7 +1693,11 @@ var Modes = (function(){
                                 resized.inkIds = _.keys(Modes.select.selected.inks);
                                 resized.textIds = _.keys(Modes.select.selected.texts);
                                 resized.imageIds = _.keys(Modes.select.selected.images);
-                                resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                /*resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);*/
+				_.each(Modes.select.selected.multiWordTexts,function(word){
+				    word.doc.width(word.doc.width() * resized.xScale);
+				    sendRichText(word);
+				});
                                 var root = Modes.select.totalSelectedBounds();
                                 Progress.call("totalSelectionChanged",[{
                                     x:root.x,
@@ -1761,6 +1767,7 @@ var Modes = (function(){
                 marqueeWorldOrigin:{x:0,y:0},
                 resizing:false,
                 dragging:false,
+                aspectLocked:false,
                 clearSelection:clearSelectionFunction,
                 activate:function(){
                     Modes.currentMode.deactivate();
