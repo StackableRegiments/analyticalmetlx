@@ -1008,12 +1008,108 @@ var Modes = (function(){
             var insertOptionsClose = undefined;
             var resetImageUpload = function(){
                 insertOptions.hide();
+								$("#imageWorking").hide();
+								$("#imageFileChoice").show();
                 var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
                 if (imageForm != undefined){
                     imageForm.reset();
                 }
                 imageFileChoice.unwrap();
             };
+						var imageModes = (function(){
+							var modes = {
+								"native":{
+									resizeFunc:function(w,h){ return {w:w,h:h};},
+									selector:"#imageInsertNative"
+								},
+								"optimized":{
+									resizeFunc:function(w,h){ return keepUnder(1 * megaPixels,w,h);},
+									selector:"#imageInsertOptimized"
+								},
+								"highDef":{
+									resizeFunc:function(w,h){ return keepUnder(3 * megaPixels,w,h);},
+									selector:"#imageInsertHighDef"
+								}
+							}
+							var currentMode = modes.optimized;
+
+							var megaPixels = 1024 * 1024;
+							var keepUnder = function(threshold,incW,incH){
+								var w = incW;
+								var h = incH;
+								var currentTotal = w * h;
+								while (currentTotal > threshold){
+									w = w * 0.8;
+									h = h * 0.8;
+									currentTotal = w * h;
+								};
+								return {w:w,h:h};
+							}
+							var redrawModeButtons = function(){
+								_.forEach(modes,function(resizeMode){
+									var el = $(resizeMode.selector);
+									if (currentMode.selector == resizeMode.selector){
+										el.addClass("activeBrush");
+									} else {
+										el.removeClass("activeBrush");
+									}	
+								});
+							}
+							$(function(){
+								_.forEach(modes,function(resizeMode){
+									var el = $(resizeMode.selector);
+									el.on("click",function(){
+										currentMode = resizeMode;
+										redrawModeButtons();
+									});
+								});
+								redrawModeButtons();
+							});
+							return {
+								"reapplyVisualStyle":redrawModeButtons,
+								"changeMode":function(newMode){
+									if (newMode in modes){
+										currentMode = modes[newMode];
+										redrawModeButtons();
+									}
+								},
+								"getResizeFunction":function(){
+									return currentMode.resizeFunc;
+								}
+							}
+						})();
+						var clientSideProcessImage = function(onComplete){
+							if (currentImage == undefined || currentImage.fileUpload == undefined || onComplete == undefined){
+								return;
+							}
+							$("#imageWorking").show();
+							$("#imageFileChoice").hide();
+							var reader = new FileReader();
+							reader.onload = function(e){
+								var renderCanvas = $("<canvas/>");
+								var img = new Image();
+								img.onload = function(e){
+									var width = img.width;
+									var height = img.height;
+									var dims = imageModes.getResizeFunction()(width,height);
+									var w = dims.w;
+									var h = dims.h;
+									renderCanvas.attr("width",w);
+									renderCanvas.attr("height",h);
+									renderCanvas.css({
+										width:px(w),
+										height:px(h)
+									});
+									currentImage.width = w;
+									currentImage.height = h;
+									renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);									
+									currentImage.resizedImage = renderCanvas[0].toDataURL();
+									onComplete();
+								};
+								img.src = e.target.result;
+							}
+							reader.readAsDataURL(currentImage.fileUpload);
+						};
             var sendImageToServer = function(){
                 if (currentImage.type == "imageDefinition"){
                     WorkQueue.pause();
@@ -1084,29 +1180,7 @@ var Modes = (function(){
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
                         }
-                        var reader = new FileReader();
-                        reader.onload = function(e){
-                            var img = new Image();
-                            img.onload = function(e){
-                                var w = img.width;
-                                var h = img.height;
-
-                                var renderCanvas = $("<canvas/>");
-                                renderCanvas.attr("width",w);
-                                renderCanvas.attr("height",h);
-                                renderCanvas.css({
-                                    width:px(w),
-                                    height: px(h)
-                                });
-                                renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                                currentImage.width = w;
-                                currentImage.height = h;
-                                currentImage.resizedImage = renderCanvas[0].toDataURL();
-                                sendImageToServer();
-                            };
-                            img.src = e.target.result;
-                        };
-                        reader.readAsDataURL(currentImage.fileUpload);
+												clientSideProcessImage(sendImageToServer);
                     },false);
                     resetImageUpload();
                 }
@@ -1127,6 +1201,7 @@ var Modes = (function(){
                         "y":worldPos.y
                     }
                     Progress.call("onLayoutUpdated");
+										imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
                 deactivate:function(){

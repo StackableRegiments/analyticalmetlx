@@ -119,7 +119,10 @@ object Globals extends PropertyReader with Logger {
         val userGroups = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
         val additionalGroupsFromProviders = Globals.groupsProviders.flatMap(_.getGroupsFor(username))
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],userGroups ::: additionalGroupsFromProviders,userAttributes)
+        val groups = userGroups ::: additionalGroupsFromProviders
+        val lasd = LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],groups,userAttributes)
+        println("got state: %s".format(lasd))
+        lasd
       }).getOrElse({
         LiftAuthStateDataForbidden
       })
