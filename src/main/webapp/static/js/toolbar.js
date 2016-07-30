@@ -1693,7 +1693,11 @@ var Modes = (function(){
                                 resized.inkIds = _.keys(Modes.select.selected.inks);
                                 resized.textIds = _.keys(Modes.select.selected.texts);
                                 resized.imageIds = _.keys(Modes.select.selected.images);
-                                resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                /*resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);*/
+				_.each(Modes.select.selected.multiWordTexts,function(word){
+				    word.doc.width(word.doc.width() * resized.xScale);
+				    sendRichText(word);
+				});
                                 var root = Modes.select.totalSelectedBounds();
                                 Progress.call("totalSelectionChanged",[{
                                     x:root.x,
