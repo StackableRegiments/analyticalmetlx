@@ -381,7 +381,11 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
-        listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
+        //listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
+        listing = newConv :: listing.filterNot(_.jid == newConv.jid)//query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
+        reRender
+      } else if (listing.exists(_.jid == newConv.jid)){
+        listing = listing.filterNot(_.jid == newConv.jid)
         reRender
       }
     }
