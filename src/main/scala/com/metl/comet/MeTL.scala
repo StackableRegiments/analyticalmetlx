@@ -498,38 +498,40 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
             ".conversationProjectorLink [href]" #> projectorFor(conv.jid) &
             ".conversationProjectorLink *" #> Text(projectorFor(conv.jid)) &
             ".conversationSlidesContainer *" #> {
-              conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
-                ".slideContainer [data-id]" #> slide.id.toString &
-                ".slideContainer [data-index]" #> slide.index.toString &
-                ".slideContainer *" #> {
-                  ".slideId *" #> Text(slide.id.toString) &
-                  ".slideIndex *" #> Text(slide.index.toString) &
-                  ".slideType *" #> Text(slide.slideType.toString) &
-                  ".slideThumbnail [src]" #> thumbnailFor(conv.jid,slide.id) &
-                  ".duplicateSlideButton *" #> {
-                    ajaxButton("duplicate slide",() => {
-                      val result = StatelessHtml.duplicateSlideInternal(username,slide.id.toString,conv.jid.toString)
-                      warn("duplicating slide: %s".format(result))
-                      Noop
-                    })
-                  } &
-                  ".addSlideAfterButton *" #> {
-                    ajaxButton("add slide after",() => {
-                      val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index + 1)
-                      warn("adding slide after: %s".format(result))
-                      Noop
-                    })
-                  } &
-                  ".addSlideBeforeButton *" #> {
-                    ajaxButton("add slide before",() => {
-                      val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index)
-                      warn("adding slide before: %s".format(result))
-                      Noop
-                    })
-                  } &
-                  ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
-                }
-              })
+              ".slideContainer" #> {
+                conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
+                  ".slideContainer [data-id]" #> slide.id.toString &
+                  ".slideContainer [data-index]" #> slide.index.toString &
+                  ".slideContainer *" #> {
+                    ".slideId *" #> Text(slide.id.toString) &
+                    ".slideIndex *" #> Text(slide.index.toString) &
+                    ".slideType *" #> Text(slide.slideType.toString) &
+                    ".slideThumbnail [src]" #> thumbnailFor(conv.jid,slide.id) &
+                    ".duplicateSlideButton *" #> {
+                      ajaxButton("duplicate slide",() => {
+                        val result = StatelessHtml.duplicateSlideInternal(username,slide.id.toString,conv.jid.toString)
+                        warn("duplicating slide: %s".format(result))
+                        Noop
+                      })
+                    } &
+                    ".addSlideAfterButton *" #> {
+                      ajaxButton("add slide after",() => {
+                        val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index + 1)
+                        warn("adding slide after: %s".format(result))
+                        Noop
+                      })
+                    } &
+                    ".addSlideBeforeButton *" #> {
+                      ajaxButton("add slide before",() => {
+                        val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index)
+                        warn("adding slide before: %s".format(result))
+                        Noop
+                      })
+                    } &
+                    ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+                  }
+                })
+              }
             }
           })
           innerResult
@@ -552,6 +554,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         warn("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender
+        partialUpdate(Call("reapplyVisualState"))
       })
     }
     case _ => warn("MeTLEditConversationActor received unknown message")
