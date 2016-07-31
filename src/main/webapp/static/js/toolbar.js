@@ -871,7 +871,8 @@ var Modes = (function(){
                                 source.privacy = Privacy.getCurrentPrivacy();
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
-                                if(editor.doc.save().length > 0){
+                                var t = editor.doc.save();
+                                if(t.length > 0){
                                     sendRichText(source);
                                     var bounds = editor.doc.calculateBounds();
                                     /*This is important to the zoom strategy*/
@@ -1413,7 +1414,19 @@ var Modes = (function(){
                 },
                 addHandles:function(){
                     removeHandles();
-
+                    var attrs = {opacity:0};
+                    var handleAlpha = 0.3;
+                    var fadeInInterval = 1000;
+                    var tween = new TWEEN.Tween(attrs).delay(fadeInInterval).to({opacity:handleAlpha},fadeInInterval);
+                    var tick = function(){
+                        TWEEN.update();
+                        blit();
+                        if(attrs.opacity < handleAlpha){
+                            requestAnimationFrame(tick);
+                        }
+                    };
+                    tick();
+                    tween.start();
                     var s = Modes.select.handlesAtZoom();
                     var blitAndArgs = function(f){
                         return function(args){
@@ -1427,7 +1440,6 @@ var Modes = (function(){
                             blit();
                         };
                     }
-                    var handleAlpha = 0.3;
                     var minimumXSpan = Modes.select.resizeHandleSize;
                     var minimumYSpan = Modes.select.resizeHandleSize;
                     var manualMove = (
@@ -1511,7 +1523,7 @@ var Modes = (function(){
                                         var size = br.x - tl.x;
                                         var x = tl.x;
                                         var y = tl.y;
-                                        canvasContext.globalAlpha = handleAlpha;
+                                        canvasContext.globalAlpha = attrs.opacity;
                                         canvasContext.setLineDash([]);
                                         canvasContext.strokeStyle = "black";
                                         canvasContext.fillStyle = "white";
@@ -1583,8 +1595,8 @@ var Modes = (function(){
                                     return false;
                                 },
                                 deactivate:function(){
-                                    resizeAspectLocked.activated = false;
                                     Modes.select.aspectLocked = false;
+                                    resizeAspectLocked.activated = false;
                                     Modes.select.resizing = false;
                                 },
                                 up:function(worldPos){
@@ -1621,7 +1633,7 @@ var Modes = (function(){
                                         var xOffset = -1 * size;
                                         var yOffset = -1 * size;
                                         var rot = 90;
-                                        canvasContext.globalAlpha = handleAlpha;
+                                        canvasContext.globalAlpha = attrs.opacity;
                                         canvasContext.setLineDash([]);
                                         canvasContext.strokeStyle = "black";
                                         canvasContext.fillStyle = "white";
@@ -1732,7 +1744,7 @@ var Modes = (function(){
                                     var xOffset = -1 * size;
                                     var yOffset = -1 * size;
                                     var rot = 90;
-                                    canvasContext.globalAlpha = handleAlpha;
+                                    canvasContext.globalAlpha = attrs.opacity;
                                     canvasContext.setLineDash([]);
                                     canvasContext.strokeStyle = "black";
                                     canvasContext.fillStyle = "white";
@@ -1753,7 +1765,7 @@ var Modes = (function(){
                     pushCanvasInteractable("resizeFree",resizeFree);
                     pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
                 },
-                totalSelectedBounds:function(){
+                totalSelectedBounds:Bench.track("Modes.select.totalSelectedBounds",function(){
                     var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
                     var incorporate = function(item){
                         var bounds = item.bounds;
@@ -1776,7 +1788,7 @@ var Modes = (function(){
                     totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
                     totalBounds.br = worldToScreen(totalBounds.x2,totalBounds.y2);
                     return totalBounds;
-                },
+                }),
                 offset:{x:0,y:0},
                 marqueeWorldOrigin:{x:0,y:0},
                 resizing:false,
