@@ -38,6 +38,37 @@ var reapplyVisualState = function(){
 		slideReorderInProgress = false;
 		refreshFromServer();
 	});
+	_.forEach($(".slideContainer"),function(sce){
+		var sc = $(sce);
+		var nextItem = $(sc).next(".slideContainer");
+		var prevItem = $(sc).prev(".slideContainer");
+		var moveBackButton = sc.find(".moveSlideBack");
+		var moveForwardButton = sc.find(".moveSlideForward");
+		moveBackButton.unbind("click");	
+		moveForwardButton.unbind("click");
+		if (nextItem.length == 0){
+			moveForwardButton.hide();
+		} else {
+			moveForwardButton.show();
+			moveForwardButton.on("click",function(){
+				slideReorderInProgress = true;
+				sc.detach();
+				nextItem.after(sc);
+				reapplyVisualState();
+			});
+		}
+		if (prevItem.length == 0){
+			moveBackButton.hide();
+		} else {
+			moveBackButton.show();
+			moveBackButton.on("click",function(){
+				slideReorderInProgress = true;
+				sc.detach();
+				prevItem.before(sc);
+				reapplyVisualState();
+			});
+		}
+	});
 }
 function sendChangedSlides(){
 	try {

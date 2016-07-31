@@ -27,7 +27,7 @@
     }
 		.slideDragHandle {
 			background:blue;
-			height:100%;
+			height:6em;
 			width:6em;
 		}
   </style>
@@ -113,7 +113,15 @@
 -->
 				<tbody id="sortableRoot">
 					<tr class="slideContainer">
-						<td class="slideDragHandle">Move</td>
+						<td>
+							<div>
+								<button type="button" class="moveSlideBack">Shift up</button>
+							</div>
+							<div class="slideDragHandle">Drag</div>
+							<div>
+								<button type="button" class="moveSlideForward">Shift down</button>
+							</div>
+						</td>
 						<td>
 							<table>
 								<tr>
