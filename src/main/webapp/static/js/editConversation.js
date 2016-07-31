@@ -16,52 +16,60 @@ function receiveConversationDetails(details){
 function receiveNewConversationDetails(details){
     //console.log("receiveNewConversationDetails:",details);
 }
+var slideReorderInProgress = false;
 var reapplyVisualState = function(){
+	var reorderContainer = $("#reorderInProgress");
+	if (slideReorderInProgress){
+		reorderContainer.show();
+	} else {
+		reorderContainer.hide();
+	}
 	$("#sortableRoot").sortable({
-			handle: "td.slideDragHandle",
-			beforeStop: function(ev,ui){
-				if (confirm("Are you sure?")){
-					//console.log("performing sort",ev,ui);
-				} else {
-					try {
-						ev.preventDefault();
-						return false;
-					} catch (e){
-						//jquery UI throws an exception when I interrupt this, so catching it silently.
-					}
-				}
-			},
-			stop: function(ev,ui){
-				try {
-						if (currentConversation != undefined && "jid" in currentConversation && "slides" in currentConversation) {
-								var oldSlides = currentConversation.slides;
-								var newIndex = 0;
-								var newSlides = _.map($(".slideId"),function(el){
-										var slideId = parseInt($(el).text());
-										//console.log("searching for:",slideId);
-										var returnedSlide = _.find(currentConversation.slides,function(slide){
-												if (slide.id == slideId){
-														//console.log("found:",slide);
-														return true;
-												} else {
-														return false;
-												}
-										});
-										if (!("groupSet" in returnedSlide)){
-												returnedSlide.groupSet = [];
-										}
-										returnedSlide.index = newIndex;
-										newIndex = newIndex + 1;
-										return returnedSlide;
-								});
-								//console.log("reordering slides:",oldSlides,newSlides);
-								reorderSlidesOfCurrentConversation(currentConversation.jid,newSlides);
-						}
-				} catch(e){
-						console.log("exception while reordering slides",e);
-				}
-			}
+		handle: "td.slideDragHandle",
+		stop: function(ev,ui){
+			slideReorderInProgress = true;
+			reapplyVisualState();
+		}
 	}).disableSelection();
+	$("#reorderSlides").unbind("click").on("click",function(){
+		sendChangedSlides();
+	});
+	$("#cancelReorderSlides").unbind("click").on("click",function(){
+		slideReorderInProgress = false;
+		refreshFromServer();
+	});
+}
+function sendChangedSlides(){
+	try {
+			if (currentConversation != undefined && "jid" in currentConversation && "slides" in currentConversation) {
+					var oldSlides = currentConversation.slides;
+					var newIndex = 0;
+					var newSlides = _.map($(".slideId"),function(el){
+							var slideId = parseInt($(el).text());
+							//console.log("searching for:",slideId);
+							var returnedSlide = _.find(currentConversation.slides,function(slide){
+									if (slide.id == slideId){
+											//console.log("found:",slide);
+											return true;
+									} else {
+											return false;
+									}
+							});
+							if (!("groupSet" in returnedSlide)){
+									returnedSlide.groupSet = [];
+							}
+							returnedSlide.index = newIndex;
+							newIndex = newIndex + 1;
+							return returnedSlide;
+					});
+					//console.log("reordering slides:",oldSlides,newSlides);
+					reorderSlidesOfCurrentConversation(currentConversation.jid,newSlides);
+					slideReorderInProgress = false;
+					reapplyVisualState();
+			}
+	} catch(e){
+			console.log("exception while reordering slides",e);
+	}
 }
 $(function(){
 	reapplyVisualState();

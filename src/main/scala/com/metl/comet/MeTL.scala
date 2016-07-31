@@ -426,7 +426,11 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME))
+    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunctionDefinition("refreshFromServer",List.empty[String],(unused) => {
+      reRender
+      JNull
+    },Full("reapplyVisualState"))
   )
   import com.metl.view._
   override def registerWith = MeTLEditConversationActorManager
