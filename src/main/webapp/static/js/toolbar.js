@@ -878,7 +878,7 @@ var Modes = (function(){
                                     /*This is important to the zoom strategy*/
                                     incorporateBoardBounds(bounds);
                                 }
-                                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                                Progress.call("totalSelectionChanged",[Modes.select.selected]);
                             });
                             editor.doc.selectionChanged(function(formatReport){
                                 var format = formatReport();
@@ -1428,13 +1428,15 @@ var Modes = (function(){
                     tick();
                     tween.start();
                     var s = Modes.select.handlesAtZoom();
-                    var blitAndArgs = function(f){
-                        return function(args){
-                            f(args);
-                            blit();
+                    var blitAfterDelay = function(f){
+                        return function(){
+                            setTimeout(function(){
+                                f();
+                                blit();
+                            },fadeInInterval);
                         }
                     }
-                    var blitAnd = function(f){
+                    var blitImmediately = function(f){
                         return function(){
                             f();
                             blit();
@@ -1460,8 +1462,8 @@ var Modes = (function(){
                                     ];
                                 }
                             }
-                            Progress.onSelectionChanged["manualMove"] = blitAnd(rehome);
-                            Progress.totalSelectionChanged["manualMove"] = blitAndArgs(rehome);
+                            Progress.onSelectionChanged["manualMove"] = blitImmediately(rehome);
+                            Progress.totalSelectionChanged["manualMove"] = blitAfterDelay(rehome);
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1558,8 +1560,8 @@ var Modes = (function(){
                                     ];
                                 }
                             }
-                            Progress.onSelectionChanged["resizeAspectLocked"] = blitAnd(rehome);
-                            Progress.totalSelectionChanged["resizeAspectLocked"] = blitAndArgs(rehome);
+                            Progress.onSelectionChanged["resizeAspectLocked"] = blitImmediately(rehome);
+                            Progress.totalSelectionChanged["resizeAspectLocked"] = blitAfterDelay(rehome);
                             return {
                                 activated:false,
                                 originalHeight:1,
@@ -1673,8 +1675,8 @@ var Modes = (function(){
                                 ];
                             }
                         }
-                        Progress.onSelectionChanged["resizeFree"] = blitAnd(rehome);
-                        Progress.totalSelectionChanged["resizeFree"] = blitAndArgs(rehome);
+                        Progress.onSelectionChanged["resizeFree"] = blitImmediately(rehome);
+                        Progress.totalSelectionChanged["resizeFree"] = blitAfterDelay(rehome);
                         return {
                             activated:false,
                             down:function(worldPos){
