@@ -126,7 +126,7 @@
       <table class="conversationSlidesContainer indent">
         <thead>
           <tr>
-            <th>Sort</th>
+            <th colspan="3">Sort</th>
             <th>Id</th>
             <th>Index</th>
             <th>Join</th>
@@ -134,15 +134,15 @@
         </thead>
         <tbody id="sortableRoot">
           <tr class="slideContainer">
-						<td>
-							<div>
-								<button type="button" class="moveSlideBack">Shift up</button>
-							</div>
-							<div class="slideDragHandle"><i class="fa fa-sort"></i></div>
-							<div>
-								<button type="button" class="moveSlideForward">Shift down</button>
-							</div>
-						</td>
+            <td>
+              <div class="slideDragHandle"><i class="fa fa-sort"></i></div>
+            </td>
+            <td>
+              <div class="slideDragHandle moveSlideBack"><i class="fa fa-sort-down"></i></div>
+            </td>
+            <td>
+              <div class="slideDragHandle moveSlideForward"><i class="fa fa-sort-up"></i></div>
+            </td>
             <td>
               <span class="slideId"></span>
             <td>
@@ -162,8 +162,8 @@
             <td>
               <span class="addSlideBeforeButton"></span>
             </td>
-					</tr>
-				</tbody>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
