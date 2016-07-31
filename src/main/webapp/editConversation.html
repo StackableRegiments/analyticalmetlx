@@ -1,8 +1,8 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
   <script src="static/js/stable/lodash-4.12.0.js"></script>
-	<!--
-  <script src="/static/js/stable/jquery-sortable-min.js"></script>
-	-->
+  <!--
+      <script src="/static/js/stable/jquery-sortable-min.js"></script>
+      -->
   <script src="/static/js/stable/jquery-ui-1.12.0.min.js"></script>
   <script src="/static/js/editConversation.js"></script>
   <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
@@ -25,11 +25,22 @@
     position: absolute;
     /** Define arrowhead **/
     }
-		.slideDragHandle {
-			background:blue;
-			height:100%;
-			width:6em;
-		}
+    .slideDragHandle {
+    }
+    .slideThumbnail{
+    height:50px;
+    }
+    .perSlideControls{
+    display:flex;
+    flex-direction:row;
+    }
+    .perSlideControls div{
+    margin:0 1em;
+    }
+    .slideControl button{
+    padding:0 1em;
+    margin:0 1em;
+    }
   </style>
   <div class="lift:Metl.specificEditConversation indent directlyOnBackground">
     <h1>Edit conversation</h1>
@@ -93,47 +104,43 @@
       </table>
       <h2>Slide level actions</h2>
       <table class="conversationSlidesContainer indent">
-				<!--
-				<thead>
-					<tr>
-						<th>Reorder</th>
-						<th>Info</th>
-						<th>Join</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
--->
-				<tbody id="sortableRoot">
-					<tr class="slideContainer">
-						<td class="slideDragHandle">Move</td>
-						<td>
-							<table>
-								<tr>
-									<th>Id: </th>
-									<td class="slideId"></td>
-								</tr>
-								<tr>
-									<th>Type: </th>
-									<td class="slideType"></td>
-								</tr>
-								<tr>
-									<th>Index: </th>
-									<td class="slideIndex"></td>
-								</tr>
-							</table>
-						</td>
-						<td>
-							<a class="slideAnchor">
-								<img class="slideThumbnail"></img>
-							</a>
-						</td>
-						<td>
-							<span class="duplicateSlideButton"></span>
-							<span class="addSlideAfterButton"></span>
-							<span class="addSlideBeforeButton"></span>
-						</td>
-					</tr>
-				</tbody>
+        <!--
+            <thead>
+              <tr>
+                <th>Reorder</th>
+                <th>Info</th>
+                <th>Join</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            -->
+        <tbody id="sortableRoot">
+          <tr class="slideContainer">
+            <td class="slideDragHandle tools">
+              <button class="fa btn-icon fa-sort"></button>
+            </td>
+            <td class="perSlideControls">
+              <div>
+                <label>Id: </label>
+                <span class="slideId"></span>
+              </div>
+              <div>
+                <label>Index: </label>
+                <span class="slideIndex"></span>
+              </div>
+            </td>
+            <td>
+              <a class="slideAnchor">
+                <img class="slideThumbnail"></img>
+              </a>
+            </td>
+            <td class="perSlideControls">
+              <span class="slideControl duplicateSlideButton"></span>
+              <span class="slideControl addSlideAfterButton"></span>
+              <span class="slideControl addSlideBeforeButton"></span>
+            </td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
