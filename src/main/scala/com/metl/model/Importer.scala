@@ -122,6 +122,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(uploadResponseObj.message,5,108)),None))
       var completed = false
       var downloadUrl = ""
+      var downloadExt = ""
       while (!completed){
         Thread.sleep(1000)
         val statusResponse = describeResponse(client.getExpectingHTTPResponse(procResponseObj.url))
@@ -145,6 +146,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         } else if (statusObj.step == "finished"){
           completed = true
           statusObj.output.foreach(out => {
+            downloadExt = out.ext
             downloadUrl = schemify(out.url)
           })
         }
@@ -159,14 +161,23 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
       val convertResponseBytes = downloadResponse.bytes
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("downloaded from cloudConverter",107,108)),None))
       trace("downloaded bytes: %s".format(convertResponseBytes.length))
-      val parsedResponse = unzipper.extractFiles(convertResponseBytes,_.getName.endsWith(".jpg")).right.map(files => files.map(fileTup => {
-        // we should read the page number from the filename, which should be:  "filename-%s.jpg".format(pageNumber), where filename should be the original filename, without the suffix.
-        // this should TOTALLY be a regex to make it clean and strong
-        var newNumber = fileTup._1
-        newNumber = newNumber.drop(filename.length + 1)
-        newNumber = newNumber.take(newNumber.length - 4)
-        (newNumber.toInt,fileTup._2)
-      }))
+
+      val parsedResponse = downloadExt match {
+        case "zip" => {
+          unzipper.extractFiles(convertResponseBytes,_.getName.endsWith(".jpg")).right.map(files => files.map(fileTup => {
+            // we should read the page number from the filename, which should be:  "filename-%s.jpg".format(pageNumber), where filename should be the original filename, without the suffix.
+            // this should TOTALLY be a regex to make it clean and strong
+            var newNumber = fileTup._1
+            newNumber = newNumber.drop(filename.length + 1)
+            newNumber = newNumber.take(newNumber.length - 4)
+            (newNumber.toInt,fileTup._2)
+          }))
+        }
+        case "jpg" => {
+          Right(List((1,convertResponseBytes)))
+        }
+        case other => Left(new Exception("unknown extension returned from cloudConverter: %s".format(other)))
+      }
       trace("parsedResponse: %s".format(parsedResponse))
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("extracted content from cloudConverter",108,108)),None))
       parsedResponse
