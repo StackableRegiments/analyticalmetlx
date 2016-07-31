@@ -8,8 +8,7 @@
 .simpleDropdownInteractableMessageDropdown{
 }
 #slideControls{
-    position:fixed;
-    margin-top:-2px;
+    float:right;
 }
 #slideControls .toolbar{
     color:black;

@@ -769,11 +769,14 @@ function render(content,incCanvasContext,incViewBounds){
                                 scaledText.load(item.doc.save());
                                 scaledText.width(item.doc.width() * xScale);
                                 if(Modes.select.aspectLocked){
-				    var source = scaledText.save();
-				    _.each(source,function(run){
-					run.size = run.size * xScale;
-				    });
-				    scaledText.load(source);
+                                    /*If you're looking for the bug where it sometimes ghosts the wrong way, this is it.
+                                     save() doesn't always produce useful results
+                                     and when it doesn't you end up with NaNs.*/
+                                    var source = scaledText.save();
+                                    _.each(source,function(run){
+                                        run.size = run.size * xScale;
+                                    });
+                                    scaledText.load(source);
                                 }
                                 carota.editor.paint(board[0], scaledText);
                                 canvasContext.restore();
