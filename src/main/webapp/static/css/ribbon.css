@@ -43,7 +43,7 @@
     top:2px;
     left:2px;
 }
-.activeSlide, .activeBackstageTab, .activeBrush, .activePrivacy, .activeTool{
+.activeBackstageTab, .activeBrush, .activePrivacy, .activeTool{
     box-shadow:
     0 -3px 0 #222222,
     5px 5px 5px #ffffff;
@@ -62,12 +62,6 @@
     top:2px;
     vertical-align:top;
     padding:0 1em;
-}
-.activeSlide{
-    box-shadow:
-    2px 2px 0 #1a74a1,
-    -2px -2px 0 #1a74a1,
-    5px 5px 5px #ffffff;
 }
 .closeButton, a.s2cClose{
     min-height:1em;
@@ -104,13 +98,7 @@ a.s2cClose{
     width:3.5em;
     height:1.75em;
 }
-.activeSlide{
-    margin-top:1em;
-    margin-bottom:1em;
-}
 
-.activeSlide, .activeBackstageTab, .activeBrush, .activePrivacy, .activeTool{
-}
 .sizeDot{
     text-align:center;
 }

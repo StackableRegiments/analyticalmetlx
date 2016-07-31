@@ -219,7 +219,6 @@ var Conversations = (function(){
                     if ("configName" in details){
                         currentServerConfigName = details.configName;
                     }
-                    currentServerConfigName
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
                         Progress.call("onConversationJoin");
                         ThumbCache.clearCache();

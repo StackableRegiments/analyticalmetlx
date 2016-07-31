@@ -92,7 +92,7 @@ var DeviceConfiguration = (function(){
         setDefaultOptions();
     };
     var getDeviceDimensions = function(){
-	return W.getViewportDimensions();
+        return W.getViewportDimensions();
         var deviceHeight = 0;
         var deviceWidth = 0;
         var matchMetaTag = function(metaName,metaValue){
@@ -377,42 +377,6 @@ var DeviceConfiguration = (function(){
             outerFit();
         }));
         var originalSize = DeviceConfiguration.preferredSizes.handles;
-        var resizeable = function(selector,func){
-            var source = $(selector);
-            var resizing = false;
-            var downPos = {x:0};
-            var widthIncludes = function(x){
-                func(source,x - (downPos.x));
-                fitFunction();
-            }
-            var down = function(x){
-                downPos.x = x;
-                resizing = true;
-            };
-            var move = function(x){
-                if(resizing){
-                    widthIncludes(x);
-                }
-            }
-            var up = function(x){
-                if(resizing){
-                    _.defer(function(){
-                        resizing = false;
-                        widthIncludes(x);
-                    });
-                }
-            }
-            registerPositionHandlers(source,down,move,up);
-        };
-        resizeable("#thumbColumnDragHandle",function(el,delta){
-            //Right to left so negative X
-            var thumbs = $(".thumbnail");
-            var aspectRatio = 0.75;
-            var effectiveWidth = thumbs.width() - delta;
-            var effectiveHeight = effectiveWidth * aspectRatio;
-            DeviceConfiguration.preferredSizes.thumbColumn.width = effectiveWidth;
-            DeviceConfiguration.preferredSizes.thumbColumn.height = effectiveHeight;
-        });
     });
     var actOnCurrentDevice = function(){
         switch (currentDevice){

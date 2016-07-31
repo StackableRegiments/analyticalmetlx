@@ -776,6 +776,7 @@
                                     var caret = this.getCaretCoords(this.selection.start);
                                     if (caret) {
                                         ctx.save();
+					ctx.globalAlpha = 1;
                                         ctx.fillStyle = 'black';
                                         caret.fill(ctx);
                                         ctx.restore();
@@ -959,7 +960,7 @@
                         host.innerHTML =
                             '<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
                             '<textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" ' +
-                            'style="position: absolute; padding: 0px; width: 1000px; height: 1em; ' +
+                            'style="position: absolute; padding: 0px; width: 1000px; height: 1em; top: -10000px; left:-10000px; ' +
                             'outline: none; font-size: 4px;"></textarea>' +
                             '</div>';
 

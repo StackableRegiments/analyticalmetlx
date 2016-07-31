@@ -64,4 +64,5 @@
 #thumbScrollContainer{
     order:1;
     overflow-x:hidden;
+    margin-top:2px;
 }

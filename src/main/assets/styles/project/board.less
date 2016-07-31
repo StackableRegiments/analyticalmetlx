@@ -11,6 +11,8 @@ html{
     font-weight:800;
     color:white;
     padding:0.5em;
+    position:fixed;
+    pointer-events:none;
 }
 body{
     background-image:@body-backgroundimage;
@@ -37,7 +39,7 @@ background-color:@block-bg;
 #slideContainer {
     max-width: @slide-container-width;
     img{
-	background-color:white;
+        background-color:white;
     }
 }
 .slideButtonContainer {
@@ -49,11 +51,7 @@ background-color:@block-bg;
     margin-top:-15px;
 }
 .activeSlide .thumbnail {
-    border: 8px solid @slide-active;
-}
-.thumbnail {
-    width:100px;
-    height:75px;
+    border-left:5px solid @slide-active;
 }
 .inactiveMode {
     display:none;
@@ -98,7 +96,7 @@ background-color:@block-bg;
     input[type="checkbox"]{
         & + label {
             padding: 0.5em 2px;
-	    width:80px;
+            width:80px;
             max-width: (@toolbar-btn-width * 2) + 4;
             background-color: @toggle-bg;
             color: @toggle-fg;
