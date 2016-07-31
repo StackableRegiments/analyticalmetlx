@@ -50,6 +50,9 @@
     .fa-sort:before {
     content: "\f0dc";
     }
+    .conversationSlidesContainer th, .conversationSlidesContainer td {
+    text-align:center;
+    }
   </style>
   <div class="lift:Metl.specificEditConversation indent directlyOnBackground">
     <h1>Edit conversation</h1>
@@ -121,24 +124,20 @@
         </span>
       </span>
       <table class="conversationSlidesContainer indent">
-        <!--
-            <thead>
-              <tr>
-                <th>Reorder</th>
-                <th>Info</th>
-                <th>Join</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            -->
+        <thead>
+          <tr>
+            <th>Sort</th>
+            <th>Id</th>
+            <th>Index</th>
+            <th>Join</th>
+          </tr>
+        </thead>
         <tbody id="sortableRoot">
           <tr class="slideContainer">
             <td class="slideDragHandle"><i class="fa fa-sort"></i></td>
             <td>
-              <label>Id: </label>
               <span class="slideId"></span>
             <td>
-              <label>Index: </label>
               <span class="slideIndex"></span>
             </td>
             <td>
