@@ -584,7 +584,6 @@ var Conversations = (function(){
         return newSlide;
     }
     var constructConversation = function(conversation){
-
         var uniq = function(name){
             return sprintf("%s_%s",name,conversation.jid);
         };
@@ -610,7 +609,6 @@ var Conversations = (function(){
         newConv.find(".conversationCreated").text(conversation.created);
 
         if (shouldModifyConversationFunction(conversation)){
-
             newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
             newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
             newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });

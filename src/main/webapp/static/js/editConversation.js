@@ -25,7 +25,7 @@ var reapplyVisualState = function(){
 		reorderContainer.hide();
 	}
 	$("#sortableRoot").sortable({
-		handle: "td.slideDragHandle",
+		handle: ".slideDragHandle",
 		stop: function(ev,ui){
 			slideReorderInProgress = true;
 			reapplyVisualState();
