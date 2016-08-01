@@ -178,6 +178,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       true
     } catch {
       case e:Throwable => {
+        error("exception thrown while updating conversation: %s\r\n%s".format(e.getMessage,e.getStackTrace))
         false
       }
     }

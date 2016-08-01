@@ -110,7 +110,7 @@ trait ConversationFilter {
     lazy val myGroups = Globals.casState.is.eligibleGroups
     in.filter(c => {
       val subject = c.subject.trim.toLowerCase
-      subject != "deleted" && (c.author == Globals.currentUser.is || myGroups.contains(subject))
+      subject != "deleted" && (c.author == Globals.currentUser.is || myGroups.exists(_._2 == subject))
     })
   }
 }
