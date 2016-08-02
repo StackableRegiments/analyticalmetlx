@@ -47,17 +47,17 @@ var Participants = (function(){
         });
         _.each(_.groupBy(history.multiWordTexts,"author"),function(authorStanzas,author){
             var itemToEdit = newParticipants[author];
-	    _.each(authorStanzas,function(stanza){
-		newParticipants[author].texts += countTexts(stanza);
-	    });
+            _.each(authorStanzas,function(stanza){
+                newParticipants[author].texts += countTexts(stanza);
+            });
         });
         participants = newParticipants;
         updateParticipantsListing();
     };
     var countTexts = function(stanza){
-	return _.reduce(stanza.words,function(acc,v,k){
-	    return acc + v.text.length;
-	},0);
+        return _.reduce(stanza.words,function(acc,v,k){
+            return acc + v.text.length;
+        },0);
     }
     var onStanzaReceived = function(stanza){
         if ("type" in stanza && "author" in stanza){
@@ -76,9 +76,9 @@ var Participants = (function(){
             case "text":
                 itemToEdit.texts = itemToEdit.texts + stanza.content.length;
                 break;
-	    case "multiWordText":
+            case "multiWordText":
                 itemToEdit.texts += countTexts(stanza);
-		break;
+                break;
             case "submission":
                 itemToEdit.submissions = itemToEdit.submissions + 1;
                 break;
@@ -96,12 +96,14 @@ var Participants = (function(){
             var replacementNodes = _.map(participants,function(participant){
                 var p = participantItemTemplate.clone();
                 var name = sprintf("participant_%s",participant.name)
-                p.find(".followLabel").attr("for",name);
+                var label = p.find(".followLabel").attr("for",name);
+                if(Conversations.shouldModifyConversation()){
+                    label.text(participant.name);
+                }
                 p.find(".followValue").attr("id",name).prop("checked",participant.following).on("change",function(){
                     participant.following = $(this).is(":checked");
                     blit();
                 });
-                p.find(".user").text(participant.name);
                 p.find(".attendanceCount").text(_.size(participant.attendances));
                 p.find(".inksCount").text(participant.inks);
                 p.find(".highlightersCount").text(participant.highlighters);

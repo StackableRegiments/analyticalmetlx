@@ -560,7 +560,10 @@ var Conversations = (function(){
     };
     var indicateActiveSlide = function(slideId){
         $(".slideButtonContainer").removeClass("activeSlide");
-        $(sprintf("#slideContainer_%s",slideId)).addClass("activeSlide");
+        var activeSlide = $(sprintf("#slideContainer_%s",slideId));
+        activeSlide.addClass("activeSlide");
+	var position = activeSlide.find(".slideThumbnailNumber").text();
+	$("#currentSlide").text(position);
     };
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
