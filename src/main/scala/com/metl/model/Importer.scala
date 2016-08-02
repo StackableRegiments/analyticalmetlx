@@ -102,8 +102,21 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
 
       // until they fix a bug, we have to use JSON POST for this step.
       //
-      val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(schemify(procResponseObj.url),Printer.compact(render((
-        ("input" -> "upload") ~ ("outputformat" -> outFormat)))).getBytes(encoding),List(("Content-Type","application/json"))))
+      val converterOptions:net.liftweb.json.JsonAST.JObject = {
+        inFormat match {
+          case "pdf" => ("command" -> "-density 300 -colorspace RGB -background white -alpha remove -quality 70 -sharpen 0x1.0 {INPUTFILE} {OUTPUTFILE}")
+          case _ => ("quality" -> 70) ~ ("density" -> 300)
+        }
+      }
+
+      val importSettings:net.liftweb.json.JsonAST.JObject = (
+        ("input" -> "upload") ~ 
+        ("outputformat" -> outFormat) ~  
+        ("converteroptions" -> converterOptions)
+      )
+      val jsonSettings = render(importSettings)
+      println("cloudConvertSettings: %s".format(Printer.compact(jsonSettings)))
+      val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(schemify(procResponseObj.url),Printer.compact(jsonSettings).getBytes(encoding),List(("Content-Type","application/json"))))
 /*
       val defineProcResponse = describeResponse(client.postFormExpectingHTTPResponse(schemify(procResponseObj.url),List(
         ("input" -> "upload"),
