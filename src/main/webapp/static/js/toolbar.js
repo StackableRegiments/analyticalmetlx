@@ -851,6 +851,9 @@ var Modes = (function(){
                 presetCenterOnScreen.click(adoptPresetWidth("centerOnScreen"));
                 presetFullscreen.click(adoptPresetWidth("fullscreen"));
                 fontOptionsToggle.click(function(){fontOptions.toggle()});
+                $("#closeTextDialog").click(function(){
+                    fontOptions.hide();
+                });
             });
             return {
                 echoesToDisregard:{},
@@ -2255,7 +2258,7 @@ var Modes = (function(){
                         }
                         Progress.call("onLayoutUpdated");
                     }
-                    $("#resetPenButton").empty().text("reset pen").click(function(){
+                    $("#resetPenButton").click(function(){
                         var originalBrush = _.find(originalBrushes,function(i){
                             return i.id == currentBrush.id;
                         });
@@ -2284,6 +2287,9 @@ var Modes = (function(){
                         container.find(".advancedTools").on("click",function(){
                             drawAdvancedTools(currentBrush);
                             $("#drawDropdowns").toggle();
+                        });
+                        $("#closePenDialog").click(function(){
+                            $("#drawDropdowns").hide();
                         });
                     }
                     setActiveMode("#drawTools","#drawMode");
@@ -2373,6 +2379,7 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     $(".activeBrush").removeClass("activeBrush");
+		    $("#drawDropdowns").hide();
                     removeActiveMode();
                     WorkQueue.gracefullyResume();
                     unregisterPositionHandlers(board);

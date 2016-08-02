@@ -75,7 +75,6 @@ background-color:@block-bg;
         }
     }
     .activeTool {
-        display:flex;
         .btn-active.active;
     }
 }
@@ -204,6 +203,9 @@ input[type=submit]{
         height:auto;
     }
 }
+.dots{
+    flex-wrap:wrap;
+}
 /* fix this jodi! */
 
 .navigationNext, .navigationPrevious {
@@ -242,4 +244,16 @@ input[type=submit]{
 }
 .backstage .btn-icon{
     font-size:16px;
+}
+.penDialogOptions{
+    display:flex;
+    button{
+        flex-grow:0;
+        flex-shrink:0;
+    }
+}
+#drawDropdowns button{
+    &.activeTool{
+        background-color:@highlight;
+    }
 }
