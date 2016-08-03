@@ -665,30 +665,87 @@ function screenBounds(worldBounds){
         screenHeight:screenHeight
     };
 }
-function multiStageRescale(incCanvas,w,h,hq){
-	if (hq && (w < incCanvas.width || h < incCanvas.height)){
-		var stepDownFactor = 0.5;
+function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
+	if (w >= 1 && h >= 1){
 		var canvas = $("<canvas />");
+		canvas.width = w;
+		canvas.height = h;
+		canvas.attr("width",w);
+		canvas.attr("height",h);
+		canvas.css({
+			width:px(w),
+			height:px(h)
+		});
+		var ctx = canvas[0].getContext("2d");
+		ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
+		ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
+		ctx.msImageSmoothingEnabled = !disableImageSmoothing;
+		ctx.imageSmoothingEnabled = !disableImageSmoothing;
+		ctx.drawImage(incCanvas,0,0,w,h);
+		return canvas[0];
+	} else {
+		return incCanvas;
+	}
+}
+var multiStageRescaleFactor = 0.5;
+function multiStageRescale(incCanvas,w,h,hq,scaleFactor){
+	var sf = scaleFactor == undefined ? multiStageRescaleFactor : scaleFactor;
+	var iw = incCanvas.width;
+	var ih = incCanvas.height;
+	if (hq && w >= 1 && h >= 1 && iw != w && ih != h){
+		var sdh = ih;
+		var sdw = iw;
+		if (w > sdw){ // growing x
+			sdw = w;
+			/*
+			sdw = sdw / sf;
+			if (w < sdw){
+				sdw = w;
+			}
+			*/
+		} else if (w < sdw){ // shrinking x
+			sdw = sdw * sf;
+			if (w > sdw){
+				sdw = w;
+			}
+		}
+		if (h > sdh){ // growing y
+			sdh = h;
+			/*
+			sdh = sdh / sf;
+			if (h < sdh){
+				sdh = h;
+			}
+			*/
+		} else if (h < sdh){ // shrinking y
+			sdh = sdh * sf;
+			if (h > sdh){
+				sdh = h;
+			}
+		}
+		if (sdw == w && sdh == h){ // if we've reached our target size, then just scale to it.
+			//console.log("scaled canvas:",w,h,steps);
+			return scaleCanvas(incCanvas,sdw,sdh);
+		} else {
+			return multiStageRescale(scaleCanvas(incCanvas,sdw,sdh),w,h,hq,sf);
+		}
+	} else {
+		return incCanvas;
+	}
+	/*
+	if (hq && w >= 1 && h >= 1 && (w < incCanvas.width || h < incCanvas.height)){
+		var stepDownFactor = 0.5;
 		var sdw = incCanvas.width * stepDownFactor;
 		var sdh = incCanvas.height * stepDownFactor;
 		if (sdw > w || sdh > h){
-			canvas.width = sdw;
-			canvas.height = sdh;
-			canvas.attr("width",sdw);
-			canvas.attr("height",sdh);
-			canvas.css({
-				width:px(sdw),
-				height:px(sdh)
-			});
-			var context = canvas[0].getContext("2d");
-			context.drawImage(incCanvas,0,0,sdw,sdh);
-			return multiStageRescale(canvas[0],w,h,hq);
+			return multiStageRescale(scaleCanvas(incCanvas,sdw,sdh,false),w,h,hq);
 		} else {
 			return incCanvas;
 		}
 	} else {
 		return incCanvas;
 	}
+	*/
 }
 function drawImage(image,hq,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
@@ -696,9 +753,11 @@ function drawImage(image,hq,incCanvasContext){
         if (image.canvas != undefined){
             var sBounds = screenBounds(image.bounds);
             visibleBounds.push(image.bounds);
-            var borderW = sBounds.screenWidth * 0.10;
-            var borderH = sBounds.screenHeight * 0.10;
-            canvasContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,hq), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+						if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+							var borderW = sBounds.screenWidth * 0.10;
+							var borderH = sBounds.screenHeight * 0.10;
+							canvasContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,hq,0.5), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+						}
         }
     }
     catch(e){
@@ -714,11 +773,13 @@ function drawText(text,hq,incCanvasContext){
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-        canvasContext.drawImage(multiStageRescale(text.canvas,sBounds.screenWidth,sBounds.screenHeight,hq),
+				if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){ 
+					canvasContext.drawImage(multiStageRescale(text.canvas,sBounds.screenWidth,sBounds.screenHeight,hq,0.5),
                                 sBounds.screenPos.x,
                                 sBounds.screenPos.y,
                                 sBounds.screenWidth,
                                 sBounds.screenHeight);
+				}
     }
     catch(e){
         console.log("drawText exception",e);
@@ -728,9 +789,11 @@ function drawInk(ink,hq,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
-    canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,hq),
+		if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){ 
+			canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,hq,0.1),
                             sBounds.screenPos.x,sBounds.screenPos.y,
                             sBounds.screenWidth,sBounds.screenHeight);
+		}
 }
 function imageReceived(image){
     var dataImage = new Image();

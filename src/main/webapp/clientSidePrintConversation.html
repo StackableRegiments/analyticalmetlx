@@ -24,6 +24,7 @@ function progress(){
 	<link rel="stylesheet" href="static/css/print.css"></link>	
 	<script>
 function renderCanvas(history,pageId){
+//	var startTime = new Date().getTime();
 	var canvasId = "canvas_"+pageId;
 	var headerId = "pageHeader_"+pageId;
 	var footerId = "pageFooter_"+pageId;
@@ -42,6 +43,7 @@ function renderCanvas(history,pageId){
 			var dataUri = b.getCanvas()[0].toDataURL("image/png");
 			var pageImage = $("#"+pageImageId);
 			pageImage.attr("src",dataUri);
+//			console.log("pageRendered",pageId,new Date().getTime() - startTime);
 		});
 	};
 	b.historyReceived(history);

@@ -836,7 +836,9 @@ function monashBlueGradient(context,width,height){
 }
 var prettyRender = _.debounce(function(canvasContext,content){
 	try {
+		var start = new Date().getTime();
 			render(content == undefined ? boardContent : content,true,canvasContext == undefined ? boardContext : canvasContext);
+			console.log("prettyRender:",new Date().getTime() - start);
 	} catch(e){
 			console.log("exception in render:",e);
 	}
@@ -847,7 +849,7 @@ var blit = function(canvasContext,content){
     } catch(e){
         console.log("exception in render:",e);
     }
-		prettyRender(canvasContext,content);
+		//prettyRender(canvasContext,content); //commenting this out until we can improve the general performance of the algorithm.
 };
 function pica(value){
     return value / 128;
