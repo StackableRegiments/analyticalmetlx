@@ -867,7 +867,7 @@ var Modes = (function(){
                         editor.doc = carota.editor.create(
                             $("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
                             board[0],
-                            isAuthor? function(){blit()/*render(boardContent)*/} : noop);
+                            isAuthor? blit : noop);
                         if(isAuthor){
                             editor.doc.contentChanged(function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
