@@ -249,7 +249,7 @@ function textReceived(t){
             incorporateBoardBounds(t.bounds);
             WorkQueue.enqueue(function(){
                 if(isInClearSpace(t.bounds)){
-                    drawText(t);
+                    drawText(t,undefined,true);
                     return false;
                 }
                 else{
@@ -665,7 +665,26 @@ function screenBounds(worldBounds){
         screenHeight:screenHeight
     };
 }
-function drawImage(image,incCanvasContext){
+function multiStageRescale(incCanvas,w,h,hq){
+	if (hq){
+		var stepDownFactor = 0.5;
+		var canvas = $("<canvas />")[0];
+		var sdw = incCanvas.width * stepDownFactor;
+		var sdh = incCanvas.height * stepDownFactor;
+		if (sdw > w || sdh > h){
+			canvas.width = sdw;
+			canvas.height = sdh;
+			var context = canvas.getContext("2d");
+			context.drawImage(incCanvas,0,0,sdw,sdh);
+			return multiStageRescale(canvas,w,h,hq);
+		} else {
+			return incCanvas;
+		}
+	} else {
+		return incCanvas;
+	}
+}
+function drawImage(image,hq,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         if (image.canvas != undefined){
@@ -673,7 +692,7 @@ function drawImage(image,incCanvasContext){
             visibleBounds.push(image.bounds);
             var borderW = sBounds.screenWidth * 0.10;
             var borderH = sBounds.screenHeight * 0.10;
-            canvasContext.drawImage(image.canvas, sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+            canvasContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,hq), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
         }
     }
     catch(e){
@@ -684,12 +703,12 @@ function drawImage(image,incCanvasContext){
 function drawMultiwordText(item){
     Modes.text.draw(item);
 }
-function drawText(text,incCanvasContext){
+function drawText(text,hq,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-        canvasContext.drawImage(text.canvas,
+        canvasContext.drawImage(multiStageRescale(text.canvas,sBounds.screenWidth,sBounds.screenHeight,hq),
                                 sBounds.screenPos.x,
                                 sBounds.screenPos.y,
                                 sBounds.screenWidth,
@@ -699,11 +718,11 @@ function drawText(text,incCanvasContext){
         console.log("drawText exception",e);
     }
 }
-function drawInk(ink,incCanvasContext){
+function drawInk(ink,hq,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
-    canvasContext.drawImage(ink.canvas,
+    canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,hq),
                             sBounds.screenPos.x,sBounds.screenPos.y,
                             sBounds.screenWidth,sBounds.screenHeight);
 }
@@ -725,7 +744,7 @@ function imageReceived(image){
         WorkQueue.enqueue(function(){
             if(isInClearSpace(image.bounds)){
                 try {
-                    drawImage(image);
+                    drawImage(image,undefined,true);
                 } catch(e){
                     console.log("drawImage exception",e);
                 }
@@ -752,7 +771,7 @@ function inkReceived(ink){
         }
         WorkQueue.enqueue(function(){
             if(isInClearSpace(ink.bounds)){
-                drawInk(ink);
+                drawInk(ink,undefined,false);
                 return false;
             }
             else{

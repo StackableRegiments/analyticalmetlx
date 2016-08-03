@@ -50,9 +50,9 @@ var ContentFilter = (function(){
         });
     };
     var filtered = function(func){
-        return function(stanza){
+        return function(stanza,a,b,c,d,e,f,g){
             if (applyFilters(stanza)){
-                func(stanza);
+                func(stanza,a,b,c,d,e,f,g);
             }
         };
     };

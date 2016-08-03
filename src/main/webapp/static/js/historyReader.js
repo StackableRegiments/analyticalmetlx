@@ -78,7 +78,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             hideBackstage();
 
             clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-            render(boardContent,canvasContext);
+            blit();//prettyRender(boardContent,canvasContext);
             blitMark = Date.now();
             if (afterFunc != undefined){
                 afterFunc();
@@ -594,7 +594,7 @@ var pressureSimilarityThreshold = 32,
     boardHeight = 0;
 
 var visibleBounds = [];
-function render(content,incCanvasContext,incViewBounds){
+function render(content,hq,incCanvasContext,incViewBounds){
     var canvasContext = incCanvasContext || boardContext;
     if(content){
         var startMark = Date.now();
@@ -607,7 +607,7 @@ function render(content,incCanvasContext,incViewBounds){
                     $.each(inks,function(i,ink){
                         try{
                             if(intersectRect(ink.bounds,viewBounds)){
-                                drawInk(ink,canvasContext);
+                                drawInk(ink,hq,canvasContext);
                             }
                         }
                         catch(e){
@@ -633,7 +633,7 @@ function render(content,incCanvasContext,incViewBounds){
                 highlightersRenderedMark = Date.now();
                 $.each(content.texts,function(i,text){
                     if(intersectRect(text.bounds,viewBounds)){
-                        drawText(text,canvasContext);
+                        drawText(text,hq,canvasContext);
                     }
                 });
                 textsRenderedMark = Date.now();
@@ -696,16 +696,16 @@ function render(content,incCanvasContext,incViewBounds){
                         _.forEach(category,function(item){
                             switch(name){
                             case "images":
-                                drawImage(item,canvasContext);
+                                drawImage(item,false,canvasContext);
                                 break;
                             case "texts":
-                                drawText(item,canvasContext);
+                                drawText(item,false,canvasContext);
                                 break;
                             case "multiWordTexts":
                                 drawMultiwordText(item);
                                 break;
                             case "inks":
-                                drawInk(item,canvasContext);
+                                drawInk(item,false,canvasContext);
                                 break;
                             }
                         });
@@ -739,12 +739,12 @@ function render(content,incCanvasContext,incViewBounds){
                             switch(name){
                             case "images":
                                 transform(x,y,function(){
-                                    drawImage(item,canvasContext);
+                                    drawImage(item,false,canvasContext);
                                 });
                                 break;
                             case "texts":
                                 transform(x,y,function(){
-                                    drawText(item,canvasContext);
+                                    drawText(item,false,canvasContext);
                                 });
                                 break;
                             case "multiWordTexts":
@@ -783,7 +783,7 @@ function render(content,incCanvasContext,incViewBounds){
                                 break;
                             case "inks":
                                 transform(x,y,function(){
-                                    drawInk(item,canvasContext);
+                                    drawInk(item,false,canvasContext);
                                 });
                                 break;
                             }
@@ -798,7 +798,7 @@ function render(content,incCanvasContext,incViewBounds){
             $.each(content.images,function(id,image){
                 try{
                     if(intersectRect(image.bounds,viewBounds)){
-                        drawImage(image,canvasContext);
+                        drawImage(image,hq,canvasContext);
                     }
                 }
                 catch(e){
@@ -834,12 +834,20 @@ function monashBlueGradient(context,width,height){
     bgd.addColorStop(1-1,"#C5D5F6");
     return bgd;
 }
+var prettyRender = _.debounce(function(canvasContext,content){
+	try {
+			render(content == undefined ? boardContent : content,true,canvasContext == undefined ? boardContext : canvasContext);
+	} catch(e){
+			console.log("exception in render:",e);
+	}
+},100);
 var blit = function(canvasContext,content){
     try {
-        render(content == undefined ? boardContent : content,canvasContext == undefined ? boardContext : canvasContext);
+        render(content == undefined ? boardContent : content,false,canvasContext == undefined ? boardContext : canvasContext);
     } catch(e){
         console.log("exception in render:",e);
     }
+		prettyRender(canvasContext,content);
 };
 function pica(value){
     return value / 128;

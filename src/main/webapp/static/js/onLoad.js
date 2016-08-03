@@ -276,7 +276,7 @@ var TweenController = (function(){
             updateRequestedPosition();
         }
         clearBoard();
-        render(boardContent);
+        blit();//render(boardContent);
         if (onComplete){
             onComplete();
         }
@@ -357,7 +357,7 @@ var TweenController = (function(){
                 requestAnimationFrame(update);
                 TWEEN.update();
                 clearBoard();
-                render(boardContent);
+                blit();//render(boardContent);
             }
         };
         requestAnimationFrame(update);
