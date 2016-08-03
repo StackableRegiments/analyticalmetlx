@@ -1104,6 +1104,7 @@ var Modes = (function(){
                         var w = dims.w;
                         var h = dims.h;
                         var quality = dims.q;
+												/*
                         renderCanvas.width = w;
                         renderCanvas.height = h;
                         renderCanvas.attr("width",w);
@@ -1112,10 +1113,22 @@ var Modes = (function(){
                             width:px(w),
                             height:px(h)
                         });
-                        currentImage.width = w;
-                        currentImage.height = h;
                         renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
                         currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+												*/
+												renderCanvas.width = width;
+												renderCanvas.height = height;
+												renderCanvas.attr("width",width);
+												renderCanvas.attr("height",height);
+												renderCanvas.css({
+													width:px(width),
+													height:px(height)
+												});
+												renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
+												var resizedCanvas = multiStageRescale(renderCanvas[0],w,h,true);
+                        currentImage.width = w;
+                        currentImage.height = h;
+                        currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
                         var newSize = currentImage.resizedImage.length;
                         console.log("original => resized",originalSize,newSize);
                         if (originalSize < newSize){
