@@ -699,6 +699,9 @@ $(function(){
         showBackstage("customizeBrush");
         updateActiveMenu(this);
     });
+		var printPrivate = true;
+		var includeTitle = true;
+		var includePageCount = true;
     $('#menuPrint').click(function(){
         showBackstage("print");
         updateActiveMenu(this);
@@ -708,39 +711,69 @@ $(function(){
         var rangeThisSlideRadio = $("#rangeThisSlide");
         var rangeSpecifiedInput = $("#rangeSpecifiedInput");
         var printButton = $("#printButton");
+				var showPrivateCheckbox = $("#printPrivateNotes");
+				var includePageCountCheckbox = $("#printPageCount");
+				var includeTitleCheckbox = $("#printConversationTitle");
+				var pageRange = Conversations.getCurrentSlide().index + 1;
         var uncheckAll = function(){
             _.forEach([rangeSpecifiedRadio,rangeAllRadio,rangeThisSlideRadio],function(item){
                 item.prop("checked",false);
             });
             rangeSpecifiedInput.prop("disabled",true);
         };
+				showPrivateCheckbox.prop("checked",printPrivate);
+				includeTitleCheckbox.prop("checked",includeTitle);
+				includePageCountCheckbox.prop("checked",includePageCount);
         uncheckAll();
         rangeThisSlideRadio.prop("checked",true);
-        rangeSpecifiedInput.val(Conversations.getCurrentSlide().index + 1);
-        var updatePrintState = function(pageRange){
-            printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s",conversationJid,pageRange));
+        rangeSpecifiedInput.val(pageRange);
+        var updatePrintState = function(){
+            printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s&includePrivateContent=%s&includeConversationTitle=%s&includePageCount=%s",conversationJid,pageRange,printPrivate,includeTitle,includePageCount));
         };
-        updatePrintState(Conversations.getCurrentSlide().index + 1);
+        updatePrintState();
+				rangeAllRadio.unbind("click");
         rangeAllRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
-            updatePrintState("all");
+						pageRange = "all";
+            updatePrintState();
         });
+				rangeSpecifiedRadio.unbind("click");
         rangeSpecifiedRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
             rangeSpecifiedInput.prop("disabled",false);
-            updatePrintState(rangeSpecifiedInput.val());
+						pageRange = rangeSpecifiedInput.val();
+            updatePrintState();
         });
+				rangeSpecifiedInput.unbind("change");
         rangeSpecifiedInput.on("change",function(){
             var text = $(this).val();
-            updatePrintState(text);
+						pageRange = text;
+            updatePrintState();
         });
+				rangeThisSlideRadio.unbind("click");
         rangeThisSlideRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
-            updatePrintState(Conversations.getCurrentSlide().index + 1);
+						pageRange = Conversations.getCurrentSlide().index + 1;
+            updatePrintState();
         });
+				showPrivateCheckbox.unbind("change");
+				showPrivateCheckbox.on("change",function(){
+					printPrivate = $(this).prop("checked");
+					updatePrintState();
+				});
+				includeTitleCheckbox.unbind("change");
+				includeTitleCheckbox.on("change",function(){
+					includeTitle = $(this).prop("checked");
+					updatePrintState();
+				});
+				includePageCountCheckbox.unbind("change");
+				includePageCountCheckbox.on("change",function(){
+					includePageCount = $(this).prop("checked");
+					updatePrintState();
+				});
     });
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
