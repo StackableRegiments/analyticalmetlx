@@ -666,17 +666,23 @@ function screenBounds(worldBounds){
     };
 }
 function multiStageRescale(incCanvas,w,h,hq){
-	if (hq){
+	if (hq && (w < incCanvas.width || h < incCanvas.height)){
 		var stepDownFactor = 0.5;
-		var canvas = $("<canvas />")[0];
+		var canvas = $("<canvas />");
 		var sdw = incCanvas.width * stepDownFactor;
 		var sdh = incCanvas.height * stepDownFactor;
 		if (sdw > w || sdh > h){
 			canvas.width = sdw;
 			canvas.height = sdh;
-			var context = canvas.getContext("2d");
+			canvas.attr("width",sdw);
+			canvas.attr("height",sdh);
+			canvas.css({
+				width:px(sdw),
+				height:px(sdh)
+			});
+			var context = canvas[0].getContext("2d");
 			context.drawImage(incCanvas,0,0,sdw,sdh);
-			return multiStageRescale(canvas,w,h,hq);
+			return multiStageRescale(canvas[0],w,h,hq);
 		} else {
 			return incCanvas;
 		}
