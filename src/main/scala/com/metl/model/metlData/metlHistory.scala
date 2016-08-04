@@ -74,7 +74,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getInks = inks
   def getImages = images
   def getTexts = texts
-  def getMultiWordTexts = texts
+  def getMultiWordTexts = multiWordTexts 
   def getQuizzes = quizzes
   def getQuizResponses = quizResponses
   def getSubmissions = submissions

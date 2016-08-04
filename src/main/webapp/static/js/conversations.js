@@ -41,6 +41,7 @@ var Conversations = (function(){
 					}
 					if (originalBannedState == true && newBannedState == false){
 						bannedState = false;
+						haveCheckedBanned = false;
 						pushUnbannedMessage();
 					}
 					updateBannedVisualState();
