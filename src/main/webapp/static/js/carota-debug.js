@@ -948,6 +948,13 @@
                         var s = scale();
                         ctx.translate(screenPos.x,screenPos.y);
                         ctx.scale(s,s);
+                        if(doc.privacy == "PRIVATE"){
+                            ctx.fillStyle = "red";
+                            ctx.globalAlpha = 0.1;
+                            ctx.fillRect(0,0,doc.frame.actualWidth(),doc.frame.height);
+			    console.log(doc.frame.actualWidth(),doc.frame.height);
+                            ctx.globalAlpha = 1.0;
+                        }
                         doc.draw(ctx, output);
                         if(doc.isActive && Modes.currentMode == Modes.text){
                             doc.drawSelection(ctx, selectDragStart || hasFocus);
@@ -955,7 +962,7 @@
                         ctx.restore();
                     };
 
-                    exports.create = function(host,externalCanvas,requestPaintFunc) {
+                    exports.create = function(host,externalCanvas,requestPaintFunc,stanza) {
 
                         host.innerHTML =
                             '<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
@@ -975,6 +982,7 @@
                             richClipboard = null,
                             plainClipboard = null;
 
+			doc.privacy = stanza.privacy;
                         doc.width(canvas.clientWidth);
 
                         doc.claimFocus = function(){
@@ -1361,12 +1369,12 @@
                     var wrap = require('./wrap');
                     var rect = require('./rect');
 
-		    var scaledWidth = function(){
-			return Modes.text.minimumWidth / scale();
-		    };
-		    var scaledHeight = function(){
-			return Modes.text.minimumHeight() / scale();
-		    };
+                    var scaledWidth = function(){
+                        return Modes.text.minimumWidth / scale();
+                    };
+                    var scaledHeight = function(){
+                        return Modes.text.minimumHeight() / scale();
+                    };
                     var prototype = node.derive({
                         bounds: function() {
                             var b = this._bounds;
