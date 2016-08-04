@@ -255,7 +255,8 @@ var TweenController = (function(){
         requestedViewboxWidth = viewboxWidth;
         requestedViewboxHeight = viewboxHeight;
     };
-    var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
+		var throttleSpeed = 10;
+    var instantAlterViewboxFunction = _.throttle(function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
                 onComplete();
@@ -283,7 +284,7 @@ var TweenController = (function(){
         //console.log("sending viewbox update");
         teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
         Progress.call("onViewboxChanged");
-    };
+    },throttleSpeed,{trailing:true,leading:true});
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
             //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
