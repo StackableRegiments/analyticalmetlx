@@ -78,7 +78,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             hideBackstage();
 
             clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-            blit();//prettyRender(boardContent,canvasContext);
+            blit();
             blitMark = Date.now();
             if (afterFunc != undefined){
                 afterFunc();
@@ -834,24 +834,12 @@ function monashBlueGradient(context,width,height){
     bgd.addColorStop(1-1,"#C5D5F6");
     return bgd;
 }
-var prettyRender = _.debounce(function(canvasContext,content){
-	try {
-		var start = new Date().getTime();
-			render(content == undefined ? boardContent : content,true,canvasContext == undefined ? boardContext : canvasContext);
-			console.log("prettyRender:",new Date().getTime() - start);
-	} catch(e){
-			console.log("exception in render:",e);
-	}
-},100);
 var blit = function(canvasContext,content){
     try {
-//				var start = new Date().getTime();
         render(content == undefined ? boardContent : content,false,canvasContext == undefined ? boardContext : canvasContext);
-//				console.log("render:",new Date().getTime() - start);
     } catch(e){
         console.log("exception in render:",e);
     }
-		//prettyRender(canvasContext,content); //commenting this out until we can improve the general performance of the algorithm.
 };
 function pica(value){
     return value / 128;

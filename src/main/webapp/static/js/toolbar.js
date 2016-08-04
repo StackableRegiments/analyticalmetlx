@@ -715,16 +715,17 @@ var Modes = (function(){
             var texts = [];
             var noop = function(){};
             var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
-                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions;
+                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions,fontLargerSelector,fontSmallerSelector;
 
             var echoesToDisregard = {};
             var createBlankText = function(worldPos){
+                var width = Modes.text.minimumWidth / scale();
                 return Modes.text.editorFor({
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     privacy:Privacy.getCurrentPrivacy(),
-                    requestedWidth:300,
-                    width:300,
+                    requestedWidth:width,
+                    width:width,
                     height:0,
                     x:worldPos.x,
                     y:worldPos.y,
@@ -732,6 +733,49 @@ var Modes = (function(){
                     author:UserSettings.getUsername(),
                     words:[]
                 });
+            };
+            var toggleFormattingProperty = function(prop){
+                return function(){
+                    _.each(boardContent.multiWordTexts,function(t){
+                        if(t.doc.isActive){
+                            var selRange = t.doc.selectedRange();
+                            selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
+                            if(t.doc.save().length > 0){
+                                sendRichText(t);
+                            }
+                        }
+                    });
+                }
+            }
+            var setFormattingProperty = function(prop,newValue){
+                return function(){
+                    newValue = newValue || $(this).val();
+                    _.each(boardContent.multiWordTexts,function(t){
+                        if(t.doc.isActive){
+                            t.doc.selectedRange().setFormatting(prop,newValue);
+                            if(t.doc.save().length > 0){
+                                sendRichText(t);
+                            }
+                        }
+                    });
+                }
+            };
+            var scaleCurrentSelection = function(factor){
+                return function(){
+                    _.each(boardContent.multiWordTexts,function(t){
+                        var d = t.doc;
+                        if(d.isActive){
+                            var source = d.save();
+                            _.each(source,function(run){
+                                run.size = run.size * factor;
+                            });
+                            d.load(source);
+                            if(d.save().length > 0){
+                                sendRichText(t);
+                            }
+                        }
+                    });
+                };
             };
             $(function(){
                 fontOptions= $("#textDropdowns");
@@ -741,6 +785,8 @@ var Modes = (function(){
                 fontColorSelector = $("#fontColorSelector");
                 fontBoldSelector = $("#fontBoldSelector");
                 fontItalicSelector = $("#fontItalicSelector");
+                fontLargerSelector = $("#fontLarger");
+                fontSmallerSelector = $("#fontSmaller");
                 fontUnderlineSelector = $("#fontUnderlineSelector");
                 justifySelector = $("#justifySelector");
                 presetFitToText = $("#presetFitToText");
@@ -761,32 +807,7 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
-                var toggleFormattingProperty = function(prop){
-                    return function(){
-                        _.each(boardContent.multiWordTexts,function(t){
-                            if(t.doc.isActive){
-                                var selRange = t.doc.selectedRange();
-                                selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
-                                if(t.doc.save().length > 0){
-                                    sendRichText(t);
-                                }
-                            }
-                        });
-                    }
-                }
-                var setFormattingProperty = function(prop,newValue){
-                    return function(){
-                        newValue = newValue || $(this).val();
-                        _.each(boardContent.multiWordTexts,function(t){
-                            if(t.doc.isActive){
-                                t.doc.selectedRange().setFormatting(prop,newValue);
-                                if(t.doc.save().length > 0){
-                                    sendRichText(t);
-                                }
-                            }
-                        });
-                    }
-                };
+
                 var adoptPresetWidth = function(preset){
                     return function(){
                         _.each(boardContent.multiWordTexts,function(t){
@@ -814,19 +835,6 @@ var Modes = (function(){
                                     t.doc.position.x = viewboxX;
                                     t.doc.position.y = viewboxY;
                                     t.doc.width(screenToWorld(boardWidth,0).x);
-                                    t.doc.select(0,t.doc.frame.length - 1);
-                                    t.doc.selectedRange().setFormatting("align","center");
-                                    t.doc.selectedRange().setFormatting("bold",true);
-                                    var content = t.doc.documentRange().save();
-                                    content.push({
-                                        text:"\n"
-                                    });
-                                    content.push({
-                                        text:"\n"
-                                    });
-                                    t.doc.load(content);
-                                    var startOfPara = t.doc.frame.length - 1;
-                                    t.doc.select(startOfPara,startOfPara);
                                     break;
                                 }
                                 t.doc.contentChanged.fire();
@@ -834,6 +842,8 @@ var Modes = (function(){
                         });
                     };
                 }
+                fontLargerSelector.click(scaleCurrentSelection(1.2));
+                fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
                 fontUnderlineSelector.click(toggleFormattingProperty("underline"));
@@ -857,6 +867,11 @@ var Modes = (function(){
             });
             return {
                 echoesToDisregard:{},
+                minimumWidth:300,
+                minimumHeight:function(){
+                    return Modes.select.resizeHandleSize * 3;
+                },
+                defaultFontSize:20,
                 editorFor:function(t){
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
@@ -975,7 +990,9 @@ var Modes = (function(){
                             var newEditor = createBlankText(worldPos);
                             var newDoc = newEditor.doc;
                             newDoc.load([]);
+                            newEditor.bounds = newDoc.calculateBounds();
                             newDoc.select(0,0);
+                            newDoc.documentRange().setFormatting("size", Modes.text.defaultFontSize / scale());
                             sel = {
                                 multiWordTexts:{}
                             };
@@ -1104,28 +1121,28 @@ var Modes = (function(){
                         var w = dims.w;
                         var h = dims.h;
                         var quality = dims.q;
-												/*
-                        renderCanvas.width = w;
-                        renderCanvas.height = h;
-                        renderCanvas.attr("width",w);
-                        renderCanvas.attr("height",h);
+                        /*
+                         renderCanvas.width = w;
+                         renderCanvas.height = h;
+                         renderCanvas.attr("width",w);
+                         renderCanvas.attr("height",h);
+                         renderCanvas.css({
+                         width:px(w),
+                         height:px(h)
+                         });
+                         renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                         currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+                         */
+                        renderCanvas.width = width;
+                        renderCanvas.height = height;
+                        renderCanvas.attr("width",width);
+                        renderCanvas.attr("height",height);
                         renderCanvas.css({
-                            width:px(w),
-                            height:px(h)
+                            width:px(width),
+                            height:px(height)
                         });
-                        renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                        currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
-												*/
-												renderCanvas.width = width;
-												renderCanvas.height = height;
-												renderCanvas.attr("width",width);
-												renderCanvas.attr("height",height);
-												renderCanvas.css({
-													width:px(width),
-													height:px(height)
-												});
-												renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
-												var resizedCanvas = multiStageRescale(renderCanvas[0],w,h,true);
+                        renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
+                        var resizedCanvas = multiStageRescale(renderCanvas[0],w,h,true);
                         currentImage.width = w;
                         currentImage.height = h;
                         currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
@@ -2392,7 +2409,7 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     $(".activeBrush").removeClass("activeBrush");
-		    $("#drawDropdowns").hide();
+                    $("#drawDropdowns").hide();
                     removeActiveMode();
                     WorkQueue.gracefullyResume();
                     unregisterPositionHandlers(board);

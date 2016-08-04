@@ -11,6 +11,40 @@ var Conversations = (function(){
     var conversationTemplate = undefined;
     var conversationSearchListing = undefined;
 
+		var checkIsBanned = (function(){
+			var haveCheckedBanned = false;
+			var bannedState = false;
+			var pushBannedMessage = function(){
+				alert("you're banned!");
+			};
+			var pushUnbannedMessage = function(){
+				alert("you're unbanned!");
+			};
+			var updateBannedVisualState = function(){
+				console.log("bannedState:",bannedState);
+				if (bannedState){
+				} else {
+				}
+			};
+			return function(conversation,freshCheck){
+				var originalBannedState = bannedState;
+				var newBannedState = getIsBannedFunction(conversation);
+				if (freshCheck == true){
+					haveCheckedBanned = false;
+					bannedState = false;
+				}
+				if (!haveCheckedBanned && newBannedState){
+					haveCheckedBanned = true;
+					bannedState = true;
+					pushBannedMessage();
+				}
+				if (originalBannedState == true && newBannedState == false){
+					bannedState = false;
+					pushUnbannedMessage();
+				}
+				updateBannedVisualState();
+			}
+		})();
     $(function(){
         //take a template of the html for the searchResultItem
         conversationSearchListing = $("#searchResults");
@@ -221,6 +255,7 @@ var Conversations = (function(){
                     }
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
                         Progress.call("onConversationJoin");
+												checkIsBanned(details,true);
                         ThumbCache.clearCache();
                     }
                 }
@@ -230,6 +265,7 @@ var Conversations = (function(){
                 }
             }
             updateCurrentConversation(details);
+						checkIsBanned(details);
             if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
                 currentlyDisplayedConversations.push(details);
                 refreshConversationSearchResults();
@@ -599,6 +635,7 @@ var Conversations = (function(){
             targetConversationJid = jidString;
             var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
             hideBackstage();
+						Progress.call("onConversationJoin",[conversation]);
             doMoveToSlide(firstSlide.id.toString());
         }));
         var jidString = conversation.jid.toString();

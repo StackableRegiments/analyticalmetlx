@@ -1,5 +1,8 @@
 var Privacy = (function(){
     var privacy = "PUBLIC";
+		var showBanMessage = function(){
+				alert("you're banned!");
+		};
     var setPrivacyIndicators = function(){
         $.each({privateMode:"PRIVATE",publicMode:"PUBLIC"},function(id,p){
             if (p == privacy){
@@ -9,8 +12,7 @@ var Privacy = (function(){
             }
         });
         $("#currentlyBanned").text(Conversations.getIsBanned() == true ? "(banned because of inappropriate content)" : "");
-        $("#currentPrivacyStatus").text(privacy == "PUBLIC"?
-                                        "publicly" : "privately");
+        $("#currentPrivacyStatus").text(privacy == "PUBLIC"? "publicly" : "privately");
     };
     var attemptToSetPrivacy = function(p){
         if (shouldSetPrivacy(p)){
