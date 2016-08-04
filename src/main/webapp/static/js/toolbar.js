@@ -2332,6 +2332,11 @@ var Modes = (function(){
                         isDown = true;
                         if(!erasing && !modifiers.eraser){
                             boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
+														if (Modes.draw.drawingAttributes.isHighlighter){
+															boardContext.globalAlpha = 0.4;
+														} else {
+															boardContext.globalAlpha = 1.0;
+														}
                             currentStroke = [x, y, mousePressure * z];
                         } else {
                         }
@@ -2394,6 +2399,8 @@ var Modes = (function(){
                             currentStroke = currentStroke.concat([x,y,mousePressure * z]);
                             strokeCollected(currentStroke.join(" "));
                         }
+												//boardContext.globalCompositeOperation = "source-over";
+												boardContext.globalAlpha = 1.0;
                     };
                     $(".activeBrush").removeClass("activeBrush");
                     if (erasing){

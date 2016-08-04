@@ -160,6 +160,7 @@ var Quizzes = (function(){
             var graph = rootElem.find(".quizResultsGraph");
             graph.show();
             _.defer(function(){
+							/*
                 var data = {
                     labels:_.map(quiz.options,"name"),
                     datasets:[
@@ -172,14 +173,58 @@ var Quizzes = (function(){
                         }
                     ]
                 };
+								*/
                 var options = {
-                    scaleOverride:true,
-                    scaleStepWidth:1,
-                    scaleSteps:Math.max.apply(Math,data.datasets[0].data),
-                    scaleStartValue:0
+									/*
+										tooltips: {
+											custom:function(tooltip){
+												console.log("tooltip",tooltip);
+												return false;
+											}
+										},
+										*/
+										scales: {
+											yAxes: [{
+												stacked: true,
+												ticks:{
+													//display:false
+												}
+											}],
+											xAxes: [{
+												type: "linear",
+												position: "bottom",
+												ticks : {
+													stepSize:1
+												}	
+											}]
+										},
+										legend:{
+											display:false
+										}
                 }
-                console.log(data,options);
-                new Chart(graph[0].getContext("2d")).Bar(data,options);
+								var splitLines = function(text,lineLength){
+									return _.map(_.chunk(text.split(""),lineLength),function(line){return _.join(line,"");}); 		
+								};
+								var data = {
+									//labels:quiz.options.map(function(qo){return splitLines(sprintf("%s: %s",qo.name,qo.text),20);}),
+									labels:quiz.options.map(function(qo){return sprintf("%s: %s",qo.name,qo.text)}),
+									datasets:[{
+										data:quiz.options.map(function(qo){
+											return quizOptionAnswerCount(quiz,qo);
+										}),
+										borderColor:["black"],
+										backgroundColor:["gray"],
+										borderWidth:1
+									}]
+								}
+								var chartDesc = {
+									type: "horizontalBar",
+									data: data,
+									options: options	
+								};
+                console.log(chartDesc);
+								new Chart(graph[0].getContext("2d"),chartDesc);
+                //new Chart(graph[0].getContext("2d")).Bar(data,options);
             });
         }
         else {

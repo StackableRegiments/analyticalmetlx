@@ -11,6 +11,46 @@ var Conversations = (function(){
     var conversationTemplate = undefined;
     var conversationSearchListing = undefined;
 
+		var BannedState = (function(){
+			var haveCheckedBanned = false;
+			var bannedState = false;
+			var pushBannedMessage = function(){
+				alert("You have been banned from contributing publically to this class because you published some inappropriate content that is deemed to be contrary to the expectations of the university.\r\nThe content has been deleted on every screen, but the instructor has a record of your action.\r\nYou must contact your instructor in order to be reinstated as a contributing member of the classroom community.");
+			};
+			var pushUnbannedMessage = function(){
+				alert("The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
+			};
+			var updateBannedVisualState = function(){
+				console.log("bannedState:",bannedState);
+				if (bannedState){
+				} else {
+				}
+			};
+			return {
+				checkIsBanned:function(conversation,freshCheck){
+					var originalBannedState = bannedState;
+					var newBannedState = getIsBannedFunction(conversation);
+					if (freshCheck == true){
+						haveCheckedBanned = false;
+						bannedState = false;
+					}
+					if (!haveCheckedBanned && newBannedState){
+						haveCheckedBanned = true;
+						bannedState = true;
+						pushBannedMessage();
+					}
+					if (originalBannedState == true && newBannedState == false){
+						bannedState = false;
+						pushUnbannedMessage();
+					}
+					updateBannedVisualState();
+				},
+				reset:function(){
+					haveCheckedBanned = false;
+					bannedState = false;
+				}	
+			};
+		})();
     $(function(){
         //take a template of the html for the searchResultItem
         conversationSearchListing = $("#searchResults");
@@ -221,6 +261,7 @@ var Conversations = (function(){
                     }
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
                         Progress.call("onConversationJoin");
+												BannedState.checkIsBanned(details,true);
                         ThumbCache.clearCache();
                     }
                 }
@@ -230,6 +271,7 @@ var Conversations = (function(){
                 }
             }
             updateCurrentConversation(details);
+						BannedState.checkIsBanned(details);
             if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
                 currentlyDisplayedConversations.push(details);
                 refreshConversationSearchResults();
@@ -598,7 +640,9 @@ var Conversations = (function(){
             if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
             targetConversationJid = jidString;
             var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
+						BannedState.reset();
             hideBackstage();
+						Progress.call("onConversationJoin",[conversation]);
             doMoveToSlide(firstSlide.id.toString());
         }));
         var jidString = conversation.jid.toString();
