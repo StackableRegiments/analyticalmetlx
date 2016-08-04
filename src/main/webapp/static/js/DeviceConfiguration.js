@@ -254,8 +254,9 @@ var DeviceConfiguration = (function(){
                     bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
                     bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
                 } else {
-                    bwidth = width - marginsFor([boardColumn]).x - gutterWidth;
+                    bwidth = $("#masterLayout").width() - marginsFor([boardColumn]).x; 
                     bheight = bwidth - gutterHeight;
+		    console.log("small profile");
                 }
                 if (bheight < 0 || bwidth < 0){
                     throw {

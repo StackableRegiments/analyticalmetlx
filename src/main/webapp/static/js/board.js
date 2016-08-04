@@ -175,7 +175,7 @@ function sendRichText(t){
         var stanza = richTextEditorToStanza(t);
         boardContent.multiWordTexts[t.identity] = stanza;
         boardContent.multiWordTexts[t.identity].doc = d;
-	/*We must also act as though a text had come in*/
+        /*We must also act as though a text had come in*/
         Progress.call("onBoardContentChanged");
         sendStanza(stanza);
     }
@@ -666,106 +666,106 @@ function screenBounds(worldBounds){
     };
 }
 function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
-	if (w >= 1 && h >= 1){
-		var canvas = $("<canvas />");
-		canvas.width = w;
-		canvas.height = h;
-		canvas.attr("width",w);
-		canvas.attr("height",h);
-		canvas.css({
-			width:px(w),
-			height:px(h)
-		});
-		var ctx = canvas[0].getContext("2d");
-		ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
-		ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
-		ctx.msImageSmoothingEnabled = !disableImageSmoothing;
-		ctx.imageSmoothingEnabled = !disableImageSmoothing;
-		ctx.drawImage(incCanvas,0,0,w,h);
-		return canvas[0];
-	} else {
-		return incCanvas;
-	}
+    if (w >= 1 && h >= 1){
+        var canvas = $("<canvas />");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.attr("width",w);
+        canvas.attr("height",h);
+        canvas.css({
+            width:px(w),
+            height:px(h)
+        });
+        var ctx = canvas[0].getContext("2d");
+        ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
+        ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
+        ctx.msImageSmoothingEnabled = !disableImageSmoothing;
+        ctx.imageSmoothingEnabled = !disableImageSmoothing;
+        ctx.drawImage(incCanvas,0,0,w,h);
+        return canvas[0];
+    } else {
+        return incCanvas;
+    }
 }
 var mipMappingEnabled = true;
 function multiStageRescale(incCanvas,w,h,stanza){
-	if (mipMappingEnabled){
-		stanza = stanza == undefined ? {} : stanza;
-		if (!("mipMap" in stanza)){
-			stanza.mipMap = {};
-		}
-		var mm = stanza.mipMap;
-		var sf = 0.5;
-		var iw = incCanvas.width;
-		var ih = incCanvas.height;
-		var save = true;
+    if (mipMappingEnabled){
+        stanza = stanza == undefined ? {} : stanza;
+        if (!("mipMap" in stanza)){
+            stanza.mipMap = {};
+        }
+        var mm = stanza.mipMap;
+        var sf = 0.5;
+        var iw = incCanvas.width;
+        var ih = incCanvas.height;
+        var save = true;
 
-		var iwSize = Math.floor(iw);
-		
-		if (w >= 1 && iw >= 1 && w < iw){ //shrinking
-			var sdw = iw * sf;
-			var sdh = ih * sf;
-			if (sdw < w){
-				return incCanvas;
-			} else {
-				var key = Math.floor(sdw);
-				if (!(key in mm)){
-					var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
-					mm[key] = newCanvas;
-				}
-				return multiStageRescale(mm[key],w,h,stanza);
-			}
-		} else {
-			return incCanvas;
-		}
+        var iwSize = Math.floor(iw);
 
-/*
-		if (w >= 1 && h >= 1 && iw != w && ih != h && w < iw && h < ih){
-			var sdw = iw;
-			var sdh = ih;
-			if (w > sdw){ // growing x
-				sdw = w;
-			} else if (w < sdw){ // shrinking x
-				sdw = sdw * sf;
-				if (w > sdw){
-					save = false;
-					sdw = w;
-				}
-			}
-			if (h > sdh){ // growing y
-				sdh = h;
-			} else if (h < sdh){ // shrinking y
-				sdh = sdh * sf;
-				if (h > sdh){
-					save = false;
-					sdh = h;
-				}
-			}
-			var key = Math.floor(sdw);
-			console.log("rescaling:",w,h,iw,ih,sdw,sdh,key,iwSize);
-			if (key == iwSize){
-				return incCanvas;
-			} else {
-				if (key in mm){
-					console.log("returning cached value:",key);
-					return multiStageRescale(mm[key],w,h,stanza);
-				} else {
-					var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
-					if (save){
-						mm[key] = newCanvas;
-					}
-					console.log("generating mipmap:",w,h,sdw,sdh,key);
-					return multiStageRescale(newCanvas,w,h,stanza);
-				}
-			}
-		} else {
-			console.log("returning:",w,h,iwSize);
-			return incCanvas;
-		}
-			*/
-	} else {
-		return incCanvas;
-	}
+        if (w >= 1 && iw >= 1 && w < iw){ //shrinking
+            var sdw = iw * sf;
+            var sdh = ih * sf;
+            if (sdw < w){
+                return incCanvas;
+            } else {
+                var key = Math.floor(sdw);
+                if (!(key in mm)){
+                    var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
+                    mm[key] = newCanvas;
+                }
+                return multiStageRescale(mm[key],w,h,stanza);
+            }
+        } else {
+            return incCanvas;
+        }
+
+        /*
+         if (w >= 1 && h >= 1 && iw != w && ih != h && w < iw && h < ih){
+         var sdw = iw;
+         var sdh = ih;
+         if (w > sdw){ // growing x
+         sdw = w;
+         } else if (w < sdw){ // shrinking x
+         sdw = sdw * sf;
+         if (w > sdw){
+         save = false;
+         sdw = w;
+         }
+         }
+         if (h > sdh){ // growing y
+         sdh = h;
+         } else if (h < sdh){ // shrinking y
+         sdh = sdh * sf;
+         if (h > sdh){
+         save = false;
+         sdh = h;
+         }
+         }
+         var key = Math.floor(sdw);
+         console.log("rescaling:",w,h,iw,ih,sdw,sdh,key,iwSize);
+         if (key == iwSize){
+         return incCanvas;
+         } else {
+         if (key in mm){
+         console.log("returning cached value:",key);
+         return multiStageRescale(mm[key],w,h,stanza);
+         } else {
+         var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
+         if (save){
+         mm[key] = newCanvas;
+         }
+         console.log("generating mipmap:",w,h,sdw,sdh,key);
+         return multiStageRescale(newCanvas,w,h,stanza);
+         }
+         }
+         } else {
+         console.log("returning:",w,h,iwSize);
+         return incCanvas;
+         }
+         */
+    } else {
+        return incCanvas;
+    }
 }
 
 function drawImage(image,hq,incCanvasContext){
@@ -774,11 +774,11 @@ function drawImage(image,hq,incCanvasContext){
         if (image.canvas != undefined){
             var sBounds = screenBounds(image.bounds);
             visibleBounds.push(image.bounds);
-						if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-							var borderW = sBounds.screenWidth * 0.10;
-							var borderH = sBounds.screenHeight * 0.10;
-							canvasContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,image), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
-						}
+            if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+                var borderW = sBounds.screenWidth * 0.10;
+                var borderH = sBounds.screenHeight * 0.10;
+                canvasContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,image), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+            }
         }
     }
     catch(e){
@@ -794,13 +794,13 @@ function drawText(text,hq,incCanvasContext){
     try{
         var sBounds = screenBounds(text.bounds);
         visibleBounds.push(text.bounds);
-				if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){ 
-					canvasContext.drawImage(multiStageRescale(text.canvas,sBounds.screenWidth,sBounds.screenHeight,text),
-                                sBounds.screenPos.x,
-                                sBounds.screenPos.y,
-                                sBounds.screenWidth,
-                                sBounds.screenHeight);
-				}
+        if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+            canvasContext.drawImage(multiStageRescale(text.canvas,sBounds.screenWidth,sBounds.screenHeight,text),
+                                    sBounds.screenPos.x,
+                                    sBounds.screenPos.y,
+                                    sBounds.screenWidth,
+                                    sBounds.screenHeight);
+        }
     }
     catch(e){
         console.log("drawText exception",e);
@@ -810,12 +810,12 @@ function drawInk(ink,hq,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
-		if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){ 
-			canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,ink),
-			//canvasContext.drawImage(ink.canvas,
-                            sBounds.screenPos.x,sBounds.screenPos.y,
-                            sBounds.screenWidth,sBounds.screenHeight);
-		}
+    if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+        canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,ink),
+                                //canvasContext.drawImage(ink.canvas,
+                                sBounds.screenPos.x,sBounds.screenPos.y,
+                                sBounds.screenWidth,sBounds.screenHeight);
+    }
 }
 function imageReceived(image){
     var dataImage = new Image();
