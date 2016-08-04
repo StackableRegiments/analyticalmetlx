@@ -2250,9 +2250,7 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger with Conver
           })
         })
       })
-      com.metl.snippet.Metl.getShowToolsFromName(nameString).foreach(showTools => {
-        isInteractiveUser = Full(showTools)
-      })
+      isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
     })
     // joinRoomByJid("global","loopback")
   })
