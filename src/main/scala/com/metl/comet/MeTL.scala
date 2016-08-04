@@ -1366,9 +1366,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           })
         })
       })
-      com.metl.snippet.Metl.getShowToolsFromName(nameString).foreach(showTools => {
-        isInteractiveUser = Full(showTools)
-      })
+      isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
     })
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
