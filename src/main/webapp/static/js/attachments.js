@@ -53,7 +53,9 @@ var Attachments = (function(){
             attachmentFileChoice.unbind("change").on("change",function(eventArgs){
                 WorkQueue.pause();
                 var jid = Conversations.getCurrentConversationJid();
-                var filename = $(this).val();
+                //var filename = $(this).val();
+								var filename = $(this).val().replace(/.*(\/|\\)/, '');
+								console.log("filename for upload:",filename);
                 var reader = new FileReader();
                 var files = eventArgs.target.files || eventArgs.dataTransfer.files;
                 var file = files[0];
@@ -129,7 +131,7 @@ var Attachments = (function(){
         var rootElem = template.find(".attachmentItem");
         rootElem.attr("id",uniq("container"));
         var linkElem = template.find(".attachmentDownloadLink");
-        var href = sprintf("/resourceProxy/%s",encodeURI(attachment.id));
+        var href = sprintf("/attachmentProxy/%s/%s",Conversations.getCurrentConversationJid(),encodeURI(attachment.id));
         linkElem.attr("href",href);
         var linkNameElem = template.find(".attachmentDownloadLinkText");
         linkNameElem.text(attachment.name);

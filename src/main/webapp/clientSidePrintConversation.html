@@ -23,6 +23,11 @@ function progress(){
 	<link rel="stylesheet" href="static/css/board.css"></link>	
 	<link rel="stylesheet" href="static/css/print.css"></link>	
 	<script>
+var pageCompleted = function(){
+};
+function registerPageCount(totalPages){
+	pageCompleted = _.after(totalPages,window.print);
+}
 function renderCanvas(history,pageId){
 //	var startTime = new Date().getTime();
 	var canvasId = "canvas_"+pageId;
@@ -42,6 +47,9 @@ function renderCanvas(history,pageId){
 		b.requestViewbox(sizedHistory.minX,sizedHistory.minY,hw,hh,function(){
 			var dataUri = b.getCanvas()[0].toDataURL("image/png");
 			var pageImage = $("#"+pageImageId);
+			pageImage.on("load",function(){
+				pageCompleted();
+			});
 			pageImage.attr("src",dataUri);
 //			console.log("pageRendered",pageId,new Date().getTime() - startTime);
 		});
@@ -65,6 +73,7 @@ function renderCanvas(history,pageId){
 }
 	</style>
 	<div class="lift:Metl.clientSidePrintConversation">
+		<div class="afterAllPagesScript"></div>
 		<div class="pagesContainer">
 			<div class="pageContainer">
 				<div class="pageHeader"></div>

@@ -182,6 +182,15 @@ object StatelessHtml extends Stemmer with Logger {
     val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
   })
+  def attachmentProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.attachmentProxy(%s)".format(identity), {
+    MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getFiles.find(_.id == identity).map(file => {
+      val headers = List(
+        ("mime-type","application/octet-stream"),
+        ("Content-Disposition","""attachment; filename="%s"""".format(file.name))
+      ) ::: Boot.cacheStrongly
+      InMemoryResponse(file.bytes.getOrElse(Array.empty[Byte]),headers,Nil,200)
+    })
+  })
   def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy()".format(conversationJid,identity), {
     Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
       sub.imageBytes.map(bytes => {

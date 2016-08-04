@@ -305,6 +305,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       () => Stopwatch.time("MeTLStatefulRestHelper.submissionProxy", StatelessHtml.submissionProxy(conversation,author,identity))
     case r @ Req(List("resourceProxy",identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.resourceProxy", StatelessHtml.resourceProxy(Helpers.urlDecode(identity)))
+    case r @ Req(List("attachmentProxy",conversationJid,identity),_,_) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.attachmentProxy", StatelessHtml.attachmentProxy(conversationJid,Helpers.urlDecode(identity)))
     case r@Req("join" :: Nil, _, _) => {
       for {
         conversationJid <- r.param("conversation");
