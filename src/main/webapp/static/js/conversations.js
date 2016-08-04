@@ -15,10 +15,10 @@ var Conversations = (function(){
 			var haveCheckedBanned = false;
 			var bannedState = false;
 			var pushBannedMessage = function(){
-				alert("you're banned!");
+				alert("You have been banned from contributing publically to this class because you published some inappropriate content that is deemed to be contrary to the expectations of the university.\r\nThe content has been deleted on every screen, but the instructor has a record of your action.\r\nYou must contact your instructor in order to be reinstated as a contributing member of the classroom community.");
 			};
 			var pushUnbannedMessage = function(){
-				alert("you're unbanned!");
+				alert("The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
 			};
 			var updateBannedVisualState = function(){
 				console.log("bannedState:",bannedState);
