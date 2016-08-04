@@ -776,7 +776,7 @@
                                     var caret = this.getCaretCoords(this.selection.start);
                                     if (caret) {
                                         ctx.save();
-					ctx.globalAlpha = 1;
+                                        ctx.globalAlpha = 1;
                                         ctx.fillStyle = 'black';
                                         caret.fill(ctx);
                                         ctx.restore();
@@ -1361,10 +1361,18 @@
                     var wrap = require('./wrap');
                     var rect = require('./rect');
 
+		    var scaledWidth = function(){
+			return Modes.text.minimumWidth / scale();
+		    };
+		    var scaledHeight = function(){
+			return Modes.text.minimumHeight() / scale();
+		    };
                     var prototype = node.derive({
                         bounds: function() {
                             var b = this._bounds;
-                            var valid = b && b.l && b.t && b.w && b.h;
+                            var valid = b && _.every(["l","t","w","h"],function(key){
+                                return key in b;
+                            });
                             if(!valid) {
                                 var left = 0, top = 0, right = 0, bottom = 0;
                                 if (this.lines && this.lines.length) {
@@ -1377,7 +1385,7 @@
                                         bottom = Math.max(bottom, b.t + b.h);
                                     });
                                 }
-                                this._bounds = rect(left, top, right - left, this.height || bottom - top);
+                                this._bounds = rect(left, top, Math.max(right - left,scaledWidth()), Math.max(this.height || bottom - top,scaledHeight()));
                             }
                             return this._bounds;
                         },
@@ -1391,7 +1399,7 @@
                                         }
                                     });
                                 }
-                                this._actualWidth = result;
+                                this._actualWidth = Math.max(scaledWidth(),result);
                             }
                             return this._actualWidth;
                         },
@@ -1840,12 +1848,20 @@
                         },
                         bounds: function() {
                             var l = this._left, t = this._top, r = 0, b = 0;
+                            var min = function(x,y){
+                                if(isNaN(x)){ return y; }
+                                return Math.min(x,y);
+                            };
+                            var max = function(x,y){
+                                if(isNaN(x)){ return y; }
+                                return Math.max(x,y);
+                            };
                             this.children().forEach(function(child) {
                                 var cb = child.bounds();
-                                l = Math.min(l, cb.l);
-                                t = Math.min(t, cb.t);
-                                r = Math.max(r, cb.l + cb.w);
-                                b = Math.max(b, cb.t + cb.h);
+                                l = min(l, cb.l);
+                                t = min(t, cb.t);
+                                r = max(r, cb.l + cb.w);
+                                b = max(b, cb.t + cb.h);
                             });
                             return rect(l, t, r - l, b - t);
                         }
