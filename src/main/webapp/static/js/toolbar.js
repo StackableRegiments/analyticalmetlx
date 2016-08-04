@@ -715,7 +715,7 @@ var Modes = (function(){
             var texts = [];
             var noop = function(){};
             var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
-                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions;
+                presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions,fontLargerSelector,fontSmallerSelector;
 
             var echoesToDisregard = {};
             var createBlankText = function(worldPos){
@@ -760,6 +760,24 @@ var Modes = (function(){
                     });
                 }
             };
+            var scaleCurrentSelection = function(factor){
+                return function(){
+                    _.each(boardContent.multiWordTexts,function(t){
+			var d = t.doc;
+                        if(d.isActive){
+                            var source = d.save();
+			    console.log(source);
+                            _.each(source,function(run){
+                                run.size = run.size * factor;
+                            });
+                            d.load(source);
+                            if(d.save().length > 0){
+                                sendRichText(t);
+                            }
+                        }
+                    });
+                };
+            };
             $(function(){
                 fontOptions= $("#textDropdowns");
                 fontOptionsToggle = $("#fontOptions");
@@ -768,6 +786,8 @@ var Modes = (function(){
                 fontColorSelector = $("#fontColorSelector");
                 fontBoldSelector = $("#fontBoldSelector");
                 fontItalicSelector = $("#fontItalicSelector");
+                fontLargerSelector = $("#fontLarger");
+                fontSmallerSelector = $("#fontSmaller");
                 fontUnderlineSelector = $("#fontUnderlineSelector");
                 justifySelector = $("#justifySelector");
                 presetFitToText = $("#presetFitToText");
@@ -836,6 +856,8 @@ var Modes = (function(){
                         });
                     };
                 }
+                fontLargerSelector.click(scaleCurrentSelection(1.2));
+                fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
                 fontUnderlineSelector.click(toggleFormattingProperty("underline"));
@@ -861,8 +883,8 @@ var Modes = (function(){
                 echoesToDisregard:{},
                 minimumWidth:300,
                 minimumHeight:function(){
-		    return Modes.select.resizeHandleSize * 3;
-		},
+                    return Modes.select.resizeHandleSize * 3;
+                },
                 defaultFontSize:20,
                 editorFor:function(t){
                     var editor = boardContent.multiWordTexts[t.identity];
