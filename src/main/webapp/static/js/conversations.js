@@ -612,6 +612,7 @@ var Conversations = (function(){
         newConv.find(".conversationCreated").text(conversation.created);
 
         if (shouldModifyConversationFunction(conversation)){
+					newConv.find(".conversationEditButton").attr("id",uniq("conversationEditLink")).attr("href",sprintf("/editConversation?conversationJid=%s",conversation.jid));
             newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
             newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
             newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
