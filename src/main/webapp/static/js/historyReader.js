@@ -845,7 +845,9 @@ var prettyRender = _.debounce(function(canvasContext,content){
 },100);
 var blit = function(canvasContext,content){
     try {
+				var start = new Date().getTime();
         render(content == undefined ? boardContent : content,false,canvasContext == undefined ? boardContext : canvasContext);
+				console.log("render:",new Date().getTime() - start);
     } catch(e){
         console.log("exception in render:",e);
     }
