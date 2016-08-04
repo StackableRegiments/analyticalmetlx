@@ -249,7 +249,7 @@ function textReceived(t){
             incorporateBoardBounds(t.bounds);
             WorkQueue.enqueue(function(){
                 if(isInClearSpace(t.bounds)){
-                    drawText(t,undefined,true);
+                    drawText(t);
                     return false;
                 }
                 else{
@@ -768,7 +768,7 @@ function multiStageRescale(incCanvas,w,h,stanza){
 	}
 }
 
-function drawImage(image,hq,incCanvasContext){
+function drawImage(image,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         if (image.canvas != undefined){
@@ -789,7 +789,7 @@ function drawImage(image,hq,incCanvasContext){
 function drawMultiwordText(item){
     Modes.text.draw(item);
 }
-function drawText(text,hq,incCanvasContext){
+function drawText(text,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
         var sBounds = screenBounds(text.bounds);
@@ -806,13 +806,12 @@ function drawText(text,hq,incCanvasContext){
         console.log("drawText exception",e);
     }
 }
-function drawInk(ink,hq,incCanvasContext){
+function drawInk(ink,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
 		if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){ 
 			canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,ink),
-			//canvasContext.drawImage(ink.canvas,
                             sBounds.screenPos.x,sBounds.screenPos.y,
                             sBounds.screenWidth,sBounds.screenHeight);
 		}
@@ -835,7 +834,7 @@ function imageReceived(image){
         WorkQueue.enqueue(function(){
             if(isInClearSpace(image.bounds)){
                 try {
-                    drawImage(image,undefined,true);
+                    drawImage(image);
                 } catch(e){
                     console.log("drawImage exception",e);
                 }
@@ -862,7 +861,7 @@ function inkReceived(ink){
         }
         WorkQueue.enqueue(function(){
             if(isInClearSpace(ink.bounds)){
-                drawInk(ink,undefined,false);
+                drawInk(ink);
                 return false;
             }
             else{

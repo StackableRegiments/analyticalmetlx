@@ -607,7 +607,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                     $.each(inks,function(i,ink){
                         try{
                             if(intersectRect(ink.bounds,viewBounds)){
-                                drawInk(ink,hq,canvasContext);
+                                drawInk(ink,canvasContext);
                             }
                         }
                         catch(e){
@@ -633,7 +633,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 highlightersRenderedMark = Date.now();
                 $.each(content.texts,function(i,text){
                     if(intersectRect(text.bounds,viewBounds)){
-                        drawText(text,hq,canvasContext);
+                        drawText(text,canvasContext);
                     }
                 });
                 textsRenderedMark = Date.now();
@@ -696,16 +696,16 @@ function render(content,hq,incCanvasContext,incViewBounds){
                         _.forEach(category,function(item){
                             switch(name){
                             case "images":
-                                drawImage(item,false,canvasContext);
+                                drawImage(item,canvasContext);
                                 break;
                             case "texts":
-                                drawText(item,false,canvasContext);
+                                drawText(item,canvasContext);
                                 break;
                             case "multiWordTexts":
                                 drawMultiwordText(item);
                                 break;
                             case "inks":
-                                drawInk(item,false,canvasContext);
+                                drawInk(item,canvasContext);
                                 break;
                             }
                         });
@@ -739,12 +739,12 @@ function render(content,hq,incCanvasContext,incViewBounds){
                             switch(name){
                             case "images":
                                 transform(x,y,function(){
-                                    drawImage(item,false,canvasContext);
+                                    drawImage(item,canvasContext);
                                 });
                                 break;
                             case "texts":
                                 transform(x,y,function(){
-                                    drawText(item,false,canvasContext);
+                                    drawText(item,canvasContext);
                                 });
                                 break;
                             case "multiWordTexts":
@@ -783,7 +783,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                 break;
                             case "inks":
                                 transform(x,y,function(){
-                                    drawInk(item,false,canvasContext);
+                                    drawInk(item,canvasContext);
                                 });
                                 break;
                             }
@@ -798,7 +798,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
             $.each(content.images,function(id,image){
                 try{
                     if(intersectRect(image.bounds,viewBounds)){
-                        drawImage(image,hq,canvasContext);
+                        drawImage(image,canvasContext);
                     }
                 }
                 catch(e){
@@ -845,9 +845,9 @@ var prettyRender = _.debounce(function(canvasContext,content){
 },100);
 var blit = function(canvasContext,content){
     try {
-				var start = new Date().getTime();
+//				var start = new Date().getTime();
         render(content == undefined ? boardContent : content,false,canvasContext == undefined ? boardContext : canvasContext);
-				console.log("render:",new Date().getTime() - start);
+//				console.log("render:",new Date().getTime() - start);
     } catch(e){
         console.log("exception in render:",e);
     }
