@@ -763,10 +763,9 @@ var Modes = (function(){
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
-			var d = t.doc;
+                        var d = t.doc;
                         if(d.isActive){
                             var source = d.save();
-			    console.log(source);
                             _.each(source,function(run){
                                 run.size = run.size * factor;
                             });
@@ -836,19 +835,6 @@ var Modes = (function(){
                                     t.doc.position.x = viewboxX;
                                     t.doc.position.y = viewboxY;
                                     t.doc.width(screenToWorld(boardWidth,0).x);
-                                    t.doc.select(0,t.doc.frame.length - 1);
-                                    t.doc.selectedRange().setFormatting("align","center");
-                                    t.doc.selectedRange().setFormatting("bold",true);
-                                    var content = t.doc.documentRange().save();
-                                    content.push({
-                                        text:"\n"
-                                    });
-                                    content.push({
-                                        text:"\n"
-                                    });
-                                    t.doc.load(content);
-                                    var startOfPara = t.doc.frame.length - 1;
-                                    t.doc.select(startOfPara,startOfPara);
                                     break;
                                 }
                                 t.doc.contentChanged.fire();

@@ -77,54 +77,23 @@
       <div id="textTools" class="inactiveMode flex-container-responsive-rev">
         <div class="popout-container">
           <div id="textDropdowns" class="popout compact-form" style="display:none">
-            <div class="penDialogOptions">
-              <button class="btn-icon fa fa-close" id="closeTextDialog" ><div class="icon-txt">Cancel</div></button>
-            </div>
-            <label for="fontFamilySelector">Font</label>
-            <select id="fontFamilySelector">
-              <option class="fontFamilyOption"></option>
-            </select>
-            <label for="fontSizeSelector">Font size</label>
-            <select id="fontSizeSelector">
-              <option class="fontSizeOption"></option>
-            </select>
-            <label for="fontColorSelector">Font color</label>
-            <select id="fontColorSelector">
-              <option class="fontColorOption"></option>
-            </select>
-            <label for="justifySelector">Justification</label>
-            <select id="justifySelector">
-              <option class="fontColorOption" value="left">Left</option>
-              <option class="fontColorOption" value="right">Right</option>
-              <option class="fontColorOption" value="center">Center</option>
-            </select>
-            <label>Presets</label>
-            <div>
-              <button id="presetFullscreen" class="btn-icon fa fa-?">
-                <div class="icon-txt">Fullscreen</div>
-              </button>
-              <button id="presetCenterOnScreen" class="btn-icon fa fa-?">
-                <div class="icon-txt">Center on screen</div>
-              </button>
-            </div>
-            <div>
-              <button id="presetNarrow" class="btn-icon fa fa-?">
-                <div class="icon-txt">Narrow</div>
-              </button>
-              <button id="presetFitToText" class="btn-icon fa fa-?">
-                <div class="icon-txt">Fit to text</div>
-              </button>
-              <button id="presetWiden" class="btn-icon fa fa-?">
-                <div class="icon-txt">Widen</div>
-              </button>
-            </div>
-          </div>
-        </div>
-        <!--
+            <button class="btn-icon fa fa-close" id="closeTextDialog" ><div class="icon-txt">Cancel</div></button>
             <button type="button" id="fontBoldSelector" class="modeSpecificTool btn-icon fa fa-bold"><div class="icon-txt">Bold</div></button>
             <button type="button" id="fontItalicSelector" class="modeSpecificTool btn-icon fa fa-italic"><div class="icon-txt">Italic</div></button>
             <button type="button" id="fontUnderlineSelector" class="modeSpecificTool btn-icon fa fa-underline"><div class="icon-txt">Underline</div></button>
-            -->
+            <button id="presetFullscreen" class="btn-icon fa fa-text-width"><div class="icon-txt">Fullscreen</div></button>
+            <div class="flex-container-responsive" style="flex-direction:row;">
+              <div>
+                <label for="fontFamilySelector">Font</label>
+                <select id="fontFamilySelector">
+                  <option class="fontFamilyOption"></option>
+                </select>
+              </div>
+              <div>
+              </div>
+            </div>
+          </div>
+        </div>
         <button type="button" id="fontLarger" class="modeSpecificTool btn-icon fa">
           <i class="fa fa-font"></i>
           <i class="fa fa-plus fa-sm"></i>
