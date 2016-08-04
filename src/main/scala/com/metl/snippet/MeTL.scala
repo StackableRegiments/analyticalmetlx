@@ -215,7 +215,7 @@ class Metl extends Logger {
   }
   def getPagesFromPageRange(pageRange:String,conversation:Conversation):List[Slide] = {
     pageRange.toLowerCase.trim match {
-      case "all" => conversation.slides
+      case "all" => conversation.slides.sortWith((a,b) => a.index < b.index)
       case specificPageRange => {
         val pageIndexes = specificPageRange.split(",").flatMap(seq => {
           seq.split("-").toList match {
@@ -239,7 +239,7 @@ class Metl extends Logger {
             }
           }
         }).distinct
-        conversation.slides.filter(s => pageIndexes.exists(_ == s.index + 1)).toList
+        conversation.slides.filter(s => pageIndexes.exists(_ == s.index + 1)).toList.sortWith((a,b) => a.index < b.index)
       }
     }
   }
@@ -289,6 +289,7 @@ class Metl extends Logger {
       val includePrivate = S.param("includePrivateContent").map(_.toBoolean).getOrElse(false)
       val includeConvTitle = S.param("includeConversationTitle").map(_.toBoolean).getOrElse(false)
       val includePageCount = S.param("includePageCount").map(_.toBoolean).getOrElse(false)
+      ".afterAllPagesScript *" #> Script(OnLoad(Call("registerPageCount",JInt(pagesToPrint.length)))) &
       ".pagesContainer *" #> {
         ".pageContainer *" #> pagesToPrint.map(page => {
           val uniqueId = page.id.toString

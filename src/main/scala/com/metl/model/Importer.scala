@@ -250,9 +250,11 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
     //callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
     callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
       Map({
+        var minSlideCount = slides.map(_._1).min
+        var offset = 1 - minSlideCount //depending on what the value of the lowest is, I need to push it to be 1, and then offset all the values by that much.
         slides.flatMap{
           case (index,imageBytes) => {
-            val slideId = index + jid
+            val slideId = (index + jid) + offset
             val identity = server.postResource(slideId.toString,nextFuncName,imageBytes) 
             val tag = "{author: '%s', privacy: '%s', id: '%s', isBackground: false, zIndex: 0, resourceIdentity: '%s', timestamp: %s}".format(author,"public",identity,identity, new java.util.Date().getTime)
             val dimensions = downscaler.getDimensionsOfImage(imageBytes) match {
