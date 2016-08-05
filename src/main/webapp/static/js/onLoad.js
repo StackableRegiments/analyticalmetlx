@@ -418,7 +418,7 @@ var subcategoryMapping = {
 };
 var categoryMapping = _.fromPairs(_.flatMap({
     metaToolbar:"conversations integrations print",
-    optsToolbar:"settings",
+    optsToolbar:"settings healthCheck",
     roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
 },function(v,k){
     return _.map(v.split(" "),function(backstage){
@@ -431,6 +431,9 @@ function showBackstage(id){
     $("html").css("overflow-y","auto");
     window.currentBackstage = id;
     $(".backstage").hide();
+		if ("HealthCheckViewer" in window){
+			HealthCheckViewer.pause();
+		}
 
 		$(".backstageTabHeaderGroup").hide();
     $(".backstageTabHeader").removeClass(active);
@@ -483,6 +486,9 @@ function hideBackstage(){
     $(".modeSpecificTool").removeClass(active);
     hideSpinner();
     $("#masterLayout").css({"opacity":1.0});
+		if ("HealthCheckViewer" in window){
+			HealthCheckViewer.pause();
+		}
 };
 function showSpinner() {
     $("#loadingSlidePopup").show();
@@ -794,4 +800,11 @@ $(function(){
         showBackstage("integrations");
         updateActiveMenu(this);
     });
+		$("#menuHealthCheck").click(function(){
+				showBackstage("healthCheck");
+				updateActiveMenu(this);
+				if ("HealthCheckViewer" in window){
+					HealthCheckViewer.resume();
+				}
+		});
 });

@@ -24,7 +24,6 @@ var HealthChecker = (function(){
 			success:success
 		});
 	};
-
 	var check = function(){
 		var clientStart = new Date().getTime();
 		$.ajax( "/latency",{
@@ -86,3 +85,112 @@ var HealthChecker = (function(){
 var serverResponse = function(responseObj){
 	HealthChecker.addMeasure(responseObj.command,responseObj.success,responseObj.duration);
 }
+
+var HealthCheckViewer = (function(){
+	var refreshRate = 5000; //every 5 seconds
+	var viewing = false;
+	var healthCheckContainer = {};
+	$("#healthCheckListing");
+	var healthCheckItemTemplate = {};
+	var charts = {};
+	$(function(){
+		healthCheckContainer = $("#healthCheckListing");
+		healthCheckItemTemplate = $("#healthCheckListing").clone();
+		healthCheckContainer.empty();
+	});
+	var pauseFunc = function(){
+		viewing = false;
+	};
+	var resumeFunc = function(){
+		var identity = _.uniqueId();
+		viewing = identity;
+		var checkData = HealthChecker.getMeasures();
+		healthCheckContainer.html(_.map(checkData,function(category,categoryName){
+			var rootElem = healthCheckItemTemplate.clone();
+			rootElem.attr("id","healthCheck_"+categoryName);
+			var canvas = $("<canvas />").addClass("healthCheckCanvas");
+			_.defer(function(){
+				var options = {
+					title: {
+						display: true,
+						text: categoryName
+					},
+					scales: {
+						yAxes: [{
+							stacked: true,
+							ticks: {
+							}
+						}],
+						xAxes: [{
+							type: "linear",
+							position: "bottom",
+							ticks: {
+								stepSize:1
+							}
+						}]
+					},
+					legend:{
+						display:false
+					}
+				};
+				var data = {
+					labels: _.map(category,"instant"),
+					datasets:[
+						{
+							label:"duration",
+							data:_.map(category,function(sample){
+								return {
+									y:sample.duration,
+									x:sample.instant
+								}
+							}),
+							borderColor:["black"],
+							backgroundColor:["gray"],
+							borderWidth:1
+						}/*,
+						{
+							data:_.map(category,"success"),
+							borderColor:["black"],
+							backgroundColor:["gray"],
+							borderWidth:1
+						}
+						*/
+					]
+				};
+				var chartDesc = {
+					type:"line",
+					data: data,
+					options: options
+				};
+				var chart = new Chart(canvas[0].getContext("2d"),chartDesc);
+				charts[categoryName] = chart;
+			});
+			rootElem.html(canvas);
+			return rootElem;
+		}));
+		_.delay(updateView,refreshRate,identity);
+	};
+	var updateView = function(identity){
+		if ("HealthChecker" in window && viewing == identity){
+			console.log("updating charts");
+			var checkData = HealthChecker.getMeasures();
+			_.forEach(checkData,function(category,categoryName){
+				var chart = charts[categoryName];
+				if (chart){
+					chart.data.datasets[0].data = _.map(category,function(sample){
+						return {
+							y:sample.duration,
+							x:sample.instant
+						};
+					});
+					chart.update();
+				}
+			});
+			_.delay(updateView,refreshRate,identity);
+		}
+	};
+	return {
+		resume:resumeFunc,
+		pause:pauseFunc
+	};
+})();
