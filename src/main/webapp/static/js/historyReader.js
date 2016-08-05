@@ -595,6 +595,8 @@ var pressureSimilarityThreshold = 32,
 
 var visibleBounds = [];
 function render(content,hq,incCanvasContext,incViewBounds){
+	try {
+		var renderStart = new Date().getTime();
     var canvasContext = incCanvasContext || boardContext;
     if(content){
         var startMark = Date.now();
@@ -817,6 +819,15 @@ function render(content,hq,incCanvasContext,incViewBounds){
         }
         Progress.call("onViewboxChanged");
     }
+		if ("HealthChecker" in window){
+			HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
+		}
+	} catch(e){
+		if ("HealthChecker" in window){
+			HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
+		}
+		throw e;
+	}
 }
 function lightBlueGradient(context,width,height){
     var bgd = context.createLinearGradient(0,0,0,height);

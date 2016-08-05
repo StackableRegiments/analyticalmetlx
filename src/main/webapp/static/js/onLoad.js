@@ -35,8 +35,6 @@ function updateStatus(message){
     var status = $("#status");
     status.text(message);
 }
-function serverResponse(){
-};
 var noActiveBackstage = "none";
 var flash = function(el){
     var t = 100;
@@ -434,7 +432,8 @@ function showBackstage(id){
     window.currentBackstage = id;
     $(".backstage").hide();
 
-    $(".backstageTabHeader").removeClass(active).hide();
+		$(".backstageTabHeaderGroup").hide();
+    $(".backstageTabHeader").removeClass(active);
     $(".backstageCategory").removeClass("active");
     $(".backstageCategory").removeClass(active);
     $(".modeSpecificTool").removeClass(active);
@@ -456,14 +455,14 @@ function showBackstage(id){
     $("#"+id).addClass(active);
 
     if(Conversations.inConversation()){
-        $("#backstageTabHeaders").show();
-        $("#applicationMenuButton").show();
-	$("#roomToolbar").show();
+			$("#backstageTabHeaders").show();
+			$("#applicationMenuButton").show();
+			$("#roomToolbar").show();
     }
     else{
-        $("#backstageTabHeaders").hide();
-        $("#applicationMenuButton").hide();
-	$("#roomToolbar").hide();
+			$("#backstageTabHeaders").hide();
+			$("#applicationMenuButton").hide();
+			$("#roomToolbar").hide();
     }
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
@@ -476,7 +475,6 @@ function hideBackstage(){
     $(".backstageTabHeader").removeClass(active);
     $(".backstage").removeClass(active);
     $("#applicationMenuButton").removeClass(active);
-    //$("#applicationMenuPopup").hide().removeClass('active');
     $("#applicationMenuPopup").removeClass('active');
     $("#backstageTabHeaders").hide();
     $("#backstageContainer").hide();
@@ -494,7 +492,7 @@ function hideSpinner() {
 }
 function toggleSubOptions(selector){
     return function(){
-        $(selector).eq(0).click();
+        $(selector).find(".backstageTabHeader").eq(0).click();
     };
 }
 $(function(){

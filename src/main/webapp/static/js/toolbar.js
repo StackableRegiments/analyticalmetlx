@@ -1173,7 +1173,6 @@ var Modes = (function(){
                         currentImage.height = h;
                         currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
                         var newSize = currentImage.resizedImage.length;
-                        console.log("original => resized",originalSize,newSize);
                         if (originalSize < newSize){
                             currentImage.resizedImage = originalSrc;
                         }
@@ -2443,7 +2442,6 @@ var Modes = (function(){
                         $("#drawTools").find(".eraser").addClass("activeBrush");
                     } else {
                         _.each($("#drawTools").find(".modeSpecificTool.pen"),function(button,i){
-                            console.log("trying to activate brush",button,i,currentBrush);
                             if ((i + 1) == currentBrush.id){
                                 $(button).addClass("activeBrush");
                             }

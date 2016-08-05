@@ -66,6 +66,7 @@ libraryDependencies ++= {
     "javax.mail" % "mail" % "1.4",
     "net.liftweb" %% "lift-mapper" % liftVersion,
     "net.liftweb" %% "lift-webkit" % liftVersion,
+    "net.liftweb" %% "lift-testkit" % liftVersion,
     "net.liftweb" %% "lift-mongodb" % liftVersion,
     "net.liftweb" %% "lift-mongodb-record" % liftVersion,
     "org.seleniumhq.selenium" % "selenium-java" % "2.8.0",
@@ -89,7 +90,6 @@ libraryDependencies ++= {
     "org.apache.shiro" % "shiro-core" % "1.2.4",
     "org.apache.shiro" % "shiro-web" % "1.2.4",
     "org.apache.commons" % "commons-compress" % "1.1",
-    "io.github.stackableregiments" %% "lift-extensions" % "0.2.+",
     "org.imsglobal" % "basiclti-util" % "1.1.1",
     //for google openId connect authentication
     "com.google.api-client" % "google-api-client" % "1.22.0",

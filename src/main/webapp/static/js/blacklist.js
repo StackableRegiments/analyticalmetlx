@@ -29,22 +29,36 @@ var Blacklist = (function(){
 			if ("blacklist" in conversation && "jid" in conversation && Conversations.getCurrentConversationJid() == conversation.jid){
 				blacklistAuthors = conversation.blacklist;
 				renderBlacklistAuthorsInPlace();
+				refreshToolState(conversation);
 			}
 		};
 		var renderBlacklistAuthorsInPlace = function(){
 			blacklistAuthorsContainer.empty();
+			var unbanAllButton = $("#unbanAll");
+			if (blacklistAuthors.length > 0){
+				unbanAllButton.show();
+				unbanAllButton.unbind("click");
+				unbanAllButton.on("click",function(){
+					console.log("unbanall click");
+					changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
+				});
+			} else {
+				unbanAllButton.unbind("click");
+				unbanAllButton.hide();
+			}
 			blacklistAuthors.map(function(author){
 				var rootElem = blacklistAuthorTemplate.clone();
 				rootElem.find(".blacklistAuthorName").text(author);
 				rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
+					console.log(sprintf("unban %s click",author));
 					blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
 					changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
 				});
 				blacklistAuthorsContainer.append(rootElem);
 			});
 		};
-		var refreshToolState = function(){
-			if (Conversations.shouldModifyConversation()){
+		var refreshToolState = function(conversation){
+			if (Conversations.shouldModifyConversation(conversation)){
 				$("#ban").show();
 				$("#administerContent").show();
 				$("#menuBlacklist").show();
@@ -55,8 +69,8 @@ var Blacklist = (function(){
 				$("#blacklistPopup").hide();
 			}
 		};
-    var clearState = function(){
-				refreshToolState();
+    var clearState = function(conversation){
+				refreshToolState(conversation);
         blacklists = [];
         currentBlacklist = {};
     };
