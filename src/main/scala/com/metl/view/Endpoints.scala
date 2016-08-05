@@ -146,6 +146,12 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
         PlainTextResponse(cp.checkPassword(u,p).toString,Nil,200)
       }
     }
+    case r@Req("latency" :: Nil,_,_) => {
+      val start = new java.util.Date().getTime
+      () => {
+        Full(PlainTextResponse((new java.util.Date().getTime - start).toString,List.empty[Tuple2[String,String]], 200))
+      }
+    }
     case r@Req("serverStatus" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
         println("serverStatus")

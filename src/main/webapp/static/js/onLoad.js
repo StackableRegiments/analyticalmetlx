@@ -35,8 +35,6 @@ function updateStatus(message){
     var status = $("#status");
     status.text(message);
 }
-function serverResponse(){
-};
 var noActiveBackstage = "none";
 var flash = function(el){
     var t = 100;
