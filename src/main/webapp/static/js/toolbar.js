@@ -2183,12 +2183,224 @@ var Modes = (function(){
         })(),
         draw:(function(){
             var originalBrushes = Brushes.getDefaultBrushes();
+						var brushes = _.map(originalBrushes,function(i){return _.clone(i);});
             var currentBrush;
             var erasing = false;
-            var hasActivated = false;
+						var drawAdvancedTools = function(){};
+						var penSizeTemplate = undefined;
+						var penColorTemplate = undefined;
+						var updateOriginalBrush = function(brush){
+								brushes[brush.index] = brush;
+						};
+						var up = function(){};
+						var down = function(){};
+						var move = function(){};
+						$(function(){
+							$(".activeBrush").removeClass("activeBrush");
+							var drawTools = function(){
+									var container = $("#drawTools");
+									_.each(container.find(".modeSpecificTool.pen"),function(button,i){
+											var brush = brushes[i];
+											var thisButton = $(button)
+															.css({color:brush.color})
+															.click(function(){
+																	$(".activeBrush").removeClass("activeBrush");
+																	$(this).addClass("activeBrush");
+																	currentBrush = brush;
+																	updateOriginalBrush(brush);
+																	Modes.draw.drawingAttributes = currentBrush;
+																	erasing = false;
+																	drawAdvancedTools(brush);
+															}).removeClass("fa-tint").removeClass("fa-circle").addClass(brush.isHighlighter ? "fa-circle" : "fa-tint");
+											thisButton.find(".widthIndicator").text(brush.width);
+											if (brush == currentBrush){
+													thisButton.addClass("activeBrush");
+											}
+									});
+							};
+							drawAdvancedTools = function(brush){
+									var dots = $("#colors .dots");
+									var bars = $("#sizes .dots");
+									var colors = Colors.getAllNamedColors();
+									var widths = Brushes.getAllBrushSizes();
+									bars.empty();
+									widths.map(function(width){
+											var sizeDot = penSizeTemplate.clone();
+											bars.append(sizeDot);
+											sizeDot.click(function(){
+													brush.width = width;
+													updateOriginalBrush(brush);
+													currentBrush = brush;
+													drawTools();
+													drawAdvancedTools(brush);
+											});
+											var bar = Canvas.circle(brush.color,width,50);
+											if (width == brush.width){
+													sizeDot.addClass("activeTool");
+											}
+											sizeDot.prepend(bar)
+											var sizeName = width.toString() + 'px';
+											sizeDot.find('.sizeDotName').append(sizeName);
+									});
+									dots.empty();
+									colors.map(function(color){
+											var colorDot = penColorTemplate.clone();
+											dots.append(colorDot);
+											colorDot.on("click",function(){
+													brush.color = color.rgb;
+													currentBrush = brush;
+													updateOriginalBrush(brush);
+													drawTools();
+													drawAdvancedTools(brush);
+											});
+											//var dot = Canvas.circle(color.rgb,50,50);
+											colorDot.css("color",color.rgb);
+											if ("rgb" in color && color.rgb == brush.color){
+													colorDot.addClass("activeTool");
+											}
+											//colorDot.prepend(dot);
+											var colorDotName = color.name;
+											colorDot.find('.colorDotName').append(colorDotName);
+									});
+									var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
+											brush.isHighlighter = true;
+											currentBrush = brush;
+											updateOriginalBrush(brush);
+											drawTools();
+											drawAdvancedTools(brush);
+									});
+									var penButton = $("#setPenToPen").unbind("click").on("click",function(){
+											brush.isHighlighter = false;
+											currentBrush = brush;
+											updateOriginalBrush(brush);
+											drawTools();
+											drawAdvancedTools(brush);
+									});
+									if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
+											hlButton.addClass("activeTool").addClass("active");
+											penButton.removeClass("activeTool").removeClass("active");
+									} else {
+											penButton.addClass("activeTool").addClass("active");
+											hlButton.removeClass("activeTool").removeClass("active");
+									}
+									Progress.call("onLayoutUpdated");
+							}
+							$("#resetPenButton").click(function(){
+									var originalBrush = _.find(originalBrushes,function(i){
+											return i.id == currentBrush.id;
+									});
+									if (originalBrush != undefined){
+											currentBrush.width = originalBrush.width;
+											currentBrush.color = originalBrush.color;
+											currentBrush.isHighlighter = originalBrush.isHighlighter;
+											drawTools();
+											drawAdvancedTools(currentBrush);
+									}
+							});
+							penSizeTemplate = $("#penSize .sizeDot").clone();
+							penColorTemplate = $("#penColor .colorDot").clone();
+							currentBrush = brushes[0];
+							drawTools();
+							drawAdvancedTools(currentBrush);
+							var container = $("#drawTools");
+							container.find(".eraser").unbind("click").on("click",function(button){
+									$(".activeBrush").removeClass("activeBrush");
+									$(this).addClass("activeBrush");
+									erasing = true;
+									$("#drawDropdowns").hide();
+							});
+							container.find(".advancedTools").unbind("click").on("click",function(){
+								if (!erasing){
+									drawAdvancedTools(currentBrush);
+									$("#drawDropdowns").toggle();
+								}
+							});
+							$("#closePenDialog").unbind("click").on("click",function(){
+									$("#drawDropdowns").hide();
+							});
+							var currentStroke = [];
+							var isDown = false;
+							var resumeWork;
+							var mousePressure = 256;
+							down = function(x,y,z,worldPos,modifiers){
+									deleted = [];
+									isDown = true;
+									if(!erasing && !modifiers.eraser){
+											boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
+											if (Modes.draw.drawingAttributes.isHighlighter){
+												boardContext.globalAlpha = 0.4;
+											} else {
+												boardContext.globalAlpha = 1.0;
+											}
+											currentStroke = [x, y, mousePressure * z];
+									} else {
+									}
+							};
+							var raySpan = 10;
+							var deleted = [];
+							move = function(x,y,z,worldPos,modifiers){
+									if(erasing || modifiers.eraser){
+											var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
+											var markAsDeleted = function(bounds){
+													var tl = worldToScreen(bounds[0],bounds[1]);
+													var br = worldToScreen(bounds[2],bounds[3]);
+													boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
+											}
+											var deleteInRay = function(coll){
+													$.each(coll,function(i,item){
+															if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
+																	delete coll[item.identity];
+																	deleted.push(item.identity);
+																	markAsDeleted(item.bounds);
+															}
+													})
+											}
+											boardContext.globalAlpha = 0.4;
+											boardContext.fillStyle = "red";
+											deleteInRay(boardContent.inks);
+											deleteInRay(boardContent.highlighters);
+											boardContext.globalAlpha = 1.0;
+									}
+									else{
+											var oldWidth = boardContext.lineWidth;
+											var newWidth = Modes.draw.drawingAttributes.width * z;
+											boardContext.beginPath();
+											boardContext.lineCap = "round";
+											boardContext.lineWidth = newWidth;
+											var lastPoint = _.takeRight(currentStroke,3);
+											boardContext.moveTo(lastPoint[0],lastPoint[1]);
+											boardContext.lineTo(x,y);
+											boardContext.stroke();
+											currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+									}
+							};
+							up = function(x,y,z,worldPos,modifiers){
+									isDown = false;
+									if(erasing || modifiers.eraser){
+											var deleteTransform = batchTransform();
+											deleteTransform.isDeleted = true;
+											deleteTransform.inkIds = deleted;
+											sendStanza(deleteTransform);
+									} else {
+											var newWidth = Modes.draw.drawingAttributes.width * z;
+											boardContext.lineWidth = newWidth;
+											boardContext.beginPath();
+											boardContext.lineWidth = newWidth;
+											boardContext.lineCap = "round";
+											var lastPoint = _.takeRight(currentStroke,3);
+											boardContext.moveTo(lastPoint[0],lastPoint[1]);
+											boardContext.lineTo(x,y);
+											boardContext.stroke();
+											currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+											strokeCollected(currentStroke.join(" "));
+									}
+									//boardContext.globalCompositeOperation = "source-over";
+									boardContext.globalAlpha = 1.0;
+							};
+						});
             return {
                 name:"draw",
-                brushes:_.map(originalBrushes,function(i){return _.clone(i);}),
+                brushes:brushes,
                 activate:function(){
                     boardContext.setLineDash([]);
                     if(Modes.currentMode == Modes.draw){
@@ -2196,220 +2408,15 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-                    var drawAdvancedTools = function(){};
-                    var penSizeTemplate = undefined;
-                    var penColorTemplate = undefined;
-                    var updateOriginalBrush = function(brush){
-                        Modes.draw.brushes[brush.index] = brush;
-                    };
-                    $(".activeBrush").removeClass("activeBrush");
-                    var drawTools = function(){
-                        var container = $("#drawTools");
-                        _.each(container.find(".modeSpecificTool.pen"),function(button,i){
-                            var brush = Modes.draw.brushes[i];
-                            var thisButton = $(button)
-                                    .css({color:brush.color})
-                                    .click(function(){
-                                        $(".activeBrush").removeClass("activeBrush");
-                                        $(this).addClass("activeBrush");
-                                        currentBrush = brush;
-                                        updateOriginalBrush(brush);
-                                        Modes.draw.drawingAttributes = currentBrush;
-                                        erasing = false;
-                                        drawAdvancedTools(brush);
-                                    });
-                            thisButton.find(".widthIndicator").text(brush.width);
-                            if (brush == currentBrush){
-                                thisButton.addClass("activeBrush");
-                            }
-                        });
-                    };
-                    drawAdvancedTools = function(brush){
-                        var dots = $("#colors .dots");
-                        var bars = $("#sizes .dots");
-                        var colors = Colors.getAllNamedColors();
-                        var widths = Brushes.getAllBrushSizes();
-                        bars.empty();
-                        widths.map(function(width){
-                            var sizeDot = penSizeTemplate.clone();
-                            bars.append(sizeDot);
-                            sizeDot.click(function(){
-                                brush.width = width;
-                                updateOriginalBrush(brush);
-                                currentBrush = brush;
-                                drawTools();
-                                drawAdvancedTools(brush);
-                            });
-                            var bar = Canvas.circle(brush.color,width,50);
-                            if (width == brush.width){
-                                sizeDot.addClass("activeTool");
-                            }
-                            sizeDot.prepend(bar)
-                            var sizeName = width.toString() + 'px';
-                            sizeDot.find('.sizeDotName').append(sizeName);
-                        });
-                        dots.empty();
-                        colors.map(function(color){
-                            var colorDot = penColorTemplate.clone();
-                            dots.append(colorDot);
-                            colorDot.on("click",function(){
-                                brush.color = color.rgb;
-                                currentBrush = brush;
-                                updateOriginalBrush(brush);
-                                drawTools();
-                                drawAdvancedTools(brush);
-                            });
-                            //var dot = Canvas.circle(color.rgb,50,50);
-                            colorDot.css("color",color.rgb);
-                            if ("rgb" in color && color.rgb == brush.color){
-                                colorDot.addClass("activeTool");
-                            }
-                            //colorDot.prepend(dot);
-                            var colorDotName = color.name;
-                            colorDot.find('.colorDotName').append(colorDotName);
-                        });
-                        var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
-                            brush.isHighlighter = true;
-                            currentBrush = brush;
-                            updateOriginalBrush(brush);
-                            drawTools();
-                            drawAdvancedTools(brush);
-                        });
-                        var penButton = $("#setPenToPen").unbind("click").on("click",function(){
-                            brush.isHighlighter = false;
-                            currentBrush = brush;
-                            updateOriginalBrush(brush);
-                            drawTools();
-                            drawAdvancedTools(brush);
-                        });
-                        if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-                            hlButton.addClass("activeTool").addClass("active");
-                            penButton.removeClass("activeTool").removeClass("active");
-                        } else {
-                            penButton.addClass("activeTool").addClass("active");
-                            hlButton.removeClass("activeTool").removeClass("active");
-                        }
-                        Progress.call("onLayoutUpdated");
-                    }
-                    $("#resetPenButton").click(function(){
-                        var originalBrush = _.find(originalBrushes,function(i){
-                            return i.id == currentBrush.id;
-                        });
-                        if (originalBrush != undefined){
-                            currentBrush.width = originalBrush.width;
-                            currentBrush.color = originalBrush.color;
-                            currentBrush.isHighlighter = originalBrush.isHighlighter;
-                            drawTools();
-                            drawAdvancedTools(currentBrush);
-                        }
-                    });
-                    if(!hasActivated){
-                        hasActivated = true;
-                        penSizeTemplate = $("#penSize .sizeDot").clone();
-                        penColorTemplate = $("#penColor .colorDot").clone();
-                        currentBrush = Modes.draw.brushes[0];
-                        drawTools();
-                        drawAdvancedTools(currentBrush);
-                        Modes.draw.drawingAttributes = currentBrush;
-                        var container = $("#drawTools");
-                        container.find(".eraser").click(function(button){
-                            $(".activeBrush").removeClass("activeBrush");
-                            $(this).addClass("activeBrush");
-                            erasing = true;
-                        });
-                        container.find(".advancedTools").on("click",function(){
-                            drawAdvancedTools(currentBrush);
-                            $("#drawDropdowns").toggle();
-                        });
-                        $("#closePenDialog").click(function(){
-                            $("#drawDropdowns").hide();
-                        });
-                    }
-                    setActiveMode("#drawTools","#drawMode");
-                    var currentStroke = [];
-                    var isDown = false;
-                    var resumeWork;
-                    var mousePressure = 256;
-                    var down = function(x,y,z,worldPos,modifiers){
-                        deleted = [];
-                        isDown = true;
-                        if(!erasing && !modifiers.eraser){
-                            boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
-														if (Modes.draw.drawingAttributes.isHighlighter){
-															boardContext.globalAlpha = 0.4;
-														} else {
-															boardContext.globalAlpha = 1.0;
-														}
-                            currentStroke = [x, y, mousePressure * z];
-                        } else {
-                        }
-                    };
-                    var raySpan = 10;
-                    var deleted = [];
-                    var move = function(x,y,z,worldPos,modifiers){
-                        if(erasing || modifiers.eraser){
-                            var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
-                            var markAsDeleted = function(bounds){
-                                var tl = worldToScreen(bounds[0],bounds[1]);
-                                var br = worldToScreen(bounds[2],bounds[3]);
-                                boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
-                            }
-                            var deleteInRay = function(coll){
-                                $.each(coll,function(i,item){
-                                    if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
-                                        delete coll[item.identity];
-                                        deleted.push(item.identity);
-                                        markAsDeleted(item.bounds);
-                                    }
-                                })
-                            }
-                            boardContext.globalAlpha = 0.4;
-                            boardContext.fillStyle = "red";
-                            deleteInRay(boardContent.inks);
-                            deleteInRay(boardContent.highlighters);
-                            boardContext.globalAlpha = 1.0;
-                        }
-                        else{
-                            var oldWidth = boardContext.lineWidth;
-                            var newWidth = Modes.draw.drawingAttributes.width * z;
-                            boardContext.beginPath();
-                            boardContext.lineCap = "round";
-                            boardContext.lineWidth = newWidth;
-                            var lastPoint = _.takeRight(currentStroke,3);
-                            boardContext.moveTo(lastPoint[0],lastPoint[1]);
-                            boardContext.lineTo(x,y);
-                            boardContext.stroke();
-                            currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-                        }
-                    };
-                    var up = function(x,y,z,worldPos,modifiers){
-                        isDown = false;
-                        if(erasing || modifiers.eraser){
-                            var deleteTransform = batchTransform();
-                            deleteTransform.isDeleted = true;
-                            deleteTransform.inkIds = deleted;
-                            sendStanza(deleteTransform);
-                        } else {
-                            var newWidth = Modes.draw.drawingAttributes.width * z;
-                            boardContext.lineWidth = newWidth;
-                            boardContext.beginPath();
-                            boardContext.lineWidth = newWidth;
-                            boardContext.lineCap = "round";
-                            var lastPoint = _.takeRight(currentStroke,3);
-                            boardContext.moveTo(lastPoint[0],lastPoint[1]);
-                            boardContext.lineTo(x,y);
-                            boardContext.stroke();
-                            currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-                            strokeCollected(currentStroke.join(" "));
-                        }
-												//boardContext.globalCompositeOperation = "source-over";
-												boardContext.globalAlpha = 1.0;
-                    };
+										Modes.draw.drawingAttributes = currentBrush;
+										setActiveMode("#drawTools","#drawMode");
+
                     $(".activeBrush").removeClass("activeBrush");
                     if (erasing){
                         $("#drawTools").find(".eraser").addClass("activeBrush");
                     } else {
-                        _.each($("#drawTools").find(".pen"),function(button,i){
+                        _.each($("#drawTools").find(".modeSpecificTool.pen"),function(button,i){
+													console.log("trying to activate brush",button,i,currentBrush);
                             if ((i + 1) == currentBrush.id){
                                 $(button).addClass("activeBrush");
                             }

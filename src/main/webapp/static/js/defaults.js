@@ -3,9 +3,17 @@ var Colors = (function(){
         ["black","#000000",255],
         ["red","#ff0000",255],
         ["blue","#0000ff",255],
-        ["cyan","#00ffff",255],
         ["green","#00ff00",255],
+        ["orange","#ff8000",255],
+        ["cyan","#00ffff",255],
+        ["yellow","#ffff00",255],
+
         ["white","#ffffff",255],
+				["dark red","#660000",255],
+				["dark blue","#000099",255],
+				["dark green","#006600",255],
+        ["brown","#663300",255],
+				["dark purple","#660066",255],
         ["dark grey","#666666",255]
     ];
     var defaultColor = colors[0];
@@ -96,13 +104,13 @@ var Brushes = (function(){
         {
             id:2,
             width:5.0,
-            color:"#FF0000",
+            color:"#ff0000",
             isHighlighter:false
         },
         {
             id:3,
             width:8.0,
-            color:"#00FF00",
+            color:"#00ff00",
             isHighlighter:false
         },
         {
@@ -114,7 +122,7 @@ var Brushes = (function(){
         {
             id:5,
             width:30.0,
-            color:"#FFFF00",
+            color:"#ffff00",
             isHighlighter:true
         }
     ];
