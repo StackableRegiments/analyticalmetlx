@@ -1318,18 +1318,10 @@ var Modes = (function(){
                         $("#resize").addClass("disabledButton");
                         $("#ban").addClass("disabledButton");
                     }
-
                     if ("Conversations" in window && Conversations.shouldModifyConversation()){
                         $("#ban").show();
-                        $("#administerContent").show();
                     } else {
                         $("#ban").hide();
-                        $("#administerContent").hide();
-                    }
-                    if (isAdministeringContent){
-                        $("#administerContent").removeClass("disabledButton");
-                    } else {
-                        $("#administerContent").addClass("disabledButton");
                     }
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
@@ -1398,37 +1390,47 @@ var Modes = (function(){
             var administerContentFunction = function(){
                 isAdministeringContent = Conversations.shouldModifyConversation() ? !isAdministeringContent : false;
                 if (isAdministeringContent){
-                    $("#administerContent").removeClass("disabledButton");
+                    $("#administerContent").addClass("activeBrush");
                 } else {
-                    $("#administerContent").addClass("disabledButton");
+                    $("#administerContent").removeClass("activeBrush");
                 }
                 clearSelectionFunction();
             };
 
+						var updateAdministerContentVisualState = function(conversation){
+                if (Conversations.shouldModifyConversation(conversation)){
+										$("#ban").show();
+                    $("#ban").removeClass("disabledButton");
+                    $("#administerContent").show();
+                    $("#administerContent").removeClass("disabledButton");
+                } else {
+										$("#ban").addClass("disabledButton");
+                    $("#ban").hide();
+                    $("#administerContent").addClass("disabledButton");
+                    $("#administerContent").hide();
+                }
+                if (isAdministeringContent){
+                    $("#administerContent").addClass("activeBrush");
+                } else {
+                    $("#administerContent").removeClass("activeBrush");
+                }
+						}
             Progress.onBoardContentChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
             Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
-                if (isAdministeringContent && Conversations.shouldModifyConversation()){
+                if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
-                if (Conversations.shouldModifyConversation()){
-                    $("#ban").show();
-                    $("#administerContent").show();
-                    $("#administerContent").bind("click",administerContentFunction);
-                    $("#ban").bind("click",banContentFunction);
+                if (Conversations.shouldModifyConversation(conversation)){
+                    $("#administerContent").unbind("click").bind("click",administerContentFunction);
+                    $("#ban").unbind("click").bind("click",banContentFunction);
                 } else {
-                    $("#ban").hide();
-                    $("#administerContent").hide();
                     $("#administerContent").unbind("click");
                     $("#ban").unbind("click");
                 }
-                if (isAdministeringContent){
-                    $("#administerContent").removeClass("disabledButton");
-                } else {
-                    $("#administerContent").addClass("disabledButton");
-                }
+								updateAdministerContentVisualState(conversation);
             };
             return {
                 name:"select",
@@ -1863,8 +1865,8 @@ var Modes = (function(){
                         clearSelectionFunction();
                     });
                     var threshold = 30;
-                    $("#administerContent").bind("click",administerContentFunction);
-                    $("#ban").bind("click",banContentFunction);
+                    //$("#administerContent").unbind("click").bind("click",administerContentFunction);
+                    //$("#ban").bind("click",banContentFunction);
                     var categories = function(func){
                         func("images");
                         func("texts");
@@ -2020,7 +2022,7 @@ var Modes = (function(){
                             /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
                             var toggleCategory = function(category){
                                 $.each(intersected[category],function(id,item){
-                                    if(id in Modes.select.selected[category]){
+                                    if(category in Modes.select.selected && id in Modes.select.selected[category]){
                                         delete Modes.select.selected[category][id];
                                     } else {
                                         Modes.select.selected[category][id] = item;
@@ -2050,6 +2052,7 @@ var Modes = (function(){
                         blit();
                     }
                     Modes.select.dragging = false;
+										updateAdministerContentVisualState();
                     Modes.select.resizing = false;
                     registerPositionHandlers(board,down,move,up);
                 },
@@ -2061,8 +2064,7 @@ var Modes = (function(){
                     $("#resize").unbind("click");
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
-                    $("#administerContent").unbind("click");
-                    $("#ban").unbind("click");
+										updateAdministerContentVisualState();
                 }
             }
         })(),
