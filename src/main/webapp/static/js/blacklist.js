@@ -34,10 +34,23 @@ var Blacklist = (function(){
 		};
 		var renderBlacklistAuthorsInPlace = function(){
 			blacklistAuthorsContainer.empty();
+			var unbanAllButton = $("#unbanAll");
+			if (blacklistAuthors.length > 0){
+				unbanAllButton.show();
+				unbanAllButton.unbind("click");
+				unbanAllButton.on("click",function(){
+					console.log("unbanall click");
+					changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
+				});
+			} else {
+				unbanAllButton.unbind("click");
+				unbanAllButton.hide();
+			}
 			blacklistAuthors.map(function(author){
 				var rootElem = blacklistAuthorTemplate.clone();
 				rootElem.find(".blacklistAuthorName").text(author);
 				rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
+					console.log(sprintf("unban %s click",author));
 					blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
 					changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
 				});
