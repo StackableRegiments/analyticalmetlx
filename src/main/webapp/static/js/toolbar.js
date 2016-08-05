@@ -1310,8 +1310,10 @@ var Modes = (function(){
                         $("#resize").removeClass("disabledButton");
                         if (isAdministeringContent){
                             $("#ban").removeClass("disabledButton");
+                            $("#delete").addClass("disabledButton");
                         } else {
                             $("#ban").addClass("disabledButton");
+                            $("#delete").removeClass("disabledButton");
                         }
                     } else {
                         $("#delete").addClass("disabledButton");
@@ -1845,7 +1847,7 @@ var Modes = (function(){
                     });
                     var adorner = $("#selectionAdorner");
                     $("#delete").bind("click",function(){
-                        if (Modes.select.selected != undefined){
+                        if (Modes.select.selected != undefined && !isAdministeringContent){
                             var deleteTransform = batchTransform();
                             deleteTransform.isDeleted = true;
                             if ("inks" in Modes.select.selected){
@@ -1861,8 +1863,8 @@ var Modes = (function(){
                                 deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
                             sendStanza(deleteTransform);
+														clearSelectionFunction();
                         }
-                        clearSelectionFunction();
                     });
                     var threshold = 30;
                     //$("#administerContent").unbind("click").bind("click",administerContentFunction);

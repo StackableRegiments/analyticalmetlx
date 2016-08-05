@@ -7,7 +7,6 @@ var Colors = (function(){
         ["orange","#ff8000",255],
         ["cyan","#00ffff",255],
         ["yellow","#ffff00",255],
-
         ["white","#ffffff",255],
 				["dark red","#660000",255],
 				["dark blue","#000099",255],
