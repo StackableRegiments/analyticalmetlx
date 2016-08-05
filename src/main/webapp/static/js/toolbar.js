@@ -736,8 +736,10 @@ var Modes = (function(){
             };
             var toggleFormattingProperty = function(prop){
                 return function(){
+                    var matched = false;
                     _.each(boardContent.multiWordTexts,function(t){
                         if(t.doc.isActive){
+                            matched = true;
                             var selRange = t.doc.selectedRange();
                             selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
                             if(t.doc.save().length > 0){
@@ -745,6 +747,11 @@ var Modes = (function(){
                             }
                         }
                     });
+                    if(!matched){
+                        var intention = carota.runs.defaultFormatting[prop] = !carota.runs.defaultFormatting[prop];
+                        var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
+                        target.toggleClass("active",intention);
+                    }
                 }
             }
             var setFormattingProperty = function(prop,newValue){
@@ -778,16 +785,17 @@ var Modes = (function(){
                 };
             };
             $(function(){
+                fontBoldSelector = $(".fontBoldSelector");
+                fontItalicSelector = $(".fontItalicSelector");
+                fontUnderlineSelector = $(".fontUnderlineSelector");
+
                 fontOptions= $("#textDropdowns");
                 fontOptionsToggle = $("#fontOptions");
                 fontFamilySelector = $("#fontFamilySelector");
                 fontSizeSelector = $("#fontSizeSelector");
                 fontColorSelector = $("#fontColorSelector");
-                fontBoldSelector = $("#fontBoldSelector");
-                fontItalicSelector = $("#fontItalicSelector");
                 fontLargerSelector = $("#fontLarger");
                 fontSmallerSelector = $("#fontSmaller");
-                fontUnderlineSelector = $("#fontUnderlineSelector");
                 justifySelector = $("#justifySelector");
                 presetFitToText = $("#presetFitToText");
                 presetRunToEdge = $("#presetRunToEdge");
@@ -871,7 +879,13 @@ var Modes = (function(){
                 minimumHeight:function(){
                     return Modes.select.resizeHandleSize * 3;
                 },
-                defaultFontSize:20,
+                default:{
+                    fontSize:20,
+                    bold:false,
+                    underline:false,
+                    italic:false,
+                    color:["#000000",255]
+                },
                 editorFor:function(t){
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
@@ -883,7 +897,7 @@ var Modes = (function(){
                             $("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
                             board[0],
                             isAuthor? blit : noop,
-			    t);
+                            t);
                         if(isAuthor){
                             editor.doc.contentChanged(function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
@@ -901,9 +915,13 @@ var Modes = (function(){
                             });
                             editor.doc.selectionChanged(function(formatReport){
                                 var format = formatReport();
-                                fontBoldSelector.toggleClass("active",format.bold == true);
-                                fontItalicSelector.toggleClass("active",format.italic == true);
-                                fontUnderlineSelector.toggleClass("active",format.underline == true);
+				var setV = function(selector,prop){
+				    carota.runs.defaultFormatting[prop] = (format[prop] == true);
+				    selector.toggleClass("active",format[prop]);
+				};
+				setV(fontBoldSelector,"bold");
+				setV(fontItalicSelector,"italic");
+				setV(fontUnderlineSelector,"underline");
                                 fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
                                 fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
                                 fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
@@ -919,6 +937,13 @@ var Modes = (function(){
                     if(t && t.doc){
                         carota.editor.paint(board[0],t.doc,true);
                     }
+                },
+                applyActiveTextOptions:function(range){
+                    range.setFormatting("size", carota.runs.defaultFormatting.fontSize / scale());
+                    range.setFormatting("bold", carota.runs.defaultFormatting.bold);
+                    range.setFormatting("underline", carota.runs.defaultFormatting.underline);
+                    range.setFormatting("italic", carota.runs.defaultFormatting.italic);
+                    range.setFormatting("color", carota.runs.defaultFormatting.color);
                 },
                 activate:function(){
                     var doubleClickThreshold = 500;
@@ -993,13 +1018,13 @@ var Modes = (function(){
                             newDoc.load([]);
                             newEditor.bounds = newDoc.calculateBounds();
                             newDoc.select(0,0);
-                            newDoc.documentRange().setFormatting("size", Modes.text.defaultFontSize / scale());
                             sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
                             Modes.select.setSelection(sel);
                             newDoc.mouseupHandler(newDoc.byOrdinal(0));
+                            Modes.text.applyActiveTextOptions(newDoc.documentRange());
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
@@ -1399,14 +1424,14 @@ var Modes = (function(){
                 clearSelectionFunction();
             };
 
-						var updateAdministerContentVisualState = function(conversation){
+            var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
-										$("#ban").show();
+                    $("#ban").show();
                     $("#ban").removeClass("disabledButton");
                     $("#administerContent").show();
                     $("#administerContent").removeClass("disabledButton");
                 } else {
-										$("#ban").addClass("disabledButton");
+                    $("#ban").addClass("disabledButton");
                     $("#ban").hide();
                     $("#administerContent").addClass("disabledButton");
                     $("#administerContent").hide();
@@ -1416,7 +1441,7 @@ var Modes = (function(){
                 } else {
                     $("#administerContent").removeClass("activeBrush");
                 }
-						}
+            }
             Progress.onBoardContentChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
@@ -1432,7 +1457,7 @@ var Modes = (function(){
                     $("#administerContent").unbind("click");
                     $("#ban").unbind("click");
                 }
-								updateAdministerContentVisualState(conversation);
+                updateAdministerContentVisualState(conversation);
             };
             return {
                 name:"select",
@@ -1863,7 +1888,7 @@ var Modes = (function(){
                                 deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
                             sendStanza(deleteTransform);
-														clearSelectionFunction();
+                            clearSelectionFunction();
                         }
                     });
                     var threshold = 30;
@@ -2054,7 +2079,7 @@ var Modes = (function(){
                         blit();
                     }
                     Modes.select.dragging = false;
-										updateAdministerContentVisualState();
+                    updateAdministerContentVisualState();
                     Modes.select.resizing = false;
                     registerPositionHandlers(board,down,move,up);
                 },
@@ -2066,7 +2091,7 @@ var Modes = (function(){
                     $("#resize").unbind("click");
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
-										updateAdministerContentVisualState();
+                    updateAdministerContentVisualState();
                 }
             }
         })(),
@@ -2185,221 +2210,221 @@ var Modes = (function(){
         })(),
         draw:(function(){
             var originalBrushes = Brushes.getDefaultBrushes();
-						var brushes = _.map(originalBrushes,function(i){return _.clone(i);});
+            var brushes = _.map(originalBrushes,function(i){return _.clone(i);});
             var currentBrush;
             var erasing = false;
-						var drawAdvancedTools = function(){};
-						var penSizeTemplate = undefined;
-						var penColorTemplate = undefined;
-						var updateOriginalBrush = function(brush){
-								brushes[brush.index] = brush;
-						};
-						var up = function(){};
-						var down = function(){};
-						var move = function(){};
-						$(function(){
-							$(".activeBrush").removeClass("activeBrush");
-							var drawTools = function(){
-									var container = $("#drawTools");
-									_.each(container.find(".modeSpecificTool.pen"),function(button,i){
-											var brush = brushes[i];
-											var thisButton = $(button)
-															.css({color:brush.color})
-															.click(function(){
-																	$(".activeBrush").removeClass("activeBrush");
-																	$(this).addClass("activeBrush");
-																	currentBrush = brush;
-																	updateOriginalBrush(brush);
-																	Modes.draw.drawingAttributes = currentBrush;
-																	erasing = false;
-																	drawAdvancedTools(brush);
-															}).removeClass("fa-tint").removeClass("fa-circle").addClass(brush.isHighlighter ? "fa-circle" : "fa-tint");
-											thisButton.find(".widthIndicator").text(brush.width);
-											if (brush == currentBrush){
-													thisButton.addClass("activeBrush");
-											}
-									});
-							};
-							drawAdvancedTools = function(brush){
-									var dots = $("#colors .dots");
-									var bars = $("#sizes .dots");
-									var colors = Colors.getAllNamedColors();
-									var widths = Brushes.getAllBrushSizes();
-									bars.empty();
-									widths.map(function(width){
-											var sizeDot = penSizeTemplate.clone();
-											bars.append(sizeDot);
-											sizeDot.click(function(){
-													brush.width = width;
-													updateOriginalBrush(brush);
-													currentBrush = brush;
-													drawTools();
-													drawAdvancedTools(brush);
-											});
-											var bar = Canvas.circle(brush.color,width,50);
-											if (width == brush.width){
-													sizeDot.addClass("activeTool");
-											}
-											sizeDot.prepend(bar)
-											var sizeName = width.toString() + 'px';
-											sizeDot.find('.sizeDotName').append(sizeName);
-									});
-									dots.empty();
-									colors.map(function(color){
-											var colorDot = penColorTemplate.clone();
-											dots.append(colorDot);
-											colorDot.on("click",function(){
-													brush.color = color.rgb;
-													currentBrush = brush;
-													updateOriginalBrush(brush);
-													drawTools();
-													drawAdvancedTools(brush);
-											});
-											//var dot = Canvas.circle(color.rgb,50,50);
-											colorDot.css("color",color.rgb);
-											if ("rgb" in color && color.rgb == brush.color){
-													colorDot.addClass("activeTool");
-											}
-											//colorDot.prepend(dot);
-											var colorDotName = color.name;
-											colorDot.find('.colorDotName').append(colorDotName);
-									});
-									var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
-											brush.isHighlighter = true;
-											currentBrush = brush;
-											updateOriginalBrush(brush);
-											drawTools();
-											drawAdvancedTools(brush);
-									});
-									var penButton = $("#setPenToPen").unbind("click").on("click",function(){
-											brush.isHighlighter = false;
-											currentBrush = brush;
-											updateOriginalBrush(brush);
-											drawTools();
-											drawAdvancedTools(brush);
-									});
-									if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-											hlButton.addClass("activeTool").addClass("active");
-											penButton.removeClass("activeTool").removeClass("active");
-									} else {
-											penButton.addClass("activeTool").addClass("active");
-											hlButton.removeClass("activeTool").removeClass("active");
-									}
-									Progress.call("onLayoutUpdated");
-							}
-							$("#resetPenButton").click(function(){
-									var originalBrush = _.find(originalBrushes,function(i){
-											return i.id == currentBrush.id;
-									});
-									if (originalBrush != undefined){
-											currentBrush.width = originalBrush.width;
-											currentBrush.color = originalBrush.color;
-											currentBrush.isHighlighter = originalBrush.isHighlighter;
-											drawTools();
-											drawAdvancedTools(currentBrush);
-									}
-							});
-							penSizeTemplate = $("#penSize .sizeDot").clone();
-							penColorTemplate = $("#penColor .colorDot").clone();
-							currentBrush = brushes[0];
-							drawTools();
-							drawAdvancedTools(currentBrush);
-							var container = $("#drawTools");
-							container.find(".eraser").unbind("click").on("click",function(button){
-									$(".activeBrush").removeClass("activeBrush");
-									$(this).addClass("activeBrush");
-									erasing = true;
-									$("#drawDropdowns").hide();
-							});
-							container.find(".advancedTools").unbind("click").on("click",function(){
-								if (!erasing){
-									drawAdvancedTools(currentBrush);
-									$("#drawDropdowns").toggle();
-								}
-							});
-							$("#closePenDialog").unbind("click").on("click",function(){
-									$("#drawDropdowns").hide();
-							});
-							var currentStroke = [];
-							var isDown = false;
-							var resumeWork;
-							var mousePressure = 256;
-							down = function(x,y,z,worldPos,modifiers){
-									deleted = [];
-									isDown = true;
-									if(!erasing && !modifiers.eraser){
-											boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
-											if (Modes.draw.drawingAttributes.isHighlighter){
-												boardContext.globalAlpha = 0.4;
-											} else {
-												boardContext.globalAlpha = 1.0;
-											}
-											currentStroke = [x, y, mousePressure * z];
-									} else {
-									}
-							};
-							var raySpan = 10;
-							var deleted = [];
-							move = function(x,y,z,worldPos,modifiers){
-									if(erasing || modifiers.eraser){
-											var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
-											var markAsDeleted = function(bounds){
-													var tl = worldToScreen(bounds[0],bounds[1]);
-													var br = worldToScreen(bounds[2],bounds[3]);
-													boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
-											}
-											var deleteInRay = function(coll){
-													$.each(coll,function(i,item){
-															if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
-																	delete coll[item.identity];
-																	deleted.push(item.identity);
-																	markAsDeleted(item.bounds);
-															}
-													})
-											}
-											boardContext.globalAlpha = 0.4;
-											boardContext.fillStyle = "red";
-											deleteInRay(boardContent.inks);
-											deleteInRay(boardContent.highlighters);
-											boardContext.globalAlpha = 1.0;
-									}
-									else{
-											var oldWidth = boardContext.lineWidth;
-											var newWidth = Modes.draw.drawingAttributes.width * z;
-											boardContext.beginPath();
-											boardContext.lineCap = "round";
-											boardContext.lineWidth = newWidth;
-											var lastPoint = _.takeRight(currentStroke,3);
-											boardContext.moveTo(lastPoint[0],lastPoint[1]);
-											boardContext.lineTo(x,y);
-											boardContext.stroke();
-											currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-									}
-							};
-							up = function(x,y,z,worldPos,modifiers){
-									isDown = false;
-									if(erasing || modifiers.eraser){
-											var deleteTransform = batchTransform();
-											deleteTransform.isDeleted = true;
-											deleteTransform.inkIds = deleted;
-											sendStanza(deleteTransform);
-									} else {
-											var newWidth = Modes.draw.drawingAttributes.width * z;
-											boardContext.lineWidth = newWidth;
-											boardContext.beginPath();
-											boardContext.lineWidth = newWidth;
-											boardContext.lineCap = "round";
-											var lastPoint = _.takeRight(currentStroke,3);
-											boardContext.moveTo(lastPoint[0],lastPoint[1]);
-											boardContext.lineTo(x,y);
-											boardContext.stroke();
-											currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-											strokeCollected(currentStroke.join(" "));
-									}
-									//boardContext.globalCompositeOperation = "source-over";
-									boardContext.globalAlpha = 1.0;
-							};
-						});
+            var drawAdvancedTools = function(){};
+            var penSizeTemplate = undefined;
+            var penColorTemplate = undefined;
+            var updateOriginalBrush = function(brush){
+                brushes[brush.index] = brush;
+            };
+            var up = function(){};
+            var down = function(){};
+            var move = function(){};
+            $(function(){
+                $(".activeBrush").removeClass("activeBrush");
+                var drawTools = function(){
+                    var container = $("#drawTools");
+                    _.each(container.find(".modeSpecificTool.pen"),function(button,i){
+                        var brush = brushes[i];
+                        var thisButton = $(button)
+                                .css({color:brush.color})
+                                .click(function(){
+                                    $(".activeBrush").removeClass("activeBrush");
+                                    $(this).addClass("activeBrush");
+                                    currentBrush = brush;
+                                    updateOriginalBrush(brush);
+                                    Modes.draw.drawingAttributes = currentBrush;
+                                    erasing = false;
+                                    drawAdvancedTools(brush);
+                                }).removeClass("fa-tint").removeClass("fa-circle").addClass(brush.isHighlighter ? "fa-circle" : "fa-tint");
+                        thisButton.find(".widthIndicator").text(brush.width);
+                        if (brush == currentBrush){
+                            thisButton.addClass("activeBrush");
+                        }
+                    });
+                };
+                drawAdvancedTools = function(brush){
+                    var dots = $("#colors .dots");
+                    var bars = $("#sizes .dots");
+                    var colors = Colors.getAllNamedColors();
+                    var widths = Brushes.getAllBrushSizes();
+                    bars.empty();
+                    widths.map(function(width){
+                        var sizeDot = penSizeTemplate.clone();
+                        bars.append(sizeDot);
+                        sizeDot.click(function(){
+                            brush.width = width;
+                            updateOriginalBrush(brush);
+                            currentBrush = brush;
+                            drawTools();
+                            drawAdvancedTools(brush);
+                        });
+                        var bar = Canvas.circle(brush.color,width,50);
+                        if (width == brush.width){
+                            sizeDot.addClass("activeTool");
+                        }
+                        sizeDot.prepend(bar)
+                        var sizeName = width.toString() + 'px';
+                        sizeDot.find('.sizeDotName').append(sizeName);
+                    });
+                    dots.empty();
+                    colors.map(function(color){
+                        var colorDot = penColorTemplate.clone();
+                        dots.append(colorDot);
+                        colorDot.on("click",function(){
+                            brush.color = color.rgb;
+                            currentBrush = brush;
+                            updateOriginalBrush(brush);
+                            drawTools();
+                            drawAdvancedTools(brush);
+                        });
+                        //var dot = Canvas.circle(color.rgb,50,50);
+                        colorDot.css("color",color.rgb);
+                        if ("rgb" in color && color.rgb == brush.color){
+                            colorDot.addClass("activeTool");
+                        }
+                        //colorDot.prepend(dot);
+                        var colorDotName = color.name;
+                        colorDot.find('.colorDotName').append(colorDotName);
+                    });
+                    var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
+                        brush.isHighlighter = true;
+                        currentBrush = brush;
+                        updateOriginalBrush(brush);
+                        drawTools();
+                        drawAdvancedTools(brush);
+                    });
+                    var penButton = $("#setPenToPen").unbind("click").on("click",function(){
+                        brush.isHighlighter = false;
+                        currentBrush = brush;
+                        updateOriginalBrush(brush);
+                        drawTools();
+                        drawAdvancedTools(brush);
+                    });
+                    if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
+                        hlButton.addClass("activeTool").addClass("active");
+                        penButton.removeClass("activeTool").removeClass("active");
+                    } else {
+                        penButton.addClass("activeTool").addClass("active");
+                        hlButton.removeClass("activeTool").removeClass("active");
+                    }
+                    Progress.call("onLayoutUpdated");
+                }
+                $("#resetPenButton").click(function(){
+                    var originalBrush = _.find(originalBrushes,function(i){
+                        return i.id == currentBrush.id;
+                    });
+                    if (originalBrush != undefined){
+                        currentBrush.width = originalBrush.width;
+                        currentBrush.color = originalBrush.color;
+                        currentBrush.isHighlighter = originalBrush.isHighlighter;
+                        drawTools();
+                        drawAdvancedTools(currentBrush);
+                    }
+                });
+                penSizeTemplate = $("#penSize .sizeDot").clone();
+                penColorTemplate = $("#penColor .colorDot").clone();
+                currentBrush = brushes[0];
+                drawTools();
+                drawAdvancedTools(currentBrush);
+                var container = $("#drawTools");
+                container.find(".eraser").unbind("click").on("click",function(button){
+                    $(".activeBrush").removeClass("activeBrush");
+                    $(this).addClass("activeBrush");
+                    erasing = true;
+                    $("#drawDropdowns").hide();
+                });
+                container.find(".advancedTools").unbind("click").on("click",function(){
+                    if (!erasing){
+                        drawAdvancedTools(currentBrush);
+                        $("#drawDropdowns").toggle();
+                    }
+                });
+                $("#closePenDialog").unbind("click").on("click",function(){
+                    $("#drawDropdowns").hide();
+                });
+                var currentStroke = [];
+                var isDown = false;
+                var resumeWork;
+                var mousePressure = 256;
+                down = function(x,y,z,worldPos,modifiers){
+                    deleted = [];
+                    isDown = true;
+                    if(!erasing && !modifiers.eraser){
+                        boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
+                        if (Modes.draw.drawingAttributes.isHighlighter){
+                            boardContext.globalAlpha = 0.4;
+                        } else {
+                            boardContext.globalAlpha = 1.0;
+                        }
+                        currentStroke = [x, y, mousePressure * z];
+                    } else {
+                    }
+                };
+                var raySpan = 10;
+                var deleted = [];
+                move = function(x,y,z,worldPos,modifiers){
+                    if(erasing || modifiers.eraser){
+                        var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
+                        var markAsDeleted = function(bounds){
+                            var tl = worldToScreen(bounds[0],bounds[1]);
+                            var br = worldToScreen(bounds[2],bounds[3]);
+                            boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
+                        }
+                        var deleteInRay = function(coll){
+                            $.each(coll,function(i,item){
+                                if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
+                                    delete coll[item.identity];
+                                    deleted.push(item.identity);
+                                    markAsDeleted(item.bounds);
+                                }
+                            })
+                        }
+                        boardContext.globalAlpha = 0.4;
+                        boardContext.fillStyle = "red";
+                        deleteInRay(boardContent.inks);
+                        deleteInRay(boardContent.highlighters);
+                        boardContext.globalAlpha = 1.0;
+                    }
+                    else{
+                        var oldWidth = boardContext.lineWidth;
+                        var newWidth = Modes.draw.drawingAttributes.width * z;
+                        boardContext.beginPath();
+                        boardContext.lineCap = "round";
+                        boardContext.lineWidth = newWidth;
+                        var lastPoint = _.takeRight(currentStroke,3);
+                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.lineTo(x,y);
+                        boardContext.stroke();
+                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                    }
+                };
+                up = function(x,y,z,worldPos,modifiers){
+                    isDown = false;
+                    if(erasing || modifiers.eraser){
+                        var deleteTransform = batchTransform();
+                        deleteTransform.isDeleted = true;
+                        deleteTransform.inkIds = deleted;
+                        sendStanza(deleteTransform);
+                    } else {
+                        var newWidth = Modes.draw.drawingAttributes.width * z;
+                        boardContext.lineWidth = newWidth;
+                        boardContext.beginPath();
+                        boardContext.lineWidth = newWidth;
+                        boardContext.lineCap = "round";
+                        var lastPoint = _.takeRight(currentStroke,3);
+                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.lineTo(x,y);
+                        boardContext.stroke();
+                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        strokeCollected(currentStroke.join(" "));
+                    }
+                    //boardContext.globalCompositeOperation = "source-over";
+                    boardContext.globalAlpha = 1.0;
+                };
+            });
             return {
                 name:"draw",
                 brushes:brushes,
@@ -2410,15 +2435,15 @@ var Modes = (function(){
                     }
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.draw;
-										Modes.draw.drawingAttributes = currentBrush;
-										setActiveMode("#drawTools","#drawMode");
+                    Modes.draw.drawingAttributes = currentBrush;
+                    setActiveMode("#drawTools","#drawMode");
 
                     $(".activeBrush").removeClass("activeBrush");
                     if (erasing){
                         $("#drawTools").find(".eraser").addClass("activeBrush");
                     } else {
                         _.each($("#drawTools").find(".modeSpecificTool.pen"),function(button,i){
-													console.log("trying to activate brush",button,i,currentBrush);
+                            console.log("trying to activate brush",button,i,currentBrush);
                             if ((i + 1) == currentBrush.id){
                                 $(button).addClass("activeBrush");
                             }

@@ -669,6 +669,8 @@
 
                             var startWord = this.wordContainingOrdinal(start),
                                 endWord = this.wordContainingOrdinal(end);
+			    /*Toggling formatting on an empty box*/
+			    if(!endWord) return 0;
 
                             var prefix;
                             if (start === startWord.ordinal) {
@@ -952,7 +954,6 @@
                             ctx.fillStyle = "red";
                             ctx.globalAlpha = 0.1;
                             ctx.fillRect(0,0,doc.frame.actualWidth(),doc.frame.height);
-			    console.log(doc.frame.actualWidth(),doc.frame.height);
                             ctx.globalAlpha = 1.0;
                         }
                         doc.draw(ctx, output);
@@ -2244,6 +2245,7 @@
                 "runs.js": function (exports, module, require) {
                     exports.formattingKeys = [ 'bold', 'italic', 'underline', 'strikeout', 'color', 'font', 'size', 'align', 'script' ];
 
+		    console.log("Building default formatting");
                     exports.defaultFormatting = {
                         size: 30,
                         font: 'sans-serif',

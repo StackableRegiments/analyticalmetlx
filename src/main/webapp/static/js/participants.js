@@ -46,7 +46,6 @@ var Participants = (function(){
             });
         });
         participants = newParticipants;
-	console.log(newParticipants);
         updateParticipantsListing();
     };
     var countTexts = function(stanza){
