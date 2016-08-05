@@ -29,6 +29,7 @@ var Blacklist = (function(){
 			if ("blacklist" in conversation && "jid" in conversation && Conversations.getCurrentConversationJid() == conversation.jid){
 				blacklistAuthors = conversation.blacklist;
 				renderBlacklistAuthorsInPlace();
+				refreshToolState(conversation);
 			}
 		};
 		var renderBlacklistAuthorsInPlace = function(){
@@ -43,8 +44,8 @@ var Blacklist = (function(){
 				blacklistAuthorsContainer.append(rootElem);
 			});
 		};
-		var refreshToolState = function(){
-			if (Conversations.shouldModifyConversation()){
+		var refreshToolState = function(conversation){
+			if (Conversations.shouldModifyConversation(conversation)){
 				$("#ban").show();
 				$("#administerContent").show();
 				$("#menuBlacklist").show();
@@ -55,8 +56,8 @@ var Blacklist = (function(){
 				$("#blacklistPopup").hide();
 			}
 		};
-    var clearState = function(){
-				refreshToolState();
+    var clearState = function(conversation){
+				refreshToolState(conversation);
         blacklists = [];
         currentBlacklist = {};
     };
