@@ -173,12 +173,12 @@ var Submissions = (function(){
 					};
 					console.log(submissionStanza);
 					sendStanza(submissionStanza);
-					alert("submission sent");
 					WorkQueue.gracefullyResume();
+					successAlert("submission sent","your submission has been sent to the instructor");
 				},
 				error: function(e){
 					console.log(e);
-					alert("Submission failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+					errorAlert("Submission failed","This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
 					WorkQueue.gracefullyResume();
 				},
 				data: imageData,

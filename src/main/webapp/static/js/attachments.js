@@ -86,7 +86,7 @@ var Attachments = (function(){
                                 WorkQueue.gracefullyResume();
                             },
                             error:function(e){
-                                alert("upload failed");
+                                errorAlert("upload failed");
                                 console.log("file upload failed",e);
                                 resetUpload();
                                 WorkQueue.gracefullyResume();
