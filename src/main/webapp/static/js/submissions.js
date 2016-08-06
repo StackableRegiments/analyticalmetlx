@@ -129,7 +129,23 @@ var Submissions = (function(){
 		var clientSideSubmissionFunc = function(){
 			WorkQueue.pause();
 			var submissionQuality = 0.4;
-			var imageData = board[0].toDataURL("image/jpeg",submissionQuality);
+			var tempCanvas = $("<canvas />");
+			var w = board[0].width;
+			var h = board[0].height;
+			tempCanvas.width = w;
+			tempCanvas.height = h;
+			tempCanvas.attr("width",w);
+			tempCanvas.attr("height",h);
+			tempCanvas.css({
+				width:w,
+				height:h
+			});
+			var tempCtx = tempCanvas[0].getContext("2d");
+			tempCtx.fillStyle = "white";
+			tempCtx.fillRect(0,0,w,h);
+			tempCtx.drawImage(board[0],0,0,w,h);
+			console.log("drawing",board[0],tempCanvas[0],w,h);
+			var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
 			var t = new Date().getTime();
 			var username = UserSettings.getUsername();
 			var currentSlide = Conversations.getCurrentSlide().id;
