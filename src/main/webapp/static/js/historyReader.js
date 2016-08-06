@@ -595,239 +595,240 @@ var pressureSimilarityThreshold = 32,
 
 var visibleBounds = [];
 function render(content,hq,incCanvasContext,incViewBounds){
-	try {
-		var renderStart = new Date().getTime();
-    var canvasContext = incCanvasContext || boardContext;
-    if(content){
-        var startMark = Date.now();
-        var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
-        try{
-            var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
-            visibleBounds = [];
-            var renderInks = function(inks){
-                if (inks != undefined){
-                    $.each(inks,function(i,ink){
-                        try{
-                            if(intersectRect(ink.bounds,viewBounds)){
-                                drawInk(ink,canvasContext);
+    try {
+        var renderStart = new Date().getTime();
+        var canvasContext = incCanvasContext || boardContext;
+        if(content){
+            var startMark = Date.now();
+            var fitMark,imagesRenderedMark,highlightersRenderedMark,textsRenderedMark,richTextsRenderedMark,inksRenderedMark,renderDecoratorsMark;
+            try{
+                var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
+                visibleBounds = [];
+                var renderInks = function(inks){
+                    if (inks != undefined){
+                        $.each(inks,function(i,ink){
+                            try{
+                                if(intersectRect(ink.bounds,viewBounds)){
+                                    drawInk(ink,canvasContext);
+                                }
                             }
-                        }
-                        catch(e){
-                            console.log("ink render failed for",e,ink.canvas,ink.identity,ink);
-                        }
-                    });
-                }
-            }
-            var renderRichTexts = function(texts){
-                if(texts){
-                    $.each(texts,function(i,text){
-                        if(!text.bounds){
-                            text.bounds = text.doc.calculateBounds();
-                        }
-                        if(intersectRect(text.bounds,viewBounds)){
-                            drawMultiwordText(text);
-                        }
-                    });
-                }
-            }
-            var renderImmediateContent = function(){
-                renderInks(content.highlighters);
-                highlightersRenderedMark = Date.now();
-                $.each(content.texts,function(i,text){
-                    if(intersectRect(text.bounds,viewBounds)){
-                        drawText(text,canvasContext);
-                    }
-                });
-                textsRenderedMark = Date.now();
-                renderRichTexts(content.multiWordTexts);
-                richTextsRenderedMark = Date.now();
-                renderInks(content.inks);
-                inksRenderedMark = Date.now();
-
-                Progress.call("postRender");
-                renderDecoratorsMark = Date.now();
-            }
-            var renderSelectionOutlines = function(){
-                var size = Modes.select.resizeHandleSize;
-                canvasContext.save();
-                var multipleItems = [];
-                _.forEach(Modes.select.selected,function(category){
-                    _.forEach(category,function(item){
-                        var bounds = item.bounds;
-                        var tl = worldToScreen(bounds[0],bounds[1]);
-                        var br = worldToScreen(bounds[2],bounds[3]);
-                        multipleItems.push([tl,br]);
-                        if(bounds){
-                            canvasContext.setLineDash([5]);
-                            canvasContext.strokeStyle = "blue";
-                            canvasContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
-                        }
-                    });
-                });
-                var tb = Modes.select.totalSelectedBounds();
-                if(multipleItems.length > 0){
-                    canvasContext.strokeStyle = "blue";
-                    canvasContext.strokeWidth = 3;
-                    canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
-                }
-                canvasContext.restore();
-            }
-            var renderCanvasInteractables = function(){
-                _.each(Modes.canvasInteractables,function(category){
-                    _.each(category,function(interactable){
-                        canvasContext.save();
-                        interactable.render(canvasContext);
-                        canvasContext.restore();
-                    });
-                });
-            }
-            var renderSelectionGhosts = function(){
-                var zero = Modes.select.marqueeWorldOrigin;
-                if(Modes.select.dragging){
-                    canvasContext.save();
-                    var s = scale();
-                    var x = Modes.select.offset.x - zero.x;
-                    var y = Modes.select.offset.y - zero.y;
-                    var screenOffset = worldToScreen(x,y);
-                    var relativeOffset = worldToScreen(0,0);
-                    canvasContext.translate(
-                        screenOffset.x - relativeOffset.x,
-                        screenOffset.y - relativeOffset.y);
-                    canvasContext.globalAlpha = 0.7;
-                    _.forEach(Modes.select.selected,function(category,name){
-                        _.forEach(category,function(item){
-                            switch(name){
-                            case "images":
-                                drawImage(item,canvasContext);
-                                break;
-                            case "texts":
-                                drawText(item,canvasContext);
-                                break;
-                            case "multiWordTexts":
-                                drawMultiwordText(item);
-                                break;
-                            case "inks":
-                                drawInk(item,canvasContext);
-                                break;
+                            catch(e){
+                                console.log("ink render failed for",e,ink.canvas,ink.identity,ink);
                             }
                         });
-                    });
-                    canvasContext.restore();
+                    }
                 }
-                else if(Modes.select.resizing){
-                    var totalBounds = Modes.select.totalSelectedBounds();
-                    var originalWidth = totalBounds.x2 - totalBounds.x;
-                    var originalHeight = totalBounds.y2 - totalBounds.y;
-                    var requestedWidth = Modes.select.offset.x - totalBounds.x;
-                    var requestedHeight = Modes.select.offset.y - totalBounds.y;
-                    var xScale = requestedWidth / originalWidth;
-                    var yScale = requestedHeight / originalHeight;
-                    var transform = function(x,y,func){
-                        canvasContext.save();
-                        canvasContext.globalAlpha = 0.7;
-                        canvasContext.translate(x,y);
-                        canvasContext.scale(xScale,yScale);
-                        canvasContext.translate(-x,-y);
-                        func();
-                        canvasContext.restore();
-                    };
-                    var noop = function(){};
-                    _.forEach(Modes.select.selected,function(category,name){
+                var renderRichTexts = function(texts){
+                    if(texts){
+                        $.each(texts,function(i,text){
+                            if(!text.bounds){
+                                text.bounds = text.doc.calculateBounds();
+                            }
+                            if(intersectRect(text.bounds,viewBounds)){
+                                drawMultiwordText(text);
+                            }
+                        });
+                    }
+                }
+                var renderImmediateContent = function(){
+                    renderInks(content.highlighters);
+                    highlightersRenderedMark = Date.now();
+                    $.each(content.texts,function(i,text){
+                        if(intersectRect(text.bounds,viewBounds)){
+                            drawText(text,canvasContext);
+                        }
+                    });
+                    textsRenderedMark = Date.now();
+                    renderRichTexts(content.multiWordTexts);
+                    richTextsRenderedMark = Date.now();
+                    renderInks(content.inks);
+                    inksRenderedMark = Date.now();
+
+                    Progress.call("postRender");
+                    renderDecoratorsMark = Date.now();
+                }
+                var renderSelectionOutlines = function(){
+                    var size = Modes.select.resizeHandleSize;
+                    canvasContext.save();
+                    var multipleItems = [];
+                    _.forEach(Modes.select.selected,function(category){
                         _.forEach(category,function(item){
                             var bounds = item.bounds;
-                            var screenPos = worldToScreen(bounds[0],bounds[1]);
-                            var x = screenPos.x;
-                            var y = screenPos.y;
-                            switch(name){
-                            case "images":
-                                transform(x,y,function(){
-                                    drawImage(item,canvasContext);
-                                });
-                                break;
-                            case "texts":
-                                transform(x,y,function(){
-                                    drawText(item,canvasContext);
-                                });
-                                break;
-                            case "multiWordTexts":
-                                canvasContext.save();
-                                canvasContext.globalAlpha = 0.7;
-                                /*Inlining of display logic from
-                                 - Modes.text.draw
-                                 - carota.editor.paint
-                                 */
-                                var scaledText = carota.editor.create(
-                                    {
-                                        querySelector:function(){
-                                            return {
-                                                addEventListener:noop
-                                            }
-                                        },
-                                        handleEvent:noop
-                                    },
-                                    canvasContext,
-                                    noop);
-                                scaledText.position = {x:bounds[0],y:bounds[1]};
-                                scaledText.load(item.doc.save());
-                                scaledText.width(item.doc.width() * xScale);
-                                if(Modes.select.aspectLocked){
-                                    /*If you're looking for the bug where it sometimes ghosts the wrong way, this is it.
-                                     save() doesn't always produce useful results
-                                     and when it doesn't you end up with NaNs.*/
-                                    var source = scaledText.save();
-                                    _.each(source,function(run){
-                                        run.size = run.size * xScale;
-                                    });
-                                    scaledText.load(source);
-                                }
-                                carota.editor.paint(board[0], scaledText);
-                                canvasContext.restore();
-                                break;
-                            case "inks":
-                                transform(x,y,function(){
-                                    drawInk(item,canvasContext);
-                                });
-                                break;
+                            var tl = worldToScreen(bounds[0],bounds[1]);
+                            var br = worldToScreen(bounds[2],bounds[3]);
+                            multipleItems.push([tl,br]);
+                            if(bounds){
+                                canvasContext.setLineDash([5]);
+                                canvasContext.strokeStyle = "blue";
+                                canvasContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
                             }
                         });
                     });
-                }
-            };
-            var loadedCount = 0;
-            var loadedLimit = Object.keys(content.images).length;
-            clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-            fitMark = Date.now();
-            $.each(content.images,function(id,image){
-                try{
-                    if(intersectRect(image.bounds,viewBounds)){
-                        drawImage(image,canvasContext);
+                    var tb = Modes.select.totalSelectedBounds();
+                    if(multipleItems.length > 0){
+                        canvasContext.strokeStyle = "blue";
+                        canvasContext.strokeWidth = 3;
+                        canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
                     }
+                    canvasContext.restore();
                 }
-                catch(e){
-                    console.log("image render failed for",e,image.identity,image);
+                var renderCanvasInteractables = function(){
+                    _.each(Modes.canvasInteractables,function(category){
+                        _.each(category,function(interactable){
+                            canvasContext.save();
+                            interactable.render(canvasContext);
+                            canvasContext.restore();
+                        });
+                    });
                 }
-            });
-            imagesRenderedMark = Date.now();
-            renderImmediateContent();
-            renderSelectionOutlines();
-            renderSelectionGhosts();
-            renderCanvasInteractables();
-            imagesRenderedMark = Date.now();
+                var renderSelectionGhosts = function(){
+                    var zero = Modes.select.marqueeWorldOrigin;
+                    if(Modes.select.dragging){
+                        canvasContext.save();
+                        var s = scale();
+                        var x = Modes.select.offset.x - zero.x;
+                        var y = Modes.select.offset.y - zero.y;
+                        var screenOffset = worldToScreen(x,y);
+                        var relativeOffset = worldToScreen(0,0);
+                        canvasContext.translate(
+                            screenOffset.x - relativeOffset.x,
+                            screenOffset.y - relativeOffset.y);
+                        canvasContext.globalAlpha = 0.7;
+                        _.forEach(Modes.select.selected,function(category,name){
+                            _.forEach(category,function(item){
+                                switch(name){
+                                case "images":
+                                    drawImage(item,canvasContext);
+                                    break;
+                                case "texts":
+                                    drawText(item,canvasContext);
+                                    break;
+                                case "multiWordTexts":
+                                    drawMultiwordText(item);
+                                    break;
+                                case "inks":
+                                    drawInk(item,canvasContext);
+                                    break;
+                                }
+                            });
+                        });
+                        canvasContext.restore();
+                    }
+                    else if(Modes.select.resizing){
+                        var totalBounds = Modes.select.totalSelectedBounds();
+                        var originalWidth = totalBounds.x2 - totalBounds.x;
+                        var originalHeight = totalBounds.y2 - totalBounds.y;
+                        var requestedWidth = Modes.select.offset.x - totalBounds.x;
+                        var requestedHeight = Modes.select.offset.y - totalBounds.y;
+                        var xScale = requestedWidth / originalWidth;
+                        var yScale = requestedHeight / originalHeight;
+                        var transform = function(x,y,func){
+                            canvasContext.save();
+                            canvasContext.globalAlpha = 0.7;
+                            canvasContext.translate(x,y);
+                            canvasContext.scale(xScale,yScale);
+                            canvasContext.translate(-x,-y);
+                            func();
+                            canvasContext.restore();
+                        };
+                        var noop = function(){};
+                        _.forEach(Modes.select.selected,function(category,name){
+                            _.forEach(category,function(item){
+                                var bounds = item.bounds;
+                                var screenPos = worldToScreen(bounds[0],bounds[1]);
+                                var x = screenPos.x;
+                                var y = screenPos.y;
+                                switch(name){
+                                case "images":
+                                    transform(x,y,function(){
+                                        drawImage(item,canvasContext);
+                                    });
+                                    break;
+                                case "texts":
+                                    transform(x,y,function(){
+                                        drawText(item,canvasContext);
+                                    });
+                                    break;
+                                case "multiWordTexts":
+                                    canvasContext.save();
+                                    canvasContext.globalAlpha = 0.7;
+                                    /*Inlining of display logic from
+                                     - Modes.text.draw
+                                     - carota.editor.paint
+                                     */
+                                    var scaledText = carota.editor.create(
+                                        {
+                                            querySelector:function(){
+                                                return {
+                                                    addEventListener:noop
+                                                }
+                                            },
+                                            handleEvent:noop
+                                        },
+                                        canvasContext,
+                                        noop,
+                                        item);
+                                    scaledText.position = {x:bounds[0],y:bounds[1]};
+                                    scaledText.load(item.doc.save());
+                                    scaledText.width(item.doc.width() * xScale);
+                                    if(Modes.select.aspectLocked){
+                                        /*If you're looking for the bug where it sometimes ghosts the wrong way, this is it.
+                                         save() doesn't always produce useful results
+                                         and when it doesn't you end up with NaNs.*/
+                                        var source = scaledText.save();
+                                        _.each(source,function(run){
+                                            run.size = run.size * xScale;
+                                        });
+                                        scaledText.load(source);
+                                    }
+                                    carota.editor.paint(board[0], scaledText);
+                                    canvasContext.restore();
+                                    break;
+                                case "inks":
+                                    transform(x,y,function(){
+                                        drawInk(item,canvasContext);
+                                    });
+                                    break;
+                                }
+                            });
+                        });
+                    }
+                };
+                var loadedCount = 0;
+                var loadedLimit = Object.keys(content.images).length;
+                clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
+                fitMark = Date.now();
+                $.each(content.images,function(id,image){
+                    try{
+                        if(intersectRect(image.bounds,viewBounds)){
+                            drawImage(image,canvasContext);
+                        }
+                    }
+                    catch(e){
+                        console.log("image render failed for",e,image.identity,image);
+                    }
+                });
+                imagesRenderedMark = Date.now();
+                renderImmediateContent();
+                renderSelectionOutlines();
+                renderSelectionGhosts();
+                renderCanvasInteractables();
+                imagesRenderedMark = Date.now();
+            }
+            catch(e){
+                console.log("Render exception",e);
+            }
+            Progress.call("onViewboxChanged");
         }
-        catch(e){
-            console.log("Render exception",e);
+        if ("HealthChecker" in window){
+            HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
         }
-        Progress.call("onViewboxChanged");
+    } catch(e){
+        if ("HealthChecker" in window){
+            HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
+        }
+        throw e;
     }
-		if ("HealthChecker" in window){
-			HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
-		}
-	} catch(e){
-		if ("HealthChecker" in window){
-			HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
-		}
-		throw e;
-	}
 }
 function lightBlueGradient(context,width,height){
     var bgd = context.createLinearGradient(0,0,0,height);

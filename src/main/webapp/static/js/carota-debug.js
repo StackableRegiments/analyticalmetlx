@@ -542,7 +542,7 @@
                             this.select(this.selection.end + this.selectedRange().setText(text), null, takeFocus);
                         },
                         modifyInsertFormatting: function(attribute, value) {
-			    carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             carota.runs.nextInsertFormatting[attribute] = value;
                             this.notifySelectionChanged();
                         },
@@ -590,7 +590,9 @@
                         },
                         runs: function(emit, range) {
                             var startDetails = this.wordContainingOrdinal(Math.max(0, range.start)),
-                                endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1));
+                                endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
+			    if(!(startDetails && endDetails)) return;
+			    /*The words aren't constructed yet*/
                             if (startDetails.index === endDetails.index) {
                                 startDetails.word.runs(emit, {
                                     start: startDetails.offset,
@@ -670,8 +672,8 @@
 
                             var startWord = this.wordContainingOrdinal(start),
                                 endWord = this.wordContainingOrdinal(end);
-			    /*Toggling formatting on an empty box*/
-			    if(!endWord) endWord = startWord;
+                            /*Toggling formatting on an empty box*/
+                            if(!endWord) endWord = startWord;
 
                             var prefix;
                             if (start === startWord.ordinal) {
@@ -984,7 +986,7 @@
                             richClipboard = null,
                             plainClipboard = null;
 
-			doc.privacy = stanza.privacy;
+                        doc.privacy = stanza.privacy;
                         doc.width(canvas.clientWidth);
 
                         doc.claimFocus = function(){
@@ -2262,7 +2264,7 @@
                         var match =  exports.formattingKeys.every(function(key) {
                             return run1[key] === run2[key];
                         })
-			return match;
+                        return match;
                     };
 
                     exports.clone = function(run) {

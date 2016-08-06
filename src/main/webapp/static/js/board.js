@@ -519,6 +519,7 @@ function transformReceived(transform){
         };
         var transformMultiWordText = function(index,text){
             if (text != undefined){
+                console.log("transformmulti",text);
                 var newWidth = (text.width || text.requestedWidth) * transform.xScale;
                 text.requestedWidth = newWidth;
                 text.width = text.requestedWidth;
@@ -678,12 +679,12 @@ function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
             height:px(h)
         });
         var ctx = canvas[0].getContext("2d");
-				/*
-        ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
-        ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
-        ctx.msImageSmoothingEnabled = !disableImageSmoothing;
-        ctx.imageSmoothingEnabled = !disableImageSmoothing;
-				*/
+        /*
+         ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
+         ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
+         ctx.msImageSmoothingEnabled = !disableImageSmoothing;
+         ctx.imageSmoothingEnabled = !disableImageSmoothing;
+         */
         ctx.drawImage(incCanvas,0,0,w,h);
         return canvas[0];
     } else {
