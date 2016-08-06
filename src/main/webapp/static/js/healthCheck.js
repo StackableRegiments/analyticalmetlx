@@ -84,6 +84,12 @@ var HealthChecker = (function(){
 
 var serverResponse = function(responseObj){
 	HealthChecker.addMeasure(responseObj.command,responseObj.success,responseObj.duration);
+	if ("instant" in responseObj){
+		var startTime = responseObj.instant;
+		var totalTime = new Date().getTime() - startTime;
+		var latency = (totalTime - responseObj.duration) / 2;
+		HealthChecker.addMeasure("latency",responseObj.success,latency);
+	}
 }
 
 var HealthCheckViewer = (function(){
