@@ -1,8 +1,5 @@
 var Privacy = (function(){
     var privacy = "PUBLIC";
-		var showBanMessage = function(){
-				infoAlert("you're banned!");
-		};
     var setPrivacyIndicators = function(){
         $.each({privateMode:"PRIVATE",publicMode:"PUBLIC"},function(id,p){
             if (p == privacy){
