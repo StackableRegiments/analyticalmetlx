@@ -543,6 +543,7 @@
                             this.select(this.selection.end + this.selectedRange().setText(text), null, takeFocus);
                         },
                         modifyInsertFormatting: function(attribute, value) {
+			    this.nextInsertFormatting = this.nextInsertFormatting || {};
                             this.nextInsertFormatting[attribute] = value;
                             this.notifySelectionChanged();
                         },
@@ -667,11 +668,12 @@
                             }
 
                             this.applyInsertFormatting(text);
+			    console.log("Applied insertformatting",text);
 
                             var startWord = this.wordContainingOrdinal(start),
                                 endWord = this.wordContainingOrdinal(end);
 			    /*Toggling formatting on an empty box*/
-			    if(!endWord) return 0;
+			    if(!endWord) endWord = startWord;
 
                             var prefix;
                             if (start === startWord.ordinal) {
@@ -2196,10 +2198,13 @@
                             range.doc.modifyInsertFormatting(attribute, value);
                         } else {
                             var saved = range.save();
+			    console.log("Before",attribute,value,saved);
                             var template = {};
                             template[attribute] = value;
                             runs.format(saved, template);
+			    console.log("After",attribute,value,saved);
                             range.setText(saved);
+			    console.log("Updated",range.save());
                         }
                     };
 
@@ -2260,9 +2265,10 @@
                     };
 
                     exports.sameFormatting = function(run1, run2) {
-                        return exports.formattingKeys.every(function(key) {
+                        var match =  exports.formattingKeys.every(function(key) {
                             return run1[key] === run2[key];
                         })
+			return match;
                     };
 
                     exports.clone = function(run) {

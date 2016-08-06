@@ -123,6 +123,7 @@ function sendInk(ink){
 function hexToRgb(hex) {
     if(typeof hex == "object" && hex.alpha) return hex;
     if(typeof hex == "string") hex = [hex,255];
+    if(typeof hex == "array") hex = hex;
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
     return {
         alpha: hex[1],
