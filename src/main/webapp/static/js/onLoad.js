@@ -679,7 +679,8 @@ $(function(){
     });
     $("#submitScreenshotButton").on("click",function(){
 			if ("Submissions" in window){
-				Submissions.requestServerSideSubmission();
+				//Submissions.requestServerSideSubmission();
+				Submissions.sendSubmission();
 			}
     });
     if ("Conversations" in window){

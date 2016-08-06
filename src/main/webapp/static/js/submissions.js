@@ -173,6 +173,7 @@ var Submissions = (function(){
 					};
 					console.log(submissionStanza);
 					sendStanza(submissionStanza);
+					alert("submission sent");
 					WorkQueue.gracefullyResume();
 				},
 				error: function(e){
