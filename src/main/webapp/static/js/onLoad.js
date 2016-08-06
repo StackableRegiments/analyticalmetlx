@@ -678,11 +678,9 @@ $(function(){
         showBackstage("quizzes");
     });
     $("#submitScreenshotButton").on("click",function(){
-        var currentConversation = Conversations.getCurrentConversation();
-        var currentSlide = Conversations.getCurrentSlideJid();
-        if("jid" in currentConversation){
-            submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
-        }
+			if ("Submissions" in window){
+				Submissions.requestServerSideSubmission();
+			}
     });
     if ("Conversations" in window){
         $("#enableSync").on("click",Conversations.enableSyncMove);

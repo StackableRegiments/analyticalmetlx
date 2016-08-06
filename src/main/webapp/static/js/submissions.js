@@ -125,9 +125,65 @@ var Submissions = (function(){
     Progress.historyReceived["Submissions"] = historyReceivedFunction;
 		// disabling this, because it's done in board.
     //Progress.stanzaReceived["Submissions"] = onSubmissionReceived;
+		//
+		var clientSideSubmissionFunc = function(){
+			WorkQueue.pause();
+			var submissionQuality = 0.4;
+			var imageData = board[0].toDataURL("image/jpeg",submissionQuality);
+			var t = new Date().getTime();
+			var username = UserSettings.getUsername();
+			var currentSlide = Conversations.getCurrentSlide().id;
+			var currentConversation = Conversations.getCurrentConversation().jid;
+			var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentConversation.toString(),encodeURI(identity));
+			var title = sprintf("submission%s%s.jpg",username,t.toString());
+			var identity = sprintf("%s:%s:%s",currentConversation,title,t);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				success: function(e){
+					var newIdentity = $(e).find("resourceUrl").text();
+					var submissionStanza = {
+						audiences:[],
+						author:username,
+						blacklist:[],
+						identity:identity,
+						privacy:Privacy.getCurrentPrivacy(),
+						slide:currentSlide,
+						target:"submission",
+						timestamp:t,
+						title:title,
+						type:"submission",
+						url:newIdentity
+					};
+					console.log(submissionStanza);
+					sendStanza(submissionStanza);
+					WorkQueue.gracefullyResume();
+				},
+				error: function(e){
+					console.log(e);
+					alert("Submission failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+					WorkQueue.gracefullyResume();
+				},
+				data: imageData,
+				cache: false,
+				contentType: false,
+				processData: false
+			});
+		};
+		var serverSideSubmissionFunc = function(){
+			if ("Conversations" in window){
+				var currentConversation = Conversations.getCurrentConversation();
+				var currentSlide = Conversations.getCurrentSlideJid();
+				if("jid" in currentConversation){
+						submitScreenshotSubmission(currentConversation.jid.toString(),currentSlide);
+				}
+			}
+		};
     return {
-        getAllSubmissions:function(){return filteredSubmissions();},
-        getCurrentSubmission:function(){return currentSubmission;},
-        processSubmission:onSubmissionReceived
+			getAllSubmissions:function(){return filteredSubmissions();},
+			getCurrentSubmission:function(){return currentSubmission;},
+			processSubmission:onSubmissionReceived,
+			sendSubmission:clientSideSubmissionFunc,
+			requestServerSideSubmission:serverSideSubmissionFunc
     };
 })();

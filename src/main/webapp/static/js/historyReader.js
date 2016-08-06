@@ -872,6 +872,8 @@ function clearBoard(incContext,rect){
         var ctx = incContext == undefined ? boardContext : incContext;
         var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
         ctx.clearRect(r.x,r.y,r.w,r.h);
+				ctx.fillStyle = "white";
+				ctx.fillRect(r.x,r.y,r.w,r.h);
     } catch(e){
         console.log("exception while clearing board:",e,incContext,rect);
     }
