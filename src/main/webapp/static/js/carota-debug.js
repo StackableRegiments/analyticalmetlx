@@ -478,7 +478,6 @@
                             this.words = per(characters(runs)).per(split(self.codes)).map(function(w) {
                                 return word(w, self.codes);
                             }).all();
-			    console.log("load words",this.words);
                             this.words.push(word());/*EOF*/
                             this.layout();
                         },
@@ -881,7 +880,6 @@
                         doc.caretVisible = true;
                         doc.customCodes = function(code, data, allCodes) {};
                         doc.codes = function(code, data) {
-			    console.log("codes",code,data);
                             var instance = codes(code, data, doc.codes);
                             return instance || doc.customCodes(code, data, doc.codes);
                         };
@@ -2201,7 +2199,6 @@
                             template[attribute] = value;
                             runs.format(saved, template);
                             range.setText(saved);
-			    console.log("saved",saved);
                         }
                     };
 

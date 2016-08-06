@@ -775,7 +775,6 @@ var Modes = (function(){
                         }
                     });
                     if(!matched){
-                        console.log("setting up next insert",prop,newValue);
                         carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                         carota.runs.nextInsertFormatting[prop] = newValue;
                     }
@@ -878,7 +877,6 @@ var Modes = (function(){
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
-                        console.log("Selecting color",color,this);
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
                         setFormattingProperty("color",[colorCodes[subject],255])();
