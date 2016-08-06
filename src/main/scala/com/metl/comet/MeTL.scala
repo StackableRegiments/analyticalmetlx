@@ -405,19 +405,19 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
-      println("reorder slides called")
+      //println("reorder slides called")
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
-      println("args parsed: %s, %s".format(jid,newSlides))
+      //println("args parsed: %s, %s".format(jid,newSlides))
       val c = serverConfig.detailsOfConversation(args(0).toString)
-      println("conversation fetched: %s".format(c))
+      //println("conversation fetched: %s".format(c))
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => {
-              println("same number of slides: %s".format(newSlides.arr.length))
+              //println("same number of slides: %s".format(newSlides.arr.length))
               val deserializedSlides = newSlides.arr.map(i => serializer.toSlide(i)).toList
-              println("deserializing slides: %s".format(deserializedSlides))
+              //println("deserializing slides: %s".format(deserializedSlides))
               serverConfig.reorderSlidesOfConversation(c.jid.toString,deserializedSlides)
             }
             case false => c

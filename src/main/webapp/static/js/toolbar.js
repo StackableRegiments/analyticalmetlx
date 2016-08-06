@@ -1230,7 +1230,7 @@ var Modes = (function(){
                         error: function(e){
                             console.log(e);
                             resetImageUpload();
-                            alert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+                            errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
                         },
                         data:currentImage.resizedImage,

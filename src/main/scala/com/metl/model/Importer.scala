@@ -96,7 +96,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         ("inputformat" -> inFormat),
         ("outputformat" -> outFormat)
       )))
-      println("ERROR: %s".format(procResponse.responseAsString))
+      //println("ERROR: %s".format(procResponse.responseAsString))
       val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter process created",3,108)),None))
 
@@ -115,7 +115,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         ("converteroptions" -> converterOptions)
       )
       val jsonSettings = render(importSettings)
-      println("cloudConvertSettings: %s".format(Printer.compact(jsonSettings)))
+      //println("cloudConvertSettings: %s".format(Printer.compact(jsonSettings)))
       val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(schemify(procResponseObj.url),Printer.compact(jsonSettings).getBytes(encoding),List(("Content-Type","application/json"))))
 /*
       val defineProcResponse = describeResponse(client.postFormExpectingHTTPResponse(schemify(procResponseObj.url),List(

@@ -121,7 +121,7 @@ object Globals extends PropertyReader with Logger {
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
         val groups = userGroups ::: additionalGroupsFromProviders
         val lasd = LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],groups,userAttributes)
-        println("got state: %s".format(lasd))
+        //println("got state: %s".format(lasd))
         lasd
       }).getOrElse({
         LiftAuthStateDataForbidden

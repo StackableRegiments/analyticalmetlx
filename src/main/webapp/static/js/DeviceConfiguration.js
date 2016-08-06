@@ -43,7 +43,7 @@ var DeviceConfiguration = (function(){
         } else {
             currentDevice = "browser";
         }
-        console.log("device:",currentDevice);
+        //console.log("device:",currentDevice);
     };
     var setDefaultOptions = function(){
         tryToDetermineCurrentDevice();
@@ -256,7 +256,7 @@ var DeviceConfiguration = (function(){
                 } else {
                     bwidth = $("#masterLayout").width() - marginsFor([boardColumn]).x; 
                     bheight = bwidth - gutterHeight;
-		    console.log("small profile");
+		    //console.log("small profile");
                 }
                 if (bheight < 0 || bwidth < 0){
                     throw {
@@ -309,7 +309,7 @@ var DeviceConfiguration = (function(){
     Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
             if("UserSettings" in window && UserSettings.getIsInteractive()){
-                console.log("enabling tools and slides");
+                //console.log("enabling tools and slides");
                 DeviceConfiguration.setSlides(true);
                 DeviceConfiguration.setTools(true);
                 if(!initialized && "Modes" in window){
@@ -319,7 +319,7 @@ var DeviceConfiguration = (function(){
                     }
                 }
             } else {
-                console.log("disabling because it's not interactive");
+                //console.log("disabling because it's not interactive");
                 DeviceConfiguration.setSlides(false);
                 DeviceConfiguration.setTools(false);
                 if(!initialized){
