@@ -32,7 +32,6 @@ var HealthChecker = (function(){
 				var serverWorkTime = parseInt(time);
 				var totalTime = new Date().getTime() - clientStart;
 				var latency = (totalTime - serverWorkTime) / 2;
-				console.log("serverStatus",time,clientStart,serverWorkTime,totalTime,latency);
 				addMeasureFunc("serverResponse",true,serverWorkTime);		
 				addMeasureFunc("latency",true,latency);
 				_.delay(check,serverStatusInterval);
@@ -178,7 +177,6 @@ var HealthCheckViewer = (function(){
 	};
 	var updateView = function(identity){
 		if ("HealthChecker" in window && viewing == identity){
-			console.log("updating charts");
 			var checkData = HealthChecker.getMeasures();
 			_.forEach(checkData,function(category,categoryName){
 				var chart = charts[categoryName];

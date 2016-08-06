@@ -677,10 +677,12 @@ function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
             height:px(h)
         });
         var ctx = canvas[0].getContext("2d");
+				/*
         ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
         ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
         ctx.msImageSmoothingEnabled = !disableImageSmoothing;
         ctx.imageSmoothingEnabled = !disableImageSmoothing;
+				*/
         ctx.drawImage(incCanvas,0,0,w,h);
         return canvas[0];
     } else {

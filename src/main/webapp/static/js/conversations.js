@@ -21,7 +21,6 @@ var Conversations = (function(){
 				successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
 			};
 			var updateBannedVisualState = function(){
-				console.log("bannedState:",bannedState);
 				if (bannedState){
 				} else {
 				}
