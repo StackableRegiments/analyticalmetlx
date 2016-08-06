@@ -914,18 +914,20 @@ var Modes = (function(){
                                 Progress.call("totalSelectionChanged",[Modes.select.selected]);
                             });
                             editor.doc.selectionChanged(function(formatReport){
-                                var format = formatReport();
-				var setV = function(selector,prop){
-				    carota.runs.defaultFormatting[prop] = (format[prop] == true);
-				    selector.toggleClass("active",format[prop]);
-				};
-				setV(fontBoldSelector,"bold");
-				setV(fontItalicSelector,"italic");
-				setV(fontUnderlineSelector,"underline");
-                                fontSizeSelector.val(format.size || carota.runs.defaultFormatting.size);
-                                fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
-                                fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
-                                justifySelector.val(format.align || carota.runs.defaultFormatting.align);
+                                /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
+                                if(editor.doc.save().length > 0){
+                                    var format = formatReport();
+                                    var setV = function(selector,prop){
+                                        carota.runs.defaultFormatting[prop] = (format[prop] == true);
+                                        selector.toggleClass("active",format[prop]);
+                                    };
+                                    setV(fontBoldSelector,"bold");
+                                    setV(fontItalicSelector,"italic");
+                                    setV(fontUnderlineSelector,"underline");
+                                    fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
+                                    fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
+                                    justifySelector.val(format.align || carota.runs.defaultFormatting.align);
+                                }
                             });
                         }
                     }
@@ -937,13 +939,6 @@ var Modes = (function(){
                     if(t && t.doc){
                         carota.editor.paint(board[0],t.doc,true);
                     }
-                },
-                applyActiveTextOptions:function(range){
-                    range.setFormatting("size", carota.runs.defaultFormatting.fontSize / scale());
-                    range.setFormatting("bold", carota.runs.defaultFormatting.bold);
-                    range.setFormatting("underline", carota.runs.defaultFormatting.underline);
-                    range.setFormatting("italic", carota.runs.defaultFormatting.italic);
-                    range.setFormatting("color", carota.runs.defaultFormatting.color);
                 },
                 activate:function(){
                     var doubleClickThreshold = 500;
@@ -1014,17 +1009,22 @@ var Modes = (function(){
                             doc.mouseupHandler(context.node);
                         } else {
                             var newEditor = createBlankText(worldPos);
+                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
                             var newDoc = newEditor.doc;
-                            newDoc.load([]);
+                            var initParams = [_.merge(_.clone(carota.runs.defaultFormatting),{
+                                text:"",
+                                size:carota.runs.defaultFormatting.size / scale()
+                            })];
+                            newDoc.load(initParams);
+			    console.log(initParams,newDoc.save());
                             newEditor.bounds = newDoc.calculateBounds();
-                            newDoc.select(0,0);
+                            newDoc.select(0,1);
                             sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
                             Modes.select.setSelection(sel);
                             newDoc.mouseupHandler(newDoc.byOrdinal(0));
-                            Modes.text.applyActiveTextOptions(newDoc.documentRange());
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
