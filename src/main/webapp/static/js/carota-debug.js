@@ -543,12 +543,12 @@
                             this.select(this.selection.end + this.selectedRange().setText(text), null, takeFocus);
                         },
                         modifyInsertFormatting: function(attribute, value) {
-			    this.nextInsertFormatting = this.nextInsertFormatting || {};
-                            this.nextInsertFormatting[attribute] = value;
+			    carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            carota.runs.nextInsertFormatting[attribute] = value;
                             this.notifySelectionChanged();
                         },
                         applyInsertFormatting: function(text) {
-                            var formatting = this.nextInsertFormatting;
+                            var formatting = carota.runs.nextInsertFormatting;
                             var insertFormattingProperties = Object.keys(formatting);
                             if (insertFormattingProperties.length) {
                                 text.forEach(function(run) {
@@ -668,7 +668,6 @@
                             }
 
                             this.applyInsertFormatting(text);
-			    console.log("Applied insertformatting",text);
 
                             var startWord = this.wordContainingOrdinal(start),
                                 endWord = this.wordContainingOrdinal(end);
@@ -819,7 +818,7 @@
                                 typeof ordinalEnd === 'number' ? ordinalEnd : this.selection.start,
                                 this.frame.length - 1
                             );
-                            this.nextInsertFormatting = {};
+                            carota.runs.nextInsertFormatting = {};
 
                             /*  NB. always fire this even if the positions stayed the same. The
                              event means that the formatting of the selection has changed
@@ -2198,13 +2197,11 @@
                             range.doc.modifyInsertFormatting(attribute, value);
                         } else {
                             var saved = range.save();
-			    console.log("Before",attribute,value,saved);
                             var template = {};
                             template[attribute] = value;
                             runs.format(saved, template);
-			    console.log("After",attribute,value,saved);
                             range.setText(saved);
-			    console.log("Updated",range.save());
+			    console.log("saved",saved);
                         }
                     };
 
