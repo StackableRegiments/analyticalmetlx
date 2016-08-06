@@ -205,7 +205,7 @@ trait HttpReqUtils {
   protected def updatedStore(authSession:AuthSession,req:HttpServletRequest):Map[String,HttpServletRequest] = {
     val reqId = generateIdForReq(req)
     embedReqId(req,reqId)
-    println("storing: %s => %s".format(reqId,req))
+    //println("storing: %s => %s".format(reqId,req))
     authSession.getStoredRequests.updated(reqId,freezeRequest(req))
   }
   protected def updatedStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):Map[String,HttpServletRequest] = {
@@ -224,7 +224,7 @@ trait HttpReqUtils {
     } 
   }
   protected def embedReqId(req:HttpServletRequest,id:String):HttpServletRequest = {
-    println("embeddingReqId: %s => %s".format(id,req))
+    //println("embeddingReqId: %s => %s".format(id,req))
     req.setAttribute(reqIdParameter,id)
     req
   }
@@ -480,7 +480,7 @@ class LoggedInFilter extends Filter with HttpReqUtils {
             case has@HealthyAuthSession(Session,requests,username,groups,attrs) => { //let the request through 
               val storedReqId = getIdFromReq(httpReq) 
               requests.get(storedReqId).map(storedReq => {
-                println("replayingReq(%s): %s => %s ".format(storedReqId,storedReq,has.getStoredRequests))
+                //println("replayingReq(%s): %s => %s ".format(storedReqId,storedReq,has.getStoredRequests))
                 sessionStore.updateSession(Session,s => HealthyAuthSession(Session,requests - storedReqId,username,groups,attrs)) // clear the rewrite
                 //sessionStore.updateSession(Session,s => HealthyAuthSession(Session,Map.empty[String,HttpServletRequest],username,groups,attrs)) // clear the rewrite
                 val authedReq = completeAuthentication(storedReq,httpResp,Session,username,groups,attrs)
@@ -698,11 +698,11 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
       authSession.gensymMap.get(f).map(securedName => (f,req.getParameter(securedName)))
     }):_*)
     validateFunc(fieldMap).map(userTup => {
-      println("validation succeeded")
+      //println("validation succeeded")
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.storedRequests,userTup._1,userTup._2,userTup._3))
       true
     }).getOrElse({
-      println("validation failed")
+      //println("validation failed")
       generateForm(authSession,res,getOriginalRequest(authSession,req))
     })
   }
@@ -797,7 +797,7 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
     val saml2Client: Saml2Client = new Saml2Client(){
       override def getStateParameter(webContext: WebContext): String = {
         val relayState = webContext.getFullRequestURL
-        println("generating relayState: %s".format(relayState))
+        //println("generating relayState: %s".format(relayState))
         relayState
       }
     }
@@ -919,9 +919,9 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       val transformedAttrs = attributes.flatMap(attr => {
         samlConfiguration.attributeTransformers.get(attr._1).map(attrName => (attrName,attr._2))
       }).toList
-      println("looking for RelayState in request: %s".format(request))
+      //println("looking for RelayState in request: %s".format(request))
       Some(request.getParameter("RelayState")).filterNot(rs => rs == null || rs.length == 0).foreach(relayState => {
-        println("found RelayState: %s in %s".format(relayState,authSession.getStoredRequests))
+        //println("found RelayState: %s in %s".format(relayState,authSession.getStoredRequests))
         embedReqId(request,relayState)
       })
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.getStoredRequests,userProfile.getId,groups,attributes ::: transformedAttrs))

@@ -374,7 +374,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     def init:Unit = {}
     def load(key:Object):Object = key match {
       case k:A => {
-        println("%s MISS %s".format(cacheName,key))
+        //println("%s MISS %s".format(cacheName,key))
         creationFunc(k).asInstanceOf[Object]
       }
       case _ => null
