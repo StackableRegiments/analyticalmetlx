@@ -1195,8 +1195,11 @@ var board = function(options){
             }
         });
         prerenderTextMark = Date.now();
-        _.each(boardContent.multiWordTexts,function(text,i){
-            Modes.text.editorFor(text).doc.load(text.words);
+				_.each(boardContent.multiWordTexts,function(text,i){
+            var editor = Modes.text.editorFor(text).doc;
+            editor.load(text.words);
+            text.bounds = editor.calculateBounds();
+            incorporateBoardBounds(text.bounds);
         });
         renderMultiWordMark = Date.now();
 
@@ -2354,6 +2357,9 @@ var board = function(options){
     catch(e){
         console.log("drawText exception",e);
     }
+	}
+	function drawMultiwordText(item){
+    Modes.text.draw(item);
 	}
 	var drawInk = function(ink){
     var sBounds = screenBounds(ink.bounds);
