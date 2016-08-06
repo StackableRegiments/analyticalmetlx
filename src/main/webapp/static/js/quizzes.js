@@ -233,6 +233,10 @@ var Quizzes = (function(){
         }
 
         var theseQuizAnswerers = quizAnswersFunction(quiz);
+				var totalAnswerCount = _.size(theseQuizAnswerers);
+				var highWaterMark = totalAnswerCount * 0.5;
+				var optimumMark = totalAnswerCount;
+				var lowWaterMark = totalAnswerCount * 0.25;
         if ("url" in quiz){
 					rootElem.find(".quizImagePreview").attr("src",sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quiz.id)).show();
         }
@@ -240,6 +244,11 @@ var Quizzes = (function(){
             rootElem.find(".quizImagePreview").hide();
         }
        /*var generateColorClass = function(color) {return sprintf("border-color:%s", color.toString().split(",")[0])}*/
+				var quizCountContainer = rootElem.find(".quizOptionCountContainer");
+				var quizOptionCountElement = rootElem.find(".quizOptionCount");
+				quizOptionCountElement.text(quiz.options.length);
+				var quizOptionCountPluralizer = rootElem.find(".quizOptionCountPluralizer");
+				quizOptionCountPluralizer.text(quiz.options.length == 1 ? "" : "s");
 				var quizOptionContainer = rootElem.find(".quizOptionContainer");
 				var quizOptionTemplate = quizOptionContainer.find(".quizOption").clone();
 				quizOptionContainer.empty();
@@ -251,10 +260,14 @@ var Quizzes = (function(){
 					});	
 					optionRootElem.find(".quizOptionText").text(qo.text);
 					optionRootElem.find(".quizOptionName").text(qo.name);
+					var optionMeter = optionRootElem.find(".quizOptionMeter");
 					if(Conversations.shouldModifyConversation()){
-						optionRootElem.find(".quizOptionAnswerCount").text(quizOptionAnswerCount(quiz,qo));
+						var score = quizOptionAnswerCount(quiz,qo);
+						optionRootElem.find(".quizOptionAnswerCount").text(score);
+						optionMeter.attr("value",score).attr("min",0).attr("max",totalAnswerCount).attr("low",lowWaterMark).attr("high",highWaterMark).attr("optimum",optimumMark).text(sprintf("%s out of %s",score,totalAnswerCount));
 					} else {
 						optionRootElem.find(".quizOptionCountContainer").remove();
+						optionMeter.remove();
 					}
         });
         if (Conversations.shouldModifyConversation()){

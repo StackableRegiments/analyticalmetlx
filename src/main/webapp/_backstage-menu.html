@@ -227,14 +227,18 @@
                 <canvas class="quizResultsGraph"></canvas>
                 <h3 class="quizQuestion"></h3>
                 <img class="quizImagePreview"></img>
+								<div class="quizOptionCountContainer">
+									There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
+								</div>
                 <div class="quizOptionContainer flex-container-column">
                   <!-- many ".quizOption"s are cloned from JS -->
                   <button class="quizOption button-transparent-border flex-container-row space-between">
                     <span class="quizOptionName mrh"></span>
                     <span class="quizOptionText"></span>
-                    <!--<span class="quizOptionCountContainer">
-                        <span class="quizOptionAnswerCount"></span>
-                    </span>-->
+                    <span class="quizOptionCountContainer">
+											<span class="quizOptionAnswerCount"></span>
+                    </span>
+										<meter class="quizOptionMeter"></meter>
                     <span class="fa fa-thumbs-up align-right mlh"></span>
                   </button>
                 </div>
