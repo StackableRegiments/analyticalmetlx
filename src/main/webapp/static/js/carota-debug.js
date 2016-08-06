@@ -478,6 +478,7 @@
                             this.words = per(characters(runs)).per(split(self.codes)).map(function(w) {
                                 return word(w, self.codes);
                             }).all();
+			    console.log("load words",this.words);
                             this.words.push(word());/*EOF*/
                             this.layout();
                         },
@@ -879,6 +880,7 @@
                         doc.caretVisible = true;
                         doc.customCodes = function(code, data, allCodes) {};
                         doc.codes = function(code, data) {
+			    console.log("codes",code,data);
                             var instance = codes(code, data, doc.codes);
                             return instance || doc.customCodes(code, data, doc.codes);
                         };
@@ -2245,7 +2247,6 @@
                 "runs.js": function (exports, module, require) {
                     exports.formattingKeys = [ 'bold', 'italic', 'underline', 'strikeout', 'color', 'font', 'size', 'align', 'script' ];
 
-		    console.log("Building default formatting");
                     exports.defaultFormatting = {
                         size: 30,
                         font: 'sans-serif',
@@ -2433,7 +2434,6 @@
                      */
 
                     module.exports = function(codes) {
-
                         var word = null, trailingSpaces = null, newLine = true;
 
                         return function(emit, inputChar) {
