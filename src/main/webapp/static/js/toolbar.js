@@ -718,9 +718,9 @@ var Modes = (function(){
                 presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions,fontLargerSelector,fontSmallerSelector;
 
             var echoesToDisregard = {};
-            var createBlankText = function(worldPos){
+            var createBlankText = function(worldPos,runs){
                 var width = Modes.text.minimumWidth / scale();
-                return Modes.text.editorFor({
+                var editor = Modes.text.editorFor({
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     privacy:Privacy.getCurrentPrivacy(),
@@ -733,6 +733,8 @@ var Modes = (function(){
                     author:UserSettings.getUsername(),
                     words:[]
                 });
+                editor.doc.load(runs);
+                return editor;
             };
             var toggleFormattingProperty = function(prop){
                 return function(){
@@ -741,32 +743,41 @@ var Modes = (function(){
                         if(t.doc.isActive){
                             matched = true;
                             var selRange = t.doc.selectedRange();
+                            /*General would interfere with specific during setFormatting*/
+                            carota.runs.nextInsertFormatting = {};
                             selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
                         }
                     });
-		    /*
                     if(!matched){
-                        var intention = carota.runs.defaultFormatting[prop] = !carota.runs.defaultFormatting[prop];
+                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                        var intention = carota.runs.nextInsertFormatting[prop] = !carota.runs.nextInsertFormatting[prop];
                         var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
                         target.toggleClass("active",intention);
                     }
-		     */
                 }
             }
             var setFormattingProperty = function(prop,newValue){
                 return function(){
+                    var matched = false;
                     newValue = newValue || $(this).val();
                     _.each(boardContent.multiWordTexts,function(t){
                         if(t.doc.isActive){
+                            matched = true;
+                            /*General would interfere with specific during setFormatting*/
+                            carota.runs.nextInsertFormatting = {};
                             t.doc.selectedRange().setFormatting(prop,newValue);
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
                         }
                     });
+                    if(!matched){
+                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                        carota.runs.nextInsertFormatting[prop] = newValue;
+                    }
                 }
             };
             var scaleCurrentSelection = function(factor){
@@ -857,23 +868,20 @@ var Modes = (function(){
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
                 fontUnderlineSelector.click(toggleFormattingProperty("underline"));
-                fontFamilySelector.change(setFormattingProperty("font"));
-                fontSizeSelector.change(setFormattingProperty("size"));
-                fontColorSelector.change(setFormattingProperty("color"));
-		var colorCodes = {
-		    red:"#ff0000",
-		    blue:"#0000ff",
-		    black:"#000000"
-		};
-                _.each(["red","blue","black"],function(color){
-                    $(sprintf("#%sText",color)).click(setFormattingProperty("color",colorCodes[color]));
+                var colorCodes = {
+                    red:"#ff0000",
+                    blue:"#0000ff",
+                    black:"#000000"
+                };
+                var colors = ["red","blue","black"];
+                _.each(colors,function(color){
+                    var subject = color;
+                    $(sprintf("#%sText",color)).click(function(){
+                        $("#textTools .fa-tint").removeClass("active");
+                        $(this).addClass("active");
+                        setFormattingProperty("color",[colorCodes[subject],255])();
+                    });
                 });
-                justifySelector.change(setFormattingProperty("align"));
-                presetFitToText.click(adoptPresetWidth("fitToText"));
-                presetRunToEdge.click(adoptPresetWidth("runToEdge"));
-                presetNarrow.click(adoptPresetWidth("narrow"));
-                presetWiden.click(adoptPresetWidth("widen"));
-                presetCenterOnScreen.click(adoptPresetWidth("centerOnScreen"));
                 presetFullscreen.click(adoptPresetWidth("fullscreen"));
                 fontOptionsToggle.click(function(){fontOptions.toggle()});
                 $("#closeTextDialog").click(function(){
@@ -924,17 +932,34 @@ var Modes = (function(){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
                                 if(editor.doc.save().length > 0){
                                     var format = formatReport();
-				    console.log("selectionChanged",format);
+                                    carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                                    var textColors = [
+                                        $("#blackText"),
+                                        $("#redText"),
+                                        $("#blueText")
+                                    ];
                                     var setV = function(selector,prop){
-                                        //carota.runs.defaultFormatting[prop] = (format[prop] == true);
-                                        selector.toggleClass("active",format[prop]);
+                                        var isToggled = (format[prop] == true);
+                                        if(isToggled){
+                                            carota.runs.nextInsertFormatting[prop] = isToggled;
+                                        }
+                                        selector.toggleClass("active",isToggled);
                                     };
+                                    var setIf = function(selector,prop,value){
+                                        var equal = _.isEqual(format[prop],value);
+                                        if(prop in format){
+                                            if(equal){
+                                                carota.runs.nextInsertFormatting[prop] = value;
+                                            }
+                                        }
+                                        selector.toggleClass("active",equal);
+                                    }
                                     setV(fontBoldSelector,"bold");
                                     setV(fontItalicSelector,"italic");
                                     setV(fontUnderlineSelector,"underline");
-                                    fontFamilySelector.val(format.font || carota.runs.defaultFormatting.font);
-                                    fontColorSelector.val(format.color || carota.runs.defaultFormatting.color);
-                                    justifySelector.val(format.align || carota.runs.defaultFormatting.align);
+                                    setIf(textColors[0],"color",["#000000",255]);
+                                    setIf(textColors[1],"color",["#ff0000",255]);
+                                    setIf(textColors[2],"color",["#0000ff",255]);
                                 }
                             });
                         }
@@ -1016,13 +1041,19 @@ var Modes = (function(){
                             Modes.select.setSelection(sel);
                             doc.mouseupHandler(context.node);
                         } else {
-                            var newEditor = createBlankText(worldPos);
-                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            var newEditor = createBlankText(worldPos,[{
+                                text:" ",
+                                italic:carota.runs.nextInsertFormatting.italic == true,
+                                bold:carota.runs.nextInsertFormatting.bold == true,
+                                underline:carota.runs.nextInsertFormatting.underline == true,
+                                color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+                                size:carota.runs.defaultFormatting.size / scale()
+                            }]);
                             var newDoc = newEditor.doc;
-			    newDoc.select(0,0);
-			    var range = newDoc.selectedRange();
-			    range.setFormatting("size",carota.runs.defaultFormatting.size / scale());
+                            newDoc.select(0,1);
                             newEditor.bounds = newDoc.calculateBounds();
+                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
                             sel = {multiWordTexts:{}};
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
                             Modes.select.setSelection(sel);

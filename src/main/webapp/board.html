@@ -5,9 +5,9 @@
   <script src="static/js/stable/jquery.ui.widget.js"></script>
   <script src="static/js/stable/jquery.iframe-transport.js"></script>
   <script src="static/js/stable/jquery.fileupload.js"></script>
-	<link rel="stylesheet" href="static/css/jAlert.css"></link>
-	<script src="static/js/stable/jAlert.min.js"></script>
-	<script src="static/js/stable/jAlert-functions.min.js"></script>
+  <link rel="stylesheet" href="static/css/jAlert.css"></link>
+  <script src="static/js/stable/jAlert.min.js"></script>
+  <script src="static/js/stable/jAlert-functions.min.js"></script>
   <script data-lift="with-resource-id" src="static/js/healthCheck.js"></script>
   <script data-lift="with-resource-id" src="static/js/Bench.js"></script>
   <script data-lift="with-resource-id" src="static/js/defaults.js"></script>
@@ -31,9 +31,6 @@
   <script data-lift="with-resource-id" src="static/js/carota-debug.js"></script>
   <script data-lift="with-resource-id" src="static/js/hotkeys.js"></script>
   <script data-lift="with-resource-id" src="static/js/contentFilter.js"></script>
-	<!--  <script data-lift="with-resource-id" src="static/js/canvasFilters.js"></script>-->
-
-	<!--<script src="static/js/Chart.min.js"></script>-->
   <script src="static/js/stable/Chart.bundle.min.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <style>
@@ -43,8 +40,6 @@
     }
     }
     #masterLayout {
-    //  flex-direction:row;
-    //  flex-pack:justify;
     height:100% !important;
     width:100% !important;
     }
@@ -82,17 +77,21 @@
       </span>
       <div class="headerRow1">
         <span id="username" ></span>
+        <span id="currentConversationTitleContainer" >
+          <span> working in </span>
+          <span id="currentConversationTitle"></span>
+          <span> Page </span>
+        </span>
         <span id="currentSlide" ></span>
-        <span id="currentConversationTitle" ></span>
       </div>
       <div id="slideControls"></div>
       <span class="lift:embed?what=_backstage-menu"></span>
     </div>
     <div id="masterLayout" class="flex-container-responsive">
-      <div class="shrinkWrappedColumn mrh" id="toolsColumn">
+      <div class="shrinkWrappedColumn" id="toolsColumn">
         <div class="lift:embed?what=_ribbon" ></div>
       </div>
-      <div class="expandoColumn expandoRow main-board mrh flex-container-column np" id="boardColumn">
+      <div class="expandoColumn expandoRow main-board mrh mlh flex-container-column np" id="boardColumn">
         <div class="lift:embed?what=_presentationSpace grow" ></div>
         <div id="notices" class="body-bg"></div>
       </div>

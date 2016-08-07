@@ -344,7 +344,7 @@ case class MeTLMultiWordText(override val server:ServerConfiguration,override va
   })
   override def adjustVisual(xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double):MeTLMultiWordText = Stopwatch.time("MeTLMultiWordText.adjustVisual",{
     val averageFactor = (xScale + yScale) / 2
-    copy(height = height * yScale, width = width * xScale, x = x + xTranslate, y = y + yTranslate)
+    copy(words = words.map(_.scale(xScale)), height = height * yScale, width = width * xScale, x = x + xTranslate, y = y + yTranslate)
   })
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLMultiWordText = Stopwatch.time("MeTLMultiWordText.adjustTimestamp",{
     copy(timestamp = newTime)

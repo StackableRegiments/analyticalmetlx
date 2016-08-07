@@ -478,7 +478,6 @@
                             this.words = per(characters(runs)).per(split(self.codes)).map(function(w) {
                                 return word(w, self.codes);
                             }).all();
-			    console.log("load words",this.words);
                             this.words.push(word());/*EOF*/
                             this.layout();
                         },
@@ -543,12 +542,12 @@
                             this.select(this.selection.end + this.selectedRange().setText(text), null, takeFocus);
                         },
                         modifyInsertFormatting: function(attribute, value) {
-			    this.nextInsertFormatting = this.nextInsertFormatting || {};
-                            this.nextInsertFormatting[attribute] = value;
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            carota.runs.nextInsertFormatting[attribute] = value;
                             this.notifySelectionChanged();
                         },
                         applyInsertFormatting: function(text) {
-                            var formatting = this.nextInsertFormatting;
+                            var formatting = carota.runs.nextInsertFormatting;
                             var insertFormattingProperties = Object.keys(formatting);
                             if (insertFormattingProperties.length) {
                                 text.forEach(function(run) {
@@ -591,7 +590,9 @@
                         },
                         runs: function(emit, range) {
                             var startDetails = this.wordContainingOrdinal(Math.max(0, range.start)),
-                                endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1));
+                                endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
+			    if(!(startDetails && endDetails)) return;
+			    /*The words aren't constructed yet*/
                             if (startDetails.index === endDetails.index) {
                                 startDetails.word.runs(emit, {
                                     start: startDetails.offset,
@@ -668,12 +669,11 @@
                             }
 
                             this.applyInsertFormatting(text);
-			    console.log("Applied insertformatting",text);
 
                             var startWord = this.wordContainingOrdinal(start),
                                 endWord = this.wordContainingOrdinal(end);
-			    /*Toggling formatting on an empty box*/
-			    if(!endWord) endWord = startWord;
+                            /*Toggling formatting on an empty box*/
+                            if(!endWord) endWord = startWord;
 
                             var prefix;
                             if (start === startWord.ordinal) {
@@ -819,7 +819,7 @@
                                 typeof ordinalEnd === 'number' ? ordinalEnd : this.selection.start,
                                 this.frame.length - 1
                             );
-                            this.nextInsertFormatting = {};
+                            carota.runs.nextInsertFormatting = {};
 
                             /*  NB. always fire this even if the positions stayed the same. The
                              event means that the formatting of the selection has changed
@@ -882,7 +882,6 @@
                         doc.caretVisible = true;
                         doc.customCodes = function(code, data, allCodes) {};
                         doc.codes = function(code, data) {
-			    console.log("codes",code,data);
                             var instance = codes(code, data, doc.codes);
                             return instance || doc.customCodes(code, data, doc.codes);
                         };
@@ -987,7 +986,7 @@
                             richClipboard = null,
                             plainClipboard = null;
 
-			doc.privacy = stanza.privacy;
+                        doc.privacy = stanza.privacy;
                         doc.width(canvas.clientWidth);
 
                         doc.claimFocus = function(){
@@ -2198,13 +2197,10 @@
                             range.doc.modifyInsertFormatting(attribute, value);
                         } else {
                             var saved = range.save();
-			    console.log("Before",attribute,value,saved);
                             var template = {};
                             template[attribute] = value;
                             runs.format(saved, template);
-			    console.log("After",attribute,value,saved);
                             range.setText(saved);
-			    console.log("Updated",range.save());
                         }
                     };
 
@@ -2268,7 +2264,7 @@
                         var match =  exports.formattingKeys.every(function(key) {
                             return run1[key] === run2[key];
                         })
-			return match;
+                        return match;
                     };
 
                     exports.clone = function(run) {
