@@ -130,11 +130,36 @@ var HealthCheckViewer = (function(){
 						text: categoryName
 					},
 					scales: {
-						yAxes: [{
-							stacked: true,
-							ticks: {
+						yAxes: [
+							{
+								id:"durationAxis",
+								type: "linear",
+								stacked: true,
+								display:true,
+								position:"left",
+								ticks: {
+								},
+								labels: {
+									show: true
+								}
+							},
+							{
+								id:"errorAxis",
+								type: "linear",
+								stacked: true,
+								display:true,
+								position:"right",
+								ticks: {
+									beginAtZero:true,
+									min:0,
+									max:1,
+									stepSize:1
+								},
+								labels: {
+									show: true
+								}
 							}
-						}],
+						],
 						xAxes: [{
 							type: "linear",
 							position: "bottom",
@@ -143,36 +168,59 @@ var HealthCheckViewer = (function(){
 							}
 						}]
 					},
+					elements:{
+						line: {
+							fill: false
+						},
+						bar: {
+							fill:true
+						}
+					},
 					legend:{
 						display:false
 					}
 				};
+				successData = _.map(category,function(d){
+					return {
+						x:d.instant,
+						y: "success" in d && d.success ? 0 : 1 
+					};
+				});
 				var data = {
 					labels: _.map(category,"instant"),
 					datasets:[
 						{
+							type:"line",
+							label:"error",
+							data:successData,
+							fill:true,
+							borderColor:"rgba(0,0,0,0.5)",//["red"],
+							backgroundColor:"rgba(255,0,0,0.3)",
+							borderWidth:1,
+							pointRadius:0,
+							yAxisID: "errorAxis"
+						},
+						{
 							label:"duration",
+							type:"line",
 							data:_.map(category,function(sample){
 								return {
 									y:sample.duration,
 									x:sample.instant
 								}
 							}),
-							borderColor:["black"],
-							backgroundColor:["gray"],
-							borderWidth:1
-						}/*,
-						{
-							data:_.map(category,"success"),
-							borderColor:["black"],
-							backgroundColor:["gray"],
-							borderWidth:1
+							fill:false,
+							pointRadius:0,
+							borderColor:"rgba(0,0,0,1)",
+							backgroundColor:"rgba(0,0,255,1)",
+							borderWidth:1,
+							yAxisID: "durationAxis"
 						}
-						*/
+
 					]
 				};
 				var chartDesc = {
-					type:"line",
+					type:"bar",
 					data: data,
 					options: options
 				};
@@ -190,10 +238,16 @@ var HealthCheckViewer = (function(){
 			_.forEach(checkData,function(category,categoryName){
 				var chart = charts[categoryName];
 				if (chart){
-					chart.data.datasets[0].data = _.map(category,function(sample){
+					chart.data.datasets[1].data = _.map(category,function(sample){
 						return {
 							y:sample.duration,
 							x:sample.instant
+						};
+					});
+					chart.data.datasets[0].data = _.map(category,function(sample){
+						return {
+							x:sample.instant,
+							y: "success" in sample && sample.success ? 0 : 1 
 						};
 					});
 					chart.update();

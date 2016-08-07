@@ -11,6 +11,8 @@ import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
 import com.metl.model._
+import net.liftweb.http.js.JsCmd
+import net.liftweb.http.js.JsCmds._
 
 object Boot{
   val ninetyDays = 60*60*24*90
@@ -69,6 +71,8 @@ class Boot extends Logger {
       }
       case _ => NotFoundAsResponse(RedirectResponse("/"))
     }
+
+    //LiftRules.noCometSessionCmd.default.set(() => RedirectTo("/conversationSearch"):JsCmd)
 
     def sitemap() = SiteMap(
       //API catalog
