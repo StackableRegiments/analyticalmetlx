@@ -72,7 +72,7 @@ class Boot extends Logger {
       case _ => NotFoundAsResponse(RedirectResponse("/"))
     }
 
-    //LiftRules.noCometSessionCmd.default.set(() => RedirectTo("/conversationSearch"):JsCmd)
+    LiftRules.noCometSessionCmd.default.set(() => Reload:JsCmd)
 
     def sitemap() = SiteMap(
       //API catalog
