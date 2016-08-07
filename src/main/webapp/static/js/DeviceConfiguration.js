@@ -451,7 +451,8 @@ var DeviceConfiguration = (function(){
                 width:100,
                 height:75
             },
-            toolsColumn:100
+            toolsColumn:100,
+	    keyboard:236
         }
     };
 })();
