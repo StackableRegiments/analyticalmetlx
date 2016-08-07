@@ -1582,17 +1582,25 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     stanza match {
       case m:MeTLMoveDelta => {
         val publicRoom = rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
-        val publicHistory = publicRoom.getHistory
         val privateRoom = rooms.getOrElse((serverName,m.slide+username),() => EmptyRoom)()
+        val publicHistory = publicRoom.getHistory
         val privateHistory = privateRoom.getHistory
-        val (sendToPublic,sendToPrivate) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
+        val (sendToPublic,sendToPrivates) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
+        println("moveDelta:\r\nPUBLIC:\r\n%s\r\nPRIVATE:\r\n%s\r\n---\r\n".format(sendToPublic,sendToPrivates))
         sendToPublic.map(pub => {
           trace("OUT TO PUB -> %s".format(pub))
           publicRoom ! LocalToServerMeTLStanza(pub)
         })
-        sendToPrivate.map(priv => {
-          trace("OUT TO PRIV -> %s".format(priv))
-          privateRoom ! LocalToServerMeTLStanza(priv)
+        sendToPrivates.foreach(privTup => {
+          val privateAuthor = privTup._1
+          if (username == privateAuthor || shouldModifyConversation()){
+            val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,server) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
+            println("sending to %s :: %s".format(privRoom,privTup))
+            privTup._2.foreach(privStanza => {
+              trace("OUT TO PRIV -> %s".format(privStanza))
+              privRoom ! LocalToServerMeTLStanza(privStanza)
+            })
+          }
         })
       }
       case s:MeTLSubmission => {
@@ -2477,17 +2485,25 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger with Conver
     stanza match {
       case m:MeTLMoveDelta => {
         val publicRoom = rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
-        val publicHistory = publicRoom.getHistory
         val privateRoom = rooms.getOrElse((serverName,m.slide+username),() => EmptyRoom)()
+        val publicHistory = publicRoom.getHistory
         val privateHistory = privateRoom.getHistory
-        val (sendToPublic,sendToPrivate) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
+        val (sendToPublic,sendToPrivates) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
+        println("moveDelta:\r\nPUBLIC:\r\n%s\r\nPRIVATE:\r\n%s\r\n---\r\n".format(sendToPublic,sendToPrivates))
         sendToPublic.map(pub => {
           trace("OUT TO PUB -> %s".format(pub))
           publicRoom ! LocalToServerMeTLStanza(pub)
         })
-        sendToPrivate.map(priv => {
-          trace("OUT TO PRIV -> %s".format(priv))
-          privateRoom ! LocalToServerMeTLStanza(priv)
+        sendToPrivates.foreach(privTup => {
+          println("sending %s".format(privTup))
+          val privateAuthor = privTup._1
+          if (username == privateAuthor || shouldModifyConversation()){
+            val privRoom = rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
+            privTup._2.foreach(privStanza => {
+              trace("OUT TO PRIV -> %s".format(privStanza))
+              privRoom ! LocalToServerMeTLStanza(privStanza)
+            })
+          }
         })
       }
       case s:MeTLSubmission => {

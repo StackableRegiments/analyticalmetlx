@@ -600,7 +600,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
       case _ => cc
     }
   }
-  def generateChanges(rawPublicHistory:History,rawPrivateHistory:History):Tuple2[List[MeTLStanza],List[MeTLStanza]] = Stopwatch.time("MeTLMoveDelta.generateChanges",{
+  def generateChanges(rawPublicHistory:History,rawPrivateHistory:History):Tuple2[List[MeTLStanza],Map[String,List[MeTLStanza]]] = Stopwatch.time("MeTLMoveDelta.generateChanges",{
     val privateHistory = rawPrivateHistory.filterCanvasContentsForMoveDelta(this)
     val publicHistory = rawPublicHistory.filterCanvasContentsForMoveDelta(this)
     val (publicTexts,publicHighlighters,publicInks,publicImages,publicMultiWordTexts) = publicHistory.getRenderableGrouped
@@ -613,13 +613,17 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         val privateTextsToPublicize = privateTexts.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateImagesToPublicize = privateImages.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateMultiWordTextsToPublicize = privateMultiWordTexts.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
-        val privateDirtier = ((privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts).length > 0) match {
-          case true => List(
-            generateDirtier(privateInks.map(i => i.identity) ::: privateHighlighters.map(i => i.identity),
-              privateTexts.map(i => i.identity),
-              privateMultiWordTexts.map(i => i.identity),
-              privateImages.map(i => i.identity),notP))
-          case _ => List.empty[MeTLStanza]
+        val privateAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts).map(_.author).distinct
+        val privateDirtiers = (privateAuthors.length > 0) match {
+          case true => Map(privateAuthors.map(pa => (
+            pa,
+            List(generateDirtier(privateInks.filter(_.author == pa).map(i => i.identity) ::: privateHighlighters.filter(_.author == pa).map(i => i.identity),
+              privateTexts.filter(_.author == pa).map(i => i.identity),
+              privateMultiWordTexts.filter(_.author == pa).map(i => i.identity),
+              privateImages.filter(_.author == pa).map(i => i.identity),notP)
+            ))
+          ):_*)
+          case _ => Map.empty[String,List[MeTLStanza]]
         }
         val publicAdjuster = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts).length > 0) match {
           case true => List(replaceIds(
@@ -634,7 +638,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
           privateHighlightersToPublicize :::
           privateTextsToPublicize :::
           privateImagesToPublicize :::
-          privateMultiWordTextsToPublicize, privateDirtier)
+          privateMultiWordTextsToPublicize, privateDirtiers)
       }
       case p:Privacy if p == Privacy.PRIVATE => {
         val notP = Privacy.PUBLIC
@@ -651,24 +655,42 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
             publicImages.map(i => i.identity),notP))
           case _ => List.empty[MeTLStanza]
         }
-        val privateAdjusters = ((privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts).length > 0) match {
-          case true => List(replaceIds(
-            privateInks.map(i => i.identity) ::: privateHighlighters.map(i => i.identity),
-            privateTexts.map(i => i.identity),
-            privateMultiWordTexts.map(i => i.identity),
-            privateImages.map(i => i.identity),p))
-          case _ => List.empty[MeTLStanza]
+        val publicContent = (publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts)
+        val privateContent = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts)
+        val publicAuthors = publicContent.map(_.author).distinct
+        val privateAuthors = privateContent.map(_.author).distinct
+        val privateAdjusters = (publicAuthors.length > 0 || privateAuthors.length > 0) match {
+          case true => Map(publicAuthors.map(pa => (
+            pa,
+            publicInksToPrivatize.filter(_.author == pa) ::: 
+            publicHighlightersToPrivatize.filter(_.author == pa) :::
+            publicTextsToPrivatize.filter(_.author == pa) ::: 
+            publicImagesToPrivatize.filter(_.author == pa) ::: 
+            publicMultiWordTextsToPrivatize.filter(_.author == pa) :::
+            List(replaceIds(
+              privateInks.filter(_.author == pa).map(i => i.identity) ::: privateHighlighters.map(i => i.identity),
+              privateTexts.filter(_.author == pa).map(i => i.identity),
+              privateMultiWordTexts.filter(_.author == pa).map(i => i.identity),
+              privateImages.filter(_.author == pa).map(i => i.identity),p)
+            ))
+          ):_*)
+          case _ => Map.empty[String,List[MeTLStanza]]
         }
-        (publicDirtiers,privateAdjusters ::: publicInksToPrivatize ::: publicHighlightersToPrivatize ::: publicTextsToPrivatize ::: publicImagesToPrivatize ::: publicMultiWordTextsToPrivatize)
+        (publicDirtiers,privateAdjusters)
       }
       case _ => {
-        val privDelta = ((privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts).length > 0) match {
-          case true => List(replaceIds(
-            privateInks.map(i=>i.identity) ::: privateHighlighters.map(i => i.identity),
-            privateTexts.map(i=>i.identity),
-            privateMultiWordTexts.map(i=>i.identity),
-            privateImages.map(i=>i.identity),Privacy.PRIVATE))
-          case _ => List.empty[MeTLStanza]
+        val privAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts).map(_.author).distinct
+        val privDeltas = (privAuthors.length > 0) match {
+          case true => Map(privAuthors.map(pa => (
+            pa,
+            List(replaceIds(
+              privateInks.filter(_.author == pa).map(i=>i.identity) ::: privateHighlighters.map(i => i.identity),
+              privateTexts.filter(_.author == pa).map(i=>i.identity),
+              privateMultiWordTexts.filter(_.author == pa).map(i=>i.identity),
+              privateImages.filter(_.author == pa).map(i=>i.identity),Privacy.PRIVATE)
+            )
+          )):_*)
+          case _ => Map.empty[String,List[MeTLStanza]]
         }
         val pubDelta = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts).length > 0) match {
           case true => List(replaceIds(
@@ -678,7 +700,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
             publicImages.map(i=>i.identity),Privacy.PUBLIC))
           case _ => List.empty[MeTLStanza]
         }
-        (pubDelta,privDelta)
+        (pubDelta,privDeltas)
       }
     }
   })
