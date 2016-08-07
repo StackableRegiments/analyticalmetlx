@@ -405,19 +405,14 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
-      //println("reorder slides called")
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
-      //println("args parsed: %s, %s".format(jid,newSlides))
       val c = serverConfig.detailsOfConversation(args(0).toString)
-      //println("conversation fetched: %s".format(c))
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => {
-              //println("same number of slides: %s".format(newSlides.arr.length))
               val deserializedSlides = newSlides.arr.map(i => serializer.toSlide(i)).toList
-              //println("deserializing slides: %s".format(deserializedSlides))
               serverConfig.reorderSlidesOfConversation(c.jid.toString,deserializedSlides)
             }
             case false => c
@@ -1586,7 +1581,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         val publicHistory = publicRoom.getHistory
         val privateHistory = privateRoom.getHistory
         val (sendToPublic,sendToPrivates) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
-        println("moveDelta:\r\nPUBLIC:\r\n%s\r\nPRIVATE:\r\n%s\r\n---\r\n".format(sendToPublic,sendToPrivates))
         sendToPublic.map(pub => {
           trace("OUT TO PUB -> %s".format(pub))
           publicRoom ! LocalToServerMeTLStanza(pub)
@@ -1595,7 +1589,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           val privateAuthor = privTup._1
           if (username == privateAuthor || shouldModifyConversation()){
             val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,server) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
-            println("sending to %s :: %s".format(privRoom,privTup))
             privTup._2.foreach(privStanza => {
               trace("OUT TO PRIV -> %s".format(privStanza))
               privRoom ! LocalToServerMeTLStanza(privStanza)
@@ -2489,13 +2482,11 @@ class SinglePageMeTLActor extends StronglyTypedJsonActor with Logger with Conver
         val publicHistory = publicRoom.getHistory
         val privateHistory = privateRoom.getHistory
         val (sendToPublic,sendToPrivates) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
-        println("moveDelta:\r\nPUBLIC:\r\n%s\r\nPRIVATE:\r\n%s\r\n---\r\n".format(sendToPublic,sendToPrivates))
         sendToPublic.map(pub => {
           trace("OUT TO PUB -> %s".format(pub))
           publicRoom ! LocalToServerMeTLStanza(pub)
         })
         sendToPrivates.foreach(privTup => {
-          println("sending %s".format(privTup))
           val privateAuthor = privTup._1
           if (username == privateAuthor || shouldModifyConversation()){
             val privRoom = rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()

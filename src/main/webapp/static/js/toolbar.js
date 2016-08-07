@@ -1434,15 +1434,17 @@ var Modes = (function(){
             },100);
             var banContentFunction = function(){
                 if (Modes.select.selected != undefined && isAdministeringContent){
+									if ("Blacklist" in window){
                     var s = Modes.select.selected;
-                    banContent(
-                        Conversations.getCurrentConversationJid(),
-                        Conversations.getCurrentSlideJid(),
-                        _.uniq(_.map(s.inks,function(e){return e.identity;})),
-                        _.uniq(_.map(s.texts,function(e){return e.identity;})),
-                        _.uniq(_.map(s.multiWordTexts,function(e){return e.identity;})),
-                        _.uniq(_.map(s.images,function(e){return e.identity;}))
+										Blacklist.banSelection(
+											Conversations.getCurrentConversationJid(),
+											Conversations.getCurrentSlideJid(),
+											s.inks,
+											s.texts,
+											s.multiWordTexts,
+											s.images
                     );
+									}
                 }
                 clearSelectionFunction();
             };
