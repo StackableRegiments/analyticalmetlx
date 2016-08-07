@@ -144,15 +144,14 @@ var Submissions = (function(){
 			tempCtx.fillStyle = "white";
 			tempCtx.fillRect(0,0,w,h);
 			tempCtx.drawImage(board[0],0,0,w,h);
-			console.log("drawing",board[0],tempCanvas[0],w,h);
 			var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
 			var t = new Date().getTime();
 			var username = UserSettings.getUsername();
 			var currentSlide = Conversations.getCurrentSlide().id;
 			var currentConversation = Conversations.getCurrentConversation().jid;
-			var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentConversation.toString(),encodeURI(identity));
 			var title = sprintf("submission%s%s.jpg",username,t.toString());
 			var identity = sprintf("%s:%s:%s",currentConversation,title,t);
+			var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentConversation.toString(),encodeURI(identity));
 			$.ajax({
 				url: url,
 				type: 'POST',

@@ -455,7 +455,6 @@ class LoggedInFilter extends Filter with HttpReqUtils {
       val httpResp = res.asInstanceOf[HttpServletResponse]
 
       val Session = httpReq.getSession
-
       sessionStore.getValidSession(Session) match {
         case Left(e) => {
           if (rejectWhenNotAuthenticated.exists(_.apply(httpReq))){
@@ -491,7 +490,9 @@ class LoggedInFilter extends Filter with HttpReqUtils {
               })
             }
             case ipas:InProgressAuthSession => {
-              if (FilterAuthenticators.passToAuthenticators(ipas,httpReq,httpResp,Session)){
+              if (rejectWhenNotAuthenticated.exists(_.apply(httpReq))){
+                httpResp.sendError(403,"forbidden.  please authenticate")
+              } else if (FilterAuthenticators.passToAuthenticators(ipas,httpReq,httpResp,Session)){
                 doFilter(req,res,chain) //the filterAuthenticator has hopefully applied some change to the sessionState without committing the response, and would like the process repeated.  Otherwise the response must've been committed
               }
             }

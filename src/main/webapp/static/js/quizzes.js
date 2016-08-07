@@ -207,7 +207,8 @@ var Quizzes = (function(){
 								};
 								var data = {
 									//labels:quiz.options.map(function(qo){return splitLines(sprintf("%s: %s",qo.name,qo.text),20);}),
-									labels:quiz.options.map(function(qo){return sprintf("%s: %s",qo.name,qo.text)}),
+									//labels:quiz.options.map(function(qo){return sprintf("%s: %s",qo.name,qo.text)}),
+									labels:_.map(quiz.options,"name"),
 									datasets:[{
 										data:quiz.options.map(function(qo){
 											return quizOptionAnswerCount(quiz,qo);
