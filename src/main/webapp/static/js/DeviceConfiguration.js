@@ -20,7 +20,8 @@ var DeviceConfiguration = (function(){
     var sectionsVisible = {//All false because the application's start state is the search screen.  onHistory will restore them.
         tools:false,
         slides:false,
-        header:false
+        header:false,
+	keyboard:false
     };
     var setSectionVisibility = function(section,visible){
         if (allowShowingChrome){
@@ -166,14 +167,15 @@ var DeviceConfiguration = (function(){
         return resultantDimensions;
     };
     var defaultFitFunction = function(){
-        customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides);
+        customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides,sectionsVisible.keyboard);
     };
     var fitFunction = defaultFitFunction;
-    var projectorFitFunction = function(){customizableFitFunction(false,false,false);};
-    var customizableFitFunction = function(_showHeader,_showTools,_showSlides){
+    var projectorFitFunction = function(){customizableFitFunction(false,false,false,false);};
+    var customizableFitFunction = function(_showHeader,_showTools,_showSlides,_showKeyboard){
         var showHeader = sectionsVisible.header;
         var showTools = sectionsVisible.tools;
         var showSlides = sectionsVisible.slides;
+        var showKeyboard = sectionsVisible.keyboard;
         var toolsColumn = $("#toolsColumn");
         var tools = $("#ribbon").find(".toolbar");
         var subTools = $(".modeSpecificTool");
@@ -256,7 +258,11 @@ var DeviceConfiguration = (function(){
                 } else {
                     bwidth = $("#masterLayout").width() - marginsFor([boardColumn]).x; 
                     bheight = bwidth - gutterHeight;
-		    //console.log("small profile");
+		    if(showKeyboard){
+			bheight -= DeviceConfiguration.preferredSizes.keyboard;
+			//Remove three bars including gutters
+			bheight += (DeviceConfiguration.preferredSizes.handles + 2) * 3;
+		    }
                 }
                 if (bheight < 0 || bwidth < 0){
                     throw {
@@ -290,7 +296,7 @@ var DeviceConfiguration = (function(){
         catch(e){
             console.log("exception in fit",e);
             _.defer(function(){
-                _.delay(customizableFitFunction,250,(showHeader,showTools,showSlides));
+                _.delay(customizableFitFunction,250,(showHeader,showTools,showSlides,showKeyboard));
             });
         }
         window.scrollTo(1,1);
@@ -435,6 +441,14 @@ var DeviceConfiguration = (function(){
         setHeader:sectionSetter("header"),
         setTools:sectionSetter("tools"),
         setSlides:sectionSetter("slides"),
+        setKeyboard:function(visible){
+	    var chrome = !visible;
+	    sectionSetter("keyboard")(visible);
+	    DeviceConfiguration.applyFit();
+	    $("#masterHeader").toggle(chrome);
+	    $(".permission-states").toggle(chrome);
+	    $("#majorModesColumn").toggle(chrome);
+	},
         toggleHeader:sectionToggler("header"),
         toggleTools:sectionToggler("tools"),
         toggleSlides:sectionToggler("slides"),
@@ -445,13 +459,17 @@ var DeviceConfiguration = (function(){
             tryToDetermineCurrentDevice();
             actOnCurrentDevice();
         },
+	hasOnScreenKeyboard:function(){
+	    return getDeviceDimensions().width <= 640;
+	},
         preferredSizes:{
             handles:50,
             thumbColumn:{
                 width:100,
                 height:75
             },
-            toolsColumn:100
+            toolsColumn:100,
+	    keyboard:236
         }
     };
 })();
