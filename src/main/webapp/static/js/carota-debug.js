@@ -459,34 +459,43 @@
                         var code = word.code();
                         return !!(code && (code.block || code.eof));
                     };
-
                     var prototype = node.derive({
-                        calculateBounds: function(){
+                        invalidateBounds: function(){
+                            var start = Date.now();
                             var bounds = this.frame.bounds();
                             var pos = this.position;
-                            return [
+                            var result = [
                                 pos.x + bounds.l,
                                 pos.y + bounds.t,
                                 pos.x + this.frame.actualWidth(),
                                 pos.y + bounds.h];
+                            this.bounds = result;
+                            this.stanza.bounds = this.bounds;
+			    Progress.call("textBoundsChanged",[this.identity,this.bounds]);
                         },
                         load: function(runs) {
                             var self = this;
                             this.undo = [];
                             this.redo = [];
                             this._wordOrdinals = [];
-                            this.words = per(characters(runs)).per(split(self.codes)).map(function(w) {
-                                return word(w, self.codes);
-                            }).all();
+                            this.words = per(characters(runs))
+                                .per(split(self.codes))
+                                .map(function(w) {
+                                    return word(w, self.codes);
+                                })
+                                .all();
                             this.words.push(word());/*EOF*/
                             this.layout();
                         },
                         layout: function() {
                             this.frame = null;
                             try {
-                                this.frame = per(this.words).per(frame(0, 0, this._width, 0, this)).first();
+                                this.frame = per(this.words)
+                                    .per(frame(0, 0, this._width, 0, this))
+                                    .first();
+                                this.invalidateBounds();
                             } catch (x) {
-                                console.error(x);
+                                console.error("layout exception",x);
                             }
                             if (!this.frame) {
                                 console.error('A bug somewhere has produced an invalid state - rolling back');
@@ -591,8 +600,8 @@
                         runs: function(emit, range) {
                             var startDetails = this.wordContainingOrdinal(Math.max(0, range.start)),
                                 endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
-			    if(!(startDetails && endDetails)) return;
-			    /*The words aren't constructed yet*/
+                            if(!(startDetails && endDetails)) return;
+                            /*The words aren't constructed yet*/
                             if (startDetails.index === endDetails.index) {
                                 startDetails.word.runs(emit, {
                                     start: startDetails.offset,
@@ -743,11 +752,11 @@
                                 if (node.block && ordinal > 0) {
                                     var nodeBefore = this.byOrdinal(ordinal - 1);
                                     if (nodeBefore.newLine) {
-                                        var newLineBounds = nodeBefore.bounds();
-                                        var lineBounds = nodeBefore.parent().parent().bounds();
+                                        var newLineBounds = nodeBefore.bounds;
+                                        var lineBounds = nodeBefore.parent().parent().bounds;
                                         b = rect(lineBounds.l, lineBounds.b, 1, newLineBounds.h);
                                     } else {
-                                        b = nodeBefore.bounds();
+                                        b = nodeBefore.bounds;
                                         b = rect(b.r, b.t, 1, b.h);
                                     }
                                 } else {
@@ -873,9 +882,12 @@
                         type: 'document'
                     });
 
-                    exports = module.exports = function() {
+                    exports = module.exports = function(stanza) {
                         var doc = Object.create(prototype);
-                        doc.identity = _.uniqueId();
+                        doc.stanza = stanza;
+                        doc.position = {x:stanza.x,y:stanza.y};
+                        doc.privacy = stanza.privacy;
+                        doc.identity = stanza.identity;
                         doc.slide = Conversations.getCurrentSlideJid();
                         doc._width = 0;
                         doc.selection = { start: 0, end: 0 };
@@ -978,7 +990,7 @@
                         var canvas = externalCanvas || host.querySelector('canvas'),
                             textAreaDiv = host.querySelector('.carotaTextArea'),
                             textArea = host.querySelector('textarea'),
-                            doc = carotaDoc(),
+                            doc = carotaDoc(stanza),
                             keyboardSelect = 0,
                             keyboardX = null, nextKeyboardX = null,
                             focusChar = null,
@@ -986,7 +998,6 @@
                             richClipboard = null,
                             plainClipboard = null;
 
-                        doc.privacy = stanza.privacy;
                         doc.width(canvas.clientWidth);
 
                         doc.claimFocus = function(){

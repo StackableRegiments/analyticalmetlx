@@ -44,7 +44,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         _.each(boardContent.multiWordTexts,function(text,i){
             var editor = Modes.text.editorFor(text).doc;
             editor.load(text.words);
-            text.bounds = editor.calculateBounds();
             incorporateBoardBounds(text.bounds);
         });
         renderMultiWordMark = Date.now();
@@ -622,7 +621,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                     if(texts){
                         $.each(texts,function(i,text){
                             if(!text.bounds){
-                                text.bounds = text.doc.calculateBounds();
+				text.doc.invalidateBounds();
                             }
                             if(intersectRect(text.bounds,viewBounds)){
                                 drawMultiwordText(text);
@@ -767,7 +766,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                         },
                                         canvasContext,
                                         noop,
-                                        item);
+                                        _.cloneDeep(item));
                                     scaledText.position = {x:bounds[0],y:bounds[1]};
                                     scaledText.load(item.doc.save());
                                     scaledText.width(item.doc.width() * xScale);
