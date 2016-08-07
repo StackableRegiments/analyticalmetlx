@@ -1,4 +1,5 @@
 var HealthChecker = (function(){
+	var storeLifetime = 5 * 60 * 1000; //5 minutes
 	var serverStatusInterval = 20000; //every 20 seconds
 	var store = {};
 	var queueSizeReached = {};
@@ -7,9 +8,10 @@ var HealthChecker = (function(){
 
 	var addMeasureFunc = function(category,success,duration){
 		if (!(category in store)){
-			store[category] = [];
+			store[category] = timedQueue(storeLifetime);
 		}
 		var catStore = store[category];
+		/*
 		if (!(category in queueSizeReached)){
 		 	if (catStore.length >= catLength){
 				queueSizeReached[category] = true;
@@ -19,6 +21,12 @@ var HealthChecker = (function(){
 			catStore.shift();
 		}
 		catStore.push({
+			instant:new Date().getTime(),
+			duration:duration,
+			success:success
+		});
+		*/
+		catStore.enqueue({
 			instant:new Date().getTime(),
 			duration:duration,
 			success:success
@@ -51,7 +59,8 @@ var HealthChecker = (function(){
 		healthChecking = false;
 	};
 	var describeHealthFunction = function(){
-		return _.map(store,function(v,k){
+		return _.map(store,function(catStore,k){
+			var v = catStore.items();
 			var count = v.length;
 			var durations = _.map(v,"duration");
 			if (count > 0){
@@ -75,7 +84,7 @@ var HealthChecker = (function(){
 		pauseHealthCheck:pauseHealthCheckFunc,
 		addMeasure:addMeasureFunc,
 		getMeasures:function(){
-			return store;
+			return _.mapValues(store,function(v){return v.items();});
 		},
 		describeHealth:describeHealthFunction
 	}
