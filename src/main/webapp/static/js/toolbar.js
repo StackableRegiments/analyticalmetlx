@@ -887,6 +887,10 @@ var Modes = (function(){
                 $("#closeTextDialog").click(function(){
                     fontOptions.hide();
                 });
+                $("#exitTextEditing").click(function(){
+		    DeviceConfiguration.setKeyboard(false);
+		    Modes.select.activate();
+                });
             });
             return {
                 echoesToDisregard:{},
@@ -1058,16 +1062,23 @@ var Modes = (function(){
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
                             Modes.select.setSelection(sel);
                             newDoc.mouseupHandler(newDoc.byOrdinal(0));
+                            editor = newEditor;
                         }
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
                         };
+                        if(DeviceConfiguration.hasOnScreenKeyboard()){
+                            DeviceConfiguration.setKeyboard(true);
+                            var b = editor.bounds;
+                            TweenController.zoomAndPanViewbox(b[0],b[1],b[2] - b[0], b[3] - b[1]);
+                        }
                         Modes.select.addHandles();
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
                 deactivate:function(){
+                    DeviceConfiguration.setKeyboard(false);
                     Modes.select.clearSelection();
                     removeActiveMode();
                     fontOptions.hide();

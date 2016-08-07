@@ -459,6 +459,9 @@ var DeviceConfiguration = (function(){
             tryToDetermineCurrentDevice();
             actOnCurrentDevice();
         },
+	hasOnScreenKeyboard:function(){
+	    return getDeviceDimensions().width <= 640;
+	},
         preferredSizes:{
             handles:50,
             thumbColumn:{
