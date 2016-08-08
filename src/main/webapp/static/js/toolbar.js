@@ -1621,7 +1621,7 @@ var Modes = (function(){
                             height:px(height)
                         });
                         renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
-                        var resizedCanvas = multiStageRescale(renderCanvas[0],w,h,true);
+                        var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
                         currentImage.width = w;
                         currentImage.height = h;
                         currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
