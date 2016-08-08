@@ -602,7 +602,13 @@ var Conversations = (function(){
 				if ("jid" in c && "id" in s){
 					var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
 				}
-				window.history.pushState({path:newUrl},"",newUrl);
+				window.history.replaceState({
+					path:newUrl,
+					url:newUrl
+				},newUrl,newUrl);
+				if ("title" in document){
+					document.title = sprintf("MeTL - %s",s.id.toString());
+				}
 			}
 		};
     var doMoveToSlide = function(slideId){
