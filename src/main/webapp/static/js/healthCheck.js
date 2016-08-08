@@ -1,5 +1,5 @@
 var HealthChecker = (function(){
-	var storeLifetime = 1 * 60 * 1000; //1 minute
+	var storeLifetime = 5 * 60 * 1000; //1 minute
 	var serverStatusInterval = 20000; //every 20 seconds
 	var store = {};
 	var queueSizeReached = {};
@@ -11,21 +11,6 @@ var HealthChecker = (function(){
 			store[category] = timedQueue(storeLifetime);
 		}
 		var catStore = store[category];
-		/*
-		if (!(category in queueSizeReached)){
-		 	if (catStore.length >= catLength){
-				queueSizeReached[category] = true;
-				catStore.shift();
-			}
-		} else {
-			catStore.shift();
-		}
-		catStore.push({
-			instant:new Date().getTime(),
-			duration:duration,
-			success:success
-		});
-		*/
 		catStore.enqueue({
 			instant:new Date().getTime(),
 			duration:duration,
@@ -51,12 +36,52 @@ var HealthChecker = (function(){
 			}
 		});
 	};
+	var updateGraph = _.throttle(function(){
+//		HealthCheckViewer.updateGraph(
+	});
 	var resumeHealthCheckFunc = function(){
 		healthChecking = true;
 		_.delay(check,serverStatusInterval);
 	};
 	var pauseHealthCheckFunc = function(){
 		healthChecking = false;
+	};
+	var getMeasuresFunc = function(){
+		return _.mapValues(store,function(v){return v.items();});
+	};
+	var getAggregatedMeasuresFunc = function(granularity){
+		return _.mapValues(store,function(v){
+			var set = {};
+			_.forEach(v.items(),function(item){
+				var sample = (Math.floor(item.instant / granularity) * granularity);
+				var oldValue = set[sample];
+				var obj = oldValue ? oldValue : {
+					count:0,
+					avg:undefined,
+					successCount:0,
+					min:undefined,
+					max:undefined,
+					instant:sample
+				};
+				obj.count += 1;
+				if (item.success){
+					obj.successCount += 1;
+				}
+				if (obj.min == undefined || obj.min > item.duration){
+					obj.min = item.duration;
+				}
+				if (obj.max == undefined || obj.max < item.duration){
+					obj.max = item.duration;
+				}
+				if (obj.avg == undefined){
+					obj.avg = item.duration;
+				} else {
+					obj.avg = ((item.duration - obj.avg) / obj.count) + obj.avg;
+				}
+				set[sample] = obj;
+			});
+			return _.values(set);
+		});
 	};
 	var describeHealthFunction = function(){
 		return _.map(store,function(catStore,k){
@@ -83,9 +108,8 @@ var HealthChecker = (function(){
 		resumeHealthCheck:resumeHealthCheckFunc,
 		pauseHealthCheck:pauseHealthCheckFunc,
 		addMeasure:addMeasureFunc,
-		getMeasures:function(){
-			return _.mapValues(store,function(v){return v.items();});
-		},
+		getMeasures:getMeasuresFunc,
+		getAggregatedMeasures:getAggregatedMeasuresFunc,
 		describeHealth:describeHealthFunction
 	}
 })();
@@ -101,7 +125,7 @@ var serverResponse = function(responseObj){
 }
 
 var HealthCheckViewer = (function(){
-	var refreshRate = 5000; //every 5 seconds
+	var refreshRate = 1000; //every 1 second
 	var viewing = false;
 	var healthCheckContainer = {};
 	$("#healthCheckListing");
@@ -115,11 +139,54 @@ var HealthCheckViewer = (function(){
 	var pauseFunc = function(){
 		viewing = false;
 	};
+	// data extractors
+	var errorDataFunc = function(samples){
+		return _.filter(_.map(samples,function(d){
+			return {
+				x:d.instant,
+				y:d.count - d.successCount
+			};
+		}),function(d){return d.y > 0;});
+	};
+	var averageDataFunc = function(samples){
+		return _.map(samples,function(d){
+			return {
+				x:d.instant,
+				y:d.avg //- d.min
+			};
+		});
+	};
+	var minDataFunc = function(samples){
+		return _.map(samples,function(d){
+			return {
+				x:d.instant,
+				y:d.min
+			};
+		});
+	};
+	var maxDataFunc = function(samples){
+		return _.map(samples,function(d){
+			return {
+				x:d.instant,
+				y:d.max //- d.avg
+			};
+		});
+	};
+
+	var adjustTimeFunc = function(samples){
+		var now = new Date().getTime();
+		return _.map(samples,function(d){
+			d.instant = (d.instant - now) / 1000;
+			return d;
+		});
+	};
+
 	var resumeFunc = function(){
 		var identity = _.uniqueId();
 		viewing = identity;
-		var checkData = HealthChecker.getMeasures();
-		healthCheckContainer.html(_.map(checkData,function(category,categoryName){
+		var checkData = HealthChecker.getAggregatedMeasures(1000);
+		healthCheckContainer.html(_.map(checkData,function(rawCategory,categoryName){
+			var category = adjustTimeFunc(rawCategory);
 			var rootElem = healthCheckItemTemplate.clone();
 			rootElem.attr("id","healthCheck_"+categoryName);
 			var canvas = $("<canvas />").addClass("healthCheckCanvas");
@@ -134,7 +201,7 @@ var HealthCheckViewer = (function(){
 							{
 								id:"durationAxis",
 								type: "linear",
-								stacked: true,
+								stacked: false,
 								display:true,
 								position:"left",
 								ticks: {
@@ -152,7 +219,6 @@ var HealthCheckViewer = (function(){
 								ticks: {
 									beginAtZero:true,
 									min:0,
-									max:1,
 									stepSize:1
 								},
 								labels: {
@@ -164,9 +230,12 @@ var HealthCheckViewer = (function(){
 							type: "linear",
 							position: "bottom",
 							ticks: {
-								stepSize:1
+								beginAtZero:true,
 							}
 						}]
+					},
+					hover:{
+						mode:"x-axis"
 					},
 					elements:{
 						line: {
@@ -177,43 +246,68 @@ var HealthCheckViewer = (function(){
 						}
 					},
 					legend:{
-						display:false
+						display:true
 					}
 				};
-				successData = _.map(category,function(d){
-					return {
-						x:d.instant,
-						y: "success" in d && d.success ? 0 : 1 
-					};
-				});
+
 				var data = {
 					labels: _.map(category,"instant"),
 					datasets:[
 						{
 							type:"line",
-							label:"error",
-							data:successData,
+							label:"error count",
+							data:errorDataFunc(category),
 							fill:true,
-							borderColor:"rgba(0,0,0,0.5)",//["red"],
+							borderColor:"rgba(0,0,0,0.5)",
 							backgroundColor:"rgba(255,0,0,0.3)",
 							borderWidth:1,
 							pointRadius:0,
+							pointHoverRadius:3,
+							pointHitRadius:5,
+							lineTension:0,
+							stepped:true,
 							yAxisID: "errorAxis"
 						},
 						{
-							label:"duration",
+							label:"min",
 							type:"line",
-							data:_.map(category,function(sample){
-								return {
-									y:sample.duration,
-									x:sample.instant
-								}
-							}),
-							fill:false,
+							data:minDataFunc(category),
+							fill:true,
 							pointRadius:0,
-							borderColor:"rgba(0,0,0,1)",
-							backgroundColor:"rgba(0,0,255,1)",
+							pointHoverRadius:3,
+							pointHitRadius:5,
+							borderColor:"rgba(155,197,61,1)",
+							backgroundColor:"rgba(155,197,61,0.3)",
 							borderWidth:1,
+							lineTension:0.4,
+							yAxisID: "durationAxis"
+						},
+						{
+							label:"avg",
+							type:"line",
+							data:averageDataFunc(category),
+							fill:true,
+							pointRadius:0,
+							pointHoverRadius:3,
+							pointHitRadius:5,
+							borderColor:"rgba(250,121,33,1)",
+							backgroundColor:"rgba(250,121,33,0.3)",
+							borderWidth:1,
+							lineTension:0.6,
+							yAxisID: "durationAxis"
+						},
+						{
+							label:"max",
+							type:"line",
+							data:maxDataFunc(category),
+							fill:true,
+							pointRadius:0,
+							pointHoverRadius:3,
+							pointHitRadius:5,
+							borderColor:"rgba(229,89,52,1)",
+							backgroundColor:"rgba(229,89,52,0.3)",
+							borderWidth:1,
+							lineTension:0.4,
 							yAxisID: "durationAxis"
 						}
 
@@ -234,25 +328,20 @@ var HealthCheckViewer = (function(){
 	};
 	var updateView = function(identity){
 		if ("HealthChecker" in window && viewing == identity){
-			var checkData = HealthChecker.getMeasures();
-			_.forEach(checkData,function(category,categoryName){
+			var start = new Date().getTime();
+			var checkData = HealthChecker.getAggregatedMeasures(1000);
+			_.forEach(checkData,function(rawCategory,categoryName){
+				var category = adjustTimeFunc(rawCategory);
 				var chart = charts[categoryName];
 				if (chart){
-					chart.data.datasets[1].data = _.map(category,function(sample){
-						return {
-							y:sample.duration,
-							x:sample.instant
-						};
-					});
-					chart.data.datasets[0].data = _.map(category,function(sample){
-						return {
-							x:sample.instant,
-							y: "success" in sample && sample.success ? 0 : 1 
-						};
-					});
+					chart.data.datasets[0].data = errorDataFunc(category);
+					chart.data.datasets[1].data = minDataFunc(category);
+					chart.data.datasets[2].data = averageDataFunc(category);
+					chart.data.datasets[3].data = maxDataFunc(category);
 					chart.update();
 				}
 			});
+			console.log("drewGraphs:",new Date().getTime() - start);
 			_.delay(updateView,refreshRate,identity);
 		}
 	};
