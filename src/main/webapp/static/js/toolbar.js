@@ -1270,8 +1270,10 @@ var Modes = (function(){
                     var cursorY = editor.doc.getCaretCoords(caretIndex);
                     var docWidth = b[2] - b[0];
                     var docHeight = docWidth;
+		    var inset = b[1] - viewboxY;
+		    var bottom = viewboxY+viewboxHeight;
                     var top = Math.min(
-                        viewboxY+viewboxHeight,
+                        bottom,
                         Math.max(viewboxY,b[1] + cursorY.t)
                     );
                     var linesFromTop = Math.floor(cursorY.t / cursorY.h);
@@ -1281,7 +1283,7 @@ var Modes = (function(){
                         DeviceConfiguration.setKeyboard(true);
                         TweenController.zoomAndPanViewbox(
                             b[0],
-                            top - scrollOffset + cursorY.t,
+                            b[1] - scrollOffset + cursorY.t,
                             docWidth,
                             docHeight);
                     }
