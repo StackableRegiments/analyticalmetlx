@@ -53,7 +53,7 @@ class ClientMessageBroker(messageTemplate:NodeSeq,messageSelector:String,labelSe
 				val message = InteractableMessage(i.scope,i.role,i.title,(cmi) => {
 					removeMessage(cmi);
 					i.removalFunc(cmi);
-				},i.cancellable,messageTemplate,messageSelector,labelSelector,contentSelector,closeSelector,i.uniqueId)
+				},i.cancellable,messageTemplate,messageSelector,labelSelector,contentSelector,closeSelector,i.uniqueId,i.afterLoad)
 				removeMessage(message)
 				onMessageArrival(message)
 				addMessageToVisible(message)
@@ -65,7 +65,7 @@ class ClientMessageBroker(messageTemplate:NodeSeq,messageSelector:String,labelSe
 	}
 }
 
-abstract class ClientMessage(id:String, incomingRole:Box[String] = Empty, incomingTitle:Box[String] = Empty,removalFunc:(ClientMessage)=>Unit,template:NodeSeq,messageSelector:String,labelSelector:String,contentSelector:String,closeSelector:String){
+abstract class ClientMessage(id:String, incomingRole:Box[String] = Empty, incomingTitle:Box[String] = Empty,removalFunc:(ClientMessage)=>Unit,template:NodeSeq,messageSelector:String,labelSelector:String,contentSelector:String,closeSelector:String,val afterLoad:Option[JsCmd] = None){
   var title:Box[String] = incomingTitle
   def entitled(t:String) = {
     title = Full(t) 
@@ -106,13 +106,13 @@ case object Clear extends ClientMessage("clearSingleton",Empty,Empty,(cm)=>{},No
 	override def renderMessage = NodeSeq.Empty
 }
 object InteractableMessage {
-  def apply(scope:InteractableMessage=>NodeSeq,role:Box[String] = Empty,incomingTitle:Box[String] = Empty,removalFunc:(ClientMessage)=>Unit = (cm) => {},cancellable:Boolean=true,template:NodeSeq = NodeSeq.Empty,messageSelector:String="",labelSelector:String="",contentSelector:String="",closeSelector:String="",id:String = nextFuncName) = new InteractableMessage(scope,role,incomingTitle,removalFunc,cancellable,template,messageSelector,labelSelector,contentSelector,closeSelector,id)
+  def apply(scope:InteractableMessage=>NodeSeq,role:Box[String] = Empty,incomingTitle:Box[String] = Empty,removalFunc:(ClientMessage)=>Unit = (cm) => {},cancellable:Boolean=true,template:NodeSeq = NodeSeq.Empty,messageSelector:String="",labelSelector:String="",contentSelector:String="",closeSelector:String="",id:String = nextFuncName,afterLoad:Option[JsCmd] = None) = new InteractableMessage(scope,role,incomingTitle,removalFunc,cancellable,template,messageSelector,labelSelector,contentSelector,closeSelector,id,afterLoad)
   def unapply(in:InteractableMessage):Option[Tuple11[InteractableMessage=>NodeSeq,Box[String],Box[String],ClientMessage=>Unit,Boolean,NodeSeq,String,String,String,String,String]] = {
     Some((in.scope,in.role,in.title,in.removalFunc,in.cancellable,in.template,in.messageSelector,in.labelSelector,in.contentSelector,in.closeSelector,in.id))
   }
 }
 
-class InteractableMessage(val scope:InteractableMessage=>NodeSeq,override val role:Box[String] = Empty,val incomingTitle:Box[String] = Empty,val removalFunc:(ClientMessage)=>Unit = (cm) => {},override val cancellable:Boolean=true,val template:NodeSeq = NodeSeq.Empty,val messageSelector:String="",val labelSelector:String="",val contentSelector:String="",val closeSelector:String="",val id:String = nextFuncName) extends ClientMessage(id,role,incomingTitle,removalFunc,template,messageSelector,labelSelector,contentSelector,closeSelector){
+class InteractableMessage(val scope:InteractableMessage=>NodeSeq,override val role:Box[String] = Empty,val incomingTitle:Box[String] = Empty,val removalFunc:(ClientMessage)=>Unit = (cm) => {},override val cancellable:Boolean=true,val template:NodeSeq = NodeSeq.Empty,val messageSelector:String="",val labelSelector:String="",val contentSelector:String="",val closeSelector:String="",val id:String = nextFuncName,override val afterLoad:Option[JsCmd] = None) extends ClientMessage(id,role,incomingTitle,removalFunc,template,messageSelector,labelSelector,contentSelector,closeSelector,afterLoad){
   override val content = scope(this)
 	override val contentNode = ajaxForm(content)
   override def equals(a:Any) = a match {
@@ -121,7 +121,13 @@ class InteractableMessage(val scope:InteractableMessage=>NodeSeq,override val ro
   }
 }
 
-case class SimpleTextAreaInteractableMessage(messageTitle:String,body:String,defaultValue:String,onChanged:(String)=>Boolean, customError:Box[()=>Unit] = Empty, override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
+
+object CustomJsCmds {
+  def ScrollAndFocus(id:String):JsCmd = net.liftweb.http.js.JsCmds.jsExpToJsCmd(JsRaw("""var el = $("#%s"); el[0].scrollIntoView(); el.focus();""".format(id)))
+}
+import CustomJsCmds._
+
+case class SimpleTextAreaInteractableMessage(messageTitle:String,body:String,defaultValue:String,onChanged:(String)=>Boolean, customError:Box[()=>Unit] = Empty, override val role:Box[String] = Empty) extends InteractableMessage(scope = (i)=>{
 	var answerProvided = false
 	<div>
 		<div>{body}</div>
@@ -134,16 +140,16 @@ case class SimpleTextAreaInteractableMessage(messageTitle:String,body:String,def
 					} else {
 						customError.map(ce => ce())
 					}
-				},("class","simpleTextAreaInteractableMessageTextarea"))}
+				},("class","simpleTextAreaInteractableMessageTextarea"),("id","simpleTextAreaInteractableMessageTextareaInputElem"))}
 			</span>
 			<span>
 				{submit("Submit", ()=>Noop)}
 			</span>
 		</div>
 	</div>
-},role,Full(messageTitle))
+},role = role,incomingTitle = Full(messageTitle),afterLoad = Full(ScrollAndFocus("simpleTextAreaInteractableMessageTextareaInputElem")))
 
-case class SimpleMultipleButtonInteractableMessage(messageTitle:String,body:String,buttons:Map[String,()=>Boolean], customError:Box[()=>Unit] = Empty, vertical:Boolean = true,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
+case class SimpleMultipleButtonInteractableMessage(messageTitle:String,body:String,buttons:Map[String,()=>Boolean], customError:Box[()=>Unit] = Empty, vertical:Boolean = true,override val role:Box[String] = Empty) extends InteractableMessage(scope = (i)=>{
 	var answerProvided = false
 	<div>
 		<div>{body}</div>
@@ -170,7 +176,7 @@ case class SimpleMultipleButtonInteractableMessage(messageTitle:String,body:Stri
 			}
 		</div>
 	</div>	
-},role,Full(messageTitle))
+},role = role,incomingTitle = Full(messageTitle))
 
 case class SimpleRadioButtonInteractableMessage(messageTitle:String,body:String,radioOptions:Map[String,()=>Boolean],defaultOption:Box[String] = Empty, customError:Box[()=>Unit] = Empty,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
 	var answerProvided = false
@@ -216,6 +222,6 @@ case class SimpleDropdownInteractableMessage(messageTitle:String,body:String,dro
 	</div>	
 },role,Full(messageTitle))
 
-case class SpamMessage(content:NodeSeq,override val role:Box[String] = Empty,incomingTitle:Box[String] = Empty,removalFunc:(ClientMessage)=>Unit = (cm) => {},override val cancellable:Boolean=true,template:NodeSeq = NodeSeq.Empty,messageSelector:String="",labelSelector:String="",contentSelector:String="",closeSelector:String="",id:String = nextFuncName) extends ClientMessage(id,role,incomingTitle,removalFunc,template,messageSelector,labelSelector,contentSelector,closeSelector){
+case class SpamMessage(content:NodeSeq,override val role:Box[String] = Empty,incomingTitle:Box[String] = Empty,removalFunc:(ClientMessage)=>Unit = (cm) => {},override val cancellable:Boolean=true,template:NodeSeq = NodeSeq.Empty,messageSelector:String="",labelSelector:String="",contentSelector:String="",closeSelector:String="",id:String = nextFuncName) extends ClientMessage(id,role,incomingTitle,removalFunc,template,messageSelector,labelSelector,contentSelector,closeSelector,None){
 	override val contentNode = a(() => done,content)
 }
