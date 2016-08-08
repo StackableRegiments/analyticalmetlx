@@ -1240,7 +1240,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           val oldOptions = tempQuiz.options
           tempQuiz = tempQuiz.addOption(QuizOption("",""))
           val newOptionId = tempQuiz.options.find(o => !oldOptions.exists(_.name == o.name)).map(o => "%s_%s".format(quizId,o.name))
-          println("newOption: %s => %s :: %s".format(oldOptions,tempQuiz.options,newOptionId))
           this ! editableQuizNodeSeq(tempQuiz,newOptionId)
           i.done
         },("class","quizAddOptionButton toolbar btn-icon fa fa-plus np"))
@@ -1328,7 +1327,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private val defaultContainerId  = "s2cMessageContainer"
   private val clientMessageBroker = new ClientMessageBroker(TemplateHolder.clientMessageTemplate,".s2cMessage",".s2cLabel",".s2cContent",".s2cClose",
     (cm) => {
-      println("cm: %s => cm.afterLoad: %s".format(cm,cm.afterLoad))
       partialUpdate(SetHtml(defaultContainerId,cm.renderMessage) & Show(defaultContainerId) & Call("reapplyStylingToServerGeneratedContent",JString(cm.uniqueId)) & cm.afterLoad.getOrElse(Noop))
     },
     (cm) => {
