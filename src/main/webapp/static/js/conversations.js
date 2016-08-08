@@ -594,21 +594,21 @@ var Conversations = (function(){
     }
 		var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
 		var updateQueryParams = function(){
-			if ("history" in window && "pushState" in window.history){
-				var c = currentConversation;
-				var s = getCurrentSlideFunc();
+			var s = getCurrentSlideFunc();
+			if (window != undefined && "history" in window && "pushState" in window.history){
 				var l = window.location;
+				var c = currentConversation;
 				var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
-				if ("jid" in c && "id" in s){
+				if (c != undefined && "jid" in c && s != undefined && "id" in s){
 					var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
 				}
 				window.history.replaceState({
 					path:newUrl,
 					url:newUrl
 				},newUrl,newUrl);
-				if ("title" in document){
-					document.title = sprintf("MeTL - %s",s.id.toString());
-				}
+			}
+			if (s != undefined && "id" in s && document != undefined && "title" in document){
+				document.title = sprintf("MeTL - %s",s.id.toString());
 			}
 		};
     var doMoveToSlide = function(slideId){
