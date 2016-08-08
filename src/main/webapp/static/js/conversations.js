@@ -601,7 +601,7 @@ var Conversations = (function(){
 				var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
 				if (c != undefined && "jid" in c && s != undefined && "id" in s){
 					var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
-				}
+			}
 				window.history.replaceState({
 					path:newUrl,
 					url:newUrl
