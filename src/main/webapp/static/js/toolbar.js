@@ -1271,13 +1271,12 @@ var Modes = (function(){
                     var docWidth = b[2] - b[0];
                     var docHeight = docWidth;
                     var top = Math.min(
-			viewboxY+viewboxHeight,
-			Math.max(viewboxY,b[1] + cursorY.t)
-		    );
+                        viewboxY+viewboxHeight,
+                        Math.max(viewboxY,b[1] + cursorY.t)
+                    );
                     var linesFromTop = Math.floor(cursorY.t / cursorY.h);
                     var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
                     var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
-                    console.log("scrollOffset",linesInBox,linesFromTop);
                     if(DeviceConfiguration.hasOnScreenKeyboard()){
                         DeviceConfiguration.setKeyboard(true);
                         TweenController.zoomAndPanViewbox(

@@ -56,6 +56,9 @@ var Participants = (function(){
     var onStanzaReceived = function(stanza){
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
+	    if(!(author in participants)){
+		participants[author] = _.clone(newParticipant);
+	    }
             var itemToEdit = participants[author];
             switch (stanza.type) {
             case "ink":
