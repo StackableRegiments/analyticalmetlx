@@ -165,6 +165,7 @@ var Conversations = (function(){
         catch(e){
             console.log("exception while painting thumbs",e);
         }
+				updateQueryParams();
     }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
@@ -591,12 +592,25 @@ var Conversations = (function(){
     var constructNextSlideButton = function(){
         return constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",goToNextSlideFunction,always);
     }
-
+		var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
+		var updateQueryParams = function(){
+			if ("history" in window && "pushState" in window.history){
+				var c = currentConversation;
+				var s = getCurrentSlideFunc();
+				var l = window.location;
+				var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
+				if ("jid" in c && "id" in s){
+					var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
+				}
+				window.history.pushState({path:newUrl},"",newUrl);
+			}
+		};
     var doMoveToSlide = function(slideId){
         indicateActiveSlide(slideId);
         delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
         WorkQueue.enqueue(function(){
             loadSlide(slideId);
+						updateQueryParams();
             return true;
         });
     };
@@ -729,7 +743,7 @@ var Conversations = (function(){
         },
         getCurrentTeacherSlide : function(){return currentTeacherSlide;},
         getCurrentSlideJid : function(){return currentSlide;},
-        getCurrentSlide : function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})},
+        getCurrentSlide : getCurrentSlideFunc,
         getCurrentConversationJid : function(){
             if ("jid" in currentConversation){
                 return currentConversation.jid.toString();
