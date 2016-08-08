@@ -1330,6 +1330,7 @@
                             }
                         };
                         doc.mousedownHandler = function(node) {
+			    console.log("mousedown",node);
                             nextCaretToggle = 0;
                             selectDragStart = node.ordinal;
                             doc.select(node.ordinal, node.ordinal);

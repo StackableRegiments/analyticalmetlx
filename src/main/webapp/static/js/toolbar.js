@@ -1039,7 +1039,6 @@ var Modes = (function(){
                 manualMove.rehome(totalBounds);
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
-                console.log("selection bounds changed",bounds);
             }
         };
         Progress.onSelectionChanged["selectionHandles"] = function(selection){
@@ -1281,11 +1280,12 @@ var Modes = (function(){
                             editor.doc.contentChanged(function(){
                                 if(DeviceConfiguration.hasOnScreenKeyboard()){
                                     var b = editor.bounds;
-                                    var minimumShownHeight = 0;//We're expanding horizontally, height is a result
-                                    var cursorY = editor.doc.getCaretCoords(editor.doc.selectedRange().start);
-                                    var viewY = b[1] + cursorY.t;
-                                    console.log("Caret",viewY,cursorY);
-                                    TweenController.zoomAndPanViewbox(b[0],viewY,b[2] - b[0], minimumShownHeight);
+                                    var caretIndex = editor.doc.selectedRange().start;
+                                    var cursorY = editor.doc.getCaretCoords(caretIndex);
+				    var top = b[1];
+				    var docWidth = b[2] - b[0];
+				    var docHeight = docWidth;
+                                    TweenController.zoomAndPanViewbox(b[0],top + cursorY.t,docWidth,docHeight);
                                 }
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.privacy = Privacy.getCurrentPrivacy();
@@ -1344,6 +1344,29 @@ var Modes = (function(){
                         carota.editor.paint(board[0],t.doc,true);
                     }
                 },
+                editorAt : function(x,y,z,worldPos){
+                    var threshold = 10;
+                    var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+                    var texts = _.take(_.values(boardContent.multiWordTexts).filter(function(text){
+                        return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
+                    }));
+                    console.log("    editorAt",x,y,worldPos);
+                    if(texts.length > 0){
+                        return texts[0];
+                    }
+                    else{
+                        return false;
+                    }
+                },
+                contextFor : function(editor,worldPos){
+                    var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
+                    var node = editor.byCoordinate(relativePos.x,relativePos.y);
+                    console.log("        contextFor",node,relativePos);
+                    return {
+                        node:node,
+                        relativePos:relativePos
+                    }
+                },
                 activate:function(){
                     var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
@@ -1352,44 +1375,24 @@ var Modes = (function(){
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
                     var lastClick = Date.now();
-                    var threshold = 10;
-                    var editorAt = function(x,y,z,worldPos){
-                        var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                        var texts = _.take(_.values(boardContent.multiWordTexts).filter(function(text){
-                            return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-                        }));
-                        if(texts.length > 0){
-                            return texts[0];
-                        }
-                        else{
-                            return false;
-                        }
-                    }
-                    var contextFor = function(editor,worldPos){
-                        var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
-                        var node = editor.byCoordinate(relativePos.x,relativePos.y);
-                        return {
-                            node:node,
-                            relativePos:relativePos
-                        }
-                    }
                     var down = function(x,y,z,worldPos){
-                        var editor = editorAt(x,y,z,worldPos).doc;
+			console.log("text down",x,y,worldPos);
+                        var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
                             editor.isActive = true;
                             editor.caretVisible = true;
-                            editor.mousedownHandler(contextFor(editor,worldPos).node);
+                            editor.mousedownHandler(Modes.text.contextFor(editor,worldPos).node);
                         };
                     }
                     var move = function(x,y,z,worldPos){
-                        var editor = editorAt(x,y,z,worldPos).doc;
+                        var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
-                            editor.mousemoveHandler(contextFor(editor,worldPos).node);
+                            editor.mousemoveHandler(Modes.text.contextFor(editor,worldPos).node);
                         }
                     };
                     var up = function(x,y,z,worldPos){
                         var clickTime = Date.now();
-                        var editor = editorAt(x,y,z,worldPos);
+                        var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
                             if(t.doc.save().length == 0){
@@ -1400,7 +1403,7 @@ var Modes = (function(){
                         Modes.select.clearSelection();
                         if (editor){
                             var doc = editor.doc;
-                            var context = contextFor(doc,worldPos);
+                            var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 doc.dblclickHandler(context.node);
                             }
@@ -1443,7 +1446,9 @@ var Modes = (function(){
                             var docWidth = b[2] - b[0];
                             var top = b[1];
                             var bottom = b[3];
-                            TweenController.zoomAndPanViewbox(b[0],top + cursorY.t,docWidth,minimumShownHeight);
+			    var docHeight = docWidth// * scale();
+			    console.log("doc",scale(),docWidth,docHeight);
+                            TweenController.zoomAndPanViewbox(b[0],top + cursorY.t,docWidth,docHeight);
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
@@ -1805,17 +1810,17 @@ var Modes = (function(){
             },100);
             var banContentFunction = function(){
                 if (Modes.select.selected != undefined && isAdministeringContent){
-									if ("Blacklist" in window){
-                    var s = Modes.select.selected;
-										Blacklist.banSelection(
-											Conversations.getCurrentConversationJid(),
-											Conversations.getCurrentSlideJid(),
-											s.inks,
-											s.texts,
-											s.multiWordTexts,
-											s.images
-                    );
-									}
+                    if ("Blacklist" in window){
+                        var s = Modes.select.selected;
+                        Blacklist.banSelection(
+                            Conversations.getCurrentConversationJid(),
+                            Conversations.getCurrentSlideJid(),
+                            s.inks,
+                            s.texts,
+                            s.multiWordTexts,
+                            s.images
+                        );
+                    }
                 }
                 clearSelectionFunction();
             };
