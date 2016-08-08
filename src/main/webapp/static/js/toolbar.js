@@ -1240,12 +1240,12 @@ var Modes = (function(){
             });
             return {
                 echoesToDisregard:{},
-                minimumWidth:150,
+                minimumWidth:240,
                 minimumHeight:function(){
                     return Modes.select.resizeHandleSize * 3;
                 },
                 default:{
-                    fontSize:20,
+                    fontSize:12,
                     bold:false,
                     underline:false,
                     italic:false,
@@ -1264,6 +1264,36 @@ var Modes = (function(){
                         }
                     });
                 },
+                scrollToCursor:function(editor){
+                    var b = editor.bounds;
+                    var caretIndex = editor.doc.selectedRange().start;
+                    var cursorY = editor.doc.getCaretCoords(caretIndex);
+                    var docWidth = b[2] - b[0];
+                    var docHeight = docWidth;
+                    var top = Math.min(
+			viewboxY+viewboxHeight,
+			Math.max(viewboxY,b[1] + cursorY.t)
+		    );
+                    var linesFromTop = Math.floor(cursorY.t / cursorY.h);
+                    var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
+                    var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
+                    console.log("scrollOffset",linesInBox,linesFromTop);
+                    if(DeviceConfiguration.hasOnScreenKeyboard()){
+                        DeviceConfiguration.setKeyboard(true);
+                        TweenController.zoomAndPanViewbox(
+                            b[0],
+                            top - scrollOffset + cursorY.t,
+                            docWidth,
+                            docHeight);
+                    }
+                    else{
+                        TweenController.zoomAndPanViewbox(
+                            viewboxX,
+                            top - scrollOffset,
+                            viewboxWidth,
+                            viewboxHeight);
+                    }
+                },
                 editorFor:function(t){
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
@@ -1278,23 +1308,7 @@ var Modes = (function(){
                             t);
                         if(isAuthor){
                             editor.doc.contentChanged(function(){
-                                if(DeviceConfiguration.hasOnScreenKeyboard()){
-                                    var b = editor.bounds;
-                                    var caretIndex = editor.doc.selectedRange().start;
-                                    var cursorY = editor.doc.getCaretCoords(caretIndex);
-                                    var docWidth = b[2] - b[0];
-                                    var docHeight = docWidth;
-                                    var top = b[1];
-                                    var linesFromTop = Math.floor(cursorY.t / cursorY.h);
-                                    var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
-                                    var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
-                                    console.log("scrollOffset",linesInBox,linesFromTop);
-                                    TweenController.zoomAndPanViewbox(
-                                        b[0],
-                                        top - scrollOffset + cursorY.t,
-                                        docWidth,
-                                        docHeight);
-                                }
+                                Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.privacy = Privacy.getCurrentPrivacy();
                                 source.target = "presentationSpace";
@@ -1339,24 +1353,7 @@ var Modes = (function(){
                                     setIf(textColors[0],"color",["#000000",255]);
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
-                                    if(DeviceConfiguration.hasOnScreenKeyboard()){
-                                        DeviceConfiguration.setKeyboard(true);
-                                        var b = editor.bounds;
-                                        var minimumShownHeight = 0;//We're expanding horizontally, height is a result
-                                        var cursorY = editor.doc.getCaretCoords(editor.doc.selectedRange().start);
-                                        var docWidth = b[2] - b[0];
-                                        var top = b[1];
-                                        var linesFromTop = Math.floor(cursorY.t / cursorY.h);
-                                        var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
-                                        var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
-                                        var docHeight = docWidth;
-                                        console.log("doc",scale(),docWidth,docHeight);
-                                        TweenController.zoomAndPanViewbox(
-                                            b[0],
-                                            top - scrollOffset + cursorY.t,
-                                            docWidth,
-                                            docHeight);
-                                    }
+                                    Modes.text.scrollToCursor(editor);
                                 }
                             });
                         }
@@ -1464,24 +1461,7 @@ var Modes = (function(){
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
                         };
-                        if(DeviceConfiguration.hasOnScreenKeyboard()){
-                            DeviceConfiguration.setKeyboard(true);
-                            var b = editor.bounds;
-                            var minimumShownHeight = 0;//We're expanding horizontally, height is a result
-                            var cursorY = editor.doc.getCaretCoords(editor.doc.selectedRange().start);
-                            var docWidth = b[2] - b[0];
-                            var top = b[1];
-                            var linesFromTop = Math.floor(cursorY.t / cursorY.h);
-                            var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
-                            var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
-                            var docHeight = docWidth;
-                            console.log("doc",scale(),docWidth,docHeight);
-                            TweenController.zoomAndPanViewbox(
-                                b[0],
-                                top - scrollOffset + cursorY.t,
-                                docWidth,
-                                docHeight);
-                        }
+                        Modes.text.scrollToCursor(editor);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     registerPositionHandlers(board,down,move,up);
@@ -2049,6 +2029,14 @@ var Modes = (function(){
                         }
                         if(Modes.select.dragging){
                             var root = Modes.select.totalSelectedBounds();
+                            _.each(Modes.select.selected.multiWordTexts,function(text,id){
+                                Modes.text.echoesToDisregard[id] = true;
+                            });
+                            Modes.text.mapSelected(function(box){
+                                box.doc.position.x += xDelta;
+                                box.doc.position.y += yDelta;
+                                box.doc.invalidateBounds();
+                            });
                             Progress.call("totalSelectionChanged",[{
                                 x:root.x + xDelta,
                                 y:root.y + yDelta,
