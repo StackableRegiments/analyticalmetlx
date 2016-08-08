@@ -1282,10 +1282,18 @@ var Modes = (function(){
                                     var b = editor.bounds;
                                     var caretIndex = editor.doc.selectedRange().start;
                                     var cursorY = editor.doc.getCaretCoords(caretIndex);
-				    var top = b[1];
-				    var docWidth = b[2] - b[0];
-				    var docHeight = docWidth;
-                                    TweenController.zoomAndPanViewbox(b[0],top + cursorY.t,docWidth,docHeight);
+                                    var docWidth = b[2] - b[0];
+                                    var docHeight = docWidth;
+                                    var top = b[1];
+                                    var linesFromTop = Math.floor(cursorY.t / cursorY.h);
+                                    var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
+                                    var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
+                                    console.log("scrollOffset",linesInBox,linesFromTop);
+                                    TweenController.zoomAndPanViewbox(
+                                        b[0],
+                                        top - scrollOffset + cursorY.t,
+                                        docWidth,
+                                        docHeight);
                                 }
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.privacy = Privacy.getCurrentPrivacy();
@@ -1331,6 +1339,24 @@ var Modes = (function(){
                                     setIf(textColors[0],"color",["#000000",255]);
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
+                                    if(DeviceConfiguration.hasOnScreenKeyboard()){
+                                        DeviceConfiguration.setKeyboard(true);
+                                        var b = editor.bounds;
+                                        var minimumShownHeight = 0;//We're expanding horizontally, height is a result
+                                        var cursorY = editor.doc.getCaretCoords(editor.doc.selectedRange().start);
+                                        var docWidth = b[2] - b[0];
+                                        var top = b[1];
+                                        var linesFromTop = Math.floor(cursorY.t / cursorY.h);
+                                        var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
+                                        var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
+                                        var docHeight = docWidth;
+                                        console.log("doc",scale(),docWidth,docHeight);
+                                        TweenController.zoomAndPanViewbox(
+                                            b[0],
+                                            top - scrollOffset + cursorY.t,
+                                            docWidth,
+                                            docHeight);
+                                    }
                                 }
                             });
                         }
@@ -1376,7 +1402,7 @@ var Modes = (function(){
                     Progress.call("onLayoutUpdated");
                     var lastClick = Date.now();
                     var down = function(x,y,z,worldPos){
-			console.log("text down",x,y,worldPos);
+                        console.log("text down",x,y,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
                             editor.isActive = true;
@@ -1445,10 +1471,16 @@ var Modes = (function(){
                             var cursorY = editor.doc.getCaretCoords(editor.doc.selectedRange().start);
                             var docWidth = b[2] - b[0];
                             var top = b[1];
-                            var bottom = b[3];
-			    var docHeight = docWidth// * scale();
-			    console.log("doc",scale(),docWidth,docHeight);
-                            TweenController.zoomAndPanViewbox(b[0],top + cursorY.t,docWidth,docHeight);
+                            var linesFromTop = Math.floor(cursorY.t / cursorY.h);
+                            var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
+                            var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
+                            var docHeight = docWidth;
+                            console.log("doc",scale(),docWidth,docHeight);
+                            TweenController.zoomAndPanViewbox(
+                                b[0],
+                                top - scrollOffset + cursorY.t,
+                                docWidth,
+                                docHeight);
                         }
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
