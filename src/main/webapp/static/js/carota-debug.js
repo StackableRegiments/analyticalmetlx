@@ -471,7 +471,7 @@
                                 pos.y + bounds.h];
                             this.bounds = result;
                             this.stanza.bounds = this.bounds;
-			    Progress.call("textBoundsChanged",[this.identity,this.bounds]);
+                            Progress.call("textBoundsChanged",[this.identity,this.bounds]);
                         },
                         load: function(runs) {
                             var self = this;

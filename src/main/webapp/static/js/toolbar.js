@@ -1268,18 +1268,13 @@ var Modes = (function(){
                     var b = editor.bounds;
                     var caretIndex = editor.doc.selectedRange().start;
                     var cursorY = editor.doc.getCaretCoords(caretIndex);
-                    var docWidth = b[2] - b[0];
-                    var docHeight = docWidth;
-		    var inset = b[1] - viewboxY;
-		    var bottom = viewboxY+viewboxHeight;
-                    var top = Math.min(
-                        bottom,
-                        Math.max(viewboxY,b[1] + cursorY.t)
-                    );
                     var linesFromTop = Math.floor(cursorY.t / cursorY.h);
                     var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
-                    var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
                     if(DeviceConfiguration.hasOnScreenKeyboard()){
+                        var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
+                        var docWidth = b[2] - b[0];
+                        var docHeight = docWidth;
+                        var bottom = viewboxY+viewboxHeight;
                         DeviceConfiguration.setKeyboard(true);
                         TweenController.zoomAndPanViewbox(
                             b[0],
@@ -1288,9 +1283,16 @@ var Modes = (function(){
                             docHeight);
                     }
                     else{
+                        var boxTop = b[1];
+                        var boxOffset = boxTop - viewboxY;
+                        var margin = 4;
+                        var freeLinesFromBoxTop = Math.floor((viewboxHeight - boxOffset) / cursorY.h) - margin;
+                        var takenLinesFromBoxTop = Math.floor(cursorY.t / cursorY.h);
+                        var adjustment = Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h;
+                        console.log("adjustment",adjustment,takenLinesFromBoxTop,freeLinesFromBoxTop);
                         TweenController.zoomAndPanViewbox(
                             viewboxX,
-                            top - scrollOffset,
+                            viewboxY + adjustment,
                             viewboxWidth,
                             viewboxHeight);
                     }
