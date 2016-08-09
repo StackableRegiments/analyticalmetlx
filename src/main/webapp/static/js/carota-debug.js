@@ -503,7 +503,7 @@
                             } else if (this._nextSelection) {
                                 var next = this._nextSelection;
                                 delete this._nextSelection;
-                                this.select(next.start, next.end);
+                                this.select(next.start, next.end,true);
                             }
                         },
                         range: function(start, end) {
@@ -547,8 +547,8 @@
 
                             return this.range(start, end);
                         },
-                        insert: function(text, takeFocus) {
-                            this.select(this.selection.end + this.selectedRange().setText(text), null, takeFocus);
+                        insert: function(text, canMoveViewport) {
+                            this.select(this.selection.end + this.selectedRange().setText(text), null, canMoveViewport);
                         },
                         modifyInsertFormatting: function(attribute, value) {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
@@ -805,9 +805,7 @@
                                 ctx.restore();
                             }
                         },
-                        notifySelectionChanged: function(takeFocus) {
-                            // When firing selectionChanged, we pass a function can be used
-                            // to obtain the formatting, as this highly likely to be needed
+                        notifySelectionChanged: function(canMoveViewport) {
                             var cachedFormatting = null;
                             var self = this;
                             var getFormatting = function() {
@@ -816,9 +814,9 @@
                                 }
                                 return cachedFormatting;
                             };
-                            this.selectionChanged.fire(getFormatting, takeFocus);
+                            this.selectionChanged.fire(getFormatting, canMoveViewport);
                         },
-                        select: function(ordinal, ordinalEnd, takeFocus) {
+                        select: function(ordinal, ordinalEnd, canMoveViewport) {
                             if (!this.frame) {
                                 console.log("Something has gone terribly wrong - doc.transaction will rollback soon");
                                 return;
@@ -835,7 +833,7 @@
                              (which can happen either by moving the selection range or by
                              altering the formatting)
                              */
-                            this.notifySelectionChanged(takeFocus);
+                            this.notifySelectionChanged(canMoveViewport);
                             this.selectionJustChanged = true;
                         },
                         performUndo: function(redo) {
@@ -1161,7 +1159,7 @@
                                 if (start === end && start > 0) {
                                     doc.range(start - 1, start).clear();
                                     focusChar = start - 1;
-                                    doc.select(focusChar, focusChar);
+                                    doc.select(focusChar, focusChar,true);
                                     handled = true;
                                 }
                                 break;
@@ -1186,7 +1184,7 @@
                             case 65: // A select all
                                 if (ctrlKey) {
                                     handled = true;
-                                    doc.select(0, length);
+                                    doc.select(0, length,true);
                                 }
                                 break;
                             case 67: // C - copy to clipboard
@@ -1231,7 +1229,7 @@
                                     }
                                 }
                                 focusChar = ordinal;
-                                doc.select(start, end);
+                                doc.select(start, end,true);
                                 handled = true;
                             }
 
@@ -1275,38 +1273,12 @@
                                 if (newText === plainClipboard) {
                                     newText = richClipboard;
                                 }
-                                doc.insert(newText);
+                                doc.insert(newText,true);
                             }
                         });
 
                         var updateTextArea = function() {
                             focusChar = focusChar === null ? doc.selection.end : focusChar;
-                            var endChar = doc.byOrdinal(focusChar);
-                            focusChar = null;
-                            if (endChar) {
-                                var bounds = endChar.bounds();
-                                textAreaDiv.style.left = bounds.l + 'px';
-                                textAreaDiv.style.top = bounds.t + 'px';
-                                textArea.focus();
-                                var scrollDownBy = Math.max(0, bounds.t + bounds.h -
-                                                            (host.scrollTop + host.clientHeight));
-                                if (scrollDownBy) {
-                                    host.scrollTop += scrollDownBy;
-                                }
-                                var scrollUpBy = Math.max(0, host.scrollTop - bounds.t);
-                                if (scrollUpBy) {
-                                    host.scrollTop -= scrollUpBy;
-                                }
-                                var scrollRightBy = Math.max(0, bounds.l -
-                                                             (host.scrollLeft + host.clientWidth));
-                                if (scrollRightBy) {
-                                    host.scrollLeft += scrollRightBy;
-                                }
-                                var scrollLeftBy = Math.max(0, host.scrollLeft - bounds.l);
-                                if (scrollLeftBy) {
-                                    host.scrollLeft -= scrollLeftBy;
-                                }
-                            }
                             textAreaContent = doc.selectedRange().plainText();
                             textArea.value = textAreaContent;
                             textArea.select();
@@ -1316,11 +1288,8 @@
                             }, 10);
                         };
 
-                        doc.selectionChanged(function(getformatting, takeFocus) {
+                        doc.selectionChanged(function(getformatting, canMoveViewport) {
                             requestPaintFunc();
-                            if (takeFocus !== false) {
-                                updateTextArea();
-                            }
                         });
 
                         doc.dblclickHandler = function(node) {
@@ -1332,7 +1301,7 @@
                         doc.mousedownHandler = function(node) {
                             nextCaretToggle = 0;
                             selectDragStart = node.ordinal;
-                            doc.select(node.ordinal, node.ordinal);
+                            doc.select(node.ordinal, node.ordinal,false);
                             keyboardX = null;
                         }
                         doc.mousemoveHandler = function(node) {
@@ -1340,9 +1309,9 @@
                                 if (node) {
                                     focusChar = node.ordinal;
                                     if (selectDragStart > node.ordinal) {
-                                        doc.select(node.ordinal, selectDragStart);
+                                        doc.select(node.ordinal, selectDragStart,false);
                                     } else {
-                                        doc.select(selectDragStart, node.ordinal);
+                                        doc.select(selectDragStart, node.ordinal,false);
                                     }
                                 }
                             }

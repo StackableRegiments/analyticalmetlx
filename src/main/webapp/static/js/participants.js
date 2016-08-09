@@ -140,6 +140,9 @@ var Participants = (function(){
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
-        getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};}
+        getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
+	code:function(author){
+	    return _.keys(participants).indexOf(author);
+	}
     };
 })();

@@ -1289,12 +1289,13 @@ var Modes = (function(){
                         var freeLinesFromBoxTop = Math.floor((viewboxHeight - boxOffset) / cursorY.h) - margin;
                         var takenLinesFromBoxTop = Math.floor(cursorY.t / cursorY.h);
                         var adjustment = Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h;
-                        console.log("adjustment",adjustment,takenLinesFromBoxTop,freeLinesFromBoxTop);
-                        TweenController.zoomAndPanViewbox(
-                            viewboxX,
-                            viewboxY + adjustment,
-                            viewboxWidth,
-                            viewboxHeight);
+                        if(adjustment != 0){
+                            TweenController.zoomAndPanViewbox(
+                                viewboxX,
+                                viewboxY + adjustment,
+                                viewboxWidth,
+                                viewboxHeight);
+                        }
                     }
                 },
                 editorFor:function(t){
@@ -1324,7 +1325,7 @@ var Modes = (function(){
                                 }
                                 Progress.call("totalSelectionChanged",[Modes.select.selected]);
                             });
-                            editor.doc.selectionChanged(function(formatReport){
+                            editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
                                 if(editor.doc.save().length > 0){
                                     var format = formatReport();
@@ -1356,7 +1357,9 @@ var Modes = (function(){
                                     setIf(textColors[0],"color",["#000000",255]);
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
-                                    Modes.text.scrollToCursor(editor);
+                                    if(canMoveViewport){
+                                        Modes.text.scrollToCursor(editor);
+                                    }
                                 }
                             });
                         }
@@ -1372,11 +1375,17 @@ var Modes = (function(){
                 },
                 editorAt : function(x,y,z,worldPos){
                     var threshold = 10;
+                    var me = UserSettings.getUsername();
                     var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                    var texts = _.take(_.values(boardContent.multiWordTexts).filter(function(text){
-                        return intersectRect(text.bounds,ray) && text.author == UserSettings.getUsername();
-                    }));
-                    console.log("    editorAt",x,y,worldPos);
+                    var texts = _.values(boardContent.multiWordTexts).filter(function(text){
+                        var intersects = intersectRect(text.bounds,ray)
+                        if(intersects){
+                            console.log("intersects",text.bounds,ray);
+                            console.log(sprintf("%s clicked box by %s",Participants.code(me),Participants.code(text.author)));
+                        }
+                        return intersects && (text.author == me);
+                    });
+                    console.log("editors",x,y,texts);
                     if(texts.length > 0){
                         return texts[0];
                     }
@@ -1387,7 +1396,6 @@ var Modes = (function(){
                 contextFor : function(editor,worldPos){
                     var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
                     var node = editor.byCoordinate(relativePos.x,relativePos.y);
-                    console.log("        contextFor",node,relativePos);
                     return {
                         node:node,
                         relativePos:relativePos
@@ -1402,7 +1410,6 @@ var Modes = (function(){
                     Progress.call("onLayoutUpdated");
                     var lastClick = Date.now();
                     var down = function(x,y,z,worldPos){
-                        console.log("text down",x,y,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
                             editor.isActive = true;
@@ -1428,6 +1435,7 @@ var Modes = (function(){
                         var sel;
                         Modes.select.clearSelection();
                         if (editor){
+                            console.log("Existing box");
                             var doc = editor.doc;
                             var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
@@ -1441,6 +1449,7 @@ var Modes = (function(){
                             Modes.select.setSelection(sel);
                             doc.mouseupHandler(context.node);
                         } else {
+                            console.log("New box");
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{
                                 text:" ",
@@ -1457,7 +1466,9 @@ var Modes = (function(){
                             sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
                             Modes.select.setSelection(sel);
                             editor = newEditor;
-                            newDoc.mouseupHandler(newDoc.byOrdinal(0));
+                            var node = newDoc.byOrdinal(0);
+                            newDoc.mousedownHandler(node);
+                            newDoc.mouseupHandler(node);
                         }
                         editor.doc.invalidateBounds();
                         editor.doc.isActive = true;
