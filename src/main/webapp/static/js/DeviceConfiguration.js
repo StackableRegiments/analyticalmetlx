@@ -262,8 +262,6 @@ var DeviceConfiguration = (function(){
 			bheight -= DeviceConfiguration.preferredSizes.keyboard;
 			//Remove three bars including gutters
 			bheight += (DeviceConfiguration.preferredSizes.handles + 2) * 3;
-			//Restore the tool column space
-			console.log("DeviceConfiguration");
 		    }
                 }
                 if (bheight < 0 || bwidth < 0){
