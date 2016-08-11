@@ -81,6 +81,26 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     println("upgraded db to use partialIndexes for mysql limitations (v2)")
     versionNumber
   }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 3).map(versionNumber => {
+    println("upgrading db to switch conversation creation from strings to longs (v3)")
+    val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
+    H2Conversation.findAllFields(List(H2Conversation.id,H2Conversation.created,H2Conversation.creation,H2Conversation.lastAccessed)).foreach(conv => {
+      if (conv.creation.get == null || conv.creation.get < 1){
+        val creationLong = try {
+          dateFormat.parse(conv.created.get).getTime();
+        } catch {
+          case e:Exception => {
+            println("exception while upgrading conversation format: %s => %s\r\n%s".format(conv,e.getMessage,e.getStackTraceString))
+            conv.lastAccessed.get
+          }
+        }
+        conv.creation(creationLong).save
+      }
+    })
+    versionNumber.intValue(3).save
+    println("upgraded db to switch conversation creation from strings to longs (v3)")
+    versionNumber
+  }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
 
   type H2Object = Object
   val RESOURCES = "resource"
@@ -219,7 +239,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
     val newJid = getNewJid
-    val details = Conversation(config,author,now.getTime,List(Slide(config,author,newJid + 1,0)),"unrestricted","",newJid,title,now.toString,Permissions.default(config))
+    val details = Conversation(config,author,now.getTime,List(Slide(config,author,newJid + 1,0)),"unrestricted","",newJid,title,now.getTime,Permissions.default(config))
     updateConversation(details)
     details
   }

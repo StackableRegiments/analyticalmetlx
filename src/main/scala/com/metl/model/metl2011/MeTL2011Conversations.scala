@@ -182,7 +182,7 @@ class MeTL2011Conversations(configName:String, val searchBaseUrl:String, http:Ht
   override def createConversation(title:String,author:String):Conversation = {
     val jid = getNewJid
     val now = new java.util.Date()
-    val local = Conversation(config,author,now.getTime,List(Slide(config,author,jid + 1,0)),"unrestricted","",jid,title,now.toString,Permissions.default(config))
+    val local = Conversation(config,author,now.getTime,List(Slide(config,author,jid + 1,0)),"unrestricted","",jid,title,now.getTime,Permissions.default(config))
     pushConversationToServer(local)
   }
   override def deleteConversation(jid:String):Conversation = {
