@@ -539,7 +539,7 @@ var Conversations = (function(){
         try {
             var convs = _.sortBy(currentlyDisplayedConversations.filter(function(conv){
                 return shouldDisplayConversationFunction(conv);
-            }),function(conv){return new Date(conv.created);}).reverse().map(constructConversation);
+            }),function(conv){return new Date(conv.creation);}).reverse().map(constructConversation);
             var searchResults = $("#searchResults");
             if (_.size(convs) > 0){
                 searchResults.html(unwrap(convs));

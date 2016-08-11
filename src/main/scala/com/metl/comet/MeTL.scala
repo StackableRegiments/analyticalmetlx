@@ -363,7 +363,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
     }) &
     "#conversationListing *" #> {
       ".aggregateContainer *" #> aggregateConversationAction(listing) &
-      ".conversationContainer" #> listing.map(conv => {
+      ".conversationContainer" #> listing.sortWith((a,b) => a.created > b.created).map(conv => {
         perConversationAction(conv)
       })
     }
