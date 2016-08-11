@@ -206,6 +206,13 @@ class Metl extends Logger {
     warn("generating comet html: %s".format(output))
     output
   }
+  def specificConversationSearch(in:NodeSeq):NodeSeq = {
+    val name = Globals.currentUser.is
+    val clazz = "lift:comet?type=MeTLJsonConversationChooserActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    warn("generating conversationSearch html: %s".format(output))
+    output
+  }
   def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
     val name = generateName()
     val clazz = "lift:comet?type=RemotePluginConversationChooserActor&amp;name=%s".format(name)

@@ -273,6 +273,86 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
   }
 }
 
+class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
+  private val serializer = new JsonSerializer("frontend")
+
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
+  override def autoIncludeJsonCode = true
+  
+  private lazy val RECEIVE_USERNAME = "receiveUsername"
+  private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
+  private lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
+  private lazy val RECEIVE_IMPORT_DESCRIPTIONS = "receiveImportDescriptions"
+  private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
+  private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
+  private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  private lazy val RECEIVE_QUERY = "receiveQuery"
+
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
+      val q = args(0).toString
+      query = Some(q)
+      listing = filterConversations(serverConfig.searchForConversation(q))
+      serializer.fromConversationList(listing)
+    },Full(RECEIVE_CONVERSATIONS)),
+    ClientSideFunctionDefinition("createConversation",List("title"),(args) => {
+      val title = getArgAsString(args(0))
+      serializer.fromConversation(serverConfig.createConversation(title,username))
+    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
+  )
+
+  protected var query:Option[String] = None
+  protected var listing:List[Conversation] = Nil
+  protected var imports:List[ImportDescription] = Nil
+
+  override def registerWith = MeTLConversationSearchActorManager
+  override def lifespan = Full(5 minutes)
+  protected val username = Globals.currentUser.is
+  protected lazy val serverConfig = ServerConfiguration.default
+
+  override def localSetup = {
+    query = Some(username)
+    listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q)))
+    super.localSetup
+  }
+  override def render = OnLoad(
+    Call(RECEIVE_USERNAME,JString(username)) & 
+    Call(RECEIVE_USER_GROUPS,getUserGroups) & 
+    Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) & 
+    Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) & 
+    Call(RECEIVE_QUERY,JString(query.getOrElse("")))
+  )
+  protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
+
+  override def lowPriority = {
+    case id:ImportDescription => {
+      if (id.author == username){
+        trace("received importDescription: %s".format(id))
+        if (imports.exists(_.id == id.id)){
+          imports = imports.map{
+            case i:ImportDescription if (i.id == id.id && i.timestamp.getTime() < id.timestamp.getTime()) => id
+            case other => other
+          }
+        } else {
+          imports = id :: imports
+        }
+        partialUpdate(Call(RECEIVE_IMPORT_DESCRIPTION,serialize(id)))
+      }
+    }
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
+      trace("receivedCommand: %s".format(c))
+      val newJid = c.commandParameters(0).toInt
+      val newConv = serverConfig.detailsOfConversation(newJid.toString)
+      partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+    }
+    case _ => warn("MeTLConversationSearchActor received unknown message")
+  }
+}
+
+
 abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
   protected def perConversationAction(conv:Conversation):CssSel
   protected def perImportAction(conv:Conversation):CssSel
@@ -285,9 +365,14 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
+ 
   private lazy val RECEIVE_USERNAME = "receiveUsername"
   private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
+  private lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
+  private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
+  private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
