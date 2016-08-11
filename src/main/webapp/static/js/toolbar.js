@@ -880,6 +880,7 @@ var Modes = (function(){
                     },
                     up:function(worldPos){
                         console.log("resizeAspectLocked up",worldPos)
+                        resizeAspectLocked.deactivate();
                         var resized = batchTransform();
                         var totalBounds = Modes.select.totalSelectedBounds();
                         var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -898,12 +899,17 @@ var Modes = (function(){
                             _.each(source,function(run){
                                 run.size = run.size * resized.xScale;
                             });
-			    text.doc.width(text.doc.width() * resized.xScale);
+                            text.doc.width(text.doc.width() * resized.xScale);
                             text.doc.load(source);
                         });
-
+			var root = Modes.select.totalSelectedBounds();
+                        Progress.call("totalSelectionChanged",[{
+                            x:root.x,
+                            y:root.y,
+                            x2:root.x + root.width * resized.xScale,
+                            y2:root.y + root.height * resized.yScale
+                        }]);
                         sendStanza(resized);
-                        resizeAspectLocked.deactivate();
                         return false;
                     },
                     render:function(canvasContext){
