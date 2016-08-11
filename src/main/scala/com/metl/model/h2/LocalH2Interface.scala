@@ -184,12 +184,12 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     }
   }
   protected def updateMaxJid = maxJid = try {
-    conversationCache.values.map(c => c.jid).max
+    conversationCache.values.map(_.jid).max
   } catch {
     case _:Throwable => 0
   }
   protected var maxJid = 0
-  protected def getNewJid = {
+  protected def getNewJid = synchronized {
     if (maxJid == 0){
       updateMaxJid
     }
