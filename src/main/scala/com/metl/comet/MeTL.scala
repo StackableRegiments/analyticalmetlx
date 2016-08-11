@@ -1095,7 +1095,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         val quizId = getArgAsString(args(1))
         rooms.get((server,conversationJid.toString)).map(room => {
           room().getHistory.getQuizByIdentity(quizId).map(quiz => {
-            this ! SimpleMultipleButtonInteractableMessage("Delete quiz","Are you sure you would like to delete this quiz? \r\n(%s)".format(quiz.question),
+            this ! SimpleMultipleButtonInteractableMessage("Delete quiz","Are you sure you would like to delete this poll? \r\n(%s)".format(quiz.question),
               Map(
                 "yes" -> {() => {
                   if (shouldModifyConversation(c)){
