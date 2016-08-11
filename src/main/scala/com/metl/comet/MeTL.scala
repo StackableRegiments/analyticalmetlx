@@ -300,7 +300,9 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunctionDefinition("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))
-      serializer.fromConversation(serverConfig.createConversation(title,username))
+      val newConv = serverConfig.createConversation(title,username)
+      listing = newConv :: listing
+      serializer.fromConversation(newConv)
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
   )
 

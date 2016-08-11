@@ -170,6 +170,15 @@ var Conversations = (function(){
 		searchBox.val(q);
 		reRender();
 	};
+	var getConversationListingFunc = function(){
+		return listing;
+	};
+	var getImportListingFunc = function(){
+		return currentImports;
+	};
+	var getQueryFunc = function(){
+		return query;
+	};
 	return {
 		receiveUsername:receiveUsernameFunc,
 		receiveUserGroups:receiveUserGroupsFunc,
@@ -179,6 +188,9 @@ var Conversations = (function(){
 		receiveImportDescription:receiveImportDescriptionFunc,
 		receiveImportDescriptions:receiveImportDescriptionsFunc,
 		receiveQuery:receiveQueryFunc,
+		getConversationListing:getConversationListingFunc,
+		getImportListing:getImportListingFunc,
+		getQuery:getQueryFunc,
 		search:searchFunc,
 		create:createFunc
 	};
