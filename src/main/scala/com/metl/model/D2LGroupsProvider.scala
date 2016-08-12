@@ -156,7 +156,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
       for (
         memberLists <- members.values;
         member <- memberLists;
-        memberName <- member.OrgDefinedId
+        memberName <- member.OrgDefinedId.filterNot(_ == "")
       ) yield {
         trace("member: %s".format(memberName))
         rawData.update(memberName,(("ou",orgUnit.Name) :: orgUnit.Code.toList.map(c => ("ou",c)) ::: rawData.get(memberName).getOrElse(Nil)).distinct)
@@ -167,7 +167,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
           for (
             membersById:List[D2LClassListUser] <- members.get(memberId).toList;
             member:D2LClassListUser <- membersById;
-            memberName:String <- member.OrgDefinedId
+            memberName:String <- member.OrgDefinedId.filterNot(_ == "")
           ) yield {
             trace("member: %s".format(memberName))
             rawData.update(memberName,(("section",section.Name) :: rawData.get(memberName).getOrElse(Nil)).distinct)
@@ -182,7 +182,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
             for (
               membersById:List[D2LClassListUser] <- members.get(memberId).toList;
               member:D2LClassListUser <- membersById;
-              memberName:String <- member.OrgDefinedId
+              memberName:String <- member.OrgDefinedId.filterNot(_ == "")
             ) yield {
               trace("member: %s".format(memberName))
               rawData.update(memberName,(("group",group.Name) :: rawData.get(memberName).getOrElse(Nil)).distinct)
