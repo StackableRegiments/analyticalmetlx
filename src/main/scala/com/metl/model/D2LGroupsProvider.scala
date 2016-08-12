@@ -79,9 +79,12 @@ case class D2LSection(
 
 
 class PeriodicD2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[Map[String,List[Tuple2[String,String]]]](refreshPeriod){
+  info("created new D2LGroupsProvider for %s (every %s)".format(d2lBaseUrl,refreshPeriod))
   val provider = new D2LGroupsProvider(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion)
   override def actuallyFetchGroups:Map[String,List[Tuple2[String,String]]] = {
-    provider.fetchGroups
+    val newGroups = provider.fetchGroups
+    println("loaded GroupData for: %s".format(newGroups))
+    newGroups
   }
   override protected def shouldCheck = true
   protected def parseStore(username:String,store:Map[String,List[Tuple2[String,String]]]) = store.get(username).getOrElse(Nil)
