@@ -11,7 +11,11 @@ var Conversations = (function(){
 	var currentImports = [];
 	var searchBox = {};
 
+	var conversationsDataGrid = undefined;
+
 	$(function(){
+			conversationsDataGrid = $("#conversationsDataGrid");
+
 			$('#activeImportsListing').hide();
 			$("#importConversationInputElementContainer").hide();
 			$("#showImportConversationWorkflow").click(function(){

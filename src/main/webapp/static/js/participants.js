@@ -45,6 +45,12 @@ var Participants = (function(){
                 newParticipants[author].texts[stanza.identity] = countTexts(stanza);
             });
         });
+				_.each(_.groupBy(history.quizResponses,"author"),function(authorStanzas,author){
+            var itemToEdit = ensure(author);
+            itemToEdit.quizResponses = itemToEdit.quizResponses + _.size(authorStanzas);
+            newParticipants[author] = itemToEdit;
+        });
+
         participants = newParticipants;
         updateParticipantsListing();
     };
@@ -56,9 +62,11 @@ var Participants = (function(){
     var onStanzaReceived = function(stanza){
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
-	    if(!(author in participants)){
-		participants[author] = _.clone(newParticipant);
-	    }
+						if(!(author in participants)){
+							var np = _.clone(newParticipant);
+							np.name = author;
+							participants[author] = np;
+						}
             var itemToEdit = participants[author];
             switch (stanza.type) {
             case "ink":

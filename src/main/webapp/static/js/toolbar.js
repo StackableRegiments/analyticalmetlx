@@ -879,6 +879,7 @@ var Modes = (function(){
                         Modes.select.resizing = false;
                     },
                     up:function(worldPos){
+                        console.log("resizeAspectLocked up",worldPos)
                         resizeAspectLocked.deactivate();
                         var resized = batchTransform();
                         var totalBounds = Modes.select.totalSelectedBounds();
@@ -892,8 +893,23 @@ var Modes = (function(){
                         resized.textIds = _.keys(Modes.select.selected.texts);
                         resized.imageIds = _.keys(Modes.select.selected.images);
                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                        _.each(Modes.select.selected.multiWordTexts,function(text,id){
+                            Modes.text.echoesToDisregard[id] = true;
+                            var source = text.doc.save();
+                            _.each(source,function(run){
+                                run.size = run.size * resized.xScale;
+                            });
+                            text.doc.width(text.doc.width() * resized.xScale);
+                            text.doc.load(source);
+                        });
+			var root = Modes.select.totalSelectedBounds();
+                        Progress.call("totalSelectionChanged",[{
+                            x:root.x,
+                            y:root.y,
+                            x2:root.x + root.width * resized.xScale,
+                            y2:root.y + root.height * resized.yScale
+                        }]);
                         sendStanza(resized);
-                        var root = Modes.select.totalSelectedBounds();
                         return false;
                     },
                     render:function(canvasContext){
@@ -1052,6 +1068,7 @@ var Modes = (function(){
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
             }
+            console.log("onSelectionChanged",totalBounds);
         };
     });
     return {

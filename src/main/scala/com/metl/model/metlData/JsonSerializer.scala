@@ -613,7 +613,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("id",JString(input.id))
     ) ::: parseMeTLContent(input))
   })
-
+  protected val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
   override def toConversation(i:JValue):Conversation = Stopwatch.time("JsonSerializer.toConversation",{
     i match {
       case input:JObject => {
@@ -624,7 +624,13 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         val tag = getStringByName(input,"tag")
         val jid = getIntByName(input,"jid")
         val title = getStringByName(input,"title")
-        val created = getStringByName(input,"created")
+        val created = try {
+          getLongByName(input,"creation")
+        } catch {
+          case e:Exception => {
+            dateFormat.parse(getStringByName(input,"created")).getTime
+          }
+        }
         val permissions = toPermissions(getObjectByName(input,"permissions"))
         val blacklist = getListOfStringsByName(input,"blacklist")
         val thisConfig = getStringByName(input,"configName") match {
@@ -646,7 +652,8 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("tag",JString(input.tag)),
       JField("jid",JInt(input.jid)),
       JField("title",JString(input.title)),
-      JField("created",JString(input.created)),
+      JField("created",JString(new java.util.Date(input.created).toString())),
+      JField("creation",JInt(input.created)),
       JField("permissions",fromPermissions(input.permissions)),
       JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList)),
       JField("configName",JString(input.server.name))

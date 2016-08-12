@@ -226,13 +226,13 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   override def fromMeTLQuizResponse(i:MeTLQuizResponse):H2QuizResponse = {
     incStanza(H2QuizResponse.create,i,"quizResponse").answer(i.answer).answerer(i.answerer).quizId(i.id)
   }
-  def toConversation(i:H2Conversation):Conversation = Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.created.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList)
+  def toConversation(i:H2Conversation):Conversation = Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList)
   override def fromConversation(i:Conversation):H2Conversation = {
     val rec = H2Conversation.find(By(H2Conversation.jid,i.jid)) match {
       case Full(c) => c
       case _ => H2Conversation.create
     }
-    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides))
+    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides))
   }
   def optionsToString(ls:List[QuizOption]):String = {
     val xml = <options>{ls.map(o => xmlSerializer.fromQuizOption(o))}</options>

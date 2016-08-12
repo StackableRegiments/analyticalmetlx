@@ -16,52 +16,68 @@ import scala.xml.{Source=>XmlSource,_}
 object GroupsProvider {
   def createFlatFileGroups(in:NodeSeq):GroupsProvider = {
     (in \\ "@format").text match {
-      case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text,(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
-      case "globalOverrides" => new GlobalOverridesGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text)
-      case "specificOverrides" => new SpecificOverridesGroupsProvider((in \\ "@location").text,(in \\ "@refreshPeriod").text)
+      case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
+      case "globalOverrides" => new GlobalOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
+      case "specificOverrides" => new SpecificOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
+      case "d2l" => (for {
+        host <- (in \\ "@host").headOption.map(_.text)
+        leApiVersion <- (in \\ "@leApiVersion").headOption.map(_.text)
+        lpApiVersion <- (in \\ "@lpApiVersion").headOption.map(_.text)
+        appId <- (in \\ "@appId").headOption.map(_.text)
+        appKey <- (in \\ "@appKey").headOption.map(_.text)
+        userId <- (in \\ "@userId").headOption.map(_.text)
+        userKey <- (in \\ "@userKey").headOption.map(_.text)
+        refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
+      } yield {
+        new PeriodicD2LGroupsProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,refreshPeriod)
+      }).getOrElse({
+        throw new Exception("missing parameters for d2l groups provider")
+      })
       case _ => throw new Exception("unrecognized flatfile format")
     }
   }
 }
 
-trait GroupsProvider {
-  def getGroupsFor(username:String):List[Tuple2[String,String]] = {
-    Nil
-  }
+trait GroupsProvider extends Logger {
+  def getGroupsFor(username:String):List[Tuple2[String,String]] = Nil
 }
 
 class SelfGroupsProvider extends GroupsProvider {
   override def getGroupsFor(username:String) = List(("ou",username))
 }
 
-abstract class RefreshingFlatFileGroupsProvider(path:String,refreshPeriod:String) extends FileWatchingComprehender[Map[String,List[Tuple2[String,String]]]](path,refreshPeriod) with GroupsProvider {
+abstract class PerUserFlatFileGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[Map[String,List[Tuple2[String,String]]]](path,refreshPeriod) {
   override def startingValue = Map.empty[String,List[Tuple2[String,String]]]
-  override def getGroupsFor(username:String) = {
-    lastCache.get(username).getOrElse(Nil)    
+  override protected def parseStore(username:String,store:Map[String,List[Tuple2[String,String]]]):List[Tuple2[String,String]] = store.get(username).getOrElse(Nil)
+}
+abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[T](refreshPeriod) { 
+  override def shouldCheck = {
+    val newCheck = new java.io.File(path).lastModified()
+    newCheck > lastModified
   }
 }
-
-abstract class FileWatchingComprehender[T](path:String,refreshPeriod:String) extends Logger { 
-  protected val timespan = 5 minutes
+abstract class PeriodicallyRefreshingGroupsProvider[T](refreshPeriod:TimeSpan) extends GroupsProvider { 
+  protected val timespan = refreshPeriod
   protected var lastModified:Long = 0
   protected def startingValue:T
   protected var lastCache:T = startingValue
   protected var cache = new PeriodicallyRefreshingVar[Unit](timespan,() => {
-    val newCheck = new java.io.File(path).lastModified()
-    if (newCheck > lastModified){
-      debug("file modification detected: %s".format(path))
-      lastCache = comprehendFile
+    if (shouldCheck){
+      val newCheck = new java.util.Date().getTime()
+      lastCache = actuallyFetchGroups
       lastModified = newCheck
     }
   })
-  protected def comprehendFile:T
+  protected def shouldCheck:Boolean
+  protected def actuallyFetchGroups:T
+  protected def parseStore(username:String,store:T):List[Tuple2[String,String]] 
+  override def getGroupsFor(username:String):List[Tuple2[String,String]] = parseStore(username,lastCache)
 }
-
-class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends FileWatchingComprehender[List[Tuple2[String,String]]](path,refreshPeriod) with GroupsProvider with Logger {
+class GlobalOverridesGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[List[Tuple2[String,String]]](path,refreshPeriod) with GroupsProvider with Logger {
   info("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
-  override def getGroupsFor(username:String) = lastCache
   override protected def startingValue = Nil
-  override protected def comprehendFile:List[Tuple2[String,String]] = {
+  override def parseStore(username:String,store:List[Tuple2[String,String]]) = store
+  override def actuallyFetchGroups:List[Tuple2[String,String]] = {
     var rawData = List.empty[Tuple2[String,String]]
     Source.fromFile(path).getLines.foreach(line => {
       line.split("\t") match {
@@ -76,9 +92,9 @@ class GlobalOverridesGroupsProvider(path:String,refreshPeriod:String) extends Fi
   }
 }
 
-class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) with Logger {
+class SpecificOverridesGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PerUserFlatFileGroupsProvider(path,refreshPeriod) with Logger {
   info("created new specificGroupsProvider(%s,%s)".format(path,refreshPeriod))
-  override def comprehendFile:Map[String,List[Tuple2[String,String]]] = {
+  override def actuallyFetchGroups:Map[String,List[Tuple2[String,String]]] = {
     var rawData = Map.empty[String,List[Tuple2[String,String]]]
     Source.fromFile(path).getLines.foreach(line => {
       line.split("\t") match {
@@ -93,9 +109,9 @@ class SpecificOverridesGroupsProvider(path:String,refreshPeriod:String) extends 
   }
 }
 
-class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:String, facultyWhoWantSubgroups:List[String] = List.empty[String]) extends RefreshingFlatFileGroupsProvider(path,refreshPeriod) with Logger {
+class StLeoFlatFileGroupsProvider(path:String,refreshPeriod:TimeSpan, facultyWhoWantSubgroups:List[String] = List.empty[String]) extends PerUserFlatFileGroupsProvider(path,refreshPeriod) with Logger {
   info("created new stLeoFlatFileGroupsProvider(%s,%s)".format(path,refreshPeriod))
-  override def comprehendFile:Map[String,List[Tuple2[String,String]]] = {
+  override def actuallyFetchGroups:Map[String,List[Tuple2[String,String]]] = {
     var rawData = Map.empty[String,List[Tuple2[String,String]]]
     Source.fromFile(path).getLines.foreach(line => {
       //sometimes it comes as a csv and other times as a tsv, so converting commas into tabs to begin with

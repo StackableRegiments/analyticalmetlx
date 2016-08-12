@@ -437,6 +437,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       <id>{input.id}</id>
     ))
   })
+  protected val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
   override def toConversation(input:NodeSeq):Conversation = Stopwatch.time("GenericXmlSerializer.toConversation",{
     val m = parseMeTLContent(input,config)
     val author = getStringByName(input,"author")
@@ -446,7 +447,13 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     val tag = getStringByName(input,"tag")
     val jid = getIntByName(input,"jid")
     val title = getStringByName(input,"title")
-    val created = getStringByName(input,"created")
+    val created = try {
+      getLongByName(input,"creation")
+    } catch {
+      case e:Exception => {
+        dateFormat.parse(getStringByName(input,"created")).getTime
+      }
+    }
     val permissions = getXmlByName(input,"permissions").map(p => toPermissions(p)).headOption.getOrElse(Permissions.default(config))
     val blacklist = getXmlByName(input,"blacklist").flatMap(bl => getXmlByName(bl,"user")).map(_.text)
     val thisConfig = getStringByName(input,"configName") match {
@@ -465,7 +472,8 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       <tag>{input.tag}</tag>,
       <jid>{input.jid}</jid>,
       <title>{input.title}</title>,
-      <created>{input.created}</created>,
+      <created>{new java.util.Date(input.created).toString()}</created>,
+      <creation>{input.created}</creation>,
       <blacklist>{
         input.blackList.map(bu => <user>{bu}</user> )
       }</blacklist>,
