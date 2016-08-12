@@ -3,7 +3,7 @@ function setupStatus(){
     var display = $("#strokesPending");
     var latency = $("#latency");
     var recentLatency = 0;
-    var progressFuncs = {};
+    window.progressFuncs = {};
     var cancelFuncs = {};
     window.updateStrokesPending = function(delta,identity){
         if(delta > 0){
@@ -16,18 +16,21 @@ function setupStatus(){
         display.text(Object.keys(pending).length);
         latency.text(recentLatency);
     }
-    window.updateTracking = function(id,progressFunc,cancelFunc){
+    window.registerTracker = function(id,progressFunc){
         if(progressFunc){
             progressFuncs[id] = progressFunc;
         }
-        if(cancelFunc){
-            cancelFuncs[id] = cancelFunc;
+        else{
+            console.log("No tracker provided against",id);
         }
-        else if(id in progressFuncs){
+    }
+    window.updateTracking = function(id){
+        if(id in progressFuncs){
             progressFuncs[id]();
+            delete progressFuncs[id];
         }
         else{
-            console.log("No progress initializer function was issued for ",id);
+            console.log("updateTracking problem: Nobody is listening for ",id);
         }
     }
     window.stopTracking = function(id){
@@ -36,6 +39,11 @@ function setupStatus(){
         }
         delete progressFuncs[id];
         delete cancelFuncs[id];
+    }
+    window.trackerFrom = function(phrase){
+        return _.filter(_.keys(progressFuncs), function(key){
+            return phrase.endsWith(sprintf("_from:%s",key));
+        });
     }
 }
 function strokeCollected(spoints){
@@ -399,7 +407,7 @@ function transformReceived(transform){
             relevantTexts.push(boardContent.texts[id]);
         });
         $.each(transform.multiWordTextIds,function(i,id){
-	    if(id in Modes.text.echoesToDisregard) return;
+            if(id in Modes.text.echoesToDisregard) return;
             relevantMultiWordTexts.push(boardContent.multiWordTexts[id]);
         });
         var point = function(x,y){return {"x":x,"y":y};};
@@ -556,9 +564,11 @@ function transformReceived(transform){
         });
         $.each(transform.imageIds,function(i,id){
             var image = boardContent.images[id];
+            console.log("Shifting image",image.x,image.y);
             image.x += transform.xTranslate;
             image.y += transform.yTranslate;
             calculateImageBounds(image);
+            console.log("Shifting image",image.x,image.y);
             transformBounds.incorporateBounds(image.bounds);
         });
         $.each(transform.textIds,function(i,id){
@@ -569,7 +579,7 @@ function transformReceived(transform){
             transformBounds.incorporateBounds(text.bounds);
         });
         $.each(transform.multiWordTextIds,function(i,id){
-	    if(id in Modes.text.echoesToDisregard) return;
+            if(id in Modes.text.echoesToDisregard) return;
             var text = boardContent.multiWordTexts[id];
             var doc = text.doc;
             doc.position.x += transform.xTranslate;
@@ -586,6 +596,11 @@ function transformReceived(transform){
                          transform.textIds.length,
                          transform.multiWordTextIds.length,
                          transform.inkIds.length));
+    console.log("Transform received",transform.identity);
+    _.each(trackerFrom(transform.identity),function(tracker){
+	console.log("Updating tracking for",tracker);
+        updateTracking(tracker);
+    });
     blit();
 }
 function moveReceived(move){

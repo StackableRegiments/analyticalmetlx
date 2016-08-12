@@ -788,14 +788,10 @@ var Modes = (function(){
                             box.doc.invalidateBounds();
                         });
                         sendStanza(moved);
-                        blit();
-                        var root = Modes.select.totalSelectedBounds();
-                        Progress.call("totalSelectionChanged",[{
-                            x:root.x,
-                            y:root.y,
-                            x2:root.x2,
-                            y2:root.y2
-                        }]);
+                        registerTracker(moved.identity,function(){
+                            Progress.call("onSelectionChanged");
+                            blit();
+                        });
                         return false;
                     },
                     render:function(canvasContext){
@@ -879,8 +875,7 @@ var Modes = (function(){
                         Modes.select.resizing = false;
                     },
                     up:function(worldPos){
-                        console.log("resizeAspectLocked up",worldPos)
-                        resizeAspectLocked.deactivate();
+			resizeAspectLocked.deactivate();
                         var resized = batchTransform();
                         var totalBounds = Modes.select.totalSelectedBounds();
                         var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -902,13 +897,9 @@ var Modes = (function(){
                             text.doc.width(text.doc.width() * resized.xScale);
                             text.doc.load(source);
                         });
-			var root = Modes.select.totalSelectedBounds();
-                        Progress.call("totalSelectionChanged",[{
-                            x:root.x,
-                            y:root.y,
-                            x2:root.x + root.width * resized.xScale,
-                            y2:root.y + root.height * resized.yScale
-                        }]);
+                        registerTracker(resized.identity,function(){
+                            Progress.call("onSelectionChanged");
+                        });
                         sendStanza(resized);
                         return false;
                     },
@@ -1009,15 +1000,11 @@ var Modes = (function(){
                         word.doc.width(word.doc.width() * resized.xScale);
                         sendRichText(word);
                     });
-                    var root = Modes.select.totalSelectedBounds();
-                    Progress.call("totalSelectionChanged",[{
-                        x:root.x,
-                        y:root.y,
-                        x2:root.x + root.width * resized.xScale,
-                        y2:root.y + root.height * resized.yScale
-                    }]);
+                    registerTracker(resized.identity,function(){
+                        Progress.call("onSelectionChanged");
+                        blit();
+                    });
                     sendStanza(resized);
-                    blit();
                     return false;
                 },
                 render:function(canvasContext){
@@ -1057,8 +1044,9 @@ var Modes = (function(){
                 resizeAspectLocked.rehome(totalBounds);
             }
         };
-        Progress.onSelectionChanged["selectionHandles"] = function(selection){
+        Progress.onSelectionChanged["selectionHandles"] = function(){
             var totalBounds = Modes.select.totalSelectedBounds();
+            console.log("onSelectionChanged",totalBounds.x,totalBounds.y,totalBounds.x2,totalBounds.y2);
             if(totalBounds.x == Infinity){
                 attrs.opacity = 0;
             }
@@ -1068,7 +1056,6 @@ var Modes = (function(){
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
             }
-            console.log("onSelectionChanged",totalBounds);
         };
     });
     return {
@@ -1334,13 +1321,9 @@ var Modes = (function(){
                                 source.privacy = Privacy.getCurrentPrivacy();
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
-                                var t = editor.doc.save();
-                                if(t.length > 0){
-                                    sendRichText(source);
-                                    /*This is important to the zoom strategy*/
-                                    incorporateBoardBounds(editor.bounds);
-                                }
-                                Progress.call("totalSelectionChanged",[Modes.select.selected]);
+                                sendRichText(source);
+                                /*This is important to the zoom strategy*/
+                                incorporateBoardBounds(editor.bounds);
                             });
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
@@ -1452,7 +1435,6 @@ var Modes = (function(){
                         var sel;
                         Modes.select.clearSelection();
                         if (editor){
-                            console.log("Existing box");
                             var doc = editor.doc;
                             var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
@@ -1466,7 +1448,6 @@ var Modes = (function(){
                             Modes.select.setSelection(sel);
                             doc.mouseupHandler(context.node);
                         } else {
-                            console.log("New box");
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{
                                 text:" ",
@@ -1668,6 +1649,7 @@ var Modes = (function(){
                                 identity:newIdentity,
                                 slide:currentSlide.toString(),
                                 source:$(e).text(),
+                                bounds:[currentImage.x,currentImage.y,currentImage.x+currentImage.width,currentImage.y+currentImage.height],
                                 width:currentImage.width,
                                 height:currentImage.height,
                                 target:"presentationSpace",
@@ -1675,15 +1657,21 @@ var Modes = (function(){
                                 x:currentImage.x,
                                 y:currentImage.y
                             };
-                            updateTracking(newIdentity,function(){
-                                var roomForControls = 50
-                                var newX = Math.min(imageStanza.x,viewboxX);
-                                var newY = Math.min(imageStanza.y,viewboxY);
-                                var newW = Math.max(imageStanza.x + imageStanza.width,viewboxWidth);
-                                var newH = Math.max(imageStanza.y + imageStanza.height,viewboxHeight);
+                            registerTracker(newIdentity,function(){
+                                var insertMargin = Modes.select.handlesAtZoom();
+                                var newX = imageStanza.x;
+                                var newY = imageStanza.y;
+                                var newW = Math.max(imageStanza.width,viewboxWidth);
+                                var newH = Math.max(imageStanza.height,viewboxHeight);
                                 Modes.select.activate();
-                                Modes.select.selected.images[imageStanza.identity] = imageStanza;
-                                IncludeView.specific(newX,newY,newW + roomForControls,newH + roomForControls);
+                                IncludeView.specific(
+                                    newX - insertMargin,
+                                    newY - insertMargin,
+                                    newW + insertMargin * 2,
+                                    newH + insertMargin * 2);
+                                Modes.select.clearSelection();
+                                Modes.select.selected.images[imageStanza.identity] = boardContent.images[imageStanza.identity];
+                                Progress.call("onSelectionChanged",[Modes.select.selected]);
                             });
                             sendStanza(imageStanza);
                             resetImageUpload();
@@ -1830,7 +1818,7 @@ var Modes = (function(){
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
                         var cat = Modes.select.selected[selCatName];
                         _.forEach(cat,function(i){
-                            if (cat && boardCatName in boardContent && i.identity in boardContent[boardCatName]){
+                            if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]){
                                 cat[i.identity] = boardContent[boardCatName][i.identity];
                             } else {
                                 changed = true;
@@ -2068,12 +2056,6 @@ var Modes = (function(){
                                 box.doc.position.y += yDelta;
                                 box.doc.invalidateBounds();
                             });
-                            Progress.call("totalSelectionChanged",[{
-                                x:root.x + xDelta,
-                                y:root.y + yDelta,
-                                x2:root.x2 + xDelta,
-                                y2:root.y2 + yDelta
-                            }]);
                             var moved = batchTransform();
                             moved.xTranslate = xDelta;
                             moved.yTranslate = yDelta;
