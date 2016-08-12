@@ -151,40 +151,40 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
     var rawData = scala.collection.mutable.Map.empty[String,List[Tuple2[String,String]]]
     
     getOrgUnits(userContext).filter(_.Type.Id == 3L).foreach(orgUnit => {
-      println("OU: %s (%s)".format(orgUnit.Name,orgUnit.Code))
+      trace("OU: %s (%s)".format(orgUnit.Name,orgUnit.Code))
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       for (
         memberLists <- members.values;
         member <- memberLists;
         memberName <- member.OrgDefinedId
       ) yield {
-        println("member: %s".format(memberName))
+        trace("member: %s".format(memberName))
         rawData.update(memberName,("ou",orgUnit.Name) :: rawData.get(memberName).getOrElse(Nil))
       }
       getSections(userContext,orgUnit).foreach(section => {
-        println("SECTION: %s".format(section.Name))
+        trace("SECTION: %s".format(section.Name))
         section.Enrollments.foreach(memberId => {
           for (
             membersById:List[D2LClassListUser] <- members.get(memberId).toList;
             member:D2LClassListUser <- membersById;
             memberName:String <- member.OrgDefinedId
           ) yield {
-            println("member: %s".format(memberName))
+            trace("member: %s".format(memberName))
             rawData.update(memberName,("section",section.Name) :: rawData.get(memberName).getOrElse(Nil))
           }
         })
       })
       getGroupCategories(userContext,orgUnit).foreach(groupCategory => {
-        println("GROUP_CATEGORY: %s".format(groupCategory.Name))
+        trace("GROUP_CATEGORY: %s".format(groupCategory.Name))
         getGroups(userContext,orgUnit,groupCategory).foreach(group => {
-          println("GROUP: %s".format(group.Name))
+          trace("GROUP: %s".format(group.Name))
           group.Enrollments.foreach(memberId => {
             for (
               membersById:List[D2LClassListUser] <- members.get(memberId).toList;
               member:D2LClassListUser <- membersById;
               memberName:String <- member.OrgDefinedId
             ) yield {
-              println("member: %s".format(memberName))
+              trace("member: %s".format(memberName))
               rawData.update(memberName,("group",group.Name) :: rawData.get(memberName).getOrElse(Nil))
             }
           })
