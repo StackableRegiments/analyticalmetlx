@@ -7,22 +7,27 @@
   <script src="static/js/conversationSearch.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+
+	<script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
+  <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
+  <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
+	
 	<div class="lift:Metl.specificConversationSearch"></div>
 	<!--
   <div class="lift:comet?type=MeTLConversationSearchActor">
 -->
-    <div id="masterLayout" class="flex-container-responsive directlyOnBackground">
+    <div id="masterLayout" class="flex-container-responsive">
       <div class="indent">
         <h1>Join a conversation</h1>
         <div class="indent">
 					<div id="conversationSearchBoxContainer">
 						<span id="conversationSearchBox"></span><button id="searchButton" type="button" value="Search" style="display:inline-block"><span class="fa fa-search"><span class="icon-txt">Search</span></span></button>
 					</div>
-          <div id="conversationListing">
+					<div id="conversationsDataGrid"></div>
+          <div id="conversationListing" class="directlyOnBackground">
             <div class="aggregateContainer">
               <div class="label count">0 results</div>
             </div>
-						<div id="conversationsDataGrid"></div>
             <table id="conversationContainerListing">
               <tr class="conversationContainer">
                 <td class="topRow">
@@ -42,7 +47,7 @@
           </div>
         </div>
       </div>
-      <div id="startAConversation" class="indent">
+      <div id="startAConversation" class="indent directlyOnBackground">
         <h1>Start a conversation</h1>
         <div class="indent">
           <div id="createConversationContainer">

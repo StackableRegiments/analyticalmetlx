@@ -16,6 +16,68 @@ var Conversations = (function(){
 	$(function(){
 			conversationsDataGrid = $("#conversationsDataGrid");
 
+			var DateField = function(config){
+				jsGrid.Field.call(this,config);
+			};
+			var EditConversationField = function(config){
+				jsGrid.Field.call(this,config);
+			};	
+			var JoinConversationField = function(config){
+				jsGrid.Field.call(this,config);
+			};
+
+			DateField.prototype = new jsGrid.Field({
+				sorter: function(a,b){
+					return new Date(a) - new Date(b);
+				},
+				itemTemplate: function(i){
+					return new Date(i).toString();
+				},
+				insertTemplate: function(i){return ""},
+				editTemplate: function(i){return ""},
+				insertValue: function(){return ""},
+				editValue: function(){return ""}
+			});
+			EditConversationField.prototype = new jsGrid.Field({
+				sorter: function(a,b){
+					return 0;
+				},
+				itemTemplate: function(cell,details){
+					if (shouldModifyConversation(details)){
+						return $("<a/>",{
+							href:sprintf("/editConversation?conversationJid=%s",details.jid),
+							text:"Edit"
+						});
+					} else {
+						return "";
+					}
+				},
+				insertTemplate: function(i){return ""},
+				editTemplate: function(i){return ""},
+				insertValue: function(){return ""},
+				editValue: function(){return ""}
+			});
+			JoinConversationField.prototype = new jsGrid.Field({
+				sorter: function(a,b){
+					return 0;
+				},
+				itemTemplate: function(cell,details){
+					return $("<a/>",{
+						href:sprintf("/board?conversationJid=%s",details.jid),
+						text:"Join"
+					});
+				},
+				insertTemplate: function(i){return ""},
+				editTemplate: function(i){return ""},
+				insertValue: function(){return ""},
+				editValue: function(){return ""}
+			});
+
+		
+			jsGrid.fields.dateField = DateField;
+			jsGrid.fields.editConversationField = EditConversationField;
+			jsGrid.fields.joinConversationField = JoinConversationField;
+
 			$('#activeImportsListing').hide();
 			$("#importConversationInputElementContainer").hide();
 			$("#showImportConversationWorkflow").click(function(){
@@ -129,7 +191,29 @@ var Conversations = (function(){
 		return rootElem;
 	};
 
+
 	var reRender = function(){
+		conversationsDataGrid.jsGrid({
+			width:"100%",
+			height:"100%",
+			inserting: false,
+			editing: false,
+			sorting: true,
+			paging: true,
+			pageSize:10,
+			pageButtonCount:5,
+			data: currentSearchResults,
+			fields: [
+				{name:"title",type:"text",title:"Title"},
+				{name:"jid",type:"number",title:"Id"},
+				{name:"creation",type:"dateField",title:"Created"},
+				{name:"lastAccessed",type:"dateField",title:"Last Accessed"},
+				{name:"author",type:"text",title:"Author"},
+				{name:"jid",type:"joinConversationField",title:"Join",sorting:false},
+				{name:"jid",type:"editConversationField",title:"Edit",sorting:false}
+			]
+		});
+
 		console.log("reRender:",currentQuery,currentSearchResults,currentImports);
 		var convs = _.map(currentSearchResults,constructConversation);
 		conversationsListing.html(convs);
