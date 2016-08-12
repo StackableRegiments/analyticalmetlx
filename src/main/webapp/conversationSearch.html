@@ -11,19 +11,26 @@
 	<script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
   <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
   <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
-	
+
+	<style>
+.gridAction a{
+	color:black !important;
+}
+	</style>
+
 	<div class="lift:Metl.specificConversationSearch"></div>
 	<!--
   <div class="lift:comet?type=MeTLConversationSearchActor">
 -->
     <div id="masterLayout" class="flex-container-responsive">
       <div class="indent">
-        <h1>Join a conversation</h1>
+        <h1 class="directlyOnBackground">Join a conversation</h1>
         <div class="indent">
 					<div id="conversationSearchBoxContainer">
 						<span id="conversationSearchBox"></span><button id="searchButton" type="button" value="Search" style="display:inline-block"><span class="fa fa-search"><span class="icon-txt">Search</span></span></button>
 					</div>
 					<div id="conversationsDataGrid"></div>
+					<!--
           <div id="conversationListing" class="directlyOnBackground">
             <div class="aggregateContainer">
               <div class="label count">0 results</div>
@@ -45,6 +52,7 @@
               </tr>
             </table>
           </div>
+-->
         </div>
       </div>
       <div id="startAConversation" class="indent directlyOnBackground">
