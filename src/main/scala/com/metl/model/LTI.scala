@@ -230,7 +230,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
             valenceContext <- pluginSession.valenceContext;
             appContext = valenceContext.appContext
           ) yield {
-            println("createdUserContext: %s".format((userId,userKey))
+            println("createdUserContext: %s".format((userId,userKey)))
             val uctx = appContext.createUserContext(userId,userKey)
             val newPluginSession = pluginSession.copy(valenceContext = Some(valenceContext.copy(userContext = Some(uctx))))
             //lti.sessionStore(lti.sessionStore.is.updated(token,newPluginSession))
