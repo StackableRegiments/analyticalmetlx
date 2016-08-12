@@ -13,9 +13,9 @@ var Conversations = (function(){
 
 	$(function(){
 			$('#activeImportsListing').hide();
-			$("#importConversationContainer").hide();
+			$("#importConversationInputElementContainer").hide();
 			$("#showImportConversationWorkflow").click(function(){
-					$("#importConversationContainer").show();
+				$('#importConversationInputElement').click();
 			});
 			$('#importConversationInputElement').fileupload({
 					dataType: 'json',
@@ -53,11 +53,22 @@ var Conversations = (function(){
 				query = q;
 				searchFunc(q);
 			};
-			searchBox.on("blur",qFunc);
+			//searchBox.on("blur",qFunc); //not updating on blur anymore
+			searchBox.on("keydown",function(e){
+				var q = $(this).val();
+				query = q;
+				if (e.keyCode == 13){
+					searchFunc(q);
+				}
+			});
 			var createConversationButton = $("#createConversationButton");
 			createConversationButton.on("click",function(){
 				var title = sprintf("%s at %s",username,new Date().toString()); 
 				createFunc(title);
+			});
+			var searchButton = $("#searchButton");
+			searchButton.on("click",function(){
+				searchFunc(query);
 			});
 	});
 

@@ -417,7 +417,7 @@ var subcategoryMapping = {
     optsToolbar:".applicationGroup"
 };
 var categoryMapping = _.fromPairs(_.flatMap({
-    metaToolbar:"conversations integrations print",
+    metaToolbar:"integrations print",
     optsToolbar:"settings healthCheck",
     roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
 },function(v,k){
@@ -591,8 +591,8 @@ $(function(){
             hideBackstage();
         }
         else{
-            updateActiveMenu($("#menuSettings"));
-            showBackstage("conversations");
+            showBackstage("integrations");
+            updateActiveMenu($("#menuIntegrations"));
         }
     });
     loadSlidesAtNativeZoom = UserSettings.getUserPref("loadSlidesAtNativeZoom") == "true";
@@ -805,5 +805,8 @@ $(function(){
 				if ("HealthCheckViewer" in window){
 					HealthCheckViewer.resume();
 				}
+		});
+		$("#conversations").click(function(){
+			window.location.href = "/conversationSearch";
 		});
 });
