@@ -159,7 +159,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
         memberName <- member.OrgDefinedId
       ) yield {
         trace("member: %s".format(memberName))
-        rawData.update(memberName,("ou",orgUnit.Name) :: rawData.get(memberName).getOrElse(Nil))
+        rawData.update(memberName,(("ou",orgUnit.Name) :: orgUnit.Code.toList.map(c => ("ou",c)) ::: rawData.get(memberName).getOrElse(Nil)).distinct)
       }
       getSections(userContext,orgUnit).foreach(section => {
         trace("SECTION: %s".format(section.Name))
@@ -170,7 +170,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
             memberName:String <- member.OrgDefinedId
           ) yield {
             trace("member: %s".format(memberName))
-            rawData.update(memberName,("section",section.Name) :: rawData.get(memberName).getOrElse(Nil))
+            rawData.update(memberName,(("section",section.Name) :: rawData.get(memberName).getOrElse(Nil)).distinct)
           }
         })
       })
@@ -185,7 +185,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
               memberName:String <- member.OrgDefinedId
             ) yield {
               trace("member: %s".format(memberName))
-              rawData.update(memberName,("group",group.Name) :: rawData.get(memberName).getOrElse(Nil))
+              rawData.update(memberName,(("group",group.Name) :: rawData.get(memberName).getOrElse(Nil)).distinct)
             }
           })
         })
