@@ -41,7 +41,17 @@ object GroupsProvider {
 trait GroupsProvider extends Logger {
   def getGroupsFor(username:String):List[Tuple2[String,String]] = Nil
 }
+/*
+trait GroupStoreProvider extends Logger {
+  def getGroups:Map[String,List[Tuple2[String,String]]] = Map.empty[String,List[Tuple2[String,String]]]
+}
 
+abstract class CachingGroupStoreProvider(gp:GroupStoreProvider,period:TimeSpan) extends GroupStoreProvider {
+  protected def stale:Boolean
+  protected def 
+
+}
+*/
 class SelfGroupsProvider extends GroupsProvider {
   override def getGroupsFor(username:String) = List(("ou",username))
 }
@@ -56,6 +66,15 @@ abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](path:String,re
     newCheck > lastModified
   }
 }
+
+class CachingGroupsProvider(gp:GroupsProvider) extends GroupsProvider {
+
+}
+
+class PeriodicallyCheckGroupsProvider(gp:GroupsProvider) extends GroupsProvider {
+
+}
+
 abstract class PeriodicallyRefreshingGroupsProvider[T](refreshPeriod:TimeSpan) extends GroupsProvider { 
   protected val timespan = refreshPeriod
   protected var lastModified:Long = 0
