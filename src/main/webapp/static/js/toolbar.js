@@ -875,7 +875,7 @@ var Modes = (function(){
                         Modes.select.resizing = false;
                     },
                     up:function(worldPos){
-			resizeAspectLocked.deactivate();
+                        resizeAspectLocked.deactivate();
                         var resized = batchTransform();
                         var totalBounds = Modes.select.totalSelectedBounds();
                         var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -2064,6 +2064,10 @@ var Modes = (function(){
                             moved.imageIds = _.keys(Modes.select.selected.images);
                             moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             Modes.select.dragging = false;
+                            registerTracker(moved.identity,function(){
+                                Progress.call("onSelectionChanged");
+                                blit();
+                            });
                             sendStanza(moved);
                         }
                         else{
