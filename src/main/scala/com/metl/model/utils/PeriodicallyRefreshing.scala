@@ -7,8 +7,8 @@ import net.liftweb.util.Helpers.TimeSpan
 import net.liftweb.actor.LiftActor
 
 case object Refresh
-class PeriodicallyRefreshingVar[T](acceptedStaleTime:TimeSpan, valueCreationFunc:()=>T) extends LiftActor{
-	private var lastResult:T = valueCreationFunc()
+class PeriodicallyRefreshingVar[T](acceptedStaleTime:TimeSpan, valueCreationFunc:()=>T, startingValue:Option[T] = None) extends LiftActor{
+	private var lastResult:T = startingValue.getOrElse(valueCreationFunc())
 	scheduleRecheck
 	private def scheduleRecheck:Unit = Schedule.schedule(this,Refresh,acceptedStaleTime:TimeSpan)
 	private def doGet:Unit = {

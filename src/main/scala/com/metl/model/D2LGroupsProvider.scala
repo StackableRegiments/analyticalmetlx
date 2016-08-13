@@ -78,17 +78,50 @@ case class D2LSection(
  
 
 
-class PeriodicD2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[Map[String,List[Tuple2[String,String]]]](refreshPeriod){
+class PeriodicD2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,refreshPeriod:TimeSpan,diskStorePath:String) extends GroupsProvider {
   info("created new D2LGroupsProvider for %s (every %s)".format(d2lBaseUrl,refreshPeriod))
-  override def actuallyFetchGroups:Map[String,List[Tuple2[String,String]]] = {
-    val provider = new D2LGroupsProvider(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion)
-    val newGroups = provider.fetchGroups
-    println("loaded GroupData for: %s".format(newGroups))
-    newGroups
+  
+  import com.github.tototoshi.csv._
+  import java.io._
+  
+  protected val groupName = "GROUP"
+  protected val groupTypeName = "TYPE"
+  protected val memberName = "MEMBER"
+
+  protected val startingValue = {
+    if (new File(diskStorePath).exists()) {
+      Some(readFromDisk)
+    } else {
+      None
+    }
   }
-  override protected def shouldCheck = true
-  protected def parseStore(username:String,store:Map[String,List[Tuple2[String,String]]]) = store.get(username).getOrElse(Nil)
-  override def startingValue = Map.empty[String,List[Tuple2[String,String]]]
+  protected def storeToDisk(c:Map[String,List[Tuple2[String,String]]]):Unit = {
+    val writer = CSVWriter.open(new File(diskStorePath))
+    writer.writeAll(List(memberName,groupTypeName,groupName) :: c.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._1,g._2))))
+    writer.close
+  }
+  protected def readFromDisk:Map[String,List[Tuple2[String,String]]] = {
+    val reader = CSVReader.open(new File(diskStorePath))
+    val results = reader.allWithHeaders
+    reader.close
+    results.flatMap(m => {
+      for {
+        member <- m.get(memberName)
+        groupType <- m.get(groupTypeName)
+        group <- m.get(groupName)
+      } yield {
+        (member,(groupType,group))
+      }
+    }).groupBy(_._1).map(t => (t._1,t._2.map(_._2)))
+  }
+  protected var lastCache:Map[String,List[Tuple2[String,String]]] = startingValue.getOrElse(Map.empty[String,List[Tuple2[String,String]]])
+  protected val cache = new PeriodicallyRefreshingVar[Unit](refreshPeriod,() => {
+    val provider = new D2LGroupsProvider(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion)
+    lastCache = provider.fetchGroups
+    storeToDisk(lastCache)
+    println("loaded GroupData for: %s".format(lastCache))
+  },startingValue.map(i => {}))
+  override def getGroupsFor(username:String):List[Tuple2[String,String]] = lastCache.get(username).getOrElse(Nil)
 }
 
 class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
