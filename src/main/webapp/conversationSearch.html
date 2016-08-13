@@ -2,94 +2,75 @@
   <script data-lift="with-resource-id" src="static/js/stable/jquery.ui.widget.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/jquery.iframe-transport.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/jquery.fileupload.js"></script>
-	<script data-lift="with-resource-id" src="static/js/stable/lodash.min.js"></script>
-	<script data-lift="with-resource-id" src="static/js/stable/sprintf-0.7-beta1.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/lodash.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/sprintf-0.7-beta1.js"></script>
   <script src="static/js/conversationSearch.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
 
-	<script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
   <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
   <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
 
-	<style>
-.gridAction a{
-	color:black !important;
-}
-	</style>
+  <style>
+    .gridAction a{
+    color:black !important;
+    }
+    .jsgrid-pager{
+    color:white;
+    }
+  </style>
 
-	<div class="lift:Metl.specificConversationSearch"></div>
-	<!--
-  <div class="lift:comet?type=MeTLConversationSearchActor">
--->
-    <div id="masterLayout" class="flex-container-responsive">
-      <div class="indent">
-        <h1 class="directlyOnBackground">Join a conversation</h1>
-        <div class="indent">
-					<div id="conversationSearchBoxContainer">
-						<span id="conversationSearchBox"></span><button id="searchButton" type="button" value="Search" style="display:inline-block"><span class="fa fa-search"><span class="icon-txt">Search</span></span></button>
-					</div>
-					<div id="conversationsDataGrid"></div>
-					<!--
-          <div id="conversationListing" class="directlyOnBackground">
-            <div class="aggregateContainer">
-              <div class="label count">0 results</div>
-            </div>
-            <table id="conversationContainerListing">
-              <tr class="conversationContainer">
-                <td class="topRow">
-                  <a class="conversationAnchor">
-                    <span class="conversationTitle"></span>
-                    <span class="conversationAuthor"></span>
-                    <span class="conversationJid"></span>
-                  </a>
-                </td>
-                <td>
-                  <span class="conversationEditingContainer">
-                    <a class="editConversationLink">Edit</a>
-                  </span>
-                </td>
-              </tr>
-            </table>
+  <div class="lift:Metl.specificConversationSearch"></div>
+  <div id="masterLayout" class="flex-container-column">
+    <div class="mbt">
+      <div class="indent flex-container-row">
+        <div class="flex-container-column">
+          <h1 class="directlyOnBackground">Join a conversation</h1>
+          <div id="conversationSearchBoxContainer" class="mbt indent">
+            <span id="conversationSearchBox"></span>
+            <button id="searchButton" type="button" value="Search">
+              <span class="fa fa-search"><span class="icon-txt">Search</span>
+              </span>
+            </button>
           </div>
--->
         </div>
-      </div>
-      <div id="startAConversation" class="indent directlyOnBackground">
-        <h1>Start a conversation</h1>
-        <div class="indent">
-          <div id="createConversationContainer">
-            <button id="createConversationButton">Create a blank conversation</button>
-          </div>
-          <button id="showImportConversationWorkflow">Import a conversation</button>
-          <div id="importConversationContainer">
-						<div id="importConversationInputElementContainer" style="display:none">
-							<label for="importConversationInputElement">Select a file</label>
-							<input id="importConversationInputElement" type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
-						</div>
-            <div id="activeImportsListing">
-              <div class="importContainer">
-                <span class="importId"></span>
-                <span class="importName"></span>
-                <span class="importAuthor"></span>
-                <div class="importProgressContainer">
-                  <div class="importOverallProgressContainer">
-                    <span class="importProgressDescriptor"></span>
-                    <div class="importProgressBarContainer">
-                      <div class="importProgressProgressBar"></div>
+        <div id="startAConversation" class="indent flex-container-column directlyOnBackground">
+          <h1>Start a conversation</h1>
+          <div class="indent">
+            <div id="createConversationContainer">
+              <button id="createConversationButton">Create a blank conversation</button>
+            </div>
+            <button id="showImportConversationWorkflow">Import a conversation</button>
+            <div id="importConversationContainer">
+              <div id="importConversationInputElementContainer" style="display:none">
+                <label for="importConversationInputElement">Select a file</label>
+                <input id="importConversationInputElement" type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
+              </div>
+              <div id="activeImportsListing">
+                <div class="importContainer">
+                  <span class="importId"></span>
+                  <span class="importName"></span>
+                  <span class="importAuthor"></span>
+                  <div class="importProgressContainer">
+                    <div class="importOverallProgressContainer">
+                      <span class="importProgressDescriptor"></span>
+                      <div class="importProgressBarContainer">
+                        <div class="importProgressProgressBar"></div>
+                      </div>
+                    </div>
+                    <div class="importStageProgressContainer">
+                      <span class="importProgressDescriptor"></span>
+                      <div class="importProgressBarContainer">
+                        <div class="importProgressProgressBar"></div>
+                      </div>
                     </div>
                   </div>
-                  <div class="importStageProgressContainer">
-                    <span class="importProgressDescriptor"></span>
-                    <div class="importProgressBarContainer">
-                      <div class="importProgressProgressBar"></div>
+                  <div class="importResultContainer">
+                    <div class="importResult">
+                      <span class="importError"></span>
+                      <a class="importSuccess">Join the new conversation</a>
                     </div>
-                  </div>
-                </div>
-                <div class="importResultContainer">
-                  <div class="importResult">
-                    <span class="importError"></span>
-                    <a class="importSuccess">Join the new conversation</a>
                   </div>
                 </div>
               </div>
@@ -98,7 +79,9 @@
         </div>
       </div>
     </div>
-		<!--
+    <div class="flex-container-row indent">
+      <div id="conversationsDataGrid" class="">
+      </div>
+    </div>
   </div>
--->
 </div>

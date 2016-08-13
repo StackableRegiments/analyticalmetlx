@@ -1,6 +1,9 @@
 html{
     overflow:hidden;
 }
+#searchButton{
+    display:inline-block;
+}
 #popupCategories{
     margin-right:4px;
 }
@@ -155,6 +158,9 @@ input[type=submit]{
 .voting-block {
     background-color: @body-bg;
 }
+#conversationSearchBoxContainer input[type=text]{
+    width:100%;
+}
 .quizOption {
     text-align:left;
     &:hover {
@@ -171,6 +177,9 @@ input[type=submit]{
     .quizSummaryEditButton {
         color:@toggle-active-fg;
     }
+}
+#createConversationContainer{
+    margin-top:-1em;
 }
 #createQuizForm, .quizCreationControls {
     .btn-icon {
