@@ -120,17 +120,27 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
       var continuing = firstResp.PagingInfo.HasMoreItems
       var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
       while (continuing){
-        val u = "%s%s".format(url.toString,bookmark.map(b => "%s=%s".format(bookMarkTag,b)).getOrElse(""))
-        val respObj = parse(client.get(u))
-        val resp = respObj.extract[D2LOrgUnitResponse]
-        items = items ::: resp.Items
-        continuing = resp.PagingInfo.HasMoreItems
-        bookmark = resp.PagingInfo.Bookmark
+        try {
+          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
+          val url = u.toString
+          val respObj = parse(client.get(url))
+          val resp = respObj.extract[D2LOrgUnitResponse]
+          items = items ::: resp.Items
+          continuing = resp.PagingInfo.HasMoreItems
+          bookmark = resp.PagingInfo.Bookmark
+          println("url: %s,bookmark: %s, items: %s".format(url,bookmark,items.length))
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            continuing = false
+            bookmark = None
+          }
+        }
       }
       items
     } catch {
       case e:Exception => {
-        debug("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
         List.empty[D2LOrgUnit]
       }
     }
@@ -154,7 +164,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
     var rawData = scala.collection.mutable.Map.empty[String,List[Tuple2[String,String]]]
     
     getOrgUnits(userContext).filter(_.Type.Id == 3L).foreach(orgUnit => {
-      trace("OU: %s (%s)".format(orgUnit.Name,orgUnit.Code))
+      debug("OU: %s (%s)".format(orgUnit.Name,orgUnit.Code))
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       for (
         memberLists <- members.values;
@@ -165,22 +175,22 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
         rawData.update(memberName,(("ou",orgUnit.Name) :: orgUnit.Code.toList.map(c => ("ou",c)) ::: rawData.get(memberName).getOrElse(Nil)).distinct)
       }
       getSections(userContext,orgUnit).foreach(section => {
-        trace("SECTION: %s".format(section.Name))
+        debug("SECTION: %s".format(section.Name))
         section.Enrollments.foreach(memberId => {
           for (
             membersById:List[D2LClassListUser] <- members.get(memberId).toList;
             member:D2LClassListUser <- membersById;
             memberName:String <- member.OrgDefinedId.filterNot(_ == "")
           ) yield {
-            trace("member: %s".format(memberName))
+            debug("member: %s".format(memberName))
             rawData.update(memberName,(("section",section.Name) :: rawData.get(memberName).getOrElse(Nil)).distinct)
           }
         })
       })
       getGroupCategories(userContext,orgUnit).foreach(groupCategory => {
-        trace("GROUP_CATEGORY: %s".format(groupCategory.Name))
+        debug("GROUP_CATEGORY: %s".format(groupCategory.Name))
         getGroups(userContext,orgUnit,groupCategory).foreach(group => {
-          trace("GROUP: %s".format(group.Name))
+          debug("GROUP: %s".format(group.Name))
           group.Enrollments.foreach(memberId => {
             for (
               membersById:List[D2LClassListUser] <- members.get(memberId).toList;
