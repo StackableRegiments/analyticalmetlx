@@ -81,23 +81,27 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     println("upgraded db to use partialIndexes for mysql limitations (v2)")
     versionNumber
   }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
-  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 3).map(versionNumber => {
+  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 4).map(versionNumber => {
     println("upgrading db to switch conversation creation from strings to longs (v3)")
-    val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
+    val dateFormats = List(
+      new java.text.SimpleDateFormat("dd/MM/yyyy h:mm:ss a"), // I think this is a C# date format -- "dd/MM/yyyy  22/05/2016 1:27:47 AM.  Of course, it misses the original timezone, so let's hope that it doesn't adjust it too badly.
+      new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
+    )
     H2Conversation.findAllFields(List(H2Conversation.id,H2Conversation.created,H2Conversation.creation,H2Conversation.lastAccessed)).foreach(conv => {
       if (conv.creation.get == null || conv.creation.get < 1){
-        val creationLong = try {
-          dateFormat.parse(conv.created.get).getTime();
-        } catch {
-          case e:Exception => {
-            println("exception while upgrading conversation format: %s => %s\r\n%s".format(conv,e.getMessage,e.getStackTraceString))
-            conv.lastAccessed.get
+        var result = conv.lastAccessed.get
+        val creationString = conv.created.get
+        dateFormats.foreach(df => {
+          try {
+            result = df.parse(creationString).getTime()
+          } catch {
+            case e:Exception => {}
           }
-        }
-        conv.creation(creationLong).save
+        })
+        conv.creation(result).save
       }
     })
-    versionNumber.intValue(3).save
+    versionNumber.intValue(4).save
     println("upgraded db to switch conversation creation from strings to longs (v3)")
     versionNumber
   }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
