@@ -1470,7 +1470,6 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
-                    Modes.select.clearSelection();
                     removeActiveMode();
                     fontOptions.hide();
                     unregisterPositionHandlers(board);
@@ -1481,6 +1480,7 @@ var Modes = (function(){
                         }
                     });
                     /*Necessary to ensure that no carets or marquees remain on the editors*/
+                    Modes.select.clearSelection();
                     blit();
                 }
             }
@@ -2171,6 +2171,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
+		    blit();
                 }
             }
         })(),
