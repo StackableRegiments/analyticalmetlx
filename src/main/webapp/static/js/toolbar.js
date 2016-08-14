@@ -1046,7 +1046,6 @@ var Modes = (function(){
         };
         Progress.onSelectionChanged["selectionHandles"] = function(){
             var totalBounds = Modes.select.totalSelectedBounds();
-            console.log("onSelectionChanged",totalBounds.x,totalBounds.y,totalBounds.x2,totalBounds.y2);
             if(totalBounds.x == Infinity){
                 attrs.opacity = 0;
             }
@@ -1385,7 +1384,6 @@ var Modes = (function(){
                         }
                         return intersects && (text.author == me);
                     });
-                    console.log("editors",x,y,texts);
                     if(texts.length > 0){
                         return texts[0];
                     }

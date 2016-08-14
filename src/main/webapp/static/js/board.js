@@ -181,6 +181,7 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
+sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
