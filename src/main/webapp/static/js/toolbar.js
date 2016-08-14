@@ -719,8 +719,6 @@ var Modes = (function(){
             }
         };
         var s = Modes.select.handlesAtZoom();
-        var minimumXSpan = Modes.select.resizeHandleSize;
-        var minimumYSpan = Modes.select.resizeHandleSize;
         var manualMove = (
             function(){
                 return {
@@ -828,8 +826,8 @@ var Modes = (function(){
                             var y = root.y;
                             root.br = root.br || {x:scaleWorldToScreen(root.x2)};
                             root.tl = root.tl || {x:scaleWorldToScreen(root.x)};
-                            if(root.br.x - root.tl.x < minimumXSpan){
-                                x = root.x + scaleScreenToWorld(minimumXSpan)
+                            if(root.br.x - root.tl.x < Modes.text.minimumWidth){
+                                x = root.x + scaleScreenToWorld(Modes.text.minimumWidth)
                             }
                             resizeAspectLocked.bounds = [
                                 x,
@@ -837,6 +835,7 @@ var Modes = (function(){
                                 x + s,
                                 y + s
                             ];
+                            console.log("resizeAspectLocked",resizeAspectLocked);
                         }
                     },
                     down:function(worldPos){
@@ -939,11 +938,11 @@ var Modes = (function(){
                         var y = root.y2;
                         root.br = root.br || {x:scaleWorldToScreen(root.x2)};
                         root.tl = root.tl || {x:scaleWorldToScreen(root.x)};
-                        if(root.br.x - root.tl.x < minimumXSpan){
-                            x = root.x + scaleScreenToWorld(minimumXSpan)
+                        if(root.br.x - root.tl.x < Modes.text.minimumWidth){
+                            x = root.x + scaleScreenToWorldModes.text.minimumWidth;
                         }
-                        if(root.br.y - root.tl.y < minimumYSpan){
-                            y = root.y + scaleScreenToWorld(minimumYSpan)
+                        if(root.br.y - root.tl.y < Modes.text.minimumHeight){
+                            y = root.y + scaleScreenToWorldModes.text.minimumHeight;
                         }
                         resizeFree.bounds = [
                             x,
@@ -965,6 +964,7 @@ var Modes = (function(){
                 },
                 move:function(worldPos){
                     if(resizeFree.activated){
+                        var limit = scaleWorldToScreen(Modes.text.minimumWidth);
                         resizeFree.bounds = [
                             worldPos.x - s,
                             worldPos.y - s,
@@ -995,11 +995,14 @@ var Modes = (function(){
                     resized.inkIds = _.keys(Modes.select.selected.inks);
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
-                    Modes.text.invalidateSelectedBoxes();
                     _.each(Modes.select.selected.multiWordTexts,function(word){
-                        word.doc.width(word.doc.width() * resized.xScale);
+                        word.doc.width(Math.max(
+                            word.doc.width() * resized.xScale,
+                            Modes.text.minimumWidth / scale()
+                        ));
                         sendRichText(word);
                     });
+                    Modes.text.invalidateSelectedBoxes();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();

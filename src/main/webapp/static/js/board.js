@@ -26,8 +26,9 @@ function setupStatus(){
     }
     window.updateTracking = function(id){
         if(id in progressFuncs){
-            progressFuncs[id]();
+	    var func = progressFuncs[id];
             delete progressFuncs[id];
+            func();
         }
         else{
             console.log("updateTracking problem: Nobody is listening for ",id);
@@ -597,9 +598,7 @@ function transformReceived(transform){
                          transform.textIds.length,
                          transform.multiWordTextIds.length,
                          transform.inkIds.length));
-    console.log("Transform received",transform.identity);
     _.each(trackerFrom(transform.identity),function(tracker){
-	console.log("Updating tracking for",tracker);
         updateTracking(tracker);
     });
     blit();
