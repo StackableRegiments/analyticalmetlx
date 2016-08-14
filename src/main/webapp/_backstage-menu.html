@@ -21,24 +21,24 @@
         <div id="blacklistPopup" class="backstage">
           <h2 class="nmt">Manage banned content</h2>
           <div class="flex-container-row img-resp">
-						<div class="mr quarter">
-							<div id="unbanAll" class="with-border fa-border">
-								<span class="fa fa-users" style="display:inline-block">
-									<div class="icon-txt">Unban</div>
-								</span>
-								<span style="display:inline-block">All</span>
-							</div>
-							<div id="currentBlacklistAuthorList">
-								<div class="blacklistAuthorContainer">
-									<div class="blacklistAuthor with-border fa-border unbanContainer blacklistAuthorUnbanButton">
-										<span class="fa fa-user-plus" style="display:inline-block">
-											<div class="icon-txt">Unban</div>
-										</span>
-										<span class="blacklistAuthorName" style="display:inline-block"></span>
-									</div>
-								</div>
-							</div>
-						</div>
+            <div class="mr quarter">
+              <div id="unbanAll" class="with-border fa-border">
+                <span class="fa fa-users" style="display:inline-block">
+                  <div class="icon-txt">Unban</div>
+                </span>
+                <span style="display:inline-block">All</span>
+              </div>
+              <div id="currentBlacklistAuthorList">
+                <div class="blacklistAuthorContainer">
+                  <div class="blacklistAuthor with-border fa-border unbanContainer blacklistAuthorUnbanButton">
+                    <span class="fa fa-user-plus" style="display:inline-block">
+                      <div class="icon-txt">Unban</div>
+                    </span>
+                    <span class="blacklistAuthorName" style="display:inline-block"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div id="blacklistListing" class="mr quarter">
               <!-- many ".blacklistSummary"s are cloned from JS -->
               <div class="blacklistSummary">
@@ -59,9 +59,6 @@
                     <span class="blacklistAuthorName"></span>
                   </div>
                 </div>
-                <span class="blacklistTeacherControls">
-                  <input type="button" class="toolbar displaySubmissionOnNextSlide button-transparent-border" value="Display Submission on next slide"></input>
-                </span>
               </div>
             </div>
           </div>
@@ -99,19 +96,19 @@
               </div>
               <input type="radio" id="rangeThisSlide" name="rangeThisSlide"></input>
               <label for="rangeThisSlide">Just this slide</label>
-							<input type="checkbox" id="printPrivateNotes"></input>
-							<label for="printPrivateNotes">Include private notes</label>
-							<input type="checkbox" id="printPageCount"></input>
-							<label for="printPageCount">Include page count</label>
-							<input type="checkbox" id="printConversationTitle"></input>
-							<label for="printConversationTitle">Include conversation title</label>
+              <input type="checkbox" id="printPrivateNotes"></input>
+              <label for="printPrivateNotes">Include private notes</label>
+              <input type="checkbox" id="printPageCount"></input>
+              <label for="printPageCount">Include page count</label>
+              <input type="checkbox" id="printConversationTitle"></input>
+              <label for="printConversationTitle">Include conversation title</label>
               <a id="printButton">
-								<div id="unbanAll" class="with-border fa-border">
-									<span class="fa fa-print" style="display:inline-block">
-										<div class="icon-txt">Print</div>
-									</span>
-								</div>
-							</a>
+                <div id="unbanAll" class="with-border fa-border">
+                  <span class="fa fa-print" style="display:inline-block">
+                    <div class="icon-txt">Print</div>
+                  </span>
+                </div>
+              </a>
             </div>
           </div>
         </div>
@@ -177,7 +174,7 @@
                 <tr class="participation">
                   <td class="followControls">
                     <input type="checkbox" class="followValue"></input>
-		    <label class="followLabel"></label>
+                    <label class="followLabel"></label>
                   </td>
                   <td class="attendanceCount"></td>
                   <td class="imagesCount"></td>
@@ -233,18 +230,18 @@
                 <canvas class="quizResultsGraph"></canvas>
                 <h3 class="quizQuestion"></h3>
                 <img class="quizImagePreview"></img>
-								<div class="quizOptionCountContainer">
-									There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
-								</div>
+                <div class="quizOptionCountContainer">
+                  There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
+                </div>
                 <div class="quizOptionContainer flex-container-column">
                   <!-- many ".quizOption"s are cloned from JS -->
                   <button class="quizOption button-transparent-border flex-container-row space-between">
                     <span class="quizOptionName mrh"></span>
                     <span class="quizOptionText"></span>
                     <span class="quizOptionCountContainer">
-											<span class="quizOptionAnswerCount"></span>
+                      <span class="quizOptionAnswerCount"></span>
                     </span>
-										<meter class="quizOptionMeter"></meter>
+                    <meter class="quizOptionMeter"></meter>
                     <span class="fa fa-thumbs-up align-right mlh"></span>
                   </button>
                 </div>
@@ -270,7 +267,7 @@
             </div>
           </div>
         </section>
-				<section id="healthCheckPopup" class="backstage box-model-block">
+        <section id="healthCheckPopup" class="backstage box-model-block">
           <h2 class="align-left mrh nmt">Client health</h2>
           <div class="health-check-listing align-left half mrh">
             <div id="healthCheckListing" class="clear box-model-block">
@@ -278,28 +275,28 @@
               </div>
             </div>
           </div>
-					<div class="health-check-summary align-right quarter mrh">
-						<div class"healthCheckSummaryLatencyContainer">
-							<h3>Network status</h3>
-							<div>
-								<div>Latency to server: <span class="latencyAverage"></span> ms (<span class="latencyHumanReadable"></span>)</div>
-								<div>Highest: <span class="bestLatency"></span> ms </div>
-								<div>Lowest: <span class="worstLatency"></span> ms </div>
-							</div>
-							<div>
-								<h4>Network call success rate</h4>
-								Client request success rate: <span class="successRate">0</span>%
-							</div>
-							<div class="heathCheckSummaryServerResponseContainer">
-								<h4>Server response queue length</h4>
-								<div>Queue wait time: <span class="serverResponseAverage"></span> ms (<span class="serverResponseHumanReadable"></span>)</div>
-							</div>
-					</div>
-				</section>
+          <div class="health-check-summary align-right quarter mrh">
+            <div class"healthCheckSummaryLatencyContainer">
+              <h3>Network status</h3>
+              <div>
+                <div>Latency to server: <span class="latencyAverage"></span> ms (<span class="latencyHumanReadable"></span>)</div>
+                <div>Highest: <span class="bestLatency"></span> ms </div>
+                <div>Lowest: <span class="worstLatency"></span> ms </div>
+              </div>
+              <div>
+                <h4>Network call success rate</h4>
+                Client request success rate: <span class="successRate">0</span>%
+              </div>
+              <div class="heathCheckSummaryServerResponseContainer">
+                <h4>Server response queue length</h4>
+                <div>Queue wait time: <span class="serverResponseAverage"></span> ms (<span class="serverResponseHumanReadable"></span>)</div>
+              </div>
+            </div>
+        </section>
+        </div>
+      </div>
+      <div class="close-section mt mlr">
+        <button class="toolbar backstageTabHeader closeButton fa fa-times nm btn-icon" type="button" id="hideBackstage"><span class="hidden">Close</span></button>
       </div>
     </div>
-    <div class="close-section mt mlr">
-      <button class="toolbar backstageTabHeader closeButton fa fa-times nm btn-icon" type="button" id="hideBackstage"><span class="hidden">Close</span></button>
-    </div>
-  </div>
 </span>
