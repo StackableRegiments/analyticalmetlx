@@ -855,6 +855,7 @@ var blit = function(canvasContext,content){
         console.log("exception in render:",e);
     }
 };
+//blit = _.throttle(blit,33);
 function pica(value){
     return value / 128;
 }

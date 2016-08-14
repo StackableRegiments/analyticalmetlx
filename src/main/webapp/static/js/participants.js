@@ -2,7 +2,7 @@ var Participants = (function(){
     var participantItemTemplate = {};
     var participantHeaderTemplate = {};
     var participantsContainer = {};
-    var participants = {};
+    participants = {};
     var newParticipant = {
         inks:0,
         highlighters:0,
@@ -15,7 +15,7 @@ var Participants = (function(){
     var onHistoryReceived = function(history){
         var newParticipants = {};
         var ensure = function(author){
-            return newParticipants[author] || _.clone(newParticipant);
+            return newParticipants[author] || _.cloneDeep(newParticipant);
         }
         _.each(_.groupBy(history.attendances,"author"),function(authorAttendances){
             var author = authorAttendances[0].author;
@@ -42,10 +42,11 @@ var Participants = (function(){
         _.each(_.groupBy(history.multiWordTexts,"author"),function(authorStanzas,author){
             var itemToEdit = ensure(author);
             _.each(authorStanzas,function(stanza){
-                newParticipants[author].texts[stanza.identity] = countTexts(stanza);
+		var total = countTexts(stanza);
+                newParticipants[author].texts[stanza.identity] = total;
             });
         });
-				_.each(_.groupBy(history.quizResponses,"author"),function(authorStanzas,author){
+        _.each(_.groupBy(history.quizResponses,"author"),function(authorStanzas,author){
             var itemToEdit = ensure(author);
             itemToEdit.quizResponses = itemToEdit.quizResponses + _.size(authorStanzas);
             newParticipants[author] = itemToEdit;
@@ -62,11 +63,11 @@ var Participants = (function(){
     var onStanzaReceived = function(stanza){
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
-						if(!(author in participants)){
-							var np = _.clone(newParticipant);
-							np.name = author;
-							participants[author] = np;
-						}
+            if(!(author in participants)){
+                var np = _.clone(newParticipant);
+                np.name = author;
+                participants[author] = np;
+            }
             var itemToEdit = participants[author];
             switch (stanza.type) {
             case "ink":
@@ -149,8 +150,8 @@ var Participants = (function(){
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
         getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
-	code:function(author){
-	    return _.keys(participants).indexOf(author);
-	}
+        code:function(author){
+            return _.keys(participants).indexOf(author);
+        }
     };
 })();
