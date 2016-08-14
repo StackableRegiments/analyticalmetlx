@@ -29,10 +29,17 @@
           <h1 class="directlyOnBackground">Join a conversation</h1>
           <div id="conversationSearchBoxContainer" class="mbt indent">
             <span id="conversationSearchBox"></span>
-            <button id="searchButton" type="button" value="Search">
-              <span class="fa fa-search"><span class="icon-txt">Search</span>
+            <div class="flex-container-row">
+              <button id="searchButton" type="button" value="Search">
+                <span class="fa fa-search">
+                  <span class="icon-txt">Search</span>
+                </span>
+              </button>
+              <span class="ml directlyOnBackground">
+                <input type="checkbox" id="onlyMyConversations"></input>
+                <label for="onlyMyConversations"><span class="icon-txt">Only my conversations</span></label>
               </span>
-            </button>
+            </div>
           </div>
         </div>
         <div id="startAConversation" class="indent flex-container-column directlyOnBackground">

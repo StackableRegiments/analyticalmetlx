@@ -13,6 +13,8 @@ var Conversations = (function(){
 
     var conversationsDataGrid = undefined;
 
+    var onlyMyConversations = false;
+
     $(function(){
         var DateField = function(config){
             jsGrid.Field.call(this,config);
@@ -35,6 +37,10 @@ var Conversations = (function(){
             editTemplate: function(i){return ""},
             insertValue: function(){return ""},
             editValue: function(){return ""}
+        });
+        $("#onlyMyConversations").click(function(){
+            onlyMyConversations = $(this).is(":checked");
+            reRender();
         });
         EditConversationField.prototype = new jsGrid.Field({
             sorter: function(a,b){
@@ -79,11 +85,11 @@ var Conversations = (function(){
         conversationsDataGrid = $("#conversationsDataGrid");
 
         conversationsDataGrid.jsGrid({
-	    width:"100%",
+            width:"100%",
             height:"auto",
             inserting: false,
             editing: false,
-            //                          filtering:true,
+            //filtering:true,
             sorting: true,
             paging: true,
             //                          pageSize:10,
@@ -100,6 +106,11 @@ var Conversations = (function(){
                         var sorted = _.sortBy(currentSearchResults,function(a){
                             return a[filter.sortField];
                         });
+                        if(onlyMyConversations){
+                            sorted = _.filter(sorted,function(a){
+                                return a.author == username;
+                            });
+                        }
                         if ("sortOrder" in filter && filter.sortOrder == "desc"){
                             sorted = _.reverse(sorted);
                         }
@@ -124,6 +135,10 @@ var Conversations = (function(){
                 {name:"edit",type:"editConversationField",title:"Edit",sorting:false,width:30,css:"gridAction"}
             ]
         });
+	conversationsDataGrid.jsGrid("sort",{
+	    field:"creation",
+	    order:"desc"
+	});
 
         $('#activeImportsListing').hide();
         $("#importConversationInputElementContainer").hide();
@@ -247,10 +262,9 @@ var Conversations = (function(){
             }
         }
         console.log("reRender:",currentQuery,currentSearchResults,currentImports);
-        var convs = _.map(currentSearchResults,constructConversation);
-        conversationsListing.html(convs);
         var imports = _.map(currentImports,constructImport);
         importListing.html(imports);
+        var convs = currentSearchResults;
         var convCount = sprintf("%s result%s",convs.length,convs.length == 1 ? "" : "s");
         $("#conversationListing").find(".aggregateContainer").find(".count").text(convCount);
     };
