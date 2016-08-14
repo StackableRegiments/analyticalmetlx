@@ -325,11 +325,11 @@ case class MeTLMultiWordText(override val server:ServerConfiguration,override va
   override def scale(xScale:Double,yScale:Double):MeTLMultiWordText = Stopwatch.time("MeTLMultiWordText.scale",{
     val averageFactor = (xScale + yScale) / 2
     copy(
-      height = height * yScale, 
-      width = width * xScale, 
-      x = x * xScale, 
-      y = y * yScale, 
-      scaleFactorX = scaleFactorX * xScale, 
+      height = height * yScale,
+      width = width * xScale,
+      x = x * xScale,
+      y = y * yScale,
+      scaleFactorX = scaleFactorX * xScale,
       scaleFactorY = scaleFactorY * yScale,
       words = words.map(_.scale(averageFactor))
     )
@@ -353,6 +353,10 @@ case class MeTLMultiWordText(override val server:ServerConfiguration,override va
     MeTLDirtyText(server,author,dirtyTime,target,privacy,slide,identity)
   })
   override def generateNewIdentity(descriptor:String):MeTLMultiWordText = copy(identity = genNewIdentity("newText:"+descriptor))
+  override def matches(other:MeTLCanvasContent) = other match {
+    case o:MeTLMultiWordText => super.matches(o)
+    case _ => false
+  }
 }
 
 object MeTLMultiWordText{
@@ -662,17 +666,17 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         val privateAdjusters = (publicAuthors.length > 0 || privateAuthors.length > 0) match {
           case true => Map(publicAuthors.map(pa => (
             pa,
-            publicInksToPrivatize.filter(_.author == pa) ::: 
-            publicHighlightersToPrivatize.filter(_.author == pa) :::
-            publicTextsToPrivatize.filter(_.author == pa) ::: 
-            publicImagesToPrivatize.filter(_.author == pa) ::: 
-            publicMultiWordTextsToPrivatize.filter(_.author == pa) :::
-            List(replaceIds(
-              privateInks.filter(_.author == pa).map(i => i.identity) ::: privateHighlighters.map(i => i.identity),
-              privateTexts.filter(_.author == pa).map(i => i.identity),
-              privateMultiWordTexts.filter(_.author == pa).map(i => i.identity),
-              privateImages.filter(_.author == pa).map(i => i.identity),p)
-            ))
+            publicInksToPrivatize.filter(_.author == pa) :::
+              publicHighlightersToPrivatize.filter(_.author == pa) :::
+              publicTextsToPrivatize.filter(_.author == pa) :::
+              publicImagesToPrivatize.filter(_.author == pa) :::
+              publicMultiWordTextsToPrivatize.filter(_.author == pa) :::
+              List(replaceIds(
+                privateInks.filter(_.author == pa).map(i => i.identity) ::: privateHighlighters.map(i => i.identity),
+                privateTexts.filter(_.author == pa).map(i => i.identity),
+                privateMultiWordTexts.filter(_.author == pa).map(i => i.identity),
+                privateImages.filter(_.author == pa).map(i => i.identity),p)
+              ))
           ):_*)
           case _ => Map.empty[String,List[MeTLStanza]]
         }
