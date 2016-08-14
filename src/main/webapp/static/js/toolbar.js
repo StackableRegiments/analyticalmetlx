@@ -1276,7 +1276,6 @@ var Modes = (function(){
                             b[1] - scrollOffset + cursorY.t,
                             docWidth,
                             docHeight);
-			console.log(docWidth,docHeight,ratio);
                     }
                     else{
                         var boxTop = b[1];
