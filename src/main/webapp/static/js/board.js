@@ -80,6 +80,7 @@ function strokeCollected(spoints){
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
         calculateInkBounds(ink);
+	prerenderInk(ink);
         if(ink.isHighlighter){
             boardContent.highlighters[ink.identity] = ink;
         }
