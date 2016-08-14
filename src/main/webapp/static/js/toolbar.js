@@ -1264,8 +1264,10 @@ var Modes = (function(){
                     var linesFromTop = Math.floor(cursorY.t / cursorY.h);
                     var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
                     if(DeviceConfiguration.hasOnScreenKeyboard()){
-                        var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
-                        var docWidth = b[2] - b[0];
+                        var scrollOffset =  Math.min(linesFromTop,Math.max(0,linesInBox - 2)) * cursorY.h;
+                        var docWidth = Math.max(
+			    b[2] - b[0],
+			    Modes.text.minimumWidth);
                         var docHeight = docWidth;
                         DeviceConfiguration.setKeyboard(true);
                         TweenController.zoomAndPanViewbox(
