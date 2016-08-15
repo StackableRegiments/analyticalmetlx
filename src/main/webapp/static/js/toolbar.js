@@ -719,8 +719,6 @@ var Modes = (function(){
             }
         };
         var s = Modes.select.handlesAtZoom();
-        var minimumXSpan = Modes.select.resizeHandleSize;
-        var minimumYSpan = Modes.select.resizeHandleSize;
         var manualMove = (
             function(){
                 return {
@@ -826,11 +824,6 @@ var Modes = (function(){
                             var s = Modes.select.handlesAtZoom();
                             var x = root.x2;
                             var y = root.y;
-                            root.br = root.br || {x:scaleWorldToScreen(root.x2)};
-                            root.tl = root.tl || {x:scaleWorldToScreen(root.x)};
-                            if(root.br.x - root.tl.x < minimumXSpan){
-                                x = root.x + scaleScreenToWorld(minimumXSpan)
-                            }
                             resizeAspectLocked.bounds = [
                                 x,
                                 y,
@@ -937,14 +930,6 @@ var Modes = (function(){
                         var s = Modes.select.handlesAtZoom();
                         var x = root.x2;
                         var y = root.y2;
-                        root.br = root.br || {x:scaleWorldToScreen(root.x2)};
-                        root.tl = root.tl || {x:scaleWorldToScreen(root.x)};
-                        if(root.br.x - root.tl.x < minimumXSpan){
-                            x = root.x + scaleScreenToWorld(minimumXSpan)
-                        }
-                        if(root.br.y - root.tl.y < minimumYSpan){
-                            y = root.y + scaleScreenToWorld(minimumYSpan)
-                        }
                         resizeFree.bounds = [
                             x,
                             y - s,
@@ -965,6 +950,7 @@ var Modes = (function(){
                 },
                 move:function(worldPos){
                     if(resizeFree.activated){
+                        var limit = scaleWorldToScreen(Modes.text.minimumWidth);
                         resizeFree.bounds = [
                             worldPos.x - s,
                             worldPos.y - s,
@@ -995,16 +981,20 @@ var Modes = (function(){
                     resized.inkIds = _.keys(Modes.select.selected.inks);
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
-                    Modes.text.invalidateSelectedBoxes();
                     _.each(Modes.select.selected.multiWordTexts,function(word){
-                        word.doc.width(word.doc.width() * resized.xScale);
+                        word.doc.width(Math.max(
+                            word.doc.width() * resized.xScale,
+                            Modes.text.minimumWidth / scale()
+                        ));
                         sendRichText(word);
                     });
+                    Modes.text.invalidateSelectedBoxes();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
                     sendStanza(resized);
+                    blit();
                     return false;
                 },
                 render:function(canvasContext){
@@ -1046,7 +1036,6 @@ var Modes = (function(){
         };
         Progress.onSelectionChanged["selectionHandles"] = function(){
             var totalBounds = Modes.select.totalSelectedBounds();
-            console.log("onSelectionChanged",totalBounds.x,totalBounds.y,totalBounds.x2,totalBounds.y2);
             if(totalBounds.x == Infinity){
                 attrs.opacity = 0;
             }
@@ -1275,10 +1264,12 @@ var Modes = (function(){
                     var linesFromTop = Math.floor(cursorY.t / cursorY.h);
                     var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
                     if(DeviceConfiguration.hasOnScreenKeyboard()){
-                        var scrollOffset =  Math.min(linesFromTop,linesInBox - 2) * cursorY.h;
-                        var docWidth = b[2] - b[0];
-                        var docHeight = docWidth;
-                        var bottom = viewboxY+viewboxHeight;
+                        var scrollOffset =  Math.min(linesFromTop,Math.max(0,linesInBox - 2)) * cursorY.h;
+                        var docWidth = Math.max(
+			    b[2] - b[0],
+			    scaleWorldToScreen(10 * cursorY.h));
+			var ratio = boardWidth / boardHeight;
+                        var docHeight = docWidth / ratio;
                         DeviceConfiguration.setKeyboard(true);
                         TweenController.zoomAndPanViewbox(
                             b[0],
@@ -1385,7 +1376,6 @@ var Modes = (function(){
                         }
                         return intersects && (text.author == me);
                     });
-                    console.log("editors",x,y,texts);
                     if(texts.length > 0){
                         return texts[0];
                     }
@@ -1480,7 +1470,6 @@ var Modes = (function(){
                 },
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
-                    Modes.select.clearSelection();
                     removeActiveMode();
                     fontOptions.hide();
                     unregisterPositionHandlers(board);
@@ -1491,6 +1480,7 @@ var Modes = (function(){
                         }
                     });
                     /*Necessary to ensure that no carets or marquees remain on the editors*/
+                    Modes.select.clearSelection();
                     blit();
                 }
             }
@@ -2040,127 +2030,132 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
-                        var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
-                        var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
-                        var dragThreshold = 15;
-                        if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
-                            Modes.select.dragging = false;
-                        }
-                        if(Modes.select.dragging){
-                            var root = Modes.select.totalSelectedBounds();
-                            _.each(Modes.select.selected.multiWordTexts,function(text,id){
-                                Modes.text.echoesToDisregard[id] = true;
-                            });
-                            Modes.text.mapSelected(function(box){
-                                box.doc.position.x += xDelta;
-                                box.doc.position.y += yDelta;
-                                box.doc.invalidateBounds();
-                            });
-                            var moved = batchTransform();
-                            moved.xTranslate = xDelta;
-                            moved.yTranslate = yDelta;
-                            moved.inkIds = _.keys(Modes.select.selected.inks);
-                            moved.textIds = _.keys(Modes.select.selected.texts);
-                            moved.imageIds = _.keys(Modes.select.selected.images);
-                            moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-                            Modes.select.dragging = false;
-                            registerTracker(moved.identity,function(){
-                                Progress.call("onSelectionChanged");
-                                blit();
-                            });
-                            sendStanza(moved);
-                        }
-                        else{
-                            var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
-                            var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
-                            var intersected = {
-                                images:{},
-                                texts:{},
-                                inks:{},
-                                multiWordTexts:{}
-                            };
-                            var intersectAuthors = {};
-                            var intersections = {};
-                            var intersectCategory = function(category){
-                                $.each(boardContent[category],function(i,item){
-                                    if (!("bounds" in item)){
-                                        if ("type" in item){
-                                            switch(item.type){
-                                            case "text":
-                                                prerenderText(item);
-                                                break;
-                                            case "image":
-                                                prerenderImage(item);
-                                                break;
-                                            case "ink":
-                                                prerenderInk(item);
-                                                break;
-                                            default:
-                                                item.bounds = [NaN,NaN,NaN,NaN];
+                        try{
+                            var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
+                            var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
+                            var dragThreshold = 15;
+                            if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
+                                Modes.select.dragging = false;
+                            }
+                            if(Modes.select.dragging){
+                                var root = Modes.select.totalSelectedBounds();
+                                _.each(Modes.select.selected.multiWordTexts,function(text,id){
+                                    Modes.text.echoesToDisregard[id] = true;
+                                });
+                                Modes.text.mapSelected(function(box){
+                                    box.doc.position.x += xDelta;
+                                    box.doc.position.y += yDelta;
+                                    box.doc.invalidateBounds();
+                                });
+                                var moved = batchTransform();
+                                moved.xTranslate = xDelta;
+                                moved.yTranslate = yDelta;
+                                moved.inkIds = _.keys(Modes.select.selected.inks);
+                                moved.textIds = _.keys(Modes.select.selected.texts);
+                                moved.imageIds = _.keys(Modes.select.selected.images);
+                                moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+                                Modes.select.dragging = false;
+                                registerTracker(moved.identity,function(){
+                                    Progress.call("onSelectionChanged");
+                                    blit();
+                                });
+                                sendStanza(moved);
+                            }
+                            else{
+                                var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
+                                var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
+                                var intersected = {
+                                    images:{},
+                                    texts:{},
+                                    inks:{},
+                                    multiWordTexts:{}
+                                };
+                                var intersectAuthors = {};
+                                var intersections = {};
+                                var intersectCategory = function(category){
+                                    $.each(boardContent[category],function(i,item){
+                                        if (!("bounds" in item)){
+                                            if ("type" in item){
+                                                switch(item.type){
+                                                case "text":
+                                                    prerenderText(item);
+                                                    break;
+                                                case "image":
+                                                    prerenderImage(item);
+                                                    break;
+                                                case "ink":
+                                                    prerenderInk(item);
+                                                    break;
+                                                default:
+                                                    item.bounds = [NaN,NaN,NaN,NaN];
+                                                }
                                             }
                                         }
-                                    }
-                                    var b = item.bounds;
-                                    var selectionThreshold = 1;
-                                    var overlap = overlapRect(selectionBounds,item.bounds);
-                                    if(overlap >= selectionThreshold){
+                                        var b = item.bounds;
+                                        var selectionThreshold = 1;
+                                        var overlap = overlapRect(selectionBounds,item.bounds);
+                                        if(overlap >= selectionThreshold){
+                                            incrementKey(intersectAuthors,item.author);
+                                            incrementKey(intersections,"any");
+                                            if (isAdministeringContent){
+                                                if(item.author != UserSettings.getUsername()){
+                                                    intersected[category][item.identity] = item;
+                                                }
+                                            } else {
+                                                if(item.author == UserSettings.getUsername()){
+                                                    intersected[category][item.identity] = item;
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                                categories(intersectCategory);
+                                $.each(boardContent.highlighters,function(i,item){
+                                    if(intersectRect(item.bounds,selectionBounds)){
                                         incrementKey(intersectAuthors,item.author);
-                                        incrementKey(intersections,"any");
                                         if (isAdministeringContent){
                                             if(item.author != UserSettings.getUsername()){
-                                                intersected[category][item.identity] = item;
+                                                intersected.inks[item.identity] = item;
                                             }
                                         } else {
                                             if(item.author == UserSettings.getUsername()){
-                                                intersected[category][item.identity] = item;
+                                                intersected.inks[item.identity] = item;
                                             }
                                         }
                                     }
                                 });
-                            }
-                            categories(intersectCategory);
-                            $.each(boardContent.highlighters,function(i,item){
-                                if(intersectRect(item.bounds,selectionBounds)){
-                                    incrementKey(intersectAuthors,item.author);
-                                    if (isAdministeringContent){
-                                        if(item.author != UserSettings.getUsername()){
-                                            intersected.inks[item.identity] = item;
+                                /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
+                                var toggleCategory = function(category){
+                                    $.each(intersected[category],function(id,item){
+                                        if(category in Modes.select.selected && id in Modes.select.selected[category]){
+                                            delete Modes.select.selected[category][id];
+                                        } else {
+                                            Modes.select.selected[category][id] = item;
                                         }
-                                    } else {
-                                        if(item.author == UserSettings.getUsername()){
-                                            intersected.inks[item.identity] = item;
-                                        }
-                                    }
+                                    });
                                 }
-                            });
-                            /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
-                            var toggleCategory = function(category){
-                                $.each(intersected[category],function(id,item){
-                                    if(category in Modes.select.selected && id in Modes.select.selected[category]){
-                                        delete Modes.select.selected[category][id];
-                                    } else {
-                                        Modes.select.selected[category][id] = item;
-                                    }
+                                categories(toggleCategory);
+                                if(!intersections.any){
+                                    Modes.select.clearSelection();
+                                }
+                                var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
+                                                     _.keys(Modes.select.selected.images).length,
+                                                     _.keys(Modes.select.selected.texts).length,
+                                                     _.keys(Modes.select.selected.multiWordTexts).length,
+                                                     _.keys(Modes.select.selected.inks).length);
+                                $.each(intersectAuthors,function(author,count){
+                                    status += sprintf("%s:%s ",author, count);
                                 });
+                                Progress.call("onSelectionChanged",[Modes.select.selected]);
                             }
-                            categories(toggleCategory);
-                            if(!intersections.any){
-                                Modes.select.clearSelection();
-                            }
-                            var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
-                                                 _.keys(Modes.select.selected.images).length,
-                                                 _.keys(Modes.select.selected.texts).length,
-                                                 _.keys(Modes.select.selected.multiWordTexts).length,
-                                                 _.keys(Modes.select.selected.inks).length);
-                            $.each(intersectAuthors,function(author,count){
-                                status += sprintf("%s:%s ",author, count);
-                            });
-                            Progress.call("onSelectionChanged",[Modes.select.selected]);
+                            marquee.css(
+                                {width:0,height:0}
+                            ).hide();
+                            blit();
                         }
-                        marquee.css(
-                            {width:0,height:0}
-                        ).hide();
-                        blit();
+                        catch(e){
+                            console.log("Selection up",e);
+                        }
                     }
                     Modes.select.dragging = false;
                     updateAdministerContentVisualState();
@@ -2176,6 +2171,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
+		    blit();
                 }
             }
         })(),

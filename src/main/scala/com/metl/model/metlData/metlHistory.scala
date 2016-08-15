@@ -540,9 +540,9 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   def filterCanvasContentsForMoveDelta(md:MeTLMoveDelta):History = Stopwatch.time("History.filterCanvasContentForMoveDelta",{
     filter(i => i match {
-      case mmd:MeTLMoveDelta => mmd.timestamp < md.timestamp && (mmd.inkIds.exists(i => md.inkIds.contains(i)) || mmd.textIds.exists(i => md.textIds.contains(i)) || mmd.imageIds.exists(i => md.imageIds.contains(i)))
+      case mmd:MeTLMoveDelta => mmd.timestamp < md.timestamp && (mmd.inkIds.exists(i => md.inkIds.contains(i)) || mmd.multiWordTextIds.exists(i => md.multiWordTextIds.contains(i)) || mmd.textIds.exists(i => md.textIds.contains(i)) || mmd.imageIds.exists(i => md.imageIds.contains(i)))
       case di:MeTLDirtyInk => md.inkIds.contains(di.identity)
-      case dt:MeTLDirtyText => md.textIds.contains(dt.identity)
+      case dt:MeTLDirtyText => md.textIds.contains(dt.identity) || md.multiWordTextIds.contains(dt.identity)
       case di:MeTLDirtyImage => md.imageIds.contains(di.identity)
       case cc:MeTLCanvasContent => md.isDirtierFor(cc,false)
       case _ => false

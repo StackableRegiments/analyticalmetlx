@@ -34,7 +34,7 @@ class Metl extends Logger {
     Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username))) && c != Conversation.empty
   }
   def boardFor():String = {
-    "/board"   
+    "/board"
   }
   def boardFor(conversationJid:Int):String = {
     "/board?conversationJid=%s".format(conversationJid)
@@ -73,7 +73,7 @@ class Metl extends Logger {
     "/editConversation?conversationJid=%s".format(conversationJid.toString)
   }
   def conversationSearch():String = {
-    "/searchConversations"
+    "/conversationSearch"
   }
 
 
@@ -200,6 +200,7 @@ class Metl extends Logger {
     output
   }
   def specific(in:NodeSeq):NodeSeq = {
+    S.param("conversationJid").openOr(S.redirectTo(noBoard))
     val name = generateName()
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
@@ -229,7 +230,7 @@ class Metl extends Logger {
             case Nil => Nil
             case List(i) => {
               try {
-              List(i.toInt)
+                List(i.toInt)
               } catch {
                 case e:Exception => Nil
               }
@@ -309,11 +310,11 @@ class Metl extends Logger {
           ".pageImageContainer [id]" #> "pageImageContainer_%s".format(uniqueId) &
           ".pageImageContainer *" #> {
             ".varContainer *" #> {
-                val history = includePrivate match {
-                  case true => MeTLXConfiguration.getRoom(page.id.toString,config.name).getHistory.merge(MeTLXConfiguration.getRoom(page.id.toString+Globals.currentUser.is,config.name).getHistory)
-                  case false => MeTLXConfiguration.getRoom(page.id.toString,config.name).getHistory
-                }
-                Script(JsCrVar(pageHistoryId,serializer.fromHistory(history)))
+              val history = includePrivate match {
+                case true => MeTLXConfiguration.getRoom(page.id.toString,config.name).getHistory.merge(MeTLXConfiguration.getRoom(page.id.toString+Globals.currentUser.is,config.name).getHistory)
+                case false => MeTLXConfiguration.getRoom(page.id.toString,config.name).getHistory
+              }
+              Script(JsCrVar(pageHistoryId,serializer.fromHistory(history)))
             } &
             ".onLoadContainer *" #> Script(OnLoad(Call("renderCanvas",JsVar(pageHistoryId),JString(uniqueId)))) &
             ".pageImage [id]" #> "pageImage_%s".format(uniqueId)

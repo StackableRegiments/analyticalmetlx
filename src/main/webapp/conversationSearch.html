@@ -24,15 +24,22 @@
   <div class="lift:Metl.specificConversationSearch"></div>
   <div id="masterLayout" class="flex-container-column">
     <div class="mbt">
-      <div class="indent flex-container-row">
+      <div class="indent flex-container-row" id="optionBlocks">
         <div class="flex-container-column">
           <h1 class="directlyOnBackground">Join a conversation</h1>
           <div id="conversationSearchBoxContainer" class="mbt indent">
             <span id="conversationSearchBox"></span>
-            <button id="searchButton" type="button" value="Search">
-              <span class="fa fa-search"><span class="icon-txt">Search</span>
+            <div class="flex-container-row">
+              <button id="searchButton" type="button" value="Search">
+                <span class="fa fa-search">
+                  <span class="icon-txt">Search</span>
+                </span>
+              </button>
+              <span class="ml directlyOnBackground">
+                <input type="checkbox" id="onlyMyConversations"></input>
+                <label for="onlyMyConversations"><span class="icon-txt">Only my conversations</span></label>
               </span>
-            </button>
+            </div>
           </div>
         </div>
         <div id="startAConversation" class="indent flex-container-column directlyOnBackground">
@@ -41,7 +48,7 @@
             <div id="createConversationContainer">
               <button id="createConversationButton">Create a blank conversation</button>
             </div>
-            <button id="showImportConversationWorkflow">Import a conversation</button>
+            <button id="showImportConversationWorkflow">Create a conversation by importing a file</button>
             <div id="importConversationContainer">
               <div id="importConversationInputElementContainer" style="display:none">
                 <label for="importConversationInputElement">Select a file</label>

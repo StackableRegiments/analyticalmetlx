@@ -1354,10 +1354,10 @@
                     var rect = require('./rect');
 
                     var scaledWidth = function(){
-                        return Modes.text.minimumWidth / scale();
+                        return scaleWorldToScreen(Modes.text.minimumWidth);
                     };
                     var scaledHeight = function(){
-                        return Modes.text.minimumHeight() / scale();
+                        return scaleWorldToScreen(Modes.text.minimumHeight());
                     };
                     var prototype = node.derive({
                         bounds: function() {
@@ -1377,7 +1377,7 @@
                                         bottom = Math.max(bottom, b.t + b.h);
                                     });
                                 }
-                                this._bounds = rect(left, top, Math.max(right - left,scaledWidth()), Math.max(this.height || bottom - top,scaledHeight()));
+                                this._bounds = rect(left, top, Math.max(right - left,scaledWidth()), Math.max(this.height ? this.height : bottom - top,scaledHeight()));
                             }
                             return this._bounds;
                         },

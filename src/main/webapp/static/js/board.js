@@ -26,8 +26,9 @@ function setupStatus(){
     }
     window.updateTracking = function(id){
         if(id in progressFuncs){
-            progressFuncs[id]();
+	    var func = progressFuncs[id];
             delete progressFuncs[id];
+            func();
         }
         else{
             console.log("updateTracking problem: Nobody is listening for ",id);
@@ -79,6 +80,7 @@ function strokeCollected(spoints){
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
         calculateInkBounds(ink);
+	prerenderInk(ink);
         if(ink.isHighlighter){
             boardContent.highlighters[ink.identity] = ink;
         }
@@ -181,6 +183,7 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
+sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -596,9 +599,7 @@ function transformReceived(transform){
                          transform.textIds.length,
                          transform.multiWordTextIds.length,
                          transform.inkIds.length));
-    console.log("Transform received",transform.identity);
     _.each(trackerFrom(transform.identity),function(tracker){
-	console.log("Updating tracking for",tracker);
         updateTracking(tracker);
     });
     blit();

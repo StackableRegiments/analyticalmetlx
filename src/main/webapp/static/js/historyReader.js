@@ -621,7 +621,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                     if(texts){
                         $.each(texts,function(i,text){
                             if(!text.bounds){
-				text.doc.invalidateBounds();
+                                text.doc.invalidateBounds();
                             }
                             if(intersectRect(text.bounds,viewBounds)){
                                 drawMultiwordText(text);
@@ -769,7 +769,10 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                         _.cloneDeep(item));
                                     scaledText.position = {x:bounds[0],y:bounds[1]};
                                     scaledText.load(item.doc.save());
-                                    scaledText.width(item.doc.width() * xScale);
+                                    scaledText.width(Math.max(
+                                        item.doc.width() * xScale,
+                                        Modes.text.minimumWidth / scale()
+                                    ));
                                     if(Modes.select.aspectLocked){
                                         /*If you're looking for the bug where it sometimes ghosts the wrong way, this is it.
                                          save() doesn't always produce useful results
@@ -852,6 +855,7 @@ var blit = function(canvasContext,content){
         console.log("exception in render:",e);
     }
 };
+//blit = _.throttle(blit,33);
 function pica(value){
     return value / 128;
 }

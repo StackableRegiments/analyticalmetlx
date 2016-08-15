@@ -21,7 +21,7 @@ var DeviceConfiguration = (function(){
         tools:false,
         slides:false,
         header:false,
-	keyboard:false
+        keyboard:false
     };
     var setSectionVisibility = function(section,visible){
         if (allowShowingChrome){
@@ -44,7 +44,6 @@ var DeviceConfiguration = (function(){
         } else {
             currentDevice = "browser";
         }
-        //console.log("device:",currentDevice);
     };
     var setDefaultOptions = function(){
         tryToDetermineCurrentDevice();
@@ -171,54 +170,61 @@ var DeviceConfiguration = (function(){
     };
     var fitFunction = defaultFitFunction;
     var projectorFitFunction = function(){customizableFitFunction(false,false,false,false);};
-    var customizableFitFunction = function(_showHeader,_showTools,_showSlides,_showKeyboard){
-        var showHeader = sectionsVisible.header;
-        var showTools = sectionsVisible.tools;
-        var showSlides = sectionsVisible.slides;
-        var showKeyboard = sectionsVisible.keyboard;
-        var toolsColumn = $("#toolsColumn");
-        var tools = $("#ribbon").find(".toolbar");
-        var subTools = $(".modeSpecificTool");
-
-        var dropPx = function(str){
-            try {
-                var value = parseInt(str.split("px")[0]);
-                return isNaN(value) ? 0 : value;
-            } catch(e){
-                return 0;
+    var dropPx = function(str){
+        var value = parseInt(str.split("px")[0]);
+        return isNaN(value) ? 0 : value;
+    };
+    var marginsFor = function(items){
+        return {
+            x:_.sum(_.map(items,function(item){
+                var l = dropPx(item.css("margin-left")) + dropPx(item.css("padding-left")) + dropPx(item.css("border"));
+                var r = dropPx(item.css("margin-right")) + dropPx(item.css("padding-right"))  + dropPx(item.css("border"));
+                return l + r;
+            })),
+            y:_.sum(_.map(items,function(item){
+                var t = dropPx(item.css("margin-top")) + dropPx(item.css("padding-top")) + dropPx(item.css("border"));
+                var b = dropPx(item.css("margin-bottom")) + dropPx(item.css("padding-bottom")) + dropPx(item.css("border"));
+                return t + b;
+            }))
+        };
+    };
+    var components = {};
+    var comp = function(selector){
+        if(!(selector in components)){
+            var val = $(selector);
+            if(val && val.length){
+                components[selector] = val;
             }
-        };
-        var marginsFor = function(items){
-            return {
-                x:_.sum(_.map(items,function(item){
-                    var l = dropPx(item.css("margin-left")) + dropPx(item.css("padding-left")) + dropPx(item.css("border"));
-                    var r = dropPx(item.css("margin-right")) + dropPx(item.css("padding-right"))  + dropPx(item.css("border"));
-                    return l + r;
-                })),
-                y:_.sum(_.map(items,function(item){
-                    var t = dropPx(item.css("margin-top")) + dropPx(item.css("padding-top")) + dropPx(item.css("border"));
-                    var b = dropPx(item.css("margin-bottom")) + dropPx(item.css("padding-bottom")) + dropPx(item.css("border"));
-                    return t + b;
-                }))
-            };
-        };
+	    return val;
+        }
+        return components[selector];
+    };
+    var customizableFitFunction = function(_showHeader,_showTools,_showSlides,_showKeyboard){
+        if(typeof(boardContext) != "undefined"){
+            var showHeader = sectionsVisible.header;
+            var showTools = sectionsVisible.tools;
+            var showSlides = sectionsVisible.slides;
+            var showKeyboard = sectionsVisible.keyboard;
+            var toolsColumn = comp("#toolsColumn");
+            var tools = comp("#ribbon").find(".toolbar");
+            var subTools = comp(".modeSpecificTool");
 
-        var flexContainer = $("#masterLayout");
+            var flexContainer = comp("#masterLayout");
 
-        var boardHeader = $("#boardHeader");
-        var applicationMenu = $("#applicationMenu");
-        var container = $("#boardContainer");
-        var boardColumn = $("#boardColumn");
+            var boardHeader = comp("#boardHeader");
+            var applicationMenu = comp("#applicationMenu");
+            var container = comp("#boardContainer");
+            var boardColumn = comp("#boardColumn");
 
-        var thumbsColumn = $("#thumbsColumn");
-        var slideContainer = $("#slideContainer");
-        var thumbScrollContainer = $("#thumbScrollContainer");
-        var thumbs = $(".thumbnail");
+            var thumbsColumn = comp("#thumbsColumn");
+            var slideContainer = comp("#slideContainer");
+            var thumbScrollContainer = comp("#thumbScrollContainer");
+            var thumbs = $(".thumbnail");
 
-        var deviceDimensions = getDeviceDimensions();
-        var width = deviceDimensions.width;
-        var height = deviceDimensions.height;
-        try{
+            var deviceDimensions = getDeviceDimensions();
+            var width = deviceDimensions.width;
+            var height = deviceDimensions.height;
+
             var performRemeasure = function(){
                 if (showHeader == true){
                     boardHeader.show();
@@ -242,10 +248,10 @@ var DeviceConfiguration = (function(){
                 } else {
                     thumbsColumn.hide();
                 }
-                var boardContainer = $("#boardContainer");
-                var board = $("#board");
-                var masterHeader = $("#masterHeader");
-                $("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
+                var boardContainer = comp("#boardContainer");
+                var board = comp("#board");
+                var masterHeader = comp("#masterHeader");
+                comp("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
                 thumbs.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
                 thumbs.height(DeviceConfiguration.preferredSizes.thumbColumn.height);
 
@@ -256,13 +262,13 @@ var DeviceConfiguration = (function(){
                     bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
                     bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
                 } else {
-                    bwidth = $("#masterLayout").width() - marginsFor([boardColumn]).x; 
+                    bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
-		    if(showKeyboard){
-			bheight -= DeviceConfiguration.preferredSizes.keyboard;
-			//Remove three bars including gutters
-			bheight += (DeviceConfiguration.preferredSizes.handles + 2) * 3;
-		    }
+                    if(showKeyboard){
+                        bheight -= DeviceConfiguration.preferredSizes.keyboard;
+                        //Remove three bars including gutters
+                        bheight += (DeviceConfiguration.preferredSizes.handles + 2) * 3;
+                    }
                 }
                 if (bheight < 0 || bwidth < 0){
                     throw {
@@ -277,11 +283,11 @@ var DeviceConfiguration = (function(){
                 }
                 bwidth = Math.round(bwidth);
                 bheight = Math.round(bheight);
-                var selectionAdorner = $("#selectionAdorner");
-                var radar = $("#radar");
-                var marquee = $("#marquee");
-                var textAdorner = $("#textAdorner");
-                var imageAdorner = $("#imageAdorner");
+                var selectionAdorner = comp("#selectionAdorner");
+                var radar = comp("#radar");
+                var marquee = comp("#marquee");
+                var textAdorner = comp("#textAdorner");
+                var imageAdorner = comp("#imageAdorner");
                 boardContext.canvas.width = bwidth;
                 boardContext.canvas.height = bheight;
                 boardContext.width = bwidth;
@@ -292,15 +298,9 @@ var DeviceConfiguration = (function(){
             performRemeasure();
             IncludeView.default();
             blit();
+            window.scrollTo(1,1);
+            window.scrollTo(0,0);
         }
-        catch(e){
-            console.log("exception in fit",e);
-            _.defer(function(){
-                _.delay(customizableFitFunction,250,(showHeader,showTools,showSlides,showKeyboard));
-            });
-        }
-        window.scrollTo(1,1);
-        window.scrollTo(0,0);
     };
     var innerFit = function(){
         if (fitFunction){
@@ -442,13 +442,13 @@ var DeviceConfiguration = (function(){
         setTools:sectionSetter("tools"),
         setSlides:sectionSetter("slides"),
         setKeyboard:function(visible){
-	    var chrome = !visible;
-	    sectionSetter("keyboard")(visible);
-	    DeviceConfiguration.applyFit();
-	    $("#masterHeader").toggle(chrome);
-	    $(".permission-states").toggle(chrome);
-	    $("#majorModesColumn").toggle(chrome);
-	},
+            var chrome = !visible;
+            sectionSetter("keyboard")(visible);
+            DeviceConfiguration.applyFit();
+            $("#masterHeader").toggle(chrome);
+            $(".permission-states").toggle(chrome);
+            $("#majorModesColumn").toggle(chrome);
+        },
         toggleHeader:sectionToggler("header"),
         toggleTools:sectionToggler("tools"),
         toggleSlides:sectionToggler("slides"),
@@ -459,9 +459,9 @@ var DeviceConfiguration = (function(){
             tryToDetermineCurrentDevice();
             actOnCurrentDevice();
         },
-	hasOnScreenKeyboard:function(){
-	    return getDeviceDimensions().width <= 640;
-	},
+        hasOnScreenKeyboard:function(){
+            return getDeviceDimensions().width <= 640;
+        },
         preferredSizes:{
             handles:50,
             thumbColumn:{
@@ -469,7 +469,7 @@ var DeviceConfiguration = (function(){
                 height:75
             },
             toolsColumn:100,
-	    keyboard:236
+            keyboard:236
         }
     };
 })();
