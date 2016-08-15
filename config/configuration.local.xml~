@@ -40,8 +40,8 @@
   <groupsProvider>
     <selfGroups/>
     <flatFileGroups format="stLeo" location="" refreshPeriod=""/>
-    <flatFileGroups format="globalOverrides" location="" refreshPeriod=""/>
-    <flatFileGroups format="specificOverrides" location="" refreshPeriod=""/>
+    <flatFileGroups format="globalOverrides" location="config/globalOverrides.txt" refreshPeriod=""/>
+    <flatFileGroups format="specificOverrides" location="config/specificOverrides.txt" refreshPeriod=""/>
   </groupsProvider>
   <cloudConverterApiKey>q6y8Ay7DLW4pNwgC5w6K05kwRKxvrIS1ef8540XTV3fBA9EG-TQHrZkL0uYgyfOspSVkXKymqAww7WBxetTF8g</cloudConverterApiKey>
   <oneNote>

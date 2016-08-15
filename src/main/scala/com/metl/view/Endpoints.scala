@@ -148,7 +148,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     }
     case r@Req("latency" :: Nil,_,_) => {
       val start = new java.util.Date().getTime
-      () => {
+        () => {
         Full(PlainTextResponse((new java.util.Date().getTime - start).toString,List.empty[Tuple2[String,String]], 200))
       }
     }
@@ -244,10 +244,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       HttpResponder.snapshotWithPrivate(jid,"thumbnail")
     })
     case Req("saveToOneNote" :: conversation :: _,_,_) => Stopwatch.time("MeTLRestHelper.saveToOneNote",{
-      Globals.oneNoteAuthToken.get match {
-        case Full(token) => JsonResponse(JString(OneNote.export(conversation,token).toString))
-        case _ => RedirectResponse(OneNote.authUrl)
-      }
+      RedirectResponse(
+        (for(
+          token <- Globals.oneNoteAuthToken.get;
+          odata <- OneNote.export(conversation,token);
+          href <- (parse(odata) \\ "oneNoteWebUrl" \ "href").extractOpt[String]
+        ) yield href).getOrElse(OneNote.authUrl))
     })
     case Req("permitOneNote" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.permitOneNote",{
       for(
