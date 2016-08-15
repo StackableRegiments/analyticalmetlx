@@ -2241,10 +2241,9 @@
                     };
 
                     exports.sameFormatting = function(run1, run2) {
-                        var match =  exports.formattingKeys.every(function(key) {
-                            return run1[key] === run2[key];
-                        })
-                        return match;
+                        return exports.formattingKeys.every(function(key) {
+                            return _.isEqual(run1[key],run2[key]);
+                        });
                     };
 
                     exports.clone = function(run) {
