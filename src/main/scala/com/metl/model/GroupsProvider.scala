@@ -193,7 +193,8 @@ class GroupStoreDataFile(diskStorePath:String) {
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
     val writer = CSVWriter.open(new File(diskStorePath))
-    writer.writeAll(List(memberName,attributeValue,groupTypeName,groupName) :: 
+    writer.writeAll(
+      List(memberName,attributeValue,groupTypeName,groupName) :: 
       c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,mi._1,g._1,g._2))) :::
       c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
     )
@@ -207,9 +208,9 @@ class GroupStoreDataFile(diskStorePath:String) {
       val (groupData,information) = results.flatMap(m => {
         for {
           member <- m.get(memberName)
+          attr <- m.get(attributeValue)
           groupType <- m.get(groupTypeName)
           group <- m.get(groupName)
-          attr <- m.get(attributeValue)
         } yield {
           (member,attr,groupType,group)
         }

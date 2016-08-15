@@ -220,7 +220,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
         }
       )
       parFlatMap[() => List[Tuple4[String,String,String,String]],Tuple4[String,String,String,String]](combinedSet,f => f(),3,"members_sections_groups")
-    },16,"ou").partition(_._3 != PersonalInformation)
+    },16,"ou").partition(_._3 != PersonalInformation.personalInformation)
     val groupsByMember:Map[String,List[Tuple2[String,String]]] = groupData.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._3,m._4))))
     val membersByGroup:Map[String,List[String]] = groupData.groupBy(_._4).map(t => (t._1,t._2.distinct.map(_._1)))
     val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._4,m._2))))
