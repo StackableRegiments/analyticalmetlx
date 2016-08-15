@@ -11,46 +11,43 @@ var Conversations = (function(){
     var conversationTemplate = undefined;
     var conversationSearchListing = undefined;
 
-		var BannedState = (function(){
-			var haveCheckedBanned = false;
-			var bannedState = false;
-			var pushBannedMessage = function(){
-				warningAlert("Banned","You have been banned from contributing publically to this class because you published some inappropriate content that is deemed to be contrary to the expectations of the university.\r\nThe content has been deleted on every screen, but the instructor has a record of your action.\r\nYou must contact your instructor in order to be reinstated as a contributing member of the classroom community.");
-			};
-			var pushUnbannedMessage = function(){
-				successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
-			};
-			var updateBannedVisualState = function(){
-				if (bannedState){
-				} else {
-				}
-			};
-			return {
-				checkIsBanned:function(conversation,freshCheck){
-					var originalBannedState = bannedState;
-					var newBannedState = getIsBannedFunction(conversation);
-					if (freshCheck == true){
-						haveCheckedBanned = false;
-						bannedState = false;
-					}
-					if (!haveCheckedBanned && newBannedState){
-						haveCheckedBanned = true;
-						bannedState = true;
-						pushBannedMessage();
-					}
-					if (originalBannedState == true && newBannedState == false){
-						bannedState = false;
-						haveCheckedBanned = false;
-						pushUnbannedMessage();
-					}
-					updateBannedVisualState();
-				},
-				reset:function(){
-					haveCheckedBanned = false;
-					bannedState = false;
-				}	
-			};
-		})();
+    var BannedState = (function(){
+        var haveCheckedBanned = false;
+        var bannedState = false;
+        var pushBannedMessage = function(){
+            warningAlert("Banned","You have been banned from contributing publically to this class because you published some inappropriate content that is deemed to be contrary to the expectations of the university.\r\nThe content has been deleted on every screen, but the instructor has a record of your action.\r\nYou must contact your instructor in order to be reinstated as a contributing member of the classroom community.");
+        };
+        var pushUnbannedMessage = function(){
+            successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
+        };
+        var updateBannedVisualState = function(){
+        };
+        return {
+            checkIsBanned:function(conversation,freshCheck){
+                var originalBannedState = bannedState;
+                var newBannedState = getIsBannedFunction(conversation);
+                if (freshCheck == true){
+                    haveCheckedBanned = false;
+                    bannedState = false;
+                }
+                if (!haveCheckedBanned && newBannedState){
+                    haveCheckedBanned = true;
+                    bannedState = true;
+                    pushBannedMessage();
+                }
+                if (originalBannedState == true && newBannedState == false){
+                    bannedState = false;
+                    haveCheckedBanned = false;
+                    pushUnbannedMessage();
+                }
+                updateBannedVisualState();
+            },
+            reset:function(){
+                haveCheckedBanned = false;
+                bannedState = false;
+            }
+        };
+    })();
     $(function(){
         //take a template of the html for the searchResultItem
         conversationSearchListing = $("#searchResults");
@@ -165,7 +162,7 @@ var Conversations = (function(){
         catch(e){
             console.log("exception while painting thumbs",e);
         }
-				updateQueryParams();
+        updateQueryParams();
     }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
@@ -262,7 +259,7 @@ var Conversations = (function(){
                     }
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
                         Progress.call("onConversationJoin");
-												BannedState.checkIsBanned(details,true);
+                        BannedState.checkIsBanned(details,true);
                         ThumbCache.clearCache();
                     }
                 }
@@ -272,7 +269,7 @@ var Conversations = (function(){
                 }
             }
             updateCurrentConversation(details);
-						BannedState.checkIsBanned(details);
+            BannedState.checkIsBanned(details);
             if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
                 currentlyDisplayedConversations.push(details);
                 refreshConversationSearchResults();
@@ -592,31 +589,31 @@ var Conversations = (function(){
     var constructNextSlideButton = function(){
         return constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",goToNextSlideFunction,always);
     }
-		var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
-		var updateQueryParams = function(){
-			var s = getCurrentSlideFunc();
-			if (window != undefined && "history" in window && "pushState" in window.history){
-				var l = window.location;
-				var c = currentConversation;
-				var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
-				if (c != undefined && "jid" in c && s != undefined && "id" in s){
-					var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
-			}
-				window.history.replaceState({
-					path:newUrl,
-					url:newUrl
-				},newUrl,newUrl);
-			}
-			if (s != undefined && "id" in s && document != undefined && "title" in document){
-				document.title = sprintf("MeTL - %s",s.id.toString());
-			}
-		};
+    var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
+    var updateQueryParams = function(){
+        var s = getCurrentSlideFunc();
+        if (window != undefined && "history" in window && "pushState" in window.history){
+            var l = window.location;
+            var c = currentConversation;
+            var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
+            if (c != undefined && "jid" in c && s != undefined && "id" in s){
+                var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
+            }
+            window.history.replaceState({
+                path:newUrl,
+                url:newUrl
+            },newUrl,newUrl);
+        }
+        if (s != undefined && "id" in s && document != undefined && "title" in document){
+            document.title = sprintf("MeTL - %s",s.id.toString());
+        }
+    };
     var doMoveToSlide = function(slideId){
         indicateActiveSlide(slideId);
         delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
         WorkQueue.enqueue(function(){
             loadSlide(slideId);
-						updateQueryParams();
+            updateQueryParams();
             return true;
         });
     };
@@ -624,8 +621,8 @@ var Conversations = (function(){
         $(".slideButtonContainer").removeClass("activeSlide");
         var activeSlide = $(sprintf("#slideContainer_%s",slideId));
         activeSlide.addClass("activeSlide");
-	var position = activeSlide.find(".slideThumbnailNumber").text();
-	$("#currentSlide").text(position);
+        var position = activeSlide.find(".slideThumbnailNumber").text();
+        $("#currentSlide").text(position);
     };
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
@@ -660,9 +657,9 @@ var Conversations = (function(){
             if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
             targetConversationJid = jidString;
             var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-						BannedState.reset();
+            BannedState.reset();
             hideBackstage();
-						Progress.call("onConversationJoin",[conversation]);
+            Progress.call("onConversationJoin",[conversation]);
             doMoveToSlide(firstSlide.id.toString());
         }));
         var jidString = conversation.jid.toString();
@@ -676,7 +673,7 @@ var Conversations = (function(){
         newConv.find(".conversationCreated").text(conversation.created);
 
         if (shouldModifyConversationFunction(conversation)){
-					newConv.find(".conversationEditButton").attr("id",uniq("conversationEditLink")).attr("href",sprintf("/editConversation?conversationJid=%s",conversation.jid));
+            newConv.find(".conversationEditButton").attr("id",uniq("conversationEditLink")).attr("href",sprintf("/editConversation?conversationJid=%s",conversation.jid));
             newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
             newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
             newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
