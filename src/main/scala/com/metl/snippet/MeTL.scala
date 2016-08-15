@@ -182,21 +182,21 @@ class Metl extends Logger {
     val name = generateName()
     val clazz = "lift:comet?type=SinglePageMeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    warn("generating single page comet html: %s".format(output))
+    //warn("generating single page comet html: %s".format(output))
     output
   }
   def specificSlideDisplay(in:NodeSeq):NodeSeq = {
     val name = generateName()
     val clazz = "lift:comet?type=MeTLSlideDisplayActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    warn("generating single page comet html: %s".format(output))
+    //warn("generating single page comet html: %s".format(output))
     output
   }
   def specificEditConversation(in:NodeSeq):NodeSeq = {
     val name = generateName(true)
     val clazz = "lift:comet?type=MeTLEditConversationActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    warn("generating editConversation comet html: %s".format(output))
+    //warn("generating editConversation comet html: %s".format(output))
     output
   }
   def specific(in:NodeSeq):NodeSeq = {
@@ -204,21 +204,21 @@ class Metl extends Logger {
     val name = generateName()
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    warn("generating comet html: %s".format(output))
+    //warn("generating comet html: %s".format(output))
     output
   }
   def specificConversationSearch(in:NodeSeq):NodeSeq = {
     val name = Globals.currentUser.is
     val clazz = "lift:comet?type=MeTLJsonConversationChooserActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    warn("generating conversationSearch html: %s".format(output))
+    //warn("generating conversationSearch html: %s".format(output))
     output
   }
   def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
     val name = generateName()
     val clazz = "lift:comet?type=RemotePluginConversationChooserActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    warn("generating comet html: %s".format(output))
+    //warn("generating comet html: %s".format(output))
     output
   }
   def getPagesFromPageRange(pageRange:String,conversation:Conversation):List[Slide] = {

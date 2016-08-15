@@ -18,7 +18,24 @@ object GroupsProvider {
     (in \\ "@format").text match {
       case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
       case "globalOverrides" => new GlobalOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
-      case "specificOverrides" => new SpecificOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
+      
+      case "specificOverrides" => {
+        (for {
+          path <- (in \\ "@location").headOption.map(_.text)
+          period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
+        } yield {
+          new StoreBackedGroupsProvider(
+            new PeriodicallyRefreshingGroupStoreProvider(
+              new FileWatchingCachingGroupStoreProvider(
+                new SpecificOverridesGroupStoreProvider(path),
+              path),
+              period
+            )
+          )
+        }).getOrElse({
+          throw new Exception("missing parameters for specificOverrides groups provider")
+        })
+      }
       case "d2l" => (for {
         host <- (in \\ "@host").headOption.map(_.text)
         leApiVersion <- (in \\ "@leApiVersion").headOption.map(_.text)
@@ -30,7 +47,15 @@ object GroupsProvider {
         diskStore <- (in \\ "@diskStore").headOption.map(_.text)
         refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
       } yield {
-        new PeriodicD2LGroupsProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,refreshPeriod,diskStore)
+        val diskCache = new GroupStoreDataFile(diskStore)
+        new StoreBackedGroupsProvider(
+          new PeriodicallyRefreshingGroupStoreProvider(
+            new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
+            refreshPeriod,
+            diskCache.read,
+            Some(g => diskCache.write(g))
+          )
+        )
       }).getOrElse({
         throw new Exception("missing parameters for d2l groups provider")
       })
@@ -39,119 +64,175 @@ object GroupsProvider {
   }
 }
 
+object PersonalInformation {
+  val personalInformation = "personalInformation"
+  val email = "email"
+  val firstName = "firstName"
+  val surname = "surname"
+  val displayName = "displayName"
+}
+
+object GroupKeys {
+  val ou = "ou"
+  val section = "section"
+  val groupCategory = "groupCategory"
+  val group = "group"
+}
+
 trait GroupsProvider extends Logger {
   def getGroupsFor(username:String):List[Tuple2[String,String]] = Nil
+  def getMembersFor(groupName:String):List[String] = Nil
+  def getPersonalDetailsFor(username:String):List[Tuple2[String,String]] = Nil
 }
+
+class StoreBackedGroupsProvider(gs:GroupStoreProvider) extends GroupsProvider {
+  override def getGroupsFor(username:String):List[Tuple2[String,String]] = gs.getGroups.get(username).getOrElse(Nil)
+  override def getMembersFor(groupName:String):List[String] = gs.getMembers.get(groupName).getOrElse(Nil)
+  override def getPersonalDetailsFor(username:String):List[Tuple2[String,String]] = gs.getPersonalDetails.get(username).getOrElse(Nil)
+}
+
+case class GroupStoreData(
+  groupsForMembers:Map[String,List[Tuple2[String,String]]] = Map.empty[String,List[Tuple2[String,String]]],
+  membersForGroups:Map[String,List[String]] = Map.empty[String,List[String]],
+  detailsForMembers:Map[String,List[Tuple2[String,String]]] = Map.empty[String,List[Tuple2[String,String]]]
+)
 
 trait GroupStoreProvider extends Logger {
-  def getGroups:Map[String,List[Tuple2[String,String]]] = Map.empty[String,List[Tuple2[String,String]]]
+  def getData:GroupStoreData = GroupStoreData()
+  def getGroups:Map[String,List[Tuple2[String,String]]] = getData.groupsForMembers
+  def getMembers:Map[String,List[String]] = getData.membersForGroups
+  def getPersonalDetails:Map[String,List[Tuple2[String,String]]] = getData.detailsForMembers
 }
-/*
 class PassThroughGroupStoreProvider(gp:GroupStoreProvider) extends GroupStoreProvider {
-  override def getGroups:Map[String,List[Tuple2[String,String]]] = internalGetGroups
-  protected def internalGetGroups = Map.empty[String,List[Tuple2[String,String]]]
+  override def getData:GroupStoreData = gp.getData
 }
 
-abstract class CachingGroupStoreProvider(gp:GroupStoreProvider) extends PassThroughGroupStoreProvider {
-  protected def storeCache(c:Map[String,List[Tuple2[String,String]]]):Unit
-  protected def readCache:Map[String,List[Tuple2[String,String]]]
-  protected def shouldRefreshCache:Boolean
-  override def internalGetGroups = {
+class CachingGroupStoreProvider(gp:GroupStoreProvider) extends PassThroughGroupStoreProvider(gp) {
+  val startingValue:Option[GroupStoreData] = None
+  val startingLastUpdated = 0L
+  protected var lastUpdated = startingLastUpdated
+
+  def storeCache(c:GroupStoreData):Unit = {}
+  protected def readCache:Option[GroupStoreData] = None
+  protected def shouldRefreshCache:Boolean = false
+  override def getData = {
     if (shouldRefreshCache){
-      val newRes = gp.getGroups
+      val newRes = super.getData
       storeCache(newRes)
       newRes
     } else {
-      readCache
+      readCache.getOrElse(GroupStoreData())
     }
   }
 }
 
-class InMemoryCachingGroupStoreProvider(gp:GroupStoreProvider,acceptableStaleness:TimeSpan) extends CachingGroupStoreProvider(gp) {
-  protected val startingValue:Option[Map[String,List[Tuple2[String,String]]]] = None
-  protected val startingLastUpdated = 0L
-  protected var lastUpdated = startingLastUpdated
-  protected var cache:Option[Map[String,List[Tuple2[String,String]]]] = None
-  override protected def storeCache(c:Map[String,List[Tuple2[String,String]]]):Unit = {
-    cache = Some(c)
-    lastUpdated = new java.util.Date().getTime()
-  }
-  override protected def readCache:Map[String,List[Tuple2[String,String]]] = cache.getOrElse(Map.empty[String,List[Tuple2[String,String]]])
-  protected def shouldRefreshCache:Boolean = {
-    cache.map(c => {
-      (new java.util.Date().getTime() - lastUpdated) > acceptableStaleness.millis
-    }).getOrElse(true)
-  }
-}
 
-class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeriod:TimeSpan,startingValue:Option[Map[String,List[Tuple2[String,String]]]] = None) extends PassThroughGroupStoreProvider { 
-  protected var lastCache:Map[String,List[Tuple2[String,String]]] = startingValue.getOrElse(Map.empty[String,List[Tuple2[String,String]]])
-  protected var cache = new PeriodicallyRefreshingVar[Unit](refreshPeriod,() => {
-    val newCheck = new java.util.Date().getTime()
-    lastCache = gp.getGroups 
-  },startingValue)
-  override def internalGetGroups = lastCache
-}
-class FileBackedInMemoryCachingGroupStoreProvider(gp:GroupStoreProvider,acceptableStaleness:TimeSpan,diskStorePath:String) extends InMemoryCachingGroupStoreProvider(gp,acceptableStaleness) {
+class SpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvider {
   import com.github.tototoshi.csv._
   import java.io._
+
   protected val groupName = "GROUP"
   protected val groupTypeName = "TYPE"
   protected val memberName = "MEMBER"
 
-  override protected val startingValue:Option[Map[String,List[Tuple2[String,String]]]] = Some(readFromDisk)
-  override protected val startingLastUpdated = getDiskLastUpdated
-  override protected def storeCache(c:Map[String,List[Tuple2[String,String]]]):Unit = {
-    super.storeCache(c)
-    storeToDisk(c)
-  }
-  protected def getDiskLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
-  protected def storeToDisk(c:Map[String,List[Tuple2[String,String]]]):Unit = {
-    val writer = CSVWriter.open(new File(diskStorePath))
-    writer.writeAll(List(memberName,groupTypeName,groupName) :: c.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._1,g._2))))
-    writer.close
-  }
-  protected def readFromDisk:Map[String,List[Tuple2[String,String]]] = {
-    val reader = CSVReader.open(new File(diskStorePath))
+  override def getData = {
+    val reader = CSVReader.open(new File(path))
     val results = reader.allWithHeaders
     reader.close
-    results.flatMap(m => {
+    val groupData = results.flatMap(m => {
       for {
         member <- m.get(memberName)
         groupType <- m.get(groupTypeName)
         group <- m.get(groupName)
       } yield {
-        (member,(groupType,group))
+        (member,groupType,group)
       }
-    }).groupBy(_._1).map(t => (t._1,t._2.map(_._2)))
+    })
+    val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1,t._2.map(i => (i._2,i._3))))
+    val membersForGroups = groupData.groupBy(_._3).map(t => (t._1,t._2.map(_._1)))
+    val data = GroupStoreData(groupsForMembers,membersForGroups)
+    data
   }
 }
-class PeriodicallyRefreshingFileBackedInMemoryCachingGroupStoreProvider(gp:GroupStoreProvider,acceptableStaleness:TimeSpan,diskStorePath:String) extends FileBackedInMemoryCachingGroupStoreProvider(gp,acceptableStaleness,diskStorePath) {
-  val periodicCache = new PeriodicallyRefreshingGroupStoreProvider(gp,acceptableStaleness,startingValue)
+
+class InMemoryCachingGroupStoreProvider(gp:GroupStoreProvider) extends CachingGroupStoreProvider(gp) {
+  protected var cache:Option[GroupStoreData] = None
+  override def storeCache(c:GroupStoreData):Unit = {
+    cache = Some(c)
+    lastUpdated = new java.util.Date().getTime()
+  }
+  override protected def readCache:Option[GroupStoreData] = cache
 }
-*/
+
+class FileWatchingCachingGroupStoreProvider(gp:GroupStoreProvider,path:String) extends InMemoryCachingGroupStoreProvider(gp) {
+  override val startingValue:Option[GroupStoreData] = Some(gp.getData)
+  protected def getFileLastModified = new java.io.File(path).lastModified()
+  override val startingLastUpdated = getFileLastModified
+  override def shouldRefreshCache = lastUpdated < getFileLastModified
+}
+
+class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeriod:TimeSpan,startingValue:Option[GroupStoreData] = None,storeFunc:Option[GroupStoreData=>Unit] = None) extends GroupStoreProvider { 
+  protected var lastCache:GroupStoreData = startingValue.getOrElse(GroupStoreData())
+  protected var cache = new PeriodicallyRefreshingVar[Unit](refreshPeriod,() => {
+    val newCheck = new java.util.Date().getTime()
+    lastCache = gp.getData 
+    storeFunc.foreach(sf => sf(lastCache))
+  },startingValue.map(sv => {}))
+  override def getData = lastCache
+}
+
+class GroupStoreDataFile(diskStorePath:String) {
+  import com.github.tototoshi.csv._
+  import java.io._
+
+  protected val groupName = "GROUP"
+  protected val groupTypeName = "TYPE"
+  protected val memberName = "MEMBER"
+  protected val attributeValue = "VALUE"
+
+  def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
+  def write(c:GroupStoreData):Unit = {
+    val writer = CSVWriter.open(new File(diskStorePath))
+    writer.writeAll(List(memberName,attributeValue,groupTypeName,groupName) :: 
+      c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,mi._1,g._1,g._2))) :::
+      c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
+    )
+    writer.close
+  }
+  def read:Option[GroupStoreData] = {
+    try {
+      val reader = CSVReader.open(new File(diskStorePath))
+      val results = reader.allWithHeaders
+      reader.close
+      val (groupData,information) = results.flatMap(m => {
+        for {
+          member <- m.get(memberName)
+          groupType <- m.get(groupTypeName)
+          group <- m.get(groupName)
+          attr <- m.get(attributeValue)
+        } yield {
+          (member,attr,groupType,group)
+        }
+      }).partition(_._3 != PersonalInformation.personalInformation)
+        
+      val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1,t._2.map(i => (i._3,i._4))))
+      val membersForGroups = groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
+      val infoForMembers = information.groupBy(_._1).map(t => (t._1,t._2.map(i => (i._4,i._2))))
+      Some(GroupStoreData(groupsForMembers,membersForGroups,infoForMembers))
+    } catch {
+      case e:Exception => {
+        None
+      }
+    }
+  }
+}
+
+// original stuff
+
 class SelfGroupsProvider extends GroupsProvider {
   override def getGroupsFor(username:String) = List(("ou",username))
 }
 
-abstract class PerUserFlatFileGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[Map[String,List[Tuple2[String,String]]]](path,refreshPeriod) {
-  override def startingValue = Map.empty[String,List[Tuple2[String,String]]]
-  override protected def parseStore(username:String,store:Map[String,List[Tuple2[String,String]]]):List[Tuple2[String,String]] = store.get(username).getOrElse(Nil)
-}
-abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[T](refreshPeriod) { 
-  override def shouldCheck = {
-    val newCheck = new java.io.File(path).lastModified()
-    newCheck > lastModified
-  }
-}
-
-class CachingGroupsProvider(gp:GroupsProvider) extends GroupsProvider {
-
-}
-
-class PeriodicallyCheckGroupsProvider(gp:GroupsProvider) extends GroupsProvider {
-
-}
 
 abstract class PeriodicallyRefreshingGroupsProvider[T](refreshPeriod:TimeSpan) extends GroupsProvider { 
   protected val timespan = refreshPeriod
@@ -170,6 +251,19 @@ abstract class PeriodicallyRefreshingGroupsProvider[T](refreshPeriod:TimeSpan) e
   protected def parseStore(username:String,store:T):List[Tuple2[String,String]] 
   override def getGroupsFor(username:String):List[Tuple2[String,String]] = parseStore(username,lastCache)
 }
+
+abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[T](refreshPeriod) { 
+  override def shouldCheck = {
+    val newCheck = new java.io.File(path).lastModified()
+    newCheck > lastModified
+  }
+}
+
+abstract class PerUserFlatFileGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[Map[String,List[Tuple2[String,String]]]](path,refreshPeriod) {
+  override def startingValue = Map.empty[String,List[Tuple2[String,String]]]
+  override protected def parseStore(username:String,store:Map[String,List[Tuple2[String,String]]]):List[Tuple2[String,String]] = store.get(username).getOrElse(Nil)
+}
+
 class GlobalOverridesGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[List[Tuple2[String,String]]](path,refreshPeriod) with GroupsProvider with Logger {
   info("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override protected def startingValue = Nil
@@ -184,24 +278,6 @@ class GlobalOverridesGroupsProvider(path:String,refreshPeriod:TimeSpan) extends 
         case _ => {}
       }
     })
-    println("loaded groupData for %s: %s".format(path,rawData))
-    rawData
-  }
-}
-
-class SpecificOverridesGroupsProvider(path:String,refreshPeriod:TimeSpan) extends PerUserFlatFileGroupsProvider(path,refreshPeriod) with Logger {
-  info("created new specificGroupsProvider(%s,%s)".format(path,refreshPeriod))
-  override def actuallyFetchGroups:Map[String,List[Tuple2[String,String]]] = {
-    var rawData = Map.empty[String,List[Tuple2[String,String]]]
-    Source.fromFile(path).getLines.foreach(line => {
-      line.split("\t") match {
-        case Array(username,groupType,groupKey) => {
-          rawData = rawData.updated(username,(List((groupType,groupKey)) ::: rawData.get(username).toList.flatten).distinct)
-        }
-        case _ => {}
-      }
-    })
-    println("loaded groupData for %s: %s".format(path,rawData))
     rawData
   }
 }

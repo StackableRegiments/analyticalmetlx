@@ -441,7 +441,7 @@ object Http{
     schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory,80))
     schemeRegistry
   }
-  private def getConnectionManager = {
+  def getConnectionManager = {
     val connMgr = new ThreadSafeClientConnManager(getSchemeRegistry)
     connMgr.setDefaultMaxPerRoute(500)
     connMgr.setMaxTotal(1000)
