@@ -75,68 +75,18 @@ case class D2LSection(
   Description:String, //richtext
   Enrollments:List[Long]
 )
- 
-/*
-
-class PeriodicD2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,refreshPeriod:TimeSpan,diskStorePath:String) extends GroupsProvider {
-  info("created new D2LGroupsProvider for %s (every %s)".format(d2lBaseUrl,refreshPeriod))
-  
-  import com.github.tototoshi.csv._
-  import java.io._
-  
-  protected val groupName = "GROUP"
-  protected val groupTypeName = "TYPE"
-  protected val memberName = "MEMBER"
-
-  protected val startingValue = {
-    if (new File(diskStorePath).exists()) {
-      Some(readFromDisk)
-    } else {
-      None
-    }
-  }
-  protected def storeToDisk(c:Map[String,List[Tuple2[String,String]]]):Unit = {
-    val writer = CSVWriter.open(new File(diskStorePath))
-    writer.writeAll(List(memberName,groupTypeName,groupName) :: c.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._1,g._2))))
-    writer.close
-  }
-  protected def readFromDisk:Map[String,List[Tuple2[String,String]]] = {
-    val reader = CSVReader.open(new File(diskStorePath))
-    val results = reader.allWithHeaders
-    reader.close
-    results.flatMap(m => {
-      for {
-        member <- m.get(memberName)
-        groupType <- m.get(groupTypeName)
-        group <- m.get(groupName)
-      } yield {
-        (member,(groupType,group))
-      }
-    }).groupBy(_._1).map(t => (t._1,t._2.map(_._2)))
-  }
-  protected var lastCache:Map[String,List[Tuple2[String,String]]] = startingValue.getOrElse(Map.empty[String,List[Tuple2[String,String]]])
-  protected val cache = new PeriodicallyRefreshingVar[Unit](refreshPeriod,() => {
-    val provider = new D2LGroupsProvider(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion)
-    lastCache = provider.fetchGroups
-    storeToDisk(lastCache)
-    println("loaded GroupData for: %s".format(lastCache))
-  },startingValue.map(i => {}))
-  override def getGroupsFor(username:String):List[Tuple2[String,String]] = lastCache.get(username).getOrElse(Nil)
-}
-*/
 
 class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends GroupStoreProvider {
-
   protected val httpConnectionTimeout = 10 // 10 seconds
   protected val httpReadTimeout = 60 * 1000 // 60 seconds
-  val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
+  protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
     override val connectionTimeout = httpConnectionTimeout
     override val readTimeout = httpReadTimeout
   }
 
   protected implicit def formats = net.liftweb.json.DefaultFormats
 
-  val bookMarkTag = "bookmark"
+  protected val bookMarkTag = "bookmark"
 
   protected def fetchListFromD2L[T](url:java.net.URI)(implicit m:Manifest[T]):List[T] = {
     try {
@@ -208,12 +158,12 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     }
   }
 
-  lazy val rawData:List[Tuple4[String,String,String,String]] = {
+  override def getData:GroupStoreData = {
     val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,d2lBaseUrl)
     val userContext = appContext.createUserContext(userId,userKey)
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
     println("courses found: %s".format(courses.length))
-    val remoteDataSet:List[Tuple4[String,String,String,String]] = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => { 
+    val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => { 
       println("OU: %s (%s) %s".format(orgUnit.Name,orgUnit.Code, orgUnit.Type))
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       val combinedSet:List[() => List[Tuple4[String,String,String,String]]] = List(
@@ -270,12 +220,10 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
         }
       )
       parFlatMap[() => List[Tuple4[String,String,String,String]],Tuple4[String,String,String,String]](combinedSet,f => f(),3,"members_sections_groups")
-    },16,"ou")
-    remoteDataSet
+    },16,"ou").partition(_._3 != PersonalInformation)
+    val groupsByMember:Map[String,List[Tuple2[String,String]]] = groupData.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._3,m._4))))
+    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_._4).map(t => (t._1,t._2.distinct.map(_._1)))
+    val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._4,m._2))))
+    GroupStoreData(groupsByMember,membersByGroup,personalDetails)
   }
-  protected lazy val groupData:Map[String,List[Tuple2[String,String]]] = rawData.filterNot(_._3 == PersonalInformation.personalInformation).groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._3,m._4))))
-  protected lazy val members:Map[String,List[String]] = rawData.filterNot(_._3 == PersonalInformation.personalInformation).groupBy(_._4).map(t => (t._1,t._2.distinct.map(_._1)))
-  protected lazy val personalDetails:Map[String,List[Tuple2[String,String]]] = rawData.filter(_._3 == PersonalInformation.personalInformation).groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._4,m._2))))
-
-  override def getData:GroupStoreData = GroupStoreData(groupData,members,personalDetails)
 }
