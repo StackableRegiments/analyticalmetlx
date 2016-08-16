@@ -350,10 +350,10 @@ var HealthCheckViewer = (function(){
     var summarizeHealth = function(data){
         var health = 10;
         if(data.latency){
-            health -= Math.min(5,data.latency.recent / 100);
+            health -= Math.min(8,data.latency.recent / 100);
         }
         if(data.render){
-            health -= Math.min(5,data.render.recent / 20);
+            health -= Math.min(8,data.render.recent / 20);
         }
         $("#healthStatus").prop({
             max:10,
