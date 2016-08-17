@@ -338,7 +338,6 @@ object Importer extends Logger {
     val importId = nextFuncName
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {
-//      val conv = config.createConversation(title,author);
       val now = new java.util.Date()
       val conv = Conversation.empty.copy(title = title, author = author,lastAccessed = now.getTime,jid = 0)  
       onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("created conversation",2,2)),None))
@@ -363,7 +362,7 @@ object Importer extends Logger {
       case e:Exception => {
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing conversation",2,4)),Some(ImportProgress("parse failed",1,1)),Some(Left(e))))
         error("exception in foreignConversationImport",e)
-        throw e//Empty
+        throw e
       }
     }
   }
@@ -393,7 +392,6 @@ object Importer extends Logger {
         onUpdate(ImportDescription(importId,fakeConversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("failed to import content",1,1)),Some(Left(e))))
         error("exception in foreignConversationImport",e)
         throw e
-        //Empty
       }
     }
   }

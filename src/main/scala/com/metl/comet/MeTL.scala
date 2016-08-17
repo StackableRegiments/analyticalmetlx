@@ -335,7 +335,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
         trace("received importDescription: %s".format(id))
         if (imports.exists(_.id == id.id)){
           imports = imports.map{
-            case i:ImportDescription if (i.id == id.id && i.timestamp.getTime() < id.timestamp.getTime()) => id
+            case i:ImportDescription if (i.id == id.id && (i.timestamp.getTime() < id.timestamp.getTime() || id.result.isDefined)) => id
             case other => other
           }
         } else {
@@ -532,7 +532,10 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     val resultantRender:RenderOut = conversation.map(conv => {
       shouldModifyConversation(conv) match {
         case true => {
-          val innerResult:RenderOut = (".editConversationContainer *" #> {
+          val innerResult:RenderOut = (
+            ".backToConversations [href]" #> conversationSearch() &
+            ".joinConversation [href]" #> boardFor(conv.jid) &
+            ".editConversationContainer *" #> {
             ".currentConversationVar *" #> conversation.map(conv => {
               JsCrVar("currentConversation", serializer.fromConversation(conv))
             }) &
@@ -623,12 +626,16 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
           innerResult
         }
         case _ => {
-          val innerResult:RenderOut = ".editConversationContainer" #> Text("you are not permitted to edit this conversation")
+          val innerResult:RenderOut = 
+            ".backToConversations [href]" #> conversationSearch() &
+            ".editConversationContainer" #> Text("you are not permitted to edit this conversation")
           innerResult
         }
       }
     }).getOrElse({
-      val innerResult:RenderOut = ".editConversationContainer" #> Text("no conversation selected")
+      val innerResult:RenderOut = 
+        ".backToConversations [href]" #> conversationSearch() &
+        ".editConversationContainer" #> Text("no conversation selected")
       innerResult
     })
     resultantRender
