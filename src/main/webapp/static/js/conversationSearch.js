@@ -154,7 +154,12 @@ var Conversations = (function(){
             },
             pageLoading:false,
             fields: [
-                {name:"title",type:"text",title:"Title",readOnly:true},
+                { name:"title", type:"text", title:"Title", readOnly:true, itemTemplate:function(title,conv){
+									if ("newConversation" in conv && conv.newConversation == true){
+										return newTag(title);
+									}
+									return title;
+								}},
                 //{name:"jid",type:"number",title:"Id",readOnly:true,width:80},
                 {name:"creation",type:"dateField",title:"Created"},
                 //{name:"lastAccessed",type:"dateField",title:"Last Accessed"},
@@ -163,11 +168,10 @@ var Conversations = (function(){
                 {name:"edit",type:"editConversationField",title:"Edit",sorting:false,width:30,css:"gridAction"}
             ]
         });
-	conversationsDataGrid.jsGrid("sort",{
-	    field:"creation",
-	    order:"desc"
-	});
-
+				conversationsDataGrid.jsGrid("sort",{
+						field:"creation",
+						order:"desc"
+				});
         $('#activeImportsListing').hide();
         $("#importConversationInputElementContainer").hide();
         $("#showImportConversationWorkflow").click(function(){
@@ -236,6 +240,19 @@ var Conversations = (function(){
         })));
     };
 
+		var newTag = function(title){
+			var tag = $("<span/>");
+			tag.append($("<span/>",{
+				class:"newConversation",
+				text: "new"		 
+			}));
+			tag.append($("<span/>",{
+				html:title
+			}));
+			console.log("newTag:",tag.html().toString());
+			return tag;
+		};
+
     var reRender = function(){
 			var mutatedImports = _.filter(_.map(currentImports,function(cid){
 				if ("result" in cid && "a" in cid.result){
@@ -244,6 +261,7 @@ var Conversations = (function(){
 						title:sprintf("%s - %s - %s","import failure",cid.name,cid.a),
 						author:cid.author,
 						jid:cid.id,				
+						newConversation:true,
 						creation:new Date().getTime(),				
 						overallProgress:cid.overallProgress,
 						stageProgress:cid.stageProgress
@@ -254,6 +272,7 @@ var Conversations = (function(){
 						conv.creation = conv.created;
 						conv.created = new Date(conv.creation);
 					};
+					conv.newConversation = true;
 					return conv;
 				} else {
 					return {
@@ -261,6 +280,7 @@ var Conversations = (function(){
 						title:cid.name,
 						author:cid.author,
 						jid:cid.id,				
+						newConversation:true,
 						creation:new Date().getTime(),				
 						overallProgress:cid.overallProgress,
 						stageProgress:cid.stageProgress
@@ -297,6 +317,7 @@ var Conversations = (function(){
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.map(currentSearchResults,function(conv){
             if (conv.jid == details.jid){
+								details.newConversation = conv.newConversation;
                 return details;
             } else {
                 return conv;
@@ -309,6 +330,7 @@ var Conversations = (function(){
         reRender();
     };
     var receiveNewConversationDetailsFunc = function(details){
+				details.newConversation = true;
         currentSearchResults.push(details);
         reRender();
     };
