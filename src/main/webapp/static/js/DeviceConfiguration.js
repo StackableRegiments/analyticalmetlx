@@ -224,6 +224,7 @@ var DeviceConfiguration = (function(){
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
             var height = deviceDimensions.height;
+	    console.log(width,height);
 
             var performRemeasure = function(){
                 if (showHeader == true){
@@ -256,6 +257,7 @@ var DeviceConfiguration = (function(){
                 thumbs.height(DeviceConfiguration.preferredSizes.thumbColumn.height);
 
                 var bwidth = boardContainer.width();
+		console.log("widths:",boardWidth,bwidth);
                 var bheight = boardContainer.height();
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
@@ -288,6 +290,8 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
+		boardContainer.width(bwidth);
+		boardContainer.height(bheight);
                 boardContext.canvas.width = bwidth;
                 boardContext.canvas.height = bheight;
                 boardContext.width = bwidth;

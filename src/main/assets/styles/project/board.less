@@ -3,11 +3,11 @@
 }
 @media(max-width:480px){
     #optionBlocks{
-	flex-wrap:wrap-reverse;
-	margin:0 1em !important;
+        flex-wrap:wrap-reverse;
+        margin:0 1em !important;
     }
     .indent{
-	margin:0 !important;
+        margin:0 !important;
     }
 }
 html{
@@ -169,6 +169,13 @@ input[type=submit]{
 }
 .voting-block {
     background-color: @body-bg;
+}
+td.conversationSharing{
+    display:flex;
+    flex-wrap:wrap;
+    .conversationSharingChoiceContainer{
+	margin:0 1em;
+    }
 }
 #conversationSearchBoxContainer input[type=text]{
     width:100%;
