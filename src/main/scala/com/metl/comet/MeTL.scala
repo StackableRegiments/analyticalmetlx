@@ -335,7 +335,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
         trace("received importDescription: %s".format(id))
         if (imports.exists(_.id == id.id)){
           imports = imports.map{
-            case i:ImportDescription if (i.id == id.id && i.timestamp.getTime() < id.timestamp.getTime()) => id
+            case i:ImportDescription if (i.id == id.id && (i.timestamp.getTime() < id.timestamp.getTime() || id.result.isDefined)) => id
             case other => other
           }
         } else {

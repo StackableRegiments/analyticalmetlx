@@ -14,12 +14,16 @@ var Conversations = (function(){
     var conversationsDataGrid = undefined;
 
     var onlyMyConversations = false;
+		var dataGridItems = [];
 
     $(function(){
         var DateField = function(config){
             jsGrid.Field.call(this,config);
         };
         var EditConversationField = function(config){
+            jsGrid.Field.call(this,config);
+        };
+        var ConversationSharingField = function(config){
             jsGrid.Field.call(this,config);
         };
         var JoinConversationField = function(config){
@@ -47,6 +51,18 @@ var Conversations = (function(){
                 return 0;
             },
             itemTemplate: function(cell,details){
+							if ("importing" in details){
+								var n = details.stageProgress.numerator;
+								var d = details.stageProgress.denominator;
+								var m = details.stageProgress.name;	
+								return $("<div/>").append($("<progress/>",{
+									value:n,
+									max:d,
+									text:sprintf("%s out of %s",n,d)
+								})).append($("<div/>",{
+									text:m
+								}));
+							} else {
                 if (shouldModifyConversation(details)){
                     return $("<a/>",{
                         href:sprintf("/editConversation?conversationJid=%s",details.jid),
@@ -55,21 +71,32 @@ var Conversations = (function(){
                 } else {
                     return "";
                 }
+							}
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
             insertValue: function(){return ""},
             editValue: function(){return ""}
         });
-        JoinConversationField.prototype = new jsGrid.Field({
+        ConversationSharingField.prototype = new jsGrid.Field({
             sorter: function(a,b){
                 return 0;
             },
             itemTemplate: function(cell,details){
-                return $("<a/>",{
-                    href:sprintf("/board?conversationJid=%s",details.jid),
-                    text:"Join"
-                });
+							if ("importing" in details){
+								var n = details.overallProgress.numerator;
+								var d = details.overallProgress.denominator;
+								var m = details.overallProgress.name;	
+								return $("<div/>").append($("<progress/>",{
+									value:n,
+									max:d,
+									text:sprintf("%s out of %s",n,d)
+								})).append($("<div/>",{
+									text:m
+								}));
+							} else {
+								return cell;
+							}
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
@@ -81,6 +108,7 @@ var Conversations = (function(){
         jsGrid.fields.dateField = DateField;
         jsGrid.fields.editConversationField = EditConversationField;
         jsGrid.fields.joinConversationField = JoinConversationField;
+        jsGrid.fields.conversationSharingField = ConversationSharingField;
 
         conversationsDataGrid = $("#conversationsDataGrid");
 
@@ -96,14 +124,14 @@ var Conversations = (function(){
             //                          pageButtonCount:5,
             noDataContent: "No conversations match your query",
             rowClick:function(obj){
-                if ("jid" in obj.item){
+                if ("jid" in obj.item && !("importing" in obj.item)){
                     window.location.href = sprintf("/board?conversationJid=%s&unique=true",obj.item.jid);
                 }
             },
             controller: {
                 loadData: function(filter){
                     if ("sortField" in filter){
-                        var sorted = _.sortBy(currentSearchResults,function(a){
+                        var sorted = _.sortBy(dataGridItems,function(a){
                             return a[filter.sortField];
                         });
                         if(onlyMyConversations){
@@ -116,7 +144,7 @@ var Conversations = (function(){
                         }
                         return sorted;
                     } else {
-                        return currentSearchResults;
+                        return dataGridItems;
                     }
                 }/*,
                   insertItem: $.noop,
@@ -131,7 +159,7 @@ var Conversations = (function(){
                 {name:"creation",type:"dateField",title:"Created"},
                 //{name:"lastAccessed",type:"dateField",title:"Last Accessed"},
                 {name:"author",type:"text",title:"Author",readOnly:true},
-                {name:"subject",type:"text",title:"Sharing",readOnly:true},
+                {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true},
                 {name:"edit",type:"editConversationField",title:"Edit",sorting:false,width:30,css:"gridAction"}
             ]
         });
@@ -204,56 +232,44 @@ var Conversations = (function(){
     };
     var shouldDisplayConversation = function(details){
         return (details.subject != "deleted" && (details.author == username || _.some(userGroups,function(g){
-            return g.toLowerCase().trim() == details.subject.toLowerCase().trim();
+            return g.value.toLowerCase().trim() == details.subject.toLowerCase().trim();
         })));
     };
-    var constructConversation = function(details){
-        var rootElem = conversationTemplate.clone();
-        rootElem.find(".conversationAnchor").attr("href",sprintf("/board?conversationJid=%s",details.jid));
-        rootElem.find(".conversationTitle").text(details.title);
-        rootElem.find(".conversationAuthor").text(details.author);
-        rootElem.find(".conversationJid").text(details.jid);
-        if (shouldModifyConversation(details)){
-            rootElem.find(".editConversationLink").attr("href",sprintf("/editConversation?conversationJid=%s",details.jid));
-        } else {
-            rootElem.find(".conversationEditingContainer").remove();
-        };
-        return rootElem;
-    };
-    var constructImport = function(importDesc){
-        var rootElem = importTemplate.clone();
-        rootElem.find(".importId").text(importDesc.id);
-        rootElem.find(".importName").text(importDesc.name);
-        rootElem.find(".importAuthor").text(importDesc.author);
-        var impProgContainer = rootElem.find(".importProgressContainer");
-        var impResContainer = rootElem.find(".importResultContainer");
-        if ("result" in importDesc){
-            if ("a" in importDesc.result){
-                // Left(e)
-                impResContainer.find(".importError").text(importDesc.a.toString());
-                impResContainer.find(".importSuccess").remove();
-                impProgContainer.remove();
-            } else if ("b" in importDesc.result){
-                // Right(conv)
-                impResContainer.find(".importSuccess").attr("href",sprintf("/board?conversationJid=%s",importDesc.result.b.jid));
-                impResContainer.find(".importError").remove();
-                impProgContainer.remove();
-            }
-        } else {
-            // still importing
-            var ovProg = rootElem.find(".importOverallProgressContainer");
-            ovProg.find(".importProgressDescriptor").text(importDesc.overallProgress.name);
-            ovProg.find(".importProgressProgressBar").css({"width":sprintf("%s%%",(importDesc.overallProgress.numerator / importDesc.overallProgress) * 100)});
-            var stgProg = rootElem.find(".importStageProgressContainer");
-            stgProg.find(".importProgressDescriptor").text(importDesc.stageProgress.name);
-            stgProg.find(".importProgressProgressBar").css({"width":sprintf("%s%%",(importDesc.stageProgress.numerator / importDesc.stageProgress) * 100)});
-            impResContainer.remove();
-        }
-        return rootElem;
-    };
-
 
     var reRender = function(){
+			var mutatedImports = _.filter(_.map(currentImports,function(cid){
+				if ("result" in cid && "a" in cid.result){
+					return {
+						importing:true,
+						title:sprintf("%s - %s - %s","import failure",cid.name,cid.a),
+						author:cid.author,
+						jid:cid.id,				
+						creation:new Date().getTime(),				
+						overallProgress:cid.overallProgress,
+						stageProgress:cid.stageProgress
+					};
+				} else if ("result" in cid && "b" in cid.result){
+					var conv = cid.result.b
+					if (!("creation" in conv) && "created" in conv && _.isNumber(conv.created)){
+						conv.creation = conv.created;
+						conv.created = new Date(conv.creation);
+					};
+					return conv;
+				} else {
+					return {
+						importing:true,
+						title:cid.name,
+						author:cid.author,
+						jid:cid.id,				
+						creation:new Date().getTime(),				
+						overallProgress:cid.overallProgress,
+						stageProgress:cid.stageProgress
+					};
+				}
+			}),function(cid){
+				return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
+			});
+			dataGridItems = _.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation));
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");
@@ -261,10 +277,7 @@ var Conversations = (function(){
                 conversationsDataGrid.jsGrid("sort",sortObj);
             }
         }
-        console.log("reRender:",currentQuery,currentSearchResults,currentImports);
-        var imports = _.map(currentImports,constructImport);
-        importListing.html(imports);
-        var convs = currentSearchResults;
+        var convs = dataGridItems;//currentSearchResults;
         var convCount = sprintf("%s result%s",convs.length,convs.length == 1 ? "" : "s");
         $("#conversationListing").find(".aggregateContainer").find(".count").text(convCount);
     };
@@ -300,13 +313,11 @@ var Conversations = (function(){
         reRender();
     };
     var receiveImportDescriptionFunc = function(importDesc){
-        console.log("importDesc",importDesc);
         currentImports = _.filter(currentImports,function(id){return id.id != importDesc.id;});
         currentImports.push(importDesc);
         reRender();
     };
     var receiveImportDescriptionsFunc = function(importDescs){
-        console.log("importDescs",importDescs);
         currentImports = importDescs;
         reRender();
     };
@@ -342,7 +353,6 @@ var Conversations = (function(){
 })();
 
 function serverResponse(response){ //invoked by Lift
-    console.log("serverResponse:",response);
 }
 function receiveUsername(username){ //invoked by Lift
     Conversations.receiveUsername(username);
