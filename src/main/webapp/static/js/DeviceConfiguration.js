@@ -265,7 +265,8 @@ var DeviceConfiguration = (function(){
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
                     if(showKeyboard){
-                        bheight -= DeviceConfiguration.preferredSizes.keyboard;
+			var keyboardSize = (currentDevice == "iPad"? DeviceConfiguration.preferredSizes.keyboard.iphone : DeviceConfiguration.preferredSizes.keyboard.ipad);
+                        bheight -= bwidth;
                         //Remove three bars including gutters
                         bheight += (DeviceConfiguration.preferredSizes.handles + 2) * 3;
                     }
@@ -460,7 +461,7 @@ var DeviceConfiguration = (function(){
             actOnCurrentDevice();
         },
         hasOnScreenKeyboard:function(){
-            return getDeviceDimensions().width <= 640;
+            return getDeviceDimensions().width <= 640 || currentDevice == "iPad";
         },
         preferredSizes:{
             handles:50,
@@ -469,7 +470,10 @@ var DeviceConfiguration = (function(){
                 height:75
             },
             toolsColumn:100,
-            keyboard:236
+            keyboard:{
+		iphone:236,
+		ipad:352
+	    }
         }
     };
 })();
