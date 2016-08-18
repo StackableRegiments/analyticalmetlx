@@ -53,7 +53,17 @@
     .conversationSlidesContainer th, .conversationSlidesContainer td {
     text-align:center;
     }
+    #deleteConfirm{
+    display:none;
+    }
   </style>
+  <script>
+    $(function(){
+    $("#deleteChallenge").click(function(){
+    $("#deleteConfirm").show();
+    });
+    });
+  </script>
   <div class="lift:Metl.specificEditConversation indent directlyOnBackground">
     <a class="backToConversations">Back to search</a>
     <a class="joinConversation ml">Join conversation</a>
@@ -98,24 +108,16 @@
       </table>
       <h2>Conversation level actions</h2>
       <div class="indent">
-        <div>
+        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="deleteChallenge"><div class="icon-txt">Archive</div></button>
+        <div id="deleteConfirm">
+          <div>Are you sure you want to archive this conversation?</div>
+          <div>It could contain content important to your students.</div>
           <span class="conversationDelete"></span>
         </div>
         <div>
           <span class="conversationDuplicate"></span>
         </div>
       </div>
-      <h2>Conversation bookmarks</h2>
-      <table class="indent">
-        <tr>
-          <th>Join Conversation: </th>
-          <td class="conversationFollowLink"></td>
-        </tr>
-        <tr>
-          <th>Project Conversation: </th>
-          <td class="conversationProjectorLink"></td>
-        </tr>
-      </table>
       <h2 class="slideActions">Page level actions</h2>
       <span id="reorderInProgress">
         <span>
@@ -128,7 +130,9 @@
       <table class="conversationSlidesContainer indent">
         <thead>
           <tr>
-            <th colspan="3">Sort</th>
+            <th>Reorder</th>
+            <th>Move down</th>
+            <th>Move up</th>
             <th>Id</th>
             <th>Index</th>
             <th>Join</th>

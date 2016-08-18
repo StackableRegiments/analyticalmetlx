@@ -278,7 +278,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
-  
+
   private lazy val RECEIVE_USERNAME = "receiveUsername"
   private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
   private lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
@@ -321,11 +321,11 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     super.localSetup
   }
   override def render = OnLoad(
-    Call(RECEIVE_USERNAME,JString(username)) & 
-    Call(RECEIVE_USER_GROUPS,getUserGroups) & 
-    Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) & 
-    Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) & 
-    Call(RECEIVE_QUERY,JString(query.getOrElse("")))
+    Call(RECEIVE_USERNAME,JString(username)) &
+      Call(RECEIVE_USER_GROUPS,getUserGroups) &
+      Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) &
+      Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) &
+      Call(RECEIVE_QUERY,JString(query.getOrElse("")))
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
 
@@ -367,7 +367,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
- 
+
   private lazy val RECEIVE_USERNAME = "receiveUsername"
   private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
   private lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
@@ -470,7 +470,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
         //listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
         listing = newConv :: listing.filterNot(_.jid == newConv.jid)//query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-        reRender
+          reRender
       } else if (listing.exists(_.jid == newConv.jid)){
         listing = listing.filterNot(_.jid == newConv.jid)
         reRender
@@ -534,108 +534,108 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         case true => {
           val innerResult:RenderOut = (
             ".backToConversations [href]" #> conversationSearch() &
-            ".joinConversation [href]" #> boardFor(conv.jid) &
-            ".editConversationContainer *" #> {
-            ".currentConversationVar *" #> conversation.map(conv => {
-              JsCrVar("currentConversation", serializer.fromConversation(conv))
-            }) &
-            ".conversationTitle *" #> ajaxText(conv.title,(renamed:String) => {
-              serverConfig.renameConversation(conv.jid.toString,renamed)
-              Noop
-            }) &
-            ".conversationJid *" #> Text(conv.jid.toString) &
-            ".conversationAuthor *" #> Text(conv.author) &
-            ".conversationSubject *" #> Text(conv.subject) &
-            ".conversationTag *" #> Text(conv.tag) &
-            ".conversationCreated *" #> Text(conv.created.toString) &
-            ".conversationLastModified *" #> Text(new Date(conv.lastAccessed).toString) &
-            {
-              val choiceHolder = ajaxRadio((conv.subject.toLowerCase :: Globals.getUserGroups.map(_._2.toLowerCase)).distinct,Full(conv.subject.toLowerCase),(newSubject:String) => {
-                serverConfig.updateSubjectOfConversation(conv.jid.toString,newSubject.toLowerCase)
-                Noop
-              })
-              ".conversationSharing *" #> {(n:NodeSeq) => {
-                choiceHolder.items.sortWith((a,b) => a.key < b.key).foldLeft(NodeSeq.Empty:NodeSeq)((acc,item) => acc ++ {
-                  val newId = nextFuncName
-                  val inputElem = item.xhtml
-                  val labelName = item.key
-                    (
-                      ".conversationSharingChoiceLabel [for]" #> newId &
-                        ".conversationSharingChoiceLabel *" #> Text(labelName) &
-                        ".conversationSharingChoiceInputElement [id]" #> newId &
-                        ".conversationSharingChoiceInputElement [onclick]" #> (inputElem \ "@onclick").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [type]" #> (inputElem \ "@type").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [name]" #> (inputElem \ "@name").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [checked]" #> (inputElem \ "@checked").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [value]" #> (inputElem \ "@value").headOption.map(_.text)
-                    ).apply(n)
-                })
-              }}
-            }&
-            ".conversationDelete *" #> ajaxButton("archive",() => {
-              val result = serverConfig.deleteConversation(conv.jid.toString)
-              warn("deleting conversation: %s".format(result))
-              Noop
-            }) &
-            ".conversationDuplicate *" #> ajaxButton("duplicate",() => {
-              val result = StatelessHtml.duplicateConversationInternal(username,conv.jid.toString)
-              warn("duplicating conversation: %s".format(result))
-              Noop
-            }) &
-            ".conversationFollowLink [href]" #> boardFor(conv.jid) &
-            ".conversationFollowLink *" #> Text(boardFor(conv.jid)) &
-            ".conversationProjectorLink [href]" #> projectorFor(conv.jid) &
-            ".conversationProjectorLink *" #> Text(projectorFor(conv.jid)) &
-            ".conversationSlidesContainer *" #> {
-              ".slideContainer" #> {
-                conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
-                  ".slideContainer [data-id]" #> slide.id.toString &
-                  ".slideContainer [data-index]" #> slide.index.toString &
-                  ".slideContainer *" #> {
-                    ".slideId *" #> Text(slide.id.toString) &
-                    ".slideIndex *" #> Text(slide.index.toString) &
-                    ".slideType *" #> Text(slide.slideType.toString) &
-                    ".slideThumbnail [src]" #> thumbnailFor(conv.jid,slide.id) &
-                    ".duplicateSlideButton *" #> {
-                      ajaxButton("duplicate slide",() => {
-                        val result = StatelessHtml.duplicateSlideInternal(username,slide.id.toString,conv.jid.toString)
-                        warn("duplicating slide: %s".format(result))
-                        Noop
-                      })
-                    } &
-                    ".addSlideAfterButton *" #> {
-                      ajaxButton("add slide after",() => {
-                        val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index + 1)
-                        warn("adding slide after: %s".format(result))
-                        Noop
-                      })
-                    } &
-                    ".addSlideBeforeButton *" #> {
-                      ajaxButton("add slide before",() => {
-                        val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index)
-                        warn("adding slide before: %s".format(result))
-                        Noop
-                      })
-                    } &
-                    ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+              ".joinConversation [href]" #> boardFor(conv.jid) &
+              ".editConversationContainer *" #> {
+                ".currentConversationVar *" #> conversation.map(conv => {
+                  JsCrVar("currentConversation", serializer.fromConversation(conv))
+                }) &
+                ".conversationTitle *" #> ajaxText(conv.title,(renamed:String) => {
+                  serverConfig.renameConversation(conv.jid.toString,renamed)
+                  Noop
+                }) &
+                ".conversationJid *" #> Text(conv.jid.toString) &
+                ".conversationAuthor *" #> Text(conv.author) &
+                ".conversationSubject *" #> Text(conv.subject) &
+                ".conversationTag *" #> Text(conv.tag) &
+                ".conversationCreated *" #> Text(conv.created.toString) &
+                ".conversationLastModified *" #> Text(new Date(conv.lastAccessed).toString) &
+                {
+                  val choiceHolder = ajaxRadio((conv.subject.toLowerCase :: Globals.getUserGroups.map(_._2.toLowerCase)).distinct,Full(conv.subject.toLowerCase),(newSubject:String) => {
+                    serverConfig.updateSubjectOfConversation(conv.jid.toString,newSubject.toLowerCase)
+                    Noop
+                  })
+                  ".conversationSharing *" #> {(n:NodeSeq) => {
+                    choiceHolder.items.sortWith((a,b) => a.key < b.key).foldLeft(NodeSeq.Empty:NodeSeq)((acc,item) => acc ++ {
+                      val newId = nextFuncName
+                      val inputElem = item.xhtml
+                      val labelName = item.key
+                        (
+                          ".conversationSharingChoiceLabel [for]" #> newId &
+                            ".conversationSharingChoiceLabel *" #> Text(labelName) &
+                            ".conversationSharingChoiceInputElement [id]" #> newId &
+                            ".conversationSharingChoiceInputElement [onclick]" #> (inputElem \ "@onclick").headOption.map(_.text) &
+                            ".conversationSharingChoiceInputElement [type]" #> (inputElem \ "@type").headOption.map(_.text) &
+                            ".conversationSharingChoiceInputElement [name]" #> (inputElem \ "@name").headOption.map(_.text) &
+                            ".conversationSharingChoiceInputElement [checked]" #> (inputElem \ "@checked").headOption.map(_.text) &
+                            ".conversationSharingChoiceInputElement [value]" #> (inputElem \ "@value").headOption.map(_.text)
+                        ).apply(n)
+                    })
+                  }}
+                }&
+                ".conversationDelete *" #> ajaxButton("Archive this conversation",() => {
+                  val result = serverConfig.deleteConversation(conv.jid.toString)
+                  warn("deleting conversation: %s".format(result))
+                  RedirectTo(noBoard);
+                }) &
+                ".conversationDuplicate *" #> ajaxButton("duplicate",() => {
+                  val result = StatelessHtml.duplicateConversationInternal(username,conv.jid.toString)
+                  warn("duplicating conversation: %s".format(result))
+                  Noop
+                }) &
+                ".conversationFollowLink [href]" #> boardFor(conv.jid) &
+                ".conversationFollowLink *" #> Text(boardFor(conv.jid)) &
+                ".conversationProjectorLink [href]" #> projectorFor(conv.jid) &
+                ".conversationProjectorLink *" #> Text(projectorFor(conv.jid)) &
+                ".conversationSlidesContainer *" #> {
+                  ".slideContainer" #> {
+                    conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
+                      ".slideContainer [data-id]" #> slide.id.toString &
+                      ".slideContainer [data-index]" #> slide.index.toString &
+                      ".slideContainer *" #> {
+                        ".slideId *" #> Text(slide.id.toString) &
+                        ".slideIndex *" #> Text(slide.index.toString) &
+                        ".slideType *" #> Text(slide.slideType.toString) &
+                        ".slideThumbnail [src]" #> thumbnailFor(conv.jid,slide.id) &
+                        ".duplicateSlideButton *" #> {
+                          ajaxButton("duplicate slide",() => {
+                            val result = StatelessHtml.duplicateSlideInternal(username,slide.id.toString,conv.jid.toString)
+                            warn("duplicating slide: %s".format(result))
+                            Noop
+                          })
+                        } &
+                        ".addSlideAfterButton *" #> {
+                          ajaxButton("add slide after",() => {
+                            val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index + 1)
+                            warn("adding slide after: %s".format(result))
+                            Noop
+                          })
+                        } &
+                        ".addSlideBeforeButton *" #> {
+                          ajaxButton("add slide before",() => {
+                            val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index)
+                            warn("adding slide before: %s".format(result))
+                            Noop
+                          })
+                        } &
+                        ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
+                      }
+                    })
                   }
-                })
-              }
-            }
-          })
+                }
+              })
           innerResult
         }
         case _ => {
-          val innerResult:RenderOut = 
+          val innerResult:RenderOut =
             ".backToConversations [href]" #> conversationSearch() &
-            ".editConversationContainer" #> Text("you are not permitted to edit this conversation")
+          ".editConversationContainer" #> Text("you are not permitted to edit this conversation")
           innerResult
         }
       }
     }).getOrElse({
-      val innerResult:RenderOut = 
+      val innerResult:RenderOut =
         ".backToConversations [href]" #> conversationSearch() &
-        ".editConversationContainer" #> Text("no conversation selected")
+      ".editConversationContainer" #> Text("no conversation selected")
       innerResult
     })
     resultantRender
@@ -841,18 +841,19 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunctionDefinition("requestDeleteConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      this ! SimpleMultipleButtonInteractableMessage("Delete conversation","Are you sure you would like to delete this conversation",
+      this ! SimpleMultipleButtonInteractableMessage("Archive conversation","Are you sure you would like to archive this conversation?  Have you considered whether students have important content on this conversation?",
         Map(
           "yes" -> {() => {
             if (shouldModifyConversation(c)){
               serverConfig.deleteConversation(c.jid.toString)
+              S.redirectTo("/conversationSearch")
               true
             } else {
               false
             }
           }},
           "no" -> {() => true}
-        ),Full(()=> this ! SpamMessage(Text("You are not permitted to delete this conversation"))),false,Full("conversations"))
+        ),Full(()=> this ! SpamMessage(Text("You are not permitted to archive this conversation"))),false,Full("conversations"))
       JNull
     },Empty),
     /*
@@ -1688,10 +1689,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           val privateAuthor = privTup._1
           if (username == privateAuthor || shouldModifyConversation()){
             val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,server) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
-            privTup._2.foreach(privStanza => {
-              trace("OUT TO PRIV -> %s".format(privStanza))
-              privRoom ! LocalToServerMeTLStanza(privStanza)
-            })
+              privTup._2.foreach(privStanza => {
+                trace("OUT TO PRIV -> %s".format(privStanza))
+                privRoom ! LocalToServerMeTLStanza(privStanza)
+              })
           }
         })
       }
