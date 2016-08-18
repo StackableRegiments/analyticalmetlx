@@ -572,7 +572,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
                 })
               }}
             }&
-            ".conversationDelete *" #> ajaxButton("delete",() => {
+            ".conversationDelete *" #> ajaxButton("archive",() => {
               val result = serverConfig.deleteConversation(conv.jid.toString)
               warn("deleting conversation: %s".format(result))
               Noop
