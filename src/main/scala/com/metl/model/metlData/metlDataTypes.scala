@@ -746,8 +746,8 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
               privateInks.filter(_.author == pa).map(i=>i.identity) ::: privateHighlighters.map(i => i.identity),
               privateTexts.filter(_.author == pa).map(i=>i.identity),
               privateMultiWordTexts.filter(_.author == pa).map(i=>i.identity),
-              privateVideos.filter(_.author == pa).map(i=>i.identity),
-              privateImages.filter(_.author == pa).map(i=>i.identity),Privacy.PRIVATE)
+              privateImages.filter(_.author == pa).map(i=>i.identity),
+              privateVideos.filter(_.author == pa).map(i=>i.identity),Privacy.PRIVATE)
             )
           )):_*)
           case _ => Map.empty[String,List[MeTLStanza]]
@@ -757,8 +757,8 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
             publicInks.map(i=>i.identity) ::: publicHighlighters.map(i => i.identity),
             publicTexts.map(i=>i.identity),
             publicMultiWordTexts.map(i=>i.identity),
-            publicVideos.map(i=>i.identity),
-            publicImages.map(i=>i.identity),Privacy.PUBLIC))
+            publicImages.map(i=>i.identity),
+            publicVideos.map(i=>i.identity),Privacy.PUBLIC))
           case _ => List.empty[MeTLStanza]
         }
         (pubDelta,privDeltas)
@@ -769,7 +769,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
   def isDirtierFor(other:MeTLCanvasContent, testPrivacy:Boolean = true):Boolean = other match {
     case i:MeTLInk => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && inkIds.contains(i.identity)
     case i:MeTLImage => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && imageIds.contains(i.identity)
-    case i:MeTLVideo => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && imageIds.contains(i.identity)
+    case i:MeTLVideo => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && videoIds.contains(i.identity)
     case i:MeTLText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && textIds.contains(i.identity)
     case i:MeTLMultiWordText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && multiWordTextIds.contains(i.identity)
     case _ => false

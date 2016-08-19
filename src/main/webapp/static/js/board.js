@@ -103,6 +103,7 @@ function batchTransform(){
         inkIds:[],
         textIds:[],
         multiWordTextIds:[],
+				videoIds:[],
         imageIds:[],
         xOrigin:0,
         yOrigin:0,
@@ -290,6 +291,7 @@ function actOnReceivedStanza(stanza){
     }
 }
 function transformReceived(transform){
+	console.log("transform received: ",transform);
     var op = "";
     var transformBounds = (function(){
         var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
@@ -520,8 +522,8 @@ function transformReceived(transform){
                 var internalY = video.y - totalBounds.y;
                 var offsetX = -(internalX - (internalX * transform.xScale));
                 var offsetY = -(internalY - (internalY * transform.yScale));
-                video.x = image.x + offsetX;
-                video.y = image.y + offsetY;
+                video.x = video.x + offsetX;
+                video.y = video.y + offsetY;
 
                 calculateVideoBounds(video);
                 transformBounds.incorporateBounds(video.bounds);

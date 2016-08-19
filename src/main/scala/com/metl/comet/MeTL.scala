@@ -939,10 +939,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val inks = pubHistory.getInks.filter(elem => inkIds.contains(elem.identity))
       val images = pubHistory.getImages.filter(elem => imageIds.contains(elem.identity))
       val texts = pubHistory.getTexts.filter(elem => textIds.contains(elem.identity))
+      val videos = pubHistory.getVideos.filter(elem => videoIds.contains(elem.identity))
       val multiWordTexts = pubHistory.getMultiWordTexts.filter(elem => multiWordTextIds.contains(elem.identity))
       val highlighters = pubHistory.getHighlighters.filter(elem => inkIds.contains(elem.identity))
 
-      val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts).map(_.author).distinct
+      val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts ::: videos).map(_.author).distinct
       val conv = serverConfig.detailsOfConversation(conversationJid)
       if (shouldModifyConversation(conv)){
         serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))

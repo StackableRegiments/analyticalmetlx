@@ -775,6 +775,7 @@ var Modes = (function(){
                         moved.inkIds = _.keys(Modes.select.selected.inks);
                         moved.textIds = _.keys(Modes.select.selected.texts);
                         moved.imageIds = _.keys(Modes.select.selected.images);
+                        moved.videoIds = _.keys(Modes.select.selected.videos);
                         moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(moved.multiWordTextIds,function(id){
                             Modes.text.echoesToDisregard[id] = true;
@@ -880,6 +881,7 @@ var Modes = (function(){
                         resized.inkIds = _.keys(Modes.select.selected.inks);
                         resized.textIds = _.keys(Modes.select.selected.texts);
                         resized.imageIds = _.keys(Modes.select.selected.images);
+                        resized.videoIds = _.keys(Modes.select.selected.videos);
                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(Modes.select.selected.multiWordTexts,function(text,id){
                             Modes.text.echoesToDisregard[id] = true;
@@ -2016,7 +2018,7 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
+                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -2223,7 +2225,7 @@ var Modes = (function(){
                                         }
                                     });
                                 }
-                                Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
+                                Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
                         if(Modes.select.dragging){
@@ -2358,6 +2360,9 @@ var Modes = (function(){
                                 /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
                                 var toggleCategory = function(category){
                                     $.each(intersected[category],function(id,item){
+																				if (!(category in Modes.select.selected)){
+																					Modes.select.selected[category] = [];
+																				}
                                         if(category in Modes.select.selected && id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
                                         } else {
