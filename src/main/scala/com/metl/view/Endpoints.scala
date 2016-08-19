@@ -237,6 +237,34 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case req@Req("videoProxy" :: jid :: id :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.videoProxy", {
+      val fis = new FileInputStream(new File("src/main/webapp/images/" + id)) //just faking it in for the moment
+      val size = file.length - 1
+      val start = 0L
+      val end = size
+      val (start,end) = {
+        (for {
+
+        } yield {
+
+        }).getOrElse((0L,size))
+      }
+      val headers = List(
+        ("Connection" -> "close")
+        ("Transfer-Encoding" -> "chunked"),
+        ("Content-Type" -> "video/mp4"),
+        ("Content-Range" -> "bytes %s-%s/%s".format(start,end,file.length.toString))
+      )
+      Full(StreamingResponse(
+        data = fis,
+        onEnd = fis.close,
+        size = size,
+        headers = headers,
+        cookies = Nil,
+        code = 206
+      ))
+    })
+
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"print")
     })

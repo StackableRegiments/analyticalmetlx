@@ -91,7 +91,9 @@ var renderVideoToCanvas = function(videoSrcFunc,canvas,x,y,w,h){
 			return false;
 		} else {
 			context.drawImage(v,x,y,w,h);
-			setTimeout(renderVideoFrame,refreshRate,v,x,y,w,h);
+			requestAnimationFrame(function(){
+				renderVideoFrame(v,x,y,w,h);
+			});
 		}
 	};
 	v[0].addEventListener("play",function(){
