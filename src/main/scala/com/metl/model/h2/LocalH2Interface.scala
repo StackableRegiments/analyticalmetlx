@@ -134,9 +134,11 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       case s:MeTLMultiWordText => Some(serializer.fromMeTLMultiWordText(s).room(jid))
       case s:MeTLText => Some(serializer.fromMeTLText(s).room(jid))
       case s:MeTLImage => Some(serializer.fromMeTLImage(s).room(jid))
+      case s:MeTLVideo => Some(serializer.fromMeTLVideo(s).room(jid))
       case s:MeTLDirtyInk => Some(serializer.fromMeTLDirtyInk(s).room(jid))
       case s:MeTLDirtyText => Some(serializer.fromMeTLDirtyText(s).room(jid))
       case s:MeTLDirtyImage => Some(serializer.fromMeTLDirtyImage(s).room(jid))
+      case s:MeTLDirtyVideo => Some(serializer.fromMeTLDirtyVideo(s).room(jid))
       case s:MeTLCommand => Some(serializer.fromMeTLCommand(s).room(jid))
       case s:MeTLQuiz => Some(serializer.fromMeTLQuiz(s).room(jid))
       case s:MeTLQuizResponse => Some(serializer.fromMeTLQuizResponse(s).room(jid))
@@ -173,9 +175,11 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       () => H2Text.findAll(By(H2Text.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLText(s))),
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
       () => H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLImage(s))).toList,
+      () => H2Video.findAll(By(H2Video.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideo(s))).toList,
       () => H2DirtyInk.findAll(By(H2DirtyInk.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyInk(s))),
       () => H2DirtyText.findAll(By(H2DirtyText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyText(s))),
       () => H2DirtyImage.findAll(By(H2DirtyImage.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyImage(s))),
+      () => H2DirtyVideo.findAll(By(H2DirtyVideo.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyVideo(s))),
       () => H2MoveDelta.findAll(By(H2MoveDelta.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMoveDelta(s))),
       () => H2Submission.findAll(By(H2Submission.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toSubmission(s))).toList,
       () => H2Quiz.findAll(By(H2Quiz.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLQuiz(s))).toList,

@@ -40,6 +40,9 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                 delete boardContent.texts[text.id];
             }
         });
+				$.each(boardContent.videos,function(i,video){
+					prerenderVideo(video);
+				});
         prerenderTextMark = Date.now();
         _.each(boardContent.multiWordTexts,function(text,i){
             var editor = Modes.text.editorFor(text).doc;
@@ -420,6 +423,9 @@ var round = function(n){
 function calculateImageBounds(image){
     image.bounds = [image.x,image.y,image.x + image.width,image.y + image.height];
 }
+function calculateVideoBounds(video){
+    video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
+}
 function calculateImageSource(image){
     var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
     return sprintf("/proxyImageUrl/%s?source=%s",slide,encodeURIComponent(image.source));
@@ -481,6 +487,33 @@ function prerenderImage(image) {
         context.globalAlpha = 1.0;
     }
     delete image.imageData;
+}
+function prerenderVideo(video){
+	if (!("video" in video)){
+		var vid = $("<video/>",{
+			src:sprintf("/videoProxy/%s/%s",video.slide,video.identity)
+		});
+		video.video = vid[0];
+		video.play = function(){
+			var paintVideoFunc = function(){
+				if (video.video.paused || video.video.ended){
+					return false;
+				} else {
+					requestAnimationFrame(function(){
+						blit();
+						paintVideoFunc();
+					});
+				}
+			}
+			video.video.addEventListener("play",function(){
+				paintVideoFunc();
+			},false);
+			video.video.play();
+		};
+	}
+	if (!("bounds" in video)){
+		calculateVideoBounds(video);
+	}
 }
 function prerenderText(text){
     var canvas = $("<canvas />")[0];
@@ -629,7 +662,17 @@ function render(content,hq,incCanvasContext,incViewBounds){
                         });
                     }
                 }
+								var renderVideos = function(videos){
+									if (videos){
+										$.each(videos,function(i,video){
+											if (intersectRect(video.bounds,viewBounds)){
+												drawVideo(video,canvasContext);
+											}
+										});
+									}
+								}
                 var renderImmediateContent = function(){
+										renderVideos(content.videos);
                     renderInks(content.highlighters);
                     highlightersRenderedMark = Date.now();
                     $.each(content.texts,function(i,text){

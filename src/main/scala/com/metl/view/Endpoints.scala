@@ -237,9 +237,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   import java.io._
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
-  val config = ServerConfiguration.default
   serve {
     case req@Req("videoProxy" :: slideJid :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
+      val config = ServerConfiguration.default
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
         video.videoBytes.map(bytes => {
           val fis = new ByteArrayInputStream(bytes) 
@@ -358,7 +358,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         slide <- r.param("slide");
         sess <- S.session
       } yield {
-        val c = config.detailsOfConversation(conversationJid)
+        val serverConfig = ServerConfiguration.default
+        val c = serverConfig.detailsOfConversation(conversationJid)
         debug("Forced to join conversation %s".format(conversationJid))
         if (c.slides.exists(s => slide.toLowerCase.trim == s.id.toString.toLowerCase.trim)){
           debug("Forced move to slide %s".format(slide))

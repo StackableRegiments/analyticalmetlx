@@ -1485,6 +1485,223 @@ var Modes = (function(){
                 }
             }
         })(),
+        video:(function(){
+            var noop = function(){};
+            var currentVideo = {};
+            var insertOptions = undefined;
+            var imageFileChoice = undefined;
+            var insertOptionsClose = undefined;
+            var resetImageUpload = function(){
+                insertOptions.hide();
+                $("#imageWorking").hide();
+                $("#imageFileChoice").show();
+                var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
+                if (imageForm != undefined){
+                    imageForm.reset();
+                }
+                imageFileChoice.unwrap();
+            };
+            var imageModes = (function(){
+                var keepUnder = function(threshold,incW,incH,quality){
+                    var w = incW;
+                    var h = incH;
+                    var currentTotal = w * h;
+                    while (currentTotal > threshold){
+                        w = w * 0.8;
+                        h = h * 0.8;
+                        currentTotal = w * h;
+                    };
+                    return {w:w,h:h,q:quality};
+                }
+                var modes = {
+                    "native":{
+                        resizeFunc:function(w,h){ return {w:w,h:h,q:1.0};},
+                        selector:"#imageInsertNative"
+                    },
+                    "optimized":{
+                        resizeFunc:function(w,h){ return keepUnder(1 * megaPixels,w,h,0.4);},
+                        selector:"#imageInsertOptimized"
+                    },
+                    "highDef":{
+                        resizeFunc:function(w,h){ return keepUnder(3 * megaPixels,w,h,0.8);},
+                        selector:"#imageInsertHighDef"
+                    }
+                }
+                var currentMode = modes.optimized;
+
+                var megaPixels = 1024 * 1024;
+                var redrawModeButtons = function(){
+                    _.forEach(modes,function(resizeMode){
+                        var el = $(resizeMode.selector);
+                        if (currentMode.selector == resizeMode.selector){
+                            el.addClass("activeBrush");
+                        } else {
+                            el.removeClass("activeBrush");
+                        }
+                    });
+                }
+                $(function(){
+                    _.forEach(modes,function(resizeMode){
+                        var el = $(resizeMode.selector);
+                        el.on("click",function(){
+                            currentMode = resizeMode;
+                            redrawModeButtons();
+                        });
+                    });
+                    redrawModeButtons();
+                });
+                return {
+                    "reapplyVisualStyle":redrawModeButtons,
+                    "changeMode":function(newMode){
+                        if (newMode in modes){
+                            currentMode = modes[newMode];
+                            redrawModeButtons();
+                        }
+                    },
+                    "getResizeFunction":function(){
+                        return currentMode.resizeFunc;
+                    }
+                }
+            })();
+            var clientSideProcessVideo = function(onComplete){
+                if (currentVideo == undefined || currentVideo.fileUpload == undefined || onComplete == undefined){
+                    return;
+                }
+								console.log("clientSideProcessVideo",currentVideo);
+                $("#imageWorking").show();
+                $("#imageFileChoice").hide();
+                var reader = new FileReader();
+                reader.onload = function(readerE){
+									console.log("readerOnLoad",readerE);
+                    var vid = $("<video/>");
+										var thisVid = vid[0];
+                    var originalSrc = readerE.target.result;
+                    var originalSize = originalSrc.length;
+                    thisVid.addEventListener("loadeddata",function(e){
+                        var width = thisVid.videoWidth;
+                        var height = thisVid.videoHeight;
+                        currentVideo.width = width;
+                        currentVideo.height = height;
+                        currentVideo.video = vid;
+												currentVideo.videoSrc = originalSrc;
+                        onComplete();
+                    },false);
+                    vid.append($("<source />",{
+											src:originalSrc,
+											type:"video/mp4"
+										}));
+										vid.load();
+                }
+                reader.readAsDataURL(currentVideo.fileUpload);
+            };
+            var sendVideoToServer = function(){
+                if (currentVideo.type == "imageDefinition"){
+                    WorkQueue.pause();
+                    var worldPos = {x:currentVideo.x,y:currentVideo.y};
+                    var screenPos= {x:currentVideo.screenX,y:currentVideo.screenY};
+                    var t = Date.now();
+                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var currentSlide = Conversations.getCurrentSlideJid();
+                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        success: function(e){
+													console.log("onSuccess:",e,currentVideo);
+                            var newIdentity = $(e).find("resourceUrl").text();
+                            var videoStanza = {
+                                type:"video",
+                                author:UserSettings.getUsername(),
+                                timestamp:t,
+                                identity:newIdentity,
+                                slide:currentSlide.toString(),
+                                source:$(e).text(),
+                                bounds:[currentVideo.x,currentVideo.y,currentVideo.x+currentVideo.width,currentVideo.y+currentVideo.height],
+                                width:currentVideo.width,
+                                height:currentVideo.height,
+                                target:"presentationSpace",
+                                privacy:Privacy.getCurrentPrivacy(),
+                                x:currentVideo.x,
+                                y:currentVideo.y
+                            };
+                            registerTracker(newIdentity,function(){
+                                var insertMargin = Modes.select.handlesAtZoom();
+                                var newX = videoStanza.x;
+                                var newY = videoStanza.y;
+                                var newW = Math.max(videoStanza.width,viewboxWidth);
+                                var newH = Math.max(videoStanza.height,viewboxHeight);
+                                Modes.select.activate();
+                                IncludeView.specific(
+                                    newX - insertMargin,
+                                    newY - insertMargin,
+                                    newW + insertMargin * 2,
+                                    newH + insertMargin * 2);
+                                Modes.select.clearSelection();
+                                Modes.select.selected.videos[videoStanza.identity] = boardContent.videos[videoStanza.identity];
+                                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                            });
+                            sendStanza(videoStanza);
+                            resetImageUpload();
+                            WorkQueue.gracefullyResume();
+                        },
+                        error: function(e){
+                            console.log(e);
+                            resetImageUpload();
+                            errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+                            WorkQueue.gracefullyResume();
+                        },
+                        data:currentVideo.videoSrc,
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    });
+                }
+            };
+            var hasInitialized = false;
+            $(function(){
+                if (!hasInitialized){
+                    hasInitialized = true;
+                    insertOptions = $("#imageInsertOptions").css({position:"absolute",left:0,top:0});
+                    insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
+                    imageFileChoice = $("#imageFileChoice").attr("accept","video/mp4");
+                    imageFileChoice[0].addEventListener("change",function(e){
+                        var files = e.target.files || e.dataTransfer.files;
+                        var limit = files.length;
+                        var file = files[0];
+												console.log("uploading video: ",file);
+                        if (file.type.indexOf("video") == 0) {
+                            currentVideo.fileUpload = file;
+                        }
+                        clientSideProcessVideo(sendVideoToServer);
+                    },false);
+                    resetImageUpload();
+                }
+            });
+            return {
+                activate:function(){
+                    Modes.currentMode.deactivate();
+                    Modes.currentMode = Modes.video;
+                    setActiveMode("#videoTools","#videoMode");
+                    var x = 10;
+                    var y = 10;
+                    var worldPos = screenToWorld(x,y);
+                    currentVideo = {
+                        "type":"imageDefinition",
+                        "screenX":x,
+                        "screenY":y,
+                        "x":worldPos.x,
+                        "y":worldPos.y
+                    }
+                    Progress.call("onLayoutUpdated");
+                    imageModes.reapplyVisualStyle();
+                    insertOptions.show();
+                },
+                deactivate:function(){
+                    resetImageUpload();
+                    removeActiveMode();
+                }
+            };
+        })(),
         image:(function(){
             var noop = function(){};
             var currentImage = {};
@@ -1767,6 +1984,8 @@ var Modes = (function(){
                             return true;
                         } else if ("multiWordTexts" in sel && _.size(sel.multiWordTexts) > 0){
                             return true;
+                        } else if ("videos" in sel && _.size(sel.videos) > 0){
+                            return true;
                         } else {
                             return false;
                         }
@@ -1802,7 +2021,7 @@ var Modes = (function(){
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
                 var changed = false;
-                _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(catName){
+                _.forEach(["images","texts","inks","highlighters","multiWordTexts","videos"],function(catName){
                     var selCatName = catName == "highlighters" ? "inks" : catName;
                     var boardCatName = catName;
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
@@ -1839,7 +2058,8 @@ var Modes = (function(){
                             s.inks,
                             s.texts,
                             s.multiWordTexts,
-                            s.images
+                            s.images,
+														s.videos
                         );
                     }
                 }
@@ -1896,7 +2116,8 @@ var Modes = (function(){
                     images:{},
                     texts:{},
                     inks:{},
-                    multiWordTexts:{}
+                    multiWordTexts:{},
+										videos:{}
                 },
                 resizeHandleSize:20,
                 setSelection:function(selected){
@@ -1919,6 +2140,7 @@ var Modes = (function(){
                     _.forEach(Modes.select.selected.texts,incorporate);
                     _.forEach(Modes.select.selected.images,incorporate);
                     _.forEach(Modes.select.selected.multiWordTexts,incorporate);
+                    _.forEach(Modes.select.selected.videos,incorporate);
                     totalBounds.width = totalBounds.x2 - totalBounds.x;
                     totalBounds.height = totalBounds.y2 - totalBounds.y;
                     totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
@@ -1958,6 +2180,9 @@ var Modes = (function(){
                             if ("multiWordTexts" in Modes.select.selected){
                                 deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
+                            if ("videos" in Modes.select.selected){
+                                deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
+                            }
                             sendStanza(deleteTransform);
                             clearSelectionFunction();
                         }
@@ -1970,6 +2195,7 @@ var Modes = (function(){
                         func("texts");
                         func("multiWordTexts");
                         func("inks");
+												func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
                         Modes.select.resizing = false;
@@ -2053,6 +2279,7 @@ var Modes = (function(){
                                 moved.inkIds = _.keys(Modes.select.selected.inks);
                                 moved.textIds = _.keys(Modes.select.selected.texts);
                                 moved.imageIds = _.keys(Modes.select.selected.images);
+                                moved.videoIds = _.keys(Modes.select.selected.videos);
                                 moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                                 Modes.select.dragging = false;
                                 registerTracker(moved.identity,function(){
@@ -2068,7 +2295,8 @@ var Modes = (function(){
                                     images:{},
                                     texts:{},
                                     inks:{},
-                                    multiWordTexts:{}
+                                    multiWordTexts:{},
+																		videos:{}
                                 };
                                 var intersectAuthors = {};
                                 var intersections = {};
@@ -2086,6 +2314,9 @@ var Modes = (function(){
                                                 case "ink":
                                                     prerenderInk(item);
                                                     break;
+																								case "video":
+																										prerenderVideo(item);
+																										break;		
                                                 default:
                                                     item.bounds = [NaN,NaN,NaN,NaN];
                                                 }
@@ -2138,11 +2369,12 @@ var Modes = (function(){
                                 if(!intersections.any){
                                     Modes.select.clearSelection();
                                 }
-                                var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
+                                var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts, %s videos ",
                                                      _.keys(Modes.select.selected.images).length,
                                                      _.keys(Modes.select.selected.texts).length,
                                                      _.keys(Modes.select.selected.multiWordTexts).length,
-                                                     _.keys(Modes.select.selected.inks).length);
+                                                     _.keys(Modes.select.selected.inks).length,
+                                                     _.keys(Modes.select.selected.videos).length);
                                 $.each(intersectAuthors,function(author,count){
                                     status += sprintf("%s:%s ",author, count);
                                 });
@@ -2171,7 +2403,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
-		    blit();
+										blit();
                 }
             }
         })(),

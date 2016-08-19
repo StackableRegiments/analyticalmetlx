@@ -290,7 +290,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
     this
   })
-  def addVideo(s:MeTLVideo,store:Boolean = true) = Stopwatch.time("History.addImage",{
+  def addVideo(s:MeTLVideo,store:Boolean = true) = Stopwatch.time("History.addVideo",{
     if (shouldAdd(s)){
       val adjustedVideo = metlMoveDeltas.filter(md => !md.isDeleted && md.isDirtierFor(s)).sortBy(_.timestamp).foldLeft(s)((acc,item) => {
         item.adjustIndividualContent(acc).asInstanceOf[MeTLVideo]
