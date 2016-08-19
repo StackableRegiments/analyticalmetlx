@@ -4,6 +4,9 @@ var DeviceConfiguration = (function(){
     var identity = Date.now();
     var currentDevice = "browser";
     var orientation = "landscape";
+    var px = function(i){
+	return sprintf("%spx",i);
+    }
     var returnCurrentDeviceFunction = function(){
         return currentDevice;
     };
@@ -182,7 +185,6 @@ var DeviceConfiguration = (function(){
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
             var height = deviceDimensions.height;
-	    console.log(deviceDimensions);
 
             var performRemeasure = function(){
                 if (showHeader == true){
@@ -211,8 +213,8 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 comp("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
-                thumbs.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
-                thumbs.height(DeviceConfiguration.preferredSizes.thumbColumn.height);
+                thumbs.attr("width",px(DeviceConfiguration.preferredSizes.thumbColumn.width));
+                thumbs.attr("height",px(DeviceConfiguration.preferredSizes.thumbColumn.height));
 
                 var bwidth = boardContainer.width();
                 var bheight = boardContainer.height();
