@@ -182,6 +182,7 @@ var DeviceConfiguration = (function(){
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
             var height = deviceDimensions.height;
+	    console.log(deviceDimensions);
 
             var performRemeasure = function(){
                 if (showHeader == true){
