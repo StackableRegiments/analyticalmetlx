@@ -983,6 +983,7 @@ var Modes = (function(){
                     resized.inkIds = _.keys(Modes.select.selected.inks);
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
+                    resized.videoIds = _.keys(Modes.select.selected.videos);
                     _.each(Modes.select.selected.multiWordTexts,function(word){
                         word.doc.width(Math.max(
                             word.doc.width() * resized.xScale,
@@ -1503,68 +1504,6 @@ var Modes = (function(){
                 }
                 imageFileChoice.unwrap();
             };
-            var imageModes = (function(){
-                var keepUnder = function(threshold,incW,incH,quality){
-                    var w = incW;
-                    var h = incH;
-                    var currentTotal = w * h;
-                    while (currentTotal > threshold){
-                        w = w * 0.8;
-                        h = h * 0.8;
-                        currentTotal = w * h;
-                    };
-                    return {w:w,h:h,q:quality};
-                }
-                var modes = {
-                    "native":{
-                        resizeFunc:function(w,h){ return {w:w,h:h,q:1.0};},
-                        selector:"#imageInsertNative"
-                    },
-                    "optimized":{
-                        resizeFunc:function(w,h){ return keepUnder(1 * megaPixels,w,h,0.4);},
-                        selector:"#imageInsertOptimized"
-                    },
-                    "highDef":{
-                        resizeFunc:function(w,h){ return keepUnder(3 * megaPixels,w,h,0.8);},
-                        selector:"#imageInsertHighDef"
-                    }
-                }
-                var currentMode = modes.optimized;
-
-                var megaPixels = 1024 * 1024;
-                var redrawModeButtons = function(){
-                    _.forEach(modes,function(resizeMode){
-                        var el = $(resizeMode.selector);
-                        if (currentMode.selector == resizeMode.selector){
-                            el.addClass("activeBrush");
-                        } else {
-                            el.removeClass("activeBrush");
-                        }
-                    });
-                }
-                $(function(){
-                    _.forEach(modes,function(resizeMode){
-                        var el = $(resizeMode.selector);
-                        el.on("click",function(){
-                            currentMode = resizeMode;
-                            redrawModeButtons();
-                        });
-                    });
-                    redrawModeButtons();
-                });
-                return {
-                    "reapplyVisualStyle":redrawModeButtons,
-                    "changeMode":function(newMode){
-                        if (newMode in modes){
-                            currentMode = modes[newMode];
-                            redrawModeButtons();
-                        }
-                    },
-                    "getResizeFunction":function(){
-                        return currentMode.resizeFunc;
-                    }
-                }
-            })();
             var clientSideProcessVideo = function(onComplete){
                 if (currentVideo == undefined || currentVideo.fileUpload == undefined || onComplete == undefined){
                     return;
@@ -1670,7 +1609,6 @@ var Modes = (function(){
                         var files = e.target.files || e.dataTransfer.files;
                         var limit = files.length;
                         var file = files[0];
-												console.log("uploading video: ",file);
                         if (file.type.indexOf("video") == 0) {
                             currentVideo.fileUpload = file;
                         }
@@ -1695,7 +1633,6 @@ var Modes = (function(){
                         "y":worldPos.y
                     }
                     Progress.call("onLayoutUpdated");
-                    imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
                 deactivate:function(){

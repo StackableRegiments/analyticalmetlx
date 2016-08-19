@@ -742,6 +742,9 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                 case "images":
                                     drawImage(item,canvasContext);
                                     break;
+																case "videos":
+																		drawVideo(item,canvasContext);
+																		break;
                                 case "texts":
                                     drawText(item,canvasContext);
                                     break;
@@ -786,6 +789,11 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                         drawImage(item,canvasContext);
                                     });
                                     break;
+																case "videos":
+																		transform(x,y,function(){
+																			drawVideo(item,canvasContext);
+																		});
+																		break;
                                 case "texts":
                                     transform(x,y,function(){
                                         drawText(item,canvasContext);

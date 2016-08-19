@@ -291,7 +291,6 @@ function actOnReceivedStanza(stanza){
     }
 }
 function transformReceived(transform){
-	console.log("transform received: ",transform);
     var op = "";
     var transformBounds = (function(){
         var myBounds = [undefined,undefined,undefined,undefined]; //minX,minY,maxX,maxY
