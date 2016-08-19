@@ -235,7 +235,7 @@ var Conversations = (function(){
         return (details.author == username);
     };
     var shouldDisplayConversation = function(details){
-        return (details.subject != "deleted" && (details.author == username || _.some(userGroups,function(g){
+        return (details.subject.toLowerCase().trim() != "deleted" && (details.author == username || _.some(userGroups,function(g){
             return g.value.toLowerCase().trim() == details.subject.toLowerCase().trim();
         })));
     };
