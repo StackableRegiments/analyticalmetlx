@@ -234,35 +234,44 @@ object WebMeTLRestHelper extends RestHelper with Logger{
   }
 }
 object MeTLStatefulRestHelper extends RestHelper with Logger {
+  import java.io._
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
+  val config = ServerConfiguration.default
   serve {
-    case req@Req("videoProxy" :: jid :: id :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.videoProxy", {
-      val fis = new FileInputStream(new File("src/main/webapp/images/" + id)) //just faking it in for the moment
-      val size = file.length - 1
-      val start = 0L
-      val end = size
-      val (start,end) = {
-        (for {
-
-        } yield {
-
-        }).getOrElse((0L,size))
-      }
-      val headers = List(
-        ("Connection" -> "close")
-        ("Transfer-Encoding" -> "chunked"),
-        ("Content-Type" -> "video/mp4"),
-        ("Content-Range" -> "bytes %s-%s/%s".format(start,end,file.length.toString))
-      )
-      Full(StreamingResponse(
-        data = fis,
-        onEnd = fis.close,
-        size = size,
-        headers = headers,
-        cookies = Nil,
-        code = 206
-      ))
+    case req@Req("videoProxy" :: slideJid :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
+      Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
+        video.videoBytes.map(bytes => {
+          val fis = new ByteArrayInputStream(bytes) 
+          val size = bytes.length - 1
+          val (start,end) = {
+            (for {
+              rawRange <- req.header("Range")
+              range = rawRange.split("bytes=").toList.map(s => parseNumber(s))
+            } yield {
+              range match {
+                case List(s,e) => (s,e)
+                case List(s) => (s,size)
+                case _ => (0L,size)
+              }
+            }).getOrElse((0L,size))
+          }
+          val headers = List(
+            ("Connection" -> "close"),
+            ("Transfer-Encoding" -> "chunked"),
+            ("Content-Type" -> "video/mp4"),
+            ("Content-Range" -> "bytes %s-%s/%s".format(start,end,bytes.length.toString))
+          )
+          StreamingResponse(
+            data = fis,
+            onEnd = fis.close,
+            size = size,
+            headers = headers,
+            cookies = Nil,
+            code = 206
+          )
+        }).openOr(NotFoundResponse("video bytes not available"))
+      }).getOrElse(NotFoundResponse("video not available")))
     })
 
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
@@ -349,8 +358,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         slide <- r.param("slide");
         sess <- S.session
       } yield {
-        val serverConfig = ServerConfiguration.default
-        val c = serverConfig.detailsOfConversation(conversationJid)
+        val c = config.detailsOfConversation(conversationJid)
         debug("Forced to join conversation %s".format(conversationJid))
         if (c.slides.exists(s => slide.toLowerCase.trim == s.id.toString.toLowerCase.trim)){
           debug("Forced move to slide %s".format(slide))

@@ -908,7 +908,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds"),(args) => {
+    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsInt(args(1))
       val inkIds = args(2) match {
@@ -924,6 +924,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => Nil
       }
       val imageIds = args(5) match {
+        case l:List[String] => l
+        case _ => Nil
+      }
+      val videoIds = args(6) match {
         case l:List[String] => l
         case _ => Nil
       }
@@ -997,7 +1001,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           }
         }
         val deleterId = nextFuncName
-        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
+        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,videoIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
         rooms.get((server,slideJid.toString)).map(r =>{
           r() ! LocalToServerMeTLStanza(deleter)
         })
