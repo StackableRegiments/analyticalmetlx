@@ -709,10 +709,8 @@ var videoControlInteractable = function(video){
 			} else {
 				var mediaState = video.getState();
 				var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
-				console.log("clicked seek:",seekPos,mediaState);
 				video.seek(seekPos);
 			}
-			console.log("playing video");
 			return false;
 		},
 		getBounds:function(){return bounds;},
@@ -1623,12 +1621,10 @@ var Modes = (function(){
                 if (currentVideo == undefined || currentVideo.fileUpload == undefined || onComplete == undefined){
                     return;
                 }
-								console.log("clientSideProcessVideo",currentVideo);
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
-									console.log("readerOnLoad",readerE);
                     var vid = $("<video/>");
 										var thisVid = vid[0];
                     var originalSrc = readerE.target.result;
@@ -1663,7 +1659,6 @@ var Modes = (function(){
                         url: url,
                         type: 'POST',
                         success: function(e){
-													console.log("onSuccess:",e,currentVideo);
                             var newIdentity = $(e).find("resourceUrl").text();
                             var videoStanza = {
                                 type:"video",
