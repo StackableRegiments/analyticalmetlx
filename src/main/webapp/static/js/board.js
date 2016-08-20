@@ -897,6 +897,7 @@ function videoReceived(video){
 			if(isInClearSpace(video.bounds)){
 					try {
 							drawVideo(video);
+							Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
 					} catch(e){
 							console.log("drawVideo exception",e);
 					}

@@ -130,8 +130,8 @@ function registerPositionHandlers(contexts,down,move,up){
         var unconsumed = true;;
         _.each(Modes.canvasInteractables,function(category,label){
             _.each(category,function(interactable){
-                if(event in interactable){
-                    if(interactable.activated || intersectRect(worldRay,interactable.bounds)){
+                if(interactable != undefined && event in interactable){
+                    if(interactable.activated || intersectRect(worldRay,interactable.getBounds())){
                         unconsumed = unconsumed && interactable[event](worldPos);
                     }
                 }
@@ -676,6 +676,109 @@ var bounceButton = function(button){
         b.removeClass(c);
     },200);
 }
+var videoControlInteractable = function(video){
+	var bounds = undefined;
+	var deactivateFunc = function(){
+			// I don't think this is necessary for this control
+	};
+	return {
+		activated:false,
+		rehome : function(root){
+			// I'm not doing anything with this stuff
+		},
+		down: function(worldPos){
+			return false; 
+		},
+		move: function(worldPos){
+			return false;
+		},
+		up: function(worldPos){
+			deactivateFunc();
+	
+			var bw = Modes.select.handlesAtZoom();
+
+			var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
+			if (position < bw){
+				if (video.getState().paused){
+					video.play();
+				} else {
+					video.pause();
+				}
+			} else if (position > (video.width - bw)){
+				video.muted(!video.muted());
+			} else {
+				var mediaState = video.getState();
+				var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
+				console.log("clicked seek:",seekPos,mediaState);
+				video.seek(seekPos);
+			}
+			console.log("playing video");
+			return false;
+		},
+		getBounds:function(){return bounds;},
+		deactivate:deactivateFunc,
+		render:function(canvasContext){
+			if (video.identity in boardContent.videos){
+				var h = Modes.select.handlesAtZoom();
+				var x = video.bounds[0];
+				var y = video.bounds[1];
+				bounds = [
+						x,
+						video.bounds[3],
+						video.bounds[2],
+						video.bounds[3] + h
+				];
+
+				var tl = worldToScreen(bounds[0],bounds[1]);
+				var br = worldToScreen(bounds[2],bounds[3]);
+				var width = br.x - tl.x;
+				var height = br.y - tl.y;
+
+				var mediaState = video.getState();
+				canvasContext.globalAlpha = 1.0;
+				canvasContext.setLineDash([]);
+				canvasContext.strokeStyle = "black";
+				canvasContext.font = sprintf("%spx FontAwesome",height);
+				
+				var buttonWidth = height;
+			
+				// play/pause button
+
+				canvasContext.fillStyle = "white";
+				canvasContext.fillRect(tl.x,tl.y,buttonWidth,height); 
+				canvasContext.fillStyle = "black";
+				if (mediaState.paused){
+					canvasContext.fillText("\uF04B",tl.x,br.y);
+				} else {
+					canvasContext.fillText("\uF04C",tl.x,br.y);
+				}
+				
+				// progress meter	
+
+				var progressX = tl.x + buttonWidth;
+				var progressWidth = width - buttonWidth;
+				canvasContext.fillStyle = "black";
+				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
+				canvasContext.fillStyle = "blue";
+				var progressWidth = (mediaState.currentTime / mediaState.duration) * progressWidth;
+				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
+
+				// mute button
+				
+				var muteX = tl.x + (width - buttonWidth);
+				canvasContext.fillStyle = "white";
+				canvasContext.fillRect(muteX,tl.y,buttonWidth,height); 
+				canvasContext.fillStyle = "black";
+				if (mediaState.muted){
+					canvasContext.fillText("\uF0F3",muteX,br.y);
+				} else {
+					canvasContext.fillText("\uF1F6",muteX,br.y);
+				}
+			}
+		}
+	};
+};
+
 var Modes = (function(){
     var removeActiveMode = function(){
         $(".activeTool").removeClass("activeTool");
@@ -700,7 +803,7 @@ var Modes = (function(){
             unregisterPositionHandlers(board);
         }
     };
-    var pushCanvasInteractable = function(category,interaction){
+    var pushCanvasInteractableFunc = function(category,interaction){
         if(!(category in Modes.canvasInteractables)){
             Modes.canvasInteractables[category] = [];
         }
@@ -721,7 +824,9 @@ var Modes = (function(){
         var s = Modes.select.handlesAtZoom();
         var manualMove = (
             function(){
+								var bounds = undefined;
                 return {
+									getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -732,7 +837,7 @@ var Modes = (function(){
                             var y = root.y;
                             var width = root.x2 - root.x;
                             var center = root.x + s / 2;
-                            manualMove.bounds = [
+                            bounds = [
                                 center - s / 2,
                                 root.y - s,
                                 center + s / 2,
@@ -794,9 +899,9 @@ var Modes = (function(){
                         return false;
                     },
                     render:function(canvasContext){
-                        if(manualMove.bounds){
-                            var tl = worldToScreen(manualMove.bounds[0],manualMove.bounds[1]);
-                            var br = worldToScreen(manualMove.bounds[2],manualMove.bounds[3]);
+                        if(bounds){
+                            var tl = worldToScreen(bounds[0],bounds[1]);
+                            var br = worldToScreen(bounds[2],bounds[3]);
                             var size = br.x - tl.x;
                             var x = tl.x;
                             var y = tl.y;
@@ -816,7 +921,9 @@ var Modes = (function(){
             })();
         var resizeAspectLocked = (
             function(){
+							var bounds = undefined;
                 return {
+									getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -825,7 +932,7 @@ var Modes = (function(){
                             var s = Modes.select.handlesAtZoom();
                             var x = root.x2;
                             var y = root.y;
-                            resizeAspectLocked.bounds = [
+                            bounds = [
                                 x,
                                 y,
                                 x + s,
@@ -899,9 +1006,9 @@ var Modes = (function(){
                         return false;
                     },
                     render:function(canvasContext){
-                        if(resizeAspectLocked.bounds){
-                            var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
-                            var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
+                        if(bounds){
+                            var tl = worldToScreen(bounds[0],bounds[1]);
+                            var br = worldToScreen(bounds[2],bounds[3]);
                             var size = br.x - tl.x;
                             var inset = size / 10;
                             var xOffset = -1 * size;
@@ -924,15 +1031,18 @@ var Modes = (function(){
                     }
                 };
             })();
+
         var resizeFree = (function(){
+					var bounds = undefined;
             return {
                 activated:false,
+								getBounds:function(){return bounds;},
                 rehome : function(root){
                     if(!resizeFree.activated){
                         var s = Modes.select.handlesAtZoom();
                         var x = root.x2;
                         var y = root.y2;
-                        resizeFree.bounds = [
+                        bounds = [
                             x,
                             y - s,
                             x + s,
@@ -1001,9 +1111,9 @@ var Modes = (function(){
                     return false;
                 },
                 render:function(canvasContext){
-                    if(resizeFree.bounds){
-                        var tl = worldToScreen(resizeFree.bounds[0],resizeFree.bounds[1]);
-                        var br = worldToScreen(resizeFree.bounds[2],resizeFree.bounds[3]);
+                    if(bounds){
+                        var tl = worldToScreen(bounds[0],bounds[1]);
+                        var br = worldToScreen(bounds[2],bounds[3]);
                         var size = br.x - tl.x;
                         var inset = size / 10;
                         var xOffset = -1 * size;
@@ -1026,9 +1136,9 @@ var Modes = (function(){
                 }
             };
         })();
-        pushCanvasInteractable("manualMove",manualMove);
-        pushCanvasInteractable("resizeFree",resizeFree);
-        pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
+        pushCanvasInteractableFunc("manualMove",manualMove);
+        pushCanvasInteractableFunc("resizeFree",resizeFree);
+        pushCanvasInteractableFunc("resizeAspectLocked",resizeAspectLocked);
         Progress.textBoundsChanged["selectionHandles"] = function(textId,bounds){
             if(textId in Modes.select.selected.multiWordTexts){
                 var totalBounds = Modes.select.totalSelectedBounds();
@@ -1050,7 +1160,12 @@ var Modes = (function(){
             }
         };
     });
+		var clearCanvasInteractableFunc = function(category){
+			Modes.canvasInteractables[category] = [];
+		};
     return {
+				pushCanvasInteractable:pushCanvasInteractableFunc,
+				clearCanvasInteractables:clearCanvasInteractableFunc,
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},

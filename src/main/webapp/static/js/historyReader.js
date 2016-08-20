@@ -494,6 +494,33 @@ function prerenderVideo(video){
 			src:sprintf("/videoProxy/%s/%s",video.slide,video.identity)
 		});
 		video.video = vid[0];
+		video.getState = function(){
+			return {
+				paused:vid[0].paused,
+				ended:vid[0].ended,
+				currentTime:vid[0].currentTime,
+				duration:vid[0].duration,
+				muted:vid[0].muted,
+				volume:vid[0].volume,
+				readyState:vid[0].readyState,
+				played:vid[0].played,
+				buffered:vid[0].buffered,
+				playbackRate:vid[0].playbackRate,
+				loop:vid[0].loop	
+			};
+		};
+		video.seek = function(newPosition){
+			vid[0].currentTime = Math.min(vid[0].duration,Math.max(0,newPosition));
+			if (vid[0].paused){
+				video.play();
+			}
+		};
+		video.muted = function(newState){
+			if (newState != undefined){
+				vid[0].muted = newState;
+			}
+			return vid[0].muted;		
+		};
 		video.play = function(){
 			var paintVideoFunc = function(){
 				if (video.video.paused || video.video.ended){
@@ -508,7 +535,14 @@ function prerenderVideo(video){
 			video.video.addEventListener("play",function(){
 				paintVideoFunc();
 			},false);
-			video.video.play();
+			if (video.video.paused || video.video.ended){
+				video.video.play();
+			}
+		};
+		video.pause = function(){
+			if (!video.video.paused){
+				video.video.pause();
+			}
 		};
 	}
 	if (!("bounds" in video)){
@@ -664,9 +698,11 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 }
 								var renderVideos = function(videos){
 									if (videos){
+										Modes.clearCanvasInteractables("videos");
 										$.each(videos,function(i,video){
 											if (intersectRect(video.bounds,viewBounds)){
 												drawVideo(video,canvasContext);
+												Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
 											}
 										});
 									}
@@ -717,9 +753,11 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 var renderCanvasInteractables = function(){
                     _.each(Modes.canvasInteractables,function(category){
                         _.each(category,function(interactable){
+													if (interactable != undefined && "render" in interactable){
                             canvasContext.save();
                             interactable.render(canvasContext);
                             canvasContext.restore();
+													};
                         });
                     });
                 }
