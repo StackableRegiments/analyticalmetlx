@@ -519,8 +519,14 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => serverConfig.deleteConversation(c.jid.toString)
-        case _ => c
+        case true => {
+          println("deleting conversation %s".format(c.jid))
+          serverConfig.deleteConversation(c.jid.toString)
+        }
+        case _ => {
+          println("refusing to delete conversation %s".format(c.jid))
+          c
+        }
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
@@ -584,7 +590,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   override def render = {
     OnLoad(conversation.map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
-      Call(RECEIVE_USER_GROUPS,getUserGroups) & 
+      Call(RECEIVE_USER_GROUPS,getUserGroups) &
       Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
     }).getOrElse(RedirectTo(conversationSearch())))
   }

@@ -14,8 +14,8 @@ var Conversations = (function(){
     var conversationsDataGrid = undefined;
 
     var onlyMyConversations = false;
-		var includeDeleted = false;
-		var dataGridItems = [];
+    var includeDeleted = false;
+    var dataGridItems = [];
 
     $(function(){
         var DateField = function(config){
@@ -47,36 +47,36 @@ var Conversations = (function(){
             onlyMyConversations = $(this).is(":checked");
             reRender();
         });
-				$("#includeDeleted").click(function(){
-					includeDeleted = $(this).is(":checked");
-					reRender();
-				});
+        $("#includeDeleted").click(function(){
+            includeDeleted = $(this).is(":checked");
+            reRender();
+        });
         EditConversationField.prototype = new jsGrid.Field({
             sorter: function(a,b){
                 return 0;
             },
             itemTemplate: function(cell,details){
-							if ("importing" in details){
-								var n = details.stageProgress.numerator;
-								var d = details.stageProgress.denominator;
-								var m = details.stageProgress.name;	
-								return $("<div/>").append($("<progress/>",{
-									value:n,
-									max:d,
-									text:sprintf("%s out of %s",n,d)
-								})).append($("<div/>",{
-									text:m
-								}));
-							} else {
-                if (shouldModifyConversation(details)){
-                    return $("<a/>",{
-                        href:sprintf("/editConversation?conversationJid=%s",details.jid),
-                        text:"Edit"
-                    });
+                if ("importing" in details){
+                    var n = details.stageProgress.numerator;
+                    var d = details.stageProgress.denominator;
+                    var m = details.stageProgress.name;
+                    return $("<div/>").append($("<progress/>",{
+                        value:n,
+                        max:d,
+                        text:sprintf("%s out of %s",n,d)
+                    })).append($("<div/>",{
+                        text:m
+                    }));
                 } else {
-                    return "";
+                    if (shouldModifyConversation(details)){
+                        return $("<a/>",{
+                            href:sprintf("/editConversation?conversationJid=%s",details.jid),
+                            text:"Edit"
+                        });
+                    } else {
+                        return "";
+                    }
                 }
-							}
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
@@ -88,20 +88,20 @@ var Conversations = (function(){
                 return 0;
             },
             itemTemplate: function(cell,details){
-							if ("importing" in details){
-								var n = details.overallProgress.numerator;
-								var d = details.overallProgress.denominator;
-								var m = details.overallProgress.name;	
-								return $("<div/>").append($("<progress/>",{
-									value:n,
-									max:d,
-									text:sprintf("%s out of %s",n,d)
-								})).append($("<div/>",{
-									text:m
-								}));
-							} else {
-								return cell;
-							}
+                if ("importing" in details){
+                    var n = details.overallProgress.numerator;
+                    var d = details.overallProgress.denominator;
+                    var m = details.overallProgress.name;
+                    return $("<div/>").append($("<progress/>",{
+                        value:n,
+                        max:d,
+                        text:sprintf("%s out of %s",n,d)
+                    })).append($("<div/>",{
+                        text:m
+                    }));
+                } else {
+                    return cell;
+                }
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
@@ -159,39 +159,37 @@ var Conversations = (function(){
             },
             pageLoading:false,
             fields: [
-								{ name:"lifecycle", type:"text", title:"Lifecycle", readOnly:true, itemTemplate:function(lifecycle,conv){
-									var elem = $("<span/>");										
-									switch (lifecycle) {
-										case "deleted":
-											elem.addClass("deletedConversationTag").text("deleted");
-											break;
-										case "new":
-											elem.addClass("newConversationTag").text("new");
-											break;
-										default:
-											elem.text("available");
-											break;
-									}											
-									return elem;
-								}},
+                { name:"lifecycle", type:"text", title:"Lifecycle", readOnly:true, itemTemplate:function(lifecycle,conv){
+                    var elem = $("<span/>");
+                    switch (lifecycle) {
+                    case "deleted":
+                        elem.addClass("deletedConversationTag").text("deleted");
+                        break;
+                    case "new":
+                        elem.addClass("newConversationTag").text("new");
+                        break;
+                    default:
+                        elem.text("");
+                        break;
+                    }
+                    return elem;
+                }},
                 { name:"title", type:"text", title:"Title", readOnly:true, itemTemplate:function(title,conv){
-									if ("newConversation" in conv && conv.newConversation == true){
-										return newTag(title);
-									}
-									return title;
-								}},
-                //{name:"jid",type:"number",title:"Id",readOnly:true,width:80},
+                    if ("newConversation" in conv && conv.newConversation == true){
+                        return newTag(title);
+                    }
+                    return title;
+                }},
                 {name:"creation",type:"dateField",title:"Created"},
-                //{name:"lastAccessed",type:"dateField",title:"Last Accessed"},
                 {name:"author",type:"text",title:"Author",readOnly:true},
                 {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true},
                 {name:"edit",type:"editConversationField",title:"Edit",sorting:false,width:30,css:"gridAction"}
             ]
         });
-				conversationsDataGrid.jsGrid("sort",{
-						field:"creation",
-						order:"desc"
-				});
+        conversationsDataGrid.jsGrid("sort",{
+            field:"creation",
+            order:"desc"
+        });
         $('#activeImportsListing').hide();
         $("#importConversationInputElementContainer").hide();
         $("#showImportConversationWorkflow").click(function(){
@@ -260,67 +258,67 @@ var Conversations = (function(){
         })));
     };
 
-		var newTag = function(title){
-			var tag = $("<span/>");
-			tag.append($("<span/>",{
-				class:"newConversation",
-				text: "new"		 
-			}));
-			tag.append($("<span/>",{
-				html:title
-			}));
-			console.log("newTag:",tag.html().toString());
-			return tag;
-		};
+    var newTag = function(title){
+        var tag = $("<span/>");
+        tag.append($("<span/>",{
+            class:"newConversation",
+            text: "new"
+        }));
+        tag.append($("<span/>",{
+            html:title
+        }));
+        console.log("newTag:",tag.html().toString());
+        return tag;
+    };
 
     var reRender = function(){
-			var mutatedImports = _.filter(_.map(currentImports,function(cid){
-				if ("result" in cid && "a" in cid.result){
-					return {
-						importing:true,
-						title:sprintf("%s - %s - %s","import failure",cid.name,cid.a),
-						author:cid.author,
-						jid:cid.id,				
-						newConversation:true,
-						creation:new Date().getTime(),				
-						overallProgress:cid.overallProgress,
-						stageProgress:cid.stageProgress
-					};
-				} else if ("result" in cid && "b" in cid.result){
-					var conv = cid.result.b
-					if (!("creation" in conv) && "created" in conv && _.isNumber(conv.created)){
-						conv.creation = conv.created;
-						conv.created = new Date(conv.creation);
-					};
-					conv.newConversation = true;
-					return conv;
-				} else {
-					return {
-						lifecycle:"new",
-						importing:true,
-						title:cid.name,
-						author:cid.author,
-						jid:cid.id,				
-						newConversation:true,
-						creation:new Date().getTime(),				
-						overallProgress:cid.overallProgress,
-						stageProgress:cid.stageProgress
-					};
-				}
-			}),function(cid){
-				return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
-			});
-			var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
-			dataGridItems = _.map(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)),function(conv){
-				if (conv.subject == "deleted"){
-					conv.lifecycle = "deleted"
-				} else if (conv.creation > newThreshold){
-					conv.lifecycle = "new"
-				} else {
-					conv.lifecycle = "available"
-				}
-				return conv;
-			});
+        var mutatedImports = _.filter(_.map(currentImports,function(cid){
+            if ("result" in cid && "a" in cid.result){
+                return {
+                    importing:true,
+                    title:sprintf("%s - %s - %s","import failure",cid.name,cid.a),
+                    author:cid.author,
+                    jid:cid.id,
+                    newConversation:true,
+                    creation:new Date().getTime(),
+                    overallProgress:cid.overallProgress,
+                    stageProgress:cid.stageProgress
+                };
+            } else if ("result" in cid && "b" in cid.result){
+                var conv = cid.result.b
+                if (!("creation" in conv) && "created" in conv && _.isNumber(conv.created)){
+                    conv.creation = conv.created;
+                    conv.created = new Date(conv.creation);
+                };
+                conv.newConversation = true;
+                return conv;
+            } else {
+                return {
+                    lifecycle:"new",
+                    importing:true,
+                    title:cid.name,
+                    author:cid.author,
+                    jid:cid.id,
+                    newConversation:true,
+                    creation:new Date().getTime(),
+                    overallProgress:cid.overallProgress,
+                    stageProgress:cid.stageProgress
+                };
+            }
+        }),function(cid){
+            return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
+        });
+        var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
+        dataGridItems = _.map(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)),function(conv){
+            if (conv.subject == "deleted"){
+                conv.lifecycle = "deleted"
+            } else if (conv.creation > newThreshold){
+                conv.lifecycle = "new"
+            } else {
+                conv.lifecycle = "available"
+            }
+            return conv;
+        });
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");
@@ -348,7 +346,7 @@ var Conversations = (function(){
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.map(currentSearchResults,function(conv){
             if (conv.jid == details.jid){
-								details.newConversation = conv.newConversation;
+                details.newConversation = conv.newConversation;
                 return details;
             } else {
                 return conv;
@@ -361,7 +359,7 @@ var Conversations = (function(){
         reRender();
     };
     var receiveNewConversationDetailsFunc = function(details){
-				details.newConversation = true;
+        details.newConversation = true;
         currentSearchResults.push(details);
         reRender();
     };
