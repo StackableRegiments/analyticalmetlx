@@ -193,10 +193,10 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case other => Some(other)
     }
     val bytes = url.map(u => config.getResource(u))
-    MeTLFile(config,c.author,c.timestamp,i.name.get,i.identity.get,url,bytes)
+    MeTLFile(config,c.author,c.timestamp,i.name.get,i.identity.get,url,bytes,i.deleted.get)
   }
   override def fromMeTLFile(i:MeTLFile):H2File = {
-    incStanza(H2File.create,i,"file").name(i.name).partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse(""))
+    incStanza(H2File.create,i,"file").name(i.name).partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.deleted)
   }
 
   def toSubmission(i:H2Submission):MeTLSubmission = {

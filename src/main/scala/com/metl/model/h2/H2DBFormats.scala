@@ -223,6 +223,7 @@ class H2File extends H2MeTLStanza[H2File]{
   object partialIdentity extends MappedMeTLString(this,H2Constants.identity) with H2MeTLIndexedString
   object identity extends MappedMeTLString(this,H2Constants.fullIdentity)
   object url extends MappedMeTLString(this,H2Constants.url)
+  object deleted extends MappedBoolean(this)
 }
 object H2File extends H2File with LongKeyedMetaMapper[H2File]{
 }
