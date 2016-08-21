@@ -15,6 +15,9 @@ var Analytics = (function(){
         displays[key].element.html($("<div />",{
             text:text
         }));
+	parent.html(parent.children().sort(function(a,b){
+	    return b.innerHTML < a.innerHTML;
+	}));
     };
     return {
         prime:function(conversation){

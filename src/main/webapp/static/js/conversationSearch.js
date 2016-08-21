@@ -163,7 +163,7 @@ var Conversations = (function(){
                     var elem = $("<span/>");
                     switch (lifecycle) {
                     case "deleted":
-                        elem.addClass("deletedConversationTag").text("deleted");
+                        elem.addClass("deletedConversationTag").text("archived");
                         break;
                     case "new":
                         elem.addClass("newConversationTag").text("new");
