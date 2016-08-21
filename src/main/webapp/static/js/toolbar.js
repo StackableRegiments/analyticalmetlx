@@ -288,7 +288,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             });
             var pointerOut = function(x,y){
                 trackedTouches = {};
@@ -313,7 +313,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     Extend.down();
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             }
             var pointerClose = function(e){
                 var point = releasePoint(e);
@@ -323,7 +323,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     pointerOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             };
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
@@ -370,8 +370,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								finishInteractableStates();
-
+								Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y){
                 WorkQueue.gracefullyResume();
@@ -403,7 +402,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     mouseOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             });
             var touches;
             var masterTouch;
@@ -497,7 +496,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             });
             var previousScale = 1.0;
             var changeFactor = 0.1;
@@ -1173,7 +1172,7 @@ var Modes = (function(){
         canvasInteractables:{},
 				finishInteractableStates:function(){
 					_.forEach(_.keys(Modes.canvasInteractables),function(k){
-						_.forEach(canvasInteractables[k],function(ci){
+						_.forEach(Modes.canvasInteractables[k],function(ci){
 							if (ci != undefined && "deactivate" in ci){
 								ci.deactivate();
 							}
@@ -1621,24 +1620,24 @@ var Modes = (function(){
             var noop = function(){};
             var currentVideo = {};
             var insertOptions = undefined;
-            var imageFileChoice = undefined;
+            var videoFileChoice = undefined;
             var insertOptionsClose = undefined;
-            var resetImageUpload = function(){
+            var resetVideoUpload = function(){
                 insertOptions.hide();
                 $("#imageWorking").hide();
                 $("#imageFileChoice").show();
-                var imageForm = imageFileChoice.wrap("<form>").closest("form").get(0);
-                if (imageForm != undefined){
-                    imageForm.reset();
+                var videoForm = videoFileChoice.wrap("<form>").closest("form").get(0);
+                if (videoForm != undefined){
+                    videoForm.reset();
                 }
-                imageFileChoice.unwrap();
+                videoFileChoice.unwrap();
             };
             var clientSideProcessVideo = function(onComplete){
                 if (currentVideo == undefined || currentVideo.fileUpload == undefined || onComplete == undefined){
                     return;
                 }
-                $("#imageWorking").show();
-                $("#imageFileChoice").hide();
+                $("#videoWorking").show();
+                $("#videoFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
                     var vid = $("<video/>");
@@ -1708,7 +1707,7 @@ var Modes = (function(){
                                 Progress.call("onSelectionChanged",[Modes.select.selected]);
                             });
                             sendStanza(videoStanza);
-                            resetImageUpload();
+                            resetVideoUpload();
                             WorkQueue.gracefullyResume();
                         },
                         error: function(e){
@@ -1728,10 +1727,10 @@ var Modes = (function(){
             $(function(){
                 if (!hasInitialized){
                     hasInitialized = true;
-                    insertOptions = $("#imageInsertOptions").css({position:"absolute",left:0,top:0});
-                    insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
-                    imageFileChoice = $("#imageFileChoice").attr("accept","video/mp4");
-                    imageFileChoice[0].addEventListener("change",function(e){
+                    insertOptions = $("#videoInsertOptions").css({position:"absolute",left:0,top:0});
+                    insertOptionsClose = $("#videoInsertOptionsClose").click(Modes.select.activate);
+                    videoFileChoice = $("#videoFileChoice").attr("accept","video/mp4");
+                    videoFileChoice[0].addEventListener("change",function(e){
                         var files = e.target.files || e.dataTransfer.files;
                         var limit = files.length;
                         var file = files[0];
@@ -1740,7 +1739,7 @@ var Modes = (function(){
                         }
                         clientSideProcessVideo(sendVideoToServer);
                     },false);
-                    resetImageUpload();
+                    resetVideoUpload();
                 }
             });
             return {
@@ -1762,7 +1761,7 @@ var Modes = (function(){
                     insertOptions.show();
                 },
                 deactivate:function(){
-                    resetImageUpload();
+                    resetVideoUpload();
                     removeActiveMode();
                 }
             };
