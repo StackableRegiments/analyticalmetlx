@@ -640,4 +640,28 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     ) :::
       input.bytes.map(ib => List(<bytes>{base64Encode(ib)}</bytes>)).getOrElse(List.empty[Node]))
   })
+  override def toMeTLVideo(input:NodeSeq):MeTLVideo = Stopwatch.time("GenericXmlSerializer.toMeTLVideo",{
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val source = getStringByName(input,"source") match {
+      case s:String if (s.length > 0 && s != "unknown url" && s != "none") => Full(s)
+      case _ => Empty
+    }
+    val videoBytes = Full(base64Decode(getStringByName(input,"videoBytes")))
+    val width = getDoubleByName(input,"width")
+    val height = getDoubleByName(input,"height")
+    val x = getDoubleByName(input,"x")
+    val y = getDoubleByName(input,"y")
+    MeTLVideo(config,m.author,m.timestamp,source,videoBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
+  })
+  override def fromMeTLVideo(input:MeTLVideo):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLVideo",{
+    canvasContentToXml("video",input,List(
+      <source>{input.source.openOr("unknown")}</source>,
+      <width>{input.width}</width>,
+      <height>{input.height}</height>,
+      <videoBytes>{base64Encode(input.videoBytes.getOrElse(Array.empty[Byte]))}</videoBytes>,
+      <x>{input.x}</x>,
+      <y>{input.y}</y>
+    ))
+  })
 }
