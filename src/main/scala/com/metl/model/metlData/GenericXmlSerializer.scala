@@ -432,6 +432,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     val m = parseMeTLContent(input,config)
     val name = getStringByName(input,"name")
     val id = getStringByName(input,"identity")
+    val deleted = getBooleanByName(input,"deleted")
     val url = (input \ "url").headOption.map(_.text)
     val bytes = url.map(u => config.getResource(u))
     MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
@@ -439,7 +440,8 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
   override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",{
     metlContentToXml("fileResource",input,List(
       <name>{input.name}</name>,
-      <identity>{input.id}</identity>
+      <identity>{input.id}</identity>,
+      <deleted>{input.deleted}</deleted>
     ) :::
       input.url.map(u => List(<url>{u}</url>)).getOrElse(List.empty[Node]))
   })

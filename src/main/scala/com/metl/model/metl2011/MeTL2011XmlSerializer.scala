@@ -134,6 +134,7 @@ class MeTL2011XmlSerializer(configName:String,cacheImages:Boolean = false,transc
 		try {
       val name = getStringByName(input,"name")
       val id = getStringByName(input,"id")
+      val deleted = getBooleanByName(input,"deleted")
 			val url = getStringByName(input,"url") match {
 				case s:String if (s.length > 0 && s != "unknown url" && s != "none") => metlUtils.reabsolutizeUri(s,"Resource")
 				case _ => Empty
@@ -144,7 +145,7 @@ class MeTL2011XmlSerializer(configName:String,cacheImages:Boolean = false,transc
 				else
 					config.getResource(u)
 			})
-			MeTLFile(config,m.author,m.timestamp,name,id,url,bytes,m.audiences)
+			MeTLFile(config,m.author,m.timestamp,name,id,url,bytes,deleted,m.audiences)
 		} catch {
 			case e:Throwable => {
 				error("failed to construct MeTLQuiz",e)

@@ -286,7 +286,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def addFile(s:MeTLFile,store:Boolean = true) = Stopwatch.time("History.addFile",{
     if (store){
       outputHook(s)
-      files = files ::: List(s)
+      val (candidates,remainder) = files.partition(_.id == s.id)
+      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))  
     }
     this
   })

@@ -251,6 +251,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
   override def fromMeTLFile(input:MeTLFile):JValue = Stopwatch.time("JsonSerializer.fromMeTLFile",{
     toJsObj("file",List(
       JField("name",JString(input.name)),
+      JField("deleted",JBool(input.deleted)),
       JField("id",JString(input.id))
     ) :::
       parseMeTLContent(input) :::
@@ -265,8 +266,9 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         val id = getStringByName(input,"id")
         //        val bytes = (input \ "bytes").extractOpt[String].map(bs => base64Decode(bs))
         val url = (input \ "url").extractOpt[String]
+        val deleted = getBooleanByName(input,"deleted")
         val bytes = url.map(u => config.getResource(u))
-        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes)
+        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted)
       }
       case _ => MeTLFile.empty
     }
