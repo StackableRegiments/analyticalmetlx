@@ -288,7 +288,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             });
             var pointerOut = function(x,y){
                 trackedTouches = {};
@@ -313,7 +313,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     Extend.down();
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             }
             var pointerClose = function(e){
                 var point = releasePoint(e);
@@ -323,7 +323,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     pointerOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             };
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
@@ -370,7 +370,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
 
             });
             var mouseOut = function(x,y){
@@ -403,7 +403,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     mouseOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             });
             var touches;
             var masterTouch;
@@ -497,7 +497,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								finishInteractableStates();
+								Modes.finishInteractableStates();
             });
             var previousScale = 1.0;
             var changeFactor = 0.1;
@@ -1057,7 +1057,7 @@ var Modes = (function(){
         canvasInteractables:{},
 				finishInteractableStates:function(){
 					_.forEach(_.keys(Modes.canvasInteractables),function(k){
-						_.forEach(canvasInteractables[k],function(ci){
+						_.forEach(Modes.canvasInteractables[k],function(ci){
 							if (ci != undefined && "deactivate" in ci){
 								ci.deactivate();
 							}
