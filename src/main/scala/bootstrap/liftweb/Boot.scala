@@ -81,13 +81,6 @@ class Boot extends Logger {
       //2011 piggyback auth
       Menu(Loc("Authentication",Link("authenticationState" :: Nil,true,"/authenticationState"),"Authentication",Hidden)),
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
-      //Widget
-      Menu(Loc("Analytical widget","widget" :: Nil,"Widgets")),
-      //Menu(Loc("Organisational view","admin" :: Nil,"Organisation admin")),
-      //Hybrid textboxing
-      Menu(Loc("HTML embed layer","textbox" :: Nil,"Textbox")),
-      //FutureMeTL
-      Menu(Loc("Future","future" :: Nil,"Future MeTL")),
       //MeTLX
       Menu(Loc("Home","index" :: Nil,"Home")),
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
@@ -96,8 +89,8 @@ class Boot extends Logger {
       Menu(Loc("PrintConversation","printConversation" :: Nil,"Print Conversation")),
       Menu(Loc("ClientSidePrintConversation","clientSidePrintConversation" :: Nil,"Client Side Print Conversation")),
       Menu(Loc("SearchConversations","searchConversations" :: Nil,"Search Conversations")),
-      //Menu(Loc("MeTL Collaborative Board","simpleBoard" :: Nil,"MeTL in a browser")),
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
+      Menu(Loc("Dashboard","dashboard" :: Nil,"Conversation level dashboarding")),
       //WebMeTL
       Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
