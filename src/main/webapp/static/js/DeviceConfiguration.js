@@ -4,6 +4,9 @@ var DeviceConfiguration = (function(){
     var identity = Date.now();
     var currentDevice = "browser";
     var orientation = "landscape";
+    var px = function(i){
+	return sprintf("%spx",i);
+    }
     var returnCurrentDeviceFunction = function(){
         return currentDevice;
     };
@@ -91,79 +94,37 @@ var DeviceConfiguration = (function(){
     var setIPadOptions = function(){
         setDefaultOptions();
     };
+    function getOrientation() {
+        var landscape;
+        if('orientation' in window) {
+            // Mobiles
+            var orientation = window.orientation;
+            landscape = (orientation == 90 || orientation == -90);
+        }
+        else {
+            // Desktop browsers
+            landscape = window.innerWidth > window.innerHeight;
+        }
+        return landscape ? 'landscape' : 'portrait';
+    }
     var getDeviceDimensions = function(){
-        return W.getViewportDimensions();
-        var deviceHeight = 0;
-        var deviceWidth = 0;
-        var matchMetaTag = function(metaName,metaValue){
-            return (navigator.standalone && _.some(_.filter(document.getElementsByTagName("meta"),function(i){return i.name.toLowerCase().trim() == metaName.toLowerCase().trim();}),function(i){return i.content.toLowerCase().trim() == metaValue.toLowerCase().trim();}));
+        var screen_width = screen.width,
+            screen_height = screen.height;
+        if(getOrientation() == 'landscape' && screen_width < screen_height) {
+            screen_width = screen.height;
+            screen_height = screen.width;
         }
-        switch (currentDevice){
-        case "iPhone":
-            deviceHeight += screen.height;
-            deviceWidth += screen.width;
-            if (window.orientation && (window.orientation == 90 || window.orientation == 270 || window.orientation == -90 || window.orientation == -270)){
-                orientation = "landscape";
-                var temp = deviceHeight;
-                deviceHeight = deviceWidth;
-                deviceWidth = temp;
-            } else if (window.orientation && (window.orientation == 0 || window.orientation == 180 || window.orientation == -180 || window.orientation == 360 || window.orientation == -360)){
-                orientation = "portrait";
-            }
-            if (!(matchMetaTag("apple-mobile-web-app-capable","yes"))){
-                if (window.innerHeight > window.innerWidth){
-                    deviceHeight -= 44;
-                }       else {
-                    deviceHeight -= 32;
-                }
-            }
-            if (!(matchMetaTag("apple-mobile-web-app-status-bar-style","black-translucent"))){
-                deviceHeight -= 20;
-            }
-            // as additional gesture wiggle-room
-            deviceHeight -= 20;
-            break;
-        case "iPad":
-            deviceHeight += screen.height;
-            deviceWidth += screen.width;
-            if (window.orientation && (window.orientation == 90 || window.orientation == 270 || window.orientation == -90 || window.orientation == -270)){
-                orientation = "landscape";
-                var temp = deviceHeight;
-                deviceHeight = deviceWidth;
-                deviceWidth = temp;
-            } else if (window.orientation && (window.orientation == 0 || window.orientation == 180 || window.orientation == -180 || window.orientation == 360 || window.orientation == -360)){
-                orientation = "portrait";
-            }
-            if (window.innerHeight == 768 && window.innerWidth == 1024){
-                orientation = "landscape";
-            } else if (window.innerWidth == 768 && window.innerHeight == 1024){
-                orientation = "portrait";
-            }
-            if (!(matchMetaTag("apple-mobile-web-app-capable","yes"))){
-                deviceHeight -= 58;
-                // as additional gesture wiggle-room
-                deviceHeight -= 20;
-            }
-            if (!(matchMetaTag("apple-mobile-web-app-status-bar-style","black-translucent"))){
-                deviceHeight -= 20;
-            }
-            break;
-            /*
-             case "IE11+":
-             deviceHeight = window.innerHeight * (screen.logicalYDPI / screen.deviceYDPI);
-             deviceWidth = window.innerWidth * (screen.logicalXDPI / screen.deviceXDPI);
-             break;
-             */
-        default:
-            //deviceHeight = window.innerHeight;
-            //deviceWidth = window.innerWidth;
-            deviceHeight = $(window).height();
-            deviceWidth = $(window).width();
-            break;
+        var w = window.innerWidth,
+            h = window.innerHeight;
+        if(!w || !h || w > screen_width || h > screen_height || w == 980) {
+            w = window.outerWidth;
+            h = window.outerHeight;
         }
-        var resultantDimensions = {height:deviceHeight,width:deviceWidth};
-        //console.log("gettingDeviceDimensions",resultantDimensions);
-        return resultantDimensions;
+        if(!w || !h || w > screen_width || h > screen_height) {
+            w = screen.availWidth;
+            h = screen.availHeight;
+        }
+        return {width: w, height: h};
     };
     var defaultFitFunction = function(){
         customizableFitFunction(sectionsVisible.header,sectionsVisible.tools,sectionsVisible.slides,sectionsVisible.keyboard);
@@ -195,7 +156,7 @@ var DeviceConfiguration = (function(){
             if(val && val.length){
                 components[selector] = val;
             }
-	    return val;
+            return val;
         }
         return components[selector];
     };
@@ -252,8 +213,8 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 comp("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
-                thumbs.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
-                thumbs.height(DeviceConfiguration.preferredSizes.thumbColumn.height);
+                thumbs.attr("width",px(DeviceConfiguration.preferredSizes.thumbColumn.width));
+                thumbs.attr("height",px(DeviceConfiguration.preferredSizes.thumbColumn.height));
 
                 var bwidth = boardContainer.width();
                 var bheight = boardContainer.height();
@@ -265,7 +226,7 @@ var DeviceConfiguration = (function(){
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
                     if(showKeyboard){
-			var keyboardSize = (currentDevice == "iPad"? DeviceConfiguration.preferredSizes.keyboard.iphone : DeviceConfiguration.preferredSizes.keyboard.ipad);
+                        var keyboardSize = (currentDevice == "iPad"? DeviceConfiguration.preferredSizes.keyboard.iphone : DeviceConfiguration.preferredSizes.keyboard.ipad);
                         bheight -= bwidth;
                         //Remove three bars including gutters
                         bheight += (DeviceConfiguration.preferredSizes.handles + 2) * 3;
@@ -289,8 +250,8 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		board.width(bwidth);
-		board.height(bheight);
+                board.width(bwidth);
+                board.height(bheight);
                 boardContext.canvas.width = bwidth;
                 boardContext.canvas.height = bheight;
                 boardContext.width = bwidth;
@@ -473,9 +434,9 @@ var DeviceConfiguration = (function(){
             },
             toolsColumn:100,
             keyboard:{
-		iphone:236,
-		ipad:352
-	    }
+                iphone:236,
+                ipad:352
+            }
         }
     };
 })();

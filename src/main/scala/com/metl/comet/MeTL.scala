@@ -278,7 +278,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
-  
+
   private lazy val RECEIVE_USERNAME = "receiveUsername"
   private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
   private lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
@@ -321,11 +321,11 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     super.localSetup
   }
   override def render = OnLoad(
-    Call(RECEIVE_USERNAME,JString(username)) & 
-    Call(RECEIVE_USER_GROUPS,getUserGroups) & 
-    Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) & 
-    Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) & 
-    Call(RECEIVE_QUERY,JString(query.getOrElse("")))
+    Call(RECEIVE_USERNAME,JString(username)) &
+      Call(RECEIVE_USER_GROUPS,getUserGroups) &
+      Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) &
+      Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) &
+      Call(RECEIVE_QUERY,JString(query.getOrElse("")))
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
 
@@ -348,6 +348,13 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       trace("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
+      listing = listing.map(c => {
+        if (c.jid == newConv.jid){
+          newConv
+        } else {
+          c
+        }
+      })
       partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
     }
     case _ => warn("MeTLConversationSearchActor received unknown message")
@@ -367,7 +374,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
- 
+
   private lazy val RECEIVE_USERNAME = "receiveUsername"
   private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
   private lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
@@ -470,7 +477,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
         //listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
         listing = newConv :: listing.filterNot(_.jid == newConv.jid)//query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-        reRender
+          reRender
       } else if (listing.exists(_.jid == newConv.jid)){
         listing = listing.filterNot(_.jid == newConv.jid)
         reRender
@@ -481,6 +488,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
 }
 
 class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
+  import com.metl.view._
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
@@ -490,7 +498,6 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
   override lazy val functionDefinitions = List(
-    ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
@@ -508,13 +515,59 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
-    ClientSideFunctionDefinition("refreshFromServer",List.empty[String],(unused) => {
-      reRender
-      JNull
-    },Full("reapplyVisualState"))
+    ClientSideFunctionDefinition("deleteConversation",List("conversationJid"),(args) => {
+      val jid = getArgAsString(args(0))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.deleteConversation(c.jid.toString)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
+      val jid = getArgAsString(args(0))
+      val newTitle = getArgAsString(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.renameConversation(c.jid.toString,newTitle)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("changeSubjectOfConversation",List("conversationJid","newSubject"),(args) => {
+      val jid = getArgAsString(args(0))
+      val newSubject = getArgAsString(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation((shouldModifyConversation(c) && Globals.getUserGroups.exists(_._2 == newSubject)) match {
+        case true => serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,newSubject)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("addSlideToConversationAtIndex",List("jid","index"),(args) => {
+      val jid = getArgAsString(args(0))
+      val index = getArgAsInt(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("duplicateSlideById",List("jid","slideId"),(args) => {
+      val jid = getArgAsString(args(0))
+      val slideId = getArgAsInt(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => StatelessHtml.duplicateSlideInternal(username,slideId.toString,c.jid.toString).getOrElse(c)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("duplicateConversation",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => StatelessHtml.duplicateConversationInternal(username,c.jid.toString).openOr(c)
+        case _ => c
+      })
+    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
   )
-  import com.metl.view._
   override def registerWith = MeTLEditConversationActorManager
   override def lifespan = Full(5 minutes)
   protected lazy val serverConfig = ServerConfiguration.default
@@ -529,116 +582,11 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   }
 
   override def render = {
-    val resultantRender:RenderOut = conversation.map(conv => {
-      shouldModifyConversation(conv) match {
-        case true => {
-          val innerResult:RenderOut = (
-            ".backToConversations [href]" #> conversationSearch() &
-            ".joinConversation [href]" #> boardFor(conv.jid) &
-            ".editConversationContainer *" #> {
-            ".currentConversationVar *" #> conversation.map(conv => {
-              JsCrVar("currentConversation", serializer.fromConversation(conv))
-            }) &
-            ".conversationTitle *" #> ajaxText(conv.title,(renamed:String) => {
-              serverConfig.renameConversation(conv.jid.toString,renamed)
-              Noop
-            }) &
-            ".conversationJid *" #> Text(conv.jid.toString) &
-            ".conversationAuthor *" #> Text(conv.author) &
-            ".conversationSubject *" #> Text(conv.subject) &
-            ".conversationTag *" #> Text(conv.tag) &
-            ".conversationCreated *" #> Text(conv.created.toString) &
-            ".conversationLastModified *" #> Text(new Date(conv.lastAccessed).toString) &
-            {
-              val choiceHolder = ajaxRadio((conv.subject.toLowerCase :: Globals.getUserGroups.map(_._2.toLowerCase)).distinct,Full(conv.subject.toLowerCase),(newSubject:String) => {
-                serverConfig.updateSubjectOfConversation(conv.jid.toString,newSubject.toLowerCase)
-                Noop
-              })
-              ".conversationSharing *" #> {(n:NodeSeq) => {
-                choiceHolder.items.sortWith((a,b) => a.key < b.key).foldLeft(NodeSeq.Empty:NodeSeq)((acc,item) => acc ++ {
-                  val newId = nextFuncName
-                  val inputElem = item.xhtml
-                  val labelName = item.key
-                    (
-                      ".conversationSharingChoiceLabel [for]" #> newId &
-                        ".conversationSharingChoiceLabel *" #> Text(labelName) &
-                        ".conversationSharingChoiceInputElement [id]" #> newId &
-                        ".conversationSharingChoiceInputElement [onclick]" #> (inputElem \ "@onclick").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [type]" #> (inputElem \ "@type").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [name]" #> (inputElem \ "@name").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [checked]" #> (inputElem \ "@checked").headOption.map(_.text) &
-                        ".conversationSharingChoiceInputElement [value]" #> (inputElem \ "@value").headOption.map(_.text)
-                    ).apply(n)
-                })
-              }}
-            }&
-            ".conversationDelete *" #> ajaxButton("delete",() => {
-              val result = serverConfig.deleteConversation(conv.jid.toString)
-              warn("deleting conversation: %s".format(result))
-              Noop
-            }) &
-            ".conversationDuplicate *" #> ajaxButton("duplicate",() => {
-              val result = StatelessHtml.duplicateConversationInternal(username,conv.jid.toString)
-              warn("duplicating conversation: %s".format(result))
-              Noop
-            }) &
-            ".conversationFollowLink [href]" #> boardFor(conv.jid) &
-            ".conversationFollowLink *" #> Text(boardFor(conv.jid)) &
-            ".conversationProjectorLink [href]" #> projectorFor(conv.jid) &
-            ".conversationProjectorLink *" #> Text(projectorFor(conv.jid)) &
-            ".conversationSlidesContainer *" #> {
-              ".slideContainer" #> {
-                conv.slides.sortWith((a,b) => a.index < b.index).map(slide => {
-                  ".slideContainer [data-id]" #> slide.id.toString &
-                  ".slideContainer [data-index]" #> slide.index.toString &
-                  ".slideContainer *" #> {
-                    ".slideId *" #> Text(slide.id.toString) &
-                    ".slideIndex *" #> Text(slide.index.toString) &
-                    ".slideType *" #> Text(slide.slideType.toString) &
-                    ".slideThumbnail [src]" #> thumbnailFor(conv.jid,slide.id) &
-                    ".duplicateSlideButton *" #> {
-                      ajaxButton("duplicate slide",() => {
-                        val result = StatelessHtml.duplicateSlideInternal(username,slide.id.toString,conv.jid.toString)
-                        warn("duplicating slide: %s".format(result))
-                        Noop
-                      })
-                    } &
-                    ".addSlideAfterButton *" #> {
-                      ajaxButton("add slide after",() => {
-                        val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index + 1)
-                        warn("adding slide after: %s".format(result))
-                        Noop
-                      })
-                    } &
-                    ".addSlideBeforeButton *" #> {
-                      ajaxButton("add slide before",() => {
-                        val result = serverConfig.addSlideAtIndexOfConversation(conv.jid.toString,slide.index)
-                        warn("adding slide before: %s".format(result))
-                        Noop
-                      })
-                    } &
-                    ".slideAnchor [href]" #> boardFor(conv.jid,slide.id)
-                  }
-                })
-              }
-            }
-          })
-          innerResult
-        }
-        case _ => {
-          val innerResult:RenderOut = 
-            ".backToConversations [href]" #> conversationSearch() &
-            ".editConversationContainer" #> Text("you are not permitted to edit this conversation")
-          innerResult
-        }
-      }
-    }).getOrElse({
-      val innerResult:RenderOut = 
-        ".backToConversations [href]" #> conversationSearch() &
-        ".editConversationContainer" #> Text("no conversation selected")
-      innerResult
-    })
-    resultantRender
+    OnLoad(conversation.map(c => {
+      Call(RECEIVE_USERNAME,JString(username)) &
+      Call(RECEIVE_USER_GROUPS,getUserGroups) & 
+      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
+    }).getOrElse(RedirectTo(conversationSearch())))
   }
   override def lowPriority = {
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
@@ -647,7 +595,6 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         warn("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender
-        partialUpdate(Call("reapplyVisualState"))
       })
     }
     case _ => warn("MeTLEditConversationActor received unknown message")
@@ -841,18 +788,19 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunctionDefinition("requestDeleteConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      this ! SimpleMultipleButtonInteractableMessage("Delete conversation","Are you sure you would like to delete this conversation",
+      this ! SimpleMultipleButtonInteractableMessage("Archive conversation","Are you sure you would like to archive this conversation?  Have you considered whether students have important content on this conversation?",
         Map(
           "yes" -> {() => {
             if (shouldModifyConversation(c)){
               serverConfig.deleteConversation(c.jid.toString)
+              S.redirectTo("/conversationSearch")
               true
             } else {
               false
             }
           }},
           "no" -> {() => true}
-        ),Full(()=> this ! SpamMessage(Text("You are not permitted to delete this conversation"))),false,Full("conversations"))
+        ),Full(()=> this ! SpamMessage(Text("You are not permitted to archive this conversation"))),false,Full("conversations"))
       JNull
     },Empty),
     /*
@@ -1693,10 +1641,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           val privateAuthor = privTup._1
           if (username == privateAuthor || shouldModifyConversation()){
             val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,server) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
-            privTup._2.foreach(privStanza => {
-              trace("OUT TO PRIV -> %s".format(privStanza))
-              privRoom ! LocalToServerMeTLStanza(privStanza)
-            })
+              privTup._2.foreach(privStanza => {
+                trace("OUT TO PRIV -> %s".format(privStanza))
+                privRoom ! LocalToServerMeTLStanza(privStanza)
+              })
           }
         })
       }

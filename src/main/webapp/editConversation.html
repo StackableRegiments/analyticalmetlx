@@ -1,8 +1,12 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
   <script src="static/js/stable/lodash-4.12.0.js"></script>
   <script src="/static/js/stable/jquery-ui-1.12.0.min.js"></script>
-  <script src="/static/js/editConversation.js"></script>
   <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+	<link rel="stylesheet" href="static/css/jAlert.css"></link>
+  <script src="static/js/stable/jAlert.min.js"></script>
+  <script src="static/js/stable/jAlert-functions.min.js"></script>
+	<script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+  <script src="/static/js/editConversation.js"></script>
   <style>
     body.dragging, body.dragging * {
     cursor: move !important;
@@ -53,8 +57,19 @@
     .conversationSlidesContainer th, .conversationSlidesContainer td {
     text-align:center;
     }
+    #deleteConfirm{
+    display:none;
+    }
   </style>
-  <div class="lift:Metl.specificEditConversation indent directlyOnBackground">
+  <script>
+    $(function(){
+    $("#deleteChallenge").click(function(){
+    $("#deleteConfirm").show();
+    });
+    });
+  </script>
+	<div class="lift:Metl.specificEditConversation"></div>
+	<div class="indent directlyOnBackground">
     <a class="backToConversations">Back to search</a>
     <a class="joinConversation ml">Join conversation</a>
     <h1>Edit conversation</h1>
@@ -81,7 +96,7 @@
       <script class="currentConversationVar"></script>
       <h2>Editable attributes</h2>
       <table class="indent">
-        <tr>
+        <tr id="sharingContainer">
           <th>Sharing: </th>
           <td class="conversationSharing">
             <div class="conversationSharingChoiceContainer">
@@ -93,30 +108,18 @@
         </tr>
         <tr>
           <th>Title: </th>
-          <td class="conversationTitle"></td>
+          <td class="conversationTitle">
+						<input type="text" id="conversationTitleInput"></input>
+					</td>
         </tr>
       </table>
       <h2>Conversation level actions</h2>
       <div class="indent">
-        <div>
-          <span class="conversationDelete"></span>
-        </div>
-        <div>
-          <span class="conversationDuplicate"></span>
-        </div>
+        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="archiveChallenge"><div class="icon-txt">Archive</div></button>
+        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="unarchiveChallenge"><div class="icon-txt">Unarchive</div></button>
+        <button class="btn-icon fa fa-copy directlyOnBackground" type="button" id="duplicateChallenge"><div class="icon-txt">Duplicate</div></button>
       </div>
-      <h2>Conversation bookmarks</h2>
-      <table class="indent">
-        <tr>
-          <th>Join Conversation: </th>
-          <td class="conversationFollowLink"></td>
-        </tr>
-        <tr>
-          <th>Project Conversation: </th>
-          <td class="conversationProjectorLink"></td>
-        </tr>
-      </table>
-      <h2 class="slideActions">Slide level actions</h2>
+      <h2 class="slideActions">Page level actions</h2>
       <span id="reorderInProgress">
         <span>
           <button type="button" id="reorderSlides">Commit reorder</button>
@@ -128,7 +131,9 @@
       <table class="conversationSlidesContainer indent">
         <thead>
           <tr>
-            <th colspan="3">Sort</th>
+            <th>Reorder</th>
+            <th>Move down</th>
+            <th>Move up</th>
             <th>Id</th>
             <th>Index</th>
             <th>Join</th>
@@ -156,13 +161,13 @@
               </a>
             </td>
             <td>
-              <span class="duplicateSlideButton"></span>
+							<button class="duplicateSlideButton btn-icon fa fa-copy directlyOnBackground" type="button"><div class="icon-txt">Duplicate</div></button>
             </td>
             <td>
-              <span class="addSlideAfterButton"></span>
+							<button class="addSlideBeforeButton btn-icon fa fa-caret-square-o-up directlyOnBackground" type="button"><div class="icon-txt">Add before</div></button>
             </td>
             <td>
-              <span class="addSlideBeforeButton"></span>
+							<button class="addSlideAfterButton btn-icon fa fa-caret-square-o-down directlyOnBackground" type="button"><div class="icon-txt">Add after</div></button>
             </td>
           </tr>
         </tbody>
