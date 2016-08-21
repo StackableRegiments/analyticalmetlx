@@ -14,6 +14,7 @@ var Conversations = (function(){
     var conversationsDataGrid = undefined;
 
     var onlyMyConversations = false;
+		var includeDeleted = false;
 		var dataGridItems = [];
 
     $(function(){
@@ -46,6 +47,10 @@ var Conversations = (function(){
             onlyMyConversations = $(this).is(":checked");
             reRender();
         });
+				$("#includeDeleted").click(function(){
+					includeDeleted = $(this).is(":checked");
+					reRender();
+				});
         EditConversationField.prototype = new jsGrid.Field({
             sorter: function(a,b){
                 return 0;
@@ -154,6 +159,21 @@ var Conversations = (function(){
             },
             pageLoading:false,
             fields: [
+								{ name:"lifecycle", type:"text", title:"Lifecycle", readOnly:true, itemTemplate:function(lifecycle,conv){
+									var elem = $("<span/>");										
+									switch (lifecycle) {
+										case "deleted":
+											elem.addClass("deletedConversationTag").text("deleted");
+											break;
+										case "new":
+											elem.addClass("newConversationTag").text("new");
+											break;
+										default:
+											elem.text("available");
+											break;
+									}											
+									return elem;
+								}},
                 { name:"title", type:"text", title:"Title", readOnly:true, itemTemplate:function(title,conv){
 									if ("newConversation" in conv && conv.newConversation == true){
 										return newTag(title);
@@ -235,7 +255,7 @@ var Conversations = (function(){
         return (details.author == username);
     };
     var shouldDisplayConversation = function(details){
-        return (details.subject.toLowerCase().trim() != "deleted" && (details.author == username || _.some(userGroups,function(g){
+        return ((details.subject.toLowerCase().trim() != "deleted" || (includeDeleted && details.author == username)) && (details.author == username || _.some(userGroups,function(g){
             return g.value.toLowerCase().trim() == details.subject.toLowerCase().trim();
         })));
     };
@@ -276,6 +296,7 @@ var Conversations = (function(){
 					return conv;
 				} else {
 					return {
+						lifecycle:"new",
 						importing:true,
 						title:cid.name,
 						author:cid.author,
@@ -289,7 +310,17 @@ var Conversations = (function(){
 			}),function(cid){
 				return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
 			});
-			dataGridItems = _.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation));
+			var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
+			dataGridItems = _.map(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)),function(conv){
+				if (conv.subject == "deleted"){
+					conv.lifecycle = "deleted"
+				} else if (conv.creation > newThreshold){
+					conv.lifecycle = "new"
+				} else {
+					conv.lifecycle = "available"
+				}
+				return conv;
+			});
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");

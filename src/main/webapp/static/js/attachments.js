@@ -77,6 +77,7 @@ var Attachments = (function(){
                                     type:"file",
                                     id:newId,
                                     name:filename,
+																		deleted:false,
                                     url:newId,
                                     author:me,
                                     timestamp:newTimestamp
@@ -118,7 +119,7 @@ var Attachments = (function(){
         try{
             attachmentContainer.empty();
             if(attachments.length > 0) {
-                $.map(attachments,function(attachment){ renderAttachment(attachment,attachmentContainer,attachmentTemplate.clone());});
+                $.map(_.filter(attachments,function(attachment){return attachment.deleted != true;}),function(attachment){ renderAttachment(attachment,attachmentContainer,attachmentTemplate.clone());});
             }
             refreshAttachmentCount();
         }
@@ -135,10 +136,22 @@ var Attachments = (function(){
         linkElem.attr("href",href);
         var linkNameElem = template.find(".attachmentDownloadLinkText");
         linkNameElem.text(attachment.name);
+				var deleteButton = template.find(".deleteButton");
+				if ("Conversations" in window && Conversations.shouldModifyConversation()){
+					deleteButton.on("click",function(){
+						attachment.deleted = true;
+						sendStanza(attachment);
+					});
+				} else {
+					deleteButton.remove();
+				}
         targetContainer.append(template);
     };
     var actOnAttachment = function(newAttachment){
-        attachments.push(newAttachment);
+			var partitioned = _.partition(attachments,function(attachment){
+				return attachment.id == newAttachment.id;
+			});
+			attachments = _.concat(partitioned[1],_.reverse(_.sortBy(_.concat([newAttachment],partitioned[0]),"timestamp"))[0]);
     };
     var historyReceivedFunction = function(history){
         try {
@@ -170,9 +183,7 @@ var Attachments = (function(){
         try{
             if (_.size(newAttachments) > 0){
                 $.each(newAttachments,function(unusedAttachmentName,attachment){
-                    if ("type" in attachment && attachment.type == "file"){
-                        attachments.push(attachment);
-                    }
+									doStanzaReceivedFunction(attachment);
                 });
             }
             renderAttachmentsInPlace();

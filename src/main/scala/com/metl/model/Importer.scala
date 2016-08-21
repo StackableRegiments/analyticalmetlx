@@ -629,13 +629,15 @@ class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(config
     val m = parseMeTLContent(input,config)
     val name = getStringByName(input,"name")
     val id = getStringByName(input,"id")
+    val deleted = getBooleanByName(input,"deleted")
     val bytes = downscaler.filterByMaximumSize(base64Decode(getStringByName(input,"bytes")))
     val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
-    MeTLFile(config,m.author,m.timestamp,name,id,url,bytes)
+    MeTLFile(config,m.author,m.timestamp,name,id,url,bytes,deleted)
   })
   override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",{
     metlContentToXml("file",input,List(
       <name>{input.name}</name>,
+      <deleted>{input.deleted}</deleted>,
       <id>{input.id}</id>
     ) :::
       input.bytes.map(ib => List(<bytes>{base64Encode(ib)}</bytes>)).getOrElse(List.empty[Node]))
