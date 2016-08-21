@@ -288,7 +288,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             });
             var pointerOut = function(x,y){
                 trackedTouches = {};
@@ -313,7 +313,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     Extend.down();
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             }
             var pointerClose = function(e){
                 var point = releasePoint(e);
@@ -323,7 +323,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     pointerOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             };
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
@@ -370,7 +370,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
 
             });
             var mouseOut = function(x,y){
@@ -403,7 +403,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     mouseOut(e.offsetX,e.offsetY);
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             });
             var touches;
             var masterTouch;
@@ -497,7 +497,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             });
             var previousScale = 1.0;
             var changeFactor = 0.1;
@@ -837,8 +837,8 @@ var Modes = (function(){
                         }
                     },
                     down:function(worldPos){
-                        Modes.select.aspectLocked = true;
                         resizeAspectLocked.activated = true;
+                        Modes.select.aspectLocked = true;
                         Modes.select.dragging = false;
                         Modes.select.resizing = true;
                         var root = Modes.select.totalSelectedBounds();
@@ -1055,18 +1055,18 @@ var Modes = (function(){
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},
-				finishInteractableStates:function(){
-					_.forEach(_.keys(Modes.canvasInteractables),function(k){
-						_.forEach(Modes.canvasInteractables[k],function(ci){
-							if (ci != undefined && "deactivate" in ci){
-								ci.deactivate();
-							}
-						});
-					});
-					Modes.select.resizing = false;
-					Modes.select.dragging = false;
-					Modes.select.aspectLocked = false;
-				},
+        finishInteractableStates:function(){
+            _.forEach(_.keys(Modes.canvasInteractables),function(k){
+                _.forEach(Modes.canvasInteractables[k],function(ci){
+                    if (ci != undefined && "deactivate" in ci){
+                        ci.deactivate();
+                    }
+                });
+            });
+            Modes.select.resizing = false;
+            Modes.select.dragging = false;
+            Modes.select.aspectLocked = false;
+        },
         text:(function(){
             var texts = [];
             var noop = function(){};
@@ -1282,9 +1282,9 @@ var Modes = (function(){
                     if(DeviceConfiguration.hasOnScreenKeyboard()){
                         var scrollOffset =  Math.min(linesFromTop,Math.max(0,linesInBox - 2)) * cursorY.h;
                         var docWidth = Math.max(
-			    b[2] - b[0],
-			    scaleWorldToScreen(10 * cursorY.h));
-			var ratio = boardWidth / boardHeight;
+                            b[2] - b[0],
+                            scaleWorldToScreen(10 * cursorY.h));
+                        var ratio = boardWidth / boardHeight;
                         var docHeight = docWidth / ratio;
                         DeviceConfiguration.setKeyboard(true);
                         TweenController.zoomAndPanViewbox(
@@ -2187,7 +2187,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
-		    blit();
+                    blit();
                 }
             }
         })(),
