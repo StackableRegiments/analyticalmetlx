@@ -105,12 +105,12 @@ object MeTLEditConversationActorManager extends LiftActor with ListenerManager w
 }
 
 trait ConversationFilter {
-  def filterConversations(in:List[Conversation]):List[Conversation] = {
+  def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is
     lazy val myGroups = Globals.casState.is.eligibleGroups
     in.filter(c => {
       val subject = c.subject.trim.toLowerCase
-      subject != "deleted" && (c.author == Globals.currentUser.is || myGroups.exists(_._2 == subject))
+      ((subject != "deleted" || (includeDeleted && c.author == Globals.currentUser.is)) && (c.author == Globals.currentUser.is || myGroups.exists(_._2 == subject)))
     })
   }
 }
@@ -295,7 +295,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
       val q = args(0).toString
       query = Some(q)
-      listing = filterConversations(serverConfig.searchForConversation(q))
+      listing = filterConversations(serverConfig.searchForConversation(q),true)
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunctionDefinition("createConversation",List("title"),(args) => {
@@ -317,7 +317,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 
   override def localSetup = {
     query = Some(username)
-    listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q)))
+    listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
     super.localSetup
   }
   override def render = OnLoad(
@@ -519,8 +519,14 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => serverConfig.deleteConversation(c.jid.toString)
-        case _ => c
+        case true => {
+          println("deleting conversation %s".format(c.jid))
+          serverConfig.deleteConversation(c.jid.toString)
+        }
+        case _ => {
+          println("refusing to delete conversation %s".format(c.jid))
+          c
+        }
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
@@ -584,7 +590,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   override def render = {
     OnLoad(conversation.map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
-      Call(RECEIVE_USER_GROUPS,getUserGroups) & 
+      Call(RECEIVE_USER_GROUPS,getUserGroups) &
       Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
     }).getOrElse(RedirectTo(conversationSearch())))
   }

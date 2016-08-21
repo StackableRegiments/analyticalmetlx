@@ -402,11 +402,16 @@ var Conversations = (function(){
             $("#projectorViewLink").empty();
             $("#slideDeepLink").empty();
             $("#conversationDeepLink").empty();
+            $("#conversationAnalysis").empty();
             $("#oneNoteExport").empty();
         } else {
             $("#projectorViewLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
                 text:"Project this conversation"
+            }));
+            $("#conversationAnalysis").html($("<a/>",{
+                href:sprintf("/dashboard?source=%s",targetConversationJid),
+                text:"Dashboard for this conversation"
             }));
             $("#slideDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&slideId=%s",targetConversationJid,currentSlide),

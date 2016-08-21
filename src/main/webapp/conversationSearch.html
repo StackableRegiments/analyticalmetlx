@@ -20,12 +20,20 @@
     .jsgrid-pager{
     color:white;
     }
-    .newConversation {
+    .deletedConversationTag{
+    background-color:red;
+    color:white;
+    border:1px solid darkred;
+    padding:0 1em;
+    margin:1em;
+    }
+    .newConversationTag{
     background-color:green;
     color:white;
     border:1px solid darkgreen;
     padding:0 1em;
     margin:1em;
+
     }
   </style>
 
@@ -47,10 +55,15 @@
                 <input type="checkbox" id="onlyMyConversations"></input>
                 <label for="onlyMyConversations"><span class="icon-txt">Only my conversations</span></label>
               </span>
+              <span class="ml directlyOnBackground">
+                <input type="checkbox" id="includeDeleted"></input>
+                <label for="includeDeleted"><span class="icon-txt">Include my archived conversations</span></label>
+              </span>
+
             </div>
           </div>
         </div>
-        <div id="startAConversation" class="indent flex-container-column directlyOnBackground">
+        <div id="startAConversation" class="flex-container-column directlyOnBackground">
           <h1>Start a conversation</h1>
           <div class="indent">
             <div id="createConversationContainer">
