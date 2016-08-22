@@ -79,6 +79,10 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             blit();
             blitMark = Date.now();
+						if (!UserSettings.getIsInteractive()){
+								//projector mode should always start viewing the entire slide
+								zoomToFit();
+						}
             if (afterFunc != undefined){
                 afterFunc();
             }
@@ -129,10 +133,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     }
     catch(e){
         console.log("receiveHistory exception",e);
-    }
-    if (!UserSettings.getIsInteractive()){
-        //projector mode should always start viewing the entire slide
-        zoomToFit();
     }
 }
 var lineDrawingThreshold = 25;
@@ -881,7 +881,7 @@ function clearBoard(incContext,rect){
     }
 }
 var IncludeView = (function(){
-    var fitToRequested = function(incX,incY,incW,incH){//Include at least this much content in your view
+    var fitToRequested = function(incX,incY,incW,incH,notFollowable){//Include at least this much content in your view
         var shouldUpdateRequestedViewbox = false;
         var x = incX;
         if (x == undefined){
@@ -923,12 +923,15 @@ var IncludeView = (function(){
             targetHeight = constrained.height / wr * hr;
             targetWidth = constrained.width;
         }
-        TweenController.zoomAndPanViewbox(constrained.x,constrained.y,targetWidth,targetHeight,undefined,!shouldUpdateRequestedViewbox);
+				var notFollowable = _.every([incX,incY,incW,incH],function(elem){
+					return elem == undefined;
+				}) || notFollowable;
+        TweenController.zoomAndPanViewbox(constrained.x,constrained.y,targetWidth,targetHeight,undefined,!shouldUpdateRequestedViewbox,notFollowable);
         Progress.call("onViewboxChanged");
     };
     return {
-        specific:function(x,y,w,h){
-            return fitToRequested(x,y,w,h);
+        specific:function(x,y,w,h,notFollowable){
+            return fitToRequested(x,y,w,h,notFollowable);
         },
         "default":function(){
             return fitToRequested();
