@@ -68,7 +68,7 @@ var DeviceConfiguration = (function(){
         } catch(e){
             console.log("error while trying to fix the layout:",e);
         }
-        zoomToPage();
+        zoomToPage(true);
         fitFunction();
     };
     var setProjectorOptions = function(){
@@ -79,7 +79,7 @@ var DeviceConfiguration = (function(){
         setSectionVisibility("slides",false);
         setSectionVisibility("header",false);
         fitFunction = projectorFitFunction;
-        zoomToFit();
+        zoomToFit(true);
         $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
             UserSettings.setIsInteractive(true);
             setDefaultOptions();
@@ -181,6 +181,7 @@ var DeviceConfiguration = (function(){
             var slideContainer = comp("#slideContainer");
             var thumbScrollContainer = comp("#thumbScrollContainer");
             var thumbs = $(".thumbnail");
+						var slideControls = comp("#slideControls");
 
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
@@ -206,21 +207,23 @@ var DeviceConfiguration = (function(){
                 }
                 if (showSlides == true){
                     thumbsColumn.show();
+										slideControls.show()
                 } else {
                     thumbsColumn.hide();
+										slideControls.hide();
                 }
                 var boardContainer = comp("#boardContainer");
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
-                comp("#thumbColumnDragHandle").width(DeviceConfiguration.preferredSizes.handles);
-                thumbs.attr("width",px(DeviceConfiguration.preferredSizes.thumbColumn.width));
-                thumbs.attr("height",px(DeviceConfiguration.preferredSizes.thumbColumn.height));
+                comp("#thumbColumnDragHandle").width(showSlides ? DeviceConfiguration.preferredSizes.handles: 0);
+                thumbs.attr("width",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.width : 0));
+                thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
                 var bwidth = boardContainer.width();
                 var bheight = boardContainer.height();
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
-                    bwidth = width - toolsColumn.width() - thumbsColumn.width() - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
+                    bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
                     bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;

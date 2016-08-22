@@ -14,14 +14,14 @@
   <script data-lift="with-resource-id" src="static/js/min/defaults.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Progress.js"></script>
   <script data-lift="with-resource-id" src="static/js/DeviceConfiguration.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/historyReader.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/board.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/toolbar.js"></script>
+  <script data-lift="with-resource-id" src="static/js/historyReader.js"></script>
+  <script data-lift="with-resource-id" src="static/js/board.js"></script>
+  <script data-lift="with-resource-id" src="static/js/toolbar.js"></script>
   <script data-lift="with-resource-id" src="static/js/conversations.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/onLoad.js"></script>
+  <script data-lift="with-resource-id" src="static/js/onLoad.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/test.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/quizzes.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/submissions.js"></script>
@@ -68,25 +68,46 @@
     width:100% !important;
     }
     */
+		.headerRow1 {
+			position:static !important;
+			margin:0;
+		}
+		#slideControls {
+			float:none !important;
+			flex-shrink:0;
+			flex-grow:0;
+			flex-wrap:nowrap;
+		}
+		.main-menu {
+			position:static !important;
+			top: 0px;
+			left: 0px;
+			z-index: 3;
+		}
+		#masterHeaderFlexContainer {
+			display:flex;
+		}
   </style>
   <div>
     <div id="masterHeader">
-      <span id="floatingToggleContainer" class="main-menu">
-        <button class="floatingToolbar btn-menu fa fa-cog btn-icon" id="applicationMenuButton">
-          <div class="icon-txt">Options</div>
-        </button>
-      </span>
-      <div class="headerRow1">
-	<meter id="healthStatus"></meter>
-        <span id="username" ></span>
-        <span id="currentConversationTitleContainer" >
-          <span> working in </span>
-          <span id="currentConversationTitle"></span>
-          <span> Page </span>
-        </span>
-        <span id="currentSlide" ></span>
-      </div>
-      <div id="slideControls"></div>
+			<div id="masterHeaderFlexContainer">
+				<span id="floatingToggleContainer" class="main-menu">
+					<button class="floatingToolbar btn-menu fa fa-cog btn-icon" id="applicationMenuButton">
+						<div class="icon-txt">Options</div>
+					</button>
+				</span>
+				<div class="headerRow1">
+					<meter id="healthStatus"></meter>
+					<span id="username" ></span>
+					<span id="currentConversationTitleContainer" >
+						<span> working in </span>
+						<span id="currentConversationTitle"></span>
+						<span> Page </span>
+					</span>
+					<span id="currentSlide" ></span>
+				</div>
+				<div id="slideControls"></div>
+			</div>
       <span class="lift:embed?what=_backstage-menu"></span>
     </div>
     <div id="masterLayout" class="flex-container-responsive">

@@ -885,21 +885,21 @@ function takeControlOfViewbox(){
     delete Progress.onBoardContentChanged.autoZooming;
     UserSettings.setUserPref("followingTeacherViewbox",true);
 }
-function zoomToFit(){
+function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
     requestedViewboxWidth = boardContent.width;
     requestedViewboxHeight = boardContent.height;
-    IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height);
+    IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height,followable);
 }
-function zoomToOriginal(){
+function zoomToOriginal(followable){
     takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
     requestedViewboxHeight = boardHeight;
-    IncludeView.specific(0,0,boardWidth,boardHeight);
+    IncludeView.specific(0,0,boardWidth,boardHeight,followable);
 }
-function zoomToPage(){
+function zoomToPage(followable){
     takeControlOfViewbox();
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
@@ -907,7 +907,7 @@ function zoomToPage(){
     requestedViewboxHeight = boardHeight;
     var xPos = viewboxX + ((oldReqVBW - requestedViewboxWidth) / 2);
     var yPos = viewboxY + ((oldReqVBH - requestedViewboxHeight) / 2);
-    IncludeView.specific(xPos,yPos,boardWidth,boardHeight);
+    IncludeView.specific(xPos,yPos,boardWidth,boardHeight,followable);
 }
 function receiveS2C(id,markup){
     try{
