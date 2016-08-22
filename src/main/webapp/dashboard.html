@@ -1,6 +1,7 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
   <head>
     <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+    <link rel="stylesheet" href="static/css/analysis.css"></link>
     <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
     <script src="static/js/stable/lodash.min.js"></script>
     <script src="static/js/stable/moment.min.js"></script>
@@ -12,16 +13,23 @@
     <div class="row">
       <h2>Dashboard</h2>
     </div>
-    <div class="lift:Analytics flex-container-responsive">
-      <div class="shrinkWrappedColumn">
+    <div class="lift:Analytics">
+      <div class="row">
         <h3>Processing</h3>
         <div id="status"></div>
         <div id="bootstrap"></div>
       </div>
-      <div class="shrinkWrappedColumn">
-        <h3>Visualisations</h3>
-        <div id="display" class="ml">
-	</div>
+      <div class="flex-container-responsive">
+        <div class="shrinkWrappedColumn">
+          <h3>Over time</h3>
+          <div id="displayOverTime" class="ml">
+          </div>
+        </div>
+        <div class="shrinkWrappedColumn ml">
+          <h3>Over pages</h3>
+          <div id="displayOverPages" class="ml">
+          </div>
+        </div>
       </div>
     </div>
   </div>

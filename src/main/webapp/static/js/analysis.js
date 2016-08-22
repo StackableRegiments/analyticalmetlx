@@ -11,7 +11,6 @@ var Analytics = (function(){
         }
         displays[key].touches += 1;
         var text = sprintf("%s %s %s",_.repeat("..",displays[key].touches),msg,key)
-        console.log(text);
         displays[key].element.html($("<div />",{
             text:text
         }));
@@ -29,69 +28,162 @@ var Analytics = (function(){
     var shortFormat = function(mString){
         return moment(parseInt(mString)).format("HH:mm MM/DD");
     };
-    var chartAttendance = function(_data){
+    var chartAttendance = function(attendances){
         var MINUTE = 60 * 1000;
-        var color = d3.scale.category10();
-        var datasets = _.map(_data,function(xs,location){
-            var rounded = _.groupBy(xs,function(x){
-                return Math.floor(x.timestamp / MINUTE)
-            });
-            var data = _.map(_.sortBy(_.keys(rounded)),function(minute){
+	var WIDTH = 640;
+	var HEIGHT = 240;
+	/*Over time*/
+        _.forEach({
+            locationOverTime:{
+                dataset:_.groupBy(attendances,"location"),
+                title:"Page attendance",
+                yLabel:"Visits to page"
+            },
+            authorsOverTime:{
+                dataset:_.groupBy(_.map(attendances,function(attendance){
+                    return {
+                        timestamp:Math.floor(attendance.timestamp / MINUTE * MINUTE),
+                        author:attendance.author,
+                        location:attendance.location
+                    };
+                }),"author"),
+                title:"Authors",
+                yLabel:"Pages visited"
+            }
+        },function(config,key){
+            var color = d3.scale.category10();
+            var dataset = _.map(config.dataset,function(xs,location){
+                var rounded = _.groupBy(xs,function(x){
+                    return Math.floor(x.timestamp / MINUTE)
+                });
+                var data = _.map(_.sortBy(_.keys(rounded)),function(minute){
+                    return {
+                        x:minute * MINUTE,
+                        y:rounded[minute].length
+                    }
+                });
                 return {
-                    x:minute * MINUTE,
-                    y:rounded[minute].length
+                    label:location,
+                    tension:0.1,
+                    borderColor:color(location),
+                    data:data
                 }
             });
-            return {
-                label:location,
-                tension:0.1,
-                borderColor:color(location),
-                data:data
-            }
-        });
-        if(!("attendance" in charts)){
-            charts.attendance = new Chart(
-                $("<canvas />").attr({
-                    width:800,
-                    height:300
-                }).appendTo($("#display"))[0].getContext("2d"),
-                {
-                    type:"line",
-                    data:{
-                        datasets:datasets
-                    },
-                    options:{
-                        scales:{
-                            yAxes:[{
-                                stacked:true,
-                                scaleLabel:{
-                                    display:true,
-                                    labelString:"Moving to page"
-                                }
-                            }],
-                            xAxes:[{
-                                type:"linear",
-                                label:"Entries per minute",
-                                position:"bottom",
-                                ticks:{
-                                    callback:function(value){
-                                        return shortFormat(value);
+            if(!(key in charts)){
+                charts[key] = new Chart(
+                    $("<canvas />").attr({
+                        width:WIDTH,
+                        height:HEIGHT
+                    }).appendTo($("#displayOverTime"))[0].getContext("2d"),
+                    {
+                        type:"line",
+                        data:{
+                            datasets:dataset
+                        },
+                        options:{
+                            title:{
+                                display:true,
+                                text:config.title
+                            },
+                            showLines:false,
+                            scales:{
+                                yAxes:[{
+                                    stacked:true,
+                                    scaleLabel:{
+                                        display:true,
+                                        labelString:config.yLabel
                                     }
-                                }
-                            }]
+                                }],
+                                xAxes:[{
+                                    type:"linear",
+                                    scaleLabel:{
+                                        display:true,
+                                        labelString:"Time"
+                                    },
+                                    position:"bottom",
+                                    ticks:{
+                                        callback:function(value){
+                                            return shortFormat(value);
+                                        }
+                                    }
+                                }]
+                            }
                         }
                     }
+                );
+            }
+            else{
+                charts[key].data.datasets = dataset;
+                charts[key].update();
+            }
+        });
+	/*Over pages*/
+        _.forEach({
+            distinctUsersOverSlides:{
+                dataset:_.groupBy(attendances,"location"),
+                title:"Furthest page reached",
+                yLabel:"Users who reached this page",
+                xLabel:"Page"
+            }
+        },function(config,key){
+            var color = d3.scale.category10();
+            var dataset = [
+                {
+		    label:"Distinct users",
+                    tension:0.1,
+                    borderColor:color(0),
+                    data:_.map(config.dataset,function(xs,location){
+                        return {
+                            x:location,
+                            y:_.uniqBy(xs,"author").length
+                        }
+                    })
                 }
-            );
-        }
-        else{
-            console.log(charts.attendance.data);
-            charts.attendance.data.datasets = datasets;
-            charts.attendance.update();
-        }
-    };
+            ];
+            if(!(key in charts)){
+                charts[key] = new Chart(
+                    $("<canvas />").attr({
+                        width:WIDTH,
+                        height:HEIGHT
+                    }).appendTo($("#displayOverPages"))[0].getContext("2d"),
+                    {
+                        type:"line",
+                        data:{
+                            datasets:dataset
+                        },
+                        options:{
+                            title:{
+                                display:true,
+                                text:config.title
+                            },
+                            showLines:true,
+                            scales:{
+                                yAxes:[{
+                                    stacked:true,
+                                    scaleLabel:{
+                                        display:true,
+                                        labelString:config.yLabel
+                                    }
+                                }],
+                                xAxes:[{
+                                    type:"linear",
+                                    scaleLabel:{
+                                        display:true,
+                                        labelString:"Page"
+                                    },
+                                    position:"bottom"
+                                }]
+                            }
+                        }
+                    });
+            }
+            else{
+                charts[key].data.datasets = dataset;
+                charts[key].update();
+            }
+        });
+    }
     var incorporate = function(xHistory){
-        console.log(xHistory);
         var history = $(xHistory);
         _.forEach(history.find("message"),function(message){
             var m = $(message);
@@ -113,7 +205,7 @@ var Analytics = (function(){
         status(sprintf("Anchored %s",dFormat(max)),"latest event");
         status(events.length,"events scoped");
         status(_.uniq(authors).length,"authors scoped");
-        chartAttendance(_.groupBy(attendances,"location"));
+        chartAttendance(attendances);
     };
     return {
         prime:function(conversation){
