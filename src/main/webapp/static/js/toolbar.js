@@ -990,7 +990,9 @@ var Modes = (function(){
                             word.doc.width() * resized.xScale,
                             Modes.text.minimumWidth / scale()
                         ));
-                        sendRichText(word);
+                        if(word.save().length > 0){
+                            sendRichText(word);
+                        }
                     });
                     Modes.text.invalidateSelectedBoxes();
                     registerTracker(resized.identity,function(){
