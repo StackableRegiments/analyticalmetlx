@@ -26,7 +26,7 @@ function setupStatus(){
     }
     window.updateTracking = function(id){
         if(id in progressFuncs){
-	    var func = progressFuncs[id];
+            var func = progressFuncs[id];
             delete progressFuncs[id];
             func();
         }
@@ -80,7 +80,7 @@ function strokeCollected(spoints){
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
         calculateInkBounds(ink);
-	prerenderInk(ink);
+        prerenderInk(ink);
         if(ink.isHighlighter){
             boardContent.highlighters[ink.identity] = ink;
         }
@@ -181,6 +181,7 @@ function richTextEditorToStanza(t){
 function sendRichText(t){
     Modes.text.echoesToDisregard[t.identity] = true;
     var stanza = richTextEditorToStanza(t);
+    console.log(stanza);
     sendStanza(stanza);
 }
 sendRichText = _.debounce(sendRichText,1000);

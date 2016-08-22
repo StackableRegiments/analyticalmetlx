@@ -837,10 +837,10 @@ var Modes = (function(){
                         }
                     },
                     down:function(worldPos){
-                        resizeAspectLocked.activated = true;
                         Modes.select.aspectLocked = true;
                         Modes.select.dragging = false;
                         Modes.select.resizing = true;
+                        resizeAspectLocked.activated = true;
                         var root = Modes.select.totalSelectedBounds();
                         Modes.select.offset = {x:root.x2,y:root.y2};
                         blit();
