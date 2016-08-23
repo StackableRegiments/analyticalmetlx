@@ -40,8 +40,65 @@ case class CloudConvertOutputElement(url:String,filename:String,size:Option[Long
 case class CloudConvertConverterElement(format:String,`type`:String,options:Option[JObject],duration:Double)
 case class CloudConvertStatusMessageResponse(id:String,url:Option[String],percent:Option[String],message:Option[String],step:String,starttime:Option[Long],expire:Long,input:Option[CloudConvertInputElement],converter:Option[CloudConvertConverterElement],output:Option[CloudConvertOutputElement],endtime:Option[Long])
 
+object ExceptionHelper {
+  def toStackTrace(in:Seq[JValue]):Array[StackTraceElement] = in.map{
+    case JObject(
+      List(
+        JField("declaringClass",JString(declaringClass)),
+        JField("methodName",JString(methodName)),
+        JField("filename",JString(fileName)),
+        JField("lineNumber",JInt(lineNumber))
+      )
+    ) => new StackTraceElement(declaringClass,methodName,fileName,lineNumber.toInt)
+    case JObject(
+      List(
+        JField("declaringClass",JString(declaringClass)),
+        JField("methodName",JString(methodName)),
+        JField("filename",JNull),
+        JField("lineNumber",JInt(lineNumber))
+      )
+    ) => new StackTraceElement(declaringClass,methodName,null,lineNumber.toInt)
+
+  }.toList.toArray
+  def fromStackTrace(in:Seq[StackTraceElement]):List[JObject] =in.map{
+    case s:StackTraceElement => JObject(
+      List(
+        JField("declaringClass",JString(s.getClassName())),
+        JField("methodName",JString(s.getMethodName())),
+        JField("filename",s.getFileName() match {
+          case null => JNull
+          case s:String => JString(s)
+        }),
+        JField("lineNumber",JInt(s.getLineNumber()))
+      )
+    )
+  }.toList
+}
+
+class ExceptionSerializer extends CustomSerializer[Exception](ser => ({
+  case JObject(
+    List(
+      JField("message",JString(message)),
+      JField("stacktrace",JArray(stackTraceSeq))
+    )
+  ) => {
+    
+    val ex = new Exception(message)
+    ex.setStackTrace(ExceptionHelper.toStackTrace(stackTraceSeq))
+    ex
+  }
+},{
+  case ex:Exception => JObject(
+    List(
+      JField("message",JString(ex.getMessage())),
+      JField("stacktrace",JArray(ExceptionHelper.fromStackTrace(ex.getStackTrace())))
+    )
+  )
+}))
+
+
 class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:ImportDescription=>Unit = (id:ImportDescription) => {}) extends Logger {
-  implicit val formats = DefaultFormats
+  implicit val formats = DefaultFormats + new ExceptionSerializer()
   val downscaler = new ImageDownscaler(16 * 1024 * 1024)
   val unzipper = new Unzipper
   protected val convertUrl = "https://api.cloudconvert.com/convert"
