@@ -161,6 +161,19 @@ function richTextEditorToStanza(t){
     if(!t.bounds) t.doc.invalidateBounds();
     var bounds = t.bounds;
     var text = t.doc.save();
+		if (t.slide == undefined){
+			t.slide = Conversations.getCurrentSlideJid();
+		};
+		if (t.author == undefined){
+			t.author = UserSettings.getUsername();
+		};
+		if (t.target == undefined){
+			t.target = "presentationSpace";
+		};
+		if (t.privacy == undefined){
+			t.privacy = Privacy.getCurrentPrivacy();
+		};
+
     return {
         author:t.author,
         timestamp:-1,
@@ -209,10 +222,10 @@ function submissionReceived(submission){
 }
 function commandReceived(c){
     if(c.command == "/TEACHER_VIEW_MOVED"){
-        if(c.parameters[5] != Conversations.getCurrentSlideJid()){
+        if(c.parameters[5] != Conversations.getCurrentSlide().id.toString()){
             return;
         }
-        var ps = c.parameters.map(parseFloat);
+        var ps = _.slice(c.parameters,0,6).map(parseFloat);
         if(_.some(ps,isNaN)){
             console.log("Can't follow teacher to",c);
             return;
@@ -221,9 +234,19 @@ function commandReceived(c){
             return;
         }
         if(Conversations.getIsSyncedToTeacher()){
+					console.log("teacherViewMoved",c);
             var f = function(){
-                zoomToPage();
-                TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
+							var controllerIdentity = c.parameters[4];
+							var slide = ps[5];
+							var autoZoomingMode = c.parameters[6];
+							if (slide == Conversations.getCurrentSlide().id.toString()){
+								if (autoZoomingMode == "true"){
+									zoomToFit();
+								} else {
+									zoomToPage();
+									TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
+								}
+							}
             };
             if(UserSettings.getIsInteractive()){
                 // interactive users don't chase the teacher's viewbox, only projectors do.

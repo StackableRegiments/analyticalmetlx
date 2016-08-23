@@ -105,6 +105,7 @@ var WorkQueue = (function(){
 })();
 var Pan = {
     pan:function(xDelta,yDelta){
+					takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         /*
@@ -115,6 +116,7 @@ var Pan = {
         TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
     },
     translate:function(xDelta,yDelta){
+					takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         /*
@@ -182,6 +184,7 @@ var Zoom = (function(){
     }
     return {
         scale:function(scale,ignoreLimits){
+					takeControlOfViewbox();
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -198,6 +201,7 @@ var Zoom = (function(){
             TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
         },
         zoom:function(scale,ignoreLimits,onComplete){
+					takeControlOfViewbox();
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -286,8 +290,8 @@ var TweenController = (function(){
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
             //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
-            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid()];
-            if(w == 0 || h == 0){
+            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid(),"autoZooming" in Progress.onBoardContentChanged];
+            if(w <= 0 || h <= 0){
                 return;
             }
             if(_.some(ps,function(p){
@@ -522,8 +526,12 @@ $(function(){
     $("#down").click(bounceAnd(Extend.down));
     $("#left").click(bounceAnd(Extend.left));
     $("#right").click(bounceAnd(Extend.right));
-    $("#in").click(bounceAnd(Zoom.in));
-    $("#out").click(bounceAnd(Zoom.out));
+    $("#in").click(bounceAnd(function(){
+			Zoom.in();
+		}));
+    $("#out").click(bounceAnd(function(){
+			Zoom.out();
+		}));
     $("#drawMode").click(function(){
         if(Modes.currentMode != Modes.draw){
             Modes.draw.activate();
@@ -581,9 +589,9 @@ $(function(){
         $("#showGrid").attr("checked",showGrid);
     }
     setLoadProgress(2);
-    $("#zoomToFull").click(bounceAnd(zoomToFit));
-    $("#zoomToPage").click(bounceAnd(zoomToPage));
-    $("#zoomToOriginal").click(bounceAnd(zoomToOriginal));
+    $("#zoomToFull").click(bounceAnd(function(){ zoomToFit(); }));
+    $("#zoomToPage").click(bounceAnd(function(){ zoomToPage(); }));
+    $("#zoomToOriginal").click(bounceAnd(function(){ zoomToOriginal(); }));
     window.currentBackstage = noActiveBackstage;
     $("#hideBackstage").click(bounceAnd(hideBackstage));
     $("#applicationMenuButton").click(function(){
