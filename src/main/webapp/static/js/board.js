@@ -161,6 +161,19 @@ function richTextEditorToStanza(t){
     if(!t.bounds) t.doc.invalidateBounds();
     var bounds = t.bounds;
     var text = t.doc.save();
+		if (t.slide == undefined){
+			t.slide = Conversations.getCurrentSlideJid();
+		};
+		if (t.author == undefined){
+			t.author = UserSettings.getUsername();
+		};
+		if (t.target == undefined){
+			t.target = "presentationSpace";
+		};
+		if (t.privacy == undefined){
+			t.privacy = Privacy.getCurrentPrivacy();
+		};
+
     return {
         author:t.author,
         timestamp:-1,

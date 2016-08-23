@@ -1080,6 +1080,8 @@ var Modes = (function(){
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     privacy:Privacy.getCurrentPrivacy(),
+										slide:Conversations.getCurrentSlideJid(),
+										target:"presentationSpace",
                     requestedWidth:width,
                     width:width,
                     height:0,
