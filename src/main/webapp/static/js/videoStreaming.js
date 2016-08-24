@@ -1,26 +1,34 @@
 var VideoStream = function(constraints,sessionId){
 	var userId = new Date().getTime().toString();
-	var peerConnection;
+	var isCaller = false;
+	var configuration = null; // I'm not sure what config a WebRTC connection can take yet;
+	var peerConnection = new RTCPeerConnection(configuration);
 	var receiveDescriptionFunc = function(desc){
-		if (peerConnection != undefined){
-			peerConnection.setRemoteDescription(new RTCSessionDescription(desc));
+		console.log("addingDesc: ",desc);
+		peerConnection.setRemoteDescription(new RTCSessionDescription(desc));
+		if (isCaller == false){
+			startConference(false);
 		}
 	};
 	var receiveCandidateFunc = function(candidate){
-		if (peerConnection != undefined){
+		if (peerConnection != undefined && candidate != null){
+			console.log("addingIceCandidate: ",candidate);
 			peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
 		}
 	};
 	var receive = function(message){
 		console.log("messageReceived:",message);
 		if ("candidate" in message.data){
-			receiveCandidateFunc(JSON.parse(message.candidate));
+			receiveCandidateFunc(JSON.parse(message.data.candidate));
 		}
 		if ("description" in message.data){
-			receiveDescriptionFunc(JSON.parse(message.description));
+			receiveDescriptionFunc(JSON.parse(message.data.description));
 		}
 		if ("connect" in message.data){
-			startConference(message.data.isCaller);
+			if (message.data.isCaller){
+				isCaller = true;
+				startConference(message.data.isCaller);
+			};
 		}
 	};
 
@@ -56,7 +64,6 @@ var VideoStream = function(constraints,sessionId){
 		width:240,
 		height:180
 	})[0];
-	var configuration = null; // I'm not sure what config a WebRTC connection can take yet;
 	var offerOptions = {
 		offerToReceiveAudio:true,
 		offerToReceiveVideo:true
@@ -78,44 +85,42 @@ var VideoStream = function(constraints,sessionId){
 		}
 	};
 	var startConference = function(isCaller){
-		if (peerConnection == undefined){
-			console.log("startingConference: ",isCaller);
-			peerConnection = new RTCPeerConnection(configuration);
+		console.log("startingConference: ",isCaller);
 
-			peerConnection.onaddstream = function(remoteE){
-				remoteVideo.srcObject = remoteE.stream;
-				remoteVideo.play();
-			};
-			peerConnection.onicecandidate = function(e){
-				sendCandidate(e.candidate);
-			};
-			if ("mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices){
-				navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(localStream){
-					localVideo.srcObject = localStream;
-					localVideo.play();
-					peerConnection.addStream(localStream);
-					peerConnection.onnegotiationeeded = function(negError) {
-						console.log("local negotiation requested, error:",negError); //not sure what to do about negotiation yet
-					};
-					if (isCaller == true){
-						console.log("calling");
-						peerConnection.createOffer(offerOptions).then(function(desc){
-							console.log("creating offer:",desc);
-							peerConnection.setLocalDescription(desc);
-							sendDescription(desc);
-						});
-					} else {
-						console.log("answering");
-						peerConnection.createAnswer().then(peerConnection.remoteDescription,function(desc){
-							peerConnection.setLocalDescription(desc);
-							sendDescription(desc);
-						});
-					}
-				}).catch(function(error){
-					console.log("error getting device:",error);
-				});
-			}	
-		}
+		peerConnection.onaddstream = function(remoteE){
+			remoteVideo.srcObject = remoteE.stream;
+			remoteVideo.play();
+		};
+		peerConnection.onicecandidate = function(e){
+			sendCandidate(e.candidate);
+		};
+		if ("mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices){
+			navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(localStream){
+				localVideo.srcObject = localStream;
+				localVideo.play();
+				peerConnection.addStream(localStream);
+				peerConnection.onnegotiationeeded = function(negError) {
+					console.log("local negotiation requested, error:",negError); //not sure what to do about negotiation yet
+				};
+				if (isCaller == true){
+					console.log("calling");
+					peerConnection.createOffer(offerOptions).then(function(desc){
+						console.log("creating offer:",desc);
+						peerConnection.setLocalDescription(desc);
+						sendDescription(desc);
+					});
+				} else {
+					console.log("answering",peerConnection.remoteDescription);
+					peerConnection.createAnswer().then(function(desc){
+						console.log("answerCreated",desc);
+						peerConnection.setLocalDescription(desc);
+						sendDescription(desc);
+					});
+				}
+			}).catch(function(error){
+				console.log("error getting device:",error);
+			});
+		}	
 	};
 	var sendDescription = function(desc){
 		signallingChannel.send({

@@ -1,34 +1,39 @@
 self.sessions = {};
 
+var initiatorTag = "initiator";
+var receiverTag = "receiver";
+var sessionIdTag = "sessionId";
+var storedMessagesTag = "storedMessages";
+
 self.addEventListener("connect",function(e){
 	var port = e.ports[0];
 	port.onmessage = function(rawMsg){
 		var msg = rawMsg.data;
-		if ("sessionId" in msg){
+		if (sessionIdTag in msg){
 			var sessionId = msg.sessionId;
-			if (!("sessionId" in sessions)){
-				sessions[sessionId] = {
+			if (!(sessionId in self.sessions)){
+				self.sessions[sessionId] = {
 					id:sessionId
 				};
 			}
 			var session = sessions[sessionId];
-			if ("initiator" in session && session.initiator.userId == msg.userId){
+			if (initiatorTag in session && session[initiatorTag].userId == msg.userId){
 				//you're the pre-existing initiator
-				if ("receiver" in session){
-					session.receiver.port.postMessage(msg);
+				if (receiverTag in session){
+					session[receiverTag].port.postMessage(msg);
 				} else {
-					session.initiator.storedMessages.push(msg);
+					session[initiatorTag][storedMessagesTag].push(msg);
 				}
-			} else if ("receiver" in session && session.receiver.userId == msg.userId){
+			} else if (receiverTag in session && session[receiverTag].userId == msg.userId){
 				//you're the pre-existing receiver
-				if ("initiator" in session){
-					session.initiator.port.postMessage(msg);
+				if (initiatorTag in session){
+					session[initiatorTag].port.postMessage(msg);
 				} else {
-					session.receiver.storedMessages.push(msg);
+					session[receiverTag][storedMessages].push(msg);
 				}
-			} else if (!("initiator" in session)){
+			} else if (!(initiatorTag in session)){
 				//you're the new initiator
-				session.initiator = {
+				session[initiatorTag] = {
 					userId:msg.userId,
 					port:port,
 					storedMessages:[]
@@ -38,16 +43,17 @@ self.addEventListener("connect",function(e){
 					"connect":sessionId,
 					"isCaller":true
 				});
-				if ("receiver" in session && "storedMessages" in session.receiver){
+				if (receiverTag in session && storedMessagesTag in session.receiver){
 					//playback any stored messages from the receiver 
-					while (session.receiver.storedMessages.peek() != undefined){
-						port.postMessage(session.receiver.storedMessages.pop());
+					var currentMessage = session[receiverTag][storedMessagesTag].shift();
+					while (currentMessage != undefined){
+						port.postMessage(currentMessage);
+						currentMessage = session[receiverTag][storedMessagesTag].shift();
 					}
 				}
-				throw JSON.stringify(sessions);
-			} else if (!("receiver" in session)){
+			} else if (!(receiverTag in session)){
 				//you're the new recipient
-				session.receiver = {
+				session[receiverTag] = {
 					userId:msg.userId,
 					port:port,
 					storedMessage:[]
@@ -57,14 +63,19 @@ self.addEventListener("connect",function(e){
 					"connect":sessionId,
 					"isCaller":false
 				});
-				if ("initiator" in session && "storedMessages" in session.initiator){
+				if (initiatorTag in session && storedMessagesTag in session.initiator){
 					//playback any stored messages from the initiator
-					while (session.initiator.storedMessages.peek() != undefined){
-						port.postMessage(session.initiator.storedMessages.pop());
+					//
+					var currentMessage = session[initiatorTag][storedMessagesTag].shift();
+					while (currentMessage != undefined){
+						port.postMessage(currentMessage);
+						currentMessage = session[initiatorTag][storedMessagesTag].shift();
 					}
 				}
 			} else {
-				port.postMessage("too many people in this session");
+				port.postMessage({
+					error:"too many people in this session"
+				});
 				port.close();
 			}
 		}
