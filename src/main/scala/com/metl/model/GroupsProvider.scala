@@ -12,6 +12,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
 import scala.io.Source
 import scala.xml.{Source=>XmlSource,_}
+import com.metl.liftAuthenticator.LiftAuthStateData
 
 object GroupsProvider {
   def createFlatFileGroups(in:NodeSeq):GroupsProvider = {
@@ -45,6 +46,7 @@ object GroupsProvider {
         userId <- (in \\ "@userId").headOption.map(_.text)
         userKey <- (in \\ "@userKey").headOption.map(_.text)
         diskStore <- (in \\ "@diskStore").headOption.map(_.text)
+        overrideUsername = (in \\ "@overrideUsername").headOption.map(_.text)
         refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
       } yield {
         val diskCache = new GroupStoreDataFile(diskStore)
@@ -55,7 +57,7 @@ object GroupsProvider {
             diskCache.read,
             Some(g => diskCache.write(g))
           )
-        )
+        ,overrideUsername)
       }).getOrElse({
         throw new Exception("missing parameters for d2l groups provider")
       })
@@ -80,15 +82,16 @@ object GroupKeys {
 }
 
 trait GroupsProvider extends Logger {
-  def getGroupsFor(username:String):List[Tuple2[String,String]] = Nil
+  def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
   def getMembersFor(groupName:String):List[String] = Nil
-  def getPersonalDetailsFor(username:String):List[Tuple2[String,String]] = Nil
+  def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
 }
 
-class StoreBackedGroupsProvider(gs:GroupStoreProvider) extends GroupsProvider {
-  override def getGroupsFor(username:String):List[Tuple2[String,String]] = gs.getGroups.get(username).getOrElse(Nil)
+class StoreBackedGroupsProvider(gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider {
+  protected def resolveUser(userData:LiftAuthStateData):String = usernameOverride.flatMap(uo => userData.informationGroups.find(_._1 == uo).map(_._2)).getOrElse(userData.username)
+  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)
   override def getMembersFor(groupName:String):List[String] = gs.getMembers.get(groupName).getOrElse(Nil)
-  override def getPersonalDetailsFor(username:String):List[Tuple2[String,String]] = gs.getPersonalDetails.get(username).getOrElse(Nil)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gs.getPersonalDetails.get(resolveUser(userData)).getOrElse(Nil)
 }
 
 case class GroupStoreData(
@@ -231,7 +234,7 @@ class GroupStoreDataFile(diskStorePath:String) {
 // original stuff
 
 class SelfGroupsProvider extends GroupsProvider {
-  override def getGroupsFor(username:String) = List(("ou",username))
+  override def getGroupsFor(userData:LiftAuthStateData) = List(("ou",userData.username))
 }
 
 
@@ -250,7 +253,7 @@ abstract class PeriodicallyRefreshingGroupsProvider[T](refreshPeriod:TimeSpan) e
   protected def shouldCheck:Boolean
   protected def actuallyFetchGroups:T
   protected def parseStore(username:String,store:T):List[Tuple2[String,String]] 
-  override def getGroupsFor(username:String):List[Tuple2[String,String]] = parseStore(username,lastCache)
+  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = parseStore(userData.username,lastCache)
 }
 
 abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[T](refreshPeriod) { 
