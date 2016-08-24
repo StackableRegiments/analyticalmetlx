@@ -118,7 +118,7 @@ object Globals extends PropertyReader with Logger {
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
         val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]]
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        println("userAttributes from authenticator: %s".format(userAttributes))
+        //println("userAttributes from authenticator: %s".format(userAttributes))
         val prelimAuthStateData = LiftAuthStateData(true,username,userGroups,userAttributes)
         val additionalGroupsFromProviders = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
         val groups = userGroups ::: additionalGroupsFromProviders
