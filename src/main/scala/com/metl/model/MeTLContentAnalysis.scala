@@ -4,6 +4,7 @@ import dispatch._, Defaults._
 import com.metl.data._
 import net.liftweb.json._
 import net.liftweb.common.Logger
+import scala.xml._
 
 case class Theme(author:String,text:String)
 
@@ -20,6 +21,10 @@ case class Chunk(activity:Seq[MeTLCanvasContent]){
 
 object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
+  val filePath = Globals.configurationFileLocation
+  val propFile = XML.load(filePath)
+  
+
   val analysisThreshold = 5
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
   def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
@@ -69,7 +74,7 @@ object CanvasContentAnalysis extends Logger {
     }
     else{
       debug("Loading themes for %s strokes".format(inks.size))
-      val myScriptKey = "exampleKey"
+      val myScriptKey = (propFile \\ "myScriptApiKey").text
       val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
 
       val json = JObject(List(
@@ -81,13 +86,15 @@ object CanvasContentAnalysis extends Logger {
           JField("textParameter",JObject(List(
             JField("language",JString("en_US"))))))))))
 
+      val input = compact(render(json))
       val req = host(myScriptUrl).secure << Map(
         ("applicationKey" -> myScriptKey),
-        ("analyzerInput" -> compact(render(json))))
+        ("analyzerInput" -> input))
 
       req.setContentType("application/x-www-form-urlencoded","UTF-8")
 
       val f = Http(req OK as.String).either
+      debug("Consuming %s bytes of MyScript cartridge".format(input.length))
       debug(f)
       val response = for(
         s <- f.right
