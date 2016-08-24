@@ -88,7 +88,11 @@ trait GroupsProvider extends Logger {
 }
 
 class StoreBackedGroupsProvider(gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider {
-  protected def resolveUser(userData:LiftAuthStateData):String = usernameOverride.flatMap(uo => userData.informationGroups.find(_._1 == uo).map(_._2)).getOrElse(userData.username)
+  protected def resolveUser(userData:LiftAuthStateData):String = {
+    val key = usernameOverride.flatMap(uo => userData.informationGroups.find(_._1 == uo).map(_._2)).getOrElse(userData.username)
+    println("resolveUser: %s => %s".format(userData))
+    key
+  }
   override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)
   override def getMembersFor(groupName:String):List[String] = gs.getMembers.get(groupName).getOrElse(Nil)
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gs.getPersonalDetails.get(resolveUser(userData)).getOrElse(Nil)
