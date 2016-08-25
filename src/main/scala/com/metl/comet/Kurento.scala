@@ -104,6 +104,9 @@ object Loopback extends KurentoPipelineType {
 object Broadcast extends KurentoPipelineType {
   override def generatePipeline(name:String):KurentoPipeline = BroadcastPipeline(name)
 }
+object Roulette extends KurentoPipelineType {
+  override def generatePipeline(name:String):KurentoPipeline = RoulettePipeline(name)
+}
 
 class KurentoPipeline(name:String) extends Logger {
   protected val pipeline = KurentoManager.client.createMediaPipeline()
@@ -130,6 +133,50 @@ case class LoopbackPipeline(name:String) extends KurentoPipeline(name) {
     super.shutdown(rtc)
   }
 }
+
+case class RoulettePipeline(name:String) extends KurentoPipeline(name) {
+  var a:Option[WebRtcEndpoint] = None
+  var b:Option[WebRtcEndpoint] = None
+  override def buildRtcEndpoint:WebRtcEndpoint = {
+    val newEndpoint = super.buildRtcEndpoint
+    if (a == None){
+      a = Some(newEndpoint)
+    } else if (b == None){
+      b = Some(newEndpoint)
+      a.foreach(e => {
+        e.connect(newEndpoint)
+        newEndpoint.connect(e)
+      })
+    } else {
+      a.foreach(_.release())
+      a = b
+      b = Some(newEndpoint)
+      a.foreach(e => {
+        e.connect(newEndpoint)
+        newEndpoint.connect(e)
+      })
+    }
+    newEndpoint
+  }
+  override def shutdown(rtc:WebRtcEndpoint):Unit = {
+    if (a.exists(_ == rtc)){
+      a.foreach(e => {
+        e.release()
+        a = b
+      })
+    }
+    if (b.exists(_ == rtc)){
+      b.foreach(e => {
+        e.release()
+      })
+    }
+    if (a == None && b == None){
+      KurentoManager.removePipeline(name,Roulette)
+      super.shutdown(rtc)
+    }
+  }
+}
+
 case class BroadcastPipeline(name:String) extends KurentoPipeline(name) {
   protected var sender:Option[WebRtcEndpoint] = None
   protected var receivers:List[WebRtcEndpoint] = Nil
@@ -211,6 +258,7 @@ trait KurentoUtils {
     (pipeType match {
         case "loopback" => Some(Loopback)
         case "broadcast" => Some(Broadcast)
+        case "roulette" => Some(Roulette)
         case _ => None
     }).map(pipelineType => KurentoManager.getPipeline(name,pipelineType))
   }

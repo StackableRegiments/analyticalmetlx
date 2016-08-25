@@ -19,6 +19,7 @@ var KurentoStream = (function(){
 			}
 		}; 
 	};
+	var opts = {};
 	var offerFunc = function(videoType){ return function(error){
 		if (error){
 			console.log("startFuncError:",error);
@@ -34,13 +35,14 @@ var KurentoStream = (function(){
 		}
 		var peerGen = kurentoUtils.WebRtcPeer
 		if (send && recv){
-			webRtcPeer = new peerGen.WebRtcPeerSendrecv(options(),offerFunc(videoType));
+			opts = options();
+			webRtcPeer = new peerGen.WebRtcPeerSendrecv(opts,offerFunc(videoType));
 		} else if (send){
-			var opts = options();
+			opts = options();
 			delete opts.remoteVideo;
 			webRtcPeer = new peerGen.WebRtcPeerSendonly(opts,offerFunc(videoType));
 		} else if (recv){
-			var opts = options();
+			opts = options();
 			delete opts.localVideo;
 			webRtcPeer = new peerGen.WebRtcPeerRecvonly(opts,offerFunc(videoType));
 		}	
@@ -54,6 +56,9 @@ var KurentoStream = (function(){
 	};
 	var listenFunc = function(){
 		return startFunc("broadcast",false,true);
+	};
+	var rouletteFunc = function(){
+		return startFunc("roulette",true,true);
 	};
 	var getLocalVideoFunc = function(){
 		return localVideo;
@@ -79,7 +84,12 @@ var KurentoStream = (function(){
 				if (error != undefined){
 					console.log("receiveAnswerError",answer,error);
 				}
-				remoteVideo.play(); // not sure when to do this, but I think it's here.
+				if ("remoteVideo" in opts){
+					remoteVideo.play(); // not sure when to do this, but I think it's here.
+				}
+				if ("localVideo" in opts){
+					localVideo.play();
+				}
 			});
 		}
 	};	
@@ -88,6 +98,7 @@ var KurentoStream = (function(){
 		receiveAnswer:receiveAnswerFunc,	
 		loopback:loopbackFunc,
 		broadcast:broadcastFunc,
+		roulette:rouletteFunc,
 		listen:listenFunc,
 		getLocalVideo:getLocalVideoFunc,
 		getRemoteVideo:getRemoteVideoFunc,
@@ -265,8 +276,6 @@ var LoopbackTest = function(){
 	var localVideo = KurentoStream.getLocalVideo();
 	var remoteVideo = KurentoStream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
-	localVideo.play();
-	remoteVideo.play();	
 }
 var BroadcastTest = function(){
 	var videoSelector = "#masterHeader";
@@ -274,8 +283,6 @@ var BroadcastTest = function(){
 	var localVideo = KurentoStream.getLocalVideo();
 	var remoteVideo = KurentoStream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
-	localVideo.play();
-	remoteVideo.play();	
 }
 var ListenTest = function(){
 	var videoSelector = "#masterHeader";
@@ -283,8 +290,13 @@ var ListenTest = function(){
 	var localVideo = KurentoStream.getLocalVideo();
 	var remoteVideo = KurentoStream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
-	localVideo.play();
-	remoteVideo.play();	
+}
+var RouletteTest = function(){
+	var videoSelector = "#masterHeader";
+	KurentoStream.roulette();// VideoStream(undefined,sessionId);
+	var localVideo = KurentoStream.getLocalVideo();
+	var remoteVideo = KurentoStream.getRemoteVideo();
+	$(videoSelector).append(localVideo).append(remoteVideo);
 }
 
 function receiveKurentoAnswer(answer){
