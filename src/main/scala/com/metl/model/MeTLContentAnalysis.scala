@@ -97,7 +97,7 @@ object CanvasContentAnalysis extends Logger {
   }
 
   def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = {
-    val key = "AIzaSyDwyVe4BC2Wxa7iQaf3PReawWDIhxcaQkA"//Localhost only
+    val key = (propFile \\ "visionApiKey").text
     val uri = "vision.googleapis.com/v1/images:annotate"
     val json =
       ("requests" -> images.filterNot(_.imageBytes.isEmpty).map(image =>
