@@ -97,6 +97,7 @@ libraryDependencies ++= {
     // for brightspark integration
     "commons-codec" % "commons-codec" % "1.7",
     "commons-fileupload" % "commons-fileupload" % "1.3.2",
+    "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
     "com.github.tototoshi" %% "scala-csv" % "1.3.3"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
