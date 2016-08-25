@@ -643,7 +643,7 @@ trait JArgUtils {
 
 }
 
-class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
+class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter with KurentoUtils {
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
@@ -663,7 +663,45 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
 
+  private lazy val RECEIVE_KURENTO_ANSWER = "receiveKurentoAnswer"
+  private lazy val RECEIVE_KURENTO_ICE_CANDIDATE = "receiveKurentoIceCandidate"
+
+  protected var kurentoSession:Option[KurentoUserSession] = None
+  KurentoManager.client // just initiating it, for the sake of it
+
   override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("initiateVideoStream",List("videoType","offer"),(args) => {
+      val videoType = getArgAsString(args(0))
+      val offer = getArgAsString(args(1))
+      //println("kurento initiate video stream: (%s, %s)".format(videoType,offer))
+      kurentoSession = for {
+        conv <- currentConversation
+        pipelineName = "%s_%s".format(conv.jid,videoType)
+        pipeline <- getPipeline(pipelineName,videoType)
+      } yield { 
+        kurentoSession.foreach(_.shutdown)
+        val newSession = KurentoUserSession(userUniqueId,this,KurentoOffer(userUniqueId,offer))
+        newSession.setMediaPipeline(pipeline)
+        newSession
+      }
+      JNull
+    },Empty),
+    ClientSideFunctionDefinition("sendVideoStreamIceCandidate",List("iceCandidate"),(args) => {
+      //println("kurento sendVideoStreamIceCandidate: %s".format(args))
+      for {
+        session <- kurentoSession
+        jObj = args(0).asInstanceOf[JValue]
+        candidate <- candidateFromJValue(jObj)
+      } yield {
+        session.addIceCandidate(candidate)
+      }
+      JNull
+    },Empty),
+    ClientSideFunctionDefinition("shutdownVideoStream",List.empty[String],(args) => {
+      println("kurento shutdownVideoStream")
+      kurentoSession.foreach(_.shutdown)
+      JNull
+    },Empty),
     ClientSideFunctionDefinition("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -1389,6 +1427,24 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
+
+    //kurento stuff
+    case ka@KurentoAnswer(id,response,sdpAnswer,message) => {
+      //println("sending kurentoAnswer: %s".format(ka))
+      partialUpdate(Call(RECEIVE_KURENTO_ANSWER,JObject(List(
+        JField("id",JString(id)),
+        JField("response",JString(response)),
+        JField("sdpAnswer",JString(sdpAnswer)),
+        JField("message",JString(message))
+      ))))
+    }
+    case kssic@KurentoServerSideIceCandidate(id,iceCandidateJsonString) => {
+      //println("sending kurentoServerSideIceCandidate: %s".format(kssic))
+      partialUpdate(Call(RECEIVE_KURENTO_ICE_CANDIDATE,JObject(List(
+        JField("id",JString(id)),
+        JField("iceCandidateJsonString",JString(iceCandidateJsonString))
+      ))))
+    }
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
   override def autoIncludeJsonCode = true
@@ -1432,6 +1488,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
     debug("shutdown metlactor: %s".format(name))
     leaveAllRooms(true)
+    kurentoSession.foreach(_.shutdown)
     super.localShutdown()
   })
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)

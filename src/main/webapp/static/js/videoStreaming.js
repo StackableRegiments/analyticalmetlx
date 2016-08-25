@@ -1,3 +1,100 @@
+var KurentoStream = (function(){
+	var webRtcPeer = undefined;
+
+	var localVideo = $("<video/>",{
+		width:240,
+		height:180
+	})[0];
+	var remoteVideo = $("<video/>",{
+		width:240,
+		height:180
+	})[0];
+
+	var options = function(){ 
+		return {
+			localVideo: localVideo,
+			remoteVideo: remoteVideo,
+			onicecandidate: function(candidate){
+				sendVideoStreamIceCandidate(candidate);
+			}
+		}; 
+	};
+	var offerFunc = function(videoType){ return function(error){
+		if (error){
+			console.log("startFuncError:",error);
+		}
+		webRtcPeer.generateOffer(function(offerError,offerData){
+			initiateVideoStream(videoType,offerData);
+		});
+	}};
+
+	var startFunc = function(videoType,send,recv){
+		if (webRtcPeer != undefined){
+			shutdownVideoStream();
+		}
+		var peerGen = kurentoUtils.WebRtcPeer
+		if (send && recv){
+			webRtcPeer = new peerGen.WebRtcPeerSendrecv(options(),offerFunc(videoType));
+		} else if (send){
+			var opts = options();
+			delete opts.remoteVideo;
+			webRtcPeer = new peerGen.WebRtcPeerSendonly(opts,offerFunc(videoType));
+		} else if (recv){
+			var opts = options();
+			delete opts.localVideo;
+			webRtcPeer = new peerGen.WebRtcPeerRecvonly(opts,offerFunc(videoType));
+		}	
+	};
+
+	var loopbackFunc = function(){
+		return startFunc("loopback",true,true);
+	};
+	var broadcastFunc = function(){
+		return startFunc("broadcast",true,false);
+	};
+	var listenFunc = function(){
+		return startFunc("broadcast",false,true);
+	};
+	var getLocalVideoFunc = function(){
+		return localVideo;
+	};
+	var getRemoteVideoFunc = function(){
+		return remoteVideo;
+	};
+	var hangupFunc = function(){
+		shutdownVideoStream();
+	};
+	var receiveIceCandidateFunc = function(candidate){
+		if (webRtcPeer != undefined){
+			webRtcPeer.addIceCandidate(candidate,function(error){
+				if (error != undefined){
+					console.log("receiveCandidateError",candidate,error);
+				}
+			});
+		}
+	};
+	var receiveAnswerFunc = function(answer){
+		if (webRtcPeer != undefined){
+			webRtcPeer.processAnswer(answer,function(error){
+				if (error != undefined){
+					console.log("receiveAnswerError",answer,error);
+				}
+				remoteVideo.play(); // not sure when to do this, but I think it's here.
+			});
+		}
+	};	
+	return {
+		receiveIceCandidate:receiveIceCandidateFunc,
+		receiveAnswer:receiveAnswerFunc,	
+		loopback:loopbackFunc,
+		broadcast:broadcastFunc,
+		listen:listenFunc,
+		getLocalVideo:getLocalVideoFunc,
+		getRemoteVideo:getRemoteVideoFunc,
+		hangup:hangupFunc	
+	};
+})();
+
 var VideoStream = function(constraints,sessionId){
 	var userId = new Date().getTime().toString();
 	var isCaller = false;
@@ -162,10 +259,46 @@ var VideoTest = function(selector){
 	});
 };
 
-var StreamTest = function(videoSelector,sessionId){
-	var vs = VideoStream(undefined,sessionId);
-	var localVideo = vs.getLocalVideo();
-	var remoteVideo = vs.getRemoteVideo();
+var LoopbackTest = function(){
+	var videoSelector = "#masterHeader";
+	KurentoStream.loopback();// VideoStream(undefined,sessionId);
+	var localVideo = KurentoStream.getLocalVideo();
+	var remoteVideo = KurentoStream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
-	return vs;
+	localVideo.play();
+	remoteVideo.play();	
 }
+var BroadcastTest = function(){
+	var videoSelector = "#masterHeader";
+	KurentoStream.broadcast();// VideoStream(undefined,sessionId);
+	var localVideo = KurentoStream.getLocalVideo();
+	var remoteVideo = KurentoStream.getRemoteVideo();
+	$(videoSelector).append(localVideo).append(remoteVideo);
+	localVideo.play();
+	remoteVideo.play();	
+}
+var ListenTest = function(){
+	var videoSelector = "#masterHeader";
+	KurentoStream.listen();// VideoStream(undefined,sessionId);
+	var localVideo = KurentoStream.getLocalVideo();
+	var remoteVideo = KurentoStream.getRemoteVideo();
+	$(videoSelector).append(localVideo).append(remoteVideo);
+	localVideo.play();
+	remoteVideo.play();	
+}
+
+function receiveKurentoAnswer(answer){
+	console.log("receiveKurentoAnswer",answer);
+	KurentoStream.receiveAnswer(answer.sdpAnswer);
+}
+function receiveKurentoIceCandidate(candidate){
+	var iceCandidate = JSON.parse(candidate.iceCandidateJsonString).candidate;
+//	console.log("receiveCandidate",iceCandidate);
+	KurentoStream.receiveIceCandidate(iceCandidate);
+}
+//injected by lift
+//function initiateVideoStream(videoType,offer){}
+//function sendVideoStreamIceCandidate(iceCandidate){}
+//function shutdownVideoStream(){}
+
+
