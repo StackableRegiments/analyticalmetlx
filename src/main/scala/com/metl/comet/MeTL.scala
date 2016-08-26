@@ -296,9 +296,11 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
       val q = args(0).toString.toLowerCase.trim
       query = Some(q)
-      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
-      listing = filterConversations(serverConfig.searchForConversation(q),true)
+//      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
+      val foundConversations = serverConfig.searchForConversation(q)
+      listing = filterConversations(foundConversations,true)
       serializer.fromConversationList(listing)
+      println("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunctionDefinition("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))

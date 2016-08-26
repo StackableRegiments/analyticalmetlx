@@ -369,7 +369,7 @@ var Conversations = (function(){
         reRender();
     };
     var getConversationListingFunc = function(){
-        return listing;
+        return dataGridItems;
     };
     var getImportListingFunc = function(){
         return currentImports;
