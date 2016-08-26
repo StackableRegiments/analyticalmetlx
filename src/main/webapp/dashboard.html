@@ -8,6 +8,9 @@
     <script src="static/js/stable/Chart.bundle.min.js"></script>
     <script src="static/js/stable/d3.min.js"></script>
     <script src="/static/js/analysis.js"></script>
+    <script src="//vega.github.io/vega/vega.js" charset="utf-8"></script>
+    <script src="//vega.github.io/vega-lite/vega-lite.js" charset="utf-8"></script>
+    <script src="//vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
   </head>
   <div class="directlyOnBackground ml">
     <div class="row">
@@ -17,18 +20,17 @@
       <div class="row">
         <h3>Processing</h3>
         <div id="status"></div>
+        <div id="vis" class="ml"></div>
         <div id="bootstrap"></div>
       </div>
       <div class="flex-container-responsive">
         <div class="shrinkWrappedColumn">
           <h3>Over time</h3>
-          <div id="displayOverTime" class="ml">
-          </div>
+          <div id="displayOverTime" class="ml"></div>
         </div>
         <div class="shrinkWrappedColumn ml">
           <h3>Over pages</h3>
-          <div id="displayOverPages" class="ml">
-          </div>
+          <div id="displayOverPages" class="ml"></div>
         </div>
       </div>
     </div>

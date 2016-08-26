@@ -30,9 +30,9 @@ var Analytics = (function(){
     };
     var chartAttendance = function(attendances){
         var MINUTE = 60 * 1000;
-	var WIDTH = 640;
-	var HEIGHT = 240;
-	/*Over time*/
+        var WIDTH = 640;
+        var HEIGHT = 240;
+        /*Over time*/
         _.forEach({
             locationOverTime:{
                 dataset:_.groupBy(attendances,"location"),
@@ -117,7 +117,7 @@ var Analytics = (function(){
                 charts[key].update();
             }
         });
-	/*Over pages*/
+        /*Over pages*/
         _.forEach({
             distinctUsersOverSlides:{
                 dataset:_.groupBy(attendances,"location"),
@@ -129,7 +129,7 @@ var Analytics = (function(){
             var color = d3.scale.category10();
             var dataset = [
                 {
-		    label:"Distinct users",
+                    label:"Distinct users",
                     tension:0.1,
                     borderColor:color(0),
                     data:_.map(config.dataset,function(xs,location){
@@ -207,9 +207,114 @@ var Analytics = (function(){
         status(_.uniq(authors).length,"authors scoped");
         chartAttendance(attendances);
     };
+    var vega = function(){
+        var json = {
+            "width": 400,
+            "height": 200,
+            "padding": {"top": 10, "left": 30, "bottom": 20, "right": 10},
+
+            "data": [
+                {
+                    "name": "table",
+                    "values": [
+                        {"category":"A", "amount":28},
+                        {"category":"B", "amount":55},
+                        {"category":"C", "amount":43},
+                        {"category":"D", "amount":91},
+                        {"category":"E", "amount":81},
+                        {"category":"F", "amount":53},
+                        {"category":"G", "amount":19},
+                        {"category":"H", "amount":87},
+                        {"category":"I", "amount":52}
+                    ]
+                }
+            ],
+
+            "signals": [
+                {
+                    "name": "tooltip",
+                    "init": {},
+                    "streams": [
+                        {"type": "rect:mouseover", "expr": "datum"},
+                        {"type": "rect:mouseout", "expr": "{}"}
+                    ]
+                }
+            ],
+
+            "predicates": [
+                {
+                    "name": "tooltip", "type": "==",
+                    "operands": [{"signal": "tooltip._id"}, {"arg": "id"}]
+                }
+            ],
+
+            "scales": [
+                { "name": "xscale", "type": "ordinal", "range": "width",
+                  "domain": {"data": "table", "field": "category"} },
+                { "name": "yscale", "range": "height", "nice": true,
+                  "domain": {"data": "table", "field": "amount"} }
+            ],
+
+            "axes": [
+                { "type": "x", "scale": "xscale" },
+                { "type": "y", "scale": "yscale" }
+            ],
+
+            "marks": [
+                {
+                    "type": "rect",
+                    "from": {"data":"table"},
+                    "properties": {
+                        "enter": {
+                            "x": {"scale": "xscale", "field": "category"},
+                            "width": {"scale": "xscale", "band": true, "offset": -1},
+                            "y": {"scale": "yscale", "field": "amount"},
+                            "y2": {"scale": "yscale", "value":0}
+                        },
+                        "update": { "fill": {"value": "steelblue"} },
+                        "hover": { "fill": {"value": "red"} }
+                    }
+                },
+                {
+                    "type": "text",
+                    "properties": {
+                        "enter": {
+                            "align": {"value": "center"},
+                            "fill": {"value": "#333"}
+                        },
+                        "update": {
+                            "x": {"scale": "xscale", "signal": "tooltip.category"},
+                            "dx": {"scale": "xscale", "band": true, "mult": 0.5},
+                            "y": {"scale": "yscale", "signal": "tooltip.amount", "offset": -5},
+                            "text": {"signal": "tooltip.amount"},
+                            "fillOpacity": {
+                                "rule": [
+                                    {
+                                        "predicate": {"name": "tooltip", "id": {"value": null}},
+                                        "value": 0
+                                    },
+                                    {"value": 1}
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+	vg.parse.spec(json,function(err,chart){
+	    chart({
+		el:"#vis"
+	    },{
+		axis:{
+		    axisColor:"#ffffff"
+		}
+	    }).update();
+	});
+    };
     return {
         prime:function(conversation){
             status("Retrieving",conversation);
+	    vega();
             $.get(sprintf("/details/%s",conversation),function(details){
                 status("Retrieved",conversation);
                 var slides = $(details).find("slide");
