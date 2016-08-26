@@ -406,7 +406,7 @@ var Conversations = (function(){
             $("#oneNoteExport").empty();
         } else {
             $("#projectorViewLink").html($("<a/>",{
-                href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false",targetConversationJid,currentSlide),
+                href:sprintf("/board?conversationJid=%s&slideId=%s&showTools=false&unique=true",targetConversationJid,currentSlide),
                 text:"Project this conversation"
             }));
             $("#conversationAnalysis").html($("<a/>",{
@@ -414,11 +414,11 @@ var Conversations = (function(){
                 text:"Dashboard for this conversation"
             }));
             $("#slideDeepLink").html($("<a/>",{
-                href:sprintf("/board?conversationJid=%s&slideId=%s",targetConversationJid,currentSlide),
+                href:sprintf("/board?conversationJid=%s&slideId=%s&unique=true",targetConversationJid,currentSlide),
                 text:"DeepLink this slide"
             }));
             $("#conversationDeepLink").html($("<a/>",{
-                href:sprintf("/board?conversationJid=%s",targetConversationJid),
+                href:sprintf("/board?conversationJid=%s&unique=true",targetConversationJid),
                 text:"Deeplink this conversation"
             }));
             $("#oneNoteExport").html($("<a/>",{
