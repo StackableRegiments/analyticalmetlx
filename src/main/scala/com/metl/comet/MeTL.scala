@@ -325,9 +325,9 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   override def render = OnLoad(
     Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
+      Call(RECEIVE_QUERY,JString(query.getOrElse(""))) &
       Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) &
-      Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) &
-      Call(RECEIVE_QUERY,JString(query.getOrElse("")))
+      Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _)))
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
 

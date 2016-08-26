@@ -364,7 +364,7 @@ var Conversations = (function(){
         reRender();
     };
     var receiveQueryFunc = function(q){
-        query = q;
+        currentQuery = q;
         searchBox.val(q);
         reRender();
     };
@@ -375,7 +375,7 @@ var Conversations = (function(){
         return currentImports;
     };
     var getQueryFunc = function(){
-        return query;
+        return currentQuery;
     };
     return {
         receiveUsername:receiveUsernameFunc,
