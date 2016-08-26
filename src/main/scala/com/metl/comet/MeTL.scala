@@ -174,7 +174,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
-      if (currentConversation.exists(_.jid == newJid)){
+      if (currentConversation.exists(_.jid == newConv.jid)){
         if (!shouldDisplayConversation(newConv)){
           warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
           currentConversation = Empty
@@ -1748,7 +1748,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
         val newJid = c.commandParameters(0).toInt
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
-        if (!shouldDisplayConversation(newConv)){
+        if (!shouldDisplayConversation(newConv) && currentConversation.exists(_.jid == newConv.jid)){
           warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
           currentConversation = Empty
           currentSlide = Empty
