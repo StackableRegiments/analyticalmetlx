@@ -105,13 +105,15 @@ object MeTLEditConversationActorManager extends LiftActor with ListenerManager w
 }
 
 trait ConversationFilter {
-  def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
-    lazy val me = Globals.currentUser.is
-    lazy val myGroups = Globals.casState.is.eligibleGroups
-    in.filter(c => {
+  protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = {
       val subject = c.subject.trim.toLowerCase
-      ((subject != "deleted" || (includeDeleted && c.author == Globals.currentUser.is)) && (c.author == Globals.currentUser.is || myGroups.exists(_._2 == subject)))
-    })
+      val author = c.author.trim.toLowerCase
+      ((subject != "deleted" || (includeDeleted && author == me)) && (author == me || myGroups.exists(_._2.toLowerCase.trim == subject)))
+  }
+  def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
+    lazy val me = Globals.currentUser.is.toLowerCase.trim
+    lazy val myGroups = Globals.casState.is.eligibleGroups.toList
+    in.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
   }
 }
 
@@ -174,7 +176,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
-      if (currentConversation.exists(_.jid == newJid)){
+      if (currentConversation.exists(_.jid == newConv.jid)){
         if (!shouldDisplayConversation(newConv)){
           warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
           currentConversation = Empty
@@ -293,9 +295,12 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
-      val q = args(0).toString
+      val q = args(0).toString.toLowerCase.trim
       query = Some(q)
-      listing = filterConversations(serverConfig.searchForConversation(q),true)
+//      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
+      val foundConversations = serverConfig.searchForConversation(q)
+      listing = filterConversations(foundConversations,true)
+      println("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunctionDefinition("createConversation",List("title"),(args) => {
@@ -316,18 +321,22 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   protected lazy val serverConfig = ServerConfiguration.default
 
   override def localSetup = {
-    query = Some(username)
+    query = Some(username.toLowerCase.trim)
     listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
     super.localSetup
   }
   override def render = OnLoad(
     Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
+      Call(RECEIVE_QUERY,JString(query.getOrElse(""))) &
       Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing)) &
-      Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _))) &
-      Call(RECEIVE_QUERY,JString(query.getOrElse("")))
+      Call(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _)))
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
+
+  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q).getOrElse(false)
+
+  override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
   override def lowPriority = {
     case id:ImportDescription => {
@@ -348,13 +357,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       trace("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
-      listing = listing.map(c => {
-        if (c.jid == newConv.jid){
-          newConv
-        } else {
-          c
-        }
-      })
+      listing = filterConversations(List(newConv) ::: listing.filterNot(_.jid == newConv.jid))
       partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
     }
     case _ => warn("MeTLConversationSearchActor received unknown message")
@@ -1748,20 +1751,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
         val newJid = c.commandParameters(0).toInt
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
-        if (!shouldDisplayConversation(newConv)){
-          warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
-          currentConversation = Empty
-          currentSlide = Empty
-          reRender
-          partialUpdate(RedirectTo(noBoard))
-        } else {
-          currentConversation = currentConversation.map(cc => {
-            if (cc.jid == newJid){
-              newConv
-            } else cc
-          })
-          debug("updating conversation to: %s".format(newConv))
-          partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+        if (currentConversation.exists(_.jid == newConv.jid)){
+          if (!shouldDisplayConversation(newConv)){
+            warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+            currentConversation = Empty
+            currentSlide = Empty
+            reRender
+            partialUpdate(RedirectTo(noBoard))
+          } else {
+            currentConversation = currentConversation.map(cc => {
+              if (cc.jid == newJid){
+                newConv
+              } else cc
+            })
+            debug("updating conversation to: %s".format(newConv))
+            partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+          }
         }
       }
       case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {

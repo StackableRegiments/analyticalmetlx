@@ -174,12 +174,7 @@ var Conversations = (function(){
                     }
                     return elem;
                 }},
-                { name:"title", type:"text", title:"Title", readOnly:true, itemTemplate:function(title,conv){
-                    if ("newConversation" in conv && conv.newConversation == true){
-                        return newTag(title);
-                    }
-                    return title;
-                }},
+                { name:"title", type:"text", title:"Title", readOnly:true },
                 {name:"creation",type:"dateField",title:"Created"},
                 {name:"author",type:"text",title:"Author",readOnly:true},
                 {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true},
@@ -248,13 +243,15 @@ var Conversations = (function(){
             searchFunc(query);
         });
     });
-
     var shouldModifyConversation = function(details){
         return (details.author == username);
     };
     var shouldDisplayConversation = function(details){
-        return ((details.subject.toLowerCase().trim() != "deleted" || (includeDeleted && details.author == username)) && (details.author == username || _.some(userGroups,function(g){
-            return g.value.toLowerCase().trim() == details.subject.toLowerCase().trim();
+				var subject = details.subject.toLowerCase().trim();
+				var title = details.title.toLowerCase().trim();
+				var author = details.author;
+        return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+            return g.value.toLowerCase().trim() == subject;
         })));
     };
 
@@ -344,14 +341,8 @@ var Conversations = (function(){
         userGroups = groups;
     };
     var receiveConversationDetailsFunc = function(details){
-        currentSearchResults = _.map(currentSearchResults,function(conv){
-            if (conv.jid == details.jid){
-                details.newConversation = conv.newConversation;
-                return details;
-            } else {
-                return conv;
-            }
-        });
+        currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
+				console.log("currentSearchResults:",currentSearchResults,details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
@@ -373,18 +364,18 @@ var Conversations = (function(){
         reRender();
     };
     var receiveQueryFunc = function(q){
-        query = q;
+        currentQuery = q;
         searchBox.val(q);
         reRender();
     };
     var getConversationListingFunc = function(){
-        return listing;
+        return dataGridItems;
     };
     var getImportListingFunc = function(){
         return currentImports;
     };
     var getQueryFunc = function(){
-        return query;
+        return currentQuery;
     };
     return {
         receiveUsername:receiveUsernameFunc,

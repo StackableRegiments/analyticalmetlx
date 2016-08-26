@@ -116,11 +116,13 @@ object Globals extends PropertyReader with Logger {
       S.containerSession.map(s => {
         val username = s.attribute("user").asInstanceOf[String]
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-        val userGroups = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        val additionalGroupsFromProviders = Globals.groupsProviders.flatMap(_.getGroupsFor(username))
+        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]]
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        //println("userAttributes from authenticator: %s".format(userAttributes))
+        val prelimAuthStateData = LiftAuthStateData(true,username,userGroups,userAttributes)
+        val additionalGroupsFromProviders = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
         val groups = userGroups ::: additionalGroupsFromProviders
-        val lasd = LiftAuthStateData(true,s.attribute("user").asInstanceOf[String],groups,userAttributes)
+        val lasd = LiftAuthStateData(true,username,groups,userAttributes)
         //println("got state: %s".format(lasd))
         lasd
       }).getOrElse({
