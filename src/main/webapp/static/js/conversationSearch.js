@@ -328,8 +328,8 @@ var Conversations = (function(){
         $("#conversationListing").find(".aggregateContainer").find(".count").text(convCount);
     };
     var searchFunc = function(query){
-        currentQuery = query;
-        getSearchResult(query); //injected from Lift
+        currentQuery = query.toLowerCase().trim();
+        getSearchResult(currentQuery); //injected from Lift
     };
     var createFunc = function(title){
         createConversation(title); //injected from Lift
@@ -364,8 +364,8 @@ var Conversations = (function(){
         reRender();
     };
     var receiveQueryFunc = function(q){
-        currentQuery = q;
-        searchBox.val(q);
+        currentQuery = q.toLowerCase().trim();
+        searchBox.val(currentQuery);
         reRender();
     };
     var getConversationListingFunc = function(){
