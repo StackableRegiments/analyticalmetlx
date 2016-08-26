@@ -295,8 +295,8 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
       val q = args(0).toString.toLowerCase.trim
-      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
       query = Some(q)
+      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
       listing = filterConversations(serverConfig.searchForConversation(q),true)
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
@@ -331,7 +331,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
 
-  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.contains(q) || in.author == q).getOrElse(false)
+  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q).getOrElse(false)
 
   override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
