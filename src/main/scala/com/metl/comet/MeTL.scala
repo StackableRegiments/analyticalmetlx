@@ -105,13 +105,14 @@ object MeTLEditConversationActorManager extends LiftActor with ListenerManager w
 }
 
 trait ConversationFilter {
+  protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = {
+      val subject = c.subject.trim.toLowerCase
+      ((subject != "deleted" || (includeDeleted && c.author == me)) && (c.author == me || myGroups.exists(_._2 == subject)))
+  }
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is
-    lazy val myGroups = Globals.casState.is.eligibleGroups
-    in.filter(c => {
-      val subject = c.subject.trim.toLowerCase
-      ((subject != "deleted" || (includeDeleted && c.author == Globals.currentUser.is)) && (c.author == Globals.currentUser.is || myGroups.exists(_._2 == subject)))
-    })
+    lazy val myGroups = Globals.casState.is.eligibleGroups.toList
+    in.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
   }
 }
 
@@ -293,7 +294,8 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
-      val q = args(0).toString
+      val q = args(0).toString.toLowerCase.trim
+      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
       query = Some(q)
       listing = filterConversations(serverConfig.searchForConversation(q),true)
       serializer.fromConversationList(listing)
@@ -316,7 +318,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   protected lazy val serverConfig = ServerConfiguration.default
 
   override def localSetup = {
-    query = Some(username)
+    query = Some(username.toLowerCase.trim)
     listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
     super.localSetup
   }
@@ -328,6 +330,10 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       Call(RECEIVE_QUERY,JString(query.getOrElse("")))
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
+
+  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.contains(q) || in.author == q).getOrElse(false)
+
+  override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
   override def lowPriority = {
     case id:ImportDescription => {
@@ -348,13 +354,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       trace("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
-      listing = listing.map(c => {
-        if (c.jid == newConv.jid){
-          newConv
-        } else {
-          c
-        }
-      })
+      listing = filterConversations(List(newConv) ::: listing.filterNot(_.jid == newConv.jid))
       partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
     }
     case _ => warn("MeTLConversationSearchActor received unknown message")
