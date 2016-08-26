@@ -1748,20 +1748,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
         val newJid = c.commandParameters(0).toInt
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
-        if (!shouldDisplayConversation(newConv) && currentConversation.exists(_.jid == newConv.jid)){
-          warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
-          currentConversation = Empty
-          currentSlide = Empty
-          reRender
-          partialUpdate(RedirectTo(noBoard))
-        } else {
-          currentConversation = currentConversation.map(cc => {
-            if (cc.jid == newJid){
-              newConv
-            } else cc
-          })
-          debug("updating conversation to: %s".format(newConv))
-          partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+        if (currentConversation.exists(_.jid == newConv.jid)){
+          if (!shouldDisplayConversation(newConv)){
+            warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+            currentConversation = Empty
+            currentSlide = Empty
+            reRender
+            partialUpdate(RedirectTo(noBoard))
+          } else {
+            currentConversation = currentConversation.map(cc => {
+              if (cc.jid == newJid){
+                newConv
+              } else cc
+            })
+            debug("updating conversation to: %s".format(newConv))
+            partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+          }
         }
       }
       case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
