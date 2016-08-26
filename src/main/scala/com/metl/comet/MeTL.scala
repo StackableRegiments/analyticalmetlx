@@ -107,10 +107,11 @@ object MeTLEditConversationActorManager extends LiftActor with ListenerManager w
 trait ConversationFilter {
   protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = {
       val subject = c.subject.trim.toLowerCase
-      ((subject != "deleted" || (includeDeleted && c.author == me)) && (c.author == me || myGroups.exists(_._2 == subject)))
+      val author = c.author.trim.toLowerCase
+      ((subject != "deleted" || (includeDeleted && author == me)) && (author == me || myGroups.exists(_._2.toLowerCase.trim == subject)))
   }
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
-    lazy val me = Globals.currentUser.is
+    lazy val me = Globals.currentUser.is.toLowerCase.trim
     lazy val myGroups = Globals.casState.is.eligibleGroups.toList
     in.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
   }
