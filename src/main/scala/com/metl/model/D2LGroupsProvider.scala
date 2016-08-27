@@ -4,6 +4,8 @@ import com.metl.data._
 import com.metl.utils._
 import com.metl.view._
 
+import com.metl.liftAuthenticator.LiftAuthStateData
+
 import net.liftweb.http.SessionVar
 import net.liftweb.http.LiftRules
 import net.liftweb.common._
@@ -27,10 +29,22 @@ case class D2LOrgUnitResponse(
   PagingInfo:D2LPagingInfo,
   Items:List[D2LOrgUnit]
 )
+case class PagedResponse[T](
+  PagingInfo:D2LPagingInfo,
+  Items:List[T]
+)
 case class D2LOrgUnitTypeInfo(
   Id:Int,
   Code:String,
   Name:String
+)
+case class D2LUser(
+  Identifier:Option[String],
+  DisplayName:Option[String],
+  EmailAddress:Option[String],
+  OrgDefinedId:Option[String],
+  ProfileBadgeUrl:Option[String],
+  ProfileIdentifier:Option[String]
 )
 case class D2LOrgUnit(
   Identifier:String, //this is actually a number
@@ -39,6 +53,19 @@ case class D2LOrgUnit(
   Code:Option[String], //this is being used like the class group identifier (EDU300-CA01)
   HomeUrl:Option[String],
   ImageUrl:Option[String]
+)
+case class D2LOrgUnitAccess(
+  IsActive:Boolean,
+  StartDate:Option[String],
+  EndDate:Option[String],
+  CanAccess:Boolean,
+  ClassListRoleName:Option[String],
+  LISRoles:List[String]
+)
+case class D2LMyOrgUnit(
+  OrgUnit:D2LOrgUnit,
+  Access:D2LOrgUnitAccess,
+  PinDate:Option[String]
 )
 case class D2LClassListUser(
   Identifier:String, //this is actually a number, and is the number used in enrollments elsewhere
@@ -76,7 +103,7 @@ case class D2LSection(
   Enrollments:List[Long]
 )
 
-class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends GroupStoreProvider {
+class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
   protected val httpConnectionTimeout = 10 // 10 seconds
   protected val httpReadTimeout = 60 * 1000 // 60 seconds
   protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
@@ -98,6 +125,63 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       }
     }
   }
+  protected def fetchPagedListFromD2L[T](masterUrl:String,userContext:ID2LUserContext)(implicit m:Manifest[T]):List[T] = {
+    val url = userContext.createAuthenticatedUri(masterUrl,"GET")
+    try {
+      val firstGet = client.get(url.toString)
+      var first = parse(firstGet)
+      val firstResp = first.extract[PagedResponse[T]]
+      var items = firstResp.Items
+      var continuing = firstResp.PagingInfo.HasMoreItems
+      var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
+      while (continuing){
+        try {
+          val u = userContext.createAuthenticatedUri("%s%s".format(masterUrl,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
+          val url = u.toString
+          val respObj = parse(client.get(url))
+          val resp = respObj.extract[PagedResponse[T]]
+          items = items ::: resp.Items
+          continuing = resp.PagingInfo.HasMoreItems
+          bookmark = resp.PagingInfo.Bookmark
+          println("bookmark: %s, items: %s".format(bookmark,items.length))
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            continuing = false
+            bookmark = None
+          }
+        }
+      }
+      items
+    } catch {
+      case e:Exception => {
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        List.empty[T]
+      }
+    }
+  }
+  def getUserContext = {
+    val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,d2lBaseUrl)
+    appContext.createUserContext(userId,userKey)
+  }
+}
+
+class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupsProvider {
+  val myContext = getUserContext
+  protected def getMyUser(userContext:ID2LUserContext,username:String):List[D2LUser] = {
+    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,username),"GET"))
+  }
+  protected def getMyEnrollments(userContext:ID2LUserContext,user:D2LUser):List[D2LMyOrgUnit] = {
+    fetchPagedListFromD2L[D2LMyOrgUnit]("/d2l/api/lp/%s/myenrollments/users/%s/orgUnits/".format(lpApiVersion,user.OrgDefinedId.getOrElse("")),userContext) 
+  }
+  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
+    (en.OrgUnit.Name :: en.OrgUnit.Code.toList).map(v => (GroupKeys.ou,v))
+  }))
+  override def getMembersFor(groupName:String):List[String] = Nil
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
+}
+
+class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
 
   protected def getOrgUnits(userContext:ID2LUserContext):List[D2LOrgUnit] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/".format(lpApiVersion),"GET")
@@ -159,8 +243,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
   }
 
   override def getData:GroupStoreData = {
-    val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,d2lBaseUrl)
-    val userContext = appContext.createUserContext(userId,userKey)
+    val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
     println("courses found: %s".format(courses.length))
     val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => { 
