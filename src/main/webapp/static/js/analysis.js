@@ -18,6 +18,7 @@ var Analytics = (function(){
     var events = [];
     var authors = [];
     var attendances = []
+    var activity = []
     var handwriting = {};
     var keyboarding = {}
     var images = {};
@@ -28,8 +29,8 @@ var Analytics = (function(){
     var shortFormat = function(mString){
         return moment(parseInt(mString)).format("HH:mm MM/DD");
     };
+    var MINUTE = 60 * 1000;
     var chartAttendance = function(attendances){
-        var MINUTE = 60 * 1000;
         var WIDTH = 640;
         var HEIGHT = 240;
         /*Over time*/
@@ -51,7 +52,7 @@ var Analytics = (function(){
                 yLabel:"Pages visited"
             }
         },function(config,key){
-            var color = d3.scale.category10();
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
             var dataset = _.map(config.dataset,function(xs,location){
                 var rounded = _.groupBy(xs,function(x){
                     return Math.floor(x.timestamp / MINUTE)
@@ -126,7 +127,7 @@ var Analytics = (function(){
                 xLabel:"Page"
             }
         },function(config,key){
-            var color = d3.scale.category10();
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
             var dataset = [
                 {
                     label:"Distinct users",
@@ -183,18 +184,29 @@ var Analytics = (function(){
             }
         });
     }
-    var incorporate = function(xHistory){
+    var incorporate = function(xHistory,details){
         var history = $(xHistory);
         _.forEach(history.find("message"),function(message){
             var m = $(message);
             var timestamp = m.attr("timestamp");
             var author = m.find("author").text();
+            var slide = m.find("slide").text();
+            if(slide == ""){
+                slide = m.find("location").text();
+            }
             events.push(timestamp);
             authors.push(author);
+            if(slide != ""){
+                activity.push({
+                    author:author,
+                    timestamp:parseInt(timestamp),
+                    location:parseInt(slide)
+                });
+            }
             _.forEach(m.find("attendance"),function(attendance){
                 attendances.push({
                     author:author,
-                    timestamp:timestamp,
+                    timestamp:new Date(parseInt(timestamp)),
                     location: $(attendance).find("location").text()
                 });
             });
@@ -204,117 +216,125 @@ var Analytics = (function(){
         status(sprintf("Anchored %s",dFormat(min)),"earliest event");
         status(sprintf("Anchored %s",dFormat(max)),"latest event");
         status(events.length,"events scoped");
+        console.log(events.length);
         status(_.uniq(authors).length,"authors scoped");
+        adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
         chartAttendance(attendances);
     };
-    var vega = function(){
-        var json = {
-            "width": 400,
-            "height": 200,
-            "padding": {"top": 10, "left": 30, "bottom": 20, "right": 10},
+    var adherenceToTeacher = function(attendances,details){
+        $("#vis").empty();
+        attendances = _.map(attendances,function(attendance){
+            attendance.timestamp = Math.floor(attendance.timestamp / MINUTE) * MINUTE;
+            return attendance;
+        });
+        var author = $(details).find("author:first").text();
+        var owner = _.groupBy(attendances,function(attendance){
+            return attendance.author == author;
+        });
+        var data = owner[false];
+        data = _.groupBy(data,"location");
+        data = _.mapValues(data,function(xs){
+            return _.groupBy(xs,"timestamp");
+        });
+        var studentLocations = [];
+        _.each(data,function(bucket,location){
+            _.each(bucket,function(xs,timestamp){
+                studentLocations.push({
+                    timestamp:timestamp,
+                    location:location,
+                    attendances:xs
+                });
+            });
+        });
+        var teacherLocations = owner[true];
 
-            "data": [
-                {
-                    "name": "table",
-                    "values": [
-                        {"category":"A", "amount":28},
-                        {"category":"B", "amount":55},
-                        {"category":"C", "amount":43},
-                        {"category":"D", "amount":91},
-                        {"category":"E", "amount":81},
-                        {"category":"F", "amount":53},
-                        {"category":"G", "amount":19},
-                        {"category":"H", "amount":87},
-                        {"category":"I", "amount":52}
-                    ]
-                }
-            ],
+        var slides = _.map(data, function(d){
+            return parseInt(d.location);
+        });
+        var margin = {
+            top: 10,
+            right: 25,
+            bottom: 15,
+            left: 35
+        }
+        var width = 800;
+        var height = 300;
 
-            "signals": [
-                {
-                    "name": "tooltip",
-                    "init": {},
-                    "streams": [
-                        {"type": "rect:mouseover", "expr": "datum"},
-                        {"type": "rect:mouseout", "expr": "{}"}
-                    ]
-                }
-            ],
+        var x = d3.scaleTime().range([0 + margin.right, width - margin.left]),
+            y = d3.scaleLinear().range([margin.top, height - margin.bottom - margin.top]),
+            r = d3.scaleLinear().range([5,25]);
 
-            "predicates": [
-                {
-                    "name": "tooltip", "type": "==",
-                    "operands": [{"signal": "tooltip._id"}, {"arg": "id"}]
-                }
-            ],
 
-            "scales": [
-                { "name": "xscale", "type": "ordinal", "range": "width",
-                  "domain": {"data": "table", "field": "category"} },
-                { "name": "yscale", "range": "height", "nice": true,
-                  "domain": {"data": "table", "field": "amount"} }
-            ],
+        x.domain(d3.extent(attendances,function(d){
+            return d.timestamp;
+        }));
+        
+        y.domain(d3.extent(attendances,function(d){
+            return parseInt(d.location);
+        }));
+        r.domain(d3.extent(studentLocations,function(d){
+            return d.attendances.length;
+        }));
 
-            "axes": [
-                { "type": "x", "scale": "xscale" },
-                { "type": "y", "scale": "yscale" }
-            ],
+        var xAxis = d3.axisBottom(x)
+                .tickSize(-height, 0)
 
-            "marks": [
-                {
-                    "type": "rect",
-                    "from": {"data":"table"},
-                    "properties": {
-                        "enter": {
-                            "x": {"scale": "xscale", "field": "category"},
-                            "width": {"scale": "xscale", "band": true, "offset": -1},
-                            "y": {"scale": "yscale", "field": "amount"},
-                            "y2": {"scale": "yscale", "value":0}
-                        },
-                        "update": { "fill": {"value": "steelblue"} },
-                        "hover": { "fill": {"value": "red"} }
-                    }
-                },
-                {
-                    "type": "text",
-                    "properties": {
-                        "enter": {
-                            "align": {"value": "center"},
-                            "fill": {"value": "#333"}
-                        },
-                        "update": {
-                            "x": {"scale": "xscale", "signal": "tooltip.category"},
-                            "dx": {"scale": "xscale", "band": true, "mult": 0.5},
-                            "y": {"scale": "yscale", "signal": "tooltip.amount", "offset": -5},
-                            "text": {"signal": "tooltip.amount"},
-                            "fillOpacity": {
-                                "rule": [
-                                    {
-                                        "predicate": {"name": "tooltip", "id": {"value": null}},
-                                        "value": 0
-                                    },
-                                    {"value": 1}
-                                ]
-                            }
-                        }
-                    }
-                }
-            ]
-        };
-	vg.parse.spec(json,function(err,chart){
-	    chart({
-		el:"#vis"
-	    },{
-		axis:{
-		    axisColor:"#ffffff"
-		}
-	    }).update();
-	});
+        var yAxis = d3.axisLeft(y)
+                .tickSize(-width + margin.right, margin.left)
+
+        var svg = d3.select("#vis").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom);
+
+        var context = svg.append("g")
+                .attr("class", "context")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        context.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(" + margin.left + "," + (margin.top + (height - margin.bottom)) + ")")
+            .call(xAxis);
+
+        context.append("g")
+            .attr("class", "y axis")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .call(yAxis);
+
+        var circles = context.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        circles.selectAll(".circ")
+            .data(studentLocations)
+            .enter().append("circle")
+            .attr("class", "circ")
+            .attr("cx", function(d) {
+                return x(d.timestamp);
+            })
+            .attr("cy", function(d) {
+                return y(parseInt(d.location));
+            })
+            .attr("r", function(d){
+                return r(d.attendances.length);
+            });
+
+        var path = d3.line()
+                .x(function(d){
+                    return x(d.timestamp);
+                })
+                .y(function(d){
+                    return y(d.location);
+                });
+        if(teacherLocations){
+            var line = context.append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                    .append("path")
+                    .attr("class","teacherPath")
+                    .attr("d",path(teacherLocations));
+        }
     };
     return {
         prime:function(conversation){
             status("Retrieving",conversation);
-	    vega();
             $.get(sprintf("/details/%s",conversation),function(details){
                 status("Retrieved",conversation);
                 var slides = $(details).find("slide");
@@ -323,7 +343,7 @@ var Analytics = (function(){
                     status("Retrieving",slide);
                     $.get(sprintf("/fullClientHistory?source=%s",slide),function(slideHistory){
                         status("Retrieved",slide);
-                        incorporate(slideHistory);
+                        incorporate(slideHistory,details);
                         status(sprintf("Incorporated %s",slides.length),"slide(s)");
                     });
                 });
