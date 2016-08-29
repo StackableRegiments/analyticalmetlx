@@ -30,16 +30,11 @@ var Analytics = (function(){
         return moment(parseInt(mString)).format("HH:mm MM/DD");
     };
     var MINUTE = 60 * 1000;
+    var WIDTH = 640;
     var chartAttendance = function(attendances){
-        var WIDTH = 640;
         var HEIGHT = 240;
         /*Over time*/
         _.forEach({
-            locationOverTime:{
-                dataset:_.groupBy(attendances,"location"),
-                title:"Page attendance",
-                yLabel:"Visits to page"
-            },
             authorsOverTime:{
                 dataset:_.groupBy(_.map(attendances,function(attendance){
                     return {
@@ -50,6 +45,11 @@ var Analytics = (function(){
                 }),"author"),
                 title:"Authors",
                 yLabel:"Pages visited"
+            },
+            locationOverTime:{
+                dataset:_.groupBy(attendances,"location"),
+                title:"Page attendance",
+                yLabel:"Visits to page"
             }
         },function(config,key){
             var color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -221,24 +221,27 @@ var Analytics = (function(){
         adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
         chartAttendance(attendances);
     };
-    var adherenceToTeacher = function(attendances,details){
+    var bucket = function(timed){
+        return _.map(timed,function(timeable){
+            timeable.timestamp = Math.floor(timeable.timestamp / MINUTE) * MINUTE;
+            return timeable;
+        });
+    }
+    var adherenceToTeacher = function(attendancesHi,details){
         $("#vis").empty();
-        attendances = _.map(attendances,function(attendance){
-            attendance.timestamp = Math.floor(attendance.timestamp / MINUTE) * MINUTE;
-            return attendance;
-        });
         var author = $(details).find("author:first").text();
-        var owner = _.groupBy(attendances,function(attendance){
-            return attendance.author == author;
+        var owner = _.groupBy(attendancesHi,function(action){
+            return action.author == author;
         });
-        var data = owner[false];
-        data = _.groupBy(data,"location");
-        data = _.mapValues(data,function(xs){
+        var students = owner[false];
+        students = bucket(students);
+        students = _.groupBy(students,"location");
+        students = _.mapValues(students,function(xs){
             return _.groupBy(xs,"timestamp");
         });
         var studentLocations = [];
-        _.each(data,function(bucket,location){
-            _.each(bucket,function(xs,timestamp){
+        _.each(students,function(time,location){
+            _.each(time,function(xs,timestamp){
                 studentLocations.push({
                     timestamp:timestamp,
                     location:location,
@@ -248,16 +251,16 @@ var Analytics = (function(){
         });
         var teacherLocations = owner[true];
 
-        var slides = _.map(data, function(d){
+        var slides = _.sortBy(_.uniq(_.map(attendancesHi, function(d){
             return parseInt(d.location);
-        });
+        })));
         var margin = {
             top: 10,
             right: 25,
             bottom: 15,
             left: 35
         }
-        var width = 800;
+        var width = WIDTH;
         var height = 300;
         var masterHeight = 100;
 
@@ -267,17 +270,17 @@ var Analytics = (function(){
             yM = d3.scaleLinear().range([masterHeight,margin.top]),
             r = d3.scaleLinear().range([5,25]);
 
-        x.domain(d3.extent(attendances,function(d){
+        x.domain(d3.extent(attendancesHi,function(d){
             return d.timestamp;
         }));
-        xM.domain(d3.extent(attendances,function(d){
+        xM.domain(d3.extent(attendancesHi,function(d){
             return d.timestamp;
         }));
-
-        y.domain(d3.extent(attendances,function(d){
+        y.domain(d3.extent(attendancesHi,function(d){
             return parseInt(d.location);
         }));
-        var masterData = _.toPairs(_.groupBy(attendances,"timestamp"));
+        var anyAuthorByMinute = _.groupBy(bucket(attendancesHi),"timestamp");
+        var masterData = _.toPairs(anyAuthorByMinute);
         yM.domain(d3.extent(masterData,function(d){
             return parseInt(d[1].length);
         }));
@@ -290,7 +293,8 @@ var Analytics = (function(){
                 .tickSize(-height, 0)
 
         var detailY = d3.axisLeft(y)
-                .tickSize(1)
+                .ticks(slides.length)
+                .tickSizeInner(-width)
 
         var masterX = d3.axisBottom(xM)
         var masterY = d3.axisLeft(yM)
@@ -298,6 +302,15 @@ var Analytics = (function(){
         var svg = d3.select("#vis").append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top * 2 + margin.bottom + masterHeight);
+
+        var gradient = svg.append("defs")
+                .append("filter")
+                .attr("id", "teacherPath")
+                .attr("x", "0")
+                .attr("y", "0")
+        gradient.append("feGaussianBlur")
+            .attr("in", "SourceGraphic")
+            .attr("stdDeviation", "10");
 
         var context = svg.append("g")
                 .attr("class", "context")
@@ -327,6 +340,15 @@ var Analytics = (function(){
         }
         var brush = d3.brushX().on("brush",brushed);
 
+        if(teacherLocations){
+            console.log(teacherLocations);
+            detail.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .append("path")
+                .attr("class","teacherPath")
+                .style("filter", "url(#teacherPath)")
+                .attr("d",teacherPath(teacherLocations));
+        }
         var circles = detail.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
                 .selectAll(".circ")
@@ -343,14 +365,7 @@ var Analytics = (function(){
                 .attr("r", function(d){
                     return r(d.attendances.length);
                 });
-        var teacher;
-        if(teacherLocations){
-            teacher = detail.append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-                .append("path")
-                .attr("class","teacherPath")
-                .attr("d",teacherPath(teacherLocations));
-        }
+
         detail.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(" + margin.left + "," + (margin.top + (height - margin.bottom)) + ")")

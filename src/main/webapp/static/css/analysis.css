@@ -2,8 +2,8 @@ body{
     background-size:100% 100%;
 }
 .masterArea path{
-    stroke:pink;
-    fill:red;
+    stroke:lightblue;
+    fill:blue;
 }
 .vega-actions{
     display:none;
@@ -15,16 +15,23 @@ body{
     font-size:60%;
 }
 .tick line{
-    stroke:#ffffff;
+    stroke:#000000;
+    stroke-width:0.5;
 }
 .tick text{
     fill:#ffffff;
 }
 .teacherPath{
+    stroke-width:50;
+    stroke:green;
     fill:none;
-    stroke-width:3;
-    stroke:blue;
 }
 .domain{
     opacity:0;
+}
+.circ{
+    stroke-width:0.7;
+    stroke:black;
+    fill:blue;
+    fill-opacity:0.1;
 }
