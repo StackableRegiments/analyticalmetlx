@@ -259,78 +259,131 @@ var Analytics = (function(){
         }
         var width = 800;
         var height = 300;
+        var masterHeight = 100;
 
         var x = d3.scaleTime().range([0 + margin.right, width - margin.left]),
+            xM = d3.scaleTime().range([0 + margin.right, width - margin.left]),
             y = d3.scaleLinear().range([margin.top, height - margin.bottom - margin.top]),
+            yM = d3.scaleLinear().range([masterHeight,margin.top]),
             r = d3.scaleLinear().range([5,25]);
-
 
         x.domain(d3.extent(attendances,function(d){
             return d.timestamp;
         }));
-        
+        xM.domain(d3.extent(attendances,function(d){
+            return d.timestamp;
+        }));
+
         y.domain(d3.extent(attendances,function(d){
             return parseInt(d.location);
         }));
+        var masterData = _.toPairs(_.groupBy(attendances,"timestamp"));
+        yM.domain(d3.extent(masterData,function(d){
+            return parseInt(d[1].length);
+        }));
+
         r.domain(d3.extent(studentLocations,function(d){
             return d.attendances.length;
         }));
 
-        var xAxis = d3.axisBottom(x)
+        var detailX = d3.axisBottom(x)
                 .tickSize(-height, 0)
 
-        var yAxis = d3.axisLeft(y)
-                .tickSize(-width + margin.right, margin.left)
+        var detailY = d3.axisLeft(y)
+                .tickSize(1)
+
+        var masterX = d3.axisBottom(xM)
+        var masterY = d3.axisLeft(yM)
 
         var svg = d3.select("#vis").append("svg")
                 .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom);
+                .attr("height", height + margin.top * 2 + margin.bottom + masterHeight);
 
         var context = svg.append("g")
                 .attr("class", "context")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        context.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(" + margin.left + "," + (margin.top + (height - margin.bottom)) + ")")
-            .call(xAxis);
-
-        context.append("g")
-            .attr("class", "y axis")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-            .call(yAxis);
-
-        var circles = context.append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-
-        circles.selectAll(".circ")
-            .data(studentLocations)
-            .enter().append("circle")
-            .attr("class", "circ")
-            .attr("cx", function(d) {
-                return x(d.timestamp);
-            })
-            .attr("cy", function(d) {
-                return y(parseInt(d.location));
-            })
-            .attr("r", function(d){
-                return r(d.attendances.length);
-            });
-
-        var path = d3.line()
+        var detail = context.append("g")
+        var teacherPath = d3.line()
                 .x(function(d){
                     return x(d.timestamp);
                 })
                 .y(function(d){
                     return y(d.location);
                 });
-        if(teacherLocations){
-            var line = context.append("g")
-                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-                    .append("path")
-                    .attr("class","teacherPath")
-                    .attr("d",path(teacherLocations));
+
+        var brushed = function(){
+            var selection = d3.event.selection;
+            x.domain(selection.map(xM.invert,xM));
+            detail.select(".teacherPath").attr("d", teacherPath(teacherLocations));
+            detail.select(".x.axis").call(detailX);
+            detail.selectAll(".circ")
+                .attr("cx", function(d) {
+                    return x(d.timestamp);
+                })
+                .attr("cy", function(d) {
+                    return y(parseInt(d.location));
+                });
         }
+        var brush = d3.brushX().on("brush",brushed);
+
+        var circles = detail.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .selectAll(".circ")
+                .data(studentLocations)
+                .enter()
+                .append("circle")
+                .attr("class", "circ")
+                .attr("cx", function(d) {
+                    return x(d.timestamp);
+                })
+                .attr("cy", function(d) {
+                    return y(parseInt(d.location));
+                })
+                .attr("r", function(d){
+                    return r(d.attendances.length);
+                });
+        var teacher;
+        if(teacherLocations){
+            teacher = detail.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .append("path")
+                .attr("class","teacherPath")
+                .attr("d",teacherPath(teacherLocations));
+        }
+        detail.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(" + margin.left + "," + (margin.top + (height - margin.bottom)) + ")")
+            .call(detailX);
+        detail.append("g")
+            .attr("class", "y axis")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .call(detailY);
+
+        var masterTop = masterHeight + height - margin.top;
+        var masterArea = d3.area()
+                .x(function(d) {
+                    return xM(d[0]);
+                })
+                .y0(masterHeight - margin.top)
+                .y1(function(d) {
+                    return yM(d[1].length) - margin.top;
+                });
+
+        var master = context.append("g")
+                .attr("transform", "translate(" + margin.left + "," + height + ")")
+        master.append("g")
+            .attr("transform", "translate(" + 0 + "," + (masterHeight) + ")")
+            .call(masterX);
+        master.append("g")
+            .attr("transform", "translate(" + 0 + "," + ( margin.top) + ")")
+            .attr("class", "masterArea")
+            .call(brush)
+            .append("path")
+            .attr("d",masterArea(masterData));
+        master.append("g")
+            .call(masterY)
+
     };
     return {
         prime:function(conversation){

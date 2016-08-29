@@ -1,6 +1,10 @@
 body{
     background-size:100% 100%;
 }
+.masterArea path{
+    stroke:pink;
+    fill:red;
+}
 .vega-actions{
     display:none;
 }
