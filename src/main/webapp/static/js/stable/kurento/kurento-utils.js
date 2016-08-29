@@ -260,16 +260,17 @@ function WebRtcPeer(mode, options, callback) {
             offerAudio = typeof mediaConstraints.audio === 'boolean' ? mediaConstraints.audio : true;
             offerVideo = typeof mediaConstraints.video === 'boolean' ? mediaConstraints.video : true;
         }
-        var browserDependantConstraints = browser.name === 'Firefox' && browser.version > 34 ? {
+        var browserDependantConstraints = /*browser.name === 'Firefox' && browser.version > 34 ? */{
                 offerToReceiveAudio: mode !== 'sendonly' && offerAudio,
                 offerToReceiveVideo: mode !== 'sendonly' && offerVideo
-            } : {
+            };/* : {
                 mandatory: {
                     OfferToReceiveAudio: mode !== 'sendonly' && offerAudio,
                     OfferToReceiveVideo: mode !== 'sendonly' && offerVideo
                 },
                 optional: [{ DtlsSrtpKeyAgreement: true }]
             };
+								*/
         var constraints = recursive(browserDependantConstraints, connectionConstraints);
         console.log('constraints: ' + JSON.stringify(constraints));
         pc.createOffer(constraints).then(function (offer) {

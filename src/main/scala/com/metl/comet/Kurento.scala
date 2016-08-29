@@ -112,11 +112,15 @@ object GroupRoom extends KurentoPipelineType {
 }
 
 class KurentoPipeline(name:String) extends Logger {
-  protected val kbps = 100 // max send rate
+  protected val videoKbps = 500 // max send rate
+  protected val audioKbps = 10 // max send rate
   protected val pipeline = KurentoManager.client.createMediaPipeline()
   def buildRtcEndpoint:WebRtcEndpoint = {
     val wre = new WebRtcEndpoint.Builder(pipeline).build()
-    wre.setMaxVideoSendBandwidth(kbps)
+    wre.setMaxVideoSendBandwidth(videoKbps)
+    wre.setMaxVideoRecvBandwidth(videoKbps)
+//    wre.setMaxAudioSendBandwidth(audioKbps)
+//    wre.setMaxAudioRecvBandwidth(audioKbps)
     wre
   }
   def getPipeline:MediaPipeline = pipeline
