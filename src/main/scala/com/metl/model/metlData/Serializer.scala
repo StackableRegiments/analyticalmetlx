@@ -40,6 +40,8 @@ abstract class Serializer {
   def fromMeTLQuizResponse(input:MeTLQuizResponse):T = throw new SerializationNotImplementedException
   def toMeTLFile(input:T):MeTLFile = throw new SerializationNotImplementedException
   def fromMeTLFile(input:MeTLFile):T = throw new SerializationNotImplementedException
+  def toMeTLVideoStream(input:T):MeTLVideoStream = throw new SerializationNotImplementedException
+  def fromMeTLVideoStream(input:MeTLVideoStream):T = throw new SerializationNotImplementedException
   def toConversation(input:T):Conversation = throw new SerializationNotImplementedException
   def fromConversation(input:Conversation):T = throw new SerializationNotImplementedException
   def fromConversationList(input:List[Conversation]):T = throw new SerializationNotImplementedException
@@ -80,6 +82,7 @@ abstract class Serializer {
     case m:MeTLMoveDelta => fromMeTLMoveDelta(m)
     case a:Attendance => fromMeTLAttendance(a)
     case f:MeTLFile => fromMeTLFile(f)
+    case v:MeTLVideoStream => fromMeTLVideoStream(v)
     case cc:MeTLUnhandledCanvasContent => fromMeTLUnhandledCanvasContent(cc)
     case ms:MeTLUnhandledStanza => fromMeTLUnhandledStanza(ms)
     case mx:MeTLUnhandledData => fromMeTLUnhandledData(mx)
@@ -117,6 +120,8 @@ class PassthroughSerializer extends Serializer {
   override def fromMeTLQuizResponse(input:MeTLQuizResponse):Object = input.asInstanceOf[Object]
   override def toMeTLFile(input:T):MeTLFile = input.asInstanceOf[MeTLFile]
   override def fromMeTLFile(input:MeTLFile):T = input.asInstanceOf[Object]
+  override def toMeTLVideoStream(input:T):MeTLVideoStream = input.asInstanceOf[MeTLVideoStream]
+  override def fromMeTLVideoStream(input:MeTLVideoStream):T = input.asInstanceOf[Object]
   override def toConversation(input:Object):Conversation = input.asInstanceOf[Conversation]
   override def fromConversation(input:Conversation):Object = input.asInstanceOf[Object]
   override def toSlide(input:Object):Slide = input.asInstanceOf[Slide]

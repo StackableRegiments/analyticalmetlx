@@ -91,6 +91,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       //      case i:NodeSeq if hasChild(i,"body") => toMeTLCommand(i)
       case i:NodeSeq if hasChild(i,"command") => toMeTLCommand(i)
       case i:NodeSeq if hasChild(i,"fileResource") => toMeTLFile(i)
+      case i:NodeSeq if hasChild(i,"videoStream") => toMeTLVideoStream(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
       case other:NodeSeq => toMeTLUnhandledData(other)
@@ -410,6 +411,21 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     ) :::
       input.url.map(u => List(<url>{u}</url>)).getOrElse(List.empty[Node]))
   })
+  override def toMeTLVideoStream(input:NodeSeq):MeTLVideoStream = Stopwatch.time("GenericXmlSerializer.toMeTLVideoStream",{
+    val m = parseMeTLContent(input,config)
+    val id = getStringByName(input,"identity")
+    val deleted = getBooleanByName(input,"deleted")
+    val url = (input \ "url").headOption.map(_.text)
+    MeTLVideoStream(config,m.author,id,m.timestamp,url,deleted)
+  })
+  override def fromMeTLVideoStream(input:MeTLVideoStream):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLVideoStream",{
+    metlContentToXml("videoStream",input,List(
+      <identity>{input.id}</identity>,
+      <deleted>{input.isDeleted}</deleted>
+    ) :::
+      input.url.map(u => List(<url>{u}</url>)).getOrElse(List.empty[Node]))
+  })
+
   def toQuizOption(input:NodeSeq):QuizOption = Stopwatch.time("GenericXmlSerializer.toMeTLQuizOption",{
     val name = getStringByName(input,"name")
     val text = getStringByName(input,"text")

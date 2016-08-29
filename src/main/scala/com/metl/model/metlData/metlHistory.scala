@@ -63,6 +63,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var latestCommands:Map[String,MeTLCommand] = Map.empty[String,MeTLCommand]
   protected var files:List[MeTLFile] = List.empty[MeTLFile]
   protected var attendances:List[Attendance] = List.empty[Attendance]
+  protected var videoStreams:List[MeTLVideoStream] = List.empty[MeTLVideoStream]
   protected var unhandledCanvasContents:List[MeTLUnhandledCanvasContent] = List.empty[MeTLUnhandledCanvasContent]
   protected var unhandledStanzas:List[MeTLUnhandledStanza] = List.empty[MeTLUnhandledStanza]
 
@@ -81,6 +82,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getAttendances = attendances
   def getFiles = files
   def getCommands = commands
+  def getVideoStreams = videoStreams
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
 
@@ -124,6 +126,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLCommand => addCommand(s)
     case s:Attendance => addAttendance(s)
     case s:MeTLFile => addFile(s)
+    case s:MeTLVideoStream => addVideoStream(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
     case _ => {
@@ -273,6 +276,14 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       outputHook(s)
       val (candidates,remainder) = files.partition(_.id == s.id)
       files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))  
+    }
+    this
+  })
+  def addVideoStream(s:MeTLVideoStream,store:Boolean = true) = Stopwatch.time("History.addVideoStream",{
+    if (store){
+      outputHook(s)
+      val (candidates,remainder) = videoStreams.partition(_.id == s.id)
+      videoStreams = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.isDeleted))
     }
     this
   })

@@ -807,6 +807,16 @@ object MeTLQuiz{
   def empty = MeTLQuiz(ServerConfiguration.empty,"",0L,0L,"","",Empty,Empty,true,List.empty[QuizOption],Nil)
 }
 
+case class MeTLVideoStream(override val server:ServerConfiguration,override val author:String,id:String,override val timestamp:Long,url:Box[String],isDeleted:Boolean,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp){
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLVideoStream = Stopwatch.time("MeTLVideoStream.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+  def delete = copy(isDeleted = true)
+}
+object MeTLVideoStream{
+  def empty = MeTLVideoStream(ServerConfiguration.empty,"","",0L,Empty,true,Nil)
+}
+
 case class MeTLSubmission(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,title:String,slideJid:Int,url:String,imageBytes:Box[Array[Byte]] = Empty,blacklist:List[SubmissionBlacklistedPerson] = List.empty[SubmissionBlacklistedPerson], override val target:String = "submission",override val privacy:Privacy = Privacy.PUBLIC,override val identity:String = new Date().getTime.toString,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slideJid.toString,identity){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLSubmission = Stopwatch.time("MeTLSubmission.adjustTimestamp",{
     copy(timestamp = newTime)

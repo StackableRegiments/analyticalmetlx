@@ -140,6 +140,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("attendances",JArray(input.getAttendances.map(i => fromMeTLAttendance(i)))),
       JField("commands",JArray(input.getCommands.map(i => fromMeTLCommand(i)))),
       JField("files",JArray(input.getFiles.map(i => fromMeTLFile(i)))),
+      JField("videoStreams",JArray(input.getVideoStreams.map(i => fromMeTLVideoStream(i)))),
       JField("unhandledCanvasContents",JArray(input.getUnhandledCanvasContents.map(i => fromMeTLUnhandledCanvasContent(i)))),
       JField("unhandledStanzas",JArray(input.getUnhandledStanzas.map(i => fromMeTLUnhandledStanza(i))))
         //      JField("unhandledData",JArray(input.getUnhandledData.map(i => fromMeTLUnhandledData(i))))
@@ -170,6 +171,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     getFields(i,"attendances").foreach(jf => history.addStanza(toMeTLAttendance(jf.value)))
     getFields(i,"commands").foreach(jf => history.addStanza(toMeTLCommand(jf.value)))
     getFields(i,"files").foreach(jf => history.addStanza(toMeTLFile(jf.value)))
+    getFields(i,"videoStreams").foreach(jf => history.addStanza(toMeTLVideoStream(jf.value)))
     getFields(i,"unhandledCanvasContents").foreach(jf => history.addStanza(toMeTLUnhandledCanvasContent(jf.value)))
     getFields(i,"unhandledStanzas").foreach(jf => history.addStanza(toMeTLUnhandledStanza(jf.value)))
     //    getFields(i,"unhandledData").foreach(jf => history.addStanza(toMeTLUnhandledData(jf.value)))
@@ -204,6 +206,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       case jo:JObject if (isOfType(jo,"command")) => toMeTLCommand(jo)
       case jo:JObject if (isOfType(jo,"attendance")) => toMeTLAttendance(jo)
       case jo:JObject if (isOfType(jo,"file")) => toMeTLFile(jo)
+      case jo:JObject if (isOfType(jo,"videoStream")) => toMeTLVideoStream(jo)
       case other:JObject if hasFields(other,List("target","privacy","slide","identity")) => toMeTLUnhandledCanvasContent(other)
       case other:JObject if hasFields(other,List("author","timestamp")) => toMeTLUnhandledStanza(other)
       case other:JObject => toMeTLUnhandledData(other)
@@ -267,6 +270,27 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted)
       }
       case _ => MeTLFile.empty
+    }
+  })
+  override def fromMeTLVideoStream(input:MeTLVideoStream):JValue = Stopwatch.time("JsonSerializer.fromMeTLVideoStream",{
+    toJsObj("file",List(
+      JField("deleted",JBool(input.isDeleted)),
+      JField("id",JString(input.id))
+    ) :::
+      parseMeTLContent(input) :::
+      input.url.map(u => JField("url",JString(u))).toList)
+  })
+
+  override def toMeTLVideoStream(i:JValue):MeTLVideoStream = Stopwatch.time("JsonSerializer.toMeTLVideoStream",{
+    i match {
+      case input:JObject => {
+        val mc = parseJObjForMeTLContent(input,config)
+        val id = getStringByName(input,"id")
+        val url = (input \ "url").extractOpt[String]
+        val deleted = getBooleanByName(input,"deleted")
+        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted)
+      }
+      case _ => MeTLVideoStream.empty
     }
   })
   override def fromMeTLMoveDelta(input:MeTLMoveDelta):JValue = Stopwatch.time("JsonSerializer.fromMeTLMoveDelta",{

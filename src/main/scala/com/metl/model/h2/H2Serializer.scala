@@ -77,6 +77,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
           case "quiz" => toMeTLQuiz(i.asInstanceOf[H2Quiz])
           case "attendance" => toMeTLAttendance(i.asInstanceOf[H2Attendance])
           case "file" => toMeTLFile(i.asInstanceOf[H2File])
+          case "videoStream" => toMeTLVideoStream(i.asInstanceOf[H2VideoStream])
           case "quizResponse" => toMeTLQuizResponse(i.asInstanceOf[H2QuizResponse])
           case "unhandledCanvasContent" => toMeTLUnhandledCanvasContent(i.asInstanceOf[H2UnhandledCanvasContent])
           case "unhandledStanza" => toMeTLUnhandledStanza(i.asInstanceOf[H2UnhandledStanza])
@@ -197,6 +198,17 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   }
   override def fromMeTLFile(i:MeTLFile):H2File = {
     incStanza(H2File.create,i,"file").name(i.name).partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.deleted)
+  }
+  def toMeTLVideoStream(i:H2VideoStream):MeTLVideoStream = {
+    val c = decStanza(i)
+    val url = i.url.get match {
+      case null | "" => None
+      case other => Some(other)
+    }
+    MeTLVideoStream(config,c.author,i.identity.get,c.timestamp,url,i.deleted.get)
+  }
+  override def fromMeTLVideoStream(i:MeTLVideoStream):H2VideoStream = {
+    incStanza(H2VideoStream.create,i,"videoStream").partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.isDeleted)
   }
 
   def toSubmission(i:H2Submission):MeTLSubmission = {
