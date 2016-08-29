@@ -15,11 +15,53 @@ import scala.xml.{Source=>XmlSource,_}
 import com.metl.liftAuthenticator.LiftAuthStateData
 
 object GroupsProvider {
+  def possiblyFilter(in:NodeSeq,gp:GroupsProvider):GroupsProvider = {
+    (for {
+      fNodes <- (in \\ "filter").headOption
+      blacklistedGroups = (fNodes \\ "group").map(gn => (
+        (gn \\ "@keyPrefix").headOption.map(_.text),
+        (gn \\ "@keySuffix").headOption.map(_.text),
+        (gn \\ "@valuePrefix").headOption.map(_.text),
+        (gn \\ "@valueSuffix").headOption.map(_.text)
+      ))
+      blacklistedInfos = (fNodes \\ "personalDetails").map(gn => (
+        (gn \\ "@keyPrefix").headOption.map(_.text),
+        (gn \\ "@keySuffix").headOption.map(_.text),
+        (gn \\ "@valuePrefix").headOption.map(_.text),
+        (gn \\ "@valueSuffix").headOption.map(_.text)
+      ))
+      blacklistedMembers = (fNodes \\ "member").map(gn => (
+        (gn \\ "@prefix").headOption.map(_.text),
+        (gn \\ "@suffix").headOption.map(_.text)
+      ))
+    } yield {
+      val groupsFilter = (g:Tuple2[String,String]) => blacklistedGroups.exists(bg => {
+        !bg._1.exists(kp => !g._1.startsWith(kp)) &&
+        !bg._2.exists(ks => !g._1.endsWith(ks)) &&
+        !bg._3.exists(vp => !g._2.startsWith(vp)) &&
+        !bg._4.exists(vs => !g._2.endsWith(vs))
+      })
+      val personalDetailsFilter = (g:Tuple2[String,String]) => blacklistedInfos.exists(bg => {
+        !bg._1.exists(kp => !g._1.startsWith(kp)) &&
+        !bg._2.exists(ks => !g._1.endsWith(ks)) &&
+        !bg._3.exists(vp => !g._2.startsWith(vp)) &&
+        !bg._4.exists(vs => !g._2.endsWith(vs))
+      })
+      val membersFilter = (g:String) => blacklistedMembers.exists(bg => {
+        !bg._1.exists(kp => !g.startsWith(kp)) &&
+        !bg._2.exists(ks => !g.endsWith(ks)) 
+      })
+      new FilteringGroupsProvider(gp,groupsFilter,membersFilter,personalDetailsFilter)
+    }).getOrElse(gp)
+  }
   def createFlatFileGroups(in:NodeSeq):GroupsProvider = {
-    (in \\ "@format").text match {
+    possiblyFilter(in,(in \\ "@format").text match {
       case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
       case "globalOverrides" => new GlobalOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
-      
+     
+      case "adfsGroups" => {
+        new ADFSGroupsExtractor
+      }
       case "specificOverrides" => {
         (for {
           path <- (in \\ "@location").headOption.map(_.text)
@@ -62,7 +104,7 @@ object GroupsProvider {
         throw new Exception("missing parameters for d2l groups provider")
       })
       case _ => throw new Exception("unrecognized flatfile format")
-    }
+    })
   }
 }
 
@@ -85,6 +127,23 @@ trait GroupsProvider extends Logger {
   def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
   def getMembersFor(groupName:String):List[String] = Nil
   def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
+}
+
+class ADFSGroupsExtractor extends GroupsProvider {
+  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = userData.eligibleGroups.toList
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = userData.informationGroups.toList
+}
+
+class PassThroughGroupsProvider(gp:GroupsProvider) extends GroupsProvider {
+  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gp.getGroupsFor(userData)
+  override def getMembersFor(groupName:String):List[String] = gp.getMembersFor(groupName)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gp.getPersonalDetailsFor(userData)
+}
+
+class FilteringGroupsProvider(gp:GroupsProvider,groupsFilter:Tuple2[String,String] => Boolean,membersFilter:String=>Boolean,personalDetailsFilter:Tuple2[String,String]=>Boolean) extends PassThroughGroupsProvider(gp) {
+  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = super.getGroupsFor(userData).filterNot(groupsFilter)
+  override def getMembersFor(groupName:String):List[String] = super.getMembersFor(groupName).filterNot(membersFilter)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = super.getPersonalDetailsFor(userData).filterNot(personalDetailsFilter)
 }
 
 class StoreBackedGroupsProvider(gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider {
