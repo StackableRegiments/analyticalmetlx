@@ -19,7 +19,14 @@ var KurentoStream = (function(){
 			}
 		}; 
 	};
-	var opts = {};
+	var opts = {
+		audio:true,
+		video:{
+			width:320,
+			height:180,
+			framerate:10	
+		}
+	};
 	var offerFunc = function(videoType){ return function(error){
 		if (error){
 			console.log("startFuncError:",error);
@@ -60,6 +67,9 @@ var KurentoStream = (function(){
 	var rouletteFunc = function(){
 		return startFunc("roulette",true,true);
 	};
+	var groupRoomFunc = function(){
+		return startFunc("groupRoom",true,true);
+	};
 	var getLocalVideoFunc = function(){
 		return localVideo;
 	};
@@ -98,6 +108,7 @@ var KurentoStream = (function(){
 		receiveAnswer:receiveAnswerFunc,	
 		loopback:loopbackFunc,
 		broadcast:broadcastFunc,
+		groupRoom:groupRoomFunc,
 		roulette:rouletteFunc,
 		listen:listenFunc,
 		getLocalVideo:getLocalVideoFunc,
@@ -298,7 +309,13 @@ var RouletteTest = function(){
 	var remoteVideo = KurentoStream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
-
+var GroupRoomTest = function(){
+	var videoSelector = "#masterHeader";
+	KurentoStream.groupRoom();// VideoStream(undefined,sessionId);
+	var localVideo = KurentoStream.getLocalVideo();
+	var remoteVideo = KurentoStream.getRemoteVideo();
+	$(videoSelector).append(localVideo).append(remoteVideo);
+}
 function receiveKurentoAnswer(answer){
 	console.log("receiveKurentoAnswer",answer);
 	KurentoStream.receiveAnswer(answer.sdpAnswer);

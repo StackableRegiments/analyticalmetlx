@@ -33,7 +33,7 @@ import com.metl.snippet.Metl._
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties}
+import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort}
 import org.kurento.jsonrpc.JsonUtils;
 /*
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,11 +107,17 @@ object Broadcast extends KurentoPipelineType {
 object Roulette extends KurentoPipelineType {
   override def generatePipeline(name:String):KurentoPipeline = RoulettePipeline(name)
 }
+object GroupRoom extends KurentoPipelineType {
+  override def generatePipeline(name:String):KurentoPipeline = GroupRoomPipeline(name)
+}
 
 class KurentoPipeline(name:String) extends Logger {
+  protected val kbps = 100 // max send rate
   protected val pipeline = KurentoManager.client.createMediaPipeline()
   def buildRtcEndpoint:WebRtcEndpoint = {
-    new WebRtcEndpoint.Builder(pipeline).build()
+    val wre = new WebRtcEndpoint.Builder(pipeline).build()
+    wre.setMaxVideoSendBandwidth(kbps)
+    wre
   }
   def getPipeline:MediaPipeline = pipeline
   def shutdown(rtc:WebRtcEndpoint):Unit = {
@@ -172,6 +178,30 @@ case class RoulettePipeline(name:String) extends KurentoPipeline(name) {
     }
     if (a == None && b == None){
       KurentoManager.removePipeline(name,Roulette)
+      super.shutdown(rtc)
+    }
+  }
+}
+
+case class GroupRoomPipeline(name:String) extends KurentoPipeline(name) {
+  protected var members:Map[WebRtcEndpoint,HubPort] = Map.empty[WebRtcEndpoint,HubPort]
+  protected val hub = new Composite.Builder(pipeline).build()
+  override def buildRtcEndpoint:WebRtcEndpoint = {
+    val newEndpoint = super.buildRtcEndpoint
+    val hubPort = new HubPort.Builder(hub).build()
+    hubPort.connect(newEndpoint)
+    newEndpoint.connect(hubPort)
+    members = members.updated(newEndpoint,hubPort)
+    newEndpoint
+  }
+  override def shutdown(rtc:WebRtcEndpoint):Unit = {
+    members.get(rtc).foreach(hubPort => {
+      rtc.release
+      hubPort.release
+    })
+    members = members - rtc
+    if (members.keys.toList.length < 1){
+      KurentoManager.removePipeline(name,GroupRoom)
       super.shutdown(rtc)
     }
   }
@@ -259,6 +289,7 @@ trait KurentoUtils {
         case "loopback" => Some(Loopback)
         case "broadcast" => Some(Broadcast)
         case "roulette" => Some(Roulette)
+        case "groupRoom" => Some(GroupRoom)
         case _ => None
     }).map(pipelineType => KurentoManager.getPipeline(name,pipelineType))
   }
