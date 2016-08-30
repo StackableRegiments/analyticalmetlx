@@ -23,6 +23,49 @@ var Analytics = (function(){
     var keyboarding = {}
     var images = {};
     var charts = {};
+    var typoQueue = [];
+    var typo;
+    $.get("/static/js/stable/dict/en_US.aff",function(aff){
+        status("Loading","spellcheck");
+        $.get("/static/js/stable/dict/en_US.dic",function(dict){
+            status("Parsing","spellcheck");
+            typo = new Typo("en_US",aff,dict);
+            status("Initialized","spellcheck");
+            _.each(typoQueue,word.incorporate);
+        })
+    });
+    var word = (function(){
+        var counters = {};
+	var cloudScale = d3.scaleLinear().range([8,25]);
+        return {
+            counts:function(){
+                return counters;
+            },
+            typo:function(){
+                return typo;
+            },
+            incorporate:function(word){
+                if(typo.check(word)){
+                    if(!(word in counters)){
+                        counters[word] = 0;
+                    }
+                    counters[word]++;
+                }
+            },
+            cloud:function(){
+		var container = $("#lang").empty();
+		cloudScale.domain(d3.extent(_.values(word.counts())));
+		_.each(word.counts(),function(count,word){
+		    $("<span />",{
+			text:word,
+			class:"ml cloudWord"
+		    }).css({
+			"font-size":sprintf("%spx",cloudScale(count))
+		    }).appendTo(container);
+		});
+            }
+        };
+    })();
     var dFormat = function(mString){
         return moment(parseInt(mString)).format("MMMM Do YYYY, h:mm:ss a");
     };
@@ -216,7 +259,6 @@ var Analytics = (function(){
         status(sprintf("Anchored %s",dFormat(min)),"earliest event");
         status(sprintf("Anchored %s",dFormat(max)),"latest event");
         status(events.length,"events scoped");
-        console.log(events.length);
         status(_.uniq(authors).length,"authors scoped");
         adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
         chartAttendance(attendances);
@@ -341,7 +383,6 @@ var Analytics = (function(){
         var brush = d3.brushX().on("brush",brushed);
 
         if(teacherLocations){
-            console.log(teacherLocations);
             detail.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
                 .append("path")
@@ -401,6 +442,7 @@ var Analytics = (function(){
 
     };
     return {
+        word:word,
         prime:function(conversation){
             status("Retrieving",conversation);
             $.get(sprintf("/details/%s",conversation),function(details){
@@ -413,6 +455,20 @@ var Analytics = (function(){
                         status("Retrieved",slide);
                         incorporate(slideHistory,details);
                         status(sprintf("Incorporated %s",slides.length),"slide(s)");
+                    });
+                    $.get(sprintf("/api/v1/analysis/words/%s",slide),function(words){
+                        _.each($(words).find("theme"),function(theme){
+                            _.each($(theme).find("content").text().split(" "),function(t){
+                                t = t.toLowerCase();
+                                if(typo){
+                                    word.incorporate(t);
+                                }
+                                else{
+                                    typoQueue.push(t);
+                                }
+                            });
+                        })
+			Analytics.word.cloud();
                     });
                 });
             });
