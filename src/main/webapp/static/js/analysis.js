@@ -25,6 +25,7 @@ var Analytics = (function(){
     var charts = {};
     var typoQueue = [];
     var typo;
+    var wordTimes = {};
     $.get("/static/js/stable/dict/en_US.aff",function(aff){
         status("Loading","spellcheck");
         $.get("/static/js/stable/dict/en_US.dic",function(dict){
@@ -36,33 +37,45 @@ var Analytics = (function(){
     });
     var word = (function(){
         var counters = {};
-	var cloudScale = d3.scaleLinear().range([8,25]);
+        var cloudScale = d3.scaleLinear().range([8,25]);
+        var nonWords = {};
         return {
             counts:function(){
                 return counters;
             },
+	    tags:function(){
+		return _.map(word.counts(),function(v,k){
+		    return {key:k,value:v};
+		});
+	    },
             typo:function(){
                 return typo;
             },
             incorporate:function(word){
+                if(word in nonWords) return;
                 if(typo.check(word)){
                     if(!(word in counters)){
                         counters[word] = 0;
                     }
                     counters[word]++;
                 }
+                else{
+                    nonWords[word] = true;
+                }
             },
             cloud:function(){
-		var container = $("#lang").empty();
-		cloudScale.domain(d3.extent(_.values(word.counts())));
-		_.each(word.counts(),function(count,word){
-		    $("<span />",{
-			text:word,
-			class:"ml cloudWord"
-		    }).css({
-			"font-size":sprintf("%spx",cloudScale(count))
-		    }).appendTo(container);
-		});
+		WordCloud(word.tags());
+		return;
+                var container = $("#lang").empty();
+                cloudScale.domain(d3.extent(_.values(word.counts())));
+                _.each(word.counts(),function(count,word){
+                    $("<span />",{
+                        text:word,
+                        class:"ml cloudWord"
+                    }).css({
+                        "font-size":sprintf("%spx",cloudScale(count))
+                    }).appendTo(container);
+                });
             }
         };
     })();
@@ -456,6 +469,7 @@ var Analytics = (function(){
                         incorporate(slideHistory,details);
                         status(sprintf("Incorporated %s",slides.length),"slide(s)");
                     });
+                    status("Parsing",sprintf("usage %s",slide));
                     $.get(sprintf("/api/v1/analysis/words/%s",slide),function(words){
                         _.each($(words).find("theme"),function(theme){
                             _.each($(theme).find("content").text().split(" "),function(t){
@@ -468,7 +482,8 @@ var Analytics = (function(){
                                 }
                             });
                         })
-			Analytics.word.cloud();
+                        Analytics.word.cloud();
+                        status("Presented",sprintf("usage %s",slide));
                     });
                 });
             });
