@@ -31,44 +31,51 @@ var WebRtcStreamManager = (function(){
 			width:videoElemWidth,
 			height:videoElemHeight
 		})[0];
-		var offerOptions = {
-			offerToReceiveAudio:true,
-			offerToReceiveVideo:true
-		};	
-
+		var offerOptions = {};
 		var shutdownFunc = function(){
+
 			localVideo.pause();
 			remoteVideo.pause();
 			localVideo.dispose();
 			remoteVideo.dispose();
-			webRtcPeer.disconnect();
+			webRtcPeer.close();
 			delete activeVideoClients[id];
 		};
 		webRtcPeer.onaddstream = function(remoteE){
-			remoteVideo.srcObject = remoteE.stream;
-			remoteVideo.play();
+			if (recv){
+				remoteVideo.srcObject = remoteE.stream;
+				remoteVideo.play();
+			}
 		};
 		webRtcPeer.onicecandidate = function(e){
 			sendVideoStreamIceCandidate(e.candidate,id);
 		};
-		if ("mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices){
-			navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(localStream){
-				localVideo.srcObject = localStream;
-//				localVideo.mute();
-				localVideo.play();
-				webRtcPeer.addStream(localStream);
-				webRtcPeer.onnegotiationeeded = function(negError) {
-					console.log("local negotiation requested, error:",negError); //not sure what to do about negotiation yet
-				};
-
-				console.log("calling");
-				webRtcPeer.createOffer(offerOptions).then(function(desc){
-					console.log("creating offer:",desc);
-					webRtcPeer.setLocalDescription(desc);
-					initiateVideoStream(videoType,desc.sdp,id);
+		webRtcPeer.onnegotiationeeded = function(negError) {
+			console.log("local negotiation requested, error:",negError); //not sure what to do about negotiation yet
+		};
+		if (send){
+			if ("mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices){
+				navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(localStream){
+					localVideo.srcObject = localStream;
+	//				localVideo.mute(); // we should totally mute the local stream here
+					localVideo.play();
+					webRtcPeer.addStream(localStream);
+					webRtcPeer.createOffer(offerOptions).then(function(desc){
+						console.log("creating offer:",desc);
+						webRtcPeer.setLocalDescription(desc);
+						initiateVideoStream(videoType,desc.sdp,id);
+					});
+				}).catch(function(error){
+					console.log("error creating offer:",error);
 				});
+			}
+		} else if (recv){
+			webRtcPeer.createAnswer().then(function(desc){
+				console.log("creating answer:",desc);
+				webRtcPeer.setLocalDescription(desc);
+				initiateVideoStream(videoType,desc.sdp,id);
 			}).catch(function(error){
-				console.log("error getting device:",error);
+				console.log("error while creating answer:",error);
 			});
 		}
 		var addIceCandidateFunc = function(candidate){
@@ -98,7 +105,6 @@ var WebRtcStreamManager = (function(){
 		activeVideoClients[id] = returnObj;
 		return returnObj;
 	};
-
 
 	var addIceCandidateFunc = function(id,iceCandidate){
 		if (id in activeVideoClients){
@@ -137,7 +143,8 @@ var WebRtcStreamManager = (function(){
 		broadcast:broadcastFunc,
 		roulette:rouletteFunc,
 		groupchat:groupChatFunc,
-		removeVideoStream:removeFunc
+		removeVideoStream:removeFunc,
+		getActiveSessions:function(){return activeVideoClients;}
 	};
 })();
 
@@ -171,7 +178,7 @@ var RouletteTest = function(id){
 }
 var GroupRoomTest = function(id){
 	var videoSelector = "#masterHeader";
-	var stream = WebRtcStreamManager.groupRoom(id);// VideoStream(undefined,sessionId);
+	var stream = WebRtcStreamManager.groupchat(id);// VideoStream(undefined,sessionId);
 	var localVideo = stream.getLocalVideo();
 	var remoteVideo = stream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
