@@ -669,30 +669,33 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_KURENTO_ANSWER = "receiveKurentoAnswer"
   private lazy val RECEIVE_KURENTO_ICE_CANDIDATE = "receiveKurentoIceCandidate"
 
-  protected var kurentoSession:Option[KurentoUserSession] = None
+  protected var kurentoSessions:List[KurentoUserSession] = Nil
   KurentoManager.client // just initiating it, for the sake of it
 
   override lazy val functionDefinitions = List(
-    ClientSideFunctionDefinition("initiateVideoStream",List("videoType","offer"),(args) => {
+    ClientSideFunctionDefinition("initiateVideoStream",List("videoType","offer","id"),(args) => {
       val videoType = getArgAsString(args(0))
       val offer = getArgAsString(args(1))
-      //println("kurento initiate video stream: (%s, %s)".format(videoType,offer))
-      kurentoSession = for {
+      val id = getArgAsString(args(2))
+      println("kurento initiate video stream: (%s, %s, %s)".format(id,videoType,offer))
+      val (matching,others) = kurentoSessions.partition(_.getId == id)
+      matching.foreach(_.shutdown)
+      kurentoSessions = (for {
         conv <- currentConversation
-        pipelineName = "%s_%s".format(conv.jid,videoType)
+        pipelineName = id//"%s_%s".format(conv.jid,videoType)
         pipeline <- getPipeline(pipelineName,videoType)
       } yield { 
-        kurentoSession.foreach(_.shutdown)
-        val newSession = KurentoUserSession(userUniqueId,this,KurentoOffer(userUniqueId,offer))
+        val newSession = KurentoUserSession(userUniqueId,this,KurentoOffer(userUniqueId,id,offer))
         newSession.setMediaPipeline(pipeline)
         newSession
-      }
+      }).toList ::: others
       JNull
     },Empty),
-    ClientSideFunctionDefinition("sendVideoStreamIceCandidate",List("iceCandidate"),(args) => {
-      //println("kurento sendVideoStreamIceCandidate: %s".format(args))
+    ClientSideFunctionDefinition("sendVideoStreamIceCandidate",List("iceCandidate","id"),(args) => {
+      val id = getArgAsString(args(1))
+      println("kurento sendVideoStreamIceCandidate: %s, %s".format(id, args))
       for {
-        session <- kurentoSession
+        session <- kurentoSessions.find(_.getId == id)
         jObj = args(0).asInstanceOf[JValue]
         candidate <- candidateFromJValue(jObj)
       } yield {
@@ -700,9 +703,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty),
-    ClientSideFunctionDefinition("shutdownVideoStream",List.empty[String],(args) => {
-      println("kurento shutdownVideoStream")
-      kurentoSession.foreach(_.shutdown)
+    ClientSideFunctionDefinition("shutdownVideoStream",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      kurentoSessions.find(_.getId == id).foreach(s => {
+        println("kurento shutdownVideoStream: %s".format(s))
+        s.shutdown
+      })
       JNull
     },Empty),
     ClientSideFunctionDefinition("refreshClientSideState",List.empty[String],(args) => {
@@ -1432,21 +1438,23 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     case HealthyWelcomeFromRoom => {}
 
     //kurento stuff
-    case ka@KurentoAnswer(id,response,sdpAnswer,message) => {
+    case ka@KurentoAnswer(userId,id,response,sdpAnswer,message) => {
       //println("sending kurentoAnswer: %s".format(ka))
       partialUpdate(Call(RECEIVE_KURENTO_ANSWER,JObject(List(
         JField("id",JString(id)),
+        JField("userId",JString(userId)),
         JField("response",JString(response)),
         JField("sdpAnswer",JString(sdpAnswer)),
         JField("message",JString(message))
-      ))))
+      )),JString(id)))
     }
-    case kssic@KurentoServerSideIceCandidate(id,iceCandidateJsonString) => {
+    case kssic@KurentoServerSideIceCandidate(userId,id,iceCandidateJsonString) => {
       //println("sending kurentoServerSideIceCandidate: %s".format(kssic))
       partialUpdate(Call(RECEIVE_KURENTO_ICE_CANDIDATE,JObject(List(
         JField("id",JString(id)),
+        JField("userId",JString(userId)),
         JField("iceCandidateJsonString",JString(iceCandidateJsonString))
-      ))))
+      )),JString(id)))
     }
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
@@ -1491,7 +1499,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
     debug("shutdown metlactor: %s".format(name))
     leaveAllRooms(true)
-    kurentoSession.foreach(_.shutdown)
+    kurentoSessions.foreach(_.shutdown)
     super.localShutdown()
   })
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)

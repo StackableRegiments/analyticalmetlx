@@ -46,41 +46,41 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-case class KurentoOffer(id:String,sdpOffer:String)
-case class KurentoAnswer(id:String,response:String,sdpAnswer:String,message:String = "")
-case class KurentoServerSideIceCandidate(userId:String,iceCandidateJsonString:String)
+case class KurentoOffer(userId:String,id:String,sdpOffer:String)
+case class KurentoAnswer(userId:String,id:String,response:String,sdpAnswer:String,message:String = "")
+case class KurentoServerSideIceCandidate(userId:String,id:String,iceCandidateJsonString:String)
 
 
 case class KurentoUserSession(userId:String,userActor:LiftActor,sdpOffer:KurentoOffer) extends Logger {
-  val presenterResponse = "presenterResponse"
-  val viewerResponse = "viewerResponse"
   val accepted = "accepted"
   val rejected = "rejected"
 
   protected var pipeline:Option[KurentoPipeline] = None
   protected var webRtcEndpoint:Option[WebRtcEndpoint] = None
 
+  def getId:String = sdpOffer.id
   def setMediaPipeline(p:KurentoPipeline):KurentoUserSession = {
     webRtcEndpoint.foreach(_.release())
     pipeline = Some(p)
+    val pipeId = p.name
     val nwrtc = p.buildRtcEndpoint
     nwrtc.addIceCandidateFoundListener(new EventListener[IceCandidateFoundEvent](){
       override def onEvent(event:IceCandidateFoundEvent):Unit = {
         val response:JsonObject = new JsonObject()
         response.addProperty("id","iceCandidate")
         response.add("candidate",JsonUtils.toJsonObject(event.getCandidate()))
-        userActor ! KurentoServerSideIceCandidate(userId,response.toString)
+        userActor ! KurentoServerSideIceCandidate(userId,pipeId,response.toString)
       }
     })
     val sdpAnswer = nwrtc.processOffer(sdpOffer.sdpOffer)
-    val responseType = presenterResponse
     val responseSuccess = accepted
-    userActor ! KurentoAnswer(responseType,responseSuccess,sdpAnswer)
+    userActor ! KurentoAnswer(userId,pipeId,responseSuccess,sdpAnswer)
     nwrtc.gatherCandidates()
     webRtcEndpoint = Some(nwrtc)
     //println("settingPipeline: %s, endpoint: %s".format(pipeline,webRtcEndpoint))
     this
   }
+  def getPipeline:Option[KurentoPipeline] = pipeline
   def addIceCandidate(candidate:IceCandidate):KurentoUserSession = {
     //println("addingIceCandidate: %s".format(candidate))
     webRtcEndpoint.foreach(_.addIceCandidate(candidate))
@@ -111,7 +111,7 @@ object GroupRoom extends KurentoPipelineType {
   override def generatePipeline(name:String):KurentoPipeline = GroupRoomPipeline(name)
 }
 
-class KurentoPipeline(name:String) extends Logger {
+class KurentoPipeline(val name:String) extends Logger {
   protected val videoKbps = 500 // max send rate
   protected val audioKbps = 10 // max send rate
   protected val pipeline = KurentoManager.client.createMediaPipeline()
@@ -129,7 +129,7 @@ class KurentoPipeline(name:String) extends Logger {
   }
 }
 
-case class LoopbackPipeline(name:String) extends KurentoPipeline(name) {
+case class LoopbackPipeline(override val name:String) extends KurentoPipeline(name) {
   var thisVideo:Option[WebRtcEndpoint] = None
   override def buildRtcEndpoint:WebRtcEndpoint = {
     val newEndpoint = super.buildRtcEndpoint
@@ -144,7 +144,7 @@ case class LoopbackPipeline(name:String) extends KurentoPipeline(name) {
   }
 }
 
-case class RoulettePipeline(name:String) extends KurentoPipeline(name) {
+case class RoulettePipeline(override val name:String) extends KurentoPipeline(name) {
   var a:Option[WebRtcEndpoint] = None
   var b:Option[WebRtcEndpoint] = None
   override def buildRtcEndpoint:WebRtcEndpoint = {
@@ -187,7 +187,7 @@ case class RoulettePipeline(name:String) extends KurentoPipeline(name) {
   }
 }
 
-case class GroupRoomPipeline(name:String) extends KurentoPipeline(name) {
+case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(name) {
   protected var members:Map[WebRtcEndpoint,HubPort] = Map.empty[WebRtcEndpoint,HubPort]
   protected val hub = new Composite.Builder(pipeline).build()
   override def buildRtcEndpoint:WebRtcEndpoint = {
@@ -211,7 +211,7 @@ case class GroupRoomPipeline(name:String) extends KurentoPipeline(name) {
   }
 }
 
-case class BroadcastPipeline(name:String) extends KurentoPipeline(name) {
+case class BroadcastPipeline(override val name:String) extends KurentoPipeline(name) {
   protected var sender:Option[WebRtcEndpoint] = None
   protected var receivers:List[WebRtcEndpoint] = Nil
   override def buildRtcEndpoint:WebRtcEndpoint = {

@@ -1,174 +1,195 @@
-var KurentoStream = (function(){
-	//window.console = new Console();
-	var webRtcPeer = undefined;
-
-	var localVideo = $("<video/>",{
-		width:240,
-		height:180
-	})[0];
-	var remoteVideo = $("<video/>",{
-		width:240,
-		height:180
-	})[0];
-
-	var options = function(){ 
-		return {
-			localVideo: localVideo,
-			remoteVideo: remoteVideo,
-			onicecandidate: function(candidate){
-				sendVideoStreamIceCandidate(candidate);
+var WebRtcStreamManager = (function(){
+	var videoElemWidth = 240, videoElemHeight = 180;
+	var defaultConstraints = {
+		audio:true,
+		video:{
+			width:{
+				min:"300",
+				max:"640"
 			},
-			mediaConstraints:{
-				audio:true,
-				video:{
-					width:320,
-					height:180,
-					framerate:10	
-				}
+			height:{
+				min:"200",
+				max:"480"
+			},
+			frameRate:{
+				min:"10",
+				max:"25"
 			}
-		}; 
-	};
-	var opts = {
-	};
-	var offerFunc = function(videoType){ return function(error){
-		if (error){
-			console.log("startFuncError:",error);
 		}
-		webRtcPeer.generateOffer(function(offerError,offerData){
-			initiateVideoStream(videoType,offerData);
-		});
-	}};
+	};
+	
+	var activeVideoClients = {}; 
+	
+	var createVideoStream = function(id,videoType,send,recv,constraints){
+		var configuration = null;
+		var webRtcPeer = new RTCPeerConnection(configuration);
+		var localVideo = $("<video/>",{
+			width:videoElemWidth,
+			height:videoElemHeight
+		})[0];
+		var remoteVideo = $("<video/>",{
+			width:videoElemWidth,
+			height:videoElemHeight
+		})[0];
+		var offerOptions = {
+			offerToReceiveAudio:true,
+			offerToReceiveVideo:true
+		};	
 
-	var startFunc = function(videoType,send,recv){
-		if (webRtcPeer != undefined){
-			shutdownVideoStream();
+		var shutdownFunc = function(){
+			localVideo.pause();
+			remoteVideo.pause();
+			localVideo.dispose();
+			remoteVideo.dispose();
+			webRtcPeer.disconnect();
+			delete activeVideoClients[id];
+		};
+		webRtcPeer.onaddstream = function(remoteE){
+			remoteVideo.srcObject = remoteE.stream;
+			remoteVideo.play();
+		};
+		webRtcPeer.onicecandidate = function(e){
+			sendVideoStreamIceCandidate(e.candidate,id);
+		};
+		if ("mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices){
+			navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(localStream){
+				localVideo.srcObject = localStream;
+//				localVideo.mute();
+				localVideo.play();
+				webRtcPeer.addStream(localStream);
+				webRtcPeer.onnegotiationeeded = function(negError) {
+					console.log("local negotiation requested, error:",negError); //not sure what to do about negotiation yet
+				};
+
+				console.log("calling");
+				webRtcPeer.createOffer(offerOptions).then(function(desc){
+					console.log("creating offer:",desc);
+					webRtcPeer.setLocalDescription(desc);
+					initiateVideoStream(videoType,desc.sdp,id);
+				});
+			}).catch(function(error){
+				console.log("error getting device:",error);
+			});
 		}
-		var peerGen = kurentoUtils.WebRtcPeer
-		if (send && recv){
-			opts = options();
-			webRtcPeer = new peerGen.WebRtcPeerSendrecv(opts,offerFunc(videoType));
-		} else if (send){
-			opts = options();
-			delete opts.remoteVideo;
-			webRtcPeer = new peerGen.WebRtcPeerSendonly(opts,offerFunc(videoType));
-		} else if (recv){
-			opts = options();
-			delete opts.localVideo;
-			webRtcPeer = new peerGen.WebRtcPeerRecvonly(opts,offerFunc(videoType));
-		}	
+		var addIceCandidateFunc = function(candidate){
+			webRtcPeer.addIceCandidate(new RTCIceCandidate(candidate));
+		};
+		var processAnswerFunc = function(answer){
+			console.log("processing answer func:",answer,answer.sdpAnswer);
+			webRtcPeer.setRemoteDescription(new RTCSessionDescription({
+				"type":"answer",
+				"sdp":answer.sdpAnswer
+			}));
+		};
+		var returnObj = {
+			shutdown:shutdownFunc,
+			addIceCandidate:addIceCandidateFunc,
+			processAnswer:processAnswerFunc,
+			getLocalVideo:function(){
+				return localVideo;
+			},
+			getRemoteVideo:function(){
+				return remoteVideo;
+			}
+		};
+		if (id in activeVideoClients){
+			activeVideoClients[id].shutdown();
+		}
+		activeVideoClients[id] = returnObj;
+		return returnObj;
 	};
 
+
+	var addIceCandidateFunc = function(id,iceCandidate){
+		if (id in activeVideoClients){
+			activeVideoClients[id].addIceCandidate(iceCandidate);
+		}
+	};
+	var receiveAnswerFunc = function(id,answer){
+		if (id in activeVideoClients){
+			activeVideoClients[id].processAnswer(answer);
+		}
+	};
 	var loopbackFunc = function(){
-		return startFunc("loopback",true,true);
+		return createVideoStream(new Date().getTime().toString(),"loopback",true,true);
 	};
-	var broadcastFunc = function(){
-		return startFunc("broadcast",true,false);
+	var broadcastFunc = function(id){
+		return createVideoStream(id,"broadcast",true,false);
 	};
-	var listenFunc = function(){
-		return startFunc("broadcast",false,true);
+	var listenFunc = function(id){
+		return createVideoStream(id,"broadcast",false,true);
 	};
-	var rouletteFunc = function(){
-		return startFunc("roulette",true,true);
+	var rouletteFunc = function(id){
+		return createVideoStream(id,"roulette",true,true);
 	};
-	var groupRoomFunc = function(){
-		return startFunc("groupRoom",true,true);
+	var groupChatFunc = function(id){
+		return createVideoStream(id,"groupRoom",true,true);
 	};
-	var getLocalVideoFunc = function(){
-		return localVideo;
-	};
-	var getRemoteVideoFunc = function(){
-		return remoteVideo;
-	};
-	var hangupFunc = function(){
-		shutdownVideoStream();
-	};
-	var receiveIceCandidateFunc = function(candidate){
-		if (webRtcPeer != undefined){
-			webRtcPeer.addIceCandidate(candidate,function(error){
-				if (error != undefined){
-					console.log("receiveCandidateError",candidate,error);
-				}
-			});
+	var removeFunc = function(id){
+		if (id in activeVideoClients){
+			activeVideoClients[id].shutdown();
 		}
 	};
-	var receiveAnswerFunc = function(answer){
-		if (webRtcPeer != undefined){
-			webRtcPeer.processAnswer(answer,function(error){
-				if (error != undefined){
-					console.log("receiveAnswerError",answer,error);
-				}
-				if ("remoteVideo" in opts){
-					remoteVideo.play(); // not sure when to do this, but I think it's here.
-				}
-				if ("localVideo" in opts){
-					localVideo.play();
-				}
-			});
-		}
-	};	
 	return {
-		receiveIceCandidate:receiveIceCandidateFunc,
-		receiveAnswer:receiveAnswerFunc,	
+		receiveIceCandidate:addIceCandidateFunc,
+		receiveAnswer:receiveAnswerFunc,
 		loopback:loopbackFunc,
 		broadcast:broadcastFunc,
-		groupRoom:groupRoomFunc,
 		roulette:rouletteFunc,
-		listen:listenFunc,
-		getLocalVideo:getLocalVideoFunc,
-		getRemoteVideo:getRemoteVideoFunc,
-		hangup:hangupFunc	
+		groupchat:groupChatFunc,
+		removeVideoStream:removeFunc
 	};
 })();
 
-window.getUserMedia = navigator.getUserMedia;
-
 var LoopbackTest = function(){
 	var videoSelector = "#masterHeader";
-	KurentoStream.loopback();// VideoStream(undefined,sessionId);
-	var localVideo = KurentoStream.getLocalVideo();
-	var remoteVideo = KurentoStream.getRemoteVideo();
+	var stream = WebRtcStreamManager.loopback();// VideoStream(undefined,sessionId);
+	var localVideo = stream.getLocalVideo();
+	var remoteVideo = stream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
-var BroadcastTest = function(){
+var BroadcastTest = function(id){
 	var videoSelector = "#masterHeader";
-	KurentoStream.broadcast();// VideoStream(undefined,sessionId);
-	var localVideo = KurentoStream.getLocalVideo();
-	var remoteVideo = KurentoStream.getRemoteVideo();
+	var stream = WebRtcStreamManager.broadcast(id);// VideoStream(undefined,sessionId);
+	var localVideo = stream.getLocalVideo();
+	var remoteVideo = stream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
-var ListenTest = function(){
+var ListenTest = function(id){
 	var videoSelector = "#masterHeader";
-	KurentoStream.listen();// VideoStream(undefined,sessionId);
-	var localVideo = KurentoStream.getLocalVideo();
-	var remoteVideo = KurentoStream.getRemoteVideo();
+	var stream = WebRtcStreamManager.listen(id);// VideoStream(undefined,sessionId);
+	var localVideo = stream.getLocalVideo();
+	var remoteVideo = stream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
-var RouletteTest = function(){
+var RouletteTest = function(id){
 	var videoSelector = "#masterHeader";
-	KurentoStream.roulette();// VideoStream(undefined,sessionId);
-	var localVideo = KurentoStream.getLocalVideo();
-	var remoteVideo = KurentoStream.getRemoteVideo();
+	var stream = WebRtcStreamManager.roulette(id);// VideoStream(undefined,sessionId);
+	var localVideo = stream.getLocalVideo();
+	var remoteVideo = stream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
-var GroupRoomTest = function(){
+var GroupRoomTest = function(id){
 	var videoSelector = "#masterHeader";
-	KurentoStream.groupRoom();// VideoStream(undefined,sessionId);
-	var localVideo = KurentoStream.getLocalVideo();
-	var remoteVideo = KurentoStream.getRemoteVideo();
+	var stream = WebRtcStreamManager.groupRoom(id);// VideoStream(undefined,sessionId);
+	var localVideo = stream.getLocalVideo();
+	var remoteVideo = stream.getRemoteVideo();
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
-function receiveKurentoAnswer(answer){
+
+
+function receiveKurentoAnswer(answer,id){
 	console.log("receiveKurentoAnswer",answer);
-	KurentoStream.receiveAnswer(answer.sdpAnswer);
+	WebRtcStreamManager.receiveAnswer(id,answer);
 }
-function receiveKurentoIceCandidate(candidate){
+function receiveKurentoIceCandidate(candidate,id){
 	var iceCandidate = JSON.parse(candidate.iceCandidateJsonString).candidate;
-//	console.log("receiveCandidate",iceCandidate);
-	KurentoStream.receiveIceCandidate(iceCandidate);
+	console.log("receiveCandidate",iceCandidate);
+	WebRtcStreamManager.receiveIceCandidate(id,iceCandidate);
 }
 //injected by lift
-//function initiateVideoStream(videoType,offer){}
-//function sendVideoStreamIceCandidate(iceCandidate){}
-//function shutdownVideoStream(){}
+//function initiateVideoStream(videoType,offer,id){}
+//function sendVideoStreamIceCandidate(iceCandidate,id){}
+//function shutdownVideoStream(id){}
 
 

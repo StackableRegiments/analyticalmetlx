@@ -28,10 +28,12 @@ var ua = window && window.navigator ? window.navigator.userAgent : '';
 var parser = new UAParser(ua);
 var browser = parser.getBrowser();
 var usePlanB = false;
+/*
 if (browser.name === 'Chrome' || browser.name === 'Chromium') {
     console.log(browser.name + ': using SDP PlanB');
     usePlanB = true;
 }
+*/
 function noop(error) {
     if (error)
         console.error(error);
@@ -368,6 +370,7 @@ function WebRtcPeer(mode, options, callback) {
         }).catch(callback);
     };
     function mangleSdpToAddSimulcast(answer) {
+			/*
         if (simulcast) {
             if (browser.name === 'Chrome' || browser.name === 'Chromium') {
                 console.log('Adding multicast info');
@@ -379,6 +382,7 @@ function WebRtcPeer(mode, options, callback) {
                 console.warn('Simulcast is only available in Chrome browser.');
             }
         }
+				*/
         return answer;
     }
     function streamEndedListener() {
@@ -400,9 +404,11 @@ function WebRtcPeer(mode, options, callback) {
             pc.addStream(audioStream);
         }
         var browser = parser.getBrowser();
+				/*
         if (mode === 'sendonly' && (browser.name === 'Chrome' || browser.name === 'Chromium') && browser.major === 39) {
             mode = 'sendrecv';
         }
+				*/
         callback();
     }
     if (mode !== 'recvonly' && !videoStream && !audioStream) {
