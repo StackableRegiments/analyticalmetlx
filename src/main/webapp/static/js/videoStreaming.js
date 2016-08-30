@@ -17,10 +17,19 @@ var WebRtcStreamManager = (function(){
 			}
 		}
 	};
+
+	function setBandwidth(sdp) {
+		var audioBandwidth = 50, videoBandwidth = 200;
+
+		//sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + audioBandwidth + '\r\n');
+		//sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBandwidth + '\r\n');
+		return sdp;
+	}
 	
 	var activeVideoClients = {}; 
 	
 	var createVideoStream = function(id,videoType,send,recv,constraints){
+		var remoteStream = undefined, localStream = undefined;
 		var configuration = null;
 		var webRtcPeer = new RTCPeerConnection(configuration);
 		var localVideo = $("<video/>",{
@@ -31,19 +40,33 @@ var WebRtcStreamManager = (function(){
 			width:videoElemWidth,
 			height:videoElemHeight
 		})[0];
-		var offerOptions = {};
+		var offerOptions = {
+			offerToReceiveAudio:recv,
+			offerToReceiveVideo:recv
+		};
 		var shutdownFunc = function(){
-
 			localVideo.pause();
 			remoteVideo.pause();
-			localVideo.dispose();
-			remoteVideo.dispose();
+			if (localStream != undefined){
+				_.forEach(localStream.getTracks(),function(track){
+					track.stop();
+				});
+			}
+			if (remoteStream != undefined){
+				_.forEach(remoteStream.getTracks(),function(track){
+					track.stop();
+				});
+			}
+			localVideo.remove();
+			remoteVideo.remove();
 			webRtcPeer.close();
 			delete activeVideoClients[id];
 		};
 		webRtcPeer.onaddstream = function(remoteE){
+			//console.log("remoteStream arrived:",remoteE,remoteE.stream.getVideoTracks(),remoteE.stream.getAudioTracks());
 			if (recv){
 				remoteVideo.srcObject = remoteE.stream;
+				remoteStream = remoteE.stream;
 				remoteVideo.play();
 			}
 		};
@@ -55,37 +78,48 @@ var WebRtcStreamManager = (function(){
 		};
 		if (send){
 			if ("mediaDevices" in navigator && "getUserMedia" in navigator.mediaDevices){
-				navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(localStream){
-					localVideo.srcObject = localStream;
-	//				localVideo.mute(); // we should totally mute the local stream here
+				navigator.mediaDevices.getUserMedia(constraints ? constraints : defaultConstraints).then(function(stream){
+					localVideo.srcObject = stream;
+					localVideo.muted = true; // we don't want to build a local feedback loop
 					localVideo.play();
-					webRtcPeer.addStream(localStream);
+					webRtcPeer.addStream(stream);
 					webRtcPeer.createOffer(offerOptions).then(function(desc){
-						console.log("creating offer:",desc);
-						webRtcPeer.setLocalDescription(desc);
-						initiateVideoStream(videoType,desc.sdp,id);
+						//console.log("creating offer:",desc);
+						var sdp = setBandwidth(desc.sdp);
+						var updatedDesc = {
+							"type":"offer",
+							"sdp":sdp
+						};
+						webRtcPeer.setLocalDescription(updatedDesc);
+						initiateVideoStream(videoType,updatedDesc.sdp,id);
 					});
 				}).catch(function(error){
-					console.log("error creating offer:",error);
+					console.log("error creating send behaviour:",error);
 				});
 			}
 		} else if (recv){
-			webRtcPeer.createAnswer().then(function(desc){
-				console.log("creating answer:",desc);
-				webRtcPeer.setLocalDescription(desc);
-				initiateVideoStream(videoType,desc.sdp,id);
+			//webRtcPeer.createAnswer().then(function(desc){
+			webRtcPeer.createOffer(offerOptions).then(function(desc){
+				//console.log("creating answer:",desc);
+				var sdp = setBandwidth(desc.sdp);
+				var updatedDesc = {
+					"type":"offer",
+					"sdp":sdp
+				};
+				webRtcPeer.setLocalDescription(updatedDesc);
+				initiateVideoStream(videoType,updatedDesc.sdp,id);
 			}).catch(function(error){
-				console.log("error while creating answer:",error);
+				console.log("error while creating non-send behaviour:",error);
 			});
 		}
 		var addIceCandidateFunc = function(candidate){
 			webRtcPeer.addIceCandidate(new RTCIceCandidate(candidate));
 		};
 		var processAnswerFunc = function(answer){
-			console.log("processing answer func:",answer,answer.sdpAnswer);
+			//console.log("processing answer func:",answer,answer.sdpAnswer);
 			webRtcPeer.setRemoteDescription(new RTCSessionDescription({
 				"type":"answer",
-				"sdp":answer.sdpAnswer
+				"sdp":setBandwidth(answer.sdpAnswer)
 			}));
 		};
 		var returnObj = {
@@ -141,6 +175,7 @@ var WebRtcStreamManager = (function(){
 		receiveAnswer:receiveAnswerFunc,
 		loopback:loopbackFunc,
 		broadcast:broadcastFunc,
+		listen:listenFunc,
 		roulette:rouletteFunc,
 		groupchat:groupChatFunc,
 		removeVideoStream:removeFunc,
@@ -186,17 +221,15 @@ var GroupRoomTest = function(id){
 
 
 function receiveKurentoAnswer(answer,id){
-	console.log("receiveKurentoAnswer",answer);
+	//console.log("receiveKurentoAnswer",answer);
 	WebRtcStreamManager.receiveAnswer(id,answer);
 }
 function receiveKurentoIceCandidate(candidate,id){
 	var iceCandidate = JSON.parse(candidate.iceCandidateJsonString).candidate;
-	console.log("receiveCandidate",iceCandidate);
+	//console.log("receiveCandidate",iceCandidate);
 	WebRtcStreamManager.receiveIceCandidate(id,iceCandidate);
 }
 //injected by lift
 //function initiateVideoStream(videoType,offer,id){}
 //function sendVideoStreamIceCandidate(iceCandidate,id){}
-//function shutdownVideoStream(id){}
-
-
+//function shutdwnVideoStream(id){}
