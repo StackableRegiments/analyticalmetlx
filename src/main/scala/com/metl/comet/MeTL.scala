@@ -646,7 +646,7 @@ trait JArgUtils {
 
 }
 
-class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter with KurentoUtils {
+class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
