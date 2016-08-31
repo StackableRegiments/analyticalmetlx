@@ -680,7 +680,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunctionDefinition("getTokBoxToken",List("id"),(args) => {
       val id = getArgAsString(0)
       Globals.tokBox.map(tb => {
-        val session = tb.getSessionToken(id)
+        val role = shouldModifyConversation() match {
+          case true => TokRole.Moderator
+          case false => TokRole.Publisher
+        }
+        val session = tb.getSessionToken(id,role)
         JObject(List(
           JField("sessionId",JString(session.sessionId)),
           JField("token",JString(session.token)),
