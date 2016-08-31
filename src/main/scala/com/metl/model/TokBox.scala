@@ -4,7 +4,6 @@ import com.opentok.{OpenTok,MediaMode,ArchiveMode,Session,SessionProperties,Toke
 
 case class TokBoxSession(apiKey:Int,sessionId:String,token:String)
 
-object TokBox extends TokBox(45646292,"bad78869566fc9441e3b1de0ba31903ba8d07880")
 class TokBox(apiKey:Int,secret:String) {
   val openTok = new OpenTok(apiKey,secret)
   protected var sessions:Map[String,Session] = Map.empty[String,Session]

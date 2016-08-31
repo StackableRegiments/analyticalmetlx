@@ -92,6 +92,10 @@
 		#masterHeaderFlexContainer {
 			display:flex;
 		}
+		.subscribedStream {
+			background:red;
+		}
+
   </style>
   <div>
     <div id="masterHeader">
@@ -99,6 +103,11 @@
 				<span id="floatingToggleContainer" class="main-menu">
 					<button class="floatingToolbar btn-menu fa fa-cog btn-icon" id="applicationMenuButton">
 						<div class="icon-txt">Options</div>
+					</button>
+				</span>
+				<span id="videoConfStartButtonContainer" class="main-menu">
+					<button class="floatingToolbar btn-menu fa fa-video-camera btn-icon" id="videoConfStartButton">
+						<div class="icon-txt">Send video</div>
 					</button>
 				</span>
 				<div class="headerRow1">
@@ -112,6 +121,13 @@
 					<span id="currentSlide" ></span>
 				</div>
 				<div id="slideControls"></div>
+			</div>
+			<div id="videoConfContainer">
+				<span class="videoContainer">
+					<button class="floatingToolbar btn-menu fa fa-television btn-icon videoConfSubscribeButton">
+						<div class="icon-txt">Receive</div>
+					</button>
+				</span>
 			</div>
       <span class="lift:embed?what=_backstage-menu"></span>
     </div>

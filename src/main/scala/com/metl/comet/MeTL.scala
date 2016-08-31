@@ -665,26 +665,34 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-
+/*
   private lazy val RECEIVE_KURENTO_ANSWER = "receiveKurentoAnswer"
   private lazy val RECEIVE_KURENTO_ICE_CANDIDATE = "receiveKurentoIceCandidate"
   private lazy val RECEIVE_KURENTO_CHANNEL_DEFINITION = "receiveKurentoChannelDefinition"
-
+*/
+  private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
-
+/*
   protected var kurentoSessions:List[KurentoUserSession] = Nil
   KurentoManager.client // just initiating it, for the sake of it
-
+*/
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getTokBoxToken",List("id"),(args) => {
       val id = getArgAsString(0)
-      val session = TokBox.getSessionToken(id)
-      JObject(List(
-        JField("sessionId",JString(session.sessionId)),
-        JField("token",JString(session.token)),
-        JField("apiKey",JInt(session.apiKey))
-      ))
+      Globals.tokBox.map(tb => {
+        val session = tb.getSessionToken(id)
+        JObject(List(
+          JField("sessionId",JString(session.sessionId)),
+          JField("token",JString(session.token)),
+          JField("apiKey",JInt(session.apiKey))
+        ))
+      }).getOrElse({
+        JObject(List(
+          JField("error",JString("no tokBox account bound to this server"))
+        ))
+      })
     },Full(RECEIVE_TOK_BOX_SESSION_TOKEN)),
+  /*
     ClientSideFunctionDefinition("initiateVideoStream",List("videoType","offer","id"),(args) => {
       val videoType = getArgAsString(args(0))
       val offer = getArgAsString(args(1))
@@ -723,6 +731,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       })
       JNull
     },Empty),
+  */
     ClientSideFunctionDefinition("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -1448,7 +1457,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
-
+/*
     //kurento stuff
     case ka@KurentoAnswer(userId,id,response,sdpAnswer,message) => {
       //println("sending kurentoAnswer: %s".format(ka))
@@ -1482,6 +1491,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("sdpAnswer",JString(sdpAnswer))
       )),JString(id)))
     }
+    */
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
   override def autoIncludeJsonCode = true
@@ -1525,7 +1535,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
     debug("shutdown metlactor: %s".format(name))
     leaveAllRooms(true)
-    kurentoSessions.foreach(_.shutdown)
+    //kurentoSessions.foreach(_.shutdown)
     super.localShutdown()
   })
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
@@ -1575,12 +1585,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
     })
+    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     debug(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
