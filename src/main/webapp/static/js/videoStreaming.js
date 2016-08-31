@@ -9,76 +9,78 @@ var TokBox = (function(){
 	var streams = {};
 	var receiveTokBoxSessionFunc = function(desc){
 		session = OT.initSession(desc.apiKey,desc.sessionId);
-		session.on("streamDestroyed",function(ev){
-			if (ev.stream.id in streams){
-				var elem = streams[ev.stream.id];
-				delete streams[ev.stream.id];
-				console.log("streamDestroyed",ev,elem);
-				elem.elem.remove();
-				// I'm not sure what I want to do with this yet, but no doubt I'll have some reason to subscribe;
-				refreshVisualState();
-			}
-		});
-		session.on("streamCreated",function(ev){
-			var stream = ev.stream;
-			var rootElem = $(subscriberSection.clone());
-			var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
-			rootElem.attr("id",uniqueId);
-			rootElem.find(".icon-txt").text(ev.stream.name);
-			var button = rootElem.find(".videoConfSubscribeButton");
-			if (stream.id in streams){
-				button.addClass("subscribedStream");
-			} else {
-				button.removeClass("subscribedStream");
-			}
-			rootElem.find(".videoConfSubscribeButton").on("click",function(){
-				if (stream.id in streams){
-					var subscriber = streams[stream.id];
-					delete streams[stream.id];
-					session.unsubscribe(subscriber.subscriber);
-					console.log("unsubscribed from stream:",stream.name,stream.id);
-				} else {
-					var subscriber = session.subscribe(stream,uniqueId,{
-						insertMode:"append",
-						width:320,
-						height:240
-					},function(error){
-						if (!error){
-							console.log("subscribed to stream:",stream.name,stream.id);
-						} else {
-							rootElem.remove();
-							console.log("error when subscribing to stream",error,stream.name,stream.id);
-						}
-					});
-					var refreshUI = function(){
-						if (stream.id in streams){
-							button.addClass("subscribedStream");
-						} else {
-							button.removeClass("subscribedStream");
-						}
-					};
-					streams[stream.id] = {
-						elem:rootElem,
-						subscriber:subscriber,
-						refreshVisual:refreshUI
-					};
+		session.on({
+			"streamDestroyed":function(ev){
+				if (ev.stream.id in streams){
+					var elem = streams[ev.stream.id];
+					delete streams[ev.stream.id];
+					console.log("streamDestroyed",ev,elem);
+					elem.elem.remove();
+					// I'm not sure what I want to do with this yet, but no doubt I'll have some reason to subscribe;
+					refreshVisualState();
 				}
+			},
+			"streamCreated":function(ev){
+				var stream = ev.stream;
+				var rootElem = $(subscriberSection.clone());
+				var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
+				rootElem.attr("id",uniqueId);
+				rootElem.find(".icon-txt").text(ev.stream.name);
+				var button = rootElem.find(".videoConfSubscribeButton");
+				if (stream.id in streams){
+					button.addClass("subscribedStream");
+				} else {
+					button.removeClass("subscribedStream");
+				}
+				rootElem.find(".videoConfSubscribeButton").on("click",function(){
+					if (stream.id in streams){
+						var subscriber = streams[stream.id];
+						delete streams[stream.id];
+						session.unsubscribe(subscriber.subscriber);
+						console.log("unsubscribed from stream:",stream.name,stream.id);
+					} else {
+						var subscriber = session.subscribe(stream,uniqueId,{
+							insertMode:"append",
+							width:320,
+							height:240
+						},function(error){
+							if (!error){
+								console.log("subscribed to stream:",stream.name,stream.id);
+							} else {
+								rootElem.remove();
+								console.log("error when subscribing to stream",error,stream.name,stream.id);
+							}
+						});
+						var refreshUI = function(){
+							if (stream.id in streams){
+								button.addClass("subscribedStream");
+							} else {
+								button.removeClass("subscribedStream");
+							}
+						};
+						streams[stream.id] = {
+							elem:rootElem,
+							subscriber:subscriber,
+							refreshVisual:refreshUI
+						};
+					}
+					refreshVisualState();
+				});
+				streamContainer.append(rootElem);
 				refreshVisualState();
-			});
-			streamContainer.append(rootElem);
-			refreshVisualState();
-		});
-		session.on("sessionConnected",function(){
-			refreshVisualState();
-		});
-		session.on("sessionDisconnected",function(){
-			refreshVisualState();
-		});
-		session.on("sessionReconnected",function(){
-			refreshVisualState();
-		});
-		session.on("sessionReconnecting",function(){
-			refreshVisualState();
+			},
+			"sessionConnected":function(ev){
+				refreshVisualState();
+			},
+			"sessionDisconnected":function(ev){
+				refreshVisualState();
+			},
+			"sessionReconnected":function(ev){
+				refreshVisualState();
+			},
+			"sessionReconnecting":function(ev){
+				refreshVisualState();
+			}
 		});
 		session.connect(desc.token,function(error){
 			if (!error){
@@ -106,6 +108,7 @@ var TokBox = (function(){
 		refreshVisualState();
 	};
 	var refreshVisualState = function(){
+		streamButton.unbind("click");
 		if (enabled && isConnected()){
 			streamButton.show();
 			streamContainer.show();
@@ -113,7 +116,6 @@ var TokBox = (function(){
 		} else {
 			streamButton.hide();
 			streamContainer.hide();
-			streamButton.unbind("click");
 		}	
 		if (thisPublisher != undefined){
 			streamButton.addClass("subscribedStream");
@@ -127,25 +129,31 @@ var TokBox = (function(){
 	};
 	var thisPublisher = undefined;
 	var startPublishFunc = function(){
+		refreshVisualState();
 		console.log("attempting to start send:",isConnected(),session);
-		var tokBoxVideoElemPublisher = $("<span/>",{id:"tokBoxVideoElemPublisher"});
+		var publisherUniqueId = sprintf("tokBoxVideoElemPublisher_%s",_.uniqueId());
+		var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId});
+		streamContainer.append(tokBoxVideoElemPublisher);
 		if (isConnected()){
 		  if (thisPublisher == undefined){
-				streamContainer.append(tokBoxVideoElemPublisher);
-				var publisher = OT.initPublisher("tokBoxVideoElemPublisher", {
+				var publisher = OT.initPublisher(publisherUniqueId, {
 					insertMode:"append",
 					width:320,
 					height:240,
 					name:UserSettings.getUsername()	
+				},function(error){
+					if (error){
+						console("error:",error);
+					}
 				});
 				thisPublisher = publisher;
+				console.log("publishing",publisher,session);
 				session.publish(publisher);
-				console.log("publishing",publisher);
 			} else {
 				var pub = thisPublisher;
 				thisPublisher = undefined;
-				tokBoxVideoElemPublisher.remove();
 				session.unpublish(pub);
+				//tokBoxVideoElemPublisher.remove();
 			}
 		}
 		refreshVisualState();
