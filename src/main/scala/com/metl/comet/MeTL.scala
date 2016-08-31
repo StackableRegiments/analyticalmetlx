@@ -670,10 +670,21 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_KURENTO_ICE_CANDIDATE = "receiveKurentoIceCandidate"
   private lazy val RECEIVE_KURENTO_CHANNEL_DEFINITION = "receiveKurentoChannelDefinition"
 
+  private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+
   protected var kurentoSessions:List[KurentoUserSession] = Nil
   KurentoManager.client // just initiating it, for the sake of it
 
   override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("getTokBoxToken",List("id"),(args) => {
+      val id = getArgAsString(0)
+      val session = TokBox.getSessionToken(id)
+      JObject(List(
+        JField("sessionId",JString(session.sessionId)),
+        JField("token",JString(session.token)),
+        JField("apiKey",JInt(session.apiKey))
+      ))
+    },Full(RECEIVE_TOK_BOX_SESSION_TOKEN)),
     ClientSideFunctionDefinition("initiateVideoStream",List("videoType","offer","id"),(args) => {
       val videoType = getArgAsString(args(0))
       val offer = getArgAsString(args(1))

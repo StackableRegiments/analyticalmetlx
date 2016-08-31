@@ -100,7 +100,9 @@ libraryDependencies ++= {
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for videoconferencing
     "org.kurento" % "kurento-client" % "6.5.0",
-    "org.kurento" % "kurento-utils-js" % "6.5.0"
+    "org.kurento" % "kurento-utils-js" % "6.5.0",
+    //for tokbox
+    "com.tokbox" % "opentok-server-sdk" % "2.3.2"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 

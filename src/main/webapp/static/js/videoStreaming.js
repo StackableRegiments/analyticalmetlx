@@ -17,25 +17,26 @@ var WebRtcStreamManager = (function(){
 		audio:true,
 		video:{
 			width:{
-				min:"300",
-				max:"640"
+				min:300,
+				max:640
 			},
 			height:{
-				min:"200",
-				max:"480"
+				min:200,
+				max:480
 			},
 			frameRate:{
-				min:"10",
-				max:"25"
+				min:10,
+				max:25
 			}
-		}
+		},
+		DtlsSrtpKeyAgreement:true
 	};
 
 	function setBandwidth(sdp) {
 		var audioBandwidth = "50", videoBandwidth = "200";
 
-		sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + audioBandwidth + '\r\n');
-		sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBandwidth + '\r\n');
+//		sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + audioBandwidth + '\r\n');
+//		sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBandwidth + '\r\n');
 		return sdp;
 	}
 	
@@ -46,7 +47,7 @@ var WebRtcStreamManager = (function(){
 		var configuration = {
 			iceServers:[
 				{
-					url:"stun:kurento.stackableregiments.com"
+					url:"stun:kurento.stackableregiments.com:3478"
 			 	},
 				{
 					url:"turn:kurento.stackableregiments.com:3478?transport:udp",
@@ -95,7 +96,7 @@ var WebRtcStreamManager = (function(){
 		webRtcPeer.onaddstream = function(remoteE){
 			console.log("remoteStream arrived:",remoteE,remoteE.stream.getVideoTracks(),remoteE.stream.getAudioTracks());
 			if (recv){
-				remoteVideo.srcObject = remoteE.stream;
+				//remoteVideo.srcObject = remoteE.stream;
 				remoteStream = remoteE.stream;
 				remoteVideo.play();
 			}
@@ -104,8 +105,10 @@ var WebRtcStreamManager = (function(){
 			if (e != null && "candidate" in e && e.candidate != null && "candidate" in e.candidate && e.candidate.candidate.indexOf("relay")<0){
 				return;
 			} else {
-				console.log("ice candidate generated:",id,e.candidate);
-				sendVideoStreamIceCandidate(e.candidate,id);
+				if (e.candidate != null){
+					console.log("ice candidate generated:",id,e.candidate);
+					sendVideoStreamIceCandidate(e.candidate,id);
+				}
 			}
 		};
 		webRtcPeer.onnegotiationeeded = function(negError) {
@@ -274,6 +277,51 @@ var GroupRoomTest = function(id){
 	$(videoSelector).append(localVideo).append(remoteVideo);
 }
 
+var TokBox = (function(){
+	$(function(){
+		var tokBoxVideoElemPublisher = $("<div/>",{id:"tokBoxVideoElemPublisher"});
+		$("#masterHeader").append(tokBoxVideoElemPublisher);
+	});
+	var receiveTokBoxSessionFunc = function(desc){
+		var session = OT.initSession(desc.apiKey,desc.sessionId);
+		session.on("streamCreated",function(ev){
+			var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
+			var tokBoxVideoElemSubscriber = $("<div/>",{id:uniqueId});
+			$("#masterHeader").append(tokBoxVideoElemSubscriber);
+			console.log("receivedStream: ",tokBoxVideoElemSubscriber,ev);
+			session.subscribe(ev.stream,uniqueId,{
+				insertMode:"append",
+				width:320,
+				height:240
+			},function(error){
+				if (!error){
+				} else {
+					console.log("error when subscribing to tokBox",error,desc);
+				}
+			});
+		});
+		session.connect(desc.token,function(error){
+			if (!error){
+				var publisher = OT.initPublisher("tokBoxVideoElemPublisher", {
+					insertMode:"append",
+					width:320,
+					height:240
+				});
+				session.publish(publisher);
+				console.log("publishing",publisher);
+			} else {
+				console.log("error when connecting to tokBox",error,desc);
+			}
+		});
+	};
+	var startSessionFunc = function(id){
+		getTokBoxToken(id);
+	};
+	return {
+		startSession:startSessionFunc,
+		receiveTokBoxSession:receiveTokBoxSessionFunc
+	};
+})();
 
 function receiveKurentoAnswer(answer,id){
 	console.log("receiveKurentoAnswer",answer);
@@ -293,7 +341,11 @@ function receiveKurentoChannelDefinition(channelDefinition,id){
 		});
 	});
 }
+function receiveTokBoxSessionToken(token){
+	TokBox.receiveTokBoxSession(token);
+}
 //injected by lift
 //function initiateVideoStream(videoType,offer,id){}
 //function sendVideoStreamIceCandidate(iceCandidate,id){}
-//function shutdwnVideoStream(id){}
+//function shutdownVideoStream(id){}
+//function getTokBoxToken(id){}
