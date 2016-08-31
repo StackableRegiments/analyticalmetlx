@@ -668,6 +668,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
 
   private lazy val RECEIVE_KURENTO_ANSWER = "receiveKurentoAnswer"
   private lazy val RECEIVE_KURENTO_ICE_CANDIDATE = "receiveKurentoIceCandidate"
+  private lazy val RECEIVE_KURENTO_CHANNEL_DEFINITION = "receiveKurentoChannelDefinition"
 
   protected var kurentoSessions:List[KurentoUserSession] = Nil
   KurentoManager.client // just initiating it, for the sake of it
@@ -1454,6 +1455,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("id",JString(id)),
         JField("userId",JString(userId)),
         JField("iceCandidateJsonString",JString(iceCandidateJsonString))
+      )),JString(id)))
+    }
+    case kcd@KurentoChannelDefinition(userId,id,sdpAnswer,candidates) => {
+      partialUpdate(Call(RECEIVE_KURENTO_CHANNEL_DEFINITION,JObject(List(
+        JField("id",JString(id)),
+        JField("userId",JString(userId)),
+        JField("candidates",JArray(candidates.map(c => {
+          JObject(List(
+            JField("id",JString(c.id)),
+            JField("userId",JString(c.userId)),
+            JField("iceCandidateJsonString",JString(c.iceCandidateJsonString))
+          ))
+        }))),
+        JField("sdpAnswer",JString(sdpAnswer))
       )),JString(id)))
     }
     case other => warn("MeTLActor received unknown message: %s".format(other))

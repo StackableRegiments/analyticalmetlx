@@ -238,7 +238,6 @@ class H2VideoStream extends H2MeTLStanza[H2VideoStream]{
 object H2VideoStream extends H2VideoStream with LongKeyedMetaMapper[H2VideoStream]{
 }
 
-
 class H2Resource extends H2MeTLContent[H2Resource]{
   def getSingleton = H2Resource
   object partialIdentity extends MappedMeTLString(this,H2Constants.identity) with H2MeTLIndexedString

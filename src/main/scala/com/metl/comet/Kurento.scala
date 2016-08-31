@@ -33,7 +33,7 @@ import com.metl.snippet.Metl._
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort}
+import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany}
 import org.kurento.jsonrpc.JsonUtils;
 /*
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +50,7 @@ case class KurentoOffer(userId:String,id:String,sdpOffer:String)
 case class KurentoAnswer(userId:String,id:String,response:String,sdpAnswer:String,message:String = "")
 case class KurentoServerSideIceCandidate(userId:String,id:String,iceCandidateJsonString:String)
 
+case class KurentoChannelDefinition(userId:String,id:String,sdpAnswer:String,candidates:List[KurentoServerSideIceCandidate])
 
 case class KurentoUserSession(userId:String,userActor:LiftActor,sdpOffer:KurentoOffer) extends Logger {
   val accepted = "accepted"
@@ -64,18 +65,28 @@ case class KurentoUserSession(userId:String,userActor:LiftActor,sdpOffer:Kurento
     pipeline = Some(p)
     val pipeId = p.name
     val nwrtc = p.buildRtcEndpoint
+    //var candidates:List[KurentoServerSideIceCandidate] = Nil
+    //var lastCandidateAdded = new java.util.Date().getTime()
     nwrtc.addIceCandidateFoundListener(new EventListener[IceCandidateFoundEvent](){
       override def onEvent(event:IceCandidateFoundEvent):Unit = {
         val response:JsonObject = new JsonObject()
         response.addProperty("id","iceCandidate")
         response.add("candidate",JsonUtils.toJsonObject(event.getCandidate()))
         userActor ! KurentoServerSideIceCandidate(userId,pipeId,response.toString)
+        //candidates = candidates ::: List(KurentoServerSideIceCandidate(userId,pipeId,response.toString))
+        //lastCandidateAdded = new java.util.Date().getTime()
       }
     })
     val sdpAnswer = nwrtc.processOffer(sdpOffer.sdpOffer)
     val responseSuccess = accepted
     userActor ! KurentoAnswer(userId,pipeId,responseSuccess,sdpAnswer)
     nwrtc.gatherCandidates()
+    /*
+    var threshold = 3 * 1000
+    while (lastCandidateAdded > (new java.util.Date().getTime() - threshold)){
+    }
+    userActor ! KurentoChannelDefinition(userId,pipeId,sdpAnswer,candidates)
+    */
     webRtcEndpoint = Some(nwrtc)
     //println("settingPipeline: %s, endpoint: %s".format(pipeline,webRtcEndpoint))
     this
@@ -117,8 +128,10 @@ class KurentoPipeline(val name:String) extends Logger {
   protected val pipeline = KurentoManager.client.createMediaPipeline()
   def buildRtcEndpoint:WebRtcEndpoint = {
     val wre = new WebRtcEndpoint.Builder(pipeline).build()
-    wre.setMaxVideoSendBandwidth(videoKbps)
-    wre.setMaxVideoRecvBandwidth(videoKbps)
+    // setting video bandwidth doesn't appear to work in firefox etc
+//    wre.setMaxVideoSendBandwidth(videoKbps)
+//    wre.setMaxVideoRecvBandwidth(videoKbps)
+//  setting the audio bandwidth doesn't appear implemented in Kurento, or maybe I'm using the wrong method signatures
 //    wre.setMaxAudioSendBandwidth(audioKbps)
 //    wre.setMaxAudioRecvBandwidth(audioKbps)
     wre
@@ -213,9 +226,30 @@ case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(n
 
 case class BroadcastPipeline(override val name:String) extends KurentoPipeline(name) {
   protected var sender:Option[WebRtcEndpoint] = None
+//  protected var dispatcher:Option[DispatcherOneToMany] = None
   protected var receivers:List[WebRtcEndpoint] = Nil
   override def buildRtcEndpoint:WebRtcEndpoint = {
     val newEndpoint = super.buildRtcEndpoint
+    /*
+    dispatcher.map(s => {
+      //s.connect(newEndpoint)
+      val ePort = new HubPort.Builder(s).build()
+      ePort.connect(newEndpoint)
+      newEndpoint.connect(ePort)
+      receivers = newEndpoint :: receivers
+      println("adding listener to broadcast: %s".format(name))
+    }).getOrElse({
+      println("adding sender to broadcast: %s".format(name))
+      sender = Some(newEndpoint)
+      val d = new DispatcherOneToMany.Builder(pipeline).build()
+      val sourcePort = new HubPort.Builder(d).build()
+      sourcePort.connect(newEndpoint)
+      newEndpoint.connect(sourcePort)
+      d.setSource(sourcePort)
+      //newEndpoint.connect(d)
+      dispatcher = Some(d)
+    })
+    */
     sender.map(s => {
       s.connect(newEndpoint)
       receivers = newEndpoint :: receivers
@@ -242,6 +276,7 @@ case class BroadcastPipeline(override val name:String) extends KurentoPipeline(n
 }
 
 object KurentoManager extends KurentoManager("ws://kurento.stackableregiments.com:8888/kurento")
+//object KurentoManager extends KurentoManager("ws://52.20.87.206:8888/kurento")
 class KurentoManager(kmsUrl:String) extends Logger {
   val client = {
     val kurento:KurentoClient = KurentoClient.create(kmsUrl, new KurentoConnectionListener() {

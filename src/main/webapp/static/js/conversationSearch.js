@@ -337,9 +337,15 @@ var Conversations = (function(){
     var receiveUsernameFunc = function(user){
         username = user;
     };
+		var getUsernameFunc = function(){
+			return username;
+		};
     var receiveUserGroupsFunc = function(groups){
         userGroups = groups;
     };
+		var getUserGroupsFunc = function(){
+			return userGroups
+		};
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
 				console.log("currentSearchResults:",currentSearchResults,details);
@@ -389,6 +395,8 @@ var Conversations = (function(){
         getConversationListing:getConversationListingFunc,
         getImportListing:getImportListingFunc,
         getQuery:getQueryFunc,
+				getUsername:getUsernameFunc,
+				getUserGroups:getUserGroupsFunc,
         search:searchFunc,
         create:createFunc
     };
