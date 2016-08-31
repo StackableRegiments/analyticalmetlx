@@ -117,6 +117,7 @@ var TokBox = (function(){
 			streamButton.hide();
 			streamContainer.hide();
 		}	
+		$(".subscribedStream").removeClass("subscribedStream");
 		if (thisPublisher != undefined){
 			streamButton.addClass("subscribedStream");
 		} else {
