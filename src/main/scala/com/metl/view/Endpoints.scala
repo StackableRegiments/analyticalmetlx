@@ -243,18 +243,18 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
         video.videoBytes.map(bytes => {
           val fis = new ByteArrayInputStream(bytes) 
-          val size = bytes.length - 1
-          val (start,end) = {
+          val initialSize:Long = bytes.length - 1
+          val (size,start,end) = {
             (for {
               rawRange <- req.header("Range")
               range = rawRange.substring(rawRange.indexOf("bytes=") + 6).split("-").toList.map(s => parseNumber(s))
             } yield {
               range match {
-                case List(s,e) => (s,e)
-                case List(s) => (s,size)
-                case _ => (0L,size)
+                case List(s,e) => (e - s,s,e)
+                case List(s) => (initialSize - s,s,initialSize)
+                case _ => (initialSize,0L,initialSize)
               }
-            }).getOrElse((0L,size))
+            }).getOrElse((initialSize,0L,size))
           }
           fis.skip(start)
           val headers = List(
