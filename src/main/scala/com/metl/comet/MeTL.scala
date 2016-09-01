@@ -647,6 +647,9 @@ trait JArgUtils {
 }
 
 class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
+  import net.liftweb.json.Extraction
+  import net.liftweb.json.DefaultFormats
+  implicit val formats = DefaultFormats
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
@@ -668,16 +671,23 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
 
   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+  private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
+  private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
 
+  protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getTokBoxToken",List("id"),(args) => {
-      val id = getArgAsString(0)
+      val id = getArgAsString(args(0))
       Globals.tokBox.map(tb => {
         val role = shouldModifyConversation() match {
           case true => TokRole.Moderator
           case false => TokRole.Publisher
         }
-        val session = tb.getSessionToken(id,role)
+        val session = tokSession.getOrElse({
+          val newSession = tb.getSessionToken(id,role)
+          tokSession = Some(newSession)
+          newSession
+        })
         JObject(List(
           JField("sessionId",JString(session.sessionId)),
           JField("token",JString(session.token)),
@@ -689,6 +699,89 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         ))
       })
     },Full(RECEIVE_TOK_BOX_SESSION_TOKEN)),
+    ClientSideFunctionDefinition("getTokBoxArchives",List.empty[String],(args) => {
+      JArray(for {
+          tb <- Globals.tokBox.toList
+          s <- tokSession.toList
+          a <- tb.getArchives(s)
+        } yield {
+          JObject(
+            List(
+              JField("id",JString(a.id)),
+              JField("name",JString(a.name))
+            ) ::: 
+            a.url.toList.map(u => JField("url",JString(u))) :::
+            a.size.toList.map(s => JField("size",JInt(s))) :::
+            a.duration.toList.map(d => JField("size",JInt(d))) :::
+            a.createdAt.toList.map(c => JField("created",JInt(c)))
+          )
+        })
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+    ClientSideFunctionDefinition("getTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a <- tb.getArchive(s,id)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+  /*
+    ClientSideFunctionDefinition("removeTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+      } yield {
+        tb.removeArchive(s,id)
+        pretty(render(a))
+      }).toList)
+      Noop
+    }),
+  */
+    ClientSideFunctionDefinition("startBroadcast",List("layout"),(args) => {
+      val layout = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        b = tb.startBroadcast(s,layout)
+      } yield {
+        Extraction.decompose(b)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunctionDefinition("updateBroadcastLayout",List("id","newLayout"),(args) => {
+      val id = getArgAsString(args(0))
+      val layout = getArgAsString(args(1))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a = tb.updateBroadcast(s,id,layout)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunctionDefinition("stopBroadcast",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a = tb.stopBroadcast(s,id)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunctionDefinition("getBroadcast",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a = tb.getBroadcast(s,id)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+
     ClientSideFunctionDefinition("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
