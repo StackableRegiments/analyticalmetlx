@@ -1,17 +1,39 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
   <head>
     <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+    <link rel="stylesheet" href="static/css/analysis.css"></link>
     <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
     <script src="static/js/stable/lodash.min.js"></script>
-    <script src="/static/js/analysis.js"></script>
+    <script src="static/js/stable/moment.min.js"></script>
+    <script src="static/js/stable/Chart.bundle.min.js"></script>
+    <script src="static/js/stable/d3.v4.min.js"></script>
+    <script src="static/js/stable/d3.layout.cloud.js"></script>
+    <script src="static/js/stable/typo.js"></script>
+    <script src="static/js/analysis.js"></script>
+    <script src="static/js/stable/word-cloud.js"></script>
   </head>
   <div class="directlyOnBackground ml">
-    <h2>Dashboard</h2>
     <div class="lift:Analytics">
-      <div id="conversationContext"></div>
-      <div id="status"></div>
-      <div id="display"></div>
-      <div id="bootstrap"></div>
+      <div class="row" id="processingRow">
+        <div id="status" class="shrinkWrappedColumn">
+          <h2>Dashboard</h2>
+          <h3>Processing</h3>
+        </div>
+        <div id="vis" class="ml mt shrinkWrappedColumn"></div>
+	<div id="lang" class="ml mt shrinkWrappedColumn">
+	</div>
+        <div id="bootstrap"></div>
+      </div>
+      <div class="flex-container-responsive">
+        <div class="shrinkWrappedColumn">
+          <h3>Over time</h3>
+          <div id="displayOverTime" class="ml"></div>
+        </div>
+        <div class="shrinkWrappedColumn ml">
+          <h3>Over pages</h3>
+          <div id="displayOverPages" class="ml"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

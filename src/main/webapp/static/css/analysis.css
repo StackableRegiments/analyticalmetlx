@@ -1,0 +1,43 @@
+body{
+    background-size:100% 100%;
+}
+.masterArea path{
+    stroke:lightblue;
+    fill:blue;
+}
+.vega-actions{
+    display:none;
+}
+#processingRow{
+    display:flex;
+}
+#status{
+    font-size:60%;
+}
+#lang{
+    max-width:240px;
+}
+.cloudWord{
+    display:inline-block;
+}
+.tick line{
+    stroke:#000000;
+    stroke-width:0.5;
+}
+.tick text{
+    fill:#ffffff;
+}
+.teacherPath{
+    stroke-width:50;
+    stroke:green;
+    fill:none;
+}
+.domain{
+    opacity:0;
+}
+.circ{
+    stroke-width:0.7;
+    stroke:black;
+    fill:blue;
+    fill-opacity:0.1;
+}
