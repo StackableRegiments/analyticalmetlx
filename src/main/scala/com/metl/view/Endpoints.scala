@@ -247,7 +247,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
           val (start,end) = {
             (for {
               rawRange <- req.header("Range")
-              range = rawRange.split("bytes=").toList.map(s => parseNumber(s))
+              range = rawRange.substring(rawRange.indexOf("bytes=") + 6).split("-").toList.map(s => parseNumber(s))
             } yield {
               range match {
                 case List(s,e) => (s,e)
