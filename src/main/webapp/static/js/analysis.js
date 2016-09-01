@@ -43,11 +43,11 @@ var Analytics = (function(){
             counts:function(){
                 return counters;
             },
-	    tags:function(){
-		return _.map(word.counts(),function(v,k){
-		    return {key:k,value:v};
-		});
-	    },
+            tags:function(){
+                return _.map(word.counts(),function(v,k){
+                    return {key:k,value:v};
+                });
+            },
             typo:function(){
                 return typo;
             },
@@ -64,8 +64,8 @@ var Analytics = (function(){
                 }
             },
             cloud:function(){
-		WordCloud(word.tags());
-		return;
+                WordCloud(word.tags());
+                return;
                 var container = $("#lang").empty();
                 cloudScale.domain(d3.extent(_.values(word.counts())));
                 _.each(word.counts(),function(count,word){
@@ -85,10 +85,16 @@ var Analytics = (function(){
     var shortFormat = function(mString){
         return moment(parseInt(mString)).format("HH:mm MM/DD");
     };
+    var margin = {
+        top: 10,
+        right: 25,
+        bottom: 15,
+        left: 35
+    }
     var MINUTE = 60 * 1000;
     var WIDTH = 640;
+    var HEIGHT = 240;
     var chartAttendance = function(attendances){
-        var HEIGHT = 240;
         /*Over time*/
         _.forEach({
             authorsOverTime:{
@@ -274,6 +280,7 @@ var Analytics = (function(){
         status(events.length,"events scoped");
         status(_.uniq(authors).length,"authors scoped");
         adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
+        chartFollowLag(attendances,details);
         chartAttendance(attendances);
     };
     var bucket = function(timed){
@@ -281,6 +288,68 @@ var Analytics = (function(){
             timeable.timestamp = Math.floor(timeable.timestamp / MINUTE) * MINUTE;
             return timeable;
         });
+    }
+    var chartFollowLag = function(attendances,details){
+        $("#followLag").empty();
+        var author = $(details).find("author:first").text();
+        var follows = [];
+        var explorations = [];
+        var lead = _.find(attendances,function(move){
+            return move.author == author;
+        });
+        _.each(_.sortBy(attendances,"timestamp"),function(move){
+            if(move.author == author){
+                lead = move;
+            }
+            else if(move.location == lead.location){
+                follows.push({
+                    author:move.author,
+                    lag:move.timestamp - lead.timestamp,
+                    location:move.location
+                });
+            }
+            else{
+                explorations.push(move);
+            }
+        });
+        status("Calculated","follow lag");
+        var x = d3.scaleBand().range([0,WIDTH - margin.left]).domain(_.map($(details).find("slide"),function(slide){
+            return $(slide).find("id").text();
+        }).reverse());
+        var y = d3.scaleLinear().range([0,HEIGHT]).domain([_.max(_.map(follows,"lag")),0]);
+        var svg = d3.select("#followLag").append("svg")
+                .attr("width", WIDTH + margin.left + margin.right)
+                .attr("height", HEIGHT + margin.top + margin.bottom)
+
+        var bars = svg.append("g")
+                .attr("transform", "translate("+(margin.left * 2)+"," + 0 + ")")
+
+        var averageLag = _.toPairs(_.mapValues(_.groupBy(follows,"location"),function(follows,location){
+            return {
+                location:location,
+                lag:_.mean(_.map(follows,"lag"))
+            }
+        }));
+        bars.selectAll(".bar")
+            .data(averageLag)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function(d,i) {
+                return x(d[0]);
+            })
+            .attr("width", x.bandwidth())
+            .attr("y", function(d) {
+                return y(d[1].lag);
+            })
+            .attr("height", function(d) { return HEIGHT - y(d[1].lag); });
+
+        svg.append("g")
+            .attr("transform", "translate(0," + HEIGHT + ")")
+            .call(d3.axisBottom(x));
+
+        svg.append("g")
+            .attr("transform", "translate("+(margin.left * 2) +"," + 0 + ")")
+            .call(d3.axisLeft(y));
     }
     var adherenceToTeacher = function(attendancesHi,details){
         $("#vis").empty();
@@ -309,12 +378,7 @@ var Analytics = (function(){
         var slides = _.sortBy(_.uniq(_.map(attendancesHi, function(d){
             return parseInt(d.location);
         })));
-        var margin = {
-            top: 10,
-            right: 25,
-            bottom: 15,
-            left: 35
-        }
+
         var width = WIDTH;
         var height = 300;
         var masterHeight = 100;
@@ -459,7 +523,10 @@ var Analytics = (function(){
         prime:function(conversation){
             status("Retrieving",conversation);
             $.get(sprintf("/details/%s",conversation),function(details){
-                status("Retrieved",conversation);
+                $.get(sprintf("/fullClientHistory?source=%s",conversation),function(conversationHistory){
+                    status("Retrieved",conversation);
+                    incorporate(conversationHistory,details);
+                });
                 var slides = $(details).find("slide");
                 _.forEach(slides.find("id"),function(el){
                     var slide = $(el).text();

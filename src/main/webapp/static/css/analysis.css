@@ -17,6 +17,10 @@ body{
 #lang{
     max-width:240px;
 }
+#lang text{
+    fill:white;
+    stroke:none;
+}
 .cloudWord{
     display:inline-block;
 }
@@ -34,6 +38,12 @@ body{
 }
 .domain{
     opacity:0;
+}
+#followLag rect{
+    stroke-width:0.7;
+    stroke:black;
+    fill:blue;
+    fill-opacity:0.1;
 }
 .circ{
     stroke-width:0.7;
