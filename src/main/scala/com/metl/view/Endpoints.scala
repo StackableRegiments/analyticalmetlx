@@ -256,6 +256,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
               }
             }).getOrElse((0L,size))
           }
+          fis.skip(start)
           val headers = List(
             ("Connection" -> "close"),
             ("Transfer-Encoding" -> "chunked"),
