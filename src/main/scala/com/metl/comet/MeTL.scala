@@ -676,29 +676,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
 
   protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
-    ClientSideFunctionDefinition("getTokBoxToken",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      Globals.tokBox.map(tb => {
-        val role = shouldModifyConversation() match {
-          case true => TokRole.Moderator
-          case false => TokRole.Publisher
-        }
-        val session = tokSession.getOrElse({
-          val newSession = tb.getSessionToken(id,role)
-          tokSession = Some(newSession)
-          newSession
-        })
-        JObject(List(
-          JField("sessionId",JString(session.sessionId)),
-          JField("token",JString(session.token)),
-          JField("apiKey",JInt(session.apiKey))
-        ))
-      }).getOrElse({
-        JObject(List(
-          JField("error",JString("no tokBox account bound to this server"))
-        ))
-      })
-    },Full(RECEIVE_TOK_BOX_SESSION_TOKEN)),
     ClientSideFunctionDefinition("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
           tb <- Globals.tokBox.toList
@@ -742,44 +719,46 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   */
     ClientSideFunctionDefinition("startBroadcast",List("layout"),(args) => {
       val layout = getArgAsString(args(0))
-      JArray((for {
+      (for {
         tb <- Globals.tokBox
+        if (shouldModifyConversation())
         s <- tokSession
         b = tb.startBroadcast(s,layout)
       } yield {
         Extraction.decompose(b)
-      }).toList)
+      }).getOrElse(JNull)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
     ClientSideFunctionDefinition("updateBroadcastLayout",List("id","newLayout"),(args) => {
       val id = getArgAsString(args(0))
       val layout = getArgAsString(args(1))
-      JArray((for {
+      (for {
         tb <- Globals.tokBox
+        if (shouldModifyConversation())
         s <- tokSession
         a = tb.updateBroadcast(s,id,layout)
       } yield {
         Extraction.decompose(a)
-      }).toList)
+      }).getOrElse(JNull)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunctionDefinition("stopBroadcast",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
+    ClientSideFunctionDefinition("stopBroadcast",List.empty[String],(args) => {
+      (for {
         tb <- Globals.tokBox
+        if (shouldModifyConversation())
         s <- tokSession
-        a = tb.stopBroadcast(s,id)
+        b <- tb.getBroadcast(s)
+        a = tb.stopBroadcast(s,b.id)
       } yield {
         Extraction.decompose(a)
-      }).toList)
+      }).getOrElse(JNull)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunctionDefinition("getBroadcast",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
+    ClientSideFunctionDefinition("getBroadcast",List.empty[String],(args) => {
+      (for {
         tb <- Globals.tokBox
         s <- tokSession
-        a = tb.getBroadcast(s,id)
+        a <- tb.getBroadcast(s)
       } yield {
         Extraction.decompose(a)
-      }).toList)
+      }).getOrElse(JNull)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
 
     ClientSideFunctionDefinition("refreshClientSideState",List.empty[String],(args) => {
@@ -1569,12 +1548,40 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     })
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
+    val receiveTokBoxSession:Box[JsCmd] = (for {
+      cc <- currentConversation
+      tb <- Globals.tokBox
+    } yield {
+      val role = shouldModifyConversation() match {
+        case true => TokRole.Moderator
+        case false => TokRole.Publisher
+      }
+      val session = tokSession.getOrElse({
+        val newSession = tb.getSessionToken(cc.jid.toString(),role)
+        tokSession = Some(newSession)
+        newSession
+      })
+      val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+        JField("sessionId",JString(session.sessionId)),
+        JField("token",JString(session.token)),
+        JField("apiKey",JInt(session.apiKey))
+      )))
+      j
+    })
+    val receiveTokBoxBroadcast:Box[JsCmd] = (for {
+      tb <- Globals.tokBox
+      s <- tokSession
+      a <- tb.getBroadcast(s)
+    } yield {
+      val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
+      j
+    })
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     debug(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {

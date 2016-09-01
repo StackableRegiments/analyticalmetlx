@@ -31,6 +31,7 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
   val openTok = new OpenTok(apiKey,secret)
   val client = new com.opentok.util.HttpClient.Builder(apiKey,secret).build()
   protected var sessions:Map[String,Session] = Map.empty[String,Session]
+  protected var broadcasts:Map[String,TokBoxBroadcast] = Map.empty[String,TokBoxBroadcast]
   def getSessionToken(description:String,role:TokRole.Value = TokRole.Subscriber):TokBoxSession = {
     val session = sessions.get(description).getOrElse({
       val newSession = openTok.createSession(
@@ -40,6 +41,7 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
           .archiveMode(ArchiveMode.ALWAYS)
           .build()
         )
+//      startBroadcast(newSession,TokBroadcastLayout.bestFit)
       sessions = sessions.updated(description,newSession)
       newSession
     })
@@ -124,16 +126,25 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
       }
     }
   }
+  def getBroadcast(session:TokBoxSession):Option[TokBoxBroadcast] = {
+    broadcasts.get(session.sessionId)
+  }
   def startBroadcast(session:TokBoxSession,layout:String):TokBoxBroadcast = {
-    val body = pretty(render(
-      ("sessionId" -> session.sessionId) ~ ("layout" -> {
-        ("type" -> TokBroadcastLayout.horizontalPresentation)
-      })
-    ))
-    performPost("%s/v2/partner/%s/broadcast".format(baseUrl,session.apiKey),body,List(("Content-Type","application/json"))) match {
-      case Right(s) => parse(s).extract[TokBoxBroadcast]
-      case Left(e) => throw e
-    }
+    getBroadcast(session).getOrElse({
+      val body = pretty(render(
+        ("sessionId" -> session.sessionId) ~ ("layout" -> {
+          ("type" -> layout)
+        })
+      ))
+      performPost("%s/v2/partner/%s/broadcast".format(baseUrl,session.apiKey),body,List(("Content-Type","application/json"))) match {
+        case Right(s) => {
+          val newBroadcast = parse(s).extract[TokBoxBroadcast]
+          broadcasts = broadcasts.updated(session.sessionId,newBroadcast)
+          newBroadcast
+        }
+        case Left(e) => throw e
+      }
+    })
   }
   def updateBroadcast(session:TokBoxSession,broadcastId:String,layout:String):TokBoxBroadcast = {
     val body = pretty(render(
