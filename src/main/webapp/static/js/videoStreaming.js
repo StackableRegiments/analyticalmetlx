@@ -4,7 +4,7 @@ var TokBox = (function(){
 		return session != undefined && "isConnected" in session && session.isConnected();
 	};
 	var subscriberSection = undefined;
-	var streamButton = undefined, streamContainer = undefined, subscriptionsContainer = undefined;
+	var streamButton = undefined, streamContainer = undefined, subscriptionsContainer = undefined, broadcastContainer = undefined, broadcastButton = undefined;
 	var enabled = false;
 	var streams = {};
 	var receiveTokBoxSessionFunc = function(desc){
@@ -24,55 +24,57 @@ var TokBox = (function(){
 					}
 				},
 				"streamCreated":function(ev){
-					var stream = ev.stream;
-					var rootElem = $(subscriberSection.clone());
-					var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
-					var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
-					rootElem.find(".icon-txt").text(ev.stream.name);
-					var button = rootElem.find(".videoConfSubscribeButton");
-					if (stream.id in streams){
-						button.addClass("subscribedStream");
-					} else {
-						button.removeClass("subscribedStream");
-					}
-					rootElem.find(".videoConfSubscribeButton").on("click",function(){
+					if ("capabilities" in session && "subscribe" in session.capabilities && session.capabilities.subscribe == 1){
+						var stream = ev.stream;
+						var rootElem = $(subscriberSection.clone());
+						var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
+						var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
+						rootElem.find(".icon-txt").text(ev.stream.name);
+						var button = rootElem.find(".videoConfSubscribeButton");
 						if (stream.id in streams){
-							var subscriber = streams[stream.id];
-							delete streams[stream.id];
-							session.unsubscribe(subscriber.subscriber);
-							console.log("unsubscribed from stream:",stream.name,stream.id);
+							button.addClass("subscribedStream");
 						} else {
-							var subscriber = session.subscribe(stream,uniqueId,{
-								insertMode:"append",
-								width:320,
-								height:240
-							},function(error){
-								if (!error){
-									console.log("subscribed to stream:",stream.name,stream.id);
-								} else {
-									rootElem.remove();
-									console.log("error when subscribing to stream",error,stream.name,stream.id);
-								}
-							});
-							var refreshUI = function(){
-								if (stream.id in streams){
-									button.addClass("subscribedStream");
-								} else {
-									button.removeClass("subscribedStream");
-								}
-							};
-							streams[stream.id] = {
-								videoSelectorId:uniqueId,
-								elem:rootElem,
-								subscriber:subscriber,
-								refreshVisual:refreshUI
-							};
+							button.removeClass("subscribedStream");
 						}
+						rootElem.find(".videoConfSubscribeButton").on("click",function(){
+							if (stream.id in streams){
+								var subscriber = streams[stream.id];
+								delete streams[stream.id];
+								session.unsubscribe(subscriber.subscriber);
+								console.log("unsubscribed from stream:",stream.name,stream.id);
+							} else {
+								var subscriber = session.subscribe(stream,uniqueId,{
+									insertMode:"append",
+									width:320,
+									height:240
+								},function(error){
+									if (!error){
+										console.log("subscribed to stream:",stream.name,stream.id);
+									} else {
+										rootElem.remove();
+										console.log("error when subscribing to stream",error,stream.name,stream.id);
+									}
+								});
+								var refreshUI = function(){
+									if (stream.id in streams){
+										button.addClass("subscribedStream");
+									} else {
+										button.removeClass("subscribedStream");
+									}
+								};
+								streams[stream.id] = {
+									videoSelectorId:uniqueId,
+									elem:rootElem,
+									subscriber:subscriber,
+									refreshVisual:refreshUI
+								};
+							}
+							refreshVisualState();
+						});
+						subscriptionsContainer.append(rootElem);
+						streamContainer.append(tokBoxVideoElemSubscriber);
 						refreshVisualState();
-					});
-					subscriptionsContainer.append(rootElem);
-					streamContainer.append(tokBoxVideoElemSubscriber);
-					refreshVisualState();
+					}
 				},
 				"sessionConnected":function(ev){
 					refreshVisualState();
@@ -97,17 +99,18 @@ var TokBox = (function(){
 		}
 	};
 	var startSessionFunc = function(id){
+		console.log("getting session for: ",id);
 		getTokBoxToken(id);
 	};
 	$(function(){
 		streamButton = $("#videoConfStartButton");
 		streamContainer = $("#videoConfContainer");
 		subscriptionsContainer = $("#videoSubsciptionsContainer");
-		if ("Conversations" in window){
-			startSessionFunc(Conversations.getCurrentConversationJid());
-		}
+		broadcastContainer = $("#broadcastContainer");
+		broadcastButton = broadcastContainer.find("#broadcastLink").clone();
 		subscriberSection = streamContainer.find(".videoContainer").clone();
 		streamContainer.empty();
+		broadcastContainer.empty();
 		refreshVisualState();
 	});
 	var setTokBoxEnabledStateFunc = function(isEnabled){
@@ -117,9 +120,13 @@ var TokBox = (function(){
 	var refreshVisualState = function(){
 		streamButton.unbind("click");
 		if (enabled && isConnected()){
-			streamButton.show();
 			streamContainer.show();
-			streamButton.on("click",startPublishFunc);
+			if ("capabilities" in session && "publish" in session.capabilities && session.capabilities.publish == 1){
+				streamButton.show();
+				streamButton.on("click",startPublishFunc);
+			} else {
+				streamButton.hide();
+			}
 		} else {
 			streamButton.hide();
 			streamContainer.hide();
@@ -167,10 +174,20 @@ var TokBox = (function(){
 		}
 		refreshVisualState();
 	};
+	var receiveBroadcastFunc = function(broadcast){
+		console.log("broadcast:",broadcast);
+		if (broadcast != null && "broadcastUrls" in broadcast && "hls" in broadcast.broadcastUrls){
+			var rootElem = broadcastButton.clone();
+			rootElem.attr("href",broadcast.broadcastUrls.hls);
+			broadcastContainer.append(rootElem);
+		} else {
+			broadcastContainer.empty();
+		}
+	};
 	return {
 		setTokBoxEnabledState:setTokBoxEnabledStateFunc,
-		startSession:startSessionFunc,
 		startPublish:startPublishFunc,
+		receiveBroadcast:receiveBroadcastFunc,
 		receiveTokBoxSession:receiveTokBoxSessionFunc,
 		getIsConnected:isConnected,
 		getSession:function(){return session;}
@@ -189,7 +206,7 @@ function receiveTokBoxArchives(archives){
 	console.log("archives:",archives);
 }
 function receiveTokBoxBroadcast(broadcast){
-	console.log("broadcast:",broadcast);
+	TokBox.receiveBroadcast(broadcast);
 }
 //injected by lift
 //function getTokBoxToken(id){}
