@@ -250,11 +250,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
               range = rawRange.substring(rawRange.indexOf("bytes=") + 6).split("-").toList.map(s => parseNumber(s))
             } yield {
               range match {
-                case List(s,e) => (e - s,s,e)
-                case List(s) => (initialSize - s,s,initialSize)
+                case List(s,e) => (e - s,s.toLong,e)
+                case List(s) => (initialSize - s,s.toLong,initialSize)
                 case _ => (initialSize,0L,initialSize)
               }
-            }).getOrElse((initialSize,0L,size))
+            }).getOrElse((initialSize,0L,initialSize))
           }
           fis.skip(start)
           val headers = List(
