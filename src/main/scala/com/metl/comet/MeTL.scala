@@ -954,7 +954,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds"),(args) => {
+    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsInt(args(1))
       val inkIds = args(2) match {
@@ -973,6 +973,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case l:List[String] => l
         case _ => Nil
       }
+      val videoIds = args(6) match {
+        case l:List[String] => l
+        case _ => Nil
+      }
       val now = new Date().getTime
       val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
 
@@ -981,10 +985,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val inks = pubHistory.getInks.filter(elem => inkIds.contains(elem.identity))
       val images = pubHistory.getImages.filter(elem => imageIds.contains(elem.identity))
       val texts = pubHistory.getTexts.filter(elem => textIds.contains(elem.identity))
+      val videos = pubHistory.getVideos.filter(elem => videoIds.contains(elem.identity))
       val multiWordTexts = pubHistory.getMultiWordTexts.filter(elem => multiWordTextIds.contains(elem.identity))
       val highlighters = pubHistory.getHighlighters.filter(elem => inkIds.contains(elem.identity))
 
-      val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts).map(_.author).distinct
+      val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts ::: videos).map(_.author).distinct
       val conv = serverConfig.detailsOfConversation(conversationJid)
       if (shouldModifyConversation(conv)){
         serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
@@ -1043,7 +1048,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           }
         }
         val deleterId = nextFuncName
-        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
+        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,videoIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
         rooms.get((server,slideJid.toString)).map(r =>{
           r() ! LocalToServerMeTLStanza(deleter)
         })

@@ -80,9 +80,11 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       case i:NodeSeq if hasChild(i,"ink") => toMeTLInk(i)
       case i:NodeSeq if hasChild(i,"textbox") => toMeTLText(i)
       case i:NodeSeq if hasChild(i,"image") => toMeTLImage(i)
+      case i:NodeSeq if hasChild(i,"video") => toMeTLVideo(i)
       case i:NodeSeq if hasChild(i,"dirtyInk") => toMeTLDirtyInk(i)
       case i:NodeSeq if hasChild(i,"dirtyText") => toMeTLDirtyText(i)
       case i:NodeSeq if hasChild(i,"dirtyImage") => toMeTLDirtyImage(i)
+      case i:NodeSeq if hasChild(i,"dirtyVideo") => toMeTLDirtyVideo(i)
       case i:NodeSeq if hasChild(i,"moveDelta") => toMeTLMoveDelta(i)
       case i:NodeSeq if hasChild(i,"quiz") => toMeTLQuiz(i)
       case i:NodeSeq if hasChild(i,"quizResponse") => toMeTLQuizResponse(i)
@@ -164,6 +166,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     val textIds = getListOfStringsByNameWithin(input,"textId","textIds")
     val multiWordTextIds = getListOfStringsByNameWithin(input,"multiWordTextId","multiWordTextIds")
     val imageIds = getListOfStringsByNameWithin(input,"imageId","imageIds")
+    val videoIds = getListOfStringsByNameWithin(input,"videoId","videoIds")
     val xTranslate = getDoubleByName(input,"xTranslate")
     val yTranslate = getDoubleByName(input,"yTranslate")
     val xScale = getDoubleByName(input,"xScale")
@@ -172,13 +175,14 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     val isDeleted = getBooleanByName(input,"isDeleted")
     val xOrigin = getDoubleByName(input,"xOrigin")
     val yOrigin = getDoubleByName(input,"yOrigin")
-    MeTLMoveDelta(config,m.author,m.timestamp,c.target,c.privacy,c.slide,c.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,m.audiences)
+    MeTLMoveDelta(config,m.author,m.timestamp,c.target,c.privacy,c.slide,c.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,m.audiences)
   })
   override def fromMeTLMoveDelta(input:MeTLMoveDelta):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLMoveDelta", {
     canvasContentToXml("moveDelta",input, Seq(
       <inkIds>{input.inkIds.map(i => <inkId>{i}</inkId>)}</inkIds>,
       <imageIds>{input.imageIds.map(i => <imageId>{i}</imageId>)}</imageIds>,
       <textIds>{input.textIds.map(i => <textId>{i}</textId>)}</textIds>,
+      <videoIds>{input.videoIds.map(i => <videoId>{i}</videoId>)}</videoIds>,
       <multiWordTextIds>{input.multiWordTextIds.map(i => <multiWordTextId>{i}</multiWordTextId>)}</multiWordTextIds>,
       <xTranslate>{input.xTranslate}</xTranslate>,
       <yTranslate>{input.yTranslate}</yTranslate>,
@@ -246,6 +250,29 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
   override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",{
     canvasContentToXml("image",input,List(
       <tag>{input.tag}</tag>,
+      <source>{input.source.openOr("unknown")}</source>,
+      <width>{input.width}</width>,
+      <height>{input.height}</height>,
+      <x>{input.x}</x>,
+      <y>{input.y}</y>
+    ))
+  })
+  override def toMeTLVideo(input:NodeSeq):MeTLVideo = Stopwatch.time("GenericXmlSerializer.toMeTLVideo",{
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val source = getStringByName(input,"source") match {
+      case s:String if (s.length > 0 && s != "unknown url" && s != "none") => Full(s)
+      case _ => Empty
+    }
+    val videoBytes = source.map(u => config.getResource(u))
+    val width = getDoubleByName(input,"width")
+    val height = getDoubleByName(input,"height")
+    val x = getDoubleByName(input,"x")
+    val y = getDoubleByName(input,"y")
+    MeTLVideo(config,m.author,m.timestamp,source,videoBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
+  })
+  override def fromMeTLVideo(input:MeTLVideo):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLVideo",{
+    canvasContentToXml("video",input,List(
       <source>{input.source.openOr("unknown")}</source>,
       <width>{input.width}</width>,
       <height>{input.height}</height>,
@@ -327,6 +354,14 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
   })
   override def fromMeTLDirtyImage(input:MeTLDirtyImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLDirtyImage",{
     canvasContentToXml("dirtyImage",input,NodeSeq.Empty)
+  })
+  override def toMeTLDirtyVideo(input:NodeSeq):MeTLDirtyVideo = Stopwatch.time("GenericXmlSerializer.toMeTLDirtyVideo",{
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    MeTLDirtyVideo(config,m.author,m.timestamp,c.target,c.privacy,c.slide,c.identity,m.audiences)
+  })
+  override def fromMeTLDirtyVideo(input:MeTLDirtyVideo):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLDirtyVideo",{
+    canvasContentToXml("dirtyVideo",input,NodeSeq.Empty)
   })
   override def toMeTLDirtyText(input:NodeSeq):MeTLDirtyText = Stopwatch.time("GenericXmlSerializer.toMeTLDirtyText",{
     val m = parseMeTLContent(input,config)

@@ -130,8 +130,8 @@ function registerPositionHandlers(contexts,down,move,up){
         var unconsumed = true;;
         _.each(Modes.canvasInteractables,function(category,label){
             _.each(category,function(interactable){
-                if(event in interactable){
-                    if(interactable.activated || intersectRect(worldRay,interactable.bounds)){
+                if(interactable != undefined && event in interactable){
+                    if(interactable.activated || intersectRect(worldRay,interactable.getBounds())){
                         unconsumed = unconsumed && interactable[event](worldPos);
                     }
                 }
@@ -370,8 +370,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-                Modes.finishInteractableStates();
-
+								Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y){
                 WorkQueue.gracefullyResume();
@@ -680,6 +679,107 @@ var bounceButton = function(button){
         b.removeClass(c);
     },200);
 }
+var videoControlInteractable = function(video){
+	var bounds = undefined;
+	var deactivateFunc = function(){
+			// I don't think this is necessary for this control
+	};
+	return {
+		activated:false,
+		rehome : function(root){
+			// I'm not doing anything with this stuff
+		},
+		down: function(worldPos){
+			return false; 
+		},
+		move: function(worldPos){
+			return false;
+		},
+		up: function(worldPos){
+			deactivateFunc();
+	
+			var bw = Modes.select.handlesAtZoom();
+
+			var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
+			if (position < bw){
+				if (video.getState().paused){
+					video.play();
+				} else {
+					video.pause();
+				}
+			} else if (position > (video.width - bw)){
+				video.muted(!video.muted());
+			} else {
+				var mediaState = video.getState();
+				var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
+				video.seek(seekPos);
+			}
+			return false;
+		},
+		getBounds:function(){return bounds;},
+		deactivate:deactivateFunc,
+		render:function(canvasContext){
+			if (video.identity in boardContent.videos){
+				var h = Modes.select.handlesAtZoom();
+				var x = video.bounds[0];
+				var y = video.bounds[1];
+				bounds = [
+						x,
+						video.bounds[3],
+						video.bounds[2],
+						video.bounds[3] + h
+				];
+
+				var tl = worldToScreen(bounds[0],bounds[1]);
+				var br = worldToScreen(bounds[2],bounds[3]);
+				var width = br.x - tl.x;
+				var height = br.y - tl.y;
+
+				var mediaState = video.getState();
+				canvasContext.globalAlpha = 1.0;
+				canvasContext.setLineDash([]);
+				canvasContext.strokeStyle = "black";
+				canvasContext.font = sprintf("%spx FontAwesome",height);
+				
+				var buttonWidth = height;
+			
+				// play/pause button
+
+				canvasContext.fillStyle = "white";
+				canvasContext.fillRect(tl.x,tl.y,buttonWidth,height); 
+				canvasContext.fillStyle = "black";
+				if (mediaState.paused){
+					canvasContext.fillText("\uF04B",tl.x,br.y);
+				} else {
+					canvasContext.fillText("\uF04C",tl.x,br.y);
+				}
+				
+				// progress meter	
+
+				var progressX = tl.x + buttonWidth;
+				var progressWidth = width - buttonWidth;
+				canvasContext.fillStyle = "black";
+				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
+				canvasContext.fillStyle = "blue";
+				var progressWidth = (mediaState.currentTime / mediaState.duration) * progressWidth;
+				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
+
+				// mute button
+				
+				var muteX = tl.x + (width - buttonWidth);
+				canvasContext.fillStyle = "white";
+				canvasContext.fillRect(muteX,tl.y,buttonWidth,height); 
+				canvasContext.fillStyle = "black";
+				if (mediaState.muted){
+					canvasContext.fillText("\uF0F3",muteX,br.y);
+				} else {
+					canvasContext.fillText("\uF1F6",muteX,br.y);
+				}
+			}
+		}
+	};
+};
+
 var Modes = (function(){
     var removeActiveMode = function(){
         $(".activeTool").removeClass("activeTool");
@@ -704,7 +804,7 @@ var Modes = (function(){
             unregisterPositionHandlers(board);
         }
     };
-    var pushCanvasInteractable = function(category,interaction){
+    var pushCanvasInteractableFunc = function(category,interaction){
         if(!(category in Modes.canvasInteractables)){
             Modes.canvasInteractables[category] = [];
         }
@@ -725,7 +825,9 @@ var Modes = (function(){
         var s = Modes.select.handlesAtZoom();
         var manualMove = (
             function(){
+								var bounds = undefined;
                 return {
+									getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -736,7 +838,7 @@ var Modes = (function(){
                             var y = root.y;
                             var width = root.x2 - root.x;
                             var center = root.x + s / 2;
-                            manualMove.bounds = [
+                            bounds = [
                                 center - s / 2,
                                 root.y - s,
                                 center + s / 2,
@@ -779,6 +881,7 @@ var Modes = (function(){
                         moved.inkIds = _.keys(Modes.select.selected.inks);
                         moved.textIds = _.keys(Modes.select.selected.texts);
                         moved.imageIds = _.keys(Modes.select.selected.images);
+                        moved.videoIds = _.keys(Modes.select.selected.videos);
                         moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(moved.multiWordTextIds,function(id){
                             Modes.text.echoesToDisregard[id] = true;
@@ -797,9 +900,9 @@ var Modes = (function(){
                         return false;
                     },
                     render:function(canvasContext){
-                        if(manualMove.bounds){
-                            var tl = worldToScreen(manualMove.bounds[0],manualMove.bounds[1]);
-                            var br = worldToScreen(manualMove.bounds[2],manualMove.bounds[3]);
+                        if(bounds){
+                            var tl = worldToScreen(bounds[0],bounds[1]);
+                            var br = worldToScreen(bounds[2],bounds[3]);
                             var size = br.x - tl.x;
                             var x = tl.x;
                             var y = tl.y;
@@ -819,7 +922,9 @@ var Modes = (function(){
             })();
         var resizeAspectLocked = (
             function(){
+							var bounds = undefined;
                 return {
+									getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -828,7 +933,7 @@ var Modes = (function(){
                             var s = Modes.select.handlesAtZoom();
                             var x = root.x2;
                             var y = root.y;
-                            resizeAspectLocked.bounds = [
+                            bounds = [
                                 x,
                                 y,
                                 x + s,
@@ -884,6 +989,7 @@ var Modes = (function(){
                         resized.inkIds = _.keys(Modes.select.selected.inks);
                         resized.textIds = _.keys(Modes.select.selected.texts);
                         resized.imageIds = _.keys(Modes.select.selected.images);
+                        resized.videoIds = _.keys(Modes.select.selected.videos);
                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(Modes.select.selected.multiWordTexts,function(text,id){
                             Modes.text.echoesToDisregard[id] = true;
@@ -901,9 +1007,9 @@ var Modes = (function(){
                         return false;
                     },
                     render:function(canvasContext){
-                        if(resizeAspectLocked.bounds){
-                            var tl = worldToScreen(resizeAspectLocked.bounds[0],resizeAspectLocked.bounds[1]);
-                            var br = worldToScreen(resizeAspectLocked.bounds[2],resizeAspectLocked.bounds[3]);
+                        if(bounds){
+                            var tl = worldToScreen(bounds[0],bounds[1]);
+                            var br = worldToScreen(bounds[2],bounds[3]);
                             var size = br.x - tl.x;
                             var inset = size / 10;
                             var xOffset = -1 * size;
@@ -926,15 +1032,18 @@ var Modes = (function(){
                     }
                 };
             })();
+
         var resizeFree = (function(){
+					var bounds = undefined;
             return {
                 activated:false,
+								getBounds:function(){return bounds;},
                 rehome : function(root){
                     if(!resizeFree.activated){
                         var s = Modes.select.handlesAtZoom();
                         var x = root.x2;
                         var y = root.y2;
-                        resizeFree.bounds = [
+                        bounds = [
                             x,
                             y - s,
                             x + s,
@@ -985,6 +1094,7 @@ var Modes = (function(){
                     resized.inkIds = _.keys(Modes.select.selected.inks);
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
+                    resized.videoIds = _.keys(Modes.select.selected.videos);
                     _.each(Modes.select.selected.multiWordTexts,function(word){
                         word.doc.width(Math.max(
                             word.doc.width() * resized.xScale,
@@ -1002,9 +1112,9 @@ var Modes = (function(){
                     return false;
                 },
                 render:function(canvasContext){
-                    if(resizeFree.bounds){
-                        var tl = worldToScreen(resizeFree.bounds[0],resizeFree.bounds[1]);
-                        var br = worldToScreen(resizeFree.bounds[2],resizeFree.bounds[3]);
+                    if(bounds){
+                        var tl = worldToScreen(bounds[0],bounds[1]);
+                        var br = worldToScreen(bounds[2],bounds[3]);
                         var size = br.x - tl.x;
                         var inset = size / 10;
                         var xOffset = -1 * size;
@@ -1027,9 +1137,9 @@ var Modes = (function(){
                 }
             };
         })();
-        pushCanvasInteractable("manualMove",manualMove);
-        pushCanvasInteractable("resizeFree",resizeFree);
-        pushCanvasInteractable("resizeAspectLocked",resizeAspectLocked);
+        pushCanvasInteractableFunc("manualMove",manualMove);
+        pushCanvasInteractableFunc("resizeFree",resizeFree);
+        pushCanvasInteractableFunc("resizeAspectLocked",resizeAspectLocked);
         Progress.textBoundsChanged["selectionHandles"] = function(textId,bounds){
             if(textId in Modes.select.selected.multiWordTexts){
                 var totalBounds = Modes.select.totalSelectedBounds();
@@ -1051,7 +1161,12 @@ var Modes = (function(){
             }
         };
     });
+		var clearCanvasInteractableFunc = function(category){
+			Modes.canvasInteractables[category] = [];
+		};
     return {
+				pushCanvasInteractable:pushCanvasInteractableFunc,
+				clearCanvasInteractables:clearCanvasInteractableFunc,
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},
@@ -1503,6 +1618,156 @@ var Modes = (function(){
                 }
             }
         })(),
+        video:(function(){
+            var noop = function(){};
+            var currentVideo = {};
+            var insertOptions = undefined;
+            var videoFileChoice = undefined;
+            var insertOptionsClose = undefined;
+            var resetVideoUpload = function(){
+                insertOptions.hide();
+                $("#imageWorking").hide();
+                $("#imageFileChoice").show();
+                var videoForm = videoFileChoice.wrap("<form>").closest("form").get(0);
+                if (videoForm != undefined){
+                    videoForm.reset();
+                }
+                videoFileChoice.unwrap();
+            };
+            var clientSideProcessVideo = function(onComplete){
+                if (currentVideo == undefined || currentVideo.fileUpload == undefined || onComplete == undefined){
+                    return;
+                }
+                $("#videoWorking").show();
+                $("#videoFileChoice").hide();
+                var reader = new FileReader();
+                reader.onload = function(readerE){
+                    var vid = $("<video/>");
+										var thisVid = vid[0];
+                    var originalSrc = readerE.target.result;
+                    var originalSize = originalSrc.length;
+                    thisVid.addEventListener("loadeddata",function(e){
+                        var width = thisVid.videoWidth;
+                        var height = thisVid.videoHeight;
+                        currentVideo.width = width;
+                        currentVideo.height = height;
+                        currentVideo.video = vid;
+												currentVideo.videoSrc = originalSrc;
+                        onComplete();
+                    },false);
+                    vid.append($("<source />",{
+											src:originalSrc,
+											type:"video/mp4"
+										}));
+										vid.load();
+                }
+                reader.readAsDataURL(currentVideo.fileUpload);
+            };
+            var sendVideoToServer = function(){
+                if (currentVideo.type == "imageDefinition"){
+                    WorkQueue.pause();
+                    var worldPos = {x:currentVideo.x,y:currentVideo.y};
+                    var screenPos= {x:currentVideo.screenX,y:currentVideo.screenY};
+                    var t = Date.now();
+                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var currentSlide = Conversations.getCurrentSlideJid();
+                    var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        success: function(e){
+                            var newIdentity = $(e).find("resourceUrl").text();
+                            var videoStanza = {
+                                type:"video",
+                                author:UserSettings.getUsername(),
+                                timestamp:t,
+                                identity:newIdentity,
+                                slide:currentSlide.toString(),
+                                source:$(e).text(),
+                                bounds:[currentVideo.x,currentVideo.y,currentVideo.x+currentVideo.width,currentVideo.y+currentVideo.height],
+                                width:currentVideo.width,
+                                height:currentVideo.height,
+                                target:"presentationSpace",
+                                privacy:Privacy.getCurrentPrivacy(),
+                                x:currentVideo.x,
+                                y:currentVideo.y
+                            };
+                            registerTracker(newIdentity,function(){
+                                var insertMargin = Modes.select.handlesAtZoom();
+                                var newX = videoStanza.x;
+                                var newY = videoStanza.y;
+                                var newW = Math.max(videoStanza.width,viewboxWidth);
+                                var newH = Math.max(videoStanza.height,viewboxHeight);
+                                Modes.select.activate();
+                                IncludeView.specific(
+                                    newX - insertMargin,
+                                    newY - insertMargin,
+                                    newW + insertMargin * 2,
+                                    newH + insertMargin * 2);
+                                Modes.select.clearSelection();
+                                Modes.select.selected.videos[videoStanza.identity] = boardContent.videos[videoStanza.identity];
+                                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                            });
+                            sendStanza(videoStanza);
+                            resetVideoUpload();
+                            WorkQueue.gracefullyResume();
+                        },
+                        error: function(e){
+                            console.log(e);
+                            resetImageUpload();
+                            errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+                            WorkQueue.gracefullyResume();
+                        },
+                        data:currentVideo.videoSrc,
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    });
+                }
+            };
+            var hasInitialized = false;
+            $(function(){
+                if (!hasInitialized){
+                    hasInitialized = true;
+                    insertOptions = $("#videoInsertOptions").css({position:"absolute",left:0,top:0});
+                    insertOptionsClose = $("#videoInsertOptionsClose").click(Modes.select.activate);
+                    videoFileChoice = $("#videoFileChoice").attr("accept","video/mp4");
+                    videoFileChoice[0].addEventListener("change",function(e){
+                        var files = e.target.files || e.dataTransfer.files;
+                        var limit = files.length;
+                        var file = files[0];
+                        if (file.type.indexOf("video") == 0) {
+                            currentVideo.fileUpload = file;
+                        }
+                        clientSideProcessVideo(sendVideoToServer);
+                    },false);
+                    resetVideoUpload();
+                }
+            });
+            return {
+                activate:function(){
+                    Modes.currentMode.deactivate();
+                    Modes.currentMode = Modes.video;
+                    setActiveMode("#videoTools","#videoMode");
+                    var x = 10;
+                    var y = 10;
+                    var worldPos = screenToWorld(x,y);
+                    currentVideo = {
+                        "type":"imageDefinition",
+                        "screenX":x,
+                        "screenY":y,
+                        "x":worldPos.x,
+                        "y":worldPos.y
+                    }
+                    Progress.call("onLayoutUpdated");
+                    insertOptions.show();
+                },
+                deactivate:function(){
+                    resetVideoUpload();
+                    removeActiveMode();
+                }
+            };
+        })(),
         image:(function(){
             var noop = function(){};
             var currentImage = {};
@@ -1785,6 +2050,8 @@ var Modes = (function(){
                             return true;
                         } else if ("multiWordTexts" in sel && _.size(sel.multiWordTexts) > 0){
                             return true;
+                        } else if ("videos" in sel && _.size(sel.videos) > 0){
+                            return true;
                         } else {
                             return false;
                         }
@@ -1815,12 +2082,12 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{}};
+                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
                 var changed = false;
-                _.forEach(["images","texts","inks","highlighters","multiWordTexts"],function(catName){
+                _.forEach(["images","texts","inks","highlighters","multiWordTexts","videos"],function(catName){
                     var selCatName = catName == "highlighters" ? "inks" : catName;
                     var boardCatName = catName;
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
@@ -1857,7 +2124,8 @@ var Modes = (function(){
                             s.inks,
                             s.texts,
                             s.multiWordTexts,
-                            s.images
+                            s.images,
+														s.videos
                         );
                     }
                 }
@@ -1914,7 +2182,8 @@ var Modes = (function(){
                     images:{},
                     texts:{},
                     inks:{},
-                    multiWordTexts:{}
+                    multiWordTexts:{},
+										videos:{}
                 },
                 resizeHandleSize:20,
                 setSelection:function(selected){
@@ -1937,6 +2206,7 @@ var Modes = (function(){
                     _.forEach(Modes.select.selected.texts,incorporate);
                     _.forEach(Modes.select.selected.images,incorporate);
                     _.forEach(Modes.select.selected.multiWordTexts,incorporate);
+                    _.forEach(Modes.select.selected.videos,incorporate);
                     totalBounds.width = totalBounds.x2 - totalBounds.x;
                     totalBounds.height = totalBounds.y2 - totalBounds.y;
                     totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
@@ -1976,6 +2246,9 @@ var Modes = (function(){
                             if ("multiWordTexts" in Modes.select.selected){
                                 deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                             }
+                            if ("videos" in Modes.select.selected){
+                                deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
+                            }
                             sendStanza(deleteTransform);
                             clearSelectionFunction();
                         }
@@ -1988,6 +2261,7 @@ var Modes = (function(){
                         func("texts");
                         func("multiWordTexts");
                         func("inks");
+												func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
                         Modes.select.resizing = false;
@@ -2015,7 +2289,7 @@ var Modes = (function(){
                                         }
                                     });
                                 }
-                                Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts"],isDragHandle);
+                                Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
                         if(Modes.select.dragging){
@@ -2071,6 +2345,7 @@ var Modes = (function(){
                                 moved.inkIds = _.keys(Modes.select.selected.inks);
                                 moved.textIds = _.keys(Modes.select.selected.texts);
                                 moved.imageIds = _.keys(Modes.select.selected.images);
+                                moved.videoIds = _.keys(Modes.select.selected.videos);
                                 moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                                 Modes.select.dragging = false;
                                 registerTracker(moved.identity,function(){
@@ -2086,7 +2361,8 @@ var Modes = (function(){
                                     images:{},
                                     texts:{},
                                     inks:{},
-                                    multiWordTexts:{}
+                                    multiWordTexts:{},
+																		videos:{}
                                 };
                                 var intersectAuthors = {};
                                 var intersections = {};
@@ -2104,6 +2380,9 @@ var Modes = (function(){
                                                 case "ink":
                                                     prerenderInk(item);
                                                     break;
+																								case "video":
+																										prerenderVideo(item);
+																										break;		
                                                 default:
                                                     item.bounds = [NaN,NaN,NaN,NaN];
                                                 }
@@ -2145,6 +2424,9 @@ var Modes = (function(){
                                 /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
                                 var toggleCategory = function(category){
                                     $.each(intersected[category],function(id,item){
+																				if (!(category in Modes.select.selected)){
+																					Modes.select.selected[category] = [];
+																				}
                                         if(category in Modes.select.selected && id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
                                         } else {
@@ -2156,11 +2438,12 @@ var Modes = (function(){
                                 if(!intersections.any){
                                     Modes.select.clearSelection();
                                 }
-                                var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts ",
+                                var status = sprintf("Selected %s images, %s texts, %s inks, %s rich texts, %s videos ",
                                                      _.keys(Modes.select.selected.images).length,
                                                      _.keys(Modes.select.selected.texts).length,
                                                      _.keys(Modes.select.selected.multiWordTexts).length,
-                                                     _.keys(Modes.select.selected.inks).length);
+                                                     _.keys(Modes.select.selected.inks).length,
+                                                     _.keys(Modes.select.selected.videos).length);
                                 $.each(intersectAuthors,function(author,count){
                                     status += sprintf("%s:%s ",author, count);
                                 });
@@ -2189,6 +2472,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
+										blit();
                     blit();
                 }
             }
