@@ -149,7 +149,6 @@ class FilteringGroupsProvider(gp:GroupsProvider,groupsFilter:Tuple2[String,Strin
 class StoreBackedGroupsProvider(gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider {
   protected def resolveUser(userData:LiftAuthStateData):String = {
     val key = usernameOverride.flatMap(uo => userData.informationGroups.find(_._1 == uo).map(_._2)).getOrElse(userData.username)
-    //println("resolveUser: %s => %s".format(userData,key))
     key
   }
   override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)

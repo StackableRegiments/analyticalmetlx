@@ -103,6 +103,7 @@ function batchTransform(){
         inkIds:[],
         textIds:[],
         multiWordTextIds:[],
+				videoIds:[],
         imageIds:[],
         xOrigin:0,
         yOrigin:0,
@@ -204,6 +205,7 @@ var stanzaHandlers = {
     move:moveReceived,
     moveDelta:transformReceived,
     image:imageReceived,
+		video:videoReceived,
     text:textReceived,
     multiWordText:richTextReceived,
     command:commandReceived,
@@ -393,6 +395,9 @@ function transformReceived(transform){
         $.each(transform.imageIds,function(i,id){
             boardContent.images[id].privacy = p;
         });
+        $.each(transform.videoIds,function(i,id){
+            boardContent.videos[id].privacy = p;
+        });
         $.each(transform.textIds,function(i,id){
             boardContent.texts[id].privacy = p;
         });
@@ -410,6 +415,9 @@ function transformReceived(transform){
         $.each(transform.imageIds,function(i,id){
             deleteImage(p,id);
         });
+        $.each(transform.videoIds,function(i,id){
+            deleteVideo(p,id);
+        });
         $.each(transform.textIds,function(i,id){
             deleteText(p,id);
         });
@@ -423,12 +431,16 @@ function transformReceived(transform){
         var relevantTexts = [];
         var relevantMultiWordTexts = [];
         var relevantImages = [];
+        var relevantVideos = [];
         $.each(transform.inkIds,function(i,id){
             relevantInks.push(boardContent.inks[id]);
             relevantInks.push(boardContent.highlighters[id]);
         });
         $.each(transform.imageIds,function(i,id){
             relevantImages.push(boardContent.images[id]);
+        });
+        $.each(transform.videoIds,function(i,id){
+            relevantVideos.push(boardContent.videos[id]);
         });
         $.each(transform.textIds,function(i,id){
             relevantTexts.push(boardContent.texts[id]);
@@ -478,6 +490,11 @@ function transformReceived(transform){
                     updateRect(point(image.x,image.y));
                 }
             });
+            $.each(relevantVideos,function(i,video){
+                if (video != undefined && "x" in video && "y" in video){
+                    updateRect(point(video.x,video.y));
+                }
+            });
         }
         transformBounds.setMinX(totalBounds.x);
         transformBounds.setMinY(totalBounds.y);
@@ -519,6 +536,23 @@ function transformReceived(transform){
                 transformBounds.incorporateBounds(image.bounds);
             }
         };
+        var transformVideo = function(index,video){
+            if (video != undefined){
+                video.width = video.width * transform.xScale;
+                video.height = video.height * transform.yScale;
+
+                var internalX = video.x - totalBounds.x;
+                var internalY = video.y - totalBounds.y;
+                var offsetX = -(internalX - (internalX * transform.xScale));
+                var offsetY = -(internalY - (internalY * transform.yScale));
+                video.x = video.x + offsetX;
+                video.y = video.y + offsetY;
+
+                calculateVideoBounds(video);
+                transformBounds.incorporateBounds(video.bounds);
+            }
+        };
+
         var transformText = function(index,text){
             if (text != undefined){
                 text.width = text.width * transform.xScale;
@@ -567,6 +601,7 @@ function transformReceived(transform){
         };
         $.each(relevantInks,transformInk);
         $.each(relevantImages,transformImage);
+        $.each(relevantVideos,transformVideo);
         $.each(relevantTexts,transformText);
         $.each(relevantMultiWordTexts,transformMultiWordText);
     }
@@ -588,6 +623,15 @@ function transformReceived(transform){
         $.each(transform.inkIds,function(i,id){
             translateInk(boardContent.inks[id]);
             translateInk(boardContent.highlighters[id]);
+        });
+        $.each(transform.videoIds,function(i,id){
+            var video = boardContent.videos[id];
+            console.log("Shifting video",video.x,video.y);
+            video.x += transform.xTranslate;
+            video.y += transform.yTranslate;
+            calculateVideoBounds(video);
+            console.log("Shifting video",video.x,video.y);
+            transformBounds.incorporateBounds(video.bounds);
         });
         $.each(transform.imageIds,function(i,id){
             var image = boardContent.images[id];
@@ -617,12 +661,13 @@ function transformReceived(transform){
         });
     }
     transformBounds.incorporateBoardBounds();
-    updateStatus(sprintf("%s %s %s %s %s",
+    updateStatus(sprintf("%s %s %s %s %s %s",
                          op,
                          transform.imageIds.length,
                          transform.textIds.length,
                          transform.multiWordTextIds.length,
-                         transform.inkIds.length));
+                         transform.inkIds.length,
+												 transform.videoIds.length));
     _.each(trackerFrom(transform.identity),function(tracker){
         updateTracking(tracker);
     });
@@ -659,6 +704,12 @@ function deleteImage(privacy,id){
     var image = boardContent.images[id];
     if(image.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.images[id];
+    }
+}
+function deleteVideo(privacy,id){
+    var video = boardContent.videos[id];
+    if(video.privacy.toUpperCase() == privacy.toUpperCase()){
+        delete boardContent.videos[id];
     }
 }
 function deleteText(privacy,id){
@@ -850,6 +901,37 @@ function drawInk(ink,incCanvasContext){
                                 sBounds.screenPos.x,sBounds.screenPos.y,
                                 sBounds.screenWidth,sBounds.screenHeight);
     }
+}
+function drawVideo(video,incCanvasContext){
+	  var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    var sBounds = screenBounds(video.bounds);
+    visibleBounds.push(video.bounds);
+    if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+        canvasContext.drawImage(video.video,
+                                sBounds.screenPos.x,sBounds.screenPos.y,
+                                sBounds.screenWidth,sBounds.screenHeight);
+    }
+}
+function videoReceived(video){
+	calculateVideoBounds(video);
+	incorporateBoardBounds(video.bounds);
+	boardContent.videos[video.identity] = video;
+	prerenderVideo(video);
+	WorkQueue.enqueue(function(){
+			if(isInClearSpace(video.bounds)){
+					try {
+							drawVideo(video);
+							Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+					} catch(e){
+							console.log("drawVideo exception",e);
+					}
+					return false;
+			}
+			else{
+					console.log("Rerendering video in contested space");
+					return true;
+			}
+	});
 }
 function imageReceived(image){
     var dataImage = new Image();

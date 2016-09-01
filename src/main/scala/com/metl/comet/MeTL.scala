@@ -647,6 +647,9 @@ trait JArgUtils {
 }
 
 class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
+  import net.liftweb.json.Extraction
+  import net.liftweb.json.DefaultFormats
+  implicit val formats = DefaultFormats
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
@@ -666,7 +669,98 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
 
+  private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
+  private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+  private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
+  private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+
+  protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
+    ClientSideFunctionDefinition("getTokBoxArchives",List.empty[String],(args) => {
+      JArray(for {
+          tb <- Globals.tokBox.toList
+          s <- tokSession.toList
+          a <- tb.getArchives(s)
+        } yield {
+          JObject(
+            List(
+              JField("id",JString(a.id)),
+              JField("name",JString(a.name))
+            ) ::: 
+            a.url.toList.map(u => JField("url",JString(u))) :::
+            a.size.toList.map(s => JField("size",JInt(s))) :::
+            a.duration.toList.map(d => JField("size",JInt(d))) :::
+            a.createdAt.toList.map(c => JField("created",JInt(c)))
+          )
+        })
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+    ClientSideFunctionDefinition("getTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a <- tb.getArchive(s,id)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+  /*
+    ClientSideFunctionDefinition("removeTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+      } yield {
+        tb.removeArchive(s,id)
+        pretty(render(a))
+      }).toList)
+      Noop
+    }),
+  */
+    ClientSideFunctionDefinition("startBroadcast",List("layout"),(args) => {
+      val layout = getArgAsString(args(0))
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSession
+        b = tb.startBroadcast(s,layout)
+      } yield {
+        Extraction.decompose(b)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunctionDefinition("updateBroadcastLayout",List("id","newLayout"),(args) => {
+      val id = getArgAsString(args(0))
+      val layout = getArgAsString(args(1))
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSession
+        a = tb.updateBroadcast(s,id,layout)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunctionDefinition("stopBroadcast",List.empty[String],(args) => {
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSession
+        b <- tb.getBroadcast(s)
+        a = tb.stopBroadcast(s,b.id)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunctionDefinition("getBroadcast",List.empty[String],(args) => {
+      (for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a <- tb.getBroadcast(s)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+
     ClientSideFunctionDefinition("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -676,11 +770,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       debug("getHistory requested")
       getSlideHistory(jid)
     },Full(RECEIVE_HISTORY)),
-    /*
-     ClientSideFunctionDefinition("getRoomPopulations",List.empty[String],(args) => {
-     JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString)),JField("population",JArray(kv._2().getChildren.map(cu => JString(cu._1)).toList))))).toList)
-     },Full("receiveRoomPopulations")),
-     */
     ClientSideFunctionDefinition("getSearchResult",List("query"),(args) => {
       serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(args(0).toString)))
     },Full(RECEIVE_CONVERSATIONS)),
@@ -745,16 +834,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val title = getArgAsString(args(0))
       serializer.fromConversation(serverConfig.createConversation(title,username))
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
-    /*
-     ClientSideFunctionDefinition("deleteConversation",List("jid"),(args) => {
-     val jid = getArgAsString(args(0))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.deleteConversation(c.jid.toString)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
     ClientSideFunctionDefinition("importConversation",List.empty[String],(unused) => {
       val im = InteractableMessage((i) => {
         val uploadId = nextFuncName
@@ -812,17 +891,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         ),Full(()=> this ! SpamMessage(Text("You are not permitted to archive this conversation"))),false,Full("conversations"))
       JNull
     },Empty),
-    /*
-     ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
-     val jid = getArgAsString(args(0))
-     val newTitle = getArgAsString(args(1))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.renameConversation(c.jid.toString,newTitle)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
     ClientSideFunctionDefinition("requestRenameConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -865,7 +933,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds"),(args) => {
+    ClientSideFunctionDefinition("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsInt(args(1))
       val inkIds = args(2) match {
@@ -884,6 +952,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case l:List[String] => l
         case _ => Nil
       }
+      val videoIds = args(6) match {
+        case l:List[String] => l
+        case _ => Nil
+      }
       val now = new Date().getTime
       val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
 
@@ -892,10 +964,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val inks = pubHistory.getInks.filter(elem => inkIds.contains(elem.identity))
       val images = pubHistory.getImages.filter(elem => imageIds.contains(elem.identity))
       val texts = pubHistory.getTexts.filter(elem => textIds.contains(elem.identity))
+      val videos = pubHistory.getVideos.filter(elem => videoIds.contains(elem.identity))
       val multiWordTexts = pubHistory.getMultiWordTexts.filter(elem => multiWordTextIds.contains(elem.identity))
       val highlighters = pubHistory.getHighlighters.filter(elem => inkIds.contains(elem.identity))
 
-      val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts).map(_.author).distinct
+      val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts ::: videos).map(_.author).distinct
       val conv = serverConfig.detailsOfConversation(conversationJid)
       if (shouldModifyConversation(conv)){
         serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
@@ -954,7 +1027,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           }
         }
         val deleterId = nextFuncName
-        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
+        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,videoIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
         rooms.get((server,slideJid.toString)).map(r =>{
           r() ! LocalToServerMeTLStanza(deleter)
         })
@@ -1123,11 +1196,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       JNull
     },Empty),
-    /*
-     ClientSideFunctionDefinition("createQuiz",List("conversationJid","newQuiz"),(args) => {
-     JNull
-     },Empty),
-     */
     ClientSideFunctionDefinition("requestCreateQuizDialogue",List("conversationJid"),(args) => {
       if (shouldModifyConversation()){
         val conversationJid = getArgAsString(args(0))
@@ -1484,12 +1552,41 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
     })
+    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
+    val receiveTokBoxSession:Box[JsCmd] = (for {
+      cc <- currentConversation
+      tb <- Globals.tokBox
+    } yield {
+      val role = shouldModifyConversation() match {
+        case true => TokRole.Moderator
+        case false => TokRole.Publisher
+      }
+      val session = tokSession.getOrElse({
+        val newSession = tb.getSessionToken(cc.jid.toString(),role)
+        tokSession = Some(newSession)
+        newSession
+      })
+      val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+        JField("sessionId",JString(session.sessionId)),
+        JField("token",JString(session.token)),
+        JField("apiKey",JInt(session.apiKey))
+      )))
+      j
+    })
+    val receiveTokBoxBroadcast:Box[JsCmd] = (for {
+      tb <- Globals.tokBox
+      s <- tokSession
+      a <- tb.getBroadcast(s)
+    } yield {
+      val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
+      j
+    })
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     debug(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
