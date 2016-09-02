@@ -24,14 +24,14 @@ object Metl extends Metl
 class Metl extends Logger {
   val config = ServerConfiguration.default
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
-    Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim && c != Conversation.empty
+    (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && c != Conversation.empty
   }
-  def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false):Boolean = {
+  def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[Tuple2[String,String]] = Globals.getUserGroups):Boolean = {
     val subject = c.subject.trim.toLowerCase
-    Globals.isSuperUser || (showDeleted && c.author == Globals.currentUser.is) || ((subject == "unrestricted" || Globals.getUserGroups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == subject)) && c != Conversation.empty)
+    Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == subject)) && c != Conversation.empty)
   }
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
-    Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username))) && c != Conversation.empty
+    (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty
   }
   def boardFor():String = {
     "/board"

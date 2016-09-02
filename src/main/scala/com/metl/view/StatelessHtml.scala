@@ -617,7 +617,7 @@ object StatelessHtml extends Stemmer with Logger {
   }
   def duplicateConversationInternal(onBehalfOfUser:String,conversation:String):Box[Conversation] = {
     val oldConv = config.detailsOfConversation(conversation)
-    if (onBehalfOfUser == oldConv.author){
+    if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,oldConv)){
       val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
       val newConvWithOldSlides = newConv.copy(
         lastAccessed = new java.util.Date().getTime,
@@ -684,7 +684,7 @@ object StatelessHtml extends Stemmer with Logger {
   def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
     for (
       conv <- Some(config.detailsOfConversation(conversation));
-      if (onBehalfOfUser == conv.author);
+      if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,conv));
       histories = exportHistories(conv,None);
       xml = {
         <export>
