@@ -118,7 +118,6 @@ var Conversation = (function(){
 		$(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
 		sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"type":"special","value":conversation.subject}]),"value"),function(item){return item.type;}),function(categoryGroups){
-			console.log("categoryGroups:",categoryGroups);
 			var rootElem = sharingCategoryTemplate.clone();
 			
 			var sharingChoiceTemplate = rootElem.find(".conversationSharingChoiceContainer").clone();
@@ -126,7 +125,6 @@ var Conversation = (function(){
 			rootElem.find(".conversationSharingCategory").text(categoryGroups[0].type);
 			var choiceElem = container.find(".conversationSharingChoice").clone();
 			container.html(_.map(categoryGroups,function(categoryGroup){
-				console.log("categoryGroup:",categoryGroup);
 				var choiceId = _.uniqueId();
 				var choiceRoot = choiceElem.clone();
 				var inputElem = choiceRoot.find(".conversationSharingChoiceInputElement")
@@ -138,6 +136,30 @@ var Conversation = (function(){
 				choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.value);
 				return choiceRoot;
 			}));
+			var sectionVisible = false;
+			var collapser = rootElem.find(".conversationSharingCollapser");
+			collapser.on("click",function(){
+				container.toggle();
+				sectionVisible = !sectionVisible;
+				if (sectionVisible){
+					collapser.addClass("fa-toggle-right");
+					collapser.removeClass("fa-toggle-down");
+				} else {
+					collapser.addClass("fa-toggle-down");
+					collapser.removeClass("fa-toggle-right");
+				}
+			});
+			if (_.some(categoryGroups,function(item){return item.value == conversation.subject;})){
+				sectionVisible = true;
+				container.show();
+				collapser.addClass("fa-toggle-right");
+				collapser.removeClass("fa-toggle-down");
+			} else {
+				sectionVisible = false;
+				container.hide();
+				collapser.addClass("fa-toggle-down");
+				collapser.removeClass("fa-toggle-right");
+			}
 			return rootElem;
 		}));
 		fixSlides();
