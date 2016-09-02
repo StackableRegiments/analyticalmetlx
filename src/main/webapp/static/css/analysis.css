@@ -1,6 +1,19 @@
 body{
     background-size:100% 100%;
 }
+.widget{
+    display:inline-block;
+}
+#vis{
+    flex-basis:50%;
+}
+#lang{
+    flex-basis:35%;
+}
+#statusLog{
+    font-size:50%;
+    flex-basis:10%;
+}
 .masterArea path{
     stroke:lightblue;
     fill:blue;
@@ -8,15 +21,10 @@ body{
 .vega-actions{
     display:none;
 }
-#processingRow{
-    display:flex;
+#widgets{
+    flex-wrap:wrap;
 }
-#status{
-    font-size:60%;
-}
-#lang{
-    max-width:240px;
-}
+
 #lang text{
     fill:white;
     stroke:none;

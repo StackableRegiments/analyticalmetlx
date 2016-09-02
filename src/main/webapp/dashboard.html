@@ -14,31 +14,19 @@
   </head>
   <div class="directlyOnBackground ml">
     <div class="lift:Analytics">
-      <div class="row" id="processingRow">
-        <div id="status" class="shrinkWrappedColumn">
-          <h2>Dashboard</h2>
-          <h3>Processing</h3>
-        </div>
-        <div id="vis" class="ml mt shrinkWrappedColumn"></div>
-        <div id="lang" class="ml mt shrinkWrappedColumn">
-        </div>
-        <div id="bootstrap"></div>
-      </div>
-      <div class="flex-container-responsive">
-        <div>
-          <h3>Average time to follow teacher (ms)</h3>
-          <div id="followLag">
+      <h2 id="pageLabel">Dashboard</h2>
+      <div class="flex-container-responsive" id="widgets">
+        <span class="ml" id="statusLog"></span>
+        <div id="vis" class="shrinkWrappedColumn widget"></div>
+        <div id="lang" class="shrinkWrappedColumn widget"></div>
+        <div class="flex-container-responsive">
+          <div class="ml shrinkWrappedColumn widget">
+            <h3>Average time to follow teacher (ms)</h3>
+            <div id="followLag"></div>
           </div>
-        </div>
-      </div>
-      <div class="flex-container-responsive">
-        <div class="shrinkWrappedColumn">
-          <h3>Over time</h3>
-          <div id="displayOverTime" class="ml"></div>
-        </div>
-        <div class="shrinkWrappedColumn ml">
-          <h3>Over pages</h3>
-          <div id="displayOverPages" class="ml"></div>
+          <div class="ml shrinkWrappedColumn widget" id="page"></div>
+          <div class="ml shrinkWrappedColumn widget" id="time"></div>
+          <div id="bootstrap"></div>
         </div>
       </div>
     </div>

@@ -2,10 +2,10 @@ var Analytics = (function(){
     Chart.defaults.global.defaultFontColor = "#FFF";
     var displays = {};
     var status = function(msg,key){
-        var parent = $("#status");
+        var parent = $("#statusLog");
         if(!(key in displays)){
             displays[key] = {
-                element:$("<div />").appendTo(parent),
+                element:$("<div />").prependTo(parent),
                 touches:0
             };
         }
@@ -43,8 +43,16 @@ var Analytics = (function(){
             counts:function(){
                 return counters;
             },
-            tags:function(){
-                return _.map(word.counts(),function(v,k){
+            stop:function(words){
+                var stops = "a am an and are do did done is it the".split(" ");
+                var stopped = _.clone(words);
+                _.each(stops,function(s){
+                    delete stopped[s];
+                });
+                return stopped;
+            },
+            pairs:function(words){
+                return _.map(words,function(v,k){
                     return {key:k,value:v};
                 });
             },
@@ -64,17 +72,9 @@ var Analytics = (function(){
                 }
             },
             cloud:function(){
-                WordCloud(word.tags());
-                return;
-                var container = $("#lang").empty();
-                cloudScale.domain(d3.extent(_.values(word.counts())));
-                _.each(word.counts(),function(count,word){
-                    $("<span />",{
-                        text:word,
-                        class:"ml cloudWord"
-                    }).css({
-                        "font-size":sprintf("%spx",cloudScale(count))
-                    }).appendTo(container);
+                WordCloud(word.pairs(word.stop(word.counts())),{
+                    w:$("#lang").width(),
+                    h:$("#lang").width()
                 });
             }
         };
@@ -92,7 +92,7 @@ var Analytics = (function(){
         left: 35
     }
     var MINUTE = 60 * 1000;
-    var WIDTH = 640;
+    var WIDTH = 360;
     var HEIGHT = 240;
     var chartAttendance = function(attendances){
         /*Over time*/
@@ -137,7 +137,7 @@ var Analytics = (function(){
                     $("<canvas />").attr({
                         width:WIDTH,
                         height:HEIGHT
-                    }).appendTo($("#displayOverTime"))[0].getContext("2d"),
+                    }).appendTo($("#time"))[0].getContext("2d"),
                     {
                         type:"line",
                         data:{
@@ -208,7 +208,7 @@ var Analytics = (function(){
                     $("<canvas />").attr({
                         width:WIDTH,
                         height:HEIGHT
-                    }).appendTo($("#displayOverPages"))[0].getContext("2d"),
+                    }).appendTo($("#page"))[0].getContext("2d"),
                     {
                         type:"line",
                         data:{
@@ -279,9 +279,6 @@ var Analytics = (function(){
         status(sprintf("Anchored %s",dFormat(max)),"latest event");
         status(events.length,"events scoped");
         status(_.uniq(authors).length,"authors scoped");
-        adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
-        chartFollowLag(attendances,details);
-        chartAttendance(attendances);
     };
     var bucket = function(timed){
         return _.map(timed,function(timeable){
@@ -352,7 +349,7 @@ var Analytics = (function(){
             .call(d3.axisLeft(y));
     }
     var adherenceToTeacher = function(attendancesHi,details){
-        $("#vis").empty();
+	$("#vis").empty();
         var author = $(details).find("author:first").text();
         var owner = _.groupBy(attendancesHi,function(action){
             return action.author == author;
@@ -379,7 +376,7 @@ var Analytics = (function(){
             return parseInt(d.location);
         })));
 
-        var width = WIDTH;
+        var width = $("#vis").width() - margin.left - margin.right;
         var height = 300;
         var masterHeight = 100;
 
@@ -523,11 +520,20 @@ var Analytics = (function(){
         prime:function(conversation){
             status("Retrieving",conversation);
             $.get(sprintf("/details/%s",conversation),function(details){
+                var render = function(){
+                    Analytics.word.cloud();
+                    status("Analysed","conversation");
+                    adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
+                    chartFollowLag(attendances,details);
+                    chartAttendance(attendances);
+                }
                 $.get(sprintf("/fullClientHistory?source=%s",conversation),function(conversationHistory){
                     status("Retrieved",conversation);
                     incorporate(conversationHistory,details);
                 });
                 var slides = $(details).find("slide");
+                var slidesLoaded = 0;
+                console.log(slidesLoaded);
                 _.forEach(slides.find("id"),function(el){
                     var slide = $(el).text();
                     status("Retrieving",slide);
@@ -549,8 +555,10 @@ var Analytics = (function(){
                                 }
                             });
                         })
-                        Analytics.word.cloud();
-                        status("Presented",sprintf("usage %s",slide));
+                        if(++slidesLoaded == slides.length){
+                            render();
+                            $(window).resize(render);
+                        }
                     });
                 });
             });

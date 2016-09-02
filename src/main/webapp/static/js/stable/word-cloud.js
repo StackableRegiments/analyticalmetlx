@@ -1,8 +1,9 @@
-var WordCloud = function(data){
+var WordCloud = function(data,options){
     var fill = d3.schemeCategory20b;
+    options = options || {};
 
-    var w = 400;
-    var h = 300;
+    var w = options.w || 400;
+    var h = options.h || 300;
 
     var max;
     var fontSize;
