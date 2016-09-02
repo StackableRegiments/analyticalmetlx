@@ -112,28 +112,37 @@ object Globals extends PropertyReader with Logger {
   object casState {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
+    object validState extends SessionVar[Option[LiftAuthStateData]](None)
     def is:LiftAuthStateData = {
-      S.containerSession.map(s => {
-        val username = s.attribute("user").asInstanceOf[String]
-        val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]]
-        val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        //println("userAttributes from authenticator: %s".format(userAttributes))
-        val prelimAuthStateData = LiftAuthStateData(true,username,userGroups,userAttributes)
-        val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
-        val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
-        val lasd = LiftAuthStateData(true,username,groups,personalDetails)
-        //println("got state: %s".format(lasd))
-        lasd
-      }).getOrElse({
-        LiftAuthStateDataForbidden
+      validState.is.getOrElse({
+        S.containerSession.map(s => {
+          val username = s.attribute("user").asInstanceOf[String]
+          val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
+          val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]]
+          val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+          //println("userAttributes from authenticator: %s".format(userAttributes))
+          val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
+          if (authenticated){
+            val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+            val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+            val lasd = LiftAuthStateData(true,username,groups,personalDetails)
+          //println("got state: %s".format(lasd))
+            validState(Some(lasd))
+            println("generated authState: %s".format(lasd))
+            lasd
+          } else {
+            LiftAuthStateDataForbidden
+          }
+        }).getOrElse({
+          LiftAuthStateDataForbidden
+        })
       })
     }
   }
   object currentUser {
     def is:String = casState.is.username
   }
-  def isSuperUser:Boolean = false
+  def isSuperUser:Boolean = casState.is.eligibleGroups.contains(("special","superuser"))
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
