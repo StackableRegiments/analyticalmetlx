@@ -26,6 +26,7 @@ var Conversation = (function(){
 
 	var reorderContainer = {};
 	var sharingContainer = {};
+	var sharingCategoryTemplate = {};
 	var sharingChoiceTemplate = {};
 	var	slidesContainer = {};
 	var	slideTemplate = {};
@@ -116,15 +117,27 @@ var Conversation = (function(){
 		$("#conversationTitleInput").val(conversation.title);
 		$(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
-		sharingContainer.html(_.map(_.uniq(_.concat(_.map(userGroups,"value"),[conversation.subject])),function(userGroup){
-			var rootElem = sharingChoiceTemplate.clone();
-			var choiceId = _.uniqueId();
-			var inputElem = rootElem.find(".conversationSharingChoiceInputElement")
-			inputElem.attr("id",choiceId).attr("type","radio").on("click",function(){
-				changeSubjectOfConversation(conversation.jid.toString(),userGroup);
-				reRender();
-			}).prop("checked",conversation.subject == userGroup);
-			rootElem.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(userGroup);
+		sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"type":"special","value":conversation.subject}]),"value"),function(item){return item.type;}),function(categoryGroups){
+			console.log("categoryGroups:",categoryGroups);
+			var rootElem = sharingCategoryTemplate.clone();
+			
+			var sharingChoiceTemplate = rootElem.find(".conversationSharingChoiceContainer").clone();
+			var container = rootElem.find(".conversationSharingChoiceContainer");
+			rootElem.find(".conversationSharingCategory").text(categoryGroups[0].type);
+			var choiceElem = container.find(".conversationSharingChoice").clone();
+			container.html(_.map(categoryGroups,function(categoryGroup){
+				console.log("categoryGroup:",categoryGroup);
+				var choiceId = _.uniqueId();
+				var choiceRoot = choiceElem.clone();
+				var inputElem = choiceRoot.find(".conversationSharingChoiceInputElement")
+
+				inputElem.attr("id",choiceId).attr("type","radio").on("click",function(){
+					changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.value);
+					reRender();
+				}).prop("checked",conversation.subject == categoryGroup.value);
+				choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.value);
+				return choiceRoot;
+			}));
 			return rootElem;
 		}));
 		fixSlides();
@@ -161,7 +174,7 @@ var Conversation = (function(){
 	$(function(){
 		reorderContainer = $("#reorderInProgress");
 		sharingContainer = $(".conversationSharing");
-		sharingChoiceTemplate = sharingContainer.find(".conversationSharingChoiceContainer").clone();
+		sharingCategoryTemplate = sharingContainer.find(".conversationSharingCategoryContainer").clone();
 		sharingContainer.empty();
 		slidesContainer = $("#sortableRoot");
 		slideTemplate = slidesContainer.find(".slideContainer").clone();

@@ -6,3 +6,15 @@ david.hagen,ou,PHY-222
 dave,special,superuser
 a,ou,aAndB
 b,ou,aAndB
+dave,role,Staff
+dave,role,Domain Users
+dave,course,Education
+dave,course,Drama
+dave,course,English
+dave,section,CA-01
+dave,section,CA-02
+dave,groupCategory,customStudentGroups
+dave,groupCategory,teacherDefinedGroups
+dave,group,groupA
+dave,group,groupB
+dave,group,groupC
