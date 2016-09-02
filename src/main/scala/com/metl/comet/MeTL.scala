@@ -592,7 +592,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   }
 
   override def render = {
-    OnLoad(conversation.map(c => {
+    OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
       Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
