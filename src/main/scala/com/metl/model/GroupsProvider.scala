@@ -62,6 +62,23 @@ object GroupsProvider {
       case "adfsGroups" => {
         new ADFSGroupsExtractor
       }
+      case "xmlSpecificOverrides" => {
+        (for {
+          path <- (in \\ "@location").headOption.map(_.text)
+          period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
+        } yield {
+          new StoreBackedGroupsProvider(
+            new PeriodicallyRefreshingGroupStoreProvider(
+              new FileWatchingCachingGroupStoreProvider(
+                new XmlSpecificOverridesGroupStoreProvider(path),
+              path),
+              period
+            )
+          )
+        }).getOrElse({
+          throw new Exception("missing parameters for specificOverrides groups provider")
+        })
+      }
       case "specificOverrides" => {
         (for {
           path <- (in \\ "@location").headOption.map(_.text)
@@ -91,7 +108,7 @@ object GroupsProvider {
         overrideUsername = (in \\ "@overrideUsername").headOption.map(_.text)
         refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
       } yield {
-        val diskCache = new GroupStoreDataFile(diskStore)
+        val diskCache = new XmlGroupStoreDataFile(diskStore)
         new StoreBackedGroupsProvider(
           new PeriodicallyRefreshingGroupStoreProvider(
             new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
@@ -225,6 +242,102 @@ class SpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvide
   }
 }
 
+trait GroupHelper {
+  def toXml(g:GroupStoreData):NodeSeq = {
+    <groupStoreData>{
+      g.groupsForMembers.values.toList.flatten.distinct.map(orgUnit => {
+        <orgUnit name={orgUnit.name} type={orgUnit.ouType}>{
+          orgUnit.members.map(ouMember => {
+            <member>{ouMember}</member>
+          })
+        }{
+          orgUnit.groupSets.map(groupSet => {
+            <groupSet name={groupSet.name} type={groupSet.groupSetType}>{
+              groupSet.members.map(gsMember => {
+                <member>{gsMember}</member>
+              })
+            }{
+              groupSet.groups.map(group => {
+                <group name={group.name} type={group.groupType}>{
+                  group.members.map(gMember => {
+                    <member>{gMember}</member>
+                  })
+                }</group>
+              })
+            }</groupSet>
+          })
+        }</orgUnit>
+    })}
+    {g.detailsForMembers.toList.map(m => {
+      <personalDetails username={m._1}>{
+        m._2.map(d => {
+          <detail key={d._1} value={d._2} />
+        })
+      }</personalDetails>
+    })
+    }</groupStoreData>
+  }
+  def fromXml(xml:NodeSeq):GroupStoreData = {
+    val userDetails = Map((xml \\ "personalDetails").flatMap(personalDetailsNode => {
+      for {
+        username <- (personalDetailsNode \ "@username").headOption.map(_.text)
+      } yield {
+        val details = (personalDetailsNode \\ "detail").flatMap(detailNode => {
+          for {
+            key <- (detailNode \ "@key").headOption.map(_.text)
+            value <- (detailNode \ "@value").headOption.map(_.text)
+          } yield {
+            (key,value)
+          }
+        })
+        (username,details.toList)
+      }
+    }).toList:_*)
+    val orgUnits = (xml \\ "orgUnit").flatMap(orgUnitNode => {
+      for {
+        ouName <- (orgUnitNode \ "@name").headOption.map(_.text) 
+        ouType <- (orgUnitNode \ "@type").headOption.map(_.text)
+      } yield {
+        val ouMembers = (orgUnitNode \ "member").map(_.text).toList
+        val groupSets = (orgUnitNode \\ "groupSet").flatMap(groupSetNode => {
+          for {
+            gsName <- (groupSetNode \ "@name").headOption.map(_.text)
+            gsType <- (groupSetNode \ "@type").headOption.map(_.text)
+          } yield {
+            val gsMembers = (groupSetNode \ "member").map(_.text).toList
+            val groups = (groupSetNode \\ "group").flatMap(groupNode => {
+              for {
+                gName <- (groupNode \ "@name").headOption.map(_.text)
+                gType <- (groupNode \ "@type").headOption.map(_.text)
+              } yield {
+                val gMembers = (groupNode \ "member").map(_.text).toList
+                Group(gType,gName,gMembers)
+              }
+            }).toList
+            GroupSet(gsType,gsName,(gsMembers ::: groups.flatMap(_.members)).distinct,groups)
+          }
+        }).toList
+        OrgUnit(ouType,ouName,(ouMembers ::: groupSets.flatMap(_.members)).distinct,groupSets)
+      }
+    })
+    val groupsForMembers = Map(orgUnits.flatMap(_.members).map(m => {
+      (m,orgUnits.filter(_.members.contains(m)).toList)
+    }):_*)
+    val membersForGroups = Map.empty[String,List[String]] 
+    val personalDetails = userDetails
+    GroupStoreData(groupsForMembers,membersForGroups,personalDetails)
+
+  }
+}
+class XmlSpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvider with GroupHelper {
+  import scala.xml._
+
+  override def getData = {
+    val xml = XML.load(path)
+    fromXml(xml)
+  }
+}
+
 class InMemoryCachingGroupStoreProvider(gp:GroupStoreProvider) extends CachingGroupStoreProvider(gp) {
   protected var cache:Option[GroupStoreData] = None
   override def storeCache(c:GroupStoreData):Unit = {
@@ -297,6 +410,24 @@ class GroupStoreDataFile(diskStorePath:String) {
     }
   }
 }
+
+class XmlGroupStoreDataFile(diskStorePath:String) extends GroupHelper {
+  import scala.xml._
+  def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
+  def write(c:GroupStoreData):Unit = {
+    XML.save(diskStorePath,toXml(c).head)
+  }
+  def read:Option[GroupStoreData] = {
+    try {
+      Some(fromXml(XML.load(diskStorePath)))
+    } catch {
+      case e:Exception => {
+        None
+      }
+    }
+  }
+}
+
 
 // original stuff
 
