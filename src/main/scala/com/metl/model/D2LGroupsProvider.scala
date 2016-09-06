@@ -285,6 +285,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => (m._3,m._2)).distinct))
     val groupData = compoundItems.flatMap(_._2)
     val groupsByMember:Map[String,List[OrgUnit]] = Map(personalDetails.keys.toList.map(u => (u,groupData.filter(_.members.contains(u)))):_*)
-    GroupStoreData(groupsByMember,Map.empty[String,List[String]],personalDetails)
+    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
+    GroupStoreData(groupsByMember,membersByGroup,personalDetails)
   }
 }

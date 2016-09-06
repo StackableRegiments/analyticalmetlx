@@ -323,7 +323,7 @@ trait GroupHelper {
     val groupsForMembers = Map(orgUnits.flatMap(_.members).map(m => {
       (m,orgUnits.filter(_.members.contains(m)).toList)
     }):_*)
-    val membersForGroups = Map.empty[String,List[String]] 
+    val membersForGroups = orgUnits.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
     val personalDetails = userDetails
     GroupStoreData(groupsForMembers,membersForGroups,personalDetails)
 
@@ -400,7 +400,7 @@ class GroupStoreDataFile(diskStorePath:String) {
       }).partition(_._3 != PersonalInformation.personalInformation)
         
       val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1,t._2.map(i => OrgUnit(i._3,i._4,List(i._1)))))
-      val membersForGroups = Map.empty[String,List[String]]//groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
+      val membersForGroups = groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
       val infoForMembers = information.groupBy(_._1).map(t => (t._1,t._2.map(i => (i._4,i._2))))
       Some(GroupStoreData(groupsForMembers,membersForGroups,infoForMembers))
     } catch {
