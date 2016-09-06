@@ -251,7 +251,7 @@ var Conversations = (function(){
 				var title = details.title.toLowerCase().trim();
 				var author = details.author;
         return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
-					return (g.key == "special" && g.value == "superuser") || g.value.toLowerCase().trim() == subject;
+					return (g.ouType == "special" && g.name == "superuser") || g.name.toLowerCase().trim() == subject;
         })));
     };
 

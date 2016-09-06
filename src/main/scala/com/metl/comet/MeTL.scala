@@ -2,6 +2,7 @@ package com.metl.comet
 
 import com.metl.data._
 import com.metl.utils._
+import com.metl.liftAuthenticator._
 import com.metl.liftExtensions._
 
 import net.liftweb._
@@ -105,7 +106,7 @@ object MeTLEditConversationActorManager extends LiftActor with ListenerManager w
 }
 
 trait ConversationFilter {
-  protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = {
+  protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = {
       val subject = c.subject.trim.toLowerCase
       val author = c.author.trim.toLowerCase
       com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted)
@@ -291,7 +292,8 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
   private lazy val RECEIVE_QUERY = "receiveQuery"
 
-  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  protected implicit val formats = net.liftweb.json.DefaultFormats
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
@@ -337,7 +339,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 
   protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q).getOrElse(false)
 
-  override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
+  override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
   override def lowPriority = {
     case id:ImportDescription => {
@@ -386,7 +388,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
 
-  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
@@ -493,6 +495,8 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
 
 class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
   import com.metl.view._
+  import net.liftweb.json.Extraction
+  import net.liftweb.json.DefaultFormats
   private val serializer = new JsonSerializer("frontend")
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
@@ -500,7 +504,10 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
-  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
+  implicit val formats = net.liftweb.json.DefaultFormats
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
+  //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunctionDefinition("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
@@ -546,7 +553,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
       val jid = getArgAsString(args(0))
       val newSubject = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation((shouldModifyConversation(c) && Globals.getUserGroups.exists(_._2 == newSubject)) match {
+      serializer.fromConversation((shouldModifyConversation(c) && Globals.getUserGroups.exists(_.name == newSubject)) match {
         case true => serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,newSubject)
         case _ => c
       })
@@ -650,7 +657,7 @@ trait JArgUtils {
 class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
   import net.liftweb.json.Extraction
   import net.liftweb.json.DefaultFormats
-  implicit val formats = DefaultFormats
+  implicit val formats = net.liftweb.json.DefaultFormats
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   private val userUniqueId = nextFuncName
 
@@ -1039,9 +1046,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
       this ! StylableRadioButtonInteractableMessage("Change sharing","How would you like to share this conversation?",
-        Map(Globals.getUserGroups.map(eg => (eg._2.toLowerCase, ()=>{
+        Map(Globals.getUserGroups.map(eg => (eg.name.toLowerCase, ()=>{
           if (shouldModifyConversation(c)){
-            serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,eg._2)
+            serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,eg.name)
             true
           } else false
         })).toList:_*),
@@ -1506,7 +1513,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     leaveAllRooms(true)
     super.localShutdown()
   })
-  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg._1)),JField("value",JString(eg._2))))).toList)
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   private def refreshClientSideStateJs = {
     currentConversation.map(cc => {
       if (!shouldDisplayConversation(cc)){

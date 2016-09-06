@@ -112,7 +112,7 @@ object Globals extends PropertyReader with Logger {
   }
 
   object currentStack extends SessionVar[Topic](Topic.defaultValue)
-  def getUserGroups:List[(String,String)] = {
+  def getUserGroups:List[OrgUnit] = {
     casState.is.eligibleGroups.toList
   }
   var groupsProviders:List[GroupsProvider] = Nil
@@ -126,7 +126,7 @@ object Globals extends PropertyReader with Logger {
         S.containerSession.map(s => {
           val username = s.attribute("user").asInstanceOf[String]
           val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-          val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]]
+          val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(username),Nil))
           val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
           //println("userAttributes from authenticator: %s".format(userAttributes))
           val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)

@@ -520,7 +520,7 @@ var Conversations = (function(){
             conversation = currentConversation;
         }
         if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(group){
-            return group.value.toLowerCase() == conversation.subject.toLowerCase();
+            return group.name.toLowerCase() == conversation.subject.toLowerCase();
         }))) {
             return true;
         } else {
