@@ -1,8 +1,12 @@
 var Participants = (function(){
+	/*
     var participantItemTemplate = {};
     var participantHeaderTemplate = {};
     var participantsContainer = {};
-    participants = {};
+		*/
+		var participantsDatagrid = {};
+		var participantFollowControl = {};
+    var participants = {};
     var newParticipant = {
         inks:0,
         highlighters:0,
@@ -12,6 +16,8 @@ var Participants = (function(){
         submissions:0,
         following:true
     };
+		var reRenderParticipants = function(){
+		};
     var onHistoryReceived = function(history){
         var newParticipants = {};
         var ensure = function(author){
@@ -42,7 +48,7 @@ var Participants = (function(){
         _.each(_.groupBy(history.multiWordTexts,"author"),function(authorStanzas,author){
             var itemToEdit = ensure(author);
             _.each(authorStanzas,function(stanza){
-		var total = countTexts(stanza);
+								var total = countTexts(stanza);
                 newParticipants[author].texts[stanza.identity] = total;
             });
         });
@@ -95,6 +101,12 @@ var Participants = (function(){
         updateParticipantsListing();
     };
     var updateParticipantsListing = function(){
+				participantsDatagrid.jsGrid("loadData");
+				var sortObj = participantsDatagrid.jsGrid("getSorting");
+				if ("field" in sortObj){
+						participantsDatagrid.jsGrid("sort",sortObj);
+				}
+				/*
         try {
             var replacementNodes = _.map(participants,function(participant){
                 var p = participantItemTemplate.clone();
@@ -120,6 +132,7 @@ var Participants = (function(){
         } catch(e) {
             console.log("participantRender failed:",e,participants);
         }
+				*/
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
@@ -139,10 +152,97 @@ var Participants = (function(){
         updateButtons();
     };
     $(function(){
-        participantsContainer = $("#participantsListingContainer").find("tbody");
-        participantItemTemplate = participantsContainer.find(".participation").clone();
-        participantsContainer.empty();
         updateButtons();
+				participantsDatagrid = $("#participantsDatagrid");
+				participantFollowControl = participantsDatagrid.find(".followControls").clone();
+				participantsDatagrid.empty();
+        var DateField = function(config){
+            jsGrid.Field.call(this,config);
+        };
+        DateField.prototype = new jsGrid.Field({
+            sorter: function(a,b){
+                return new Date(a) - new Date(b);
+            },
+            itemTemplate: function(i){
+                return new Date(i).toLocaleString();
+            },
+            insertTemplate: function(i){return ""},
+            editTemplate: function(i){return ""},
+            insertValue: function(){return ""},
+            editValue: function(){return ""}
+        });
+        jsGrid.fields.dateField = DateField;
+
+				var gridFields = [
+					{
+						name:"name",
+						type:"text",
+						title:"Follow",
+						readOnly:true,
+						sorting:true,
+						itemTemplate:function(username,participant){
+							var rootElem = participantFollowControl.clone();
+							var elemId = sprintf("participant_%s",participant.name);
+							rootElem.find(".followValue").attr("id",elemId).prop("checked",participant.following).on("change",function(){
+								participants[participant.name].following = $(this).is(":checked");
+								blit();
+								updateParticipantsListing();
+							});
+							rootElem.find(".followLabel").attr("for",elemId).text(participant.name);
+							return rootElem;
+						}	
+					},
+					{name:"attendances",type:"text",title:"Attendances",readOnly:true},
+					{name:"images",type:"text",title:"Images",readOnly:true},
+					{name:"inks",type:"text",title:"Inks",readOnly:true},
+					{name:"highlighters",type:"text",title:"Highlighters",readOnly:true},
+					{name:"texts",type:"text",title:"Texts",readOnly:true},
+					{name:"quizResponses",type:"text",title:"Poll responses",readOnly:true},
+					{name:"submissions",type:"text",title:"Submissions",readOnly:true},
+				];
+				participantsDatagrid.jsGrid({
+					width:"100%",
+					height:"auto",
+					inserting:false,
+					editing:false,
+					sorting:true,
+					paging:true,
+					noDataContent: "No participants",
+				 	controller: {
+						loadData: function(filter){
+							var sorted = _.map(_.keys(participants),function(k){
+								var v = participants[k];
+								return {
+									name:k,
+									following:v.following,
+									attendances:_.size(v.attendances),
+									images:v.images,
+									inks:v.inks,
+									texts:_.reduce(v.texts,function(acc,item){return acc + item},0),
+									quizResponses:v.quizResponses,
+									submissions:v.submissions,
+									highlighters:v.highlighters
+								};
+							});
+							if ("sortField" in filter){
+								sorted = _.sortBy(sorted,function(sub){
+									return sub[filter.sortField];
+								});
+								if ("sortOrder" in filter && filter.sortOrder == "desc"){
+									sorted = _.reverse(sorted);
+								}
+							}
+							return sorted;
+						}
+					},
+					pageLoading:false,
+					fields: gridFields	
+				});
+				participantsDatagrid.jsGrid("sort",{
+					field:"name",
+					order:"desc"
+				});
+				updateParticipantsListing();
     });
     Progress.stanzaReceived["participants"] = onStanzaReceived;
     Progress.historyReceived["participants"] = onHistoryReceived;

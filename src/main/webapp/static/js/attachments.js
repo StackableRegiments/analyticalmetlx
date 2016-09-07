@@ -74,7 +74,7 @@ var Attachments = (function(){
 						loadData: function(filter){
 							var sorted = attachments;
 							if ("sortField" in filter){
-								sorted = _.sortBy(attachments,function(sub){
+								sorted = _.sortBy(sorted,function(sub){
 									return sub[filter.sortField];
 								});
 								if ("sortOrder" in filter && filter.sortOrder == "desc"){
