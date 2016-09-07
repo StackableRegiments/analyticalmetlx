@@ -5,19 +5,120 @@ var Blacklist = (function(){
     var currentBlacklistContainer = {};
 		var blacklistAuthorsContainer = {};
 		var blacklistAuthorTemplate = {};
+
+		var blacklistDatagrid = {};
+		var blacklistPopupTemplate = {};
     var blacklists = [];
 		var blacklistAuthors = [];
     var currentBlacklist = {};
     $(function(){
+			blacklistDatagrid = $("#blacklistDatagrid");
+			blacklistPopupTemplate = blacklistDatagrid.find(".blacklistRecord").clone();
+			blacklistDatagrid.empty();
+			/*
         blacklistSummaryListing = $("#blacklistListing");
         blacklistSummaryTemplate = blacklistSummaryListing.find(".blacklistSummary").clone();
+        blacklistSummaryListing.empty();
         currentBlacklistContainer = $("#currentBlacklist");
         currentBlacklistTemplate = currentBlacklistContainer.find(".blacklistContainer").clone();
+        blacklistAuthorsContainer.empty();
+			*/
         blacklistAuthorsContainer = $("#currentBlacklistAuthorList");
         blacklistAuthorTemplate = blacklistAuthorsContainer.find(".blacklistAuthorContainer").clone();
-        blacklistSummaryListing.empty();
-        blacklistAuthorsContainer.empty();
+				blacklistAuthorsContainer.empty();
 				refreshToolState();
+
+				        var DateField = function(config){
+            jsGrid.Field.call(this,config);
+        };
+        DateField.prototype = new jsGrid.Field({
+            sorter: function(a,b){
+                return new Date(a) - new Date(b);
+            },
+            itemTemplate: function(i){
+                return new Date(i).toLocaleString();
+            },
+            insertTemplate: function(i){return ""},
+            editTemplate: function(i){return ""},
+            insertValue: function(){return ""},
+            editValue: function(){return ""}
+        });
+        jsGrid.fields.dateField = DateField;
+
+				var gridFields = [
+					{
+						name:"url",
+						type:"text",
+						title:"Preview",
+						readOnly:true,
+						sorting:false,
+						itemTemplate:function(thumbnailUrl,submission){
+							var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
+							var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
+								var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
+								var title = sprintf("Ban record at %s on slide %s",new Date(submission.timestamp),submission.slide);
+								var rootElem = blacklistPopupTemplate.clone();
+								var authorContainer = rootElem.find(".blacklistLegend");
+								var authorTemplate = authorContainer.find(".blacklistAuthor").clone();
+								authorContainer.empty();
+								if ("blacklist" in submission){
+									_.each(submission.blacklist,function(ba){
+										if ("username" in ba && "highlight" in ba){
+											var authorElem = authorTemplate.clone();
+											authorElem.find(".blacklistAuthorName").text(ba.username);
+											var color = ba.highlight[0];
+											var opacity = ba.highlight[1];
+											authorElem.find(".blacklistAuthorColor").css({"background-color":color,"opacity":opacity});
+											authorContainer.append(authorElem);
+										}
+									});
+								}
+								rootElem.find(".blacklistImage").attr("src",url);
+								$.jAlert({
+									title:title,
+									closeOnClick:true,
+									width:"90%",
+									content:rootElem[0].outerHTML
+								});
+							});							
+							return img;
+						}
+					},
+					{name:"slide",type:"number",title:"Slide",readOnly:true},
+					{name:"timestamp",type:"dateField",title:"When",readOnly:true},
+					{name:"author",type:"text",title:"Who",readOnly:true}
+				];
+				blacklistDatagrid.jsGrid({
+					width:"100%",
+					height:"auto",
+					inserting:false,
+					editing:false,
+					sorting:true,
+					paging:true,
+					noDataContent: "No ban records",
+				 	controller: {
+						loadData: function(filter){
+							if ("sortField" in filter){
+								var sorted = _.sortBy(blacklists,function(sub){
+									return sub[filter.sortField];
+								});
+								if ("sortOrder" in filter && filter.sortOrder == "desc"){
+									sorted = _.reverse(sorted);
+								}
+								return sorted;
+							} else {
+								return blacklists;
+							}
+						}
+					},
+					pageLoading:false,
+					fields: gridFields	
+				});
+				blacklistDatagrid.jsGrid("sort",{
+					field:"timestamp",
+					order:"desc"
+				});
+				renderBlacklistsInPlace();
     });
     var filteredBlacklists = function(){
 			return _.filter(blacklists,filterBlacklist);
@@ -75,11 +176,18 @@ var Blacklist = (function(){
         currentBlacklist = {};
     };
     var renderBlacklistsInPlace = function(){
+				blacklistDatagrid.jsGrid("loadData");
+				var sortObj = blacklistDatagrid.jsGrid("getSorting");
+				if ("field" in sortObj){
+						blacklistDatagrid.jsGrid("sort",sortObj);
+				}			
+			/*
         blacklistSummaryListing.empty();
         filteredBlacklists().map(function(blacklist){
             renderBlacklistSummary(blacklist);
         })
         renderCurrentBlacklistInPlace();
+				*/
     }
     var renderCurrentBlacklistInPlace = function(){
         currentBlacklistContainer.html(renderBlacklist(currentBlacklist));
@@ -317,6 +425,7 @@ var Blacklist = (function(){
 			processBlacklist:onBlacklistReceived,
 			getBlacklistedAuthors:function(){return Conversations.shouldModifyConversation() ? blacklistAuthors : [];},
 			//banSelection:serverSideBanSelectionFunc
-			banSelection:clientSideBanSelectionFunc
+			banSelection:clientSideBanSelectionFunc,
+			reRender:renderBlacklistsInPlace
     };
 })();

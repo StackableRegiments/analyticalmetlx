@@ -799,6 +799,7 @@ $(function(){
     $('#menuBlacklist').click(function(){
         showBackstage("blacklist");
         updateActiveMenu(this);
+				Blacklist.reRender();
     });
     $('#menuSettings').click(function(){
         showBackstage("settings");

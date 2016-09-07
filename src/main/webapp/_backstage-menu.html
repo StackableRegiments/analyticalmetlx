@@ -19,9 +19,10 @@
           <label for="toolsToggleButton"><span class="icon-txt">Show tools</span></label>
         </div>
         <div id="blacklistPopup" class="backstage">
-          <h2 class="nmt">Manage banned content</h2>
+					<!--<h2 class="nmt">Manage banned content</h2>-->
           <div class="flex-container-row img-resp">
             <div class="mr quarter">
+							<h2>Currently banned users</h2>
               <div id="unbanAll" class="with-border fa-border">
                 <span class="fa fa-users" style="display:inline-block">
                   <div class="icon-txt">Unban</div>
@@ -39,8 +40,22 @@
                 </div>
               </div>
             </div>
+						<div>
+							<h2>Banned content</h2>
+							<div id="blacklistDatagrid">
+								<div class="blacklistRecord">
+									<div class="blacklistLegend">
+										<div class="blacklistAuthor">
+											<span class="blacklistAuthorColor" width="10px" height="10px">&nbsp;</span>
+											<span class="blacklistAuthorName"></span>
+										</div>
+									</div>
+									<img class="blacklistImage"></img>
+								</div>
+							</div>
+						</div>
+						<!--
             <div id="blacklistListing" class="mr quarter">
-              <!-- many ".blacklistSummary"s are cloned from JS -->
               <div class="blacklistSummary">
                 <button type="button" class="viewBlacklistButton block with-border clickable nmt">
                   <div class="blacklistDescription"></div>
@@ -49,7 +64,6 @@
               </div>
             </div>
             <div id="currentBlacklist" class="half">
-              <!-- one ".currentBlacklistItem" will be visible at any time, but it will be cloned and replaced by JS -->
               <div class="blacklistContainer">
                 <div class="blacklistDescription"></div>
                 <image class="blacklistImage"></image>
@@ -61,6 +75,7 @@
                 </div>
               </div>
             </div>
+						-->
           </div>
         </div>
         <div id="integrationsPopup" class="backstage">
