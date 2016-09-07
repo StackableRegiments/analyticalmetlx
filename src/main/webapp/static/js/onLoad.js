@@ -790,6 +790,7 @@ $(function(){
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
+				Submissions.reRender();
     });
     $('#menuPolls').click(function(){
         showBackstage("quizzes");
