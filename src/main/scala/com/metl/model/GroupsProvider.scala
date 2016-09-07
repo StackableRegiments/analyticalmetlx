@@ -242,7 +242,45 @@ class SpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvide
   }
 }
 
-trait GroupHelper {
+trait GroupStoreDataSerializers {
+  import com.github.tototoshi.csv._
+  import java.io._
+  protected val memberName = "MEMBER"
+  protected val attributeValue = "VALUE"
+  protected val groupTypeName = "TYPE"
+  protected val groupName = "GROUP"
+
+  def toCsv(c:GroupStoreData):String = {
+    val baos = new ByteArrayOutputStream()
+    val writer = CSVWriter.open(baos)
+    writer.writeAll(
+      List(memberName,attributeValue,groupTypeName,groupName) :: 
+      c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => g.members.map(m => (m,m,g.ouType,g.name)))) :::
+      c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
+    )
+    writer.close
+    baos.toString("UTF-8")
+  }
+  def fromCsv(s:String):GroupStoreData = {
+    val reader = CSVReader.open(new InputStreamReader(new ByteArrayInputStream(s.getBytes("UTF-8"))))
+    val results = reader.allWithHeaders
+    reader.close
+    val (groupData,information) = results.flatMap(m => {
+      for {
+        member <- m.get(memberName)
+        attr <- m.get(attributeValue)
+        groupType <- m.get(groupTypeName)
+        group <- m.get(groupName)
+      } yield {
+        (member,attr,groupType,group)
+      }
+    }).partition(_._3 != PersonalInformation.personalInformation)
+      
+    val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1,t._2.map(i => OrgUnit(i._3,i._4,List(i._1)))))
+    val membersForGroups = groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
+    val infoForMembers = information.groupBy(_._1).map(t => (t._1,t._2.map(i => (i._4,i._2))))
+    GroupStoreData(groupsForMembers,membersForGroups,infoForMembers)
+  }
   def toXml(g:GroupStoreData):NodeSeq = {
     <groupStoreData>{
       g.groupsForMembers.values.toList.flatten.distinct.map(orgUnit => {
@@ -317,7 +355,8 @@ trait GroupHelper {
             GroupSet(gsType,gsName,(gsMembers ::: groups.flatMap(_.members)).distinct,groups)
           }
         }).toList
-        OrgUnit(ouType,ouName,(ouMembers ::: groupSets.flatMap(_.members)).distinct,groupSets)
+        val ou = OrgUnit(ouType,ouName,(ouMembers ::: groupSets.flatMap(_.members)).distinct,groupSets)
+        ou
       }
     })
     val groupsForMembers = Map(orgUnits.flatMap(_.members).map(m => {
@@ -326,10 +365,9 @@ trait GroupHelper {
     val membersForGroups = orgUnits.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
     val personalDetails = userDetails
     GroupStoreData(groupsForMembers,membersForGroups,personalDetails)
-
   }
 }
-class XmlSpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvider with GroupHelper {
+class XmlSpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvider with GroupStoreDataSerializers {
   import scala.xml._
 
   override def getData = {
@@ -364,45 +402,19 @@ class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeri
   override def getData = lastCache
 }
 
-class GroupStoreDataFile(diskStorePath:String) {
-  import com.github.tototoshi.csv._
+class GroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers {
   import java.io._
-
-  protected val memberName = "MEMBER"
-  protected val attributeValue = "VALUE"
-  protected val groupTypeName = "TYPE"
-  protected val groupName = "GROUP"
 
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
-    val writer = CSVWriter.open(new File(diskStorePath))
-    writer.writeAll(
-      List(memberName,attributeValue,groupTypeName,groupName) :: 
-      c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => g.members.map(m => (m,m,g.ouType,g.name)))) :::
-      c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
-    )
-    writer.close
+    new PrintWriter(diskStorePath){
+      write(toCsv(c))
+      close
+    }
   }
   def read:Option[GroupStoreData] = {
     try {
-      val reader = CSVReader.open(new File(diskStorePath))
-      val results = reader.allWithHeaders
-      reader.close
-      val (groupData,information) = results.flatMap(m => {
-        for {
-          member <- m.get(memberName)
-          attr <- m.get(attributeValue)
-          groupType <- m.get(groupTypeName)
-          group <- m.get(groupName)
-        } yield {
-          (member,attr,groupType,group)
-        }
-      }).partition(_._3 != PersonalInformation.personalInformation)
-        
-      val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1,t._2.map(i => OrgUnit(i._3,i._4,List(i._1)))))
-      val membersForGroups = groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
-      val infoForMembers = information.groupBy(_._1).map(t => (t._1,t._2.map(i => (i._4,i._2))))
-      Some(GroupStoreData(groupsForMembers,membersForGroups,infoForMembers))
+      Some(fromCsv(Source.fromFile(diskStorePath).mkString))
     } catch {
       case e:Exception => {
         None
@@ -411,7 +423,7 @@ class GroupStoreDataFile(diskStorePath:String) {
   }
 }
 
-class XmlGroupStoreDataFile(diskStorePath:String) extends GroupHelper {
+class XmlGroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers {
   import scala.xml._
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
@@ -419,7 +431,8 @@ class XmlGroupStoreDataFile(diskStorePath:String) extends GroupHelper {
   }
   def read:Option[GroupStoreData] = {
     try {
-      Some(fromXml(XML.load(diskStorePath)))
+      val xml = XML.load(diskStorePath)
+      Some(fromXml(xml))
     } catch {
       case e:Exception => {
         None

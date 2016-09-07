@@ -277,8 +277,8 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
         })
         List(GroupSet(GroupKeys.groupCategory,groupCategory.Name,groups.flatMap(_.members).distinct,groups))
       },4,"groupCategories")
-      val children = sectionGroupSets ::: groupCategories
-      val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,children.flatMap(_.members).distinct,children))
+      val children =  sectionGroupSets ::: groupCategories
+      val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,(members.values.toList.flatten.flatMap(_.OrgDefinedId).toList ::: children.flatMap(_.members)).distinct,children))
       List((memberDetails,orgUnits))
     },16,"ou")
     val personalInformation = compoundItems.map(_._1)
