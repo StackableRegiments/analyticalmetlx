@@ -1,6 +1,7 @@
 var Submissions = (function(){
     var submissions = [];
 		var submissionsDatagrid = {};
+		var insertButtonTemplate = {};
 		var reRenderDatagrid = function(){
 			submissionsDatagrid.jsGrid("loadData");
 			var sortObj = submissionsDatagrid.jsGrid("getSorting");
@@ -9,6 +10,9 @@ var Submissions = (function(){
 			}
 		};
     $(function(){
+				submissionsDatagrid = $("#submissionsDatagrid");
+				insertButtonTemplate = submissionsDatagrid.find(".insertOnNextSlideButtonContainer");
+				submissionsDatagrid.empty();
         var DateField = function(config){
             jsGrid.Field.call(this,config);
         };
@@ -25,8 +29,6 @@ var Submissions = (function(){
             editValue: function(){return ""}
         });
         jsGrid.fields.dateField = DateField;
-
-				submissionsDatagrid = $("#submissionsDatagrid");
 
 				var gridFields = [
 					{
@@ -61,9 +63,11 @@ var Submissions = (function(){
 						sorting:false,
 						itemTemplate:function(identity,submission){
 							if (Conversations.shouldModifyConversation()){
-								return $("<input/>",{"type":"button","value":"insert"}).on("click",function(){
+								var rootElem = insertButtonTemplate.clone();
+								rootElem.find(".insertOnNextSlideButton").on("click",function(){
 									addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
 								});
+								return rootElem;
 							} else {
 								return $("<span/>");
 							}
