@@ -192,13 +192,13 @@ var Participants = (function(){
 							return rootElem;
 						}	
 					},
-					{name:"attendances",type:"text",title:"Attendances",readOnly:true},
-					{name:"images",type:"text",title:"Images",readOnly:true},
-					{name:"inks",type:"text",title:"Inks",readOnly:true},
-					{name:"highlighters",type:"text",title:"Highlighters",readOnly:true},
-					{name:"texts",type:"text",title:"Texts",readOnly:true},
-					{name:"quizResponses",type:"text",title:"Poll responses",readOnly:true},
-					{name:"submissions",type:"text",title:"Submissions",readOnly:true},
+					{name:"attendances",type:"number",title:"Attendances",readOnly:true},
+					{name:"images",type:"number",title:"Images",readOnly:true},
+					{name:"inks",type:"number",title:"Inks",readOnly:true},
+					{name:"highlighters",type:"number",title:"Highlighters",readOnly:true},
+					{name:"texts",type:"number",title:"Texts",readOnly:true},
+					{name:"quizResponses",type:"number",title:"Poll responses",readOnly:true},
+					{name:"submissions",type:"number",title:"Submissions",readOnly:true},
 				];
 				participantsDatagrid.jsGrid({
 					width:"100%",

@@ -52,7 +52,7 @@ var Submissions = (function(){
 							return img;
 						}
 					},
-					{name:"slide",type:"text",title:"Slide",readOnly:true},
+					{name:"slide",type:"number",title:"Slide",readOnly:true},
 					{name:"timestamp",type:"dateField",title:"When",readOnly:true},
 					{name:"author",type:"text",title:"Who",readOnly:true},
 					{
