@@ -39,7 +39,7 @@ var Submissions = (function(){
 						sorting:false,
 						itemTemplate:function(thumbnailUrl,submission){
 							var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-							var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px"}).on("click",function(){
+							var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
 								var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
 								var title = sprintf("Submission from %s at %s on slide %s",submission.author,new Date(submission.timestamp),submission.slide);
 								$.jAlert({

@@ -137,14 +137,11 @@
             <label for="attachmentFileChoice">Select file to attach</label>
             <input type="file" id="attachmentFileChoice"></input>
           </div>
-          <div class="attachment-listing align-left half mrh clear">
-            <ul id="attachmentListing" class="clear box-model-block no-list-style">
-              <li class="attachmentItem flex-container-row btn-list pbh">
-                <a class="attachmentDownloadLink" href="#"><span class="attachmentDownloadLinkText"></span></a>
-								<button class="deleteButton toolbar fa fa-times nm btn-icon" type="button"><span class="hidden">Delete</span></button>
-              </li>
-            </ul>
-          </div>
+					<div id="attachmentsDatagrid">
+						<span class="deleteButtonContainer">
+							<button class="deleteButton toolbar fa fa-trash nm btn-icon" type="button"><span class="hidden">Delete</span></button>
+						</span>
+					</div>
         </section>
         <section id="participantsPopup" class="backstage box-model-block">
           <h2 class="nmt">Participants</h2>
