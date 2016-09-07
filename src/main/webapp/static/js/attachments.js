@@ -101,7 +101,7 @@ var Attachments = (function(){
         attachmentUploadFormContainer.hide();
         if (Conversations.shouldModifyConversation()){
             $("#attachmentCreationButton").unbind("click").on("click",function(){
-                attachmentUploadFormContainer.show();
+                attachmentFileChoice.click();
             }).show();
             attachmentFileChoice.unbind("change").on("change",function(eventArgs){
                 WorkQueue.pause();
