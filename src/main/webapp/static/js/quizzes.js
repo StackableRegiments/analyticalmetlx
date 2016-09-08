@@ -25,6 +25,10 @@ var Quizzes = (function(){
 				}
 		};
 
+		var urlForQuizImage = function(quizId){
+			 return sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quizId);
+		};
+
     $(function(){
 			quizDatagrid = $("#quizDatagrid");
 			editQuizTemplate = quizDatagrid.find(".editQuizPopup").clone();
@@ -57,8 +61,7 @@ var Quizzes = (function(){
 					name:"url",type:"text",title:"Image",readOnly:true,
 					itemTemplate:function(url,quizSummary){
 						if (url){
-							var quizUrl = sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quizSummary.id);
-							return $("<img/>",{src:quizUrl,style:"width:120px;height:90px"});
+							return $("<img/>",{src:urlForQuizImage(quizSummary.id),style:"width:120px;height:90px"});
 						} else {
 							return $("<span/>");
 						}
@@ -85,6 +88,7 @@ var Quizzes = (function(){
 						var answerButton = rootElem.find(".answerPollButton");
 						
 						answerButton.on("click",function(){
+							var answerTitle = sprintf("Answer poll: %s",quiz.question);
 							var answerId = sprintf("quiz_answer_%s",quiz.id);
 							var answerPopupContainer = $("<span/>",{id:answerId});
 							var jAlert = $.jAlert({
@@ -96,7 +100,6 @@ var Quizzes = (function(){
 							var answerContainerId = sprintf("answerContainer_%s",quiz.id);
 							var answerPopup = answerQuizTemplate.clone();
 							$("#"+answerId).append(answerPopup);
-							var answerTitle = sprintf("Answer poll: %s",quiz.question);
 							var answerContainer = answerPopup.find(".quizOptionContainer");
 							var answerTemplate = answerContainer.find(".quizOption").clone();
 							answerContainer.html(_.map(quiz.options,function(opt){
@@ -110,6 +113,7 @@ var Quizzes = (function(){
 								answer.find(".quizOptionText").text(opt.text);
 								return answer;	
 							}));
+							answerPopup.find(".quizImagePreview").attr("src",urlForQuizImage(quiz.id));
 
 						});
 						if (Conversations.shouldModifyConversation()){
@@ -117,6 +121,7 @@ var Quizzes = (function(){
 								var newQuiz = _.cloneDeep(quiz);
 								var containerId = sprintf("edit_quiz_%s",quiz.id);
 								var popupContainer = $("<span/>",{id:containerId});
+								var editTitle = sprintf("Edit poll: %s",quiz.question);
 								var jAlert = $.jAlert({
 									title:editTitle,
 									width:"90%",
@@ -167,6 +172,65 @@ var Quizzes = (function(){
 									newText.scrollIntoView();
 									newText.focus();
 								});
+								var imagePreview = editPopup.find(".quizImagePreview");
+								imagePreview.attr("src",urlForQuizImage(newQuiz.id));
+								if ("url" in newQuiz){
+									imagePreview.show();
+								} else {
+									imagePreview.hide();
+								}
+								editPopup.find(".removeSlideImageFromQuiz").on("click",function(){
+									imagePreview.attr("src",undefined).hide();
+									newQuiz.url = undefined;
+								});
+								editPopup.find(".addSlideImageToQuiz").on("click",function(){
+									// this is where the slide should be snapshotted and added.
+									WorkQueue.pause();
+									var cc = Conversations.getCurrentConversation();
+
+									var submissionQuality = 0.4;
+									var tempCanvas = $("<canvas />");
+									var w = board[0].width;
+									var h = board[0].height;
+									tempCanvas.width = w;
+									tempCanvas.height = h;
+									tempCanvas.attr("width",w);
+									tempCanvas.attr("height",h);
+									tempCanvas.css({
+										width:w,
+										height:h
+									});
+									var tempCtx = tempCanvas[0].getContext("2d");
+									tempCtx.fillStyle = "white";
+									tempCtx.fillRect(0,0,w,h);
+									tempCtx.drawImage(board[0],0,0,w,h);
+									var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
+									var t = new Date().getTime();
+									var username = UserSettings.getUsername();
+									var title = sprintf("quizimage%s%s.jpg",username,t.toString());
+									var identity = sprintf("%s:%s:%s",cc.jid.toString(),title,t);
+									var url = sprintf("/uploadDataUri?jid=%s&filename=%s",cc.jid.toString(),encodeURI(identity));
+									$.ajax({
+										url: url,
+										type: 'POST',
+										success: function(e){
+											var newIdentity = $(e).find("resourceUrl").text();
+											newQuiz.url = newIdentity;
+											imagePreview.attr("src",imageData).show();
+											WorkQueue.gracefullyResume();
+											console.log("created new Image:",newIdentity);
+										},
+										error: function(e){
+											console.log(e);
+											WorkQueue.gracefullyResume();
+										},
+										data: imageData,
+										cache: false,
+										contentType: false,
+										processData: false
+									});
+									// end snapshot
+								});
 								editPopup.find(".updateQuiz").on("click",function(){
 									sendStanza(newQuiz);
 									jAlert.closeAlert();
@@ -176,7 +240,6 @@ var Quizzes = (function(){
 									sendStanza(newQuiz);
 									jAlert.closeAlert();
 								});
-								var editTitle = sprintf("Edit poll: %s",quiz.question);
 
 								$("#"+containerId).append(editPopup);
 							});

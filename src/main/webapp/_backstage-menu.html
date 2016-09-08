@@ -165,7 +165,15 @@
 							<div class="voting-block block img-resp">
 								<h3>Question:</h3>
 								<input class="quizQuestion" type="text"></input>
-								<img class="quizImagePreview"></img>
+								<img class="quizImagePreview" style="width:320px;height:240px"></img>
+								<input class="addSlideImageToQuiz button-transparent-border" value="Add/Update slide image" type="button"></input>
+								<input class="removeSlideImageFromQuiz button-transparent-border" value="Remove slide image" type="button"></input>
+								<h3>Answers:</h3>
+								<span class="addOptionButtonContainer">
+									<button class="addOptionButton button-transparent-border flex-container-row space-between">
+										<span>Add option</span>
+									</button>
+								</span>
 								<div class="quizOptionContainer flex-container-column">
 									<!-- many ".quizOption"s are cloned from JS -->
 									<div class="quizOption">
@@ -174,11 +182,6 @@
 										<button class="quizOptionDelete">Delete</button>
 									</div>
 								</div>
-								<div class="addOptionButtonContainer">
-									<button class="addOptionButton button-transparent-border flex-container-row space-between">
-										<span>Add option</span>
-									</button>
-								</div>
 						</div>
 							<div class="currentQuizTeacherControls">
 								<input class="updateQuiz button-transparent-border" value="Update this poll" type="button"></input>
@@ -186,11 +189,10 @@
 							</div>
 						</div>
 						<div class="answerQuizPopup">
-							<!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
 							<div class="currentQuizItem">
 								<div class="voting-block block img-resp">
 									<h3 class="quizQuestion"></h3>
-									<img class="quizImagePreview"></img>
+									<img class="quizImagePreview" style="width:320px;height:240px"></img>
 									<div class="quizOptionCountContainer">
 										There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
 									</div>
