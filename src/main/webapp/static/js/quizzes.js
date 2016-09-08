@@ -1,6 +1,8 @@
 var Quizzes = (function(){
     var quizzes = {};
     var quizAnswers = {};
+		var quizResultsGraphs = {};
+
     var currentQuiz = {};
 		var unansweredQuizSummaryContainer = {};
 		var unansweredQuizSummaryTemplate = {};
@@ -8,42 +10,241 @@ var Quizzes = (function(){
 		var answeredQuizSummaryTemplate = {};
 		var currentQuizContainer = {};
 		var currentQuizTemplate = {};
+		
+		var quizDatagrid = {};
+		var editQuizTemplate = {};
+		var answerQuizTemplate = {};
+		var showResultsTemplate = {};
+		var actionsButtonsTemplate = {};
+
+		var reRenderQuizzes = function(){
+				quizDatagrid.jsGrid("loadData");
+				var sortObj = quizDatagrid.jsGrid("getSorting");
+				if ("field" in sortObj){
+						quizDatagrid.jsGrid("sort",sortObj);
+				}
+		};
+
     $(function(){
+			quizDatagrid = $("#quizDatagrid");
+			editQuizTemplate = quizDatagrid.find(".editQuizPopup").clone();
+			answerQuizTemplate = quizDatagrid.find(".answerQuizPopup").clone();
+			showResultsTemplate = quizDatagrid.find(".viewResultsPopup").clone();
+			actionsButtonsTemplate = quizDatagrid.find(".actionsButtons").clone();
+			quizDatagrid.empty();
+
+			var DateField = function(config){
+					jsGrid.Field.call(this,config);
+			};
+			DateField.prototype = new jsGrid.Field({
+					sorter: function(a,b){
+							return new Date(a) - new Date(b);
+					},
+					itemTemplate: function(i){
+							return new Date(i).toLocaleString();
+					},
+					insertTemplate: function(i){return ""},
+					editTemplate: function(i){return ""},
+					insertValue: function(){return ""},
+					editValue: function(){return ""}
+			});
+			jsGrid.fields.dateField = DateField;
+
+			var gridFields = [
+				{name:"question",type:"text",title:"Question",readOnly:true},
+				{name:"optionCount",type:"number",title:"Options",readOnly:true},
+				{
+					name:"url",type:"text",title:"Image",readOnly:true,
+					itemTemplate:function(url,quizSummary){
+						if (url){
+							var quizUrl = sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quizSummary.id);
+							return $("<img/>",{src:quizUrl,style:"width:120px;height:90px"});
+						} else {
+							return $("<span/>");
+						}
+					}
+				},
+				{name:"created",type:"dateField",title:"Created",readOnly:true},
+				{name:"timestamp",type:"dateField",title:"Modified",readOnly:true},
+				{
+					name:"answerCount",type:"number",title:"Answers",readOnly:true,
+					itemTemplate:function(answerCount,quiz){
+						if (Conversations.shouldModifyConversation()){
+							return quiz.key in quizResultsGraphs ? quizResultsGraphs[quiz.key] : answerCount;
+						} else {
+							return answerCount;
+						}
+					}																																																		 
+				},
+				{
+					name:"id",type:"text",title:"Actions",readOnly:true,sorting:false,
+					itemTemplate:function(id,quizSummary){
+						var quiz = quizzes[quizSummary.key];
+						var rootElem = actionsButtonsTemplate.clone();
+						var editButton = rootElem.find(".editPollButton");
+						var answerButton = rootElem.find(".answerPollButton");
+						
+						answerButton.on("click",function(){
+							var answerId = sprintf("quiz_answer_%s",quiz.id);
+							var answerPopupContainer = $("<span/>",{id:answerId});
+							var jAlert = $.jAlert({
+								title:answerTitle,
+								closeOnClick:true,
+								width:"auto",
+								content:answerPopupContainer[0].outerHTML
+							});
+							var answerContainerId = sprintf("answerContainer_%s",quiz.id);
+							var answerPopup = answerQuizTemplate.clone();
+							$("#"+answerId).append(answerPopup);
+							var answerTitle = sprintf("Answer poll: %s",quiz.question);
+							var answerContainer = answerPopup.find(".quizOptionContainer");
+							var answerTemplate = answerContainer.find(".quizOption").clone();
+							answerContainer.html(_.map(quiz.options,function(opt){
+								var answer = answerTemplate.clone();
+								answer.find(".quizOptionButton").on("click",function(){
+									console.log("answering:",quiz,opt);
+									answerQuiz(Conversations.getCurrentConversationJid(),quiz.id,opt.name);
+									jAlert.closeAlert();
+								});
+								answer.find(".quizOptionName").text(opt.name);
+								answer.find(".quizOptionText").text(opt.text);
+								return answer;	
+							}));
+
+						});
+						if (Conversations.shouldModifyConversation()){
+							editButton.on("click",function(){
+								var newQuiz = _.cloneDeep(quiz);
+								var containerId = sprintf("edit_quiz_%s",quiz.id);
+								var popupContainer = $("<span/>",{id:containerId});
+								var jAlert = $.jAlert({
+									title:editTitle,
+									width:"90%",
+									content:popupContainer[0].outerHTML
+								});
+								var editPopup = editQuizTemplate.clone();
+								editPopup.find(".quizQuestion").val(quiz.question).on("change",function(){
+									newQuiz.question = $(this).val();
+								});
+
+								var answerContainer = editPopup.find(".quizOptionContainer");
+								var answerTemplate = answerContainer.find(".quizOption");
+								var generateOptionButton = function(opt){
+									var answer = answerTemplate.clone();
+									answer.find(".quizOptionName").text(opt.name);
+									answer.find(".quizOptionText").val(opt.text).on("change",function(){
+										opt.text = $(this).val();
+									});
+									answer.find(".quizOptionDelete").on("click",function(){
+										newQuiz.options = _.filter(newQuiz.options,function(o){return o.name != opt.name;});
+										answer.remove();
+									});
+									return answer;
+								};
+								answerContainer.html(_.map(newQuiz.options,generateOptionButton));
+								editPopup.find(".addOptionButton").on("click",function(){
+									var lastHighestName = _.reverse(_.orderBy(newQuiz.options,"name"))[0].name;
+									var key = lastHighestName;
+									if (/^z+$/.test(key)) {
+										// If all z's, replace all with a's
+										key = key.replace(/z/g, 'a') + 'a';
+									} else {
+										// (take till last char) append with (increment last char)
+										key = key.slice(0, -1) + String.fromCharCode(key.slice(-1).charCodeAt() + 1);
+									}
+									var newOption = {
+										type:"quizOption",
+										name:key,
+										text:"",
+										correct:false,
+										color:["#ffffff",255]
+									};
+									console.log("creating new option:",newQuiz.options,newOption);
+									newQuiz.options.push(newOption);
+									var optionHtml = generateOptionButton(newOption);
+									answerContainer.append(optionHtml);
+									var newText = optionHtml.find(".quizOptionText")[0];
+									newText.scrollIntoView();
+									newText.focus();
+								});
+								editPopup.find(".updateQuiz").on("click",function(){
+									sendStanza(newQuiz);
+									jAlert.closeAlert();
+								});
+								editPopup.find(".deleteQuiz").on("click",function(){
+									newQuiz.deleted = true;
+									sendStanza(newQuiz);
+									jAlert.closeAlert();
+								});
+								var editTitle = sprintf("Edit poll: %s",quiz.question);
+
+								$("#"+containerId).append(editPopup);
+							});
+						} else {
+							editButton.remove();
+						}
+						return rootElem;						
+					}
+				}
+			];
+			quizDatagrid.jsGrid({
+				width:"100%",
+				height:"auto",
+				inserting:false,
+				editing:false,
+				sorting:true,
+				paging:true,
+				noDataContent: "No polls",
+				controller: {
+					loadData: function(filter){
+						var sorted = _.map(_.keys(quizzes),function(k){
+							var v = quizzes[k];
+							var answers = quizAnswers[k];
+							return {
+								key:k,
+								question:v.question,
+								author:v.author,
+								created:v.created,
+								id:v.id,
+								answerCount:_.size(answers),
+								answers:answers,
+								timestamp:v.timestamp,
+								url:v.url,
+								optionCount:_.size(v.options),
+								options:v.options
+							};
+						});
+						if ("sortField" in filter){
+							sorted = _.sortBy(sorted,function(sub){
+								return sub[filter.sortField];
+							});
+							if ("sortOrder" in filter && filter.sortOrder == "desc"){
+								sorted = _.reverse(sorted);
+							}
+						}
+						return sorted;
+					}
+				},
+				pageLoading:false,
+				fields: gridFields	
+			});
+			quizDatagrid.jsGrid("sort",{
+				field:"name",
+				order:"desc"
+			});
+			reRenderQuizzes();
+			
+
 			unansweredQuizSummaryContainer = $("#unansweredQuizListing");
 			unansweredQuizSummaryTemplate = unansweredQuizSummaryContainer.find(".quizItem").clone();
 			answeredQuizSummaryContainer = $("#answeredQuizListing");
 			answeredQuizSummaryTemplate = answeredQuizSummaryContainer.find(".quizItem").clone();
 			currentQuizContainer = $("#currentQuiz");
 			currentQuizTemplate = currentQuizContainer.find(".currentQuizItem").clone();	
-			$("#quizzes").click(function(){
-					showBackstage("quizzes");
-			});
-			var quizCount = $("<div />",{
-					id:"quizCount",
-					class:"icon-txt"
-			});
-			$("#feedbackStatus").prepend(quizCount);
-			quizCount.click(function(){
-					showBackstage("quizzes");
-			});
-			refreshQuizCount();
+
     });
-    var refreshQuizCount = function(){
-        var quizCount = _.size(quizzes);
-        if (quizCount > 0){
-            if(quizCount == 1){
-                $("#quizCount").text(sprintf("%s quiz",_.size(quizzes)));
-                $("#dedicatedQuizCount").text("This conversation has 1 quiz");
-            }else {
-                $("#quizCount").text(sprintf("%s quizzes",_.size(quizzes)));
-                $("#dedicatedQuizCount").text(sprintf("This conversation has %s quizzes",quizCount));
-            }
-        } else {
-            $("#quizCount").text("");
-            $("#dedicatedQuizCount").text("This conversation has no quizzes");
-        }
-    };
-    var clearState = function(){
+
+		var clearState = function(){
         quizzes = {};
         quizAnswers = {};
         currentQuiz = {};
@@ -60,6 +261,8 @@ var Quizzes = (function(){
 				}
     };
     var renderQuizzesInPlace = function(){
+			reRenderQuizzes();
+			/*
         try{
             var haveAnsweredQuiz = function(quiz) {
                 return quizAnswersFunction(quiz)[UserSettings.getUsername()] != undefined;
@@ -81,11 +284,11 @@ var Quizzes = (function(){
             if ("type" in currentQuiz && currentQuiz.type == "quiz" && "isDeleted" in currentQuiz && currentQuiz.isDeleted != true){
                 $("#currentQuiz").html(renderQuiz(currentQuiz));
             }
-            refreshQuizCount();
         }
         catch(e){
             console.log("renderQuizzes exception",e,quizzes);
         }
+				*/
     };
     var quizAnswersFunction = function(quiz){
         if ("type" in quiz && quiz.type == "quiz" && "id" in quiz){
@@ -374,7 +577,8 @@ var Quizzes = (function(){
     return {
         getCurrentQuiz:function(){return currentQuiz;},
         getAllQuizzes:function(){return quizzes;},
-        getAnswersForQuiz:quizAnswersFunction
+        getAnswersForQuiz:quizAnswersFunction,
+				reRender:reRenderQuizzes	
     };
 })();
 

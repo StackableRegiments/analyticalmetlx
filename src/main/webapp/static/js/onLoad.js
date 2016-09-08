@@ -795,6 +795,7 @@ $(function(){
     $('#menuPolls').click(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
+				Quizzes.reRender();
     });
     $('#menuBlacklist').click(function(){
         showBackstage("blacklist");
