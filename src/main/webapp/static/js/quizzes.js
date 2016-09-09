@@ -214,7 +214,7 @@ var Quizzes = (function(){
 								rootElem.find(".quizResultsShouldDisplayOnNextSlide").on("click",function(){
 									withQuizImage(function(newIdentity,tempCanvas,imageData){
 										var convJid = Conversations.getCurrentConversationJid();
-										newIndex = 0;
+										newIndex = Conversations.getCurrentSlide().index + 1;
 										addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
 										jAlert.closeAlert();
 										hideBackstage();
