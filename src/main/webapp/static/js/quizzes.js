@@ -147,7 +147,8 @@ var Quizzes = (function(){
 												y:10
 											};
 											sendStanza(imageStanza);
-											console.log("droppedQuizResults on slide:",newIdentity);
+											jAlert.closeAlert();
+											hideBackstage();
 										},
 										error: function(e){
 											console.log("exception while adding the quizResultsGraph to the slide",e);
@@ -157,7 +158,6 @@ var Quizzes = (function(){
 										contentType: false,
 										processData: false
 									});
-
 								});
 
 								$("#"+popupId).append(rootElem);
