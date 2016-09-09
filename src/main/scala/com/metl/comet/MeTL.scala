@@ -263,9 +263,8 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
-      val q = args(0).toString.toLowerCase.trim
+      val q = getArgAsString(args(0)).toLowerCase.trim
       query = Some(q)
-//      partialUpdate(Call(RECEIVE_QUERY,JString(q)))
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
       println("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
@@ -358,7 +357,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
     ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
-      serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(args(0).toString)))
+      serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim)))
     },Full(RECEIVE_CONVERSATIONS))
   )
 
@@ -611,7 +610,13 @@ trait JArgUtils {
     case ja:JArray => ja
     case other => JArray(List.empty[JValue])
   }
-
+  protected def getArgAsListOfStrings(input:Any):List[String] = input match {
+    case JArray(items) => items.flatMap{
+      case JString(s) => Some(s)
+      case _ => None
+    }
+    case _ => Nil
+  }
 }
 
 class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
@@ -650,7 +655,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
      },Full("receiveRoomPopulations")),
      */
     ClientSideFunction("getSearchResult",List("query"),(args) => {
-      serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(args(0).toString)))
+      serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim)))
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("getIsInteractiveUser",List.empty[String],(args) => isInteractiveUser.map(iu => JBool(iu)).openOr(JBool(true)),Full(RECEIVE_IS_INTERACTIVE_USER)),
     ClientSideFunction("setIsInteractiveUser",List("isInteractive"),(args) => {
@@ -703,20 +708,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
       val jid = getArgAsString(args(0))
-      val rawBlacklist = args(1) match {
-        case l:List[String] => l
-        case JArray(bl) => bl.flatMap{
-          case JString(s) => Some(s)
-          case other => {
-            warn("unknown internal JValue: [%s]".format(other))
-            None
-          }
-        }
-        case other => {
-          warn("unknown JValue: [%s]".format(other))
-          Nil
-        }
-      }
+      val rawBlacklist = getArgAsListOfStrings(args(1))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))
@@ -726,22 +718,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsInt(args(1))
-      val inkIds = args(2) match {
-        case l:List[String] => l
-        case _ => Nil
-      }
-      val textIds = args(3) match {
-        case l:List[String] => l
-        case _ => Nil
-      }
-      val multiWordTextIds = args(4) match {
-        case l:List[String] => l
-        case _ => Nil
-      }
-      val imageIds = args(5) match {
-        case l:List[String] => l
-        case _ => Nil
-      }
+      val inkIds = getArgAsListOfStrings(args(2))
+      val textIds = getArgAsListOfStrings(args(3))
+      val multiWordTextIds = getArgAsListOfStrings(args(4))
+      val imageIds = getArgAsListOfStrings(args(5))
       val now = new Date().getTime
       val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
 
@@ -962,7 +942,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
-      val c = serverConfig.detailsOfConversation(args(0).toString)
+      val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {

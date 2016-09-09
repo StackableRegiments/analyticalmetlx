@@ -503,7 +503,11 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase()){
+        if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase() || ("UserSettings" in window && _.some(UserSettings.getUserGroups(),function(g){
+					var key = g.key ? g.key : g.type;
+					var name = g.name ? g.name : g.value;	
+					return (key == "special" && name == "superuser") || name.toLowerCase().trim() == conversation.subject.toLowerCase().trim();					
+				}))){
             return true;
         } else {
             return false;
@@ -519,8 +523,10 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(group){
-            return group.value.toLowerCase() == conversation.subject.toLowerCase();
+        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
+						var key = g.key ? g.key : g.type;
+						var name = g.name ? g.name : g.value;	
+						return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject.toLowerCase().trime();
         }))) {
             return true;
         } else {
