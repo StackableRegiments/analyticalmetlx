@@ -394,6 +394,11 @@ var Conversations = (function(){
     };
 })();
 
+function augmentArguments(args){
+	args[_.size(args)] = new Date().getTime();
+	return args;
+}
+
 function serverResponse(response){ //invoked by Lift
 }
 function receiveUsername(username){ //invoked by Lift
