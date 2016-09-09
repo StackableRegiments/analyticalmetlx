@@ -96,6 +96,53 @@ var Quizzes = (function(){
 								_.defer(function(){
 									renderQuizResults("#"+quizResultsPopupId,quiz,resultsW,resultsH);
 								});
+								
+								var quizImagePreview = rootElem.find(".quizImagePreview");
+								quizImagePreview.attr("src",urlForQuizImage(quiz.id));
+								if ("url" in quiz){
+									quizImagePreview.show();
+								} else {
+									quizImagePreview.hide();
+								}
+
+								var answerContainer = rootElem.find(".quizOptionContainer");
+								var answerTemplate = answerContainer.find(".quizOption");
+						
+
+								var theseQuizAnswerers = quizAnswersFunction(quiz);
+								var quizOptionAnswerCount = function(quiz, qo){
+										var count = 0;
+										if (quiz.id in quizAnswers){
+												$.each(theseQuizAnswerers,function(name,answerer){
+														if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == UserSettings.getUsername().toLowerCase())){
+																count = count +1;
+														}
+												});
+										};
+										return count;
+								}
+
+								var totalAnswerCount = _.size(theseQuizAnswerers);
+								var highWaterMark = totalAnswerCount * 0.5;
+								var optimumMark = totalAnswerCount;
+								var lowWaterMark = totalAnswerCount * 0.25;
+
+								answerContainer.html(_.map(quiz.options,function(opt){
+									var answer = answerTemplate.clone();
+									answer.find(".quizOptionName").text(opt.name);
+									answer.find(".quizOptionText").text(opt.text);
+									var optionMeter = answer.find(".quizOptionMeter");
+									if(Conversations.shouldModifyConversation()){
+										var score = quizOptionAnswerCount(quiz,opt);
+										answer.find(".quizOptionAnswerCount").text(score);
+										optionMeter.attr("value",score).attr("min",0).attr("max",totalAnswerCount).attr("low",lowWaterMark).attr("high",highWaterMark).attr("optimum",optimumMark).text(sprintf("%s out of %s",score,totalAnswerCount));
+									} else {
+										answer.find(".quizOptionCountContainer").remove();
+										optionMeter.remove();
+									}
+									return answer;
+								}));
+
 								rootElem.find(".quizResultsShouldDisplayOnSlide").on("click",function(){
 									var submissionQuality = 0.4;
 									var quizCanvas = $("#"+quizResultsPopupId)[0];
