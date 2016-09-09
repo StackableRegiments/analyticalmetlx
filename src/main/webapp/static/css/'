@@ -5,18 +5,10 @@ body{
     display:inline-block;
 }
 #vis{
-    flex-basis:50%;
+    flex-basis:60%;
 }
 #lang{
-    flex-basis:35%;
-}
-#statusLog{
-    font-size:50%;
-    flex-basis:10%;
-}
-.totalsArea path{
-    stroke:lightblue;
-    fill:green;
+    flex-basis:30%;
 }
 .masterArea path{
     stroke:lightblue;
@@ -28,7 +20,13 @@ body{
 #widgets{
     flex-wrap:wrap;
 }
-
+#statusLog,#pageLabel{
+}
+#statusLog{
+    font-size:40%;
+    max-height:5em;
+    overflow-y:hidden;
+}
 #lang text{
     fill:white;
     stroke:none;
@@ -62,9 +60,4 @@ body{
     stroke:black;
     fill:blue;
     fill-opacity:0.1;
-}
-.legendLine, .authorLine{
-    stroke:none;
-    fill:white;
-    font-size:0.8em;
 }

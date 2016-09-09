@@ -32,6 +32,8 @@ object SystemRestHelper extends RestHelper with Stemmer with Logger {
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
         Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
       })
+    case r @ Req(List("api","v1","sample","global",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.history", Full(XmlResponse(XML.load("global.xml"))))
     case r @ Req(List("api","v1","history","public",jid),_,_) =>
       () => Stopwatch.time("SystemRestHelper.history", StatelessHtml.history(jid))
     case r @ Req(List("api","v1","history","includePrivate",jid,onBehalfOf),_,_) =>
@@ -242,7 +244,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       val config = ServerConfiguration.default
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
         video.videoBytes.map(bytes => {
-          val fis = new ByteArrayInputStream(bytes) 
+          val fis = new ByteArrayInputStream(bytes)
           val initialSize:Long = bytes.length - 1
           val (size,start,end) = {
             (for {

@@ -1,0 +1,41 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+  <head>
+    <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+    <link rel="stylesheet" href="static/css/analysis.css"></link>
+    <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+    <script src="static/js/stable/lodash.min.js"></script>
+    <script src="static/js/stable/moment.min.js"></script>
+    <script src="static/js/stable/Chart.bundle.min.js"></script>
+    <script src="static/js/stable/d3.v4.min.js"></script>
+    <script src="static/js/stable/d3.layout.cloud.js"></script>
+    <script src="static/js/stable/typo.js"></script>
+    <script src="static/js/stable/word-cloud.js"></script>
+    <script src="static/js/enterprise.js"></script>
+    <style>
+      #authorLines{
+      width:100%;
+      }
+      #vis{
+      flex-basis:90%;
+      }
+    </style>
+  </head>
+  <div class="directlyOnBackground ml">
+    <h2 id="pageLabel">Enterprise Dashboard</h2>
+    <table id="ep">
+      <tr>
+        <td>
+        </td>
+        <td>
+          <div id="visContainer" class="flex-container-responsive">
+            <div id="vis"></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td id="authors"></td>
+        <td id="authorLines"></td>
+      </tr>
+    </table>
+  </div>
+</div>
