@@ -984,6 +984,30 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunctionDefinition("addImageSlideToConversationAtIndex",List("jid","index","resourceId"),(args) => {
+      val jid = getArgAsString(args(0))
+      val index = getArgAsInt(args(1))
+      val resourceId = getArgAsString(args(2))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => {
+          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+          newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
+            val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
+            val bytes = serverConfig.getResource(resourceId)
+            val now = new java.util.Date().getTime
+            val identity = "%s%s".format(username,now.toString)
+            val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+            val dimensions = SlideRenderer.measureImage(tempSubImage)
+            val subImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+            slideRoom ! LocalToServerMeTLStanza(subImage)
+          })
+          newC
+        }
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+
     ClientSideFunctionDefinition("addSubmissionSlideToConversationAtIndex",List("jid","index","submissionId"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))

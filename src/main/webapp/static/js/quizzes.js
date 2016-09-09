@@ -143,7 +143,7 @@ var Quizzes = (function(){
 									return answer;
 								}));
 
-								rootElem.find(".quizResultsShouldDisplayOnSlide").on("click",function(){
+								var withQuizImage = function(afterFunc){
 									var submissionQuality = 0.4;
 									var quizCanvas = $("#"+quizResultsPopupId)[0];
 									var tempCanvas = $("<canvas/>");
@@ -173,29 +173,7 @@ var Quizzes = (function(){
 										type: 'POST',
 										success: function(e){
 											var newIdentity = $(e).find("resourceUrl").text();
-											var slideId = Conversations.getCurrentSlideJid();
-											var username = UserSettings.getUsername();
-											var t = new Date().getTime();
-											var imageId = sprintf("%s%s%s",slideId,username,t);
-											var newTag = imageId;
-											var imageStanza = {
-												type:"image",
-												author:username,
-												height:h,
-												width:w,
-												identity:imageId,
-												slide:slideId,
-												source:newIdentity,
-												privacy:"PUBLIC",
-												tag:newTag,
-												target:"presentationSpace",
-												timestamp:t,
-												x:10,
-												y:10
-											};
-											sendStanza(imageStanza);
-											jAlert.closeAlert();
-											hideBackstage();
+											afterFunc(newIdentity,tempCanvas,imageData);
 										},
 										error: function(e){
 											console.log("exception while adding the quizResultsGraph to the slide",e);
@@ -204,6 +182,42 @@ var Quizzes = (function(){
 										cache: false,
 										contentType: false,
 										processData: false
+									});
+								};
+								rootElem.find(".quizResultsShouldDisplayOnSlide").on("click",function(){
+									withQuizImage(function(newIdentity,tempCanvas,imageData){
+										var slideId = Conversations.getCurrentSlideJid();
+										var username = UserSettings.getUsername();
+										var t = new Date().getTime();
+										var imageId = sprintf("%s%s%s",slideId,username,t);
+										var newTag = imageId;
+										var imageStanza = {
+											type:"image",
+											author:username,
+											height:h,
+											width:w,
+											identity:imageId,
+											slide:slideId,
+											source:newIdentity,
+											privacy:"PUBLIC",
+											tag:newTag,
+											target:"presentationSpace",
+											timestamp:t,
+											x:10,
+											y:10
+										};
+										sendStanza(imageStanza);
+										jAlert.closeAlert();
+										hideBackstage();
+									});
+								});
+								rootElem.find(".quizResultsShouldDisplayOnNextSlide").on("click",function(){
+									withQuizImage(function(newIdentity,tempCanvas,imageData){
+										var convJid = Conversations.getCurrentConversationJid();
+										newIndex = 0;
+										addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
+										jAlert.closeAlert();
+										hideBackstage();
 									});
 								});
 
