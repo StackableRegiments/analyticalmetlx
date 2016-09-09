@@ -28,7 +28,7 @@ import com.metl.renderer.SlideRenderer
 import json.JsonAST._
 
 import com.metl.snippet.Metl._
-
+/*
 case class StylableRadioButtonInteractableMessage(messageTitle:String,body:String,radioOptions:Map[String,()=>Boolean],defaultOption:Box[String] = Empty, customError:Box[()=>Unit] = Empty,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
   var answerProvided = false
   <div>
@@ -54,13 +54,14 @@ case class StylableRadioButtonInteractableMessage(messageTitle:String,body:Strin
   </div>
   </div>
 },role,Full(messageTitle))
-
-
+*/
+/*
 object TemplateHolder{
   val useClientMessageTemplate = getClientMessageTemplate
   def getClientMessageTemplate = Templates(List("_s2cMessage")).openOr(NodeSeq.Empty)
   def clientMessageTemplate = if (Globals.isDevMode) getClientMessageTemplate else useClientMessageTemplate
 }
+*/
 
 case class RoomJoinRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
 case class RoomLeaveRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
@@ -733,10 +734,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }, Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    /*
     ClientSideFunctionDefinition("joinConversation",List("where"),(args) => {
       val where = getArgAsString(args(0))
       joinConversation(where).map(c => serializer.fromConversation(c)).openOr(JNull)
     },Full(RECEIVE_CONVERSATION_DETAILS)),
+
     ClientSideFunctionDefinition("leaveConversation",List.empty[String],(args) => {
       leaveAllRooms()
       currentConversation = None
@@ -746,6 +749,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val title = getArgAsString(args(0))
       serializer.fromConversation(serverConfig.createConversation(title,username))
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
+  */
     /*
      ClientSideFunctionDefinition("deleteConversation",List("jid"),(args) => {
      val jid = getArgAsString(args(0))
@@ -756,6 +760,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
      })
      },Full(RECEIVE_CONVERSATION_DETAILS)),
      */
+    /*
     ClientSideFunctionDefinition("importConversation",List.empty[String],(unused) => {
       val im = InteractableMessage((i) => {
         val uploadId = nextFuncName
@@ -813,6 +818,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         ),Full(()=> this ! SpamMessage(Text("You are not permitted to archive this conversation"))),false,Full("conversations"))
       JNull
     },Empty),
+  */
     /*
      ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
      val jid = getArgAsString(args(0))
@@ -824,6 +830,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
      })
      },Full(RECEIVE_CONVERSATION_DETAILS)),
      */
+    /*
     ClientSideFunctionDefinition("requestRenameConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -835,6 +842,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       },Full(() => this ! SpamMessage(Text("An error occurred while attempting to rename the conversation"))),Full("conversations"))
       JNull
     },Empty),
+  */
     ClientSideFunctionDefinition("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
       val jid = getArgAsString(args(0))
       val newPermissions = getArgAsJValue(args(1))
@@ -962,6 +970,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty),
+    /*
     ClientSideFunctionDefinition("requestChangeSubjectOfConversationDialogue",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
@@ -975,6 +984,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         Full(c.subject.toLowerCase),Full(()=> this ! SpamMessage(Text("An error occurred while attempting to rename the conversation"))),Full("conversations"))
       JNull
     },Empty),
+    */
     ClientSideFunctionDefinition("addSlideToConversationAtIndex",List("jid","index"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1147,12 +1157,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val response = MeTLQuizResponse(serverConfig,username,new Date().getTime,chosenOptionName,username,quizId)
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       JNull
-    },Empty),
+    },Empty)
     /*
      ClientSideFunctionDefinition("createQuiz",List("conversationJid","newQuiz"),(args) => {
      JNull
      },Empty),
      */
+    /*
     ClientSideFunctionDefinition("requestCreateQuizDialogue",List("conversationJid"),(args) => {
       if (shouldModifyConversation()){
         val conversationJid = getArgAsString(args(0))
@@ -1247,7 +1258,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty)
+    */
   )
+  /*
   protected def editableQuizNodeSeq(quiz:MeTLQuiz,nextFocusId:Option[String] = None):InteractableMessage = {
     InteractableMessage(scope = (i) => {
       val quizId = "quizId_%s".format(quiz.id)
@@ -1370,6 +1383,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       </div>
     },role = Full("quizzes"),incomingTitle = Full("Define this poll"),afterLoad = nextFocusId.map(nid => CustomJsCmds.ScrollAndFocus(nid)))
   }
+  */
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r().getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
       val conversation = serverConfig.detailsOfConversation(jid)
@@ -1400,6 +1414,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def render = {
     OnLoad(refreshClientSideStateJs)
   }
+  /*
   private val defaultContainerId  = "s2cMessageContainer"
   private val clientMessageBroker = new ClientMessageBroker(TemplateHolder.clientMessageTemplate,".s2cMessage",".s2cLabel",".s2cContent",".s2cClose",
     (cm) => {
@@ -1409,12 +1424,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       partialUpdate(Hide(defaultContainerId) & cm.done)
     }
   )
+  */
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
+    /*
     case c:ClientMessage => {
       clientMessageBroker.processMessage(c)
     }
+    */
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
