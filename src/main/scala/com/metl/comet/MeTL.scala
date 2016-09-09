@@ -28,40 +28,6 @@ import com.metl.renderer.SlideRenderer
 import json.JsonAST._
 
 import com.metl.snippet.Metl._
-/*
-case class StylableRadioButtonInteractableMessage(messageTitle:String,body:String,radioOptions:Map[String,()=>Boolean],defaultOption:Box[String] = Empty, customError:Box[()=>Unit] = Empty,override val role:Box[String] = Empty) extends InteractableMessage((i)=>{
-  var answerProvided = false
-  <div>
-  <div>{body}</div>
-  <div>
-  {
-    radio(radioOptions.toList.map(optTuple => optTuple._1),defaultOption,(chosen:String) => {
-      if (!answerProvided && radioOptions(chosen)()){
-        answerProvided = true
-        i.done
-      } else {
-        customError.map(ce => ce())
-      }
-    },("class","simpleRadioButtonInteractableMessageButton")).items.foldLeft(NodeSeq.Empty)((acc,choiceItem) => {
-      val inputElem = choiceItem.xhtml
-      val id = nextFuncName
-      acc ++ ("input [id]" #> id).apply((choiceItem.xhtml \\ "input")) ++ <label for={id}>{Text(choiceItem.key.toString)}</label>
-    })
-  }
-  <div>
-  {submit("Submit", ()=> Noop) }
-  </div>
-  </div>
-  </div>
-},role,Full(messageTitle))
-*/
-/*
-object TemplateHolder{
-  val useClientMessageTemplate = getClientMessageTemplate
-  def getClientMessageTemplate = Templates(List("_s2cMessage")).openOr(NodeSeq.Empty)
-  def clientMessageTemplate = if (Globals.isDevMode) getClientMessageTemplate else useClientMessageTemplate
-}
-*/
 
 case class RoomJoinRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
 case class RoomLeaveRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
@@ -724,125 +690,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       sendStanzaToServer(stanza,"loopback")
       JNull
     },Empty),
-    ClientSideFunctionDefinition("changeUser",List("username"),(args) => {
-      val newUsername = getArgAsString(args(0))
-      if (Globals.isDevMode){
-        //Can't change the username anymore.
-        //Globals.currentUser(newUsername)
-      }
-      JString(username)
-    }, Full(RECEIVE_USERNAME)),
     ClientSideFunctionDefinition("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunctionDefinition("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
-    /*
-    ClientSideFunctionDefinition("joinConversation",List("where"),(args) => {
-      val where = getArgAsString(args(0))
-      joinConversation(where).map(c => serializer.fromConversation(c)).openOr(JNull)
-    },Full(RECEIVE_CONVERSATION_DETAILS)),
-
-    ClientSideFunctionDefinition("leaveConversation",List.empty[String],(args) => {
-      leaveAllRooms()
-      currentConversation = None
-      JNull
-    },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunctionDefinition("createConversation",List("title"),(args) => {
-      val title = getArgAsString(args(0))
-      serializer.fromConversation(serverConfig.createConversation(title,username))
-    },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
-  */
-    /*
-     ClientSideFunctionDefinition("deleteConversation",List("jid"),(args) => {
-     val jid = getArgAsString(args(0))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.deleteConversation(c.jid.toString)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
-    /*
-    ClientSideFunctionDefinition("importConversation",List.empty[String],(unused) => {
-      val im = InteractableMessage((i) => {
-        val uploadId = nextFuncName
-        val progressId = nextFuncName
-        val progressBarId = nextFuncName
-        val script = """$('#'+'%s').fileupload({
-                dataType: 'json',
-                add: function (e,data) {
-                  $('#'+'%s').css('width', '0%%');
-                  $('#'+'%s').show();
-                  data.submit();
-                },
-                progressall: function (e, data) {
-                  var progress = parseInt(data.loaded / data.total * 100, 10) + '%%';
-                  $('#'+'%s').css('width', progress);
-                },
-                done: function (e, data) {
-                  $.each(data.files, function (index, file) {
-                    $('<p/>').text(file.name).appendTo(document.body);
-                  });
-                  $('#'+'%s').fadeOut();
-                }
-              });
-            """.format(uploadId,progressId,progressBarId,progressBarId,progressId)
-
-        val nodes = <div>
-        <label for={uploadId}>{Text("Select your file")}</label>
-        <div>{Text("* The conversation will appear quickly, but may take a minute or two to fill with content.")}</div>
-        <input id={uploadId} type="file" name="files[]" data-url="/conversationImportEndpoint"></input>
-        <div id={progressId} style="width:20em; border: 1pt solid silver; display: none">
-        <div id={progressBarId} style="background: green; height: 1em; width:0%"></div>
-        </div>
-        <script>{script}</script>
-        </div>
-        nodes
-      },Full("conversationImport"),Full("Import conversation"))
-      this ! im
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("requestDeleteConversationDialogue",List("conversationJid"),(args) => {
-      val jid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(jid)
-      this ! SimpleMultipleButtonInteractableMessage("Archive conversation","Are you sure you would like to archive this conversation?  Have you considered whether students have important content on this conversation?",
-        Map(
-          "yes" -> {() => {
-            if (shouldModifyConversation(c)){
-              serverConfig.deleteConversation(c.jid.toString)
-              S.redirectTo("/conversationSearch")
-              true
-            } else {
-              false
-            }
-          }},
-          "no" -> {() => true}
-        ),Full(()=> this ! SpamMessage(Text("You are not permitted to archive this conversation"))),false,Full("conversations"))
-      JNull
-    },Empty),
-  */
-    /*
-     ClientSideFunctionDefinition("renameConversation",List("jid","newTitle"),(args) => {
-     val jid = getArgAsString(args(0))
-     val newTitle = getArgAsString(args(1))
-     val c = serverConfig.detailsOfConversation(jid)
-     serializer.fromConversation(shouldModifyConversation(c) match {
-     case true => serverConfig.renameConversation(c.jid.toString,newTitle)
-     case _ => c
-     })
-     },Full(RECEIVE_CONVERSATION_DETAILS)),
-     */
-    /*
-    ClientSideFunctionDefinition("requestRenameConversationDialogue",List("conversationJid"),(args) => {
-      val jid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(jid)
-      this ! SimpleTextAreaInteractableMessage("Rename conversation","What would you like to rename this conversation?",c.title,(renamed) => {
-        if (renamed.length > 0 && shouldModifyConversation(c)){
-          val newConv = serverConfig.renameConversation(c.jid.toString,renamed)
-          true
-        } else false
-      },Full(() => this ! SpamMessage(Text("An error occurred while attempting to rename the conversation"))),Full("conversations"))
-      JNull
-    },Empty),
-  */
     ClientSideFunctionDefinition("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
       val jid = getArgAsString(args(0))
       val newPermissions = getArgAsJValue(args(1))
@@ -870,7 +719,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))//newBlacklist))
+        case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
@@ -908,8 +757,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val conv = serverConfig.detailsOfConversation(conversationJid)
       if (shouldModifyConversation(conv)){
         serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
-        this ! SpamMessage(<div />,Full("submissions"),Full("Blacklisted users: %s".format(authors)))
-
+        alertScreen("banning users","Blacklisted users: %s".format(authors))
         def getColorForAuthor(name:String):Color = {
           new Color(128,128,128,128)
         }
@@ -956,10 +804,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             rooms.get((server,conversationJid)).map(r =>{
               r() ! LocalToServerMeTLStanza(submission)
             });
-            this ! SpamMessage(<div />,Full("submissions"),Full("Blacklist record created and added for authors: %s".format(authors)))
+            alertScreen("banning users","Blacklist record created and added for authors: %s".format(authors))
           }
           case _ => {
-            this ! SpamMessage(<div />,Full("submissions"),Full("blacklist record creation failed.  Your canvas is empty."))
+            errorScreen("banning users","blacklist record creation failed.  Your canvas is empty.")
           }
         }
         val deleterId = nextFuncName
@@ -970,21 +818,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty),
-    /*
-    ClientSideFunctionDefinition("requestChangeSubjectOfConversationDialogue",List("conversationJid"),(args) => {
-      val jid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(jid)
-      this ! StylableRadioButtonInteractableMessage("Change sharing","How would you like to share this conversation?",
-        Map(Globals.getUserGroups.map(eg => (eg._2.toLowerCase, ()=>{
-          if (shouldModifyConversation(c)){
-            serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,eg._2)
-            true
-          } else false
-        })).toList:_*),
-        Full(c.subject.toLowerCase),Full(()=> this ! SpamMessage(Text("An error occurred while attempting to rename the conversation"))),Full("conversations"))
-      JNull
-    },Empty),
-    */
     ClientSideFunctionDefinition("addSlideToConversationAtIndex",List("jid","index"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1158,232 +991,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       JNull
     },Empty)
-    /*
-     ClientSideFunctionDefinition("createQuiz",List("conversationJid","newQuiz"),(args) => {
-     JNull
-     },Empty),
-     */
-    /*
-    ClientSideFunctionDefinition("requestCreateQuizDialogue",List("conversationJid"),(args) => {
-      if (shouldModifyConversation()){
-        val conversationJid = getArgAsString(args(0))
-        val now = new Date().getTime
-        val quiz = MeTLQuiz(serverConfig,username,now,now,"",now.toString,Empty,Empty,false,List("A","B","C").map(o => QuizOption(o,"",false,QuizOption.colorForName(o))))
-        this ! editableQuizNodeSeq(quiz,Some("quizId_%s_question".format(now.toString)))
-      } else {
-        this ! SpamMessage(Text("You are not permitted to create a quiz in this conversation"),Full("quizzes"))
-      }
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("requestDeleteQuizDialogue",List("conversationJid","quizId"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(conversationJid)
-      if (shouldModifyConversation(c)){
-        val quizId = getArgAsString(args(1))
-        rooms.get((server,conversationJid.toString)).map(room => {
-          room().getHistory.getQuizByIdentity(quizId).map(quiz => {
-            this ! SimpleMultipleButtonInteractableMessage("Delete quiz","Are you sure you would like to delete this poll? \r\n(%s)".format(quiz.question),
-              Map(
-                "yes" -> {() => {
-                  if (shouldModifyConversation(c)){
-                    rooms.get((server,conversationJid.toString)).map(rf => {
-                      val r = rf()
-                      r.getHistory.getQuizByIdentity(quizId).map(q => {
-                        val deletedQuiz = q.delete
-                        r ! LocalToServerMeTLStanza(deletedQuiz)
-                      })
-                    })
-                    true
-                  } else {
-                    false
-                  }
-                }},
-                "no" -> {() => true}
-              ),Full(()=> this ! SpamMessage(Text("You are not permitted to delete this conversation"))),false,Full("quizzes"))
-          })
-        })
-      }
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("updateQuiz",List("conversationJid","quizId","updatedQuiz"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val c = serverConfig.detailsOfConversation(conversationJid)
-      if (shouldModifyConversation(c)){
-        val quizId = getArgAsString(args(1))
-        val newQuizJValue = getArgAsJValue(args(2))
-        rooms.get((server,conversationJid.toString)).map(rf => {
-          val r = rf()
-          r.getHistory.getQuizByIdentity(quizId).map(oq => {
-            val newQuiz = serializer.toMeTLQuiz(newQuizJValue)
-            val deletedOldQuiz = oq.delete
-            if (oq.id == newQuiz.id){
-              r ! LocalToServerMeTLStanza(deletedOldQuiz)
-              r ! LocalToServerMeTLStanza(newQuiz)
-            }
-          })
-        })
-      }
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("requestUpdateQuizDialogue",List("conversationJid","quizId"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val quizId = getArgAsString(args(1))
-      rooms.get((server,conversationJid)).map(r => r().getHistory.getQuizByIdentity(quizId).map(q => this ! editableQuizNodeSeq(q,Some("quizId_%s_question".format(quizId))))).getOrElse({this ! SpamMessage(Text("The quiz you've requested cannot be found at this time"),Full("quizzes"))})
-      JNull
-    },Empty),
-    ClientSideFunctionDefinition("submitScreenshotSubmission",List("conversationJid","slideJid"),(args) => {
-      val conversationJid = getArgAsString(args(0))
-      val slideJid = getArgAsInt(args(1))
-      val now = new Date().getTime
-      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
-      val privHistory = rooms.get((server,slideJid.toString+username)).map(r => r().getHistory).getOrElse(History.empty)
-      val mergedHistory = pubHistory.merge(privHistory)
-      val title = "submission%s%s.jpg".format(username,now.toString)
-
-      val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
-      val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
-        (width,height) match {
-        case (a:Int,b:Int) if a > 0 && b > 0 => {
-          val imageBytes = SlideRenderer.render(mergedHistory,width,height)
-          val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-          val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri)
-          rooms.get((server,conversationJid)).map(r =>{
-            r() ! LocalToServerMeTLStanza(submission)
-          });
-          this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot submitted"))
-        }
-        case _ => {
-          this ! SpamMessage(<div />,Full("submissions"),Full("Screenshot was not submitted.  Your canvas is empty."))
-        }
-      }
-      JNull
-    },Empty)
-    */
   )
-  /*
-  protected def editableQuizNodeSeq(quiz:MeTLQuiz,nextFocusId:Option[String] = None):InteractableMessage = {
-    InteractableMessage(scope = (i) => {
-      val quizId = "quizId_%s".format(quiz.id)
-      val questionId = "%s_%s".format(quizId,"question")
-      var tempQuiz = quiz
-      var answerProvided = false
-      var errorMessages = List.empty[SpamMessage]
-      <div id="createQuizForm">
-      <label for="quizQuestion">Question</label>
-      <div>
-      {
-        ajaxTextarea(tempQuiz.question,(input:String) => {
-          if (input.length > 0){
-            tempQuiz = tempQuiz.replaceQuestion(input)
-          } else {
-            errorMessages = SpamMessage(Text("Please ensure this poll has a question"),Full("quizzes")) :: errorMessages
-          }
-        },("class","quizQuestion"),("id",questionId))
-      }
-      </div>
-      {
-        tempQuiz.url.map(quizUrl => {
-          val imageUrl = "/resourceProxy/%s".format(Helpers.urlEncode(quizUrl))
-          <img class="quizImagePreview" src={imageUrl}>This poll has an image</img>
-        }).openOr(NodeSeq.Empty)
-      }
-      <div>
-      {
-        tempQuiz.options.sortBy(o => o.name).map(qo => {
-          <div class="quizOption">
-          <label class="quizName">
-          {
-            qo.name
-          }
-          </label>
-          <div class="flex-container-responsive">
-          {
-            val quizAnswerId = "%s_%s".format(quizId,qo.name)
-            ajaxTextarea(qo.text, (input:String) => {
-              if (input.length > 0){
-                tempQuiz = tempQuiz.replaceOption(qo.name,input)
-              } else {
-                errorMessages = SpamMessage(Text("Please ensure that quizOption %s has a description".format(qo.name)),Full("quizzes")) :: errorMessages
-              }
-            },("class","quizText"),("id",quizAnswerId))
-          }
-          {
-            ajaxButton(<span>{Text("Delete this option")}</span>, () => {
-              if (tempQuiz.options.length > 2){
-                tempQuiz = tempQuiz.removeOption(qo.name)
-                this ! editableQuizNodeSeq(tempQuiz,nextFocusId)
-                i.done
-              } else {
-                this ! SpamMessage(Text("Please ensure that this poll has at least two options"),Full("quizzes"))
-                Noop
-              }
-            },("class","quizRemoveOptionButton toolbar btn-icon fa fa-trash np"))
-          }
-          </div>
-          </div>
-        })
-      }
-      </div>
-      {
-        ajaxButton(<span>{Text("Add an option")}</span>, ()=>{
-          val oldOptions = tempQuiz.options
-          tempQuiz = tempQuiz.addOption(QuizOption("",""))
-          val newOptionId = tempQuiz.options.find(o => !oldOptions.exists(_.name == o.name)).map(o => "%s_%s".format(quizId,o.name))
-          this ! editableQuizNodeSeq(tempQuiz,newOptionId)
-          i.done
-        },("class","quizAddOptionButton toolbar btn-icon fa fa-plus np"))
-      }
-      </div>
-      <div class="quizCreationControls">
-      {
-        val quizImageButtonText = tempQuiz.url.map(u => "Update poll image with current slide").openOr("Attach current slide")
-        ajaxButton(<span>{Text(quizImageButtonText)}</span>, () => {
-          for (
-            conversation <- currentConversation;
-            slideJid <- currentSlide
-          ) yield {
-            val conversationJid = conversation.jid.toString
-            val now = new Date().getTime
-            val mergedHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
-            val title = "submission%s%s.jpg".format(username,now.toString)
-            val width = (mergedHistory.getRight - mergedHistory.getLeft).toInt
-            val height = (mergedHistory.getBottom - mergedHistory.getTop).toInt
-            val uriBox = (width,height) match {
-              case (a:Int,b:Int) if a > 0 && b > 0 => {
-                val imageBytes = SlideRenderer.render(mergedHistory,width,height)
-                val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-                Full(uri)
-              }
-              case _ => Empty
-            }
-            val newTempQuiz = tempQuiz.replaceImage(uriBox)
-            this ! editableQuizNodeSeq(newTempQuiz,nextFocusId)
-            i.done
-          }
-          Noop
-        },("class","quizAttachImageButton toolbar btn-icon fa fa-paperclip"))
-      }
-      {
-        ajaxButton(<span>{Text("Delete this poll")}</span>, ()=>{
-          var deletedQuiz = tempQuiz.delete
-          sendStanzaToServer(deletedQuiz,server)
-          i.done
-        },("class","quizDeleteButton toolbar btn-icon fa fa-trash"))
-      }
-      {ajaxSubmit("Submit", ()=>{
-        if (errorMessages.length > 0){
-          errorMessages.foreach(em => this ! em)
-          errorMessages = List.empty[SpamMessage]
-          Noop
-        } else {
-          sendStanzaToServer(tempQuiz,server)
-          i.done
-        }
-      },("class","quizSubmitButton toolbar button-transparent-border"))}
-      </div>
-    },role = Full("quizzes"),incomingTitle = Full("Define this poll"),afterLoad = nextFocusId.map(nid => CustomJsCmds.ScrollAndFocus(nid)))
-  }
-  */
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r().getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
       val conversation = serverConfig.detailsOfConversation(jid)
@@ -1414,25 +1022,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def render = {
     OnLoad(refreshClientSideStateJs)
   }
-  /*
-  private val defaultContainerId  = "s2cMessageContainer"
-  private val clientMessageBroker = new ClientMessageBroker(TemplateHolder.clientMessageTemplate,".s2cMessage",".s2cLabel",".s2cContent",".s2cClose",
-    (cm) => {
-      partialUpdate(SetHtml(defaultContainerId,cm.renderMessage) & Show(defaultContainerId) & Call("reapplyStylingToServerGeneratedContent",JString(cm.uniqueId)) & cm.afterLoad.getOrElse(Noop))
-    },
-    (cm) => {
-      partialUpdate(Hide(defaultContainerId) & cm.done)
-    }
-  )
-  */
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
-    /*
-    case c:ClientMessage => {
-      clientMessageBroker.processMessage(c)
-    }
-    */
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
@@ -1664,6 +1256,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case _ => {}
     }
   })
+  protected def alertScreen(heading:String,message:String):Unit = {
+    partialUpdate(Call("infoAlert",JString(heading),JString(message)))
+  }
+  protected def errorScreen(heading:String,message:String):Unit = {
+    partialUpdate(Call("errorAlert",JString(heading),JString(message)))
+  }
   private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
     val metlData = serializer.toMeTLData(jVal)
     metlData match {
@@ -1721,7 +1319,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               debug("sending quiz: %s".format(q))
               val roomId = cc.jid.toString
               rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(q))
-            } else this ! SpamMessage(Text("You are not permitted to create quizzes in this conversation"),Full("quizzes"))
+            } else {
+              errorScreen("quiz creation","You are not permitted to create quizzes in this conversation")
+            }
           })
         }
       }
