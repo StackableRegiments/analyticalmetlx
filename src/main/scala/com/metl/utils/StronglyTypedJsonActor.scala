@@ -44,9 +44,6 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener {
               val params = allParams.take(args.length)
               val bonusParams = allParams.drop(args.length)
               val output = serverSideFunc(params)
-              returnResultFunction.map(rrf => {
-                partialUpdate(Call(rrf,output))
-              })
               Right((output,params,bonusParams))
             }
             case unknown => Left(new Exception("unknown object: %s".format(unknown)))
@@ -58,7 +55,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener {
         }
       }
       val end = new java.util.Date().getTime()
-      Call("serverResponse",JObject({
+      val returnCall = Call("serverResponse",JObject({
         exceptionOrResult match {
           case Right(r) => {
             val (response,params,bonusParams) = r
@@ -83,6 +80,12 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener {
         JField("serverEnd",JInt(end)),
         JField("success",JBool(exceptionOrResult.isRight))
       )))
+      (for {
+        rrf <- returnResultFunction
+        res <- exceptionOrResult.right.toOption
+      } yield {
+        returnCall & Call(rrf,res._1)
+      }).getOrElse(returnCall)
     }))))
 	}
   val functions = NodeSeq.fromSeq(functionDefinitions.map(_.jsCreationFunc).toList)
