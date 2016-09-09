@@ -215,87 +215,23 @@
 									<canvas class="quizResultsGraph"></canvas>
 									<h3 class="quizQuestion"></h3>
 									<img class="quizImagePreview"></img>
-									<div class="quizOptionCountContainer">
-										There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
-									</div>
 									<div class="quizOptionContainer flex-container-column">
 										<!-- many ".quizOption"s are cloned from JS -->
-										<button class="quizOption button-transparent-border flex-container-row space-between">
+										<div class="quizOption button-transparent-border flex-container-row space-between">
 											<span class="quizOptionName mrh"></span>
 											<span class="quizOptionText"></span>
 											<span class="quizOptionCountContainer">
 												<span class="quizOptionAnswerCount"></span>
 											</span>
 											<meter class="quizOptionMeter"></meter>
-											<span class="fa fa-thumbs-up align-right mlh"></span>
-										</button>
+										</div>
 									</div>
 								</div>
 								<div class="currentQuizTeacherControls">
-									<input class="quizShouldDisplayOnNextSlide button-transparent-border" value="Display poll on next page" type="button"></input>
-									<input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on next page" type="button"></input>
+									<input class="quizResultsShouldDisplayOnSlide button-transparent-border" value="Display poll with results on canvas" type="button"></input>
 								</div>
 							</div>
 						</div>
-					</div>
-          <div class="quiz-listing align-left half mrh clear">
-            <div id="unansweredQuizListing" class="clear box-model-block">
-              <h3 class="nmb">Unanswered polls</h3>
-              <!-- many ".quizItem"s are cloned from JS -->
-              <div class="quizItem flex-container-row btn-list">
-                <a class="quizSummary btn-item flex-container-row full">
-                  <div class="quizSummaryQuestion mrh"></div>
-                  <div class="fa fa-thumbs-up btn-icon"><span class="hidden">Activity: </span><div class="quizSummaryAnswerCount"></div></div>
-                </a>
-                <div class="quizTeacherControls btn-item">
-                  <input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
-                </div>
-              </div>
-            </div>
-            <div id="answeredQuizListing" class="clear box-model-block">
-              <h3 class="nmb">Answered polls</h3>
-              <!-- many ".quizItem"s are cloned from JS -->
-              <div class="quizItem flex-container-row btn-list">
-                <a class="quizSummary btn-item flex-container-row full">
-                  <div class="quizSummaryQuestion mrh"></div>
-                  <div class="fa fa-thumbs-up btn-icon"><span class="hidden">Activity: </span><div class="quizSummaryAnswerCount"></div></div>
-                </a>
-                <div class="quizTeacherControls btn-item">
-                  <input class="quizSummaryEditButton" value="Edit poll" type="button"></input>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div id="currentQuiz" class="box-model-block align-left half">
-            <!-- one ".currentQuizItem" will be visible at any time, but it will be cloned and replaced by JS -->
-            <div class="currentQuizItem">
-              <div class="voting-block block img-resp">
-                <h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
-                <canvas class="quizResultsGraph"></canvas>
-                <h3 class="quizQuestion"></h3>
-                <img class="quizImagePreview"></img>
-                <div class="quizOptionCountContainer">
-                  There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
-                </div>
-                <div class="quizOptionContainer flex-container-column">
-                  <!-- many ".quizOption"s are cloned from JS -->
-                  <button class="quizOption button-transparent-border flex-container-row space-between">
-                    <span class="quizOptionName mrh"></span>
-                    <span class="quizOptionText"></span>
-                    <span class="quizOptionCountContainer">
-                      <span class="quizOptionAnswerCount"></span>
-                    </span>
-                    <meter class="quizOptionMeter"></meter>
-                    <span class="fa fa-thumbs-up align-right mlh"></span>
-                  </button>
-                </div>
-              </div>
-              <div class="currentQuizTeacherControls">
-                <input class="quizShouldDisplayOnNextSlide button-transparent-border" value="Display poll on next page" type="button"></input>
-                <input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on next page" type="button"></input>
-                <input class="deleteQuiz button-transparent-border" value="Delete this poll" type="button"></input>
-              </div>
-            </div>
           </div>
         </section>
         <section id="contentFilterPopup" class="backstage box-model-block">

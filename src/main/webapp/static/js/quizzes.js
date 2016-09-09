@@ -71,11 +71,100 @@ var Quizzes = (function(){
 				{name:"timestamp",type:"dateField",title:"Modified",readOnly:true},
 				{
 					name:"answerCount",type:"number",title:"Answers",readOnly:true,
-					itemTemplate:function(answerCount,quiz){
+					itemTemplate:function(answerCount,quizSummary){
 						if (Conversations.shouldModifyConversation()){
-							return quiz.key in quizResultsGraphs ? quizResultsGraphs[quiz.key] : answerCount;
+							var quiz = quizzes[quizSummary.key];
+							var quizResultsId = "quizResultsGraph_"+quiz.id;
+							_.defer(function(){
+								renderQuizResults("#"+quizResultsId,quiz,160,120);
+							});
+							var canvas = $("<canvas/>",{id:quizResultsId});
+							canvas.on("click",function(){
+								var resultsW = 640;
+								var resultsH = 480;
+								var resultsPopupTitle = sprintf("Results for %s",quiz.question);
+								var popupId = sprintf("quizResultsPopup_%s",quiz.id);
+								var resultsPopupContainer = $("<div/>",{id:popupId});
+								var jAlert = $.jAlert({
+									title:resultsPopupTitle,
+									width:"auto",
+									content:resultsPopupContainer[0].outerHTML	
+								});
+								var rootElem = showResultsTemplate.clone();
+								var quizResultsPopupId = sprintf("quizResultsPopupGraph_%s",quiz.id);
+								rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId);
+								_.defer(function(){
+									renderQuizResults("#"+quizResultsPopupId,quiz,resultsW,resultsH);
+								});
+								rootElem.find(".quizResultsShouldDisplayOnSlide").on("click",function(){
+									var submissionQuality = 0.4;
+									var quizCanvas = $("#"+quizResultsPopupId)[0];
+									var tempCanvas = $("<canvas/>");
+									var w = resultsW;
+									var h = resultsH;
+									tempCanvas.width = w;
+									tempCanvas.height = h;
+									tempCanvas.attr("width",w);
+									tempCanvas.attr("height",h);
+									tempCanvas.css({
+										width:w,
+										height:h
+									});
+									var ctx = tempCanvas[0].getContext("2d");
+									ctx.fillStyle = "rgb(255,255,255)";
+									ctx.fillRect(0,0,w,h);
+									ctx.drawImage(quizCanvas,0,0,w,h);
+									var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
+									var t = new Date().getTime();
+									var username = UserSettings.getUsername();
+									var cc = Conversations.getCurrentConversation();
+									var title = sprintf("quizresultsimage%s%s.jpg",username,t.toString());
+									var identity = sprintf("%s:%s:%s",cc.jid.toString(),title,t);
+									var url = sprintf("/uploadDataUri?jid=%s&filename=%s",cc.jid.toString(),encodeURI(identity));
+									$.ajax({
+										url: url,
+										type: 'POST',
+										success: function(e){
+											var newIdentity = $(e).find("resourceUrl").text();
+											var slideId = Conversations.getCurrentSlideJid();
+											var username = UserSettings.getUsername();
+											var t = new Date().getTime();
+											var imageId = sprintf("%s%s%s",slideId,username,t);
+											var newTag = imageId;
+											var imageStanza = {
+												type:"image",
+												author:username,
+												height:h,
+												width:w,
+												identity:imageId,
+												slide:slideId,
+												source:newIdentity,
+												privacy:"PUBLIC",
+												tag:newTag,
+												target:"presentationSpace",
+												timestamp:t,
+												x:10,
+												y:10
+											};
+											sendStanza(imageStanza);
+											console.log("droppedQuizResults on slide:",newIdentity);
+										},
+										error: function(e){
+											console.log("exception while adding the quizResultsGraph to the slide",e);
+										},
+										data: imageData,
+										cache: false,
+										contentType: false,
+										processData: false
+									});
+
+								});
+
+								$("#"+popupId).append(rootElem);
+							});
+							return canvas;
 						} else {
-							return answerCount;
+							return $("<span/>"); 
 						}
 					}																																																		 
 				},
@@ -86,7 +175,6 @@ var Quizzes = (function(){
 						var rootElem = actionsButtonsTemplate.clone();
 						var editButton = rootElem.find(".editPollButton");
 						var answerButton = rootElem.find(".answerPollButton");
-						
 						answerButton.on("click",function(){
 							var answerTitle = sprintf("Answer poll: %s",quiz.question);
 							var answerId = sprintf("quiz_answer_%s",quiz.id);
@@ -100,6 +188,8 @@ var Quizzes = (function(){
 							var answerContainerId = sprintf("answerContainer_%s",quiz.id);
 							var answerPopup = answerQuizTemplate.clone();
 							$("#"+answerId).append(answerPopup);
+							answerPopup.find(".quizOptionCount").text(quizSummary.optionCount);
+							answerPopup.find(".quizOptionCountPluralizer").text(quizSummary.optionCount == 1 ? "" : "s");
 							var answerContainer = answerPopup.find(".quizOptionContainer");
 							var answerTemplate = answerContainer.find(".quizOption").clone();
 							answerContainer.html(_.map(quiz.options,function(opt){
@@ -113,8 +203,13 @@ var Quizzes = (function(){
 								answer.find(".quizOptionText").text(opt.text);
 								return answer;	
 							}));
-							answerPopup.find(".quizImagePreview").attr("src",urlForQuizImage(quiz.id));
-
+							var quizImagePreview = answerPopup.find(".quizImagePreview");
+							quizImagePreview.attr("src",urlForQuizImage(quiz.id));
+							if ("url" in quiz){
+								quizImagePreview.show();
+							} else {
+								quizImagePreview.hide();
+							}
 						});
 						if (Conversations.shouldModifyConversation()){
 							editButton.on("click",function(){
@@ -179,12 +274,18 @@ var Quizzes = (function(){
 								} else {
 									imagePreview.hide();
 								}
-								editPopup.find(".removeSlideImageFromQuiz").on("click",function(){
+								var removeQuizButton = editPopup.find(".removeSlideImageFromQuiz");
+								removeQuizButton.on("click",function(){
 									imagePreview.attr("src",undefined).hide();
+									removeQuizButton.hide();
 									newQuiz.url = undefined;
 								});
+								if ("url" in newQuiz){
+									removeQuizButton.show();
+								} else {
+									removeQuizButton.hide();
+								};
 								editPopup.find(".addSlideImageToQuiz").on("click",function(){
-									// this is where the slide should be snapshotted and added.
 									WorkQueue.pause();
 									var cc = Conversations.getCurrentConversation();
 
@@ -217,11 +318,12 @@ var Quizzes = (function(){
 											var newIdentity = $(e).find("resourceUrl").text();
 											newQuiz.url = newIdentity;
 											imagePreview.attr("src",imageData).show();
+											removeQuizButton.show();
 											WorkQueue.gracefullyResume();
 											console.log("created new Image:",newIdentity);
 										},
 										error: function(e){
-											console.log(e);
+											console.log("exception while snapshotting the slide for the quizImage",e);
 											WorkQueue.gracefullyResume();
 										},
 										data: imageData,
@@ -229,7 +331,6 @@ var Quizzes = (function(){
 										contentType: false,
 										processData: false
 									});
-									// end snapshot
 								});
 								editPopup.find(".updateQuiz").on("click",function(){
 									sendStanza(newQuiz);
@@ -296,25 +397,11 @@ var Quizzes = (function(){
 				order:"desc"
 			});
 			reRenderQuizzes();
-			
-
-			unansweredQuizSummaryContainer = $("#unansweredQuizListing");
-			unansweredQuizSummaryTemplate = unansweredQuizSummaryContainer.find(".quizItem").clone();
-			answeredQuizSummaryContainer = $("#answeredQuizListing");
-			answeredQuizSummaryTemplate = answeredQuizSummaryContainer.find(".quizItem").clone();
-			currentQuizContainer = $("#currentQuiz");
-			currentQuizTemplate = currentQuizContainer.find(".currentQuizItem").clone();	
-
     });
 
 		var clearState = function(){
         quizzes = {};
         quizAnswers = {};
-        currentQuiz = {};
-        unansweredQuizSummaryContainer.empty();
-        answeredQuizSummaryContainer.empty();
-        currentQuizContainer.empty();
-        $("#quizCount").text("");
         if (Conversations.shouldModifyConversation()){
 					$("#quizCreationButton").unbind("click").on("click",function(){
 						requestCreateQuizDialogue(Conversations.getCurrentConversation());
@@ -325,33 +412,6 @@ var Quizzes = (function(){
     };
     var renderQuizzesInPlace = function(){
 			reRenderQuizzes();
-			/*
-        try{
-            var haveAnsweredQuiz = function(quiz) {
-                return quizAnswersFunction(quiz)[UserSettings.getUsername()] != undefined;
-            }
-						var sortedQuizzes = _.sortBy(quizzes,function(quiz){return quiz.created});
-            var answeredQuizzes = $.map(sortedQuizzes, function(quiz, id){ if(haveAnsweredQuiz(quiz)) return quiz; });
-            var unansweredQuizzes = $.map(sortedQuizzes, function(quiz, id){ if(!haveAnsweredQuiz(quiz)) return quiz; });
-
-						answeredQuizSummaryContainer.empty();
-            if(answeredQuizzes.length > 0) {
-                $.map(_.filter(answeredQuizzes,function(aq){return aq.isDeleted != true;}),function(quizData){ renderQuizSummary(quizData,answeredQuizSummaryContainer,answeredQuizSummaryTemplate.clone()); });
-            }
-						unansweredQuizSummaryContainer.empty();
-            if(unansweredQuizzes.length > 0) {
-                $.map(_.filter(unansweredQuizzes,function(uaq){return uaq.isDeleted != true;}),function(quizData){ renderQuizSummary(quizData,unansweredQuizSummaryContainer,unansweredQuizSummaryTemplate.clone()); });
-            }
-
-            $("#currentQuiz").empty();
-            if ("type" in currentQuiz && currentQuiz.type == "quiz" && "isDeleted" in currentQuiz && currentQuiz.isDeleted != true){
-                $("#currentQuiz").html(renderQuiz(currentQuiz));
-            }
-        }
-        catch(e){
-            console.log("renderQuizzes exception",e,quizzes);
-        }
-				*/
     };
     var quizAnswersFunction = function(quiz){
         if ("type" in quiz && quiz.type == "quiz" && "id" in quiz){
@@ -369,32 +429,16 @@ var Quizzes = (function(){
             return {};
         }
     }
-    var renderQuizSummary = function(quiz,targetContainer,template){
-        var uniq = function(label){return sprintf("quiz_summary_%s_%s",label,quiz.id);};
-		var rootElem = template.find(".quizSummary");
-		rootElem.attr("id",uniq("container")).on("click",function(){
-		    $(".quizSummary").removeClass('active');
-		    $(this).addClass('active');
-			currentQuiz = quiz;
-			// reRenderCurrentQuiz
-            $("#currentQuiz").html(renderQuiz(quiz));
-		});
-		rootElem.find(".quizSummaryQuestion").attr("id",uniq("title")).text(quiz.question);
-		var allAnswersForThisQuiz = quiz.id in quizAnswers? _.reduce(quizAnswersFunction(quiz),function(prev,curr){
-        var additional = "answerCount" in curr ? curr.answerCount : 0;
-            return prev + additional;
-        },0) : 0;
-		rootElem.find(".quizSummaryAnswerCount").attr("id",uniq("answers")).text(sprintf("%s", allAnswersForThisQuiz));
-        if (Conversations.shouldModifyConversation()){
-			rootElem.closest(".quizItem").find(".quizSummaryEditButton").attr("id",uniq("editButton")).on("click",function(){
-				requestUpdateQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
-			});
-        } else {
-			rootElem.closest(".quizItem").find(".quizTeacherControls").remove();
-		}
-		targetContainer.append(template);
-    };
-    var renderQuiz = function(quiz){
+    var renderQuizResults = function(selector,quiz,w,h){
+				var graph = $(selector);
+				graph.width = w;
+				graph.height = h;
+				graph.attr("width",w);
+				graph.attr("height",h);
+				graph.css({
+					width:w,
+					height:h
+				});
         var quizOptionAnswerCount = function(quiz, qo){
             var count = 0;
             if (quiz.id in quizAnswers){
@@ -406,152 +450,48 @@ var Quizzes = (function(){
             };
             return count;
         }
-        var quizOptionClass = function(quiz, qo){
-            var text = "quizOption";
-            if (quiz.id in quizAnswers){
-                $.each(theseQuizAnswerers,function(name,answerer){
-                    if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && name.toLowerCase() == UserSettings.getUsername().toLowerCase()){
-                        text = "quizOption activeAnswer active";
-                    }
-                });
-            };
-            return text;
-        }
-        var uniq = function(label){return sprintf("quiz_%s_%s",label,quiz.id);};
-				var rootElem = currentQuizTemplate.clone();
-				rootElem.attr("id",uniq("container"));
-				rootElem.find(".quizQuestion").text(quiz.question).attr("id",uniq("title"));
-        if (Conversations.isAuthor()){
-            rootElem.find(".resultsTitle").show();
-            var graph = rootElem.find(".quizResultsGraph");
-            graph.show();
-            _.defer(function(){
-							/*
-                var data = {
-                    labels:_.map(quiz.options,"name"),
-                    datasets:[
-                        {
-                            fillColor:"gray",
-                            strokeColor:"black",
-                            data:quiz.options.map(function(qo){
-                                return quizOptionAnswerCount(quiz,qo);
-                            })
-                        }
-                    ]
-                };
-								*/
-                var options = {
-									/*
-										tooltips: {
-											custom:function(tooltip){
-												console.log("tooltip",tooltip);
-												return false;
-											}
-										},
-										*/
-										scales: {
-											yAxes: [{
-												stacked: true,
-												ticks:{
-													//display:false
-												}
-											}],
-											xAxes: [{
-												type: "linear",
-												position: "bottom",
-												ticks : {
-													stepSize:1
-												}	
-											}]
-										},
-										legend:{
-											display:false
-										}
-                }
-								var splitLines = function(text,lineLength){
-									return _.map(_.chunk(text.split(""),lineLength),function(line){return _.join(line,"");}); 		
-								};
-								var data = {
-									//labels:quiz.options.map(function(qo){return splitLines(sprintf("%s: %s",qo.name,qo.text),20);}),
-									//labels:quiz.options.map(function(qo){return sprintf("%s: %s",qo.name,qo.text)}),
-									labels:_.map(quiz.options,"name"),
-									datasets:[{
-										data:quiz.options.map(function(qo){
-											return quizOptionAnswerCount(quiz,qo);
-										}),
-										borderColor:["black"],
-										backgroundColor:["gray"],
-										borderWidth:1
-									}]
-								}
-								var chartDesc = {
-									type: "horizontalBar",
-									data: data,
-									options: options	
-								};
-                console.log(chartDesc);
-								new Chart(graph[0].getContext("2d"),chartDesc);
-                //new Chart(graph[0].getContext("2d")).Bar(data,options);
-            });
-        }
-        else {
-            rootElem.find(".resultsTitle").hide();
-            rootElem.find(".quizResultsGraph").hide();
-        }
-
         var theseQuizAnswerers = quizAnswersFunction(quiz);
-				var totalAnswerCount = _.size(theseQuizAnswerers);
-				var highWaterMark = totalAnswerCount * 0.5;
-				var optimumMark = totalAnswerCount;
-				var lowWaterMark = totalAnswerCount * 0.25;
-        if ("url" in quiz){
-					rootElem.find(".quizImagePreview").attr("src",sprintf("/quizProxy/%s/%s",Conversations.getCurrentConversationJid(),quiz.id)).show();
-        }
-        else {
-            rootElem.find(".quizImagePreview").hide();
-        }
-       /*var generateColorClass = function(color) {return sprintf("border-color:%s", color.toString().split(",")[0])}*/
-				var quizCountContainer = rootElem.find(".quizOptionCountContainer");
-				var quizOptionCountElement = rootElem.find(".quizOptionCount");
-				quizOptionCountElement.text(quiz.options.length);
-				var quizOptionCountPluralizer = rootElem.find(".quizOptionCountPluralizer");
-				quizOptionCountPluralizer.text(quiz.options.length == 1 ? "" : "s");
-				var quizOptionContainer = rootElem.find(".quizOptionContainer");
-				var quizOptionTemplate = quizOptionContainer.find(".quizOption").clone();
-				quizOptionContainer.empty();
-        $.each(quiz.options,function(i,qo){
-					var optionRootElem = quizOptionTemplate.clone();
-					quizOptionContainer.append(optionRootElem);
-					optionRootElem.attr("id",uniq("option_"+qo.name)).addClass(quizOptionClass(quiz,qo)).on("click",function(){
-						answerQuiz(Conversations.getCurrentConversationJid(),quiz.id,qo.name);
-					});	
-					optionRootElem.find(".quizOptionText").text(qo.text);
-					optionRootElem.find(".quizOptionName").text(qo.name);
-					var optionMeter = optionRootElem.find(".quizOptionMeter");
-					if(Conversations.shouldModifyConversation()){
-						var score = quizOptionAnswerCount(quiz,qo);
-						optionRootElem.find(".quizOptionAnswerCount").text(score);
-						optionMeter.attr("value",score).attr("min",0).attr("max",totalAnswerCount).attr("low",lowWaterMark).attr("high",highWaterMark).attr("optimum",optimumMark).text(sprintf("%s out of %s",score,totalAnswerCount));
-					} else {
-						optionRootElem.find(".quizOptionCountContainer").remove();
-						optionMeter.remove();
+				var options = {
+					scales: {
+						yAxes: [{
+							stacked: true,
+							ticks:{
+							}
+						}],
+						xAxes: [{
+							type: "linear",
+							position: "bottom",
+							ticks : {
+								stepSize:1
+							}	
+						}]
+					},
+					legend:{
+						display:false
 					}
-        });
-        if (Conversations.shouldModifyConversation()){
-					rootElem.find(".quizShouldDisplayOnNextSlide").on("click",function(){
-						addQuizViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
-					});
-          rootElem.find(".quizResultsShouldDisplayOnNextSlide").on("click",function(){
-						addQuizResultsViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
-					});
-					rootElem.find(".deleteQuiz").on("click",function(){
-							requestDeleteQuizDialogue(Conversations.getCurrentConversationJid(),quiz.id);
-					});
-        } else {
-					rootElem.find(".currentQuizTeacherControls").hide();
 				}
-        return rootElem;
-    };
+				var splitLines = function(text,lineLength){
+					return _.map(_.chunk(text.split(""),lineLength),function(line){return _.join(line,"");}); 		
+				};
+				var data = {
+					labels:_.map(quiz.options,"name"),
+					datasets:[{
+						data:quiz.options.map(function(qo){
+							return quizOptionAnswerCount(quiz,qo);
+						}),
+						borderColor:["black"],
+						backgroundColor:["gray"],
+						borderWidth:1
+					}]
+				}
+				var chartDesc = {
+					type: "horizontalBar",
+					data: data,
+					options: options	
+				};
+				var ctx = graph[0].getContext("2d");
+				new Chart(ctx,chartDesc);
+		}
     var actOnQuiz = function(newQuiz){
         quizzes[newQuiz.id] = newQuiz;
     };
