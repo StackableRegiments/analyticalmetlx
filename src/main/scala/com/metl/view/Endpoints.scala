@@ -301,8 +301,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         RedirectResponse(referer)
       }
     })
-    case Req(List("listRooms"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
-    case Req(List("listSessions"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
+    case Req(List("listRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
+    case Req(List("listSessions"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversation(r))
@@ -335,9 +335,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide", StatelessHtml.duplicateSlide(Globals.currentUser.is,slide,conversation))
     case Req(List("duplicateConversation",conversation),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation", StatelessHtml.duplicateConversation(Globals.currentUser.is,conversation))
-    case Req(List("requestMaximumSizedGrouping",conversation,slide,groupSize),_,_) =>
+    case Req(List("requestMaximumSizedGrouping",conversation,slide,groupSize),_,_) if Globals.isSuperUser =>
       () => Stopwatch.time("MeTLStatefulRestHelper.requestMaximumSizedGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByMaximumSize(groupSize.toInt),Nil,Nil)))
-    case Req(List("requestClassroomSplitGrouping",conversation,slide,numberOfGroups),_,_) =>
+    case Req(List("requestClassroomSplitGrouping",conversation,slide,numberOfGroups),_,_) if Globals.isSuperUser =>
       () => Stopwatch.time("MeTLStatefulRestHelper.requestClassroomSplitGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is,conversation,slide,GroupSet(ServerConfiguration.default,nextFuncName,slide,ByTotalGroups(numberOfGroups.toInt),Nil,Nil)))
     case Req(List("proxyDataUri",slide,source),_,_) =>
       ()=> Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri", StatelessHtml.proxyDataUri(slide,source))

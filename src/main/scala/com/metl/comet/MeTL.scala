@@ -108,7 +108,8 @@ trait ConversationFilter {
   protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[Tuple2[String,String]],includeDeleted:Boolean = false):Boolean = {
       val subject = c.subject.trim.toLowerCase
       val author = c.author.trim.toLowerCase
-      ((subject != "deleted" || (includeDeleted && author == me)) && (author == me || myGroups.exists(_._2.toLowerCase.trim == subject)))
+      com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted)
+//      ((subject != "deleted" || (includeDeleted && author == me)) && (author == me || myGroups.exists(_._2.toLowerCase.trim == subject)))
   }
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is.toLowerCase.trim
@@ -591,7 +592,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   }
 
   override def render = {
-    OnLoad(conversation.map(c => {
+    OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
       Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
