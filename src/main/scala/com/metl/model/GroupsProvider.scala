@@ -54,13 +54,13 @@ object GroupsProvider {
       new FilteringGroupsProvider(gp,groupsFilter,membersFilter,personalDetailsFilter)
     }).getOrElse(gp)
   }
-  def createFlatFileGroups(in:NodeSeq):GroupsProvider = {
-    possiblyFilter(in,(in \\ "@format").text match {
-      case "stLeo" => new StLeoFlatFileGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
-      case "globalOverrides" => new GlobalOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
+  def createFlatFileGroups(in:NodeSeq):List[GroupsProvider] = {
+    (in \\ "@format").headOption.toList.flatMap(ho => ho.text match {
+      case "stLeo" => List(new StLeoFlatFileGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList))
+      case "globalOverrides" => List(new GlobalOverridesGroupsProvider((in \\ "@location").text,TimeSpanParser.parse((in \\ "@refreshPeriod").text)))
      
       case "adfsGroups" => {
-        new ADFSGroupsExtractor
+        List(new ADFSGroupsExtractor)
       }
       case "specificOverrides" => {
         (for {
@@ -75,9 +75,7 @@ object GroupsProvider {
               period
             )
           )
-        }).getOrElse({
-          throw new Exception("missing parameters for specificOverrides groups provider")
-        })
+        }).toList
       }
       case "d2l" => (for {
         host <- (in \\ "@host").headOption.map(_.text)
@@ -100,11 +98,9 @@ object GroupsProvider {
             Some(g => diskCache.write(g))
           )
         ,overrideUsername)
-      }).getOrElse({
-        throw new Exception("missing parameters for d2l groups provider")
-      })
-      case _ => throw new Exception("unrecognized flatfile format")
-    })
+      }).toList
+      case _ => Nil
+    }).toList.map(gp => possiblyFilter(in,gp))
   }
 }
 

@@ -201,7 +201,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       Globals.groupsProviders = new SelfGroupsProvider() :: Globals.groupsProviders
     },false)
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
-      Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) :: Globals.groupsProviders
+      Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
     },true)
     println("configured groupsProviders: %s".format(Globals.groupsProviders))
   }

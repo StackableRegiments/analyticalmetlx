@@ -1,44 +1,111 @@
 var Submissions = (function(){
-    var submissionSummaryListing = {};
-    var submissionSummaryTemplate = {};
-    var currentSubmissionTemplate = {};
-    var currentSubmissionContainer = {};
     var submissions = [];
-    var currentSubmission = {};
+		var submissionsDatagrid = {};
+		var insertButtonTemplate = {};
+		var reRenderDatagrid = function(){
+			submissionsDatagrid.jsGrid("loadData");
+			var sortObj = submissionsDatagrid.jsGrid("getSorting");
+			if ("field" in sortObj){
+					submissionsDatagrid.jsGrid("sort",sortObj);
+			}
+		};
     $(function(){
-        submissionSummaryListing = $("#submissionListing");
-        submissionSummaryTemplate = submissionSummaryListing.find(".submissionSummary").clone();
-        currentSubmissionContainer = $("#currentSubmission");
-        currentSubmissionTemplate = currentSubmissionContainer.find(".submissionContainer").clone();
-        submissionSummaryListing.empty();
-        $("#submissions").click(function(){
-            showBackstage("submissions");
+				submissionsDatagrid = $("#submissionsDatagrid");
+				insertButtonTemplate = submissionsDatagrid.find(".insertOnNextSlideButtonContainer");
+				submissionsDatagrid.empty();
+        var DateField = function(config){
+            jsGrid.Field.call(this,config);
+        };
+        DateField.prototype = new jsGrid.Field({
+            sorter: function(a,b){
+                return new Date(a) - new Date(b);
+            },
+            itemTemplate: function(i){
+                return new Date(i).toLocaleString();
+            },
+            insertTemplate: function(i){return ""},
+            editTemplate: function(i){return ""},
+            insertValue: function(){return ""},
+            editValue: function(){return ""}
         });
-        var submissionsCount = $("<div />",{
-            id:"submissionCount",
-            class:"icon-txt"
-        });
-        $("#feedbackStatus").prepend(submissionsCount);
-        submissionsCount.click(function(){
-            showBackstage("submissions");
-        });
-        refreshSubmissionCount();
+        jsGrid.fields.dateField = DateField;
+
+				var gridFields = [
+					{
+						name:"url",
+						type:"text",
+						title:"Preview",
+						readOnly:true,
+						sorting:false,
+						itemTemplate:function(thumbnailUrl,submission){
+							var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
+							var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
+								var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
+								var title = sprintf("Submission from %s at %s on slide %s",submission.author,new Date(submission.timestamp),submission.slide);
+								$.jAlert({
+									title:title,
+									closeOnClick:true,
+									width:"90%",
+									content:$("<img/>",{src:url})[0].outerHTML
+								});
+							});							
+							return img;
+						}
+					},
+					{name:"slide",type:"number",title:"Slide",readOnly:true},
+					{name:"timestamp",type:"dateField",title:"When",readOnly:true},
+					{name:"author",type:"text",title:"Who",readOnly:true},
+					{
+						name:"identity",
+						type:"text",
+						title:"actions",
+						readOnly:true,
+						sorting:false,
+						itemTemplate:function(identity,submission){
+							if (Conversations.shouldModifyConversation()){
+								var rootElem = insertButtonTemplate.clone();
+								rootElem.find(".insertOnNextSlideButton").on("click",function(){
+									addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
+								});
+								return rootElem;
+							} else {
+								return $("<span/>");
+							}
+						}
+					}
+				];
+				submissionsDatagrid.jsGrid({
+					width:"100%",
+					height:"auto",
+					inserting:false,
+					editing:false,
+					sorting:true,
+					paging:true,
+					noDataContent: "No submissions",
+				 	controller: {
+						loadData: function(filter){
+							if ("sortField" in filter){
+								var sorted = _.sortBy(filteredSubmissions(),function(sub){
+									return sub[filter.sortField];
+								});
+								if ("sortOrder" in filter && filter.sortOrder == "desc"){
+									sorted = _.reverse(sorted);
+								}
+								return sorted;
+							} else {
+								return filteredSubmissions();
+							}
+						}
+					},
+					pageLoading:false,
+					fields: gridFields	
+				});
+				submissionsDatagrid.jsGrid("sort",{
+					field:"timestamp",
+					order:"desc"
+				});
+				renderSubmissionsInPlace();
     });
-    var refreshSubmissionCount = function(){
-        var submissionCount = _.size(filteredSubmissions());
-        if (submissionCount > 0){
-            if(submissionCount == 1){
-                $("#submissionCount").text(sprintf("%s submission",submissionCount));
-                $("#dedicatedSubmissionCount").text("This conversation has 1 submission");
-            } else{
-                $("#submissionCount").text(sprintf("%s submissions",submissionCount));
-                $("#dedicatedSubmissionCount").text(sprintf("This conversation has %s submissions",submissionCount));
-            }
-        } else {
-            $("#submissionCount").text("");
-            $("#dedicatedSubmissionCount").text(sprintf("This conversation has %s submissions",submissionCount));
-        }
-    };
     var filteredSubmissions = function(){
         return _.filter(submissions,filterSubmission);
     };
@@ -47,52 +114,10 @@ var Submissions = (function(){
     };
     var clearState = function(){
         submissions = [];
-        currentSubmission = {};
-        $("#submissionCount").text("");
     };
     var renderSubmissionsInPlace = function(){
-        submissionSummaryListing.empty();
-        filteredSubmissions().map(function(submission){
-            renderSubmissionSummary(submission);
-        })
-        /*
-         $("#submissionListing").html(unwrap(filteredSubmissions().map(renderSubmissionSummary)));
-         */
-        renderCurrentSubmissionInPlace();
-        refreshSubmissionCount();
+				reRenderDatagrid();
     }
-    var renderCurrentSubmissionInPlace = function(){
-        currentSubmissionContainer.html(renderSubmission(currentSubmission));
-    };
-    var renderSubmissionSummary = function(submission){
-        if ("type" in submission && submission.type == "submission"){
-            var rootElem = submissionSummaryTemplate.clone();
-            submissionSummaryListing.append(rootElem);
-            rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s %s", submission.author, new Date(submission.timestamp).toDateString(),new Date(submission.timestamp).toLocaleTimeString()));
-            rootElem.find(".submissionImageThumb").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
-            rootElem.find(".viewSubmissionButton").attr("id",sprintf("viewSubmissionButton_%s",submission.identity)).on("click",function(){
-                currentSubmission = submission;
-                renderCurrentSubmissionInPlace();
-            });
-        }
-    };
-    var renderSubmission = function(submission){
-        var rootElem = $("<div />");
-        if ("type" in submission && submission.type == "submission"){
-            rootElem = currentSubmissionTemplate.clone();
-            rootElem.attr("id",sprintf("submission_%s",submission.identity))
-            rootElem.find(".submissionDescription").text(sprintf("submitted by %s at %s",submission.author, submission.timestamp));
-            rootElem.find(".submissionImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity));
-            if (Conversations.shouldModifyConversation()){
-                rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
-                    addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
-                });
-            } else {
-                rootElem.find("submissionTeacherControls").hide();
-            }
-        }
-        return rootElem;
-    };
     var historyReceivedFunction = function(history){
         try {
             if ("type" in history && history.type == "history"){
@@ -123,9 +148,6 @@ var Submissions = (function(){
 
     Progress.onConversationJoin["Submissions"] = clearState;
     Progress.historyReceived["Submissions"] = historyReceivedFunction;
-		// disabling this, because it's done in board.
-    //Progress.stanzaReceived["Submissions"] = onSubmissionReceived;
-		//
 		var clientSideSubmissionFunc = function(){
 			WorkQueue.pause();
 			var submissionQuality = 0.4;
@@ -200,6 +222,7 @@ var Submissions = (function(){
 			getCurrentSubmission:function(){return currentSubmission;},
 			processSubmission:onSubmissionReceived,
 			sendSubmission:clientSideSubmissionFunc,
-			requestServerSideSubmission:serverSideSubmissionFunc
+			requestServerSideSubmission:serverSideSubmissionFunc,
+			reRender:reRenderDatagrid
     };
 })();

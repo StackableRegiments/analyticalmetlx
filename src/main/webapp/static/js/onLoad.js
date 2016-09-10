@@ -795,14 +795,17 @@ $(function(){
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
+				Submissions.reRender();
     });
     $('#menuPolls').click(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
+				Quizzes.reRender();
     });
     $('#menuBlacklist').click(function(){
         showBackstage("blacklist");
         updateActiveMenu(this);
+				Blacklist.reRender();
     });
     $('#menuSettings').click(function(){
         showBackstage("settings");
