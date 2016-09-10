@@ -649,6 +649,91 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
 
   protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
+    ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
+      JArray(for {
+          tb <- Globals.tokBox.toList
+          s <- tokSession.toList
+          a <- tb.getArchives(s)
+        } yield {
+          JObject(
+            List(
+              JField("id",JString(a.id)),
+              JField("name",JString(a.name))
+            ) ::: 
+            a.url.toList.map(u => JField("url",JString(u))) :::
+            a.size.toList.map(s => JField("size",JInt(s))) :::
+            a.duration.toList.map(d => JField("size",JInt(d))) :::
+            a.createdAt.toList.map(c => JField("created",JInt(c)))
+          )
+        })
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+    ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a <- tb.getArchive(s,id)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+  /*
+    ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSession
+      } yield {
+        tb.removeArchive(s,id)
+        pretty(render(a))
+      }).toList)
+      Noop
+    }),
+  */
+    ClientSideFunction("startBroadcast",List("layout"),(args) => {
+      val layout = getArgAsString(args(0))
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSession
+        b = tb.startBroadcast(s,layout)
+      } yield {
+        Extraction.decompose(b)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
+      val id = getArgAsString(args(0))
+      val layout = getArgAsString(args(1))
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSession
+        a = tb.updateBroadcast(s,id,layout)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSession
+        b <- tb.getBroadcast(s)
+        a = tb.stopBroadcast(s,b.id)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunction("getBroadcast",List.empty[String],(args) => {
+      (for {
+        tb <- Globals.tokBox
+        s <- tokSession
+        a <- tb.getBroadcast(s)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -719,13 +804,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunction("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds"),(args) => {
+    ClientSideFunction("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsInt(args(1))
       val inkIds = getArgAsListOfStrings(args(2))
       val textIds = getArgAsListOfStrings(args(3))
       val multiWordTextIds = getArgAsListOfStrings(args(4))
       val imageIds = getArgAsListOfStrings(args(5))
+      val videoIds = getArgAsListOfStrings(args(6))
       val now = new Date().getTime
       val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
 
@@ -1104,6 +1190,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
     })
+    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(false)))
+    val receiveTokBoxSession:Box[JsCmd] = Empty
+    val receiveTokBoxBroadcast:Box[JsCmd] = Empty
+    /*
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     val receiveTokBoxSession:Box[JsCmd] = (for {
       cc <- currentConversation
@@ -1133,6 +1223,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
       j
     })
+     */
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))

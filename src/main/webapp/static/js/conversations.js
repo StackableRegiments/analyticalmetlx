@@ -245,13 +245,13 @@ var Conversations = (function(){
         }
     };
     var actOnConversationDetails = function(details){
+        try{
         var oldConversationJid = "";
         if ("jid" in currentConversation){
             oldConversationJid = currentConversation.jid.toString().toLowerCase();
         };
-        try{
-            updateStatus(sprintf("Updating to conversation %s",details.jid));
-            if (details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
+            //updateStatus(sprintf("Updating to conversation %s",details.jid));
+            if ("jid" in details && targetConversationJid && details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
                 if (shouldDisplayConversationFunction(details)){
                     currentConversation = details;
                     if ("configName" in details){
@@ -276,6 +276,7 @@ var Conversations = (function(){
             }
         }
         catch(e){
+	    console.log("exception in actOnConversationDetails",e);
             updateStatus(sprintf("FAILED: ReceiveConversationDetails exception: %s",e));
         }
         Progress.call("onLayoutUpdated");
@@ -503,11 +504,14 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
+	if (!("jid" in conversation)){
+	    return false;
+	}
         if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase() || ("UserSettings" in window && _.some(UserSettings.getUserGroups(),function(g){
-					var key = g.key ? g.key : g.type;
-					var name = g.name ? g.name : g.value;	
-					return (key == "special" && name == "superuser") || name.toLowerCase().trim() == conversation.subject.toLowerCase().trim();					
-				}))){
+            var key = g.key ? g.key : g.type;
+            var name = g.name ? g.name : g.value;
+            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == conversation.subject.toLowerCase().trim();
+        }))){
             return true;
         } else {
             return false;
@@ -523,10 +527,11 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
-						var key = g.key ? g.key : g.type;
-						var name = g.name ? g.name : g.value;	
-						return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject.toLowerCase().trime();
+	var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
+        if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
+            var key = g.key ? g.key : g.type;
+            var name = g.name ? g.name : g.value;
+            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
         }))) {
             return true;
         } else {
@@ -602,10 +607,10 @@ var Conversations = (function(){
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
-        var s = getCurrentSlideFunc();
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
+	    var s = getCurrentSlideFunc();
             var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
             if (c != undefined && "jid" in c && s != undefined && "id" in s){
                 var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
