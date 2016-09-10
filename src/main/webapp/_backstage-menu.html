@@ -19,18 +19,18 @@
           <label for="toolsToggleButton"><span class="icon-txt">Show tools</span></label>
         </div>
         <div id="blacklistPopup" class="backstage">
-					<!--<h2 class="nmt">Manage banned content</h2>-->
-          <div class="flex-container-row img-resp">
-            <div class="mr quarter">
-							<h2>Currently banned users</h2>
+          <!--<h2 class="nmt">Manage banned content</h2>-->
+          <div class="flex-container-col">
+            <div>
+              <h2>Currently banned users</h2>
               <div id="unbanAll" class="with-border fa-border">
                 <span class="fa fa-users" style="display:inline-block">
                   <div class="icon-txt">Unban</div>
                 </span>
                 <span style="display:inline-block">All</span>
               </div>
-              <div id="currentBlacklistAuthorList">
-                <div class="blacklistAuthorContainer">
+              <div class="flex-container-responsive" id="currentBlacklistAuthorList">
+                <div class="blacklistAuthorContainer ml">
                   <div class="blacklistAuthor with-border fa-border unbanContainer blacklistAuthorUnbanButton">
                     <span class="fa fa-user-plus" style="display:inline-block">
                       <div class="icon-txt">Unban</div>
@@ -40,20 +40,20 @@
                 </div>
               </div>
             </div>
-						<div>
-							<h2>Banned content</h2>
-							<div id="blacklistDatagrid">
-								<div class="blacklistRecord">
-									<div class="blacklistLegend">
-										<div class="blacklistAuthor">
-											<span class="blacklistAuthorColor" width="10px" height="10px">&nbsp;</span>
-											<span class="blacklistAuthorName"></span>
-										</div>
-									</div>
-									<img class="blacklistImage"></img>
-								</div>
-							</div>
-						</div>
+            <div>
+              <h2>Banned content</h2>
+              <div id="blacklistDatagrid">
+                <div class="blacklistRecord">
+                  <div class="blacklistLegend">
+                    <div class="blacklistAuthor">
+                      <span class="blacklistAuthorColor" width="10px" height="10px">&nbsp;</span>
+                      <span class="blacklistAuthorName"></span>
+                    </div>
+                  </div>
+                  <img class="blacklistImage"></img>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div id="integrationsPopup" class="backstage">
@@ -67,12 +67,12 @@
                 <div id="slideDeepLink"></div>
               </div>
             </div>
-	    <!--
-            <div>
-              <h3>Analytics over this conversation</h3>
-              <div id="conversationAnalysis"></div>
-            </div>
-	    -->
+            <!--
+                <div>
+                  <h3>Analytics over this conversation</h3>
+                  <div id="conversationAnalysis"></div>
+                </div>
+                -->
             <div>
               <h3>Copy this conversation to OneNote</h3>
               <div id="oneNoteExport"></div>
@@ -111,13 +111,13 @@
         </div>
         <div id="submissionsPopup" class="backstage">
           <h2 class="nmt">Submissions</h2>
-					<div id="submissionsDatagrid">
-						<div class="insertOnNextSlideButtonContainer">
-							<button class="insertOnNextSlideButton button-transparent-border mth">
-								<span>Insert on next slide</span>
-							</button>
-						</div>
-					</div>
+          <div id="submissionsDatagrid">
+            <div class="insertOnNextSlideButtonContainer">
+              <button class="insertOnNextSlideButton button-transparent-border mth">
+                <span>Insert on next slide</span>
+              </button>
+            </div>
+          </div>
         </div>
         <section id="attachmentsPopup" class="backstage box-model-block">
           <h2 class="align-left mrh nmt">Attachments</h2>
@@ -130,20 +130,20 @@
             <label for="attachmentFileChoice">Select file to attach</label>
             <input type="file" id="attachmentFileChoice"></input>
           </div>
-					<div id="attachmentsDatagrid">
-						<span class="deleteButtonContainer">
-							<button class="deleteButton toolbar fa fa-trash nm btn-icon" type="button"><span class="hidden">Delete</span></button>
-						</span>
-					</div>
+          <div id="attachmentsDatagrid">
+            <span class="deleteButtonContainer">
+              <button class="deleteButton toolbar fa fa-trash nm btn-icon" type="button"><span class="hidden">Delete</span></button>
+            </span>
+          </div>
         </section>
         <section id="participantsPopup" class="backstage box-model-block">
           <h2 class="nmt">Participants</h2>
-					<div id="participantsDatagrid">
-						<span class="followControls">
-							<input type="checkbox" class="followValue"></input>
-							<label class="followLabel"></label>
-						</span>
-					</div>
+          <div id="participantsDatagrid">
+            <span class="followControls">
+              <input type="checkbox" class="followValue"></input>
+              <label class="followLabel"></label>
+            </span>
+          </div>
         </section>
         <section id="quizzesPopup" class="backstage box-model-block">
           <h2 class="align-left mrh nmt">Polls</h2>
@@ -152,87 +152,93 @@
               <span>Create poll</span>
             </button>
           </div>
-					<div id="quizDatagrid">
-						<div class="actionsButtons">
-							<button class="editPollButton button-transparent-border mth">
-								<span>Edit poll</span>
-							</button>
-							<button class="answerPollButton button-transparent-border mth">
-								<span>Answer poll</span>
-							</button>
-						</div>
-						<div class="editQuizPopup">
-							<div class="voting-block block img-resp">
-								<h3>Question:</h3>
-								<input class="quizQuestion" type="text"></input>
-								<img class="quizImagePreview" style="width:320px;height:240px"></img>
-								<input class="addSlideImageToQuiz button-transparent-border" value="Add/Update slide image" type="button"></input>
-								<input class="removeSlideImageFromQuiz button-transparent-border" value="Remove slide image" type="button"></input>
-								<h3>Answers:</h3>
-								<span class="addOptionButtonContainer">
-									<button class="addOptionButton button-transparent-border flex-container-row space-between">
-										<span>Add option</span>
-									</button>
-								</span>
-								<div class="quizOptionContainer flex-container-column">
-									<!-- many ".quizOption"s are cloned from JS -->
-									<div class="quizOption">
-										<span class="quizOptionName mrh"></span>
-										<input type="text" class="quizOptionText"></input>
-										<button class="quizOptionDelete">Delete</button>
-									</div>
-								</div>
-						</div>
-							<div class="currentQuizTeacherControls">
-								<input class="updateQuiz button-transparent-border" value="Save this poll" type="button"></input>
-								<input class="deleteQuiz button-transparent-border" value="Delete this poll" type="button"></input>
-							</div>
-						</div>
-						<div class="answerQuizPopup">
-							<div class="currentQuizItem">
-								<div class="voting-block block img-resp">
-									<h3 class="quizQuestion"></h3>
-									<img class="quizImagePreview" style="width:320px;height:240px"></img>
-									<div class="quizOptionCountContainer">
-										There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
-									</div>
-									<div class="quizOptionContainer flex-container-column">
-										<div class="quizOption">
-											<button	class="quizOptionButton button-transparent-border flex-container-row space-between">
-												<span class="quizOptionName mrh"></span>
-												<span class="quizOptionText"></span>
-												<span class="fa fa-thumbs-up align-right mlh"></span>
-											</button>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="viewResultsPopup">
-							<div class="currentQuizItem">
-								<div class="voting-block block img-resp">
-									<h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
-									<canvas class="quizResultsGraph"></canvas>
-									<h3 class="quizQuestion"></h3>
-									<img class="quizImagePreview"></img>
-									<div class="quizOptionContainer flex-container-column">
-										<!-- many ".quizOption"s are cloned from JS -->
-										<div class="quizOption flex-container-row space-between">
-											<span class="quizOptionName mrh"></span>
-											<span class="quizOptionText"></span>
-											<span class="quizOptionCountContainer">
-												<span class="quizOptionAnswerCount"></span>
-											</span>
-											<meter class="quizOptionMeter"></meter>
-										</div>
-									</div>
-								</div>
-								<div class="currentQuizTeacherControls">
-									<input class="quizResultsShouldDisplayOnSlide button-transparent-border" value="Display poll with results on canvas" type="button"></input>
-									<input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on new slide" type="button"></input>
-								</div>
-							</div>
-						</div>
+          <div id="quizDatagrid">
+            <div class="actionsButtons">
+              <button class="editPollButton button-transparent-border mth">
+                <span>Edit poll</span>
+              </button>
+              <button class="answerPollButton button-transparent-border mth">
+                <span>Answer poll</span>
+              </button>
+            </div>
+            <div class="editQuizPopup">
+              <div class="voting-block block img-resp">
+                <h3>Question:</h3>
+                <input class="quizQuestion" type="text"></input>
+                <div class="flex-container-responsive">
+                  <div>
+                    <input class="addSlideImageToQuiz button-transparent-border" value="Add/Update slide image" type="button"></input>
+                    <input class="removeSlideImageFromQuiz button-transparent-border" value="Remove slide image" type="button"></input>
+                  </div>
+                  <img class="quizImagePreview ml mt" style="width:320px;height:240px"></img>
+                </div>
+                <div class="flex-container-responsive">
+                  <h3>Answers:</h3>
+                  <span class="addOptionButtonContainer">
+                    <button class="ml addOptionButton button-transparent-border flex-container-row space-between">
+                      <span>Add option</span>
+                    </button>
+                  </span>
+                </div>
+                <div class="quizOptionContainer flex-container-column">
+                  <!-- many ".quizOption"s are cloned from JS -->
+                  <div class="quizOption">
+                    <span class="quizOptionName mrh"></span>
+                    <input type="text" class="quizOptionText"></input>
+                    <button class=" quizOptionDelete btn-icon fa fa-trash" type="button" id="delete"><div class="icon-txt">Delete</div></button>
+                  </div>
+                </div>
+              </div>
+              <div class="currentQuizTeacherControls flex-container-responsive">
+                <input class="updateQuiz button-transparent-border" value="Save this poll" type="button"></input>
+                <input class="deleteQuiz button-transparent-border ml" value="Delete this poll" type="button"></input>
+              </div>
+            </div>
+            <div class="answerQuizPopup">
+              <div class="currentQuizItem">
+                <div class="voting-block block img-resp">
+                  <h3 class="quizQuestion"></h3>
+                  <img class="quizImagePreview" style="width:320px;height:240px"></img>
+                  <div class="quizOptionCountContainer">
+                    There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
+                  </div>
+                  <div class="quizOptionContainer flex-container-column">
+                    <div class="quizOption">
+                      <button   class="quizOptionButton button-transparent-border flex-container-row space-between">
+                        <span class="quizOptionName mrh"></span>
+                        <span class="quizOptionText"></span>
+                        <span class="fa fa-thumbs-up align-right mlh"></span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="viewResultsPopup">
+              <div class="currentQuizItem">
+                <div class="voting-block block img-resp">
+                  <h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
+                  <canvas class="quizResultsGraph"></canvas>
+                  <h3 class="quizQuestion"></h3>
+                  <img class="quizImagePreview"></img>
+                  <div class="quizOptionContainer flex-container-column">
+                    <!-- many ".quizOption"s are cloned from JS -->
+                    <div class="quizOption flex-container-row space-between">
+                      <span class="quizOptionName mrh"></span>
+                      <span class="quizOptionText"></span>
+                      <span class="quizOptionCountContainer">
+                        <span class="quizOptionAnswerCount"></span>
+                      </span>
+                      <meter class="quizOptionMeter"></meter>
+                    </div>
+                  </div>
+                </div>
+                <div class="currentQuizTeacherControls">
+                  <input class="quizResultsShouldDisplayOnSlide button-transparent-border" value="Display poll with results on canvas" type="button"></input>
+                  <input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on new slide" type="button"></input>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
         <section id="contentFilterPopup" class="backstage box-model-block">

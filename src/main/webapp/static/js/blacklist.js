@@ -86,7 +86,9 @@ var Blacklist = (function(){
             },
             {name:"slide",type:"number",title:"Slide",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
-            {name:"author",type:"text",title:"Who",readOnly:true}
+            {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
+		return _.map(o.blacklist,"username").join(",");
+	    }}
         ];
         blacklistDatagrid.jsGrid({
             width:"100%",
@@ -98,8 +100,12 @@ var Blacklist = (function(){
             noDataContent: "No ban records",
             controller: {
                 loadData: function(filter){
+		    var richLists = _.map(blacklists,function(bl){
+			bl.userCount = bl.blacklist.length;
+			return bl;
+		    });
                     if ("sortField" in filter){
-                        var sorted = _.sortBy(blacklists,function(sub){
+                        var sorted = _.sortBy(richLists,function(sub){
                             return sub[filter.sortField];
                         });
                         if ("sortOrder" in filter && filter.sortOrder == "desc"){
@@ -107,7 +113,7 @@ var Blacklist = (function(){
                         }
                         return sorted;
                     } else {
-                        return blacklists;
+                        return richLists;
                     }
                 }
             },
