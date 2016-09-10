@@ -9,11 +9,11 @@
   <link rel="stylesheet" href="static/css/jAlert.css"></link>
   <script src="static/js/stable/jAlert.min.js"></script>
   <script src="static/js/stable/jAlert-functions.min.js"></script>
-	<script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
   <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
   <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
   <script data-lift="with-resource-id" src="static/js/min/collections.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/healthCheck.js"></script>
+  <script data-lift="with-resource-id" src="static/js/healthCheck.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Bench.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/defaults.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Progress.js"></script>
@@ -22,7 +22,6 @@
   <script data-lift="with-resource-id" src="static/js/historyReader.js"></script>
   <script data-lift="with-resource-id" src="static/js/board.js"></script>
   <script data-lift="with-resource-id" src="static/js/toolbar.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/conversations.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
@@ -37,11 +36,13 @@
   <script data-lift="with-resource-id" src="static/js/min/carota-debug.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/hotkeys.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/contentFilter.js"></script>
-	<!-- for kurento webRtc -->	
-  <script data-lift="with-resource-id" src="static/js/stable/kurento/adapter.js"></script>
-	<script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
-  <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
-  <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
+  <!-- for kurento webRtc -->
+  <!--
+      <script data-lift="with-resource-id" src="static/js/stable/kurento/adapter.js"></script>
+      <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+      <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
+      <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
+      -->
   <script src="static/js/stable/Chart.bundle.min.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <style>
@@ -78,71 +79,71 @@
     width:100% !important;
     }
     */
-		.headerRow1 {
-			position:static !important;
-			margin:0;
-		}
-		#slideControls {
-			float:none !important;
-			flex-shrink:0;
-			flex-grow:0;
-			flex-wrap:nowrap;
-		}
-		.main-menu {
-			position:static !important;
-			top: 0px;
-			left: 0px;
-			z-index: 3;
-		}
-		#masterHeaderFlexContainer {
-			display:flex;
-		}
-		.subscribedStream {
-			background:red;
-		}
-		.publisherVideoElem, .subscriberVideoElem {
-			display:inline-block;
-		}
+    .headerRow1 {
+    position:static !important;
+    margin:0;
+    }
+    #slideControls {
+    float:none !important;
+    flex-shrink:0;
+    flex-grow:0;
+    flex-wrap:nowrap;
+    }
+    .main-menu {
+    position:static !important;
+    top: 0px;
+    left: 0px;
+    z-index: 3;
+    }
+    #masterHeaderFlexContainer {
+    display:flex;
+    }
+    .subscribedStream {
+    background:red;
+    }
+    .publisherVideoElem, .subscriberVideoElem {
+    display:inline-block;
+    }
 
   </style>
   <div>
     <div id="masterHeader">
-			<div id="masterHeaderFlexContainer">
-				<span id="floatingToggleContainer" class="main-menu">
-					<button class="floatingToolbar btn-menu fa fa-cog btn-icon" id="applicationMenuButton">
-						<div class="icon-txt">Options</div>
-					</button>
-				</span>
-				<span id="videoConfStartButtonContainer" class="main-menu">
-					<button class="floatingToolbar btn-menu fa fa-video-camera btn-icon" id="videoConfStartButton">
-						<div class="icon-txt">Send video</div>
-					</button>
-				</span>
-				<span id="broadcastContainer" class="main-menu">
-					<a class="floatingToolbar btn-menu fa fa-television btn-icon" id="broadcastLink">
-						<div class="icon-txt">Watch class</div>
-					</a>
-				</span>
-				<div class="headerRow1">
-					<meter id="healthStatus"></meter>
-					<span id="username" ></span>
-					<span id="currentConversationTitleContainer" >
-						<span> working in </span>
-						<span id="currentConversationTitle"></span>
-						<span> Page </span>
-					</span>
-					<span id="currentSlide" ></span>
-				</div>
-				<div id="slideControls"></div>
-			</div>
-			<div id="videoSubsciptionsContainer"></div>
-			<div id="videoConfContainer">
-				<span class="videoContainer">
-					<button class="floatingToolbar btn-menu fa fa-television btn-icon videoConfSubscribeButton">
-						<div class="icon-txt">Receive</div>
-					</button>
-				</span>
-			</div>
+      <div id="masterHeaderFlexContainer">
+        <span id="floatingToggleContainer" class="main-menu">
+          <button class="floatingToolbar btn-menu fa fa-cog btn-icon" id="applicationMenuButton">
+            <div class="icon-txt">Options</div>
+          </button>
+        </span>
+        <span id="videoConfStartButtonContainer" class="main-menu">
+          <button class="floatingToolbar btn-menu fa fa-video-camera btn-icon" id="videoConfStartButton">
+            <div class="icon-txt">Send video</div>
+          </button>
+        </span>
+        <span id="broadcastContainer" class="main-menu">
+          <a class="floatingToolbar btn-menu fa fa-television btn-icon" id="broadcastLink">
+            <div class="icon-txt">Watch class</div>
+          </a>
+        </span>
+        <div class="headerRow1">
+          <meter id="healthStatus"></meter>
+          <span id="username" ></span>
+          <span id="currentConversationTitleContainer" >
+            <span> working in </span>
+            <span id="currentConversationTitle"></span>
+            <span> Page </span>
+          </span>
+          <span id="currentSlide" ></span>
+        </div>
+        <div id="slideControls"></div>
+      </div>
+      <div id="videoSubsciptionsContainer"></div>
+      <div id="videoConfContainer">
+        <span class="videoContainer">
+          <button class="floatingToolbar btn-menu fa fa-television btn-icon videoConfSubscribeButton">
+            <div class="icon-txt">Receive</div>
+          </button>
+        </span>
+      </div>
       <span class="lift:embed?what=_backstage-menu"></span>
     </div>
     <div id="masterLayout" class="flex-container-responsive">
