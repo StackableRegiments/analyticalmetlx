@@ -199,7 +199,7 @@ var Enterprise = (function(){
                     })
                 detail.selectAll("rect")
                     .attr("x",function(d){
-                        return x(d.data.timestamp);
+                        return (d.data.timestamp);
                     })
                     .attr("y",function(d){
                         return y(d[1]) + margin.top;
@@ -394,7 +394,7 @@ var Enterprise = (function(){
     }
     return {
         prime:function(){
-            $.get("/api/v1/sample/global/1",function(history){
+            $.get("/fullClientHistory?source=global",function(history){
                 var commands = _.map($(history).find("message"),function(mx){
                     var message = $(mx);
                     var timestamp = message.attr("timestamp");

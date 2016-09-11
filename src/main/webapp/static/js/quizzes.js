@@ -75,19 +75,20 @@ var Quizzes = (function(){
                     if (Conversations.shouldModifyConversation()){
                         var quiz = quizzes[quizSummary.key];
                         var elem = $("<div/>");
-                        var quizResultsId = "quizResultsGraph_"+quiz.id;
-                        _.defer(function(){
-                            renderQuizResults("#"+quizResultsId,quiz,160,120);
-                        });
-                        var canvas = $("<canvas/>",{id:quizResultsId});
-                        elem.append(canvas);
                         /*
-                         elem.append(quizResultsGraphs[quizSummary.key]);
-                         elem.css({
-                         width:"100%",
-                         height:"100%"
+                         var quizResultsId = "quizResultsGraph_"+quiz.id;
+                         _.defer(function(){
+                         renderQuizResults("#"+quizResultsId,quiz,160,120);
                          });
+                         var canvas = $("<canvas/>",{id:quizResultsId});
+                         elem.append(canvas);
                          */
+                        elem.append(quizResultsGraphs[quizSummary.key]);
+                        console.log(quizResultsGraphs[quizSummary.key]);
+                        elem.css({
+                            width:"100%",
+                            height:"100%"
+                        });
                         elem.on("click",function(){
                             var resultsW = 640;
                             var resultsH = 480;
@@ -560,35 +561,47 @@ var Quizzes = (function(){
             return quizOptionAnswerCount(quiz,opt);
         });
 
+        var margin = {
+            left:10,
+            right:10,
+            top:10,
+            bottom:10
+        }
         var elem = $("<svg/>");
-        var svg = d3.select(elem[0]);
-        svg.attr("width",w).attr("height",h);
-        var dcW = w - 20;
-        var dcH = h - 20;
-        var barWidth =  dcW / _.size(quiz.options);
-        var scoreValue = dcH / _.max(scorePerAnswer);
-        console.log("scorePerAnswer:",scorePerAnswer);
-        var bars = svg.selectAll("rect").data(scorePerAnswer).enter().append("rect")
+        var svg = d3.select(elem[0])
+		.attr("width","100%")
+		.attr("height","100%")
+		.attr("viewBox","0 0 "+w+" "+h);
+        var x = d3.scaleBand()
+                .padding(0.1)
+                .range([margin.left,w - margin.right])
+                .domain(d3.range(quiz.options.length));
+        var y = d3.scaleLinear()
+                .range([margin.top,h - margin.bottom])
+                .domain([0,_.max(scorePerAnswer) + 1]);
+        var xAxis = d3.axisBottom(x);
+        var yAxis = d3.axisLeft(y);
+        console.log("prebars");
+        svg.append("g")
+            .call(xAxis);
+        svg.append("g")
+            .call(yAxis);
+        var bars = svg.append("g")
+                .selectAll("rect")
+                .data(scorePerAnswer)
+                .enter()
+                .append("rect")
                 .attr("x",function(d,i){
-                    return i * barWidth;
+                    return x(i);
                 })
-                .attr("y",function(d,i){
-                    return dcH - (d * scoreValue);
-                })
-                .attr("height",function(d,i){
-                    return d * scoreValue;
-                })
-                .attr("width",function(d,i){
-                    return barWidth;
-                })
-                .style("fill","blue")
-                .style("opacity","1.0")
-                .style("stroke-width","1")
-                .style("stroke","black");
+                .attr("class","bar")
+                .attr("y",h - margin.bottom)
+                .attr("height",y)
+                .attr("width",x.bandwidth());
         return elem;
     };
     var updateQuizGraph = function(quiz){
-        quizResultsGraphs[quiz.id] = generateQuizResultsGraph(quiz,640,480);
+        return generateQuizResultsGraph(quiz,640,480);
     };
     var withSvgDataUrl = function(svg,afterFunc){
         try {
