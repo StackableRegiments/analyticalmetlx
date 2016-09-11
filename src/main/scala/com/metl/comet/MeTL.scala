@@ -641,14 +641,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-
+/*
   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
-
+*/
   protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
+    /*
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
           tb <- Globals.tokBox.toList
@@ -677,7 +678,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         Extraction.decompose(a)
       }).toList)
     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-  /*
     ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
       val id = getArgAsString(args(0))
       JArray((for {
@@ -689,7 +689,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }).toList)
       Noop
     }),
-  */
     ClientSideFunction("startBroadcast",List("layout"),(args) => {
       val layout = getArgAsString(args(0))
       (for {
@@ -733,7 +732,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         Extraction.decompose(a)
       }).getOrElse(JNull)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-
+  */
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -1190,9 +1189,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
     })
-    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(false)))
-    val receiveTokBoxSession:Box[JsCmd] = Empty
-    val receiveTokBoxBroadcast:Box[JsCmd] = Empty
     /*
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     val receiveTokBoxSession:Box[JsCmd] = (for {
@@ -1229,7 +1225,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     debug(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser/*,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast*/)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {

@@ -583,7 +583,7 @@ var Conversations = (function(){
         var currentJid = currentConversation.jid;
         var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
         var newIndex = currentSlideIndex + 1;
-        addSlideToConversationAtIndex(currentConversation.jid,newIndex);
+        addSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex);
         Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
             if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
                 if ("slides" in incomingDetails){
