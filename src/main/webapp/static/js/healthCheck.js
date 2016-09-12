@@ -18,16 +18,20 @@ var HealthChecker = (function(){
         });
         updateGraph();
     };
+    var previousLatency = 0;
     var check = function(){
         var clientStart = new Date().getTime();
-        $.ajax( "/latency",{
+        $.ajax( "/serverStatus",{
             method:"GET",
+	    data:{
+		latency:previousLatency
+	    },
             success:function(time){
                 var serverWorkTime = parseInt(time);
                 var totalTime = new Date().getTime() - clientStart;
-                var latency = (totalTime - serverWorkTime) / 2;
+                previousLatency = (totalTime - serverWorkTime) / 2;
                 addMeasureFunc("serverResponse",true,serverWorkTime);
-                addMeasureFunc("latency",true,latency);
+                addMeasureFunc("latency",true,previousLatency);
                 _.delay(check,serverStatusInterval);
             },
             dataType:"text",
