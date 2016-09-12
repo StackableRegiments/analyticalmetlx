@@ -18,6 +18,9 @@
 #slideControls{
     float:right;
 }
+.bar{
+    fill:black;
+}
 #slideControls .toolbar{
     color:black;
     background:white;

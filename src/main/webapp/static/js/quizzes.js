@@ -567,11 +567,11 @@ var Quizzes = (function(){
             top:10,
             bottom:10
         }
-        var elem = $("<svg/>");
-        var svg = d3.select(elem[0])
-		.attr("width","100%")
-		.attr("height","100%")
-		.attr("viewBox","0 0 "+w+" "+h);
+        var elem = document.createElementNS("http://www.w3.org/2000/svg", 'svg')
+        var svg = d3.select(elem)
+                .attr("width","100%")
+                .attr("height","100%")
+                .attr("viewBox","0 0 "+w+" "+h);
         var x = d3.scaleBand()
                 .padding(0.1)
                 .range([margin.left,w - margin.right])
@@ -581,10 +581,12 @@ var Quizzes = (function(){
                 .domain([0,_.max(scorePerAnswer) + 1]);
         var xAxis = d3.axisBottom(x);
         var yAxis = d3.axisLeft(y);
-        console.log("prebars");
+        console.log(svg,x.domain(),x.range(),y.domain(),y.range());
         svg.append("g")
+	    .attr("transform","translate("+0+","+h+")")
             .call(xAxis);
         svg.append("g")
+	    .attr("transform","translate("+margin.left+","+0+")")
             .call(yAxis);
         var bars = svg.append("g")
                 .selectAll("rect")
@@ -595,7 +597,9 @@ var Quizzes = (function(){
                     return x(i);
                 })
                 .attr("class","bar")
-                .attr("y",h - margin.bottom)
+                .attr("y",function(d){
+		    return h - y(d);
+		})
                 .attr("height",y)
                 .attr("width",x.bandwidth());
         return elem;

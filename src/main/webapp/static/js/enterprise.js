@@ -188,15 +188,7 @@ var Enterprise = (function(){
                     .call(function(d){
                         console.log("tick",d);
                     })
-                    .attr("y",function(d){
-                        console.log(d);
-                        if(d == "September"){
-                            return 16;
-                        }
-                        else{
-                            return 9;
-                        }
-                    })
+                    .attr("y",9);
                 detail.selectAll("rect")
                     .attr("x",function(d){
                         return (d.data.timestamp);
