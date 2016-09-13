@@ -16,8 +16,8 @@ var Quizzes = (function(){
     var answerQuizTemplate = {};
     var showResultsTemplate = {};
     var actionsButtonsTemplate = {};
-		
-		var reRenderActiveGraphFunction = undefined;
+
+    var reRenderActiveGraphFunction = undefined;
 
     var reRenderQuizzes = function(){
         quizDatagrid.jsGrid("loadData");
@@ -92,130 +92,130 @@ var Quizzes = (function(){
                                 title:resultsPopupTitle,
                                 width:"auto",
                                 content:resultsPopupContainer[0].outerHTML,
-																onClose:function(ja){
-																	reRenderActiveGraphFunction = undefined;
-																}
+                                onClose:function(ja){
+                                    reRenderActiveGraphFunction = undefined;
+                                }
                             });
-														reRenderActiveGraphFunction = function(quizId){
-															if (quizId == quizSummary.key){
-																var rootElem = showResultsTemplate.clone();
-																var quizResultsPopupId = sprintf("quizResultsPopupGraph_%s",quiz.id);
-																var svg = $(quizResultsGraphs[quizSummary.key]).clone();
-																console.log("reRenderingGraph: ",quizId,quizSummary);
-																rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId).append(svg.clone());
-																var quizImagePreview = rootElem.find(".quizImagePreview");
-																quizImagePreview.attr("src",urlForQuizImage(quiz.id));
-																if ("url" in quiz){
-																		quizImagePreview.show();
-																} else {
-																		quizImagePreview.hide();
-																}
+                            reRenderActiveGraphFunction = function(quizId){
+                                if (quizId == quizSummary.key){
+                                    var rootElem = showResultsTemplate.clone();
+                                    var quizResultsPopupId = sprintf("quizResultsPopupGraph_%s",quiz.id);
+                                    var svg = $(quizResultsGraphs[quizSummary.key]).clone();
+                                    console.log("reRenderingGraph: ",quizId,quizSummary);
+                                    rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId).append(svg.clone());
+                                    var quizImagePreview = rootElem.find(".quizImagePreview");
+                                    quizImagePreview.attr("src",urlForQuizImage(quiz.id));
+                                    if ("url" in quiz){
+                                        quizImagePreview.show();
+                                    } else {
+                                        quizImagePreview.hide();
+                                    }
 
-																var answerContainer = rootElem.find(".quizOptionContainer");
-																var answerTemplate = answerContainer.find(".quizOption");
+                                    var answerContainer = rootElem.find(".quizOptionContainer");
+                                    var answerTemplate = answerContainer.find(".quizOption");
 
 
-																var theseQuizAnswerers = quizAnswersFunction(quiz);
-																var quizOptionAnswerCount = function(quiz, qo){
-																		var count = 0;
-																		if (quiz.id in quizAnswers){
-																				$.each(theseQuizAnswerers,function(name,answerer){
-																						if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == UserSettings.getUsername().toLowerCase())){
-																								count = count +1;
-																						}
-																				});
-																		};
-																		return count;
-																}
+                                    var theseQuizAnswerers = quizAnswersFunction(quiz);
+                                    var quizOptionAnswerCount = function(quiz, qo){
+                                        var count = 0;
+                                        if (quiz.id in quizAnswers){
+                                            $.each(theseQuizAnswerers,function(name,answerer){
+                                                if (answerer.latestAnswer.answer.toLowerCase() == qo.name.toLowerCase() && (Conversations.shouldModifyConversation() || name.toLowerCase() == UserSettings.getUsername().toLowerCase())){
+                                                    count = count +1;
+                                                }
+                                            });
+                                        };
+                                        return count;
+                                    }
 
-																var totalAnswerCount = _.size(theseQuizAnswerers);
-																var highWaterMark = totalAnswerCount * 0.5;
-																var optimumMark = totalAnswerCount;
-																var lowWaterMark = totalAnswerCount * 0.25;
+                                    var totalAnswerCount = _.size(theseQuizAnswerers);
+                                    var highWaterMark = totalAnswerCount * 0.5;
+                                    var optimumMark = totalAnswerCount;
+                                    var lowWaterMark = totalAnswerCount * 0.25;
 
-																answerContainer.html(_.map(quiz.options,function(opt){
-																		var answer = answerTemplate.clone();
-																		answer.find(".quizOptionName").text(opt.name);
-																		answer.find(".quizOptionText").text(opt.text);
-																		var optionMeter = answer.find(".quizOptionMeter");
-																		if(Conversations.shouldModifyConversation()){
-																				var score = quizOptionAnswerCount(quiz,opt);
-																				answer.find(".quizOptionAnswerCount").text(score);
-																				optionMeter.attr("value",score).attr("min",0).attr("max",totalAnswerCount).attr("low",lowWaterMark).attr("high",highWaterMark).attr("optimum",optimumMark).text(sprintf("%s out of %s",score,totalAnswerCount));
-																		} else {
-																				answer.find(".quizOptionCountContainer").remove();
-																				optionMeter.remove();
-																		}
-																		return answer;
-																}));
+                                    answerContainer.html(_.map(quiz.options,function(opt){
+                                        var answer = answerTemplate.clone();
+                                        answer.find(".quizOptionName").text(opt.name);
+                                        answer.find(".quizOptionText").text(opt.text);
+                                        var optionMeter = answer.find(".quizOptionMeter");
+                                        if(Conversations.shouldModifyConversation()){
+                                            var score = quizOptionAnswerCount(quiz,opt);
+                                            answer.find(".quizOptionAnswerCount").text(score);
+                                            optionMeter.attr("value",score).attr("min",0).attr("max",totalAnswerCount).attr("low",lowWaterMark).attr("high",highWaterMark).attr("optimum",optimumMark).text(sprintf("%s out of %s",score,totalAnswerCount));
+                                        } else {
+                                            answer.find(".quizOptionCountContainer").remove();
+                                            optionMeter.remove();
+                                        }
+                                        return answer;
+                                    }));
 
-																var withQuizImage = function(afterFunc){
-																		var w = resultsW;
-																		var h = resultsH;
-																		withSvgDataUrl(svg.clone()[0],w,h,function(imageData){
-																			var t = new Date().getTime();
-																			var username = UserSettings.getUsername();
-																			var cc = Conversations.getCurrentConversation();
-																			var title = sprintf("quizresultsimage%s%s.jpg",username,t.toString());
-																			var identity = sprintf("%s:%s:%s",cc.jid.toString(),title,t);
-																			var url = sprintf("/uploadDataUri?jid=%s&filename=%s",cc.jid.toString(),encodeURI(identity));
-																			$.ajax({
-																					url: url,
-																					type: 'POST',
-																					success: function(e){
-																							var newIdentity = $(e).find("resourceUrl").text();
-																							afterFunc(newIdentity,imageData,w,h);
-																					},
-																					error: function(e){
-																							console.log("exception while adding the quizResultsGraph to the slide",e);
-																					},
-																					data: imageData,
-																					cache: false,
-																					contentType: false,
-																					processData: false
-																			});
-																		})
-																};
-																rootElem.find(".quizResultsShouldDisplayOnSlide").unbind("click").on("click",function(){
-																		withQuizImage(function(newIdentity,imageData,w,h){
-																				var slideId = Conversations.getCurrentSlideJid();
-																				var username = UserSettings.getUsername();
-																				var t = new Date().getTime();
-																				var imageId = sprintf("%s%s%s",slideId,username,t);
-																				var newTag = imageId;
-																				var imageStanza = {
-																						type:"image",
-																						author:username,
-																						height:h,
-																						width:w,
-																						identity:imageId,
-																						slide:slideId,
-																						source:newIdentity,
-																						privacy:"PUBLIC",
-																						tag:newTag,
-																						target:"presentationSpace",
-																						timestamp:t,
-																						x:10,
-																						y:10
-																				};
-																				sendStanza(imageStanza);
-																				jAlert.closeAlert();
-																				hideBackstage();
-																		});
-																});
-																rootElem.find(".quizResultsShouldDisplayOnNextSlide").unbind("click").on("click",function(){
-																		withQuizImage(function(newIdentity,imageData,w,h){
-																				var convJid = Conversations.getCurrentConversationJid();
-																				newIndex = Conversations.getCurrentSlide().index + 1;
-																				addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
-																				jAlert.closeAlert();
-																				hideBackstage();
-																		});
-																});
-																$("#"+popupId).html(rootElem);
-															};
-														};
-														reRenderActiveGraphFunction(quizSummary.key);
+                                    var withQuizImage = function(afterFunc){
+                                        var w = resultsW;
+                                        var h = resultsH;
+                                        withSvgDataUrl(svg.clone()[0],w,h,function(imageData){
+                                            var t = new Date().getTime();
+                                            var username = UserSettings.getUsername();
+                                            var cc = Conversations.getCurrentConversation();
+                                            var title = sprintf("quizresultsimage%s%s.jpg",username,t.toString());
+                                            var identity = sprintf("%s:%s:%s",cc.jid.toString(),title,t);
+                                            var url = sprintf("/uploadDataUri?jid=%s&filename=%s",cc.jid.toString(),encodeURI(identity));
+                                            $.ajax({
+                                                url: url,
+                                                type: 'POST',
+                                                success: function(e){
+                                                    var newIdentity = $(e).find("resourceUrl").text();
+                                                    afterFunc(newIdentity,imageData,w,h);
+                                                },
+                                                error: function(e){
+                                                    console.log("exception while adding the quizResultsGraph to the slide",e);
+                                                },
+                                                data: imageData,
+                                                cache: false,
+                                                contentType: false,
+                                                processData: false
+                                            });
+                                        })
+                                    };
+                                    rootElem.find(".quizResultsShouldDisplayOnSlide").unbind("click").on("click",function(){
+                                        withQuizImage(function(newIdentity,imageData,w,h){
+                                            var slideId = Conversations.getCurrentSlideJid();
+                                            var username = UserSettings.getUsername();
+                                            var t = new Date().getTime();
+                                            var imageId = sprintf("%s%s%s",slideId,username,t);
+                                            var newTag = imageId;
+                                            var imageStanza = {
+                                                type:"image",
+                                                author:username,
+                                                height:h,
+                                                width:w,
+                                                identity:imageId,
+                                                slide:slideId,
+                                                source:newIdentity,
+                                                privacy:"PUBLIC",
+                                                tag:newTag,
+                                                target:"presentationSpace",
+                                                timestamp:t,
+                                                x:10,
+                                                y:10
+                                            };
+                                            sendStanza(imageStanza);
+                                            jAlert.closeAlert();
+                                            hideBackstage();
+                                        });
+                                    });
+                                    rootElem.find(".quizResultsShouldDisplayOnNextSlide").unbind("click").on("click",function(){
+                                        withQuizImage(function(newIdentity,imageData,w,h){
+                                            var convJid = Conversations.getCurrentConversationJid();
+                                            newIndex = Conversations.getCurrentSlide().index + 1;
+                                            addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
+                                            jAlert.closeAlert();
+                                            hideBackstage();
+                                        });
+                                    });
+                                    $("#"+popupId).html(rootElem);
+                                };
+                            };
+                            reRenderActiveGraphFunction(quizSummary.key);
                         });
                         return elem;
                     } else {
@@ -543,10 +543,10 @@ var Quizzes = (function(){
         }
         var scorePerAnswer = _.map(quiz.options,function(opt){
             return {
-							name:opt.name,
-							score:quizOptionAnswerCount(quiz,opt),
-							color:opt.color
-						};
+                name:opt.name,
+                score:quizOptionAnswerCount(quiz,opt),
+                color:opt.color
+            };
         });
 
         var margin = {
@@ -571,30 +571,30 @@ var Quizzes = (function(){
         var yAxis = d3.axisLeft(y);
         console.log(svg,x.domain(),x.range(),y.domain(),y.range());
         svg.append("g")
-					.attr("transform",sprintf("translate(0,%s)",h - margin.bottom))
-					.call(xAxis);
+            .attr("transform",sprintf("translate(0,%s)",h - margin.bottom))
+            .call(xAxis);
         svg.append("g")
-					.attr("transform",sprintf("translate(%s,0)",margin.left))
-					.call(yAxis);
+            .attr("transform",sprintf("translate(%s,0)",margin.left))
+            .call(yAxis);
         var bars = svg.append("g")
-					.selectAll("rect")
-					.data(scorePerAnswer)
-					.enter()
-					.append("rect")
-					.attr("x",function(d,i){
-						return x(d.name);
-					})
-					.attr("class","bar")
-					.style("fill",function(d,i){
-						return d.color[0];
-					})	
-					.attr("y",function(d){
-						return y(d.score);
-					})
-					.attr("height",function(d){
-						return h - y(d.score) - margin.bottom;
-					})
-					.attr("width",x.bandwidth());
+                .selectAll("rect")
+                .data(scorePerAnswer)
+                .enter()
+                .append("rect")
+                .attr("x",function(d,i){
+                    return x(d.name);
+                })
+                .attr("class","bar")
+                .style("fill",function(d,i){
+                    return d.color[0];
+                })
+                .attr("y",function(d){
+                    return y(d.score);
+                })
+                .attr("height",function(d){
+                    return h - y(d.score) - margin.bottom;
+                })
+                .attr("width",x.bandwidth());
         return elem;
     };
     var updateQuizGraph = function(quiz){
@@ -607,7 +607,7 @@ var Quizzes = (function(){
             var blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
             var blobUrl = URL.createObjectURL(blob);
             var img = $("<img />").width(w).height(h);
-						img.on("load",function(){
+            img.on("load",function(){
                 var canvas = $("<canvas/>");
                 canvas.width = w;
                 canvas.height = h;
@@ -623,10 +623,10 @@ var Quizzes = (function(){
                 ctx.drawImage(img[0],0,0,w,h);
                 var submissionQuality = 0.4;
                 var imageData = canvas[0].toDataURL("image/jpeg",submissionQuality);
-								console.log("img:",svg,img,blobUrl,canvas,imageData);
+                console.log("img:",svg,img,blobUrl,canvas,imageData);
                 afterFunc(imageData);
             });
-						img.attr("src",blobUrl);
+            img.attr("src",blobUrl);
         } catch(e) {
             console.log("exception while converting svg to dataUrl",e);
         }
@@ -643,11 +643,11 @@ var Quizzes = (function(){
         }
         quizAnswers[answer.id] = items;
         if (answer.id in quizzes){
-					quizResultsGraphs[answer.id] = updateQuizGraph(quizzes[answer.id]);
-					if (reRenderActiveGraphFunction != undefined){
-						console.log("reRenderingGraph: ",answer,reRenderActiveGraphFunction);
-						reRenderActiveGraphFunction(answer.id);
-					}
+            quizResultsGraphs[answer.id] = updateQuizGraph(quizzes[answer.id]);
+            if (reRenderActiveGraphFunction != undefined){
+                console.log("reRenderingGraph: ",answer,reRenderActiveGraphFunction);
+                reRenderActiveGraphFunction(answer.id);
+            }
         }
     };
     var historyReceivedFunction = function(history){
@@ -689,9 +689,9 @@ var Quizzes = (function(){
                     if ("type" in quiz && quiz.type == "quiz"){
                         quizzes[quiz.id] = quiz;
                         quizResultsGraphs[quiz.id] = updateQuizGraph(quiz);
-												if (reRenderActiveGraphFunction != undefined){
-													reRenderActiveGraphFunction(answer.id);
-												}
+                        if (reRenderActiveGraphFunction != undefined){
+                            reRenderActiveGraphFunction(answer.id);
+                        }
                     }
                 });
             }
@@ -707,10 +707,10 @@ var Quizzes = (function(){
                 var firstAnswer = answers[0];
                 quizAnswers[firstAnswer.id] = answers;
                 renderQuizzesInPlace();
-								if (reRenderActiveGraphFunction != undefined){
-									console.log("reRenderingGraph: ",answer,reRenderActiveGraphFunction);
-									reRenderActiveGraphFunction(answer.id);
-								}
+                if (reRenderActiveGraphFunction != undefined){
+                    console.log("reRenderingGraph: ",answer,reRenderActiveGraphFunction);
+                    reRenderActiveGraphFunction(answer.id);
+                }
             }
         }
         catch(e){
