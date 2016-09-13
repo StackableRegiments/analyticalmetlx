@@ -103,7 +103,7 @@ var Colors = (function(){
 		];
 
 		var colorFor = function(seed){
-			var rawScore = _.reduce(seed,function(acc,item){
+			var rawScore = _.reduce(seed.substring(0,4),function(acc,item){
 				return acc + item.charCodeAt(0);
 			},0);
 			var score = rawScore % 25;
