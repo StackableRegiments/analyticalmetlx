@@ -276,7 +276,20 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         }).openOr(NotFoundResponse("video bytes not available"))
       }).getOrElse(NotFoundResponse("video not available")))
     })
-
+    case r@Req("reportLatency" :: Nil,_,_) => {
+      val start = new java.util.Date().getTime
+      () => Stopwatch.time("MeTLRestHelper.reportLatency", {
+        for {
+          min <- r.param("minLatency")
+          max <- r.param("maxLatency")
+          mean <- r.param("meanLatency")
+          samples <- r.param("sampleCount")
+        } yield {
+          info("[%s] miliseconds clientReportedLatency".format(mean))
+        }
+        Full(PlainTextResponse((new java.util.Date().getTime - start).toString, List.empty[Tuple2[String,String]], 200))
+      })
+    }
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"print")
     })
