@@ -542,14 +542,14 @@ var Quizzes = (function(){
             return count;
         }
         var scorePerAnswer = _.map(quiz.options,function(opt){
-            return quizOptionAnswerCount(quiz,opt);
+            return {name:opt.name,score:quizOptionAnswerCount(quiz,opt)};
         });
 
         var margin = {
-            left:10,
-            right:10,
-            top:10,
-            bottom:10
+            left:30,
+            right:30,
+            top:30,
+            bottom:30
         }
         var elem = document.createElementNS("http://www.w3.org/2000/svg", 'svg')
         var svg = d3.select(elem)
@@ -559,33 +559,35 @@ var Quizzes = (function(){
         var x = d3.scaleBand()
                 .padding(0.1)
                 .range([margin.left,w - margin.right])
-                .domain(d3.range(quiz.options.length));
+                .domain(_.map(scorePerAnswer,"name"));
         var y = d3.scaleLinear()
                 .range([margin.top,h - margin.bottom])
-                .domain([0,_.max(scorePerAnswer) + 1]);
+                .domain([_.max(_.map(scorePerAnswer,"score")) + 1,0]);
         var xAxis = d3.axisBottom(x);
         var yAxis = d3.axisLeft(y);
         console.log(svg,x.domain(),x.range(),y.domain(),y.range());
         svg.append("g")
-	    .attr("transform","translate("+0+","+h+")")
-            .call(xAxis);
+					.attr("transform",sprintf("translate(0,%s)",h - margin.bottom))
+					.call(xAxis);
         svg.append("g")
-	    .attr("transform","translate("+margin.left+","+0+")")
-            .call(yAxis);
+					.attr("transform",sprintf("translate(%s,0)",margin.left))
+					.call(yAxis);
         var bars = svg.append("g")
-                .selectAll("rect")
-                .data(scorePerAnswer)
-                .enter()
-                .append("rect")
-                .attr("x",function(d,i){
-                    return x(i);
-                })
-                .attr("class","bar")
-                .attr("y",function(d){
-		    return h - y(d);
-		})
-                .attr("height",y)
-                .attr("width",x.bandwidth());
+					.selectAll("rect")
+					.data(scorePerAnswer)
+					.enter()
+					.append("rect")
+					.attr("x",function(d,i){
+						return x(d.name);
+					})
+					.attr("class","bar")
+					.attr("y",function(d){
+						return y(d.score);
+					})
+					.attr("height",function(d){
+						return h - y(d.score) - margin.bottom;
+					})
+					.attr("width",x.bandwidth());
         return elem;
     };
     var updateQuizGraph = function(quiz){
