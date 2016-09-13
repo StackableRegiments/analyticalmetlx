@@ -169,6 +169,18 @@ class SlideRenderer extends Logger {
     }
   })
 
+  protected def renderVideo(metlVideo:MeTLVideo,g:Graphics2D):Unit = Stopwatch.time("SlideRenderer.renderVideo",{
+    try {
+      g.setPaint(toAwtColor(Color(255,0,0,0)))
+      g.drawRect(metlVideo.x.toInt,metlVideo.y.toInt,metlVideo.width.toInt,metlVideo.height.toInt)
+      g.fillRect(metlVideo.x.toInt,metlVideo.y.toInt,metlVideo.width.toInt,metlVideo.height.toInt)
+    } catch {
+      case e:Throwable => {
+        error("failed to render video: %s",e)
+      }
+    }
+  })
+
   protected def renderInk(metlInk:MeTLInk,g:Graphics2D) = Stopwatch.time("SlideRenderer.renderInk",{
     try {
       val HIGHLIGHTER_ALPHA  = 55
@@ -589,7 +601,7 @@ class SlideRenderer extends Logger {
   def renderMultiple(h:History,requestedSizes:List[RenderDescription],target:String= "presentationSpace"):Map[RenderDescription,Array[Byte]] = Stopwatch.time("SlideRenderer.renderMultiple",{
     h.shouldRender match {
       case true => {
-        val (texts,highlighters,inks,images,multiWordTexts) = h.getRenderableGrouped
+        val (texts,highlighters,inks,images,multiWordTexts,_videos) = h.getRenderableGrouped
         val dimensions = measureItems(h,texts,highlighters,inks,images,multiWordTexts,target)
         Map(requestedSizes.map(rs => {
           val width = rs.width
@@ -610,7 +622,7 @@ class SlideRenderer extends Logger {
   def measureHistory(h:History, target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureHistory",{
     h.shouldRender match {
       case true => {
-        val (texts,highlighters,inks,images,multiWordTexts) = h.getRenderableGrouped
+        val (texts,highlighters,inks,images,multiWordTexts,_videos) = h.getRenderableGrouped
         measureItems(h,texts,highlighters,inks,images,multiWordTexts)
       }
       case false => Dimensions(0.0,0.0,0.0,0.0,0.0,0.0)
@@ -670,8 +682,9 @@ class SlideRenderer extends Logger {
       }
       case false => h
     }
-    val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts) = scaledHistory.getRenderableGrouped
+    val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts,scaledVideos) = scaledHistory.getRenderableGrouped
     filterAccordingToTarget[MeTLImage](target,scaledImages).foreach(img => renderImage(img,g))
+    filterAccordingToTarget[MeTLVideo](target,scaledVideos).foreach(img => renderVideo(img,g))
     filterAccordingToTarget[MeTLInk](target,scaledHighlighters).foreach(renderInk(_,g))
     filterAccordingToTarget[MeTLText](target,scaledTexts).foreach(t => renderText(measureTextLines(t,g),g))
     filterAccordingToTarget[MeTLMultiWordText](target,scaledMultiWordTexts).foreach(t => renderMultiWordText(t,g))

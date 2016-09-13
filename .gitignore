@@ -6,8 +6,15 @@ testdb*
 .DS_Store
 node_modules
 src/main/assets/build/source/
-.idea
-*.swp
 security.log
 config/configuration.local.xml
 config/configuration.xml
+
+# emacs temp files
+*~
+# vim
+*.swp
+# Idea files
+.idea
+*.iml
+*.ipr

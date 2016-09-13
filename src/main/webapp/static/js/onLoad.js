@@ -565,6 +565,11 @@ $(function(){
             Modes.image.activate();
         }
     });
+    $("#videoMode").click(function(){
+        if(Modes.currentMode != Modes.video){
+            Modes.video.activate();
+        }
+    });
     $("#zoomMode").click(function(){
         if(Modes.currentMode != Modes.zoom){
             Modes.zoom.activate();
@@ -795,6 +800,7 @@ $(function(){
     $('#menuPolls').click(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
+				Quizzes.reRender();
     });
     $('#menuBlacklist').click(function(){
         showBackstage("blacklist");

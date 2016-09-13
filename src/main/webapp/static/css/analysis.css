@@ -1,0 +1,70 @@
+body{
+    background-size:100% 100%;
+}
+.widget{
+    display:inline-block;
+}
+#vis{
+    flex-basis:50%;
+}
+#lang{
+    flex-basis:35%;
+}
+#statusLog{
+    font-size:50%;
+    flex-basis:10%;
+}
+.totalsArea path{
+    stroke:lightblue;
+    fill:green;
+}
+.masterArea path{
+    stroke:lightblue;
+    fill:blue;
+}
+.vega-actions{
+    display:none;
+}
+#widgets{
+    flex-wrap:wrap;
+}
+
+#lang text{
+    fill:white;
+    stroke:none;
+}
+.cloudWord{
+    display:inline-block;
+}
+.tick line{
+    stroke:#000000;
+    stroke-width:0.5;
+}
+.tick text{
+    fill:#ffffff;
+}
+.teacherPath{
+    stroke-width:50;
+    stroke:green;
+    fill:none;
+}
+.domain{
+    opacity:0;
+}
+#followLag rect{
+    stroke-width:0.7;
+    stroke:black;
+    fill:blue;
+    fill-opacity:0.1;
+}
+.circ{
+    stroke-width:0.7;
+    stroke:black;
+    fill:blue;
+    fill-opacity:0.1;
+}
+.legendLine, .authorLine{
+    stroke:none;
+    fill:white;
+    font-size:0.8em;
+}
