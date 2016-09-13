@@ -374,7 +374,7 @@ var Quizzes = (function(){
                 name:key,
                 text:"",
                 correct:false,
-                color:["#ffffff",255]
+                color:Colors.getColorForSeed(key)
             };
             console.log("creating new option:",newQuiz.options,newOption);
             newQuiz.options.push(newOption);
@@ -478,21 +478,21 @@ var Quizzes = (function(){
                             name:"A",
                             text:"",
                             correct:false,
-                            color:["#000000",255]
+                            color:Colors.getColorForSeed("A")
                         },
                         {
                             type:"quizOption",
                             name:"B",
                             text:"",
                             correct:false,
-                            color:["#000000",255]
+                            color:Colors.getColorForSeed("B")
                         },
                         {
                             type:"quizOption",
                             name:"C",
                             text:"",
                             correct:false,
-                            color:["#000000",255]
+                            color:Colors.getColorForSeed("C")
                         }
                     ],
                     question:"",

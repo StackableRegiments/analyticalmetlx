@@ -302,13 +302,13 @@ var Blacklist = (function(){
         tempCtx.fillRect(0,0,w,h);
         tempCtx.drawImage(board[0],0,0,w,h);
 
-        var nextColour = function(){
-            return ["#808080",128]
+        var nextColour = function(author){
+            return [Colors.getColorForSeed(author)[0],128]
         };
         var colouredAuthors = _.map(bannedAuthors,function(author){
             return {
                 username:author,
-                highlight:nextColour()
+                highlight:nextColour(author)
             };
         });
 
