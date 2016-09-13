@@ -542,7 +542,11 @@ var Quizzes = (function(){
             return count;
         }
         var scorePerAnswer = _.map(quiz.options,function(opt){
-            return {name:opt.name,score:quizOptionAnswerCount(quiz,opt)};
+            return {
+							name:opt.name,
+							score:quizOptionAnswerCount(quiz,opt),
+							color:opt.color
+						};
         });
 
         var margin = {
@@ -581,6 +585,9 @@ var Quizzes = (function(){
 						return x(d.name);
 					})
 					.attr("class","bar")
+					.style("fill",function(d,i){
+						return d.color[0];
+					})	
 					.attr("y",function(d){
 						return y(d.score);
 					})
