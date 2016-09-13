@@ -84,7 +84,6 @@ var Quizzes = (function(){
                          elem.append(canvas);
                          */
                         elem.append(quizResultsGraphs[quizSummary.key]);
-                        console.log(quizResultsGraphs[quizSummary.key]);
                         elem.css({
                             width:"100%",
                             height:"100%"
@@ -102,11 +101,14 @@ var Quizzes = (function(){
                             });
                             var rootElem = showResultsTemplate.clone();
                             var quizResultsPopupId = sprintf("quizResultsPopupGraph_%s",quiz.id);
-                            rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId);
+                            //rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId);
+														var svg = $(quizResultsGraphs[quizSummary.key]).clone();
+                            rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId).append(svg.clone());
+														/*
                             _.defer(function(){
                                 renderQuizResults("#"+quizResultsPopupId,quiz,resultsW,resultsH);
                             });
-
+														*/
                             var quizImagePreview = rootElem.find(".quizImagePreview");
                             quizImagePreview.attr("src",urlForQuizImage(quiz.id));
                             if ("url" in quiz){
@@ -154,6 +156,7 @@ var Quizzes = (function(){
                             }));
 
                             var withQuizImage = function(afterFunc){
+															/*
                                 var submissionQuality = 0.4;
                                 var quizCanvas = $("#"+quizResultsPopupId)[0];
                                 var tempCanvas = $("<canvas/>");
@@ -172,30 +175,36 @@ var Quizzes = (function(){
                                 ctx.fillRect(0,0,w,h);
                                 ctx.drawImage(quizCanvas,0,0,w,h);
                                 var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
-                                var t = new Date().getTime();
-                                var username = UserSettings.getUsername();
-                                var cc = Conversations.getCurrentConversation();
-                                var title = sprintf("quizresultsimage%s%s.jpg",username,t.toString());
-                                var identity = sprintf("%s:%s:%s",cc.jid.toString(),title,t);
-                                var url = sprintf("/uploadDataUri?jid=%s&filename=%s",cc.jid.toString(),encodeURI(identity));
-                                $.ajax({
-                                    url: url,
-                                    type: 'POST',
-                                    success: function(e){
-                                        var newIdentity = $(e).find("resourceUrl").text();
-                                        afterFunc(newIdentity,tempCanvas,imageData);
-                                    },
-                                    error: function(e){
-                                        console.log("exception while adding the quizResultsGraph to the slide",e);
-                                    },
-                                    data: imageData,
-                                    cache: false,
-                                    contentType: false,
-                                    processData: false
-                                });
+*/
+
+                                var w = resultsW;
+                                var h = resultsH;
+																withSvgDataUrl(svg.clone()[0],w,h,function(imageData){
+																	var t = new Date().getTime();
+																	var username = UserSettings.getUsername();
+																	var cc = Conversations.getCurrentConversation();
+																	var title = sprintf("quizresultsimage%s%s.jpg",username,t.toString());
+																	var identity = sprintf("%s:%s:%s",cc.jid.toString(),title,t);
+																	var url = sprintf("/uploadDataUri?jid=%s&filename=%s",cc.jid.toString(),encodeURI(identity));
+																	$.ajax({
+																			url: url,
+																			type: 'POST',
+																			success: function(e){
+																					var newIdentity = $(e).find("resourceUrl").text();
+																					afterFunc(newIdentity,imageData,w,h);
+																			},
+																			error: function(e){
+																					console.log("exception while adding the quizResultsGraph to the slide",e);
+																			},
+																			data: imageData,
+																			cache: false,
+																			contentType: false,
+																			processData: false
+																	});
+																})
                             };
                             rootElem.find(".quizResultsShouldDisplayOnSlide").on("click",function(){
-                                withQuizImage(function(newIdentity,tempCanvas,imageData){
+                                withQuizImage(function(newIdentity,imageData,w,h){
                                     var slideId = Conversations.getCurrentSlideJid();
                                     var username = UserSettings.getUsername();
                                     var t = new Date().getTime();
@@ -222,7 +231,7 @@ var Quizzes = (function(){
                                 });
                             });
                             rootElem.find(".quizResultsShouldDisplayOnNextSlide").on("click",function(){
-                                withQuizImage(function(newIdentity,tempCanvas,imageData){
+                                withQuizImage(function(newIdentity,imageData,w,h){
                                     var convJid = Conversations.getCurrentConversationJid();
                                     newIndex = Conversations.getCurrentSlide().index + 1;
                                     addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
@@ -607,15 +616,14 @@ var Quizzes = (function(){
     var updateQuizGraph = function(quiz){
         return generateQuizResultsGraph(quiz,640,480);
     };
-    var withSvgDataUrl = function(svg,afterFunc){
+    var withSvgDataUrl = function(svg,w,h,afterFunc){
         try {
             var s = $(svg);
-            var w = s.width();
-            var h = s.height();
             var svgData = new XMLSerializer().serializeToString(svg);
             var blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-            var blobUrl = s.URL.createObjectURL(blob);
-            $("<img />").width(w).height(h).on("load",function(){
+            var blobUrl = URL.createObjectURL(blob);
+            var img = $("<img />").width(w).height(h);
+						img.on("load",function(){
                 var canvas = $("<canvas/>");
                 canvas.width = w;
                 canvas.height = h;
@@ -628,11 +636,13 @@ var Quizzes = (function(){
                 var ctx = canvas[0].getContext("2d");
                 ctx.fillStyle = "rgb(255,255,255)";
                 ctx.fillRect(0,0,w,h);
-                ctx.drawImage(this,0,0,w,h);
+                ctx.drawImage(img[0],0,0,w,h);
                 var submissionQuality = 0.4;
-                var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
+                var imageData = canvas[0].toDataURL("image/jpeg",submissionQuality);
+								console.log("img:",svg,img,blobUrl,canvas,imageData);
                 afterFunc(imageData);
-            }).attr("src",blobUrl);
+            });
+						img.attr("src",blobUrl);
         } catch(e) {
             console.log("exception while converting svg to dataUrl",e);
         }
