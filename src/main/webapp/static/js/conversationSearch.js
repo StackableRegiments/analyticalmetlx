@@ -244,14 +244,20 @@ var Conversations = (function(){
         });
     });
     var shouldModifyConversation = function(details){
-        return (details.author == username);
+        return (details.author == username || _.some(userGroups,function(g){
+					var key = g.key ? g.key : g.type;
+					var name = g.name ? g.name : g.value;	
+					return (key == "special" && name == "superuser");
+				}));
     };
     var shouldDisplayConversation = function(details){
 				var subject = details.subject.toLowerCase().trim();
 				var title = details.title.toLowerCase().trim();
 				var author = details.author;
         return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
-					return (g.key == "special" && g.value == "superuser") || g.value.toLowerCase().trim() == subject;
+					var key = g.key ? g.key : g.type;
+					var name = g.name ? g.name : g.value;	
+					return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
         })));
     };
 
@@ -337,9 +343,15 @@ var Conversations = (function(){
     var receiveUsernameFunc = function(user){
         username = user;
     };
+		var getUsernameFunc = function(){
+			return username;
+		};
     var receiveUserGroupsFunc = function(groups){
         userGroups = groups;
     };
+		var getUserGroupsFunc = function(){
+			return userGroups
+		};
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
 				console.log("currentSearchResults:",currentSearchResults,details);
@@ -389,10 +401,19 @@ var Conversations = (function(){
         getConversationListing:getConversationListingFunc,
         getImportListing:getImportListingFunc,
         getQuery:getQueryFunc,
+				getUsername:getUsernameFunc,
+				getUserGroups:getUserGroupsFunc,
         search:searchFunc,
-        create:createFunc
+        create:createFunc,
+				getUserGroups:function(){return userGroups;},
+				getUsername:function(){return username;}
     };
 })();
+
+function augmentArguments(args){
+	args[_.size(args)] = new Date().getTime();
+	return args;
+}
 
 function serverResponse(response){ //invoked by Lift
 }

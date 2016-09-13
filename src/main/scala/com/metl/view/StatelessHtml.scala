@@ -220,7 +220,7 @@ object StatelessHtml extends Stemmer with Logger {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
     val themes = List(
       history.getInks.groupBy(_.author).flatMap{
-        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
+        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i,"handwriting"))
       }).flatten
     val themesByUser = themes.groupBy(_.author).map(kv =>
       <userTheme>
@@ -232,15 +232,22 @@ object StatelessHtml extends Stemmer with Logger {
   def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
     val themes = List(
-      history.getTexts.map(t => Theme(t.author,t.text)).toList,
+      history.getTexts.map(t => Theme(t.author,t.text,"keyboarding")).toList,
       (history.getInks ::: history.getHighlighters).groupBy(_.author).flatMap{
-        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i))
+        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i, "handwriting"))
+      },
+      history.getImages.groupBy(_.author).flatMap{
+        case (author,images) => CanvasContentAnalysis.ocr(images) match {
+          case (descriptions,words) => List(
+            descriptions.map(word => Theme(author, word, "imageRecognition")),
+            words.map(word => Theme(author,word,"imageTranscription"))).flatten
+        }
       }).flatten
     debug(themes)
     val themesByUser = themes.groupBy(_.author).map(kv =>
       <userTheme>
         <user>{kv._1}</user>
-        <themes>{kv._2.map(t => <theme>{t.text}</theme>)}</themes>
+        <themes>{kv._2.map(t => <theme><context>{t.origin}</context><content>{t.text}</content></theme>)}</themes>
         </userTheme>)
     <userThemes>{themesByUser}</userThemes>
   })
@@ -594,7 +601,7 @@ object StatelessHtml extends Stemmer with Logger {
       }).getOrElse(conv)
       Full(newConv)
     } else {
-      Empty 
+      Empty
     }
   }
 
@@ -607,7 +614,7 @@ object StatelessHtml extends Stemmer with Logger {
     }).getOrElse({
       Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
     })
-   }
+  }
   def duplicateConversationInternal(onBehalfOfUser:String,conversation:String):Box[Conversation] = {
     val oldConv = config.detailsOfConversation(conversation)
     if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,oldConv)){
@@ -646,7 +653,7 @@ object StatelessHtml extends Stemmer with Logger {
       )
       val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)
       Full(remoteConv2)
-    } else Empty 
+    } else Empty
   }
 
   def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
@@ -721,19 +728,19 @@ object StatelessHtml extends Stemmer with Logger {
   def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
     importConversation(req)
     /*
-    (for (
-      xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
-      historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
-        val hist = exportSerializer.toHistory(h)
-        (hist.jid,hist)
-      }):_*));
-      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
-      remoteConv = StatelessHtml.importConversation(Globals.currentUser.is,conversation,historyMap);
-      node <- serializer.fromConversation(remoteConv).headOption
-    ) yield {
-      XmlResponse(node)
-    })
-  */
+     (for (
+     xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
+     historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
+     val hist = exportSerializer.toHistory(h)
+     (hist.jid,hist)
+     }):_*));
+     conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
+     remoteConv = StatelessHtml.importConversation(Globals.currentUser.is,conversation,historyMap);
+     node <- serializer.fromConversation(remoteConv).headOption
+     ) yield {
+     XmlResponse(node)
+     })
+     */
   })
 
   def foreignConversationImportEndpoint(r:Req):Box[LiftResponse] = {
@@ -745,11 +752,11 @@ object StatelessHtml extends Stemmer with Logger {
       title = "%s's (%s) created at %s".format(author,filename,new java.util.Date());
 
       remoteConv <- com.metl.model.Importer.importConversation(title,filename,bytes,author);
-/*
-      conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
-      remoteConv <- foreignConversationImport(config,author,conv,histories);
-*/
+      /*
+       conv = config.createConversation(title,author);
+       histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
+       remoteConv <- foreignConversationImport(config,author,conv,histories);
+       */
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
@@ -758,40 +765,40 @@ object StatelessHtml extends Stemmer with Logger {
   def powerpointImport(r:Req):Box[LiftResponse] = {
     foreignConversationImport(r)
     /*
-    (for (
-      title <- r.param("title");
-      bytes <- {
-        r.body match {
-          case Full(b) => Some(b)
-          case _ => r.uploadedFiles.headOption.map(_.file)
-        }
-      };
-      author = Globals.currentUser.is;
-      filename = title;
-      conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
-      remoteConv <- foreignConversationImport(config,author,conv,histories);
-      node <- serializer.fromConversation(remoteConv).headOption
-    ) yield {
-      XmlResponse(node)
-    })
-    */
+     (for (
+     title <- r.param("title");
+     bytes <- {
+     r.body match {
+     case Full(b) => Some(b)
+     case _ => r.uploadedFiles.headOption.map(_.file)
+     }
+     };
+     author = Globals.currentUser.is;
+     filename = title;
+     conv = config.createConversation(title,author);
+     histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
+     remoteConv <- foreignConversationImport(config,author,conv,histories);
+     node <- serializer.fromConversation(remoteConv).headOption
+     ) yield {
+     XmlResponse(node)
+     })
+     */
   }
   def powerpointImportFlexible(r:Req):Box[LiftResponse] = {
     foreignConversationImport(r)
     /*
-    (for (
-      title <- r.param("title");
-      bytes <- r.body;
-      author = Globals.currentUser.is;
-      conv = config.createConversation(title,author);
-      histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
-      remoteConv <- foreignConversationImport(config,author,conv,histories);
-      node <- serializer.fromConversation(remoteConv).headOption
-    ) yield {
-      XmlResponse(node)
-    })
-    */
+     (for (
+     title <- r.param("title");
+     bytes <- r.body;
+     author = Globals.currentUser.is;
+     conv = config.createConversation(title,author);
+     histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
+     remoteConv <- foreignConversationImport(config,author,conv,histories);
+     node <- serializer.fromConversation(remoteConv).headOption
+     ) yield {
+     XmlResponse(node)
+     })
+     */
   }
 
   def foreignConversationImport(r:Req):Box[LiftResponse] = {
@@ -800,11 +807,10 @@ object StatelessHtml extends Stemmer with Logger {
       bytes <- r.body;
       author = Globals.currentUser.is;
       remoteConv <- com.metl.model.Importer.importConversation(title,title,bytes,author);
-//      remoteConv <- foreignConversationImport(title,title,bytes,author);
+      //      remoteConv <- foreignConversationImport(title,title,bytes,author);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
     })
   }
 }
-

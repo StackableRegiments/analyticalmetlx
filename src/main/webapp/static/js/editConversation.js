@@ -278,6 +278,10 @@ var Conversation = (function(){
 	};
 })();
 
+function augmentArguments(args){
+	args[_.size(args)] = new Date().getTime();
+	return args;
+}
 
 function serverResponse(response){
     //console.log("serverResponse:",response);

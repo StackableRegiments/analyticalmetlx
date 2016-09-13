@@ -73,10 +73,50 @@ var Colors = (function(){
             }
         }
     };
+
+		var niceColours = [
+			"#D4C2FC",
+			"#7B287D",
+			"#F19A3E",
+			"#DB324D",
+			"#8EFF72",
+			"#C8AD55",
+			"#0FA3B1",
+			"#88A09E",
+			"#E7BB41",
+			"#393E41",
+			"#FF5A5F",
+			"#03B954",
+			"#D10000",
+			"#CD9FCC",
+			"#8895B3",
+			"#C5D86D",
+			"#0D1321",
+			"#B8D8BA",
+			"#034748",
+			"#A57548",
+			"#7CFEF0",
+			"#6C809A",
+			"#574B60",
+			"#8D6346",
+			"#4C2C69"
+		];
+
+		var colorFor = function(seed){
+			var rawScore = _.reduce(seed.substring(0,4),function(acc,item){
+				return acc + item.charCodeAt(0);
+			},0);
+			var score = rawScore % 25;
+			var alpha = 255
+			var rgb = niceColours[score];
+			console.log("colorFor",seed,rawScore,score,rgb);
+			return [rgb,alpha];	
+		};
     return {
         getAllNamedColors:getAllNamedColorsFunction,
         getNameForColor:getNameForColorFunction,
-        getColorForName:getColorForNameFunction
+        getColorForName:getColorForNameFunction,
+				getColorForSeed:colorFor
     }
 })();
 

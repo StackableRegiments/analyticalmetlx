@@ -73,6 +73,14 @@ object Globals extends PropertyReader with Logger {
   val importerParallelism = (propFile \\ "importerPerformance").headOption.map(ipn => readAttribute(ipn,"parallelism").toInt).filter(_ > 0).getOrElse(1)
   var isDevMode:Boolean = true
 
+  var tokBox = for {
+      tbNode <- (propFile \\ "tokBox").headOption
+      apiKey <- (tbNode \\ "@apiKey").headOption.map(_.text.toInt)
+      secret <- (tbNode \\ "@secret").headOption.map(_.text)
+    } yield {
+      new TokBox(apiKey,secret)
+    }
+
 
   val liftConfig = (propFile \\ "liftConfiguration")
   val allowParallelSnippets:Boolean = readBool(liftConfig,"allowParallelSnippets").getOrElse(true)

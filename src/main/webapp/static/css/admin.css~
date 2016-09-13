@@ -1,6 +1,0 @@
-.tile{
-    background:charcoal;
-    color:white;
-    width:20%;
-    font:small;
-}

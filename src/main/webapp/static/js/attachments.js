@@ -1,16 +1,16 @@
 var Attachments = (function(){
     var attachments = [];
-		var attachmentsDatagrid = {};
-		var deleteButtonTemplate = {};
+    var attachmentsDatagrid = {};
+    var deleteButtonTemplate = {};
     $(function(){
-				attachmentsDatagrid = $("#attachmentsDatagrid");
+        attachmentsDatagrid = $("#attachmentsDatagrid");
         $("#menuAttachments").on("click",function(){
             showBackstage("attachments");
             updateActiveMenu(this);
-						reRenderAttachments();
+            reRenderAttachments();
         });
-				deleteButtonTemplate = attachmentsDatagrid.find(".deleteButtonContainer").clone();
-				attachmentsDatagrid.empty();
+        deleteButtonTemplate = attachmentsDatagrid.find(".deleteButtonContainer").clone();
+        attachmentsDatagrid.empty();
         var DateField = function(config){
             jsGrid.Field.call(this,config);
         };
@@ -28,70 +28,70 @@ var Attachments = (function(){
         });
         jsGrid.fields.dateField = DateField;
 
-				var gridFields = [
-					{
-						name:"id",
-						type:"text",
-						title:"Download",
-						readOnly:true,
-						sorting:false,
-						itemTemplate:function(thumbnailUrl,attachment){
-							var href = sprintf("/attachmentProxy/%s/%s",Conversations.getCurrentConversationJid(),encodeURI(attachment.id));
-							return $("<a />",{href:href,text:attachment.name});
-						}
-					},
-					{name:"timestamp",type:"dateField",title:"When",readOnly:true},
-					{name:"author",type:"text",title:"Who",readOnly:true},
-					{
-						name:"identity",
-						type:"text",
-						title:"actions",
-						readOnly:true,
-						sorting:false,
-						itemTemplate:function(identity,attachment){
-							if (Conversations.shouldModifyConversation()){
-								var rootElem = deleteButtonTemplate.clone();
-								rootElem.find(".deleteButton").on("click",function(){
-									attachment.deleted = true;
-									sendStanza(attachment);
-								});
-								return rootElem;
-							} else {
-								return $("<span/>");
-							}
-						}
-					}
-				];
-				attachmentsDatagrid.jsGrid({
-					width:"100%",
-					height:"auto",
-					inserting:false,
-					editing:false,
-					sorting:true,
-					paging:true,
-					noDataContent: "No attachments",
-				 	controller: {
-						loadData: function(filter){
-							var sorted = attachments;
-							if ("sortField" in filter){
-								sorted = _.sortBy(sorted,function(sub){
-									return sub[filter.sortField];
-								});
-								if ("sortOrder" in filter && filter.sortOrder == "desc"){
-									sorted = _.reverse(sorted);
-								}
-							}
-							return _.filter(sorted,function(attachment){return !attachment.deleted;});
-						}
-					},
-					pageLoading:false,
-					fields: gridFields	
-				});
-				attachmentsDatagrid.jsGrid("sort",{
-					field:"timestamp",
-					order:"desc"
-				});
-				reRenderAttachments();
+        var gridFields = [
+            {
+                name:"id",
+                type:"text",
+                title:"Download",
+                readOnly:true,
+                sorting:true,
+                itemTemplate:function(thumbnailUrl,attachment){
+                    var href = sprintf("/attachmentProxy/%s/%s",Conversations.getCurrentConversationJid(),encodeURI(attachment.id));
+                    return $("<a />",{href:href,text:attachment.name});
+                }
+            },
+            {name:"timestamp",type:"dateField",title:"When",readOnly:true},
+            {name:"author",type:"text",title:"Who",readOnly:true},
+            {
+                name:"identity",
+                type:"text",
+                title:"actions",
+                readOnly:true,
+                sorting:false,
+                itemTemplate:function(identity,attachment){
+                    if (Conversations.shouldModifyConversation()){
+                        var rootElem = deleteButtonTemplate.clone();
+                        rootElem.find(".deleteButton").on("click",function(){
+                            attachment.deleted = true;
+                            sendStanza(attachment);
+                        });
+                        return rootElem;
+                    } else {
+                        return $("<span/>");
+                    }
+                }
+            }
+        ];
+        attachmentsDatagrid.jsGrid({
+            width:"100%",
+            height:"auto",
+            inserting:false,
+            editing:false,
+            sorting:true,
+            paging:true,
+            noDataContent: "No attachments",
+            controller: {
+                loadData: function(filter){
+                    var sorted = attachments;
+                    if ("sortField" in filter){
+                        sorted = _.sortBy(sorted,function(sub){
+                            return sub[filter.sortField];
+                        });
+                        if ("sortOrder" in filter && filter.sortOrder == "desc"){
+                            sorted = _.reverse(sorted);
+                        }
+                    }
+                    return _.filter(sorted,function(attachment){return !attachment.deleted;});
+                }
+            },
+            pageLoading:false,
+            fields: gridFields
+        });
+        attachmentsDatagrid.jsGrid("sort",{
+            field:"timestamp",
+            order:"desc"
+        });
+        reRenderAttachments();
     });
     var resetUpload = function(){
         var attachmentFileChoice = $("#attachmentFileChoice"),
@@ -107,7 +107,7 @@ var Attachments = (function(){
                 WorkQueue.pause();
                 var jid = Conversations.getCurrentConversationJid();
                 //var filename = $(this).val();
-								var filename = $(this).val().replace(/.*(\/|\\)/, '');
+                var filename = $(this).val().replace(/.*(\/|\\)/, '');
                 var reader = new FileReader();
                 var files = eventArgs.target.files || eventArgs.dataTransfer.files;
                 var file = files[0];
@@ -128,7 +128,7 @@ var Attachments = (function(){
                                     type:"file",
                                     id:newId,
                                     name:filename,
-																		deleted:false,
+                                    deleted:false,
                                     url:newId,
                                     author:me,
                                     timestamp:newTimestamp
@@ -163,15 +163,15 @@ var Attachments = (function(){
     var clearState = function(){
         attachments = [];
         resetUpload();
-				reRenderAttachments();
+        reRenderAttachments();
     };
-		var reRenderAttachments = function(){
-			attachmentsDatagrid.jsGrid("loadData");
-			var sortObj = attachmentsDatagrid.jsGrid("getSorting");
-			if ("field" in sortObj){
-					attachmentsDatagrid.jsGrid("sort",sortObj);
-			}
-		};
+    var reRenderAttachments = function(){
+        attachmentsDatagrid.jsGrid("loadData");
+        var sortObj = attachmentsDatagrid.jsGrid("getSorting");
+        if ("field" in sortObj){
+            attachmentsDatagrid.jsGrid("sort",sortObj);
+        }
+    };
     var renderAttachment = function(attachment,targetContainer,template){
         var uniq = function(label){return sprintf("attachment_%s_%s",label,attachment.id);};
         var rootElem = template.find(".attachmentItem");
@@ -181,23 +181,23 @@ var Attachments = (function(){
         linkElem.attr("href",href);
         var linkNameElem = template.find(".attachmentDownloadLinkText");
         linkNameElem.text(attachment.name);
-				var deleteButton = template.find(".deleteButton");
-				if ("Conversations" in window && Conversations.shouldModifyConversation()){
-					deleteButton.on("click",function(){
-						attachment.deleted = true;
-						sendStanza(attachment);
-					});
-				} else {
-					deleteButton.remove();
-				}
+        var deleteButton = template.find(".deleteButton");
+        if ("Conversations" in window && Conversations.shouldModifyConversation()){
+            deleteButton.on("click",function(){
+                attachment.deleted = true;
+                sendStanza(attachment);
+            });
+        } else {
+            deleteButton.remove();
+        }
         targetContainer.append(template);
     };
 
     var actOnAttachment = function(newAttachment){
-			var partitioned = _.partition(attachments,function(attachment){
-				return attachment.id == newAttachment.id;
-			});
-			attachments = _.concat(partitioned[1],_.reverse(_.sortBy(_.concat([newAttachment],partitioned[0]),"timestamp"))[0]);
+        var partitioned = _.partition(attachments,function(attachment){
+            return attachment.id == newAttachment.id;
+        });
+        attachments = _.concat(partitioned[1],_.reverse(_.sortBy(_.concat([newAttachment],partitioned[0]),"timestamp"))[0]);
     };
     var historyReceivedFunction = function(history){
         try {
@@ -220,7 +220,7 @@ var Attachments = (function(){
             if ("type" in possibleAttachment && possibleAttachment.type == "file"){
                 actOnAttachment(possibleAttachment);
             }
-						reRenderAttachments();
+            reRenderAttachments();
         }
         catch(e){
             console.log("Attachments.stanzaReceivedFunction exception",e);
@@ -230,7 +230,7 @@ var Attachments = (function(){
         try{
             if (_.size(newAttachments) > 0){
                 $.each(newAttachments,function(unusedAttachmentName,attachment){
-									doStanzaReceivedFunction(attachment);
+                    doStanzaReceivedFunction(attachment);
                 });
             }
             reRenderAttachments();

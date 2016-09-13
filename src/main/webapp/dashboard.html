@@ -1,17 +1,34 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
   <head>
     <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+    <link rel="stylesheet" href="static/css/analysis.css"></link>
     <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
     <script src="static/js/stable/lodash.min.js"></script>
-    <script src="/static/js/analysis.js"></script>
+    <script src="static/js/stable/moment.min.js"></script>
+    <script src="static/js/stable/Chart.bundle.min.js"></script>
+    <script src="static/js/stable/d3.v4.min.js"></script>
+    <script src="static/js/stable/d3.layout.cloud.js"></script>
+    <script src="static/js/stable/typo.js"></script>
+    <script src="static/js/analysis.js"></script>
+    <script src="static/js/stable/word-cloud.js"></script>
   </head>
   <div class="directlyOnBackground ml">
-    <h2>Dashboard</h2>
     <div class="lift:Analytics">
-      <div id="conversationContext"></div>
-      <div id="status"></div>
-      <div id="display"></div>
-      <div id="bootstrap"></div>
+      <h2 id="pageLabel">Dashboard</h2>
+      <div class="flex-container-responsive" id="widgets">
+        <span class="ml" id="statusLog"></span>
+        <div id="vis" class="shrinkWrappedColumn widget"></div>
+        <div id="lang" class="shrinkWrappedColumn widget"></div>
+        <div class="flex-container-responsive">
+          <div class="ml shrinkWrappedColumn widget">
+            <h3>Average time to follow teacher (ms)</h3>
+            <div id="followLag"></div>
+          </div>
+          <div class="ml shrinkWrappedColumn widget" id="page"></div>
+          <div class="ml shrinkWrappedColumn widget" id="time"></div>
+          <div id="bootstrap"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

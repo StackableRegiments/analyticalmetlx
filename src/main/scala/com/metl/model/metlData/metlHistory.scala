@@ -52,6 +52,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var dirtyInks:List[MeTLDirtyInk] = List.empty[MeTLDirtyInk]
   protected var images:List[MeTLImage] = List.empty[MeTLImage]
   protected var dirtyImages:List[MeTLDirtyImage] = List.empty[MeTLDirtyImage]
+  protected var videos:List[MeTLVideo] = List.empty[MeTLVideo]
+  protected var dirtyVideos:List[MeTLDirtyVideo] = List.empty[MeTLDirtyVideo]
   protected var texts:List[MeTLText] = List.empty[MeTLText]
   protected var dirtyTexts:List[MeTLDirtyText] = List.empty[MeTLDirtyText]
   protected var multiWordTexts:List[MeTLMultiWordText] = List.empty[MeTLMultiWordText]
@@ -63,6 +65,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var latestCommands:Map[String,MeTLCommand] = Map.empty[String,MeTLCommand]
   protected var files:List[MeTLFile] = List.empty[MeTLFile]
   protected var attendances:List[Attendance] = List.empty[Attendance]
+  protected var videoStreams:List[MeTLVideoStream] = List.empty[MeTLVideoStream]
   protected var unhandledCanvasContents:List[MeTLUnhandledCanvasContent] = List.empty[MeTLUnhandledCanvasContent]
   protected var unhandledStanzas:List[MeTLUnhandledStanza] = List.empty[MeTLUnhandledStanza]
 
@@ -73,6 +76,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getHighlighters = highlighters
   def getInks = inks
   def getImages = images
+  def getVideos = videos
   def getTexts = texts
   def getMultiWordTexts = multiWordTexts 
   def getQuizzes = quizzes
@@ -81,17 +85,19 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getAttendances = attendances
   def getFiles = files
   def getCommands = commands
+  def getVideoStreams = videoStreams
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
-  def getRenderableGrouped:Tuple5[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText]] = Stopwatch.time("History.getRenderableGrouped",{
-    getRenderable.foldLeft((List.empty[MeTLText],List.empty[MeTLInk],List.empty[MeTLInk],List.empty[MeTLImage],List.empty[MeTLMultiWordText]))((acc,item) => item match {
-      case t:MeTLText => (acc._1 ::: List(t),acc._2,acc._3,acc._4,acc._5)
-      case h:MeTLInk if h.isHighlighter => (acc._1,acc._2 ::: List(h),acc._3,acc._4,acc._5)
-      case s:MeTLInk => (acc._1,acc._2,acc._3 ::: List(s),acc._4,acc._5)
-      case i:MeTLImage => (acc._1,acc._2,acc._3,acc._4 ::: List(i),acc._5)
-      case i:MeTLMultiWordText => (acc._1,acc._2,acc._3,acc._4,acc._5 ::: List(i))
+  def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
+    getRenderable.foldLeft((List.empty[MeTLText],List.empty[MeTLInk],List.empty[MeTLInk],List.empty[MeTLImage],List.empty[MeTLMultiWordText],List.empty[MeTLVideo]))((acc,item) => item match {
+      case t:MeTLText => (acc._1 ::: List(t),acc._2,acc._3,acc._4,acc._5,acc._6)
+      case h:MeTLInk if h.isHighlighter => (acc._1,acc._2 ::: List(h),acc._3,acc._4,acc._5,acc._6)
+      case s:MeTLInk => (acc._1,acc._2,acc._3 ::: List(s),acc._4,acc._5,acc._6)
+      case i:MeTLImage => (acc._1,acc._2,acc._3,acc._4 ::: List(i),acc._5,acc._6)
+      case i:MeTLMultiWordText => (acc._1,acc._2,acc._3,acc._4,acc._5 ::: List(i),acc._6)
+      case i:MeTLVideo => (acc._1,acc._2,acc._3,acc._4,acc._5,acc._6 ::: List(i))
       case _ => acc
     })
   })
@@ -104,6 +110,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   def getImageBySource(source:String) = Stopwatch.time("History.getImageBySource",getImages.find(i => i.source.map(s => s == source).openOr(false)))
   def getImageByIdentity(identity:String) = Stopwatch.time("History.getImageByIdentity",getImages.find(i => i.identity == identity))
+  def getVideoBySource(source:String) = Stopwatch.time("History.getVideoBySource",getVideos.find(i => i.source.map(s => s == source).openOr(false)))
+  def getVideoByIdentity(identity:String) = Stopwatch.time("History.getVideoByIdentity",getVideos.find(i => i.identity == identity))
   def getQuizByIdentity(identity:String) = Stopwatch.time("History.getQuizImageByIdentity",getQuizzes.filter(i => i.id == identity).sortBy(q => q.timestamp).reverse.headOption)
   def getFileByIdentity(identity:String) = Stopwatch.time("History.getFileByIdentity",getFiles.filter(_.id == identity).sortBy(_.timestamp).reverse.headOption)
   def getSubmissionByAuthorAndIdentity(author:String,identity:String) = Stopwatch.time("History.getSubmissionByAuthorAndIdentity",getSubmissions.find(s => s.author == author && s.identity == identity))
@@ -112,10 +120,12 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLDirtyInk => removeInk(s)
     case s:MeTLDirtyText => removeText(s)
     case s:MeTLDirtyImage => removeImage(s)
+    case s:MeTLDirtyVideo => removeVideo(s)
     case s:MeTLMoveDelta => addMeTLMoveDelta(s)
     case s:MeTLInk if s.isHighlighter => addHighlighter(s)
     case s:MeTLInk => addInk(s)
     case s:MeTLImage => addImage(s)
+    case s:MeTLVideo => addVideo(s)
     case s:MeTLText => addText(s)
     case s:MeTLMultiWordText => addMultiWordText(s)
     case s:MeTLQuiz => addQuiz(s)
@@ -124,6 +134,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLCommand => addCommand(s)
     case s:Attendance => addAttendance(s)
     case s:MeTLFile => addFile(s)
+    case s:MeTLVideoStream => addVideoStream(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
     case _ => {
@@ -163,6 +174,11 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         if (!s.isDeleted)
           addImage(s.adjustIndividualContent(i,true,left,top).asInstanceOf[MeTLImage],false)
       }
+      case i:MeTLVideo if matches(s.videoIds,i) => {
+        removeVideo(i.generateDirty(s.timestamp),false)
+        if (!s.isDeleted)
+          addVideo(s.adjustIndividualContent(i,true,left,top).asInstanceOf[MeTLVideo],false)
+      }
       case _ => {}
     }
   })
@@ -172,6 +188,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       case i:MeTLText => s.textIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLMultiWordText => s.multiWordTextIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLImage => s.imageIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
+      case i:MeTLVideo => s.videoIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
     }
     val relevantContents = getCanvasContents.filter(cc => matches(cc))
     val (boundsLeft,boundsTop) = {
@@ -193,6 +210,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       case text:MeTLText => dirtyTexts.exists(dText => dText.isDirtierFor(text))
       case multiWordText:MeTLMultiWordText => dirtyTexts.exists(dText => dText.isDirtierFor(multiWordText))
       case image:MeTLImage => dirtyImages.exists(dImage => dImage.isDirtierFor(image))
+      case video:MeTLVideo => dirtyVideos.exists(dVideo => dVideo.isDirtierFor(video))
       case _ => false
     }
     !(dirtyTest || metlMoveDeltas.filter(md => md.isDirtierFor(cc)).exists(md => md.isDeleted))
@@ -276,6 +294,33 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
     this
   })
+  def addVideoStream(s:MeTLVideoStream,store:Boolean = true) = Stopwatch.time("History.addVideoStream",{
+    if (store){
+      outputHook(s)
+      val (candidates,remainder) = videoStreams.partition(_.id == s.id)
+      videoStreams = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.isDeleted))
+    }
+    this
+  })
+  def addVideo(s:MeTLVideo,store:Boolean = true) = Stopwatch.time("History.addVideo",{
+    if (shouldAdd(s)){
+      val adjustedVideo = metlMoveDeltas.filter(md => !md.isDeleted && md.isDirtierFor(s)).sortBy(_.timestamp).foldLeft(s)((acc,item) => {
+        item.adjustIndividualContent(acc).asInstanceOf[MeTLVideo]
+      })
+      canvasContents = canvasContents.filterNot(cc => cc match {
+        case i:MeTLVideo => i.matches(s)
+        case _ => false
+      }) ::: List(adjustedVideo)
+      growBounds(adjustedVideo.left,adjustedVideo.right,adjustedVideo.top,adjustedVideo.bottom)
+      if (store)
+        outputHook(adjustedVideo)
+      update(true)
+    }
+    if (store)
+      videos = videos ::: List(s)
+    this
+  })
+
   def addImage(s:MeTLImage,store:Boolean = true) = Stopwatch.time("History.addImage",{
     if (shouldAdd(s)){
       val adjustedImage = metlMoveDeltas.filter(md => !md.isDeleted && md.isDirtierFor(s)).sortBy(_.timestamp).foldLeft(s)((acc,item) => {
@@ -439,6 +484,27 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       dirtyImages = dirtyImages ::: List(dirtyImage)
     this
   })
+  def removeVideo(dirtyVideo:MeTLDirtyVideo,store:Boolean = true) = Stopwatch.time("History.removeImage",{
+    val (item,remaining) = getCanvasContents.partition(s => s match {
+      case i:MeTLVideo => dirtyVideo.isDirtierFor(i)
+      case _ => false
+    }
+    )
+    canvasContents = remaining
+    item.map(s => s match {
+      case i:MeTLVideo => {
+        calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
+        if (store)
+          outputHook(dirtyVideo)
+        update(true)
+      }
+      case _ => {}
+    })
+    if (store)
+      dirtyVideos = dirtyVideos ::: List(dirtyVideo)
+    this
+  })
+
   def removeText(dirtyText:MeTLDirtyText,store:Boolean = true) = Stopwatch.time("History.removeText",{
     val (item,remaining) = getCanvasContents.partition(s => s match {
       case t:MeTLText => dirtyText.isDirtierFor(t)
@@ -519,6 +585,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     getCanvasContents.foreach(s => s match {
       case i:MeTLInk => growBounds(i.left,i.right,i.top,i.bottom)
       case i:MeTLImage => growBounds(i.left,i.right,i.top,i.bottom)
+      case i:MeTLVideo => growBounds(i.left,i.right,i.top,i.bottom)
       case t:MeTLText => growBounds(t.left,t.right,t.top,t.bottom)
       case t:MeTLMultiWordText => growBounds(t.left,t.right,t.top,t.bottom)
     })
@@ -545,6 +612,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       case di:MeTLDirtyInk => md.inkIds.contains(di.identity)
       case dt:MeTLDirtyText => md.textIds.contains(dt.identity) || md.multiWordTextIds.contains(dt.identity)
       case di:MeTLDirtyImage => md.imageIds.contains(di.identity)
+      case di:MeTLDirtyVideo => md.imageIds.contains(di.identity)
       case cc:MeTLCanvasContent => md.isDirtierFor(cc,false)
       case _ => false
     })

@@ -134,6 +134,16 @@ class H2Image extends H2MeTLCanvasContent[H2Image] {
 }
 object H2Image extends H2Image with LongKeyedMetaMapper[H2Image] {
 }
+class H2Video extends H2MeTLCanvasContent[H2Video] {
+  def getSingleton = H2Video
+  object source extends MappedMeTLString(this,H2Constants.url)
+  object width extends MappedDouble(this)
+  object height extends MappedDouble(this)
+  object x extends MappedDouble(this)
+  object y extends MappedDouble(this)
+}
+object H2Video extends H2Video with LongKeyedMetaMapper[H2Video] {
+}
 class H2DirtyInk extends H2MeTLCanvasContent[H2DirtyInk] {
   def getSingleton = H2DirtyInk
 }
@@ -149,12 +159,18 @@ class H2DirtyImage extends H2MeTLCanvasContent[H2DirtyImage] {
 }
 object H2DirtyImage extends H2DirtyImage with LongKeyedMetaMapper[H2DirtyImage]{
 }
+class H2DirtyVideo extends H2MeTLCanvasContent[H2DirtyVideo] {
+  def getSingleton = H2DirtyVideo
+}
+object H2DirtyVideo extends H2DirtyVideo with LongKeyedMetaMapper[H2DirtyVideo]{
+}
 class H2MoveDelta extends H2MeTLCanvasContent[H2MoveDelta]{
   def getSingleton = H2MoveDelta
   object inkIds extends MappedText(this)
   object textIds extends MappedText(this)
   object multiWordTextIds extends MappedText(this)
   object imageIds extends MappedText(this)
+  object videoIds extends MappedText(this)
   object xOrigin extends MappedDouble(this)
   object yOrigin extends MappedDouble(this)
   object xTranslate extends MappedDouble(this)
@@ -226,6 +242,16 @@ class H2File extends H2MeTLStanza[H2File]{
   object deleted extends MappedBoolean(this)
 }
 object H2File extends H2File with LongKeyedMetaMapper[H2File]{
+}
+
+class H2VideoStream extends H2MeTLStanza[H2VideoStream]{
+  def getSingleton = H2VideoStream
+  object partialIdentity extends MappedMeTLString(this,H2Constants.identity) with H2MeTLIndexedString
+  object identity extends MappedMeTLString(this,H2Constants.fullIdentity)
+  object url extends MappedMeTLString(this,H2Constants.url)
+  object deleted extends MappedBoolean(this)
+}
+object H2VideoStream extends H2VideoStream with LongKeyedMetaMapper[H2VideoStream]{
 }
 
 class H2Resource extends H2MeTLContent[H2Resource]{
