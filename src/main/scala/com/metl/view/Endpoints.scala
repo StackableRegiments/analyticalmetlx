@@ -240,6 +240,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
+      S.session.foreach(_.destroySession())
+      //S.containerSession.foreach(s => s.terminate)
+      Full(RedirectResponse("/conversationSearch"))
+    })
     case req@Req("videoProxy" :: slideJid :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
       val config = ServerConfiguration.default
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
