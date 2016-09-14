@@ -185,7 +185,7 @@ var Conversation = (function(){
 								newIndex = newIndex + 1;
 								return returnedSlide;
 						});
-						reorderSlidesOfCurrentConversation(conversation.jid,newSlides);
+						reorderSlidesOfCurrentConversation(conversation.jid.toString(),newSlides);
 						slideReorderInProgress = false;
 						reRender();
 				}
@@ -211,13 +211,13 @@ var Conversation = (function(){
 		$(".backToConversations").attr("href","/conversationSearch");
 		var changeTitleFunc = function(){
 			var newTitle = $(this).val();
-			renameConversation(conversation.jid,newTitle);
+			renameConversation(conversation.jid.toString,newTitle);
 		};
 		$("#conversationTitleInput").on("blur",changeTitleFunc).keyup(function(e){
 			if (e.which == 13){
 				e.preventDefault();
 				var newTitle = $(this).val();
-				renameConversation(conversation.jid,newTitle);
+				renameConversation(conversation.jid.toString,newTitle);
 			};
 		});
 		$("#archiveChallenge").on("click",function(){
