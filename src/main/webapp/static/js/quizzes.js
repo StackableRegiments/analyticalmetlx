@@ -74,8 +74,8 @@ var Quizzes = (function(){
             {
                 name:"answerCount",type:"number",title:"Answers",readOnly:true,
                 itemTemplate:function(answerCount,quizSummary){
+										var quiz = quizzes[quizSummary.key];
                     if (Conversations.shouldModifyConversation()){
-                        var quiz = quizzes[quizSummary.key];
                         var elem = $("<div/>");
                         elem.append(quizResultsGraphs[quizSummary.key]);
                         elem.css({
@@ -221,7 +221,12 @@ var Quizzes = (function(){
                         });
                         return elem;
                     } else {
-                        return $("<span/>");
+												var myAnswer = quizAnswersFunction(quiz)[UserSettings.getUsername()];
+												if (myAnswer != undefined && "latestAnswer" in myAnswer){
+													return $("<span/>",{text:myAnswer.latestAnswer.answer});
+												} else {
+													return $("<span/>",{text:"unanswered"});
+												}
                     }
                 }
             },
