@@ -240,6 +240,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
+      S.session.foreach(_.destroySession())
+      //S.containerSession.foreach(s => s.terminate)
+      Full(RedirectResponse("/conversationSearch"))
+    })
     case req@Req("videoProxy" :: slideJid :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
       val config = ServerConfiguration.default
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
@@ -427,6 +432,25 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
             val server = ServerConfiguration.default
             XmlResponse(<resourceUrl>{server.postResource(jid,filename,bytes)}</resourceUrl>)
           })
+        })
+    }
+    case r @ Req(List("uploadSvg"),_,_) =>{
+      debug("UploadSvg registered in MeTLStatefulRestHelper")
+      //trace(r.body)
+        () => Stopwatch.time("MeTLStatefulRestHelper.uploadSvg", {
+          for {
+            svgBytes <- r.body
+            w <- r.param("width").map(_.toInt)
+            h <- r.param("height").map(_.toInt)
+            filename <- r.param("filename")
+            jid <- r.param("jid")
+          } yield {
+            val svg = IOUtils.toString(svgBytes)
+            var quality = r.param("quality").map(_.toFloat).getOrElse(0.4f)
+            val bytes = SvgConverter.toJpeg(svg,w,h,quality)
+            val server = ServerConfiguration.default
+            XmlResponse(<resourceUrl>{server.postResource(jid,filename,bytes)}</resourceUrl>)
+          }
         })
     }
     case r @ Req(List("logDevice"),_,_) => () => {
