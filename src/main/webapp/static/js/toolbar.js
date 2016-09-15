@@ -463,12 +463,14 @@ function registerPositionHandlers(contexts,down,move,up){
                 case 1:
                     var t = touches[0];
                     var worldPos = screenToWorld(t.x,t.y);
-                    if(noInteractableConsumed(worldPos,"move")){
-                        if(isDown){
-                            var z = 0.5;
-                            move(t.x,t.y,z,worldPos,modifiers(e));
-                        }
-                    }
+										if (touches[0].radiusX > 0 && touches[0].radiusY > 0){
+											if(noInteractableConsumed(worldPos,"move")){
+												if(isDown){
+													var z = 0.5;
+													move(t.x,t.y,z,worldPos,modifiers(e));
+												}
+											}
+										}
                     break;
                 default:
                     var pos = averagePos(touches);
