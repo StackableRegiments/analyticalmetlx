@@ -41,13 +41,6 @@ var UserSettings = (function(){
     };
 		var shouldUseLocalStorageFunc = function(){
 			return false;
-			/*
-			if (localStorage){
-				return true;
-			} else {
-				return false;
-			}
-			*/
 		}
     var setUserPrefFunction = function(prefKey,prefValue){
         if(shouldUseLocalStorageFunc()){
