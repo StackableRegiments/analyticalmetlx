@@ -171,6 +171,7 @@ var Conversations = (function(){
         var slideControls = $("#slideControls").html([constructPrevSlideButton(),constructNextSlideButton(),constructAddSlideButton()]);
         slideContainer.off("scroll");
         slideContainer.on("scroll",paintThumbs);
+        indicateActiveSlide(currentSlide);
         Progress.call("onLayoutUpdated");
     }
 
