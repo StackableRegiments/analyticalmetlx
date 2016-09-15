@@ -425,7 +425,9 @@ function registerPositionHandlers(contexts,down,move,up){
                     touches.push({
                         x: touch.pageX - o.left,
                         y: touch.pageY - o.top,
-                        identifier:touch.identifier
+                        identifier:touch.identifier,
+												radiusX: touch.radiusX,
+												radiusY: touch.radiusY
                     });
                 });
                 return touches;
@@ -435,13 +437,15 @@ function registerPositionHandlers(contexts,down,move,up){
                 e.preventDefault();
                 var touches = offsetTouches(e.originalEvent.touches);
                 if(touches.length == 1){
-                    var t = touches[0];
-                    var worldPos = screenToWorld(t.x,t.y);
-                    isDown = true;
-                    var z = 0.5;
-                    if(noInteractableConsumed(worldPos,"down")){
-                        down(t.x,t.y,z,worldPos,modifiers(e));
-                    }
+									if (touches[0].radiusX > 0 && touches[0].radiusY > 0){
+										var t = touches[0];
+										var worldPos = screenToWorld(t.x,t.y);
+										isDown = true;
+										var z = 0.5;
+										if(noInteractableConsumed(worldPos,"down")){
+												down(t.x,t.y,z,worldPos,modifiers(e));
+										}
+									}
                 }
                 else{
                     var avg = averagePos(touches);
