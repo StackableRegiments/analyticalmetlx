@@ -418,8 +418,8 @@ var Enterprise = (function(){
     }
     return {
         prime:function(){
-            //$.get("/fullClientHistory?source=global",function(history){
-            $.get("/api/v1/sample/global/1",function(history){
+            $.get("/fullClientHistory?source=global",function(history){
+            //$.get("/api/v1/sample/global/1",function(history){
                 var commands = _.map($(history).find("message"),function(mx){
                     var message = $(mx);
                     var timestamp = message.attr("timestamp");
