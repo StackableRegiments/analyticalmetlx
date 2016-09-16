@@ -17,6 +17,7 @@ var Participants = (function(){
         following:true
     };
 		var reRenderParticipants = function(){
+			updateParticipantsListing();
 		};
     var onHistoryReceived = function(history){
         var newParticipants = {};
@@ -250,6 +251,9 @@ var Participants = (function(){
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
         getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
+				reRender:function(){
+					reRenderParticipants();
+				},	
         code:function(author){
             return _.keys(participants).indexOf(author);
         }
