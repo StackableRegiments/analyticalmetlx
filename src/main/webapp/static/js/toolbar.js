@@ -1261,10 +1261,25 @@ var Modes = (function(){
                         var d = t.doc;
                         if(d.isActive){
                             var source = d.save();
+														
+														var originalRange = d.selectedRange();
+														var start = originalRange.start;
+														var end = originalRange.start;
+														d.runs(function(runToAlter){
+															start = end;
+															end = start + runToAlter.text.length;
+															d.select(start,end,true);
+															var size = d.selectedRange().getFormatting().size;
+															d.selectedRange().setFormatting("size",d.selectedRange().getFormatting().size * factor);
+														},d.selectedRange());
+														d.select(originalRange.start,originalRange.end,true);
+														
+/*
                             _.each(source,function(run){
                                 run.size = run.size * factor;
                             });
                             d.load(source);
+*/
                             if(d.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1444,7 +1459,7 @@ var Modes = (function(){
                             editor.doc.contentChanged(function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
-                                source.privacy = Privacy.getCurrentPrivacy();
+                                //source.privacy = Privacy.getCurrentPrivacy();
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
                                 sendRichText(source);
