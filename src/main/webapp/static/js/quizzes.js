@@ -151,11 +151,8 @@ var Quizzes = (function(){
                                     var withSvgQuizImage = function(afterFunc){
                                         var w = resultsW;
                                         var h = resultsH;
-																				console.log("svg:",svg);
 																				var svgObj = svg.clone()[0];
-																				console.log("svgObj:",svgObj);
 																				var svgString = new XMLSerializer().serializeToString(svgObj);
-																				console.log("svgString:",svgString);
 																				var t = new Date().getTime();
 																				var username = UserSettings.getUsername();
 																				var cc = Conversations.getCurrentConversation();
@@ -602,43 +599,6 @@ var Quizzes = (function(){
     };
     var updateQuizGraph = function(quiz){
         return generateQuizResultsGraph(quiz,640,480);
-    };
-    var withSvgDataUrl = function(svg,w,h,afterFunc){
-        try {
-            var s = $(svg);
-            var svgData = new XMLSerializer().serializeToString(svg);
-						//var encodedUri = encodeURIComponent(svgData);
-						//var blobSrc = "data:image/svg+xml,"+encodedUri;
-            var blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-						var DOMURL = window.URL || window.webkitURL || window;
-            var blobUrl = DOMURL.createObjectURL(blob);
-						//console.log("img:",svg,blobSrc);
-            var img = $("<img />").width(w).height(h);
-            img.on("load",function(){
-                var canvas = $("<canvas/>");
-                canvas.width = w;
-                canvas.height = h;
-                canvas.attr("width",w);
-                canvas.attr("height",h);
-                canvas.css({
-                    width:w,
-                    height:h
-                });
-                var ctx = canvas[0].getContext("2d");
-                ctx.fillStyle = "rgb(255,255,255)";
-                ctx.fillRect(0,0,w,h);
-                ctx.drawImage(img[0],0,0,w,h);
-                var submissionQuality = 0.4;
-                var imageData = canvas[0].toDataURL("image/jpeg",submissionQuality);
-                console.log("img:",svg,svgData,img,canvas,imageData);
-								DOMURL.revokeObjectURL(blobUrl);
-                afterFunc(imageData);
-            });
-            img.attr("src",blobUrl);
-            //img.attr("src",blobSrc);
-        } catch(e) {
-            console.log("exception while converting svg to dataUrl",e);
-        }
     };
     var actOnQuiz = function(newQuiz){
         quizzes[newQuiz.id] = newQuiz;
