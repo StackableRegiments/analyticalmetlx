@@ -948,16 +948,17 @@ var Modes = (function(){
                         resizeAspectLocked.activated = true;
                         var root = Modes.select.totalSelectedBounds();
                         Modes.select.offset = {x:root.x2,y:root.y2};
+												resizeAspectLocked.rehome(root);
                         blit();
                         return false;
                     },
                     move:function(worldPos){
                         if(resizeAspectLocked.activated){
-                            resizeAspectLocked.bounds = [
+                            bounds = [
                                 worldPos.x - s,
-                                resizeAspectLocked.bounds[1],
+                                bounds[1],
                                 worldPos.x + s,
-                                resizeAspectLocked.bounds[3]
+                                bounds[3]
                             ];
                             var totalBounds = Modes.select.totalSelectedBounds();
                             var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -1100,7 +1101,7 @@ var Modes = (function(){
                             word.doc.width() * resized.xScale,
                             Modes.text.minimumWidth / scale()
                         ));
-                        if(word.save().length > 0){
+                        if(word.doc.save().length > 0){
                             sendRichText(word);
                         }
                     });
