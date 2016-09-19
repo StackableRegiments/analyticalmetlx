@@ -206,7 +206,7 @@ var Quizzes = (function(){
                                         });
                                     });
                                     rootElem.find(".quizResultsShouldDisplayOnNextSlide").unbind("click").on("click",function(){
-                                        withQuizImage(function(newIdentity,imageData,w,h){
+                                        withSvgQuizImage(function(newIdentity,w,h){
                                             var convJid = Conversations.getCurrentConversationJid();
                                             newIndex = Conversations.getCurrentSlide().index + 1;
                                             addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
