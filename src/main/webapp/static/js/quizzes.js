@@ -88,7 +88,6 @@ var Quizzes = (function(){
 									var answerContainer = rootElem.find(".quizOptionContainer");
 									var answerTemplate = answerContainer.find(".quizOption");
 
-
 									var theseQuizAnswerers = quizAnswersFunction(quiz);
 									var quizOptionAnswerCount = function(quiz, qo){
 											var count = 0;
@@ -480,7 +479,7 @@ var Quizzes = (function(){
             $("#quizCreationButton").unbind("click").on("click",function(){
                 var t = new Date().getTime();
                 var username = UserSettings.getUsername();
-                var id = sprintf("%s_%s",username,t);
+                var id = sprintf("%s",t);
                 var newQuiz = {
                     type:"quiz",
                     options:[
