@@ -1294,7 +1294,7 @@ var Modes = (function(){
 															var size = d.selectedRange().getFormatting().size;
 															if (size == undefined){
 																var candidate = _.findLast(referenceRuns,function(run){
-																	return "formatting" in run && "size" in run.formatting && run.end <= start; 
+																	return "formatting" in run && "size" in run.formatting && run.end <= end; 
 																});
 																if (candidate != undefined && "formatting" in candidate && "size" in candidate.formatting){
 																	size = candidate.formatting.size;
