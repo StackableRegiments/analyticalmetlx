@@ -524,9 +524,12 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
           case m:MeTLInk => m.copy(slide = newLoc.getJid)
           case m:MeTLImage => m.copy(slide = newLoc.getJid)
           case m:MeTLText => m.copy(slide = newLoc.getJid)
+          case m:MeTLVideo => m.copy(slide = newLoc.getJid)
+          case m:MeTLMultiWordText => m.copy(slide = newLoc.getJid)
           case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
+          case m:MeTLDirtyVideo => m.copy(slide = newLoc.getJid)
           case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
           case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
           case m:MeTLQuiz => m
