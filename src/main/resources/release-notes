@@ -1,2 +1,7 @@
-text improvements
-other improvements
+Analytics.
+
+Performance improvements:
+- localise fonts and images to speed up loading
+- reduce number of server calls per request
+
+Many other bug fixes and improvements.
