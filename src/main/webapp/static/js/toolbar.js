@@ -1296,7 +1296,7 @@ var Modes = (function(){
 																var candidate = _.findLast(referenceRuns,function(run){
 																	return "formatting" in run && "size" in run.formatting && run.end <= start; 
 																});
-																if ("formatting" in candidate && "size" in candidate.formatting){
+																if (candidate != undefined && "formatting" in candidate && "size" in candidate.formatting){
 																	size = candidate.formatting.size;
 																}
 															};
