@@ -1,7 +1,4 @@
-Analytics.
-
-Performance improvements:
-- localise fonts and images to speed up loading
-- reduce number of server calls per request
-
+Feature: analytics.
+Performance: localise fonts and images to speed up loading.
+Performance: reduce number of server calls per request.
 Many other bug fixes and improvements.
