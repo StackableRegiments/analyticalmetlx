@@ -2,6 +2,7 @@ import com.metl.model._
 import com.metl.data._
 import com.metl.utils._
 import org.scalatest._
+import org.scalatest.enablers.Size._
 
 case class TestContent(username:String,
   override val timestamp:Long,
@@ -24,12 +25,16 @@ class ContentAnalysisTest extends FlatSpec with Matchers {
     TestContent("b",100,0,0,50,50)
   )
   "Chunking" should "split content into collections on user" in {
-    val chunks = CanvasContentAnalysis.chunk(sample)
-    chunks.chunksets should have size 2
+    val chunks = CanvasContentAnalysis.chunk(sample).chunksets
+    chunks should have size 2
   }
   it should "emit ordered collections for users" in {
-    val sorts = for(
-      user <- CanvasContentAnalysis.chunk(sample).chunksets) yield user.chunks == user.chunks.sortBy(_.start)
+    val sorts = for {
+      user <- CanvasContentAnalysis.chunk(sample).chunksets
+      chunks = user.chunks
+    } yield {
+      chunks == chunks.sortBy(_.start)
+    }
     all (sorts) should be (true)
   }
 }
