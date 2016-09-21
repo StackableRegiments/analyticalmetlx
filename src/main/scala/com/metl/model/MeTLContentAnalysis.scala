@@ -25,8 +25,7 @@ case class Chunk(activity:Seq[MeTLCanvasContent]){
 
 object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
-  val filePath = Globals.configurationFileLocation
-  lazy val propFile = XML.load(filePath)
+  lazy val propFile = XML.load(Globals.configurationFileLocation)
 
 
   val analysisThreshold = 5
