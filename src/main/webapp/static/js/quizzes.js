@@ -283,7 +283,7 @@ var Quizzes = (function(){
 												});
                     } else {
                         editButton.remove();
-												veiwAnswerButton.remove();
+												viewAnswerButton.remove();
                     }
                     return rootElem;
                 }
