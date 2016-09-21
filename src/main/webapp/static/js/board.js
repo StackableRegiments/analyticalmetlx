@@ -43,7 +43,7 @@ function setupStatus(){
     }
     window.trackerFrom = function(phrase){
         return _.filter(_.keys(progressFuncs), function(key){
-            return phrase.endsWith(sprintf("_from:%s",key));
+            return _.endsWith(phrase,sprintf("_from:%s",key));
         });
     }
 }

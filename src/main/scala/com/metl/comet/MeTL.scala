@@ -471,7 +471,8 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
-      val c = serverConfig.detailsOfConversation(args(0).toString)
+      println("reorderSlidesOfConversation(%s,%s)".format(jid,newSlides))
+      val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
@@ -608,7 +609,10 @@ trait JArgUtils {
   protected def getArgAsJArray(input:Any):JArray = input match {
     case l:List[JValue] => JArray(l)
     case ja:JArray => ja
-    case other => JArray(List.empty[JValue])
+    case other => {
+      println("getArgAsJArray(%s) => %s".format(input,other))
+      JArray(List.empty[JValue])
+    }
   }
   protected def getArgAsListOfStrings(input:Any):List[String] = input match {
     case JArray(items) => items.flatMap{

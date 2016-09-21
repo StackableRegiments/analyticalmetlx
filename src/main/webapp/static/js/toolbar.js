@@ -948,16 +948,17 @@ var Modes = (function(){
                         resizeAspectLocked.activated = true;
                         var root = Modes.select.totalSelectedBounds();
                         Modes.select.offset = {x:root.x2,y:root.y2};
+												resizeAspectLocked.rehome(root);
                         blit();
                         return false;
                     },
                     move:function(worldPos){
                         if(resizeAspectLocked.activated){
-                            resizeAspectLocked.bounds = [
+                            bounds = [
                                 worldPos.x - s,
-                                resizeAspectLocked.bounds[1],
+                                bounds[1],
                                 worldPos.x + s,
-                                resizeAspectLocked.bounds[3]
+                                bounds[3]
                             ];
                             var totalBounds = Modes.select.totalSelectedBounds();
                             var originalWidth = totalBounds.x2 - totalBounds.x;
@@ -1100,7 +1101,7 @@ var Modes = (function(){
                             word.doc.width() * resized.xScale,
                             Modes.text.minimumWidth / scale()
                         ));
-                        if(word.save().length > 0){
+                        if(word.doc.save().length > 0){
                             sendRichText(word);
                         }
                     });
@@ -1263,16 +1264,48 @@ var Modes = (function(){
                             var source = d.save();
 														
 														var originalRange = d.selectedRange();
-														var start = originalRange.start;
-														var end = originalRange.start;
+														var original = {
+															start:originalRange.start,
+															end:originalRange.end
+														};
+														var start = original.start;
+														var end = original.start;
+														var referenceRuns = [];
+														d.select(0,original.end,true);
+														var refStart = 0;
+														d.runs(function(referenceRun){
+															var newEnd = refStart + _.size(referenceRun.text);
+															d.select(refStart,newEnd,true);
+															var formatting = d.selectedRange().getFormatting();
+															referenceRuns.push({
+																start:refStart,
+																end:newEnd,
+																run:referenceRun,
+																formatting:formatting
+															});
+															refStart = newEnd;
+														},d.selectedRange());
+
+														d.select(original.start,original.end,true);
 														d.runs(function(runToAlter){
 															start = end;
 															end = start + runToAlter.text.length;
 															d.select(start,end,true);
 															var size = d.selectedRange().getFormatting().size;
-															d.selectedRange().setFormatting("size",d.selectedRange().getFormatting().size * factor);
+															if (size == undefined){
+																var candidate = _.findLast(referenceRuns,function(run){
+																	return "formatting" in run && "size" in run.formatting && run.end <= end; 
+																});
+																if (candidate != undefined && "formatting" in candidate && "size" in candidate.formatting){
+																	size = candidate.formatting.size;
+																}
+															};
+															if (size != undefined){
+																d.selectedRange().setFormatting("size",size * factor);
+															}
 														},d.selectedRange());
-														d.select(originalRange.start,originalRange.end,true);
+
+														d.select(original.start,original.end,true);
 														
 /*
                             _.each(source,function(run){

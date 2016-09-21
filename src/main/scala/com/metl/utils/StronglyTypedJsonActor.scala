@@ -33,60 +33,75 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener {
     import net.liftweb.json._
     val jsCreationFunc = Script(JsCrVar(name,AnonFunc(ajaxCall(JsRaw("JSON.stringify(augmentArguments(arguments))"),(s:String) => {
       val start = new java.util.Date().getTime()
-      val exceptionOrResult = {
-        try {
-          parse(s) match {
-            case jObj:JObject => {
-              val allParams = jObj.children.flatMap{
-                case JField(k,v) => Some(v)
-                case _ => None
+      try {
+        val exceptionOrResult = {
+          try {
+            parse(s) match {
+              case jObj:JObject => {
+                val allParams = jObj.children.flatMap{
+                  case JField(k,v) => Some(v)
+                  case _ => None
+                }
+                val params = allParams.take(args.length)
+                val bonusParams = allParams.drop(args.length)
+                val output = serverSideFunc(params)
+                Right((output,params,bonusParams))
               }
-              val params = allParams.take(args.length)
-              val bonusParams = allParams.drop(args.length)
-              val output = serverSideFunc(params)
-              Right((output,params,bonusParams))
+              case unknown => Left(new Exception("unknown object: %s".format(unknown)))
             }
-            case unknown => Left(new Exception("unknown object: %s".format(unknown)))
+          } catch {
+            case e:Exception => {
+              Left(e)
+            }
           }
-        } catch {
-          case e:Exception => {
-            Left(e)
+        }
+        val end = new java.util.Date().getTime()
+        val returnCall = Call("serverResponse",JObject({
+          exceptionOrResult match {
+            case Right((response,params,bonusParams)) => {
+              JField("bonusArguments",JArray(bonusParams)) :: bonusParams.reverse.headOption.toList.map(ins => JField("instant",ins)) ::: {
+                returnArguments match {
+                  case true => List(JField("arguments",JArray(params)))
+                  case false => Nil
+                }
+              } ::: { 
+                returnResponse match {
+                  case true => List(JField("response",response))
+                  case false => Nil
+                }
+              }
+            }
+            case Left(e) => List(JField("error",JString(e.getMessage)))
           }
+        } ::: List(
+          JField("command",JString(name)),
+          JField("duration",JInt(end - start)),
+          JField("serverStart",JInt(start)),
+          JField("serverEnd",JInt(end)),
+          JField("success",JBool(exceptionOrResult.isRight))
+        )))
+        (for {
+          rrf <- returnResultFunction
+          res <- exceptionOrResult.right.toOption
+        } yield {
+          returnCall & Call(rrf,res._1)
+        }).getOrElse(returnCall)
+      } catch {
+        case e:Exception => {
+          val end = new java.util.Date().getTime()
+          error("Exception in ClientSideFunc::%s(%s) => %s\r\n%s".format(name,args.mkString(","),e.getMessage,e.getStackTraceString))
+          Call("serverResponse",JObject(
+            List(
+              JField("command",JString(name)),
+              JField("duration",JInt(end - start)),
+              JField("serverStart",JInt(start)),
+              JField("serverEnd",JInt(end)),
+              JField("success",JBool(false)),
+              JField("error",JString(e.getMessage))
+            )))
         }
       }
-      val end = new java.util.Date().getTime()
-      val returnCall = Call("serverResponse",JObject({
-        exceptionOrResult match {
-          case Right(r) => {
-            val (response,params,bonusParams) = r
-            List(JField("instant",bonusParams.reverse.head),JField("bonusArguments",JArray(bonusParams)))::: {
-              returnArguments match {
-                case true => List(JField("arguments",JArray(params)))
-                case false => Nil
-              }
-            } ::: { 
-              returnResponse match {
-                case true => List(JField("response",response))
-                case false => Nil
-              }
-            }
-          }
-          case Left(e) => List(JField("error",JString(e.getMessage)))
-        }
-      } ::: List(
-        JField("command",JString(name)),
-        JField("duration",JInt(end - start)),
-        JField("serverStart",JInt(start)),
-        JField("serverEnd",JInt(end)),
-        JField("success",JBool(exceptionOrResult.isRight))
-      )))
-      (for {
-        rrf <- returnResultFunction
-        res <- exceptionOrResult.right.toOption
-      } yield {
-        returnCall & Call(rrf,res._1)
-      }).getOrElse(returnCall)
-    }))))
+      }))))
 	}
   val functions = NodeSeq.fromSeq(functionDefinitions.map(_.jsCreationFunc).toList)
 	override def render = NodeSeq.Empty
