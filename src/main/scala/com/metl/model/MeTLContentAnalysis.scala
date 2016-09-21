@@ -1,6 +1,7 @@
 package com.metl.model
 
-import dispatch._, Defaults._
+import dispatch._
+import dispatch.Defaults._
 import com.metl.data._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
