@@ -25,12 +25,11 @@ class ContentAnalysisTest extends FlatSpec with Matchers {
   )
   "Chunking" should "split content into collections on user" in {
     val chunks = CanvasContentAnalysis.chunk(sample)
-    chunks should have size 2
+    chunks.chunksets should have size 2
   }
   it should "emit ordered collections for users" in {
     val sorts = for(
-      user <- CanvasContentAnalysis.chunk(sample);
-      chunk <- user) yield chunk == chunk.sortBy(_.timestamp)
+      user <- CanvasContentAnalysis.chunk(sample).chunksets) yield user.chunks == user.chunks.sortBy(_.start)
     all (sorts) should be (true)
   }
 }
