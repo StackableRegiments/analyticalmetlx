@@ -1,4 +1,6 @@
 target
+output
+logs
 debug.log
 .ivy2
 .sbt-boot
