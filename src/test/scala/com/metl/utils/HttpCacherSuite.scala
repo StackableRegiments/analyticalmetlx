@@ -1,6 +1,7 @@
 package com.metl.utils
 
-import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.{Date, GregorianCalendar, Locale, SimpleTimeZone, TimeZone}
 
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import net.liftweb.mockweb.MockWeb._
@@ -42,7 +43,16 @@ class HttpCacherSuite extends FunSuite with BeforeAndAfter {
   test("construct appropriate expires header for empty data") {
     testS(testUrl) {
       val response = cacher.constructResponse(binary, "image/jpg",new TimeSpan(10 * 1000))// 10 seconds)
-      assert(extractHeaderValue(response, "Expires") == "Tue, 16 Oct 2012 10:37:38 +1100")
+
+      val formatter = new SimpleDateFormat("EEE', 'dd' 'MMM' 'yyyy' 'HH:mm:ss' 'Z", Locale.US)
+      val calendar = new GregorianCalendar()
+      calendar.set(2012, 9, 15, 23, 37, 38)
+//      calendar.set(2012, 9, 16, 10, 37, 38)
+      calendar.setTimeZone(new SimpleTimeZone(0, "Greenwich"))
+
+      assert(extractHeaderValue(response, "Expires") == formatter.format( calendar.getTime))
+//      assert(extractHeaderValue(response, "Expires") == "Tue, 15 Oct 2012 23:37:38 +0000")
+//      assert(extractHeaderValue(response, "Expires") == "Tue, 16 Oct 2012 10:37:38 +1100")
     }
   }
 
