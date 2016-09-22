@@ -64,9 +64,11 @@ var WordCloud = function(data,options){
             .attr("transform", function(d) {
                 return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
             })
+	/*
             .style("fill",function(d){
 		return fill(d.value);
 	    })
+	 */
             .style("font-size", function(d) {
                 return d.size + "px";
             })
