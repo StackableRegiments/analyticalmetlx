@@ -47,12 +47,9 @@ class HttpCacherSuite extends FunSuite with BeforeAndAfter {
       val formatter = new SimpleDateFormat("EEE', 'dd' 'MMM' 'yyyy' 'HH:mm:ss' 'Z", Locale.US)
       val calendar = new GregorianCalendar()
       calendar.set(2012, 9, 15, 23, 37, 38)
-//      calendar.set(2012, 9, 16, 10, 37, 38)
       calendar.setTimeZone(new SimpleTimeZone(0, "Greenwich"))
 
       assert(extractHeaderValue(response, "Expires") == formatter.format( calendar.getTime))
-//      assert(extractHeaderValue(response, "Expires") == "Tue, 15 Oct 2012 23:37:38 +0000")
-//      assert(extractHeaderValue(response, "Expires") == "Tue, 16 Oct 2012 10:37:38 +1100")
     }
   }
 
