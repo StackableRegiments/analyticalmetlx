@@ -139,6 +139,15 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     val videoBytes = url.map(u => config.getResource(u))
     MeTLVideo(config,cc.author,cc.timestamp,url,videoBytes,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
   }
+  def toMeTLVideo(i:H2Video,videoData:Array[Byte]):MeTLVideo = {
+    val cc = decCanvasContent(i)
+    val url = i.source.get match {
+      case other:String if other.length > 0 => Full(other)
+      case _ => Empty
+    }
+    val videoBytes = Full(videoData)//url.map(u => config.getResource(u))
+    MeTLVideo(config,cc.author,cc.timestamp,url,videoBytes,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
+  }
   override def fromMeTLVideo(i:MeTLVideo):H2Video = incCanvasContent(H2Video.create,i,"video").source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
 
   def toMeTLImage(i:H2Image):MeTLImage = {
@@ -148,6 +157,15 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case _ => Empty
     }
     val imageBytes = url.map(u => config.getResource(u))
+    MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
+  }
+  def toMeTLImage(i:H2Image,imageData:Array[Byte]):MeTLImage = {
+    val cc = decCanvasContent(i)
+    val url = i.source.get match {
+      case other:String if other.length > 0 => Full(other)
+      case _ => Empty
+    }
+    val imageBytes = Full(imageData)//url.map(u => config.getResource(u))
     MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
   }
   override def fromMeTLImage(i:MeTLImage):H2Image = incCanvasContent(H2Image.create,i,"image").tag(i.tag).source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
@@ -214,6 +232,15 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     val bytes = url.map(u => config.getResource(u))
     MeTLFile(config,c.author,c.timestamp,i.name.get,i.identity.get,url,bytes,i.deleted.get)
   }
+  def toMeTLFile(i:H2File,fileBytes:Array[Byte]):MeTLFile = {
+    val c = decStanza(i)
+    val url = i.url.get match {
+      case null | "" => None
+      case other => Some(other)
+    }
+    val bytes = Full(fileBytes)//url.map(u => config.getResource(u))
+    MeTLFile(config,c.author,c.timestamp,i.name.get,i.identity.get,url,bytes,i.deleted.get)
+  }
   override def fromMeTLFile(i:MeTLFile):H2File = {
     incStanza(H2File.create,i,"file").name(i.name).partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.deleted)
   }
@@ -236,6 +263,14 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     val blacklist = blacklistFromString(i.blacklist.get)
     MeTLSubmission(config,c.author,c.timestamp,i.title.get,i.slideJid.get,url,Full(bytes),blacklist,c.target,c.privacy,c.identity)
   }
+  def toSubmission(i:H2Submission,imageData:Array[Byte]):MeTLSubmission = {
+    val c = decCanvasContent(i)
+    val url = i.url.get
+    val bytes = imageData//config.getResource(url)
+    val blacklist = blacklistFromString(i.blacklist.get)
+    MeTLSubmission(config,c.author,c.timestamp,i.title.get,i.slideJid.get,url,Full(bytes),blacklist,c.target,c.privacy,c.identity)
+  }
+
   override def fromSubmission(i:MeTLSubmission):H2Submission = incCanvasContent(H2Submission.create,i,"submission").title(i.title).slideJid(i.slideJid).url(i.url).blacklist(blacklistToString(i.blacklist))
   def toMeTLQuiz(i:H2Quiz):MeTLQuiz = {
     val url = i.url.get match {
@@ -243,6 +278,15 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case _ => Empty
     }
     val bytes = url.map(u => config.getResource(u))
+    val c = decStanza(i)
+    MeTLQuiz(config,c.author,c.timestamp,i.created.get,i.question.get,i.quizId.get,url,bytes,i.isDeleted.get,optionsFromString(i.options.get))
+  }
+  def toMeTLQuiz(i:H2Quiz,imageData:Array[Byte]):MeTLQuiz = {
+    val url = i.url.get match {
+      case s:String if (s.length > 0) => Full(s)
+      case _ => Empty
+    }
+    val bytes = Full(imageData)//url.map(u => config.getResource(u))
     val c = decStanza(i)
     MeTLQuiz(config,c.author,c.timestamp,i.created.get,i.question.get,i.quizId.get,url,bytes,i.isDeleted.get,optionsFromString(i.options.get))
   }

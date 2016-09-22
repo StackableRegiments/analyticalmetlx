@@ -11,6 +11,8 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 import Privacy._
 
+import scala.collection.mutable.{List=>MutList}
+
 case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:Double = 0,yOffset:Double = 0) extends Logger {
   protected def createHistory(jid:String,xScale:Double,yScale:Double,xOffset:Double,yOffset:Double) = History(jid,xScale,yScale,xOffset,yOffset)
   protected var lastModifiedTime:Long = 0L
