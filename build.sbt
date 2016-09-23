@@ -39,8 +39,6 @@ scalacOptions ++= Seq("-deprecation", "-unchecked")
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
-containerShutdownOnExit := false
-
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
   val jettyVersion = "9.3.10.v20160621"
