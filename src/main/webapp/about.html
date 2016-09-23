@@ -1,194 +1,217 @@
-<lift:surround with="unstyled" at="content">
-	<div class="">
-		<div class="lift:versionDescriber">
-			<div class="version">
-				<h2>Version</h2>
-				<span class="versionNumber"></span>
-			</div>
-			<div class="releaseNotes">
-				<h2>Release Notes</h2>
-				<ul>
-					<li class="releaseNotesTextItem"></li>
-				</ul>
-			</div>
-		</div>
-		<h2>About MeTL</h2>
-		<p>MeTL is openSource software, protected by the Apache 2 Open Source License.  The source code is available at: <a href="https://github.com/StackableRegiments/analyticalmetlx">https://github.com/StackableRegiments/analyticalmetlx</a>
-		</p>
-		<p>MeTL uses a number of openSource libraries and online services.</p> 
-		<div class="dependencies">
-			<div class="dependency">
-				<h3>CloudConvert</h3>
-				<a href="https://cloudconvert.com/">https://cloudconvert.com</a>
-				<p>MeTL uses CloudConvert to parse a variety of document types, to import into the conversations.  MeTL complies with the CloudConvert <a href="https://cloudconvert.com/terms">terms of usage</a></p>	
-			</div>
+<div class="lift:surround?with=unstyled;at=content">
+    <div class="">
+        <div class="lift:versionDescriber">
+            <div class="version">
+                <h2>Version</h2>
+                <span class="versionNumber"></span>
+            </div>
+            <div class="releaseNotes">
+                <h2>Release Notes</h2>
+                <ul>
+                    <li class="releaseNotesTextItem"></li>
+                </ul>
+            </div>
+        </div>
+        <h2>About MeTL</h2>
+        <p>MeTL is openSource software, protected by the Apache 2 Open Source License. The source code is available at:
+            <a href="https://github.com/StackableRegiments/analyticalmetlx">https://github.com/StackableRegiments/analyticalmetlx</a>
+        </p>
+        <p>MeTL uses a number of openSource libraries and online services.</p>
+        <div class="dependencies">
+            <div class="dependency">
+                <h3>CloudConvert</h3>
+                <a href="https://cloudconvert.com/">https://cloudconvert.com</a>
+                <p>MeTL uses CloudConvert to parse a variety of document types, to import into the conversations. MeTL
+                    complies with the CloudConvert <a href="https://cloudconvert.com/terms">terms of usage</a></p>
+            </div>
 <!--
-			<div class="dependency">
-				<h3>CloudConvert</h3>
-				<a href="https://cloudconvert.com/">https://cloudconvert.com/pdf-to-jpg</a>
-				<p>MeTL uses CloudConvert to parse a variety of document types, to import into the conversations.</p>	
-			</div>
-			<div class="dependency">
-				<h3>CloudConvert</h3>
-				<a href="https://cloudconvert.com/">https://cloudconvert.com/pdf-to-jpg</a>
-				<p>MeTL uses CloudConvert to parse a variety of document types, to import into the conversations.</p>	
-			</div>
+            <div class="dependency">
+                <h3>CloudConvert</h3>
+                <a href="https://cloudconvert.com/">https://cloudconvert.com/pdf-to-jpg</a>
+                <p>MeTL uses CloudConvert to parse a variety of document types, to import into the conversations.</p>
+            </div>
+            <div class="dependency">
+                <h3>CloudConvert</h3>
+                <a href="https://cloudconvert.com/">https://cloudconvert.com/pdf-to-jpg</a>
+                <p>MeTL uses CloudConvert to parse a variety of document types, to import into the conversations.</p>
+            </div>
 -->
-		</div>
-		<div class="backend-libraries">
-			<div class="library">
-				<h3>Liftweb</h3>
-				<a href="https://github.com/lift/framework">https://github.com/lift/framework</a>
-				<p>MeTL's backend server is built on Lift.</p>	
-				<p>MeTL uses Lift, under the terms of <a href="https://github.com/lift/framework/blob/master/LICENSE.txt">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>IMSGlobal basiclti-util-java</h3>
-				<a href="https://github.com/IMSGlobal/basiclti-util-java">https://github.com/IMSGlobal/basiclti-util-java</a>
-				<p>MeTL uses basiclti-util-java from IMSGlobal library to comprehend LTI launch requests from LMS tools.</p>
-				<p>MeTL uses basiclti-util-java, under the terms of <a href="https://github.com/IMSGlobal/basiclti-util-java/blob/master/LICENSE">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Vysper</h3>
-				<a href="https://mina.apache.org/vysper-project/">https://mina.apache.org/vysper-project/</a>
-				<p>MeTL uses Vysper to provide XMPP protocol support.</p>
-				<p>MeTL uses Vysper, under the terms of <a href="https://svn.apache.org/repos/asf/mina/site/trunk/content/vysper-project/index.mdtext">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>PAC4J</h3>
-				<a href="https://github.com/pac4j/pac4j">https://github.com/pac4j/pac4j</a>
-				<p>MeTL uses PAC4J to provide SAML authentication and authorization support.</p>
-				<p>MeTL uses PAC4J, under the terms of <a href="https://github.com/pac4j/pac4j/blob/master/LICENSE">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Google API client library</h3>
-				<a href="https://developers.google.com/api-client-library/java/">https://developers.google.com/api-client-library/java/</a>
-				<p>MeTL uses Google API client library for java to provide OpenID connect authentication support.</p>
-				<p>MeTL uses the Google API client libraries for Java, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>POI</h3>
-				<a href="https://poi.apache.org/">https://poi.apache.org/</a>
-				<p>MeTL uses Apache POI to comprehend Microsoft Office document formats.</p>
-				<p>MeTL uses Apache POI, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>EHCache</h3>
-				<a href="http://www.ehcache.org/">http://www.ehcache.org/</a>
-				<p>MeTL uses EHCache for performance optimization.</p>
-				<p>MeTL uses EHCache, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>H2 Database</h3>
-				<a href="http://www.h2database.com/">http://www.h2database.com/</a>
-				<p>MeTL uses H2 Database as an embedded database.</p>
-				<p>MeTL uses H2 Database, under the terms of <a href="http://www.h2database.com/html/license.html">the dual MPL 2.0 and EPL 1.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Shiro</h3>
-				<a href="http://shiro.apache.org/">http://shiro.apache.org/</a>
-				<p>MeTL uses Apache Shiro for authentication.</p>
-				<p>MeTL uses Apache Shiro, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Apache Commons Codec</h3>
-				<a href="https://commons.apache.org/proper/commons-codec/">https://commons.apache.org/proper/commons-codec/</a>
-				<p>MeTL uses Apache Commons Codec, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Apache Commons FileUpload</h3>
-				<a href="https://commons.apache.org/proper/commons-fileupload/">https://commons.apache.org/proper/commons-fileupload/</a>
-				<p>MeTL uses Apache Commons FileUpload, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Apache Commons Compress</h3>
-				<a href="https://commons.apache.org/proper/commons-compress/">https://commons.apache.org/proper/commons-compress/</a>
-				<p>MeTL uses Apache Commons Compress, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Apache HttpClient</h3>
-				<a href="https://hc.apache.org/">https://hc.apache.org/</a>
-				<p>MeTL uses Apache HttpClient, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>MySQL</h3>
-				<a href="https://www.mysql.com/">https://www.mysql.com/</a>
-				<p>MeTL uses MySQL client libraries to connect to MySQL compliant databases.</p>
-				<p>MeTL uses MySQL client libraries, under the terms of <a href="https://www.mysql.com/about/legal/licensing/foss-exception/">Oracle's Free and Open Source Software license</a>.</p>
-			</div>
-			<div class="library">
-				<h3>Dispatch Databinder</h3>
-				<a href="http://dispatch.databinder.net/Dispatch.html">http://dispatch.databinder.net/Dispatch.html</a>
-				<p>MeTL uses Dispatch Databinder, under the terms of <a href="https://github.com/dispatch/reboot/blob/0.11.3/LICENSE.txt">the GNU Lesser General Public License</a>.</p>
-			</div>
-			</div>
-			<div class="library">
-				<h3>Jetty</h3>
-				<a href="http://www.eclipse.org/jetty/">http://www.eclipse.org/jetty/</a>
-				<p>MeTL uses embedded jetty in development environments, and is hosted in standalone jetty servers in production deployments.</p>
-				<p>MeTL uses Eclipse Jetty, under the terms of <a href="http://www.eclipse.org/jetty/licenses.html">the dual license Apache License 2.0 and Eclipse Public License 1.0</a>.</p>
-			</div>
-		</div>
-		<div class="testing-libraries">
-			<div class="library">
-				<h3>Selenium</h3>
-				<a href="http://www.seleniumhq.org/">http://www.seleniumhq.org/</a>
-			</div>
-			<div class="library">
-				<h3>Mockito</h3>
-				<a href="http://mockito.org/">http://mockito.org/</a>
-			</div>
-			<div class="library">
-				<h3>Specs</h3>
-				<a href="https://etorreborre.github.io/specs2/">https://etorreborre.github.io/specs2/</a>
-			</div>
-			<div class="library">
-				<h3>ScalaTest</h3>
-				<a href="http://www.scalatest.org/">http://www.scalatest.org/</a>
-			</div>
-		</div>
-		<div class="frontend-libraries">
-			<div class="library">
-				<h3>JQuery</h3>
-				<a href="https://jquery.com/">https://jquery.com/</a>
-			</div>
-			<div class="library">
-				<h3>Lodash</h3>
-				<a href="https://lodash.com/">https://lodash.com/</a>
-			</div>
-			<div class="library">
-				<h3>OpenId Connect</h3>
-				<a href="https://developers.google.com/identity/protocols/OpenIDConnect">https://developers.google.com/identity/protocols/OpenIDConnect</a>
-				<p>MeTL uses OpenId Connect to support delegating authentication to Google identity domains.</p>
-			</div>
-			<div class="library">
-				<h3>Bootstrap</h3>
-				<a href="http://getbootstrap.com/">http://getbootstrap.com/</a>
-			</div>
-			<div class="library">
-				<h3>D3</h3>
-				<a href="https://d3js.org/">https://d3js.org/</a>
-			</div>
-			<div class="library">
-				<h3>Chart.js</h3>
-				<a href="http://www.chartjs.org/">http://www.chartjs.org/</a>
-			</div>
-			<div class="library">
-				<h3>jAlert</h3>
-				<a href="http://flwebsites.biz/jAlert/">http://flwebsites.biz/jAlert/</a>
-			</div>
-			<div class="library">
-				<h3>Tween</h3>
-				<a href="https://github.com/tweenjs/tween.js/">https://github.com/tweenjs/tween.js/</a>
-			</div>
-			<div class="library">
-				<h3>Sprintf</h3>
-				<a href="http://www.diveintojavascript.com/projects/javascript-sprintf">http://www.diveintojavascript.com/projects/javascript-sprintf</a>
-			</div>
-			<div class="library">
-				<h3>Underscore</h3>
-				<a href="http://underscorejs.org/">http://underscorejs.org/</a>
-			</div>
-		</div>
-	</div>
-</lift:surround>
+        </div>
+        <div class="backend-libraries">
+            <div class="library">
+                <h3>Liftweb</h3>
+                <a href="https://github.com/lift/framework">https://github.com/lift/framework</a>
+                <p>MeTL's backend server is built on Lift.</p>
+                <p>MeTL uses Lift, under the terms of <a
+                        href="https://github.com/lift/framework/blob/master/LICENSE.txt">the Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>IMSGlobal basiclti-util-java</h3>
+                <a href="https://github.com/IMSGlobal/basiclti-util-java">https://github.com/IMSGlobal/basiclti-util-java</a>
+                <p>MeTL uses basiclti-util-java from IMSGlobal library to comprehend LTI launch requests from LMS
+                    tools.</p>
+                <p>MeTL uses basiclti-util-java, under the terms of <a
+                        href="https://github.com/IMSGlobal/basiclti-util-java/blob/master/LICENSE">the Apache 2.0
+                    license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Vysper</h3>
+                <a href="https://mina.apache.org/vysper-project/">https://mina.apache.org/vysper-project/</a>
+                <p>MeTL uses Vysper to provide XMPP protocol support.</p>
+                <p>MeTL uses Vysper, under the terms of <a
+                        href="https://svn.apache.org/repos/asf/mina/site/trunk/content/vysper-project/index.mdtext">the
+                    Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>PAC4J</h3>
+                <a href="https://github.com/pac4j/pac4j">https://github.com/pac4j/pac4j</a>
+                <p>MeTL uses PAC4J to provide SAML authentication and authorization support.</p>
+                <p>MeTL uses PAC4J, under the terms of <a href="https://github.com/pac4j/pac4j/blob/master/LICENSE">the
+                    Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Google API client library</h3>
+                <a href="https://developers.google.com/api-client-library/java/">https://developers.google.com/api-client-library/java/</a>
+                <p>MeTL uses Google API client library for java to provide OpenID connect authentication support.</p>
+                <p>MeTL uses the Google API client libraries for Java, under the terms of <a
+                        href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>POI</h3>
+                <a href="https://poi.apache.org/">https://poi.apache.org/</a>
+                <p>MeTL uses Apache POI to comprehend Microsoft Office document formats.</p>
+                <p>MeTL uses Apache POI, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the
+                    Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>EHCache</h3>
+                <a href="http://www.ehcache.org/">http://www.ehcache.org/</a>
+                <p>MeTL uses EHCache for performance optimization.</p>
+                <p>MeTL uses EHCache, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the Apache
+                    2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>H2 Database</h3>
+                <a href="http://www.h2database.com/">http://www.h2database.com/</a>
+                <p>MeTL uses H2 Database as an embedded database.</p>
+                <p>MeTL uses H2 Database, under the terms of <a href="http://www.h2database.com/html/license.html">the
+                    dual MPL 2.0 and EPL 1.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Shiro</h3>
+                <a href="http://shiro.apache.org/">http://shiro.apache.org/</a>
+                <p>MeTL uses Apache Shiro for authentication.</p>
+                <p>MeTL uses Apache Shiro, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the
+                    Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Apache Commons Codec</h3>
+                <a href="https://commons.apache.org/proper/commons-codec/">https://commons.apache.org/proper/commons-codec/</a>
+                <p>MeTL uses Apache Commons Codec, under the terms of <a
+                        href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Apache Commons FileUpload</h3>
+                <a href="https://commons.apache.org/proper/commons-fileupload/">https://commons.apache.org/proper/commons-fileupload/</a>
+                <p>MeTL uses Apache Commons FileUpload, under the terms of <a
+                        href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Apache Commons Compress</h3>
+                <a href="https://commons.apache.org/proper/commons-compress/">https://commons.apache.org/proper/commons-compress/</a>
+                <p>MeTL uses Apache Commons Compress, under the terms of <a
+                        href="http://www.apache.org/licenses/LICENSE-2.0">the Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Apache HttpClient</h3>
+                <a href="https://hc.apache.org/">https://hc.apache.org/</a>
+                <p>MeTL uses Apache HttpClient, under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">the
+                    Apache 2.0 license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>MySQL</h3>
+                <a href="https://www.mysql.com/">https://www.mysql.com/</a>
+                <p>MeTL uses MySQL client libraries to connect to MySQL compliant databases.</p>
+                <p>MeTL uses MySQL client libraries, under the terms of <a
+                        href="https://www.mysql.com/about/legal/licensing/foss-exception/">Oracle's Free and Open Source
+                    Software license</a>.</p>
+            </div>
+            <div class="library">
+                <h3>Dispatch Databinder</h3>
+                <a href="http://dispatch.databinder.net/Dispatch.html">http://dispatch.databinder.net/Dispatch.html</a>
+                <p>MeTL uses Dispatch Databinder, under the terms of <a
+                        href="https://github.com/dispatch/reboot/blob/0.11.3/LICENSE.txt">the GNU Lesser General Public
+                    License</a>.</p>
+            </div>
+        </div>
+        <div class="library">
+            <h3>Jetty</h3>
+            <a href="http://www.eclipse.org/jetty/">http://www.eclipse.org/jetty/</a>
+            <p>MeTL uses embedded jetty in development environments, and is hosted in standalone jetty servers in
+                production deployments.</p>
+            <p>MeTL uses Eclipse Jetty, under the terms of <a href="http://www.eclipse.org/jetty/licenses.html">the dual
+                license Apache License 2.0 and Eclipse Public License 1.0</a>.</p>
+        </div>
+        <div class="testing-libraries">
+            <div class="library">
+                <h3>Selenium</h3>
+                <a href="http://www.seleniumhq.org/">http://www.seleniumhq.org/</a>
+            </div>
+            <div class="library">
+                <h3>Mockito</h3>
+                <a href="http://mockito.org/">http://mockito.org/</a>
+            </div>
+            <div class="library">
+                <h3>Specs</h3>
+                <a href="https://etorreborre.github.io/specs2/">https://etorreborre.github.io/specs2/</a>
+            </div>
+            <div class="library">
+                <h3>ScalaTest</h3>
+                <a href="http://www.scalatest.org/">http://www.scalatest.org/</a>
+            </div>
+        </div>
+        <div class="frontend-libraries">
+            <div class="library">
+                <h3>JQuery</h3>
+                <a href="https://jquery.com/">https://jquery.com/</a>
+            </div>
+            <div class="library">
+                <h3>Lodash</h3>
+                <a href="https://lodash.com/">https://lodash.com/</a>
+            </div>
+            <div class="library">
+                <h3>OpenId Connect</h3>
+                <a href="https://developers.google.com/identity/protocols/OpenIDConnect">https://developers.google.com/identity/protocols/OpenIDConnect</a>
+                <p>MeTL uses OpenId Connect to support delegating authentication to Google identity domains.</p>
+            </div>
+            <div class="library">
+                <h3>Bootstrap</h3>
+                <a href="http://getbootstrap.com/">http://getbootstrap.com/</a>
+            </div>
+            <div class="library">
+                <h3>D3</h3>
+                <a href="https://d3js.org/">https://d3js.org/</a>
+            </div>
+            <div class="library">
+                <h3>Chart.js</h3>
+                <a href="http://www.chartjs.org/">http://www.chartjs.org/</a>
+            </div>
+            <div class="library">
+                <h3>jAlert</h3>
+                <a href="http://flwebsites.biz/jAlert/">http://flwebsites.biz/jAlert/</a>
+            </div>
+            <div class="library">
+                <h3>Tween</h3>
+                <a href="https://github.com/tweenjs/tween.js/">https://github.com/tweenjs/tween.js/</a>
+            </div>
+            <div class="library">
+                <h3>Sprintf</h3>
+                <a href="http://www.diveintojavascript.com/projects/javascript-sprintf">http://www.diveintojavascript.com/projects/javascript-sprintf</a>
+            </div>
+            <div class="library">
+                <h3>Underscore</h3>
+                <a href="http://underscorejs.org/">http://underscorejs.org/</a>
+            </div>
+        </div>
+    </div>
+</div>

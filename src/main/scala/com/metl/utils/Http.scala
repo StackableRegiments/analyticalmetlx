@@ -1,39 +1,27 @@
 package com.metl.utils
 
-import java.io._
-import org.apache.http._
-import org.apache.http.params._
-import org.apache.http.util._
-import org.apache.http.client.methods._
-import org.apache.http.auth._
-import org.apache.http.message._
-import org.apache.http.conn._
-import org.apache.http.conn.ssl._
-import org.apache.http.conn.scheme._
-import org.apache.http.impl.client._
-import org.apache.http.entity.ContentType
-import org.apache.http.entity.mime.MultipartEntityBuilder
-import org.apache.http.impl.conn._
-import org.apache.http.impl.conn.tsccm._
-import java.util.concurrent._
-import java.util.concurrent.TimeUnit._
-import javax.net.ssl._
-import java.security.cert._
-import java.util.ArrayList
-import org.apache.http.protocol.HTTP
-import java.net.URLEncoder
-import org.apache.http.client.entity.UrlEncodedFormEntity
-import org.apache.http.entity.{StringEntity,ByteArrayEntity}
-import org.apache.http.message.BasicNameValuePair
-import org.apache.commons.io.IOUtils
-import org.apache.http.message.{BasicHttpRequest,BasicHttpEntityEnclosingRequest}
-import org.apache.http.conn.routing.HttpRoute
 import java.net.URI
-import org.apache.http.params.BasicHttpParams
-import org.apache.http.protocol.BasicHttpContext
-import net.liftweb.util._
-import java.util.Date
+import java.security.cert._
+import java.util.concurrent._
+import java.util.{ArrayList, Date}
+import javax.net.ssl._
+
 import net.liftweb.common.Logger
+import net.liftweb.util._
+import org.apache.commons.io.IOUtils
+import org.apache.http._
+import org.apache.http.client.entity.UrlEncodedFormEntity
+import org.apache.http.client.methods._
+import org.apache.http.conn._
+import org.apache.http.conn.routing.HttpRoute
+import org.apache.http.conn.scheme._
+import org.apache.http.entity.mime.MultipartEntityBuilder
+import org.apache.http.entity.{ByteArrayEntity, ContentType, StringEntity}
+import org.apache.http.impl.client._
+import org.apache.http.impl.conn.tsccm._
+import org.apache.http.message.{BasicHttpEntityEnclosingRequest, BasicHttpRequest, BasicNameValuePair, _}
+import org.apache.http.protocol.HTTP
+import org.apache.http.util._
 
 case class RedirectException(message:String,exceptions:List[Throwable] = List.empty[Throwable]) extends Exception(message){}
 case class RetryException(message:String,exceptions:List[Throwable] = List.empty[Throwable]) extends Exception(message){}

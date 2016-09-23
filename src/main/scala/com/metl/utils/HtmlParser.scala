@@ -1,8 +1,9 @@
 package com.metl.utils
 
-import scala.collection._
-import scala.collection.JavaConversions._
 import org.htmlcleaner._
+
+import scala.collection.JavaConversions._
+import scala.collection._
 
 object HtmlParser{
 	def getAttributeValueAndContentFromPageElements(pageBody:String,searchAttributeKey:String,searchAttributeValue:String,targetAttributeKey:String):List[(String,String)] = {
