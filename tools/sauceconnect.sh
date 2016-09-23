@@ -13,6 +13,7 @@ java -jar Sauce-Connect.jar --readyfile $READY_FILE \
     --tunnel-identifier $SNAP_PIPELINE_COUNTER \
     $SAUCE_USERNAME $SAUCE_ACCESS_KEY &
 
+
 # Wait for Connect to be ready before exiting
 while [ ! -f $READY_FILE ]; do
   sleep .5
