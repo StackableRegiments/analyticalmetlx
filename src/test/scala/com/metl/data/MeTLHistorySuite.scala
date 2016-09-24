@@ -18,7 +18,36 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
     val h = new History("test")
 		forAll (genInk) { (ink: MeTLInk) =>
       h.addStanza(ink)
-      h.getInks.length == 1
+      h.getInks == List(ink) || h.getHighlighters == List(ink)
     }
 	}
+	test("add a textbox") {
+    val h = new History("test")
+		forAll (genText) { (text: MeTLText) =>
+      h.addStanza(text)
+      h.getTexts == List(text)
+    }
+	}
+	test("add an image") {
+    val h = new History("test")
+		forAll (genImage) { (image: MeTLImage) =>
+      h.addStanza(image)
+      h.getImages == List(image)
+    }
+	}
+	test("add a submission") {
+    val h = new History("test")
+		forAll (genSubmission) { (sub: MeTLSubmission) =>
+      h.addStanza(sub)
+      h.getSubmissions == List(sub)
+    }
+	}
+	test("add a command") {
+    val h = new History("test")
+		forAll (genCommand) { (comm: MeTLCommand) =>
+      h.addStanza(comm)
+      h.getCommands == List(comm)
+    }
+	}
+
 }
