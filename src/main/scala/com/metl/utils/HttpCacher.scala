@@ -1,6 +1,4 @@
-package com.metl.liftExtensions
-
-import com.metl.utils._
+package com.metl.utils
 
 import net.liftweb.common._
 import net.liftweb.http._

@@ -24,7 +24,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
 		val content = <ink><color>blue</color><privacy>private</privacy></ink>
 		val result = XmlUtils.getPrivacyByName(content, "privacy")
 
-		assert(result === Privacy.PRIVATE) 
+		assert(result === Privacy.PRIVATE)
 	}
 
 	test("extract privacy of not_set from content") {
@@ -41,7 +41,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
 		assert(result === Privacy.PUBLIC) 
 	}
 
-	test("extract non-existant privacy from content") {
+	test("extract non-existent privacy from content") {
 		val content = <ink><color>blue</color></ink>
 		val result = XmlUtils.getPrivacyByName(content, "privacy")
 

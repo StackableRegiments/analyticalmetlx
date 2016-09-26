@@ -1,10 +1,9 @@
 package com.metl.utils
 
-import net.liftweb.http._
-import net.liftweb.common._
-import net.liftweb.util.Schedule
-import net.liftweb.util.Helpers.TimeSpan
 import net.liftweb.actor.LiftActor
+import net.liftweb.http._
+import net.liftweb.util.Helpers.TimeSpan
+import net.liftweb.util.Schedule
 
 case object Refresh
 class PeriodicallyRefreshingVar[T](acceptedStaleTime:TimeSpan, valueCreationFunc:()=>T, startingValue:Option[T] = None) extends LiftActor{

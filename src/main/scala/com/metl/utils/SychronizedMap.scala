@@ -1,8 +1,5 @@
 package com.metl.utils
 
-import net.liftweb.common._
-import net.liftweb.util.Helpers._
-
 trait Synched {
 	import java.util.concurrent.locks.ReentrantReadWriteLock
 	private val rwl = new ReentrantReadWriteLock
