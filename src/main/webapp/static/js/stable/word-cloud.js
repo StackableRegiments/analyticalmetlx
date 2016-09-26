@@ -1,4 +1,5 @@
 var WordCloud = function(data,options){
+    console.log("wordcloud",data);
     var fill = d3.scaleOrdinal(d3.schemeCategory20b);
     options = options || {};
     /*
@@ -15,6 +16,7 @@ var WordCloud = function(data,options){
     var h = options.h || 300;
     var lw = options.lw || w;
     var lh = options.lh || h;
+    var target = options.target || "#lang";
 
     var max;
     var fontSize;
@@ -30,8 +32,8 @@ var WordCloud = function(data,options){
             })
             .on("end", draw);
 
-    $("#lang").empty();
-    var svg = d3.select("#lang").append("svg")
+    $(target).empty();
+    var svg = d3.select(target).append("svg")
     svg.attr("viewBox","0 0 "+lw+" "+lh)
         .attr("width", w)
         .attr("height", h);
@@ -45,7 +47,6 @@ var WordCloud = function(data,options){
     };
 
     function draw() {
-        console.log("drawing",data);
         var text = vis.selectAll("text")
                 .data(data, function(d) {
                     return d.key.toLowerCase();
@@ -80,10 +81,11 @@ var WordCloud = function(data,options){
 
     function update() {
         layout.font('impact').spiral('archimedean');
-        fontSize = d3.scaleSqrt().range([8, 30]);
+        fontSize = d3.scaleLinear().range([8, 30]);
         if (data.length){
-            fontSize.domain([+data[data.length - 1].value || 1, +data[0].value]);
+            fontSize.domain(d3.extent(_.map(data,"value")));
         }
+	console.log(fontSize.domain());
         layout.stop().words(data).start();
     }
 };
