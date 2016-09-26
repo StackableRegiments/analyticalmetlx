@@ -233,6 +233,7 @@ object StatelessHtml extends Stemmer with Logger {
     val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
     val themes = List(
       history.getTexts.map(t => Theme(t.author,t.text,"keyboarding")).toList,
+      history.getMultiWordTexts.map(t => Theme(t.author,t.words.map(_.text).mkString(" "),"keyboarding")).toList,
       (history.getInks ::: history.getHighlighters).groupBy(_.author).flatMap{
         case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i, "handwriting"))
       },
@@ -243,7 +244,7 @@ object StatelessHtml extends Stemmer with Logger {
             words.map(word => Theme(author,word,"imageTranscription"))).flatten
         }
       }).flatten
-    debug(themes)
+    themes.map(t => debug(t.toString))
     val themesByUser = themes.groupBy(_.author).map(kv =>
       <userTheme>
         <user>{kv._1}</user>
