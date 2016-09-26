@@ -2,23 +2,27 @@ package com.metl.auth
 
 import java.util.UUID
 import javax.servlet._
-import javax.servlet.http.{HttpServletRequestWrapper,HttpServletRequest, HttpServletResponse,HttpSession}
-import net.liftweb.common.{Empty, Box, Full, Failure}
+import javax.servlet.http.{HttpServletRequest, HttpServletRequestWrapper, HttpServletResponse, HttpSession}
+
+import net.liftweb.common.{Box, Empty, Failure, Full}
 import net.liftweb.util.Helpers._
 import java.util.Date
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import net.liftweb.mocks.MockHttpServletRequest
 import org.apache.commons.io.IOUtils
+import java.io.{BufferedReader, ByteArrayInputStream, ByteArrayOutputStream, InputStreamReader, Reader}
 
-import java.io.{ByteArrayOutputStream,ByteArrayInputStream,InputStreamReader,BufferedReader,Reader}
 import org.apache.commons.httpclient.params.HttpMethodParams
-
 import net.liftweb.util._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
+
 import scala.collection.JavaConverters._
 import java.security.Principal
+
+import com.metl.model.{Globals, UserAgent}
+import net.liftweb.http.S
 
 case class MeTLPrincipal(authenticated:Boolean,username:String,groups:List[Tuple2[String,String]],attrs:List[Tuple2[String,String]]) extends Principal {
   override def getName:String = username
@@ -546,6 +550,17 @@ class LoggedInFilter extends Filter with HttpReqUtils {
       }
     }
     */
+
+//    UserAgent(Full(req.getHeader("User-Agent")))
+    UserAgent(S.getRequestHeader("User-Agent"))
+//    UserAgent.get match {
+//      Full(userAgent) => println("!!!User Agent: " + userAgent )
+//      Empty
+//    }
+    println("!!!User Agent: " + UserAgent.is.openOr("???"))
+
+    S.request.foreach( r => r.headers.foreach( h => println( "!!! key = " + h._1 + ", value = " + h._2)))
+
     new AuthenticedHttpServletRequestWrapper(req,principal)
   }
 }
