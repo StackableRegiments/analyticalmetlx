@@ -44,7 +44,7 @@ var Analytics = (function(){
                 return counters;
             },
             stop:function(words){
-                var stops = "a am an and are do did done is it the".split(" ");
+                var stops = "a am an and are be do did done is it that the was".split(" ");
                 var stopped = _.clone(words);
                 _.each(stops,function(s){
                     delete stopped[s];
@@ -71,10 +71,10 @@ var Analytics = (function(){
                     nonWords[word] = true;
                 }
             },
-            cloud:function(){
+            cloud:function(opts){
                 WordCloud(word.pairs(word.stop(word.counts())),{
-                    w:$("#lang").width(),
-                    h:$("#lang").width()
+                    w:opts.w || $("#lang").width(),
+                    h:opts.h || $("#lang").height()
                 });
             }
         };

@@ -127,7 +127,10 @@ var Participants = (function(){
                     }
                 });
             })
-            Analytics.word.cloud();
+            Analytics.word.cloud({
+		w:600,
+		h:300
+	    });
         });
     };
     var openParticipantsMenuFunction = function(){
