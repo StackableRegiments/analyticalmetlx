@@ -1,4 +1,6 @@
 target
+output
+logs
 debug.log
 .ivy2
 .sbt-boot
@@ -12,6 +14,8 @@ config/configuration.xml
 
 # emacs temp files
 *~
+\#*\#
+.\#*
 # vim
 *.swp
 # Idea files

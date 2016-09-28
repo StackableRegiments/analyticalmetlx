@@ -2,7 +2,6 @@ package com.metl.model
 
 import com.metl.utils._
 import com.metl.data._
-import com.metl.liftExtensions._
 
 import net.liftweb.common._
 import net.liftweb.http._

@@ -104,6 +104,8 @@ libraryDependencies ++= {
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
+//    "org.scalactic" %% "scalactic" % "3.0.0",
+//    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1"
@@ -145,6 +147,12 @@ timingFormat := {
 }
 
 testOptions in Test += Tests.Argument("-eI")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-f", "target/test-report")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-report")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-report")
+
+// don't buffer test output, as ScalaTest does a better job
+logBuffered in Test := false
 
 // add a JVM option to use when forking a JVM for 'run'
 javaOptions += "-Xmx2G"
@@ -169,5 +177,3 @@ traceLevel := 10
 
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
-
-credentials += Credentials(Path.userHome / ".ivy2" / "ivy-credentials")

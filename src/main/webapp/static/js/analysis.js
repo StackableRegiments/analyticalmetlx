@@ -93,7 +93,7 @@ var Analytics = (function(){
     }
     var MINUTE = 60 * 1000;
     var WIDTH = 360;
-    var HEIGHT = 240;
+    var HEIGHT = 480;
     var chartAttendance = function(attendances){
         /*Over time*/
         _.forEach({

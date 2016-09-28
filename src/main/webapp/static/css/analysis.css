@@ -30,8 +30,8 @@ body{
 }
 
 #lang text{
-    fill:white;
-    stroke:none;
+    stroke:black;
+    stroke-width:0.5;
 }
 .cloudWord{
     display:inline-block;

@@ -28,7 +28,7 @@ trait PropertyReader extends Logger {
 
   protected def traceIt[A](label:String,param:String,in: => A):A = {
     val res = in
-    info("%s(%s) : %s".format(label,param,in))
+    trace("%s(%s) : %s".format(label,param,in))
     res
   }
 

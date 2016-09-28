@@ -1,6 +1,7 @@
 package com.metl.model
 
-import dispatch._, Defaults._
+import dispatch._
+import dispatch.Defaults._
 import com.metl.data._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
@@ -24,9 +25,7 @@ case class Chunk(activity:Seq[MeTLCanvasContent]){
 
 object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
-  val filePath = Globals.configurationFileLocation
-  val propFile = XML.load(filePath)
-
+  lazy val propFile = XML.load(Globals.configurationFileLocation)
 
   val analysisThreshold = 5
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
