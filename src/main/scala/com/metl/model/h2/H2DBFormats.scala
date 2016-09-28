@@ -292,3 +292,18 @@ class DatabaseVersion extends LongKeyedMapper[DatabaseVersion] with IdPK {
     override def defaultValue = -1
   }
 }
+
+object ThemeExtraction extends ThemeExtraction with LongKeyedMetaMapper[ThemeExtraction]{
+  def put(identity:String,extraction:String) = {
+    ThemeExtraction.create.identity(identity).extraction(extraction).save
+    extraction
+  }
+  def get(identity:String):Option[ThemeExtraction] = {
+    ThemeExtraction.find(By(ThemeExtraction.identity,identity))
+  }
+}
+class ThemeExtraction extends LongKeyedMapper[ThemeExtraction] with IdPK{
+  def getSingleton = ThemeExtraction
+  object identity extends MappedText(this)
+  object extraction extends MappedText(this)
+}

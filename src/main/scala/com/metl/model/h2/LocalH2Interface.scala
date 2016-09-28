@@ -57,7 +57,8 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       H2UnhandledCanvasContent,
       H2UnhandledStanza,
       H2UnhandledContent,
-      DatabaseVersion
+      DatabaseVersion,
+      ThemeExtraction
     ):_*
   )
 

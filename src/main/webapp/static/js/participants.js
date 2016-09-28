@@ -1,9 +1,4 @@
 var Participants = (function(){
-    /*
-     var participantItemTemplate = {};
-     var participantHeaderTemplate = {};
-     var participantsContainer = {};
-     */
     var participantsDatagrid = {};
     var participantFollowControl = {};
     var participants = {};
@@ -21,6 +16,7 @@ var Participants = (function(){
     };
     var onHistoryReceived = function(history){
         var newParticipants = {};
+        Analytics.word.reset();
         var ensure = function(author){
             return newParticipants[author] || _.cloneDeep(newParticipant);
         }
@@ -60,6 +56,7 @@ var Participants = (function(){
         });
 
         participants = newParticipants;
+
         updateParticipantsListing();
     };
     var countTexts = function(stanza){
@@ -95,20 +92,38 @@ var Participants = (function(){
             case "quizResponse":
                 itemToEdit.quizResponses = itemToEdit.quizResponses + 1;
                 break;
-
             }
             participants[author] = itemToEdit;
         }
         updateParticipantsListing();
     };
-    var typo;
-    var typoQueue = [];
-    $.get("/static/js/stable/dict/en_US.aff",function(aff){
-        $.get("/static/js/stable/dict/en_US.dic",function(dict){
-            typo = new Typo("en_US",aff,dict);
-            _.each(typoQueue,Analytics.word.incorporate);
-        })
-    });
+    var fontSizes = d3.scaleLinear().range([6,30]);
+    var themeCloud;
+    var updateThemes = function(data){
+        if(!themeCloud) themeCloud = d3.select("#lang")
+            .style("margin-left","1em");
+        fontSizes.domain(d3.extent(_.map(data,"value")));
+        var words = themeCloud.selectAll(".word")
+                .data(data,function(d){
+                    return d.key;
+                })
+        words.enter()
+            .append("div")
+            .attr("class","word")
+            .style("margin-right","1em")
+            .style("display","inline-block")
+            .style("vertical-align","middle")
+            .text(function(d){
+                return d.key;
+            })
+            .style("font-size",function(d){
+                return fontSizes(d.value)+"px";
+            })
+            .merge(words)
+            .sort(function(a,b){
+                return d3.ascending(b.value, a.value);
+            });
+    }
     var updateParticipantsListing = function(){
         participantsDatagrid.jsGrid("loadData");
         var sortObj = participantsDatagrid.jsGrid("getSorting");
@@ -116,21 +131,31 @@ var Participants = (function(){
             participantsDatagrid.jsGrid("sort",sortObj);
         }
         $.get(sprintf("/api/v1/analysis/words/%s",Conversations.getCurrentSlideJid()),function(words){
-            _.each($(words).find("theme"),function(theme){
-                _.each($(theme).find("content").text().split(" "),function(t){
+            Analytics.word.reset();
+            var contexts = {};
+            _.each($(words).find("theme"),function(_theme){
+                var theme = $(_theme);
+                var context = theme.find("context").text();
+                _.each(theme.find("content").text().split(" "),function(t){
                     t = t.toLowerCase();
-                    if(typo){
-                        Analytics.word.incorporate(t);
+                    Analytics.word.incorporate(t);
+                    if(!(t in contexts)){
+                        contexts[t] = {};
                     }
-                    else{
-                        typoQueue.push(t);
+                    if(!(context in contexts[t])){
+                        contexts[t][context] = 0;
                     }
+                    contexts[t][context]++;
                 });
-            })
-            Analytics.word.cloud({
-		w:600,
-		h:300
-	    });
+            });
+            updateThemes(Analytics.word.cloudData());
+            /*
+             Analytics.word.cloud({
+             w:600,
+             h:300,
+             contexts:contexts
+             });
+             */
         });
     };
     var openParticipantsMenuFunction = function(){
@@ -140,7 +165,7 @@ var Participants = (function(){
     };
     var updateButtons = function(){
         if (Conversations.shouldModifyConversation()){
-            $("#menuParticipants").click(openParticipantsMenuFunction);
+            $("#menuParticipants").off().on("click",openParticipantsMenuFunction);
             $("#menuParticipants").show();
         } else {
             $("#menuParticipants").unbind("click");

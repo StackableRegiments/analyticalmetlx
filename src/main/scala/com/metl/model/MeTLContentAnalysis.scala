@@ -9,6 +9,7 @@ import net.liftweb.common.Logger
 import scala.xml._
 import collection._
 import net.liftweb.util.SecurityHelpers._
+import com.metl.h2.dbformats.ThemeExtraction
 
 case class Theme(author:String,text:String,origin:String)
 
@@ -69,17 +70,6 @@ object CanvasContentAnalysis extends Logger {
       case _ => Nil
     }
   }
-  val CACHE = "inkCache.xml"
-  var cache = Map.empty[String,String]
-  try{
-    (XML.load(CACHE) \\ "result").map(result => cache = cache.updated(
-      (result \ "k").text,
-      (result \ "v").text
-    ))
-  }
-  catch{
-    case e:Throwable => println(e)
-  }
   def simplify(s:String) = {
     (parse(s) \\ "textLines" \\ "label").children.collect{ case JField(_,JString(s)) => s }
   }
@@ -97,25 +87,41 @@ object CanvasContentAnalysis extends Logger {
     res
   }
 
-  def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = {
-    val key = (propFile \\ "visionApiKey").text
-    val uri = "vision.googleapis.com/v1/images:annotate"
-    val json =
-      ("requests" -> images.filterNot(_.imageBytes.isEmpty).map(image =>
-        ("image" ->
-          ("content" ->  image.imageBytes.map(base64Encode _).openOr(""))) ~
-          ("features" -> List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
-            ("type" -> featureType) ~
-              ("maxResults" -> 10)))))
+  def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = images
+    .map(ocrOne _)
+    .collect{ case Right(js) => js}
+    .map(parse)
+    .map(getDescriptions _)
+    .foldLeft((List.empty[String],List.empty[String])){
+    case (a,b) => (a._1 ::: b._1, a._2 ::: b._2)
+  }
+  def ocrOne(image:MeTLImage) = {
+    ThemeExtraction.get(image.identity) match {
+      case Some(t) => {
+        debug("Cache hit for OCR image: %s".format(image.identity))
+        Right(t.extraction.get)
+      }
+      case _ => {
+        debug("Cache miss for OCR image: %s".format(image.identity))
+        val key = (propFile \\ "visionApiKey").text
+        val uri = "vision.googleapis.com/v1/images:annotate"
+        val json =
+          ("requests" -> List(
+            ("image" ->
+              ("content" ->  image.imageBytes.map(base64Encode _).openOr(""))) ~
+              ("features" -> List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
+                ("type" -> featureType) ~
+                  ("maxResults" -> 10)))))
 
-    val req = host(uri).secure << compact(render(json)) <<? Map("key" -> key)
-    val f = Http(req > as.String).either
-    debug(f)
-    val response = for(
-      s <- f.right
-    ) yield parse(s)
-    val r = response()
-    r.right.toOption.map(getDescriptions _).getOrElse((Nil,Nil))
+        val req = host(uri).secure << compact(render(json)) <<? Map("key" -> key)
+        val f = Http(req > as.String).either
+        debug(f)
+        val response = for(
+          s <- f.right
+        ) yield ThemeExtraction.put(image.identity,s)
+        response()
+      }
+    }
   }
 
   def extract(inks:List[MeTLInk]):List[String] = {
@@ -126,9 +132,13 @@ object CanvasContentAnalysis extends Logger {
     else {
       val key = inks.map(_.identity).toString
       debug("Loading themes for %s strokes".format(inks.size))
-      cache.get(key) match {
-        case Some(cached) => simplify(cached)
+      ThemeExtraction.get(key) match {
+        case Some(cached) => {
+          debug("Cache hit for ink set: %s".format(key))
+          simplify(cached.extraction.get)
+        }
         case _ => {
+          debug("Cache miss for ink set: %s".format(key))
           val myScriptKey = (propFile \\ "myScriptApiKey").text
           val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
 
@@ -150,17 +160,10 @@ object CanvasContentAnalysis extends Logger {
 
           val f = Http(req OK as.String).either
           debug("Consuming %s bytes of MyScript cartridge".format(input.length))
-          debug(f)
           val response = for(
             s <- f.right
           ) yield {
-            cache = cache.updated(key,s)
-            XML.save(CACHE, <results> {
-              cache.map{
-                case(key,value) => <result><k>{key}</k><v>{value}</v></result>
-              }
-            } </results>)
-            s
+            ThemeExtraction.put(key,s)
           }
           val r = response()
           debug(r)

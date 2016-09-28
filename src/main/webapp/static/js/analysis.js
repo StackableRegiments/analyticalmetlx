@@ -40,11 +40,14 @@ var Analytics = (function(){
         var cloudScale = d3.scaleLinear().range([8,25]);
         var nonWords = {};
         return {
+            reset:function(){
+                counters = {};
+            },
             counts:function(){
                 return counters;
             },
             stop:function(words){
-                var stops = "a am an and are be do did done is it that the was".split(" ");
+                var stops = "a also am an and are be do did done for in is it of that the this was".split(" ");
                 var stopped = _.clone(words);
                 _.each(stops,function(s){
                     delete stopped[s];
@@ -71,11 +74,16 @@ var Analytics = (function(){
                     nonWords[word] = true;
                 }
             },
-            cloud:function(opts){
-                WordCloud(word.pairs(word.stop(word.counts())),{
-                    w:opts.w || $("#lang").width(),
-                    h:opts.h || $("#lang").height()
+            cloudData:function(){
+                return _.sortBy(word.pairs(word.stop(word.counts())),function(d){
+                    return d.key;
                 });
+            },
+            cloud:function(opts){
+                WordCloud(word.cloudData(),_.extend({
+                    w:$("#lang").width(),
+                    h:$("#lang").height()
+                },opts));
             }
         };
     })();
@@ -349,7 +357,7 @@ var Analytics = (function(){
             .call(d3.axisLeft(y));
     }
     var adherenceToTeacher = function(attendancesHi,details){
-	$("#vis").empty();
+        $("#vis").empty();
         var author = $(details).find("author:first").text();
         var owner = _.groupBy(attendancesHi,function(action){
             return action.author == author;
