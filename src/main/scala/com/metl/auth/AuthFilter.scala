@@ -551,16 +551,6 @@ class LoggedInFilter extends Filter with HttpReqUtils {
     }
     */
 
-//    UserAgent(Full(req.getHeader("User-Agent")))
-    UserAgent(S.getRequestHeader("User-Agent"))
-//    UserAgent.get match {
-//      Full(userAgent) => println("!!!User Agent: " + userAgent )
-//      Empty
-//    }
-    println("!!!User Agent: " + UserAgent.is.openOr("???"))
-
-    S.request.foreach( r => r.headers.foreach( h => println( "!!! key = " + h._1 + ", value = " + h._2)))
-
     new AuthenticedHttpServletRequestWrapper(req,principal)
   }
 }

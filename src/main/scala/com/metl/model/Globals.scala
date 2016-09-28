@@ -168,4 +168,4 @@ object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
 object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
 object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
 
-object UserAgent extends SessionVar[Box[String]](Empty)
+object UserAgent extends SessionVar[Box[String]](S.userAgent)

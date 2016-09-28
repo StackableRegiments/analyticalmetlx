@@ -50,14 +50,14 @@ object SecurityListener extends Logger {
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
-      info("%s :: %s logged in, ipAddress %s".format(sessionId,user,IPAddress.is))
+      info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(sessionId,user,IPAddress.is,UserAgent.is))
     }
   }
   def cleanupSession(in:LiftSession):Unit = {
     val thisSessionId = sessionId //in.uniqueId
     ipAddresses.remove(thisSessionId).foreach(rec => {
       if (rec.username != "forbidden"){
-          info("%s :: %s user session expired, ipAddress %s".format(thisSessionId,rec.username,Some(rec.ipAddress)))
+          info("%s :: %s user session expired, ipAddress %s, userAgent: %s".format(thisSessionId,rec.username,Some(rec.ipAddress),UserAgent.is))
       }
     })
   }
@@ -74,7 +74,7 @@ object SecurityListener extends Logger {
           ipAddresses += ((sessionId,SessionRecord(user,newIPAddress,now,now)))
         })
         if (user != "forbidden")
-          info("%s :: %s changed IP address %s".format(sessionId,user,Some(newIPAddress)))
+          info("%s :: %s changed IP address %s, userAgent: %s".format(sessionId,user,Some(newIPAddress),UserAgent.is))
       }
     } catch {
       case e:StateInStatelessException => {}
