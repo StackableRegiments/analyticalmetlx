@@ -35,7 +35,7 @@ object HttpResponder extends HttpCacher with Logger {
     val privateRoom = MeTLXConfiguration.getRoom(jid+Globals.currentUser.is,server.name,RoomMetaDataUtils.fromJid(jid+Globals.currentUser.is))
     val merged = publicRoom.getHistory.merge(privateRoom.getHistory)
     
-    val snap = com.metl.renderer.SlideRenderer.render(
+    val snap = privateRoom.slideRenderer.render(
       merged,
       size.trim.toLowerCase match {
         case "thumbnail" => Globals.ThumbnailSize
