@@ -21,13 +21,16 @@ cache:
 
 install:
   - npm install nightwatch
+  - npm install wdio
+  - npm install wdio-sauce-service
 
 before_script:
   - sbt container:launch
 
 script:
   - sbt test
-  - nightwatch
+  - sbt container:start
+  - node_modules/.bin/wdio wdio.conf.js
 
 notifications:
   email: false

@@ -28,8 +28,8 @@
                 "enabled" : false,
                 "path" : ""
             },
-	    "username":"${SAUCE_USERNAME}",
-	    "access_key":"${SAUCE_ACCESS_KEY}",
+            "username":"${SAUCE_USERNAME}",
+            "access_key":"${SAUCE_ACCESS_KEY}",
             "desiredCapabilities": {
                 "browserName": "chrome",
                 "javascriptEnabled": true,
