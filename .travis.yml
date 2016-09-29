@@ -21,7 +21,7 @@ cache:
 
 script:
   - sbt test
-  - sbt container:start
+  - sbt container:launch
   - npm install nightwatch
   - nightwatch
 
