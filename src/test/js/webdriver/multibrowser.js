@@ -3,15 +3,14 @@ describe('Multiple users', function() {
         browser.url('/board');
     });
     it('should login', function () {
-        browserA.setValue('input[type=text]', 'primus');
-        browserB.setValue('input[type=text]', 'secundus');
-        browser.sync();
+        teacher.setValue('input[type=text]', 'teacher');
+        student.setValue('input[type=text]', 'student');
     });
     it('should submit the login form', function () {
         browser.click('input[type=submit]');
+	browser.waitForExist("#conversationSearchBox",5000);
     });
     it('should end the session', function () {
         browser.pause(5000);
-        browser.end();
     });
 });
