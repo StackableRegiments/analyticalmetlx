@@ -2,9 +2,9 @@ import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
-name := "web-container-metlx"
-version := "0.2.0"
-organization := "io.github.stackableregiments"
+name := "analyticalmetlx"
+version := "0.6.4"
+organization := "com.stackableregiments"
 
 val scalaVersionString = "2.11.5"
 
