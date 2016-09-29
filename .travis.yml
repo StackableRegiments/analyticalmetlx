@@ -24,7 +24,7 @@ script:
   - sbt container:start
   - npm install wdio
   - npm install wdio-sauce-service
-  - node_modules/.bin/wdio wdio.conf.js
+  - node_modules/wdio/bin/wdio wdio.conf.js
 
 notifications:
   slack:
