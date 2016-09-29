@@ -87,12 +87,14 @@ object CanvasContentAnalysis extends Logger {
     val descriptions = for(
       JField("labelAnnotations",f) <- j;
       JField("description",JString(s)) <- f
-    ) yield  s
+    ) yield  s.trim
     val words = for(
       JField("textAnnotations",f) <- j;
       JField("description",JString(s)) <- f
-    ) yield  s
-    (descriptions,words)
+    ) yield  s.trim
+    val res = (descriptions.distinct,words.distinct)
+    debug(res)
+    res
   }
 
   def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = {
@@ -113,7 +115,6 @@ object CanvasContentAnalysis extends Logger {
       s <- f.right
     ) yield parse(s)
     val r = response()
-    debug(r)
     r.right.toOption.map(getDescriptions _).getOrElse((Nil,Nil))
   }
 
