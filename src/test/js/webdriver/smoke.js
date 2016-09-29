@@ -1,15 +1,7 @@
-var webdriverio = require('wdio')
-var options = {
-    desiredCapabilities: {
-        browserName: 'firefox'
-    }
-};
-
-webdriverio
-    .remote(options)
-    .init()
-    .url('http://localhost:8080/board')
-    .getTitle().then(function(title) {
-        console.log('Title was: ' + title);
-    })
-    .end();
+describe('smokeTest', function() {
+    it('returns the page title', function() {
+        browser.url('http://localhost:8080/');
+        var title = browser.getTitle();
+        console.log('Title is: ' + title);
+    });
+});
