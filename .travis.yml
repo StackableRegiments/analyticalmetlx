@@ -20,8 +20,8 @@ cache:
     - $HOME/.sbt-boot/
 
 script:
-  - sbt container:start
   - sbt test
+  - sbt container:start
   - npm install nightwatch
   - nightwatch
 
