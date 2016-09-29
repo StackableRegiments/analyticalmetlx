@@ -22,6 +22,8 @@ before_cache:
 script:
   - sbt container:start
   - sbt test
+  - npm install nightwatch
+  - nightwatch
 
 notifications:
   slack:
