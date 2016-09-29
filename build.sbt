@@ -177,3 +177,12 @@ traceLevel := 10
 
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
+
+val integrationTests = taskKey[Unit]("integration tests")
+
+lazy val library = (project in file("library")).
+  settings(
+    integrationTests := {
+      Process(List("node_modules/wdio/node_modules/.bin/wdio.cmd wdio.conf.js", ".")) #>> file("integrationTests.log") !
+    }
+  )

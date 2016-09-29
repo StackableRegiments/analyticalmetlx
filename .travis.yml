@@ -20,17 +20,11 @@ cache:
     - $HOME/.sbt-boot/
 
 install:
-  - npm install nightwatch
   - npm install wdio
   - npm install wdio-sauce-service
 
-before_script:
-  - sbt container:launch
-
 script:
-  - sbt test
-  - sbt container:start
-  - node_modules/.bin/wdio wdio.conf.js
+  - sbt test container:start integrationTest
 
 notifications:
   email: false
