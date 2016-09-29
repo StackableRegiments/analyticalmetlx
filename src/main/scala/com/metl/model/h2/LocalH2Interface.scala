@@ -290,8 +290,8 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
     //oldGetHistory(jid)
-    //newGetHistory(jid)
-    newSerialGetHistory(jid)
+    newGetHistory(jid)
+    //newSerialGetHistory(jid)
   })
   def oldGetHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
     val newHistory = History(jid)

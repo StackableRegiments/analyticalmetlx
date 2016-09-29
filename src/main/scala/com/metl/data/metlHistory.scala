@@ -11,8 +11,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 import Privacy._
 
-
-trait HistoryCollection[A]{// extends Seq[A]{
+trait HistoryCollection[A]{
   def toList:List[A]
   def +=(cand:A):HistoryCollection[A]
   def -=(cand:A):HistoryCollection[A]
@@ -30,7 +29,123 @@ trait HistoryCollection[A]{// extends Seq[A]{
   def reverse:HistoryCollection[A]
   def exists(pred:A=>Boolean):Boolean
 }
+trait ImmutableListHistoryCollectionStore {
+  protected def emptyColl[A]:HistoryCollection[A] = new ImmutableListHistoryCollection[A]()
+  implicit def collToSeq[A](in:HistoryCollection[A]):Seq[A] = in.toList
+}
 
+class ImmutableListHistoryCollection[A](seedValue:Seq[A] = Nil) extends HistoryCollection[A]{
+  protected var coll:List[A] = {
+    seedValue.toList
+  }
+  override def toList:List[A] = coll.toList
+  override def +=(cand:A):HistoryCollection[A] = {
+    coll = coll ::: List(cand)
+    this
+  }
+  override def -=(cand:A):HistoryCollection[A] = {
+    coll = coll.filterNot(_ == cand)
+    this
+  }
+  override def ++=(cand:Seq[A]):HistoryCollection[A] = {
+    coll = coll ::: cand.toList
+    this
+  }
+  override def --=(cand:Seq[A]):HistoryCollection[A] = {
+    coll = coll.filterNot(i => cand.contains(i))
+    this
+  }
+  override def remove(pred:A=>Boolean):HistoryCollection[A] = {
+    coll = coll.filter(pred)
+    this
+  }
+  override def filter(pred:A=>Boolean):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.filter(pred))
+  }
+  override def filterNot(pred:A=>Boolean):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.filterNot(pred))
+  }
+  override def find(pred:A=>Boolean):Option[A] = {
+    coll.find(pred)
+  }
+  override def exists(pred:A=>Boolean):Boolean = {
+    coll.exists(pred)
+  }
+  override def partition(pred:A=>Boolean):Tuple2[HistoryCollection[A],HistoryCollection[A]] = {
+    val (a,b) = coll.partition(pred)
+    (new ImmutableListHistoryCollection(a),new ImmutableListHistoryCollection(b))
+  }
+  override def map[B](func:A=>B):HistoryCollection[B] = new MutableListHistoryCollection(coll.map(func))
+  override def foldLeft[B](seed:B)(func:Tuple2[B,A]=>B):B = coll.foldLeft(seed)((a,i) => func((a,i)))
+  override def sortWith(func:Tuple2[A,A]=>Boolean):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.sortWith((a,b) => func(a,b)))
+  }
+  override def sortBy[B](func:A=>B)(implicit ord: Ordering[B]):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.sortBy(func))
+  }
+  override def reverse:HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.reverse)
+  }
+}
+/*
+class MapHistoryCollection[A,B](keyCalc:A=>B,seedValue:Map[B,A] = Map.emty[B,A]) extends HistoryCollection[A]{
+  protected var coll:Map[B,A] = {
+    seedValue.toList
+  }
+  override def toList:List[A] = coll.toList
+  override def +=(cand:A):HistoryCollection[A] = {
+    coll = coll.updated(keyCalc(cand),cand)
+    this
+  }
+  override def -=(cand:A):HistoryCollection[A] = {
+    coll = coll.remove(keyCalc(cand))
+    this
+  }
+  override def ++=(cand:Seq[A]):HistoryCollection[A] = {
+    cand.foreach(c => {
+      += c
+    })
+    this
+  }
+  override def --=(cand:Seq[A]):HistoryCollection[A] = {
+    cand.foreach(c => {
+      -= c
+    })
+    this
+  }
+  override def remove(pred:A=>Boolean):HistoryCollection[A] = {
+    coll = coll.filter(pred)
+    this
+  }
+  override def filter(pred:A=>Boolean):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.filter(pred))
+  }
+  override def filterNot(pred:A=>Boolean):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.filterNot(pred))
+  }
+  override def find(pred:A=>Boolean):Option[A] = {
+    coll.find(pred)
+  }
+  override def exists(pred:A=>Boolean):Boolean = {
+    coll.exists(pred)
+  }
+  override def partition(pred:A=>Boolean):Tuple2[HistoryCollection[A],HistoryCollection[A]] = {
+    val (a,b) = coll.partition(pred)
+    (new ImmutableListHistoryCollection(a),new ImmutableListHistoryCollection(b))
+  }
+  override def map[B](func:A=>B):HistoryCollection[B] = new MutableListHistoryCollection(coll.map(func))
+  override def foldLeft[B](seed:B)(func:Tuple2[B,A]=>B):B = coll.foldLeft(seed)((a,i) => func((a,i)))
+  override def sortWith(func:Tuple2[A,A]=>Boolean):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.sortWith((a,b) => func(a,b)))
+  }
+  override def sortBy[B](func:A=>B)(implicit ord: Ordering[B]):HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.sortBy(func))
+  }
+  override def reverse:HistoryCollection[A] = {
+    new ImmutableListHistoryCollection(coll.reverse)
+  }
+}
+*/
 class MutableListHistoryCollection[A](seedValue:Seq[A] = Nil) extends HistoryCollection[A]{
   import scala.collection.mutable.{ListBuffer=>MutList}
   protected var coll:MutList[A] = {
@@ -88,7 +203,12 @@ class MutableListHistoryCollection[A](seedValue:Seq[A] = Nil) extends HistoryCol
   }
 }
 
-case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:Double = 0,yOffset:Double = 0) extends Logger {
+trait MutableListHistoryCollectionStore {
+  protected def emptyColl[A]:HistoryCollection[A] = new MutableListHistoryCollection[A]()
+  implicit def collToSeq[A](in:HistoryCollection[A]):Seq[A] = in.toList
+}
+
+case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:Double = 0,yOffset:Double = 0) extends Logger with MutableListHistoryCollectionStore {
   protected def createHistory(jid:String,xScale:Double,yScale:Double,xOffset:Double,yOffset:Double) = History(jid,xScale,yScale,xOffset,yOffset)
   protected var lastModifiedTime:Long = 0L
   protected var lastVisuallyModifiedTime:Long = 0L
@@ -122,8 +242,6 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   protected var outputHook:MeTLStanza => Unit = (s) => {}
 
-  protected def emptyColl[A]:HistoryCollection[A] = new MutableListHistoryCollection[A]()
-  implicit def collToSeq[A](in:HistoryCollection[A]):Seq[A] = in.toList
   protected val stanzas:HistoryCollection[MeTLStanza] = emptyColl[MeTLStanza]
   protected val canvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
   protected val highlighters:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
