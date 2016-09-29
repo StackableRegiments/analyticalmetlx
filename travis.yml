@@ -1,5 +1,3 @@
 language: scala
   scala:
     - 2.11.5
-notifications:
-  slack: stackableregiments:sVT6nReWGWsx3IsBZO4b6OD5
