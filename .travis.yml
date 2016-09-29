@@ -21,6 +21,7 @@ cache:
 
 install:
   - npm install wdio
+  - npm install wdio-mocha-framework
   - npm install wdio-sauce-service
 
 script:
