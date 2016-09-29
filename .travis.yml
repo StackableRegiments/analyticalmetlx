@@ -24,7 +24,7 @@ install:
   - npm install wdio-sauce-service
 
 script:
-  - sbt test container:start integrationTest
+  - sbt test container:start integrationTests
 
 notifications:
   email: false
