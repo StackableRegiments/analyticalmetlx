@@ -6,7 +6,7 @@ module.exports = {
             .click('input[type=submit]')
             .waitForElementVisible('#conversationSearchBox',5000)
     },
-    'Search page lists no conversations', function(browser){
+    'Search page lists no conversations': function(browser){
         browser
             .assert.containsText('.jsgrid-nodata-row','No conversations');
     },
