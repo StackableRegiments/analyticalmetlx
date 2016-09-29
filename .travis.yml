@@ -22,9 +22,13 @@ cache:
 install:
   - npm install wdio
   - npm install wdio-sauce-service
+<<<<<<< HEAD
 
 script:
   - sbt test container:start integrationTest
+=======
+  - node_modules/wdio/node_modules/.bin/wdio wdio.conf.js
+>>>>>>> 36b79081480c2737db48dbdea3c8d1a65f083944
 
 notifications:
   email: false
