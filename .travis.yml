@@ -22,8 +22,9 @@ cache:
 script:
   - sbt test
   - sbt container:start
-  - npm install nightwatch
-  - nightwatch
+  - npm install wdio
+  - npm install wdio-sauce-service
+  - node_modules/.bin/wdio wdio.conf.js
 
 notifications:
   slack:
