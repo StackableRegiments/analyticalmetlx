@@ -21,10 +21,11 @@ cache:
 
 install:
   - npm install wdio
+  - npm install wdio-mocha-framework
   - npm install wdio-sauce-service
 
 script:
-  - sbt test container:start integrationTests
+  - sbt -Xms1536m -Xmx1536m -Dmetlx.configurationFile=config/configuration.ci.xml test container:start integrationTests
 
 notifications:
   email: false

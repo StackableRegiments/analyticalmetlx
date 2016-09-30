@@ -183,6 +183,6 @@ val integrationTests = taskKey[Unit]("integration tests")
 lazy val library = (project in file("library")).
   settings(
     integrationTests := {
-      Process(List("node_modules/wdio/node_modules/.bin/wdio wdio.conf.js", ".")) #>> file("integrationTests.log") !
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.conf.js", ".")) #>> file("integrationTests.log") !
     }
   )
