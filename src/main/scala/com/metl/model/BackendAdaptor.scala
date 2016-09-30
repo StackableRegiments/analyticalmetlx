@@ -354,7 +354,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
 
-class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){
+class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
   import net.sf.ehcache.loader.{CacheLoader}
   import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
@@ -390,7 +390,13 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   def update(key:A,value:B):Unit = {
     cache.put(new Element(key,value))
   }
-  def startup = cache.initialise
+  def startup = try {
+    cache.initialise
+  } catch {
+    case e:Exception => {
+      warn("exception initializing ehcache: %s".format(e.getMessage))
+    }
+  }
   def shutdown = cache.dispose()
 }
 
