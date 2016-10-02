@@ -856,6 +856,22 @@ object MeTLDirtyVideo{
   def empty = MeTLDirtyVideo(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","",Nil)
 }
 
+case class MeTLUndeletedCanvasContent(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,override val target:String,override val privacy:Privacy, override val slide:String, override val identity:String,elementType:String,oldElementIdentity:String,newElementIdentity:String,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences) {
+  override def matches(other:MeTLCanvasContent) = other match {
+    case o:MeTLUndeletedCanvasContent => super.matches(o)
+    case _ => false
+  }
+  override def isDirtierFor(other:MeTLCanvasContent) = false
+  override def alterPrivacy(newPrivacy:Privacy):MeTLUndeletedCanvasContent = copy(privacy=newPrivacy)
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLUndeletedCanvasContent = Stopwatch.time("MeTLUndeletedCanvasContent.adjustTimestamp",{
+    copy(timestamp=newTime)
+  })
+  override def generateNewIdentity(descriptor:String):MeTLUndeletedCanvasContent = copy(identity=genNewIdentity("newMeTLUndeletedCanvasContent:"+descriptor))
+}
+object MeTLUndeletedCanvasContent{
+  def empty = MeTLUndeletedCanvasContent(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","","","","",Nil)
+}
+
 case class MeTLCommand(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,command:String,commandParameters:List[String],override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLCommand = Stopwatch.time("MeTLCommand.adjustTimestamp",{
     copy(timestamp = newTime)
