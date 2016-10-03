@@ -67,7 +67,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     DatabaseVersion.create.key("version").scope("db").intValue(-1).save
   })
   DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 2).map(versionNumber => {
-    println("upgrading db to use partialIndexes for mysql limitations (v2)")
+    info("upgrading db to use partialIndexes for mysql limitations (v2)")
     // update the partialIndexes if it's under version 2, and then increment to version 2
     H2Resource.findAllFields(List(H2Resource.id,H2Resource.identity,H2Resource.partialIdentity)).foreach(res => {
       res.partialIdentity(res.identity.get match {
@@ -82,11 +82,11 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       }).save
     })
     versionNumber.intValue(2).save
-    println("upgraded db to use partialIndexes for mysql limitations (v2)")
+    info("upgraded db to use partialIndexes for mysql limitations (v2)")
     versionNumber
-  }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
   DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 4).map(versionNumber => {
-    println("upgrading db to switch conversation creation from strings to longs (v3)")
+    info("upgrading db to switch conversation creation from strings to longs (v3)")
     val dateFormats = List(
       new java.text.SimpleDateFormat("dd/MM/yyyy h:mm:ss a"), // I think this is a C# date format -- "dd/MM/yyyy  22/05/2016 1:27:47 AM.  Of course, it misses the original timezone, so let's hope that it doesn't adjust it too badly.
       new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
@@ -106,9 +106,9 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       }
     })
     versionNumber.intValue(4).save
-    println("upgraded db to switch conversation creation from strings to longs (v3)")
+    info("upgraded db to switch conversation creation from strings to longs (v3)")
     versionNumber
-  }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
 
   type H2Object = Object
   val RESOURCES = "resource"

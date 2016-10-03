@@ -94,7 +94,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case r:Req if scheme.map(_ != r.request.scheme).getOrElse(false) => () => {
       val uri = r.request.url
       val transformed = "%s://%s:%s%s%s".format(scheme.getOrElse("http"),host.getOrElse(r.request.serverName),port.getOrElse(r.request.serverPort),r.uri,r.request.queryString.map(qs => "?%s".format(qs)).getOrElse(""))
-      println("insecure: %s, redirecting to: %s".format(uri,transformed))
+      info("insecure: %s, redirecting to: %s".format(uri,transformed))
       Full(RedirectResponse(transformed,r))
     }
     //yaws endpoints 1188
@@ -156,8 +156,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     }
     case r@Req("serverStatus" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
-        //println("serverStatus")
-        //println(r.param("latency"))
         r.param("latency").foreach(latency => info("[%s] miliseconds clientReportedLatency".format(latency)))
         Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
       })
@@ -315,7 +313,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         referer <- S.referer
       ) yield {
         Globals.oneNoteAuthToken(Full(OneNote.claimToken(token)))
-        println("permitOneNote: %s -> %s",token,referer)
+        info("permitOneNote: %s -> %s".format(token,referer))
         RedirectResponse(referer)
       }
     })

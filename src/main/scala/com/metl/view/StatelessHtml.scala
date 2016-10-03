@@ -101,7 +101,7 @@ object StatelessHtml extends Stemmer with Logger {
     XML.load("https://metl.saintleo.edu/search?query=") \\ "slide" \ "id"
   }
   def externalSlideSummary(slide:String):Box[Tuple2[String,Elem]] = Stopwatch.time("StatelessHtml.externalSlideSummary",{
-    println("externalSlideSummary %s".format(slide))
+    info("externalSlideSummary %s".format(slide))
     try{
       val outfile = "/stackable/samples/slides/%s.xml".format(slide)
       Full((slide, if(new File(outfile).exists){
@@ -114,8 +114,8 @@ object StatelessHtml extends Stemmer with Logger {
       }))
     }
     catch{
-      case e => {
-        println("externalSlideSummary exception for %s: %s".format(slide,e.getMessage))
+      case e:Exception => {
+        error("externalSlideSummary exception for %s:".format(slide,e))
         Empty
       }
     }
