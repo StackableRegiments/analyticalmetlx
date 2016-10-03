@@ -78,7 +78,7 @@ object CanvasContentAnalysis extends Logger {
     ))
   }
   catch{
-    case e:Throwable => println(e)
+    case e:Throwable => error("exception in thematize: ",e)
   }
   def simplify(s:String) = {
     (parse(s) \\ "textLines" \\ "label").children.collect{ case JField(_,JString(s)) => s }

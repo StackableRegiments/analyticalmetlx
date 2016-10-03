@@ -267,7 +267,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       query = Some(q)
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
-      println("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
+      trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("createConversation",List("title"),(args) => {
@@ -471,7 +471,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
-      println("reorderSlidesOfConversation(%s,%s)".format(jid,newSlides))
+      trace("reorderSlidesOfConversation(%s,%s)".format(jid,newSlides))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
@@ -491,11 +491,11 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
-          println("deleting conversation %s".format(c.jid))
+          trace("deleting conversation %s".format(c.jid))
           serverConfig.deleteConversation(c.jid.toString)
         }
         case _ => {
-          println("refusing to delete conversation %s".format(c.jid))
+          trace("refusing to delete conversation %s".format(c.jid))
           c
         }
       })
@@ -610,7 +610,7 @@ trait JArgUtils {
     case l:List[JValue] => JArray(l)
     case ja:JArray => ja
     case other => {
-      println("getArgAsJArray(%s) => %s".format(input,other))
+      trace("getArgAsJArray(%s) => %s".format(input,other))
       JArray(List.empty[JValue])
     }
   }
