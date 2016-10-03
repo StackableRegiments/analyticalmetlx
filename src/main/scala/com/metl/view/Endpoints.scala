@@ -156,8 +156,8 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     }
     case r@Req("serverStatus" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
-        println("serverStatus")
-        println(r.param("latency"))
+        //println("serverStatus")
+        //println(r.param("latency"))
         r.param("latency").foreach(latency => info("[%s] miliseconds clientReportedLatency".format(latency)))
         Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
       })
