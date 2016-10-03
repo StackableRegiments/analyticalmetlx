@@ -291,6 +291,13 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     this
   })
 
+  def addDeletedCanvasContent(s:MeTLCanvasContent,store:Boolean = true) = Stopwatch.time("History.addDeletedCanvasContent",{ // this function is only here for reconstructing archived histories.  It shouldn't be used by the general use-case of the MeTL behaviour.
+    if (store){
+      outputHook(s)
+      deletedCanvasContents = deletedCanvasContents ::: List(s)
+    }
+  })
+
   def addAttendance(s:Attendance,store:Boolean = true) = Stopwatch.time("History.addAttendance",{
     if (store){
       outputHook(s)

@@ -142,6 +142,8 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("commands",JArray(input.getCommands.map(i => fromMeTLCommand(i)))),
       JField("files",JArray(input.getFiles.map(i => fromMeTLFile(i)))),
       JField("videoStreams",JArray(input.getVideoStreams.map(i => fromMeTLVideoStream(i)))),
+      JField("deletedCanvasContents",JArray(input.getDeletedCanvasContents.map(i => fromMeTLData(i)))),
+      JField("undeletedCanvasContents",JArray(input.getUndeletedCanvasContents.map(i => fromMeTLUndeletedCanvasContent(i)))),
       JField("unhandledCanvasContents",JArray(input.getUnhandledCanvasContents.map(i => fromMeTLUnhandledCanvasContent(i)))),
       JField("unhandledStanzas",JArray(input.getUnhandledStanzas.map(i => fromMeTLUnhandledStanza(i))))
         //      JField("unhandledData",JArray(input.getUnhandledData.map(i => fromMeTLUnhandledData(i))))
@@ -174,6 +176,13 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     getFields(i,"commands").foreach(jf => history.addStanza(toMeTLCommand(jf.value)))
     getFields(i,"files").foreach(jf => history.addStanza(toMeTLFile(jf.value)))
     getFields(i,"videoStreams").foreach(jf => history.addStanza(toMeTLVideoStream(jf.value)))
+    getFields(i,"deletedCanvasContents").foreach(jf => {
+      toMeTLData(jf.value) match {
+        case cc:MeTLCanvasContent => history.addDeletedCanvasContent(cc)
+        case _ => {}
+      }
+    })
+    getFields(i,"undeletedCanvasContent").foreach(jf => history.addStanza(toMeTLUndeletedCanvasContent(jf.value)))
     getFields(i,"unhandledCanvasContents").foreach(jf => history.addStanza(toMeTLUnhandledCanvasContent(jf.value)))
     getFields(i,"unhandledStanzas").foreach(jf => history.addStanza(toMeTLUnhandledStanza(jf.value)))
     //    getFields(i,"unhandledData").foreach(jf => history.addStanza(toMeTLUnhandledData(jf.value)))
@@ -679,6 +688,27 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("id",JString(input.id))
     ) ::: parseMeTLContent(input))
   })
+  override def toMeTLUndeletedCanvasContent(input:JValue):MeTLUndeletedCanvasContent = Stopwatch.time("JsonSerializer.toMeTLUndeletedCanvasContent",{
+    input match {
+      case j:JObject => {
+        val mc = parseJObjForMeTLContent(j,config)
+        val cc = parseJObjForCanvasContent(j)
+        val oldElementIdentity = getStringByName(j,"oldIdentity")
+        val newElementIdentity = getStringByName(j,"newIdentity")
+        val elementType = getStringByName(j,"elementType")
+        MeTLUndeletedCanvasContent(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,elementType,oldElementIdentity,newElementIdentity,mc.audiences)
+      }
+      case _ => MeTLUndeletedCanvasContent.empty
+    }
+  })
+  override def fromMeTLUndeletedCanvasContent(input:MeTLUndeletedCanvasContent):JValue = Stopwatch.time("JsonSerializer.fromMeTLUndeletedCanvasContent",{
+    toJsObj("undeletedCanvasContent",List(
+      JField("oldIdentity",JString(input.oldElementIdentity)),
+      JField("newIdentity",JString(input.newElementIdentity)),
+      JField("elementType",JString(input.elementType))
+    ) ::: parseCanvasContent(input))
+  })
+
   protected val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
   override def toConversation(i:JValue):Conversation = Stopwatch.time("JsonSerializer.toConversation",{
     i match {
