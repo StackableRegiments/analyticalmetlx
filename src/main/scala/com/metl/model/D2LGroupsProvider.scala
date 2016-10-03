@@ -120,7 +120,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       parse(client.get(url.toString)).extract[List[T]]
     } catch {
       case e:Exception => {
-        println("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        error("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
         List.empty[T]
       }
     }
@@ -143,7 +143,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           items = items ::: resp.Items
           continuing = resp.PagingInfo.HasMoreItems
           bookmark = resp.PagingInfo.Bookmark
-          println("bookmark: %s, items: %s".format(bookmark,items.length))
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
             warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
@@ -201,7 +201,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
           items = items ::: resp.Items
           continuing = resp.PagingInfo.HasMoreItems
           bookmark = resp.PagingInfo.Bookmark
-          println("bookmark: %s, items: %s".format(bookmark,items.length))
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
             warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
@@ -245,9 +245,9 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
   override def getData:GroupStoreData = {
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
-    println("courses found: %s".format(courses.length))
+    info("courses found: %s".format(courses.length))
     val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => { 
-      println("OU: %s (%s) %s".format(orgUnit.Name,orgUnit.Code, orgUnit.Type))
+      trace("OU: %s (%s) %s".format(orgUnit.Name,orgUnit.Code, orgUnit.Type))
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       val combinedSet:List[() => List[Tuple4[String,String,String,String]]] = List(
         () => {
@@ -267,7 +267,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
             member.LastName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.surname)) ::: 
             member.Email.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.email))
           }).flatten
-          println("OU-Members: %s %s".format(orgUnit.Name,constructedMembers.toList.length))
+          trace("OU-Members: %s %s".format(orgUnit.Name,constructedMembers.toList.length))
           constructedMembers.toList
         },
         () => {
@@ -280,14 +280,14 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
           ) yield {
             (memberName,memberName,GroupKeys.section,section.Name)
           }
-          println("OU-Sections: %s %s".format(orgUnit.Name,constructedSections.length))
+          trace("OU-Sections: %s %s".format(orgUnit.Name,constructedSections.length))
           constructedSections
         },
         () => {
           val constructedGroups = parFlatMap[D2LGroupCategory,Tuple4[String,String,String,String]](getGroupCategories(userContext,orgUnit),groupCategory => {
-            println("OU-GroupCategory: %s %s".format(orgUnit.Name,groupCategory.Name))
+            trace("OU-GroupCategory: %s %s".format(orgUnit.Name,groupCategory.Name))
             parFlatMap[D2LGroup,Tuple4[String,String,String,String]](getGroups(userContext,orgUnit,groupCategory),group => {
-              println("OU-Group: %s %s".format(orgUnit.Name,group.Name))
+              trace("OU-Group: %s %s".format(orgUnit.Name,group.Name))
               for (
                 memberId <- group.Enrollments;   
                 membersById:List[D2LClassListUser] <- members.get(memberId).toList;
@@ -298,7 +298,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
               }
             },6,"groups")
           },4,"groupCategories")
-          println("OU-Groups: %s %s".format(orgUnit.Name,constructedGroups.length))
+          trace("OU-Groups: %s %s".format(orgUnit.Name,constructedGroups.length))
           constructedGroups
         }
       )
