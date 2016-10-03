@@ -1,6 +1,7 @@
 package com.metl.data
 
 import com.metl.utils._
+import com.metl.model._
 
 import net.liftweb.util.Helpers._
 import net.liftweb.common._
@@ -44,8 +45,10 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   }
 
   protected var outputHook:MeTLStanza => Unit = (s) => {}
+  protected val chunker = new Chunker(this)
 
   protected var stanzas:List[MeTLStanza] = List.empty[MeTLStanza]
+  protected var themes:List[Theme] = List.empty[Theme]
   protected var canvasContents:List[MeTLCanvasContent] = List.empty[MeTLCanvasContent]
   protected var highlighters:List[MeTLInk] = List.empty[MeTLInk]
   protected var inks:List[MeTLInk] = List.empty[MeTLInk]
@@ -78,7 +81,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getImages = images
   def getVideos = videos
   def getTexts = texts
-  def getMultiWordTexts = multiWordTexts 
+  def getMultiWordTexts = multiWordTexts
   def getQuizzes = quizzes
   def getQuizResponses = quizResponses
   def getSubmissions = submissions
@@ -88,6 +91,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getVideoStreams = videoStreams
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
+  def getThemes = themes
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -143,9 +147,15 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
   }
 
+  def addTheme(t:Theme) = {
+    themes = t :: themes
+    println("Theme count: %s".format(themes.length))
+  }
+
   def addStanza(s:MeTLStanza) = Stopwatch.time("History.addStanza",{
     stanzas = stanzas ::: List(s)
     latestTimestamp = List(s.timestamp,latestTimestamp).max
+    chunker.add(s)
     processNewStanza(s)
   })
 
@@ -290,7 +300,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     if (store){
       outputHook(s)
       val (candidates,remainder) = files.partition(_.id == s.id)
-      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))  
+      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))
     }
     this
   })

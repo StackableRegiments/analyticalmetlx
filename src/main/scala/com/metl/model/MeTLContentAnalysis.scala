@@ -14,14 +14,44 @@ import com.metl.h2.dbformats.ThemeExtraction
 case class Theme(author:String,text:String,origin:String)
 
 case class Chunked(timeThreshold:Int, distanceThreshold:Int, chunksets:Seq[Chunkset])
-case class Chunkset(author:String,chunks:Seq[Chunk]){
+case class Chunkset(author:String,chunks:List[Chunk]){
   val start = chunks.map(_.start).min
   val end = chunks.map(_.end).max
 }
-case class Chunk(activity:Seq[MeTLCanvasContent]){
+case class Chunk(activity:List[MeTLCanvasContent]){
   val start = activity.headOption.map(_.timestamp).getOrElse(0L)
   val end = activity.reverse.headOption.map(_.timestamp).getOrElse(0L)
   val milis = end - start
+}
+
+class Chunker(history:History, timeout:Int=3000) extends Logger {
+  var partialChunks = Map.empty[String,List[MeTLInk]]
+  def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
+  def emit = history.addTheme _
+  def add(c:MeTLStanza) = c match {
+    /*This has a bug; it will not emit a sequence which has completed but not started a new one.
+     There needs to be a trigger of some sort on that.*/
+    case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
+      case Right(t) => {
+        CanvasContentAnalysis.getDescriptions(t) match {
+          case (descriptions,words) => List(
+            descriptions.map(word => Theme(i.author, word, "imageRecognition")),
+            words.map(word => Theme(i.author,word,"imageTranscription")))
+        }
+      }
+      case failure => debug(failure)
+    }
+    case t:MeTLMultiWordText => t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding")))
+    case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
+      case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
+      case Some(partial) => {
+        CanvasContentAnalysis.extract(partial).map(word => emit(Theme(i.author,word,"handwriting")))
+        partialChunks + (i.author -> List(i))
+      }
+      case None => partialChunks + (i.author -> (List(i)))
+    }
+    case default => {}
+  }
 }
 
 object CanvasContentAnalysis extends Logger {
