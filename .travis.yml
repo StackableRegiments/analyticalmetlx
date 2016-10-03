@@ -1,0 +1,39 @@
+# Use container-based infrastructure
+sudo: false
+
+language: scala
+
+scala:
+  - 2.11.5
+jdk:
+  - oraclejdk8
+
+before_cache:
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt-boot -name "*.lock" -delete
+
+# These directories are cached to S3 at the end of the build
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt-boot/
+
+install:
+  - npm install wdio
+  - npm install wdio-mocha-framework
+  - npm install wdio-sauce-service
+
+script:
+  - sbt -Xms1536m -Xmx1536m -Dmetlx.configurationFile=config/configuration.ci.xml test container:start integrationTests
+
+notifications:
+  email: false
+  slack:
+    secure: o02Ja29otbp/sOySktHEMZ89/BsofMlHvFaayjtnOphG1HUGNjHHetFIGT3YWX/dl6gGZ0AKGu8Ku/5c68kW/gHrsIZYLfn40MdfZ4bpm7hUQMZ5kb1CzQImaPrGF9W/ppF9FiWbi8AbyUo8kOFNnN0ZJC58iWmSXsyEkGEvzRZAdLJvF+dedo216NODS/6Q7D7D36lnVR2U8A2moQcJrnrpKeRIxhNI7uyLntbTc0ii8G6p/04nsEYbF3RXKtfXDwA/s3ZPFk6+nHavNhsAONrdI/k1aKWxt4pQZkgd7dbDMhU7LXbjUgYSSvHOPFjYYNg0URq4kWMXjP26lYNVn7hpc24o4UJqsFTvCj4D2TA4uhP+1kIPvVBPNBMuS053pdnaw9GCwwHR/glG/iyDF4mp1VN82YRO9ZIKliYE7CV8PCjXOF5QmqXAlwaJCtFfLkWoIRTBkT7MIqqZRHR+rv9HlL8J4zyVD0MpSqzp+lfrPWSSyV0uobURQN26bXUElV6x1Xu2gAuOChg8xQxoNGu/4/ha4UlLitkXagn0ZidmnFFVVM4UcWHzjg3peaq2ZOJR1EJxaS5ef9fSxF5rOxhtoyyp71FrIFxaPWNSKwoZwB8XThPcLWEbhZE6WfuDDA/WOBiQC4LEpX0cBYnOD9FB3iZ4rt0e5H6/foxJyzg=
+
+addons:
+  sauce_connect:
+    username: "dougecko"
+  jwt:
+    secure: "A1++juNGfk4AOhsFqjHvsCSNdSt0hjeJs71Zpaa8XT0PcvRAUNLwA6EzVn5c6L/q9wQ+PtdGNoTXJ+adD+Qq2zL6TmLswlRt5jfds5amzi6lJfKc4qCCCepeGh78+lkOOOrB+9kxS4kQSD0NZOa1FI4EIUhw8RJzjzA8/ahLpuotDW7g9TWEDl/TyXfTMWTaYuXBd/RPaQxzydWrVhOVXR6T+f39+sLa8TBqUKT/gLaki92Y8jSFyOM12qJEfnjnpa2l82yiLeTZGtOXQHYIKEWAjAq7PT/hd1S2mBzrmvzihr9dUAOhM46AwZcp4xjeMQ7f8qIDwm4urIcH0JuTEGnxk8vjaziAV1e0BofkWOqftnIhlE9MAk9rpk2oRYcwGsvxUjcI2QKi3BkNNMiaJXsA8UbcMlZtPbZGHSFBQHWXQCQjib1NCdgQFiY6y+4iQDPuqBNj8Y+3i8ShXQpnt9UpYidDMUdzJKZ9rlM2RaS9dhCDa1yZ4cc/Tr+5ygR/u7tfl2RoNhGaaDfUk0Lq1SAmFmUNR+NuejglnoUbSuuehXAKiv8rZo1BHrYB8/TD3Nou7ITDo5Ij8hdCnE1Ox+LoPsrbzcGyvUygeNWkkGo1HeA0aAzZ3RkPpRWXsc5pg3wxmwfXMau0or885ktVTmFNbsMNz6JGLvGSt1eZm7w="

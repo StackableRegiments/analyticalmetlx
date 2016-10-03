@@ -2,9 +2,9 @@ import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
-name := "web-container-metlx"
-version := "0.2.0"
-organization := "io.github.stackableregiments"
+name := "analyticalmetlx"
+version := "0.6.4"
+organization := "com.stackableregiments"
 
 val scalaVersionString = "2.11.5"
 
@@ -177,3 +177,12 @@ traceLevel := 10
 
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
+
+val integrationTests = taskKey[Unit]("integration tests")
+
+lazy val library = (project in file("library")).
+  settings(
+    integrationTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.conf.js", ".")) #>> file("integrationTests.log") !
+    }
+  )
