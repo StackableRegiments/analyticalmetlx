@@ -14,40 +14,40 @@ import com.metl.data._
 import Privacy._
 
 class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with ShouldMatchers with QueryXml with MeTLTextMatchers with MeTLDataGenerators {
-	test("add an ink") {
+  test("add an ink") {
     val h = new History("test")
-		forAll (genInk) { (ink: MeTLInk) =>
+    forAll (genInk) { (ink: MeTLInk) =>
       h.addStanza(ink)
       h.getInks == List(ink) || h.getHighlighters == List(ink)
     }
-	}
-	test("add a textbox") {
+  }
+  test("add a textbox") {
     val h = new History("test")
-		forAll (genText) { (text: MeTLText) =>
+    forAll (genText) { (text: MeTLText) =>
       h.addStanza(text)
       h.getTexts == List(text)
     }
-	}
-	test("add an image") {
+  }
+  test("add an image") {
     val h = new History("test")
-		forAll (genImage) { (image: MeTLImage) =>
+    forAll (genImage) { (image: MeTLImage) =>
       h.addStanza(image)
       h.getImages == List(image)
     }
-	}
-	test("add a submission") {
+  }
+  test("add a submission") {
     val h = new History("test")
-		forAll (genSubmission) { (sub: MeTLSubmission) =>
+    forAll (genSubmission) { (sub: MeTLSubmission) =>
       h.addStanza(sub)
       h.getSubmissions == List(sub)
     }
-	}
-	test("add a command") {
+  }
+  test("add a command") {
     val h = new History("test")
-		forAll (genCommand) { (comm: MeTLCommand) =>
+    forAll (genCommand) { (comm: MeTLCommand) =>
       h.addStanza(comm)
       h.getCommands == List(comm)
     }
-	}
+  }
 
 }
