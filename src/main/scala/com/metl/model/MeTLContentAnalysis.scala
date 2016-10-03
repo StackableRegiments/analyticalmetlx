@@ -24,11 +24,15 @@ case class Chunk(activity:List[MeTLCanvasContent]){
   val milis = end - start
 }
 
-class Chunker(history:History, timeout:Int=3000) extends Logger {
+trait Chunker{
+  def add(c:MeTLStanza,h:History):Unit
+  def emit(t:Theme,h:History):Unit
+}
+class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
   var partialChunks = Map.empty[String,List[MeTLInk]]
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
-  def emit = history.addTheme _
-  def add(c:MeTLStanza) = c match {
+  def emit(t:Theme,history:History) = history.addTheme(t)
+  def add(c:MeTLStanza,history:History) = c match {
     /*This has a bug; it will not emit a sequence which has completed but not started a new one.
      There needs to be a trigger of some sort on that.*/
     case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
@@ -41,11 +45,11 @@ class Chunker(history:History, timeout:Int=3000) extends Logger {
       }
       case failure => debug(failure)
     }
-    case t:MeTLMultiWordText => t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding")))
+    case t:MeTLMultiWordText => t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),history))
     case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
       case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
       case Some(partial) => {
-        CanvasContentAnalysis.extract(partial).map(word => emit(Theme(i.author,word,"handwriting")))
+        CanvasContentAnalysis.extract(partial).foreach(word => emit(Theme(i.author,word,"handwriting"),history))
         partialChunks + (i.author -> List(i))
       }
       case None => partialChunks + (i.author -> (List(i)))
