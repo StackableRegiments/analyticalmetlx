@@ -597,16 +597,12 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         val slide = getIntByName(input,"slide")
         val url = getStringByName(input,"url")
         val title = getStringByName(input,"title")
-        println("submission 1")
         val blacklistObjs = getListOfObjectsByName(input,"blacklist")
-        println("submission 2; %s".format(blacklistObjs))
         val blacklist = blacklistObjs.map(blo => {
-          println("submission 3: %s".format(blo))
           val username = getStringByName(blo,"username")
           val highlight = toColor(getColorByName(blo,"highlight"))
           SubmissionBlacklistedPerson(username,highlight)
         }).toList
-        println("submission 4: %s".format(blacklist))
         MeTLSubmission(config,mc.author,mc.timestamp,title,slide,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
       }
       case _ => MeTLSubmission.empty
