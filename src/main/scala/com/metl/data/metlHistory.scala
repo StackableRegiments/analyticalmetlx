@@ -475,8 +475,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
         if (store){
           outputHook(dirtyInk)
-          deletedCanvasContents = deletedCanvasContents ::: List(dirtyInk)
         }
+        deletedCanvasContents = deletedCanvasContents ::: List(i)
         update(true)
       }
       case _ => {}
@@ -497,8 +497,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
         if (store){
           outputHook(dirtyImage)
-          deletedCanvasContents = deletedCanvasContents ::: List(dirtyImage)
         }
+        deletedCanvasContents = deletedCanvasContents ::: List(i)
         update(true)
       }
       case _ => {}
@@ -518,8 +518,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
         if (store){
           outputHook(dirtyVideo)
-          deletedCanvasContents = deletedCanvasContents ::: List(dirtyVideo)
         }
+        deletedCanvasContents = deletedCanvasContents ::: List(i)
         update(true)
       }
       case _ => {}
@@ -540,16 +540,16 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
         if (store){
           outputHook(dirtyText)
-          deletedCanvasContents = deletedCanvasContents ::: List(dirtyText)
         }
+        deletedCanvasContents = deletedCanvasContents ::: List(t)
         update(true)
       }
       case t:MeTLMultiWordText => {
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
         if (store){
           outputHook(dirtyText)
-          deletedCanvasContents = deletedCanvasContents ::: List(dirtyText)
         }
+        deletedCanvasContents = deletedCanvasContents ::: List(t)
         update(true)
       }
       case _ => {}
@@ -570,8 +570,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
         if (store) {
           outputHook(dirtyText)
-          deletedCanvasContents = deletedCanvasContents ::: List(dirtyText)
         }
+        deletedCanvasContents = deletedCanvasContents ::: List(t)
         update(true)
       }
       case _ => {}
