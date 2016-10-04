@@ -65,6 +65,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case i:A => {
         i.metlType.get match {
           case "ink" => toMeTLInk(i.asInstanceOf[H2Ink])
+          case "theme" => toTheme(i.asInstanceOf[H2Theme])
           case "text" => toMeTLText(i.asInstanceOf[H2Text])
           case "multiWordText" => toMeTLMultiWordText(i.asInstanceOf[H2MultiWordText])
           case "image" => toMeTLImage(i.asInstanceOf[H2Image])
@@ -140,6 +141,8 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     MeTLVideo(config,cc.author,cc.timestamp,url,videoBytes,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
   }
   override def fromMeTLVideo(i:MeTLVideo):H2Video = incCanvasContent(H2Video.create,i,"video").source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
+
+  override def fromTheme(i:MeTLTheme):H2Theme = incMeTLContent(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin)
 
   def toMeTLImage(i:H2Image):MeTLImage = {
     val cc = decCanvasContent(i)

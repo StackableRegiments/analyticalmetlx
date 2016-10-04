@@ -244,6 +244,16 @@ class H2File extends H2MeTLStanza[H2File]{
 object H2File extends H2File with LongKeyedMetaMapper[H2File]{
 }
 
+class H2Theme extends H2MeTLStanza[H2Theme]{
+  def getSingleton = H2Theme
+  object text extends MappedText(this)
+  object location extends MappedMeTLString(this,4096)
+  object origin extends MappedMeTLString(this,64)
+}
+object H2Theme extends H2Theme with LongKeyedMetaMapper[H2Theme]{
+}
+
+
 class H2VideoStream extends H2MeTLStanza[H2VideoStream]{
   def getSingleton = H2VideoStream
   object partialIdentity extends MappedMeTLString(this,H2Constants.identity) with H2MeTLIndexedString
