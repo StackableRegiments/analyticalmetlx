@@ -421,7 +421,7 @@ var subcategoryMapping = {
     optsToolbar:".applicationGroup"
 };
 var categoryMapping = _.fromPairs(_.flatMap({
-    metaToolbar:"integrations print",
+    metaToolbar:"integrations print recycleBin",
     optsToolbar:"settings healthCheck",
     roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
 },function(v,k){
