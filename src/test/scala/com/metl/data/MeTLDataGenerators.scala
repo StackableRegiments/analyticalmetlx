@@ -9,6 +9,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.common._
 
 import com.metl.data._
+import com.metl.model._
 import Privacy._
 
 trait MeTLDataGenerators {
@@ -124,6 +125,16 @@ trait MeTLDataGenerators {
     audiences <- genAudiences
   } yield MeTLImage(ServerConfiguration.empty, author, timestamp, tag, source, Empty, Empty, width, height, x, y, target, privacy, slide, identity,audiences)
   // WrappedArray.make[Byte]
+
+  val genTheme = for {
+    author <- Gen.alphaStr
+    target <- Gen.alphaStr
+    location <- Gen.numStr
+    text <- Gen.alphaStr
+    timestamp <- validTimestamp
+    origin <- Gen.numStr
+    audiences <- genAudiences
+  } yield MeTLTheme(ServerConfiguration.empty,author,timestamp,location,Theme(author,text,origin),audiences)
 
   val genText = for {
     author <- Gen.alphaStr
