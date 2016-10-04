@@ -30,10 +30,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
     }
   }
   test("add an image") {
-    val h = new History("test",1.0,1.0,0,0, new Object with Chunker {
-      def emit(t:Theme,h:History) = {}
-      def add(s:MeTLStanza,h:History) = {}
-    })
+    val h = new History("test",1.0,1.0,0,0)
     forAll (genImage) { (image: MeTLImage) =>
       h.addStanza(image)
       h.getImages == List(image)

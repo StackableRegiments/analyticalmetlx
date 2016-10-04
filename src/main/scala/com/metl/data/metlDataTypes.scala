@@ -1,6 +1,7 @@
 package com.metl.data
 
 import com.metl.utils._
+import com.metl.model._
 
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -269,7 +270,7 @@ object MeTLStanza{
   def unapply(in:MeTLStanza) = Some((in.server,in.author,in.timestamp,in.audiences))
   def empty = MeTLStanza(ServerConfiguration.empty,"",0L)
 }
-
+case class MeTLTheme(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,theme:Theme,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences)
 case class Attendance(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,present:Boolean,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("Attendance.adjustTimestamp",copy(timestamp = newTime))
 }

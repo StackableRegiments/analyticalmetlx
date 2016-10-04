@@ -12,7 +12,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 import Privacy._
 
-case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:Double = 0,yOffset:Double = 0,chunker:Chunker = new ChunkAnalyzer) extends Logger {
+case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:Double = 0,yOffset:Double = 0) extends Logger {
   protected def createHistory(jid:String,xScale:Double,yScale:Double,xOffset:Double,yOffset:Double) = History(jid,xScale,yScale,xOffset,yOffset)
   protected var lastModifiedTime:Long = 0L
   protected var lastVisuallyModifiedTime:Long = 0L
@@ -153,7 +153,6 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def addStanza(s:MeTLStanza) = Stopwatch.time("History.addStanza",{
     stanzas = stanzas ::: List(s)
     latestTimestamp = List(s.timestamp,latestTimestamp).max
-    chunker.add(s,this)
     processNewStanza(s)
   })
 

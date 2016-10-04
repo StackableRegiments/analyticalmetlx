@@ -25,31 +25,31 @@ case class Chunk(activity:List[MeTLCanvasContent]){
 }
 
 trait Chunker{
-  def add(c:MeTLStanza,h:History):Unit
-  def emit(t:Theme,h:History):Unit
+  def add(c:MeTLStanza,h:MeTLRoom):Unit
+  def emit(t:Theme,h:MeTLRoom):Unit
 }
 class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
   var partialChunks = Map.empty[String,List[MeTLInk]]
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
-  def emit(t:Theme,history:History) = history.addTheme(t)
-  def add(c:MeTLStanza,history:History) = c match {
+  def emit(t:Theme,room:MeTLRoom) = room.addTheme(t)
+  def add(c:MeTLStanza,room:MeTLRoom) = c match {
     /*This has a bug; it will not emit a sequence which has completed but not started a new one.
      There needs to be a trigger of some sort on that.*/
     case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
       case Right(t) => {
         CanvasContentAnalysis.getDescriptions(t) match {
           case (descriptions,words) => List(
-            descriptions.map(word => Theme(i.author, word, "imageRecognition")),
-            words.map(word => Theme(i.author,word,"imageTranscription")))
+            descriptions.foreach(word => emit(Theme(i.author, word, "imageRecognition"),room)),
+            words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
         }
       }
       case failure => debug(failure)
     }
-    case t:MeTLMultiWordText => t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),history))
+    case t:MeTLMultiWordText => t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
     case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
       case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
       case Some(partial) => {
-        CanvasContentAnalysis.extract(partial).foreach(word => emit(Theme(i.author,word,"handwriting"),history))
+        CanvasContentAnalysis.extract(partial).foreach(word => emit(Theme(i.author,word,"handwriting"),room))
         partialChunks + (i.author -> List(i))
       }
       case None => partialChunks + (i.author -> (List(i)))
