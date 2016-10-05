@@ -187,73 +187,73 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
 
       image should equal(gennedImage)
     }
+  }
 
-    test("parse metl text to json and back") {
-      forAll (genText) { (gennedText: MeTLText) =>
+  test("parse metl text to json and back") {
+    forAll (genText) { (gennedText: MeTLText) =>
 
-        val json = jsonSerializer.fromMeTLText(gennedText)
-        val text = jsonSerializer.toMeTLText(json)
+      val json = jsonSerializer.fromMeTLText(gennedText)
+      val text = jsonSerializer.toMeTLText(json)
 
-        text should equal(gennedText)
-      }
+      text should equal(gennedText)
     }
+  }
 
-    test("parse metl multi-word text to json and back") {
-      forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) =>
+  test("parse metl multi-word text to json and back") {
+    forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) =>
 
-        val json = jsonSerializer.fromMeTLMultiWordText(gennedText)
-        val text = jsonSerializer.toMeTLMultiWordText(json)
+      val json = jsonSerializer.fromMeTLMultiWordText(gennedText)
+      val text = jsonSerializer.toMeTLMultiWordText(json)
 
-        text should equal(gennedText)
-      }
+      text should equal(gennedText)
     }
+  }
 
-    test("parse metl dirty ink to json and back") {
-      forAll (genDirtyInk) { (gennedDirtyInk: MeTLDirtyInk) =>
+  test("parse metl dirty ink to json and back") {
+    forAll (genDirtyInk) { (gennedDirtyInk: MeTLDirtyInk) =>
 
-        val json = jsonSerializer.fromMeTLDirtyInk(gennedDirtyInk)
-        val dirtyInk = jsonSerializer.toMeTLDirtyInk(json)
+      val json = jsonSerializer.fromMeTLDirtyInk(gennedDirtyInk)
+      val dirtyInk = jsonSerializer.toMeTLDirtyInk(json)
 
-        dirtyInk should equal(gennedDirtyInk)
-      }
+      dirtyInk should equal(gennedDirtyInk)
     }
+  }
 
-    test("parse metl dirty image to json and back") {
-      forAll (genDirtyImage) { (gennedDirtyImage: MeTLDirtyImage) =>
+  test("parse metl dirty image to json and back") {
+    forAll (genDirtyImage) { (gennedDirtyImage: MeTLDirtyImage) =>
 
-        val json = jsonSerializer.fromMeTLDirtyImage(gennedDirtyImage)
-        val dirtyImage = jsonSerializer.toMeTLDirtyImage(json)
+      val json = jsonSerializer.fromMeTLDirtyImage(gennedDirtyImage)
+      val dirtyImage = jsonSerializer.toMeTLDirtyImage(json)
 
-        dirtyImage should equal(gennedDirtyImage)
-      }
+      dirtyImage should equal(gennedDirtyImage)
     }
+  }
 
-    test("parse metl dirty text to json and back") {
-      forAll (genDirtyText) { (gennedDirtyText: MeTLDirtyText) =>
+  test("parse metl dirty text to json and back") {
+    forAll (genDirtyText) { (gennedDirtyText: MeTLDirtyText) =>
 
-        val json = jsonSerializer.fromMeTLDirtyText(gennedDirtyText)
-        val dirtyText = jsonSerializer.toMeTLDirtyText(json)
+      val json = jsonSerializer.fromMeTLDirtyText(gennedDirtyText)
+      val dirtyText = jsonSerializer.toMeTLDirtyText(json)
 
-        dirtyText should equal(gennedDirtyText)
-      }
+      dirtyText should equal(gennedDirtyText)
     }
+  }
 
-    test("parse metl command to json and back") {
-      forAll (genCommand) { (gennedCommand: MeTLCommand) =>
+  test("parse metl command to json and back") {
+    forAll (genCommand) { (gennedCommand: MeTLCommand) =>
 
-        val json = jsonSerializer.fromMeTLCommand(gennedCommand)
-        val command = jsonSerializer.toMeTLCommand(json)
+      val json = jsonSerializer.fromMeTLCommand(gennedCommand)
+      val command = jsonSerializer.toMeTLCommand(json)
 
-        command should equal(gennedCommand)
-      }
+      command should equal(gennedCommand)
     }
+  }
 
-    test("parse submission to json and back") {
-      forAll (genSubmission) { (gennedSubmission: MeTLSubmission) =>
-        val json = jsonSerializer.fromSubmission(gennedSubmission)
-        val submission = jsonSerializer.toSubmission(json)
-        submission should equal(gennedSubmission)
-      }
+  test("parse submission to json and back") {
+    forAll (genSubmission) { (gennedSubmission: MeTLSubmission) =>
+      val json = jsonSerializer.fromSubmission(gennedSubmission)
+      val submission = jsonSerializer.toSubmission(json)
+      submission should equal(gennedSubmission)
     }
   }
 }

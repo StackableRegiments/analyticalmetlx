@@ -219,7 +219,6 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       }
     })
     getFields(i,"undeletedCanvasContent").foreach(jf => history.addStanza(toMeTLUndeletedCanvasContent(jf.value)))
-    >>>>>>> origin/METL-171-JsonSerializerForMultiWordTexts
     getFields(i,"unhandledCanvasContents").foreach(jf => history.addStanza(toMeTLUnhandledCanvasContent(jf.value)))
     getFields(i,"unhandledStanzas").foreach(jf => history.addStanza(toMeTLUnhandledStanza(jf.value)))
     //    getFields(i,"unhandledData").foreach(jf => history.addStanza(toMeTLUnhandledData(jf.value)))

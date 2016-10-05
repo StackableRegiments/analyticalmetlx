@@ -74,7 +74,7 @@ trait MeTLDataGenerators {
     text <- Gen.alphaStr
     timestamp <- validTimestamp
     origin <- Gen.numStr
-    audiences <- genAudiences
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
   } yield MeTLTheme(ServerConfiguration.empty,author,timestamp,location,Theme(author,text,origin),audiences)
   def genInk = for {
     author <- Gen.alphaStr

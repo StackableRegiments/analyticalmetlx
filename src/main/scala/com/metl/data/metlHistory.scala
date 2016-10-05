@@ -91,12 +91,9 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getVideoStreams = videoStreams
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
-<<<<<<< HEAD
   def getThemes = themes
-=======
   def getUndeletedCanvasContents = undeletedCanvasContents
   def getDeletedCanvasContents = deletedCanvasContents
->>>>>>> origin/METL-171-JsonSerializerForMultiWordTexts
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
