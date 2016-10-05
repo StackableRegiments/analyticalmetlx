@@ -57,6 +57,17 @@ var RecycleBin = (function(){
 									} else {
 										return defaultElem;
 									}
+								} else if (stanza.type == "text"){
+									return defaultElem; 
+								} else if (stanza.type == "multiWordText"){
+									var textElem = $("<span/>");
+									_.forEach(stanza.words,function(word){
+										textElem.append($("<span/>",{
+											text:word.text,
+											style:sprintf("color:%s",word.color[0])
+										}));
+									});
+									return textElem; 
 								} else {
 									return defaultElem; 
 								}
@@ -175,7 +186,6 @@ var RecycleBin = (function(){
 							prerenderInk(stanza);
 							break;
 						case "text":
-							prerenderText(stanza);
 							break;
 						case "image":
 							var image = stanza;
@@ -194,7 +204,9 @@ var RecycleBin = (function(){
 							dataImage.src = calculateImageSource(image);
 							break;
 						case "multiWordText":
-							prerenderText(stanza);
+							if ("doc" in stanza){
+								stanza = richTextEditorToStanza(stanza);
+							}
 							break;
 						case "video":
 							//prerenderVideo(stanza);
