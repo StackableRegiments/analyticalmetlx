@@ -15,36 +15,36 @@ import Privacy._
 
 class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with ShouldMatchers with QueryXml with MeTLTextMatchers with MeTLDataGenerators {
 	test("add an ink") {
-    val h = new History("test")
 		forAll (genInk) { (ink: MeTLInk) =>
+      val h = new History("test")
       h.addStanza(ink)
       h.getInks == List(ink) || h.getHighlighters == List(ink)
     }
 	}
 	test("add a textbox") {
-    val h = new History("test")
 		forAll (genText) { (text: MeTLText) =>
+      val h = new History("test")
       h.addStanza(text)
       h.getTexts == List(text)
     }
 	}
 	test("add an image") {
-    val h = new History("test")
 		forAll (genImage) { (image: MeTLImage) =>
+      val h = new History("test")
       h.addStanza(image)
       h.getImages == List(image)
     }
 	}
 	test("add a submission") {
-    val h = new History("test")
 		forAll (genSubmission) { (sub: MeTLSubmission) =>
+      val h = new History("test")
       h.addStanza(sub)
       h.getSubmissions == List(sub)
     }
 	}
 	test("add a command") {
-    val h = new History("test")
 		forAll (genCommand) { (comm: MeTLCommand) =>
+      val h = new History("test")
       h.addStanza(comm)
       h.getCommands == List(comm)
     }
@@ -52,7 +52,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
 	test("add an ink and then delete it") {
 		forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val dirtyInk = ink.generateDirty()
+      val dirtyInk = ink.generateDirty().adjustTimestamp(ink.timestamp + 1)
       h.addStanza(ink)
       h.addStanza(dirtyInk)
       (h.getCanvasContents should not contain (ink))
@@ -62,7 +62,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
 	test("add an ink and then delete it and then undelete it") {
 		forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val dirtyInk = ink.generateDirty()
+      val dirtyInk = ink.generateDirty().adjustTimestamp(ink.timestamp + 1)
       h.addStanza(ink)
       h.addStanza(dirtyInk)
       (h.getCanvasContents should not contain (ink))
