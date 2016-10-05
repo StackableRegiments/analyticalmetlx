@@ -42,7 +42,7 @@ var RecycleBin = (function(){
 							var defaultElem = $("<span/>",{text:"no preview"});
 							if ("type" in stanza){
 								var popupTitle = sprintf("Deleted %s from %s at %s on slide %s",stanza.type,stanza.author,new Date(stanza.timestamp),stanza.slide);
-								if (stanza.type == "ink" || stanza.type == "image"){
+								if (stanza.type == "ink"){
 									if ("canvas" in stanza){
 										var imgSrc = stanza.canvas.toDataURL("image/png");
 										var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
@@ -57,15 +57,35 @@ var RecycleBin = (function(){
 									} else {
 										return defaultElem;
 									}
+								} else if (stanza.type == "image"){
+									var imgSrc = calculateImageSource(stanza);
+									var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+										$.jAlert({
+											title:popupTitle,
+											closeOnClick:true,
+											width:"90%",
+											content:$("<img/>",{src:imgSrc})[0].outerHTML
+										});
+									});
+									return img;	
 								} else if (stanza.type == "text"){
 									return defaultElem; 
 								} else if (stanza.type == "multiWordText"){
 									var textElem = $("<span/>");
+									var fontSizeMax = _.maxBy(stanza.words,function(w){return w.size;}).size;
+									var scalingFactor = 100 / fontSizeMax;
 									_.forEach(stanza.words,function(word){
-										textElem.append($("<span/>",{
-											text:word.text,
-											style:sprintf("color:%s",word.color[0])
-										}));
+										var run = $("<span/>",{
+											text:word.text
+										}).css({
+											"color":word.color[0],
+											"font-family":word.font,
+											"font-style":word.italic ? "italic" : "normal",
+											"font-weight":word.bold ? "bold" : "normal",
+											"text-decoration":word.underline ? "underline" : "normal",
+											"font-size":sprintf("%s%%",word.size * scalingFactor)
+										});
+										textElem.append(run);
 									});
 									return textElem; 
 								} else {
@@ -188,6 +208,7 @@ var RecycleBin = (function(){
 						case "text":
 							break;
 						case "image":
+							/*
 							var image = stanza;
 							var dataImage = new Image();
 							image.imageData = dataImage;
@@ -202,6 +223,7 @@ var RecycleBin = (function(){
 									prerenderImage(image);
 							}
 							dataImage.src = calculateImageSource(image);
+							*/
 							break;
 						case "multiWordText":
 							if ("doc" in stanza){
