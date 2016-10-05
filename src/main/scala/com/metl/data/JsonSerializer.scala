@@ -512,6 +512,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
           val y = getDoubleByName(input,"y")
           val width = getDoubleByName(input,"width")
           val height = getDoubleByName(input,"height")
+          println("toMetlMultiWordText words: %s".format(words))
           MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words,mc.audiences)
         }
         catch {
@@ -535,6 +536,8 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     JField("size",JDouble(input.size))
   ))
   override def fromMeTLMultiWordText(input:MeTLMultiWordText) = Stopwatch.time("JsonSerializer.fromMeTLMultiWordText",{
+    val words = input.words.map(fromMeTLWord _).toList
+    println("fromMetlMultiWordText words: %s".format(words))
     toJsObj("multiWordText",List(
       JField("x",JDouble(input.x)),
       JField("y",JDouble(input.y)),
@@ -542,7 +545,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("height",JDouble(input.height)),
       JField("tag",JString(input.tag)),
       JField("requestedWidth",JDouble(input.requestedWidth)),
-      JField("words",JArray(input.words.map(fromMeTLWord _).toList))
+      JField("words",JArray(words))
     ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   });
   override def fromMeTLText(input:MeTLText):JValue = Stopwatch.time("JsonSerializer.fromMeTLText",{
