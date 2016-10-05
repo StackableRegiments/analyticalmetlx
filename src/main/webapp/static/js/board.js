@@ -698,6 +698,7 @@ function deleteInk(inks,privacy,id){
         var ink = boardContent[inks][id];
         if(ink.privacy.toUpperCase() == privacy.toUpperCase()){
             delete boardContent[inks][id];
+						Progress.call("onCanvasContentDeleted",[ink]);	
         }
     }
 }
@@ -705,24 +706,28 @@ function deleteImage(privacy,id){
     var image = boardContent.images[id];
     if(image.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.images[id];
+				Progress.call("onCanvasContentDeleted",[image]);	
     }
 }
 function deleteVideo(privacy,id){
     var video = boardContent.videos[id];
     if(video.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.videos[id];
+				Progress.call("onCanvasContentDeleted",[video]);	
     }
 }
 function deleteText(privacy,id){
     var text = boardContent.texts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.texts[id];
+				Progress.call("onCanvasContentDeleted",[text]);	
     }
 }
 function deleteMultiWordText(privacy,id){
     var text = boardContent.multiWordTexts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.multiWordTexts[id];
+				Progress.call("onCanvasContentDeleted",[text]);	
     }
 }
 function dirtyInkReceived(dirtyInk){

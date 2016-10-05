@@ -38,13 +38,14 @@ var RecycleBin = (function(){
 						readOnly:true,
 						sorting:false,
 						itemTemplate:function(thumbnailUrl,stanza){
-							var img = $("<img/>",{src:stanza.canvas,class:"stanzaThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
+							var imgSrc = stanza.canvas.toDataURL("image/png");
+							var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
 								var title = sprintf("Deleted content from %s at %s on slide %s",stanza.author,new Date(stanza.timestamp),stanza.slide);
 								$.jAlert({
 									title:title,
 									closeOnClick:true,
 									width:"90%",
-									content:$("<img/>",{src:stanza.canvas})[0].outerHTML
+									content:$("<img/>",{src:imgSrc})[0].outerHTML
 								});
 							});							
 							return img;
@@ -64,12 +65,13 @@ var RecycleBin = (function(){
 							var rootElem = actionButtonsTemplate.clone();
 							var button = rootElem.find(".restoreContent");
 							button.on("click",function(){
-								var newStanza = stanza.clone();
+								var newStanza = _.cloneDeep(stanza);
 								var newIdentity = sprintf("%s_%s",new Date().getTime(),stanza.identity).substr(0,64);
 								newStanza.identity = newIdentity;
 								var newUndeletedContentItem = {
 									type:"undeletedCanvasContent",
 									author:UserSettings.getUsername(),
+									identity:sprintf("%s_%s_%s",new Date().getTime(),stanza.slide,UserSettings.getUsername()).substr(0,64),
 									timestamp:new Date().getTime(),
 									slide:stanza.slide,
 									privacy:stanza.privacy,
@@ -78,6 +80,7 @@ var RecycleBin = (function(){
 									oldIdentity:stanza.identity,
 									newIdentity:newIdentity	
 								};
+								console.log("restoring:",stanza,newStanza,newUndeletedContentItem);
 								sendStanza(newStanza);
 								sendStanza(newUndeletedContentItem);
 							});
@@ -137,6 +140,9 @@ var RecycleBin = (function(){
                 _.forEach(history.deletedCanvasContents,function(stanza){
 									onCanvasContentDeleted(stanza,true);
 								});
+								_.forEach(history.undeletedCanvasContents,function(stanza){
+									onStanzaReceived(stanza);
+								});
                 reRenderDatagrid();
             }
         }
@@ -145,13 +151,37 @@ var RecycleBin = (function(){
         }
     };
     var onCanvasContentDeleted = function(stanza,skipRender){
+			if ("type" in stanza){
+				switch(stanza.type){
+					case "ink":
+						prerenderInk(stanza);
+						break;
+					case "text":
+						prerenderText(stanza);
+						break;
+					case "image":
+						prerenderImage(stanza);
+						break;
+					case "multiWordText":
+						prerenderText(stanza);
+						break;
+					case "video":
+						//prerenderVideo(stanza);
+						break;
+					default:
+						break;
+				}
+			}
+			deletedContent = _.filter(deletedContent,function(elem){
+				return "identity" in elem && "type" in elem && "identity" in stanza && "type" in stanza && elem.identity != stanza.identity && elem.type != stanza.type;
+			});
 			deletedContent.push(stanza);
 			reRenderDatagrid();
     };
 		var onStanzaReceived = function(stanza){
-			if (stanza != undefined && "type" in stanza && stanza.type == "undeletedCanvasContent"){
+			if (stanza != undefined && "type" in stanza && stanza.type == "undeletedCanvasContent" && "elementType" in stanza && "oldIdentity" in stanza){
 				deletedContent = _.filter(deletedContent,function(dc){
-					return "elementType" in stanza && "oldIdentity" in stanza && stanza.elementType != dc.type && stanza.oldIdentity != dc.identity;
+					return stanza.elementType != dc.type && stanza.oldIdentity != dc.identity;
 				});
 				reRenderDatagrid();
 			}
