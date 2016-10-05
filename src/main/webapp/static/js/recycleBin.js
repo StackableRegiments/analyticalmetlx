@@ -38,17 +38,23 @@ var RecycleBin = (function(){
 						readOnly:true,
 						sorting:false,
 						itemTemplate:function(thumbnailUrl,stanza){
-							var imgSrc = stanza.canvas.toDataURL("image/png");
-							var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
-								var title = sprintf("Deleted content from %s at %s on slide %s",stanza.author,new Date(stanza.timestamp),stanza.slide);
-								$.jAlert({
-									title:title,
-									closeOnClick:true,
-									width:"90%",
-									content:$("<img/>",{src:imgSrc})[0].outerHTML
-								});
-							});							
-							return img;
+							if ("type" in stanza){
+								if (stanza.type == "ink" || stanza.type == "image"){
+									var imgSrc = stanza.canvas.toDataURL("image/png");
+									var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+										var title = sprintf("Deleted content from %s at %s on slide %s",stanza.author,new Date(stanza.timestamp),stanza.slide);
+										$.jAlert({
+											title:title,
+											closeOnClick:true,
+											width:"90%",
+											content:$("<img/>",{src:imgSrc})[0].outerHTML
+										});
+									});							
+									return img;
+								} else {
+									return $("<span/>",{text:"no preview"});
+								}
+							} else return $("<span/>");
 						}
 					},
 					{name:"slide",type:"number",title:"Slide",readOnly:true},
