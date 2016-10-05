@@ -35,9 +35,43 @@ class PrivacySerializer extends net.liftweb.json.Serializer[Privacy] {
   }
 }
 
+class ColorSerializer extends net.liftweb.json.Serializer[Color] with JsonSerializerHelper {
+  import ColorConverter._
+  private val ColorClass = classOf[Color]
+  protected def toColor(input:AnyRef):Color = Stopwatch.time("JsonSerializer.toColor", {
+    input match {
+      case List(c,a) => {
+        val color = c.asInstanceOf[String]
+        val alpha = ConversionHelper.toDouble(a).toInt
+        def clamp (n:Integer,min:Integer=0,max:Integer=255) = Math.max(min,Math.min(max,n))
+        val r = convert2AfterN(color,1)
+        val g = convert2AfterN(color,3)
+        val b = convert2AfterN(color,5)
+        Color(alpha,clamp(r),clamp(g),clamp(b))
+      }
+      case _ => Color.empty
+    }
+  })
+  protected def fromColor(input:Color):JValue = Stopwatch.time("JsonSerializer.fromColor",{
+    JArray(List(JString("#%02x%02x%02x".format(input.red,input.green,input.blue)),JInt(input.alpha)))
+  })
+  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Color] = {
+    case (TypeInfo(ColorClass, _), json) => json match {
+      case JArray(List(JString(hexString),JInt(alpha))) => toColor(List(hexString,alpha))
+      case x => throw new MappingException("Can't convert " + x + " to Color")
+    }
+  }
+
+  def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
+    case x: Color => fromColor(x)
+  }
+}
+
+
+
 trait JsonSerializerHelper {
 
-  lazy implicit val formats = Serialization.formats(NoTypeHints) + new PrivacySerializer
+  lazy implicit val formats = Serialization.formats(NoTypeHints) + new PrivacySerializer + new ColorSerializer
 
   def getStringByName(input:JObject,name:String) = (input \ name).extract[String]
   def getBooleanByName(input:JObject,name:String) = (input \ name).extract[Boolean]
@@ -478,7 +512,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
           val y = getDoubleByName(input,"y")
           val width = getDoubleByName(input,"width")
           val height = getDoubleByName(input,"height")
-          MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words)
+          MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words,mc.audiences)
         }
         catch {
           case e => {

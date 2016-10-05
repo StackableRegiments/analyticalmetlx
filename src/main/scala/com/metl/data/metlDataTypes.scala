@@ -65,8 +65,8 @@ object ColorConverter{
       Color.default
     }
   }
-  private def hexToInt(h:String):Int = tryo(Integer.parseInt(h,16)).openOr(0)
-  private def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
+  def hexToInt(h:String):Int = tryo(Integer.parseInt(h,16)).openOr(0)
+  def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
   def fromHexString(h:String):Color = fromARGBHexString(h)
   def fromRGBHexString(h:String):Color = {
     val r = convert2AfterN(h,1)

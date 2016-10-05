@@ -200,6 +200,16 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
       }
     }
 
+    test("parse metl multi-word text to json and back") {
+      forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) =>
+
+        val json = jsonSerializer.fromMeTLMultiWordText(gennedText)
+        val text = jsonSerializer.toMeTLMultiWordText(json)
+
+        text should equal(gennedText)
+      }
+    }
+
     test("parse metl dirty ink to json and back") {
       forAll (genDirtyInk) { (genDirtyInk: MeTLDirtyInk) =>
 
