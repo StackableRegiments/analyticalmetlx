@@ -105,6 +105,16 @@ class H2MultiWordText extends H2MeTLCanvasContent[H2MultiWordText]{
 object H2MultiWordText extends H2MultiWordText with LongKeyedMetaMapper[H2MultiWordText]{
 }
 
+class H2UndeletedCanvasContent extends H2MeTLCanvasContent[H2UndeletedCanvasContent]{
+  def getSingleton = H2UndeletedCanvasContent
+  object elementType extends MappedMeTLString(this,64)
+  object oldIdentity extends MappedMeTLString(this,H2Constants.identity)
+  object newIdentity extends MappedMeTLString(this,H2Constants.identity)
+}
+
+object H2UndeletedCanvasContent extends H2UndeletedCanvasContent with LongKeyedMetaMapper[H2UndeletedCanvasContent]{
+}
+
 class H2Text extends H2MeTLCanvasContent[H2Text] {
   def getSingleton = H2Text
   object text extends MappedText(this)

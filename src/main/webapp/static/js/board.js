@@ -132,16 +132,17 @@ function sendInk(ink){
     sendStanza(ink);
 }
 function hexToRgb(hex) {
-    if(typeof hex == "object" && hex.alpha) return hex;
-    if(typeof hex == "string") hex = [hex,255];
-    if(typeof hex == "array") hex = hex;
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
-    return {
-        alpha: hex[1],
-        red: parseInt(result[1], 16),
-        green: parseInt(result[2], 16),
-        blue: parseInt(result[3], 16)
-    };
+    if(typeof hex == "object" && hex.alpha) {
+			return Colors.getColorForColorParts(hex.alpha,hex.red,hex.green,hex.blue);
+		} else if (typeof hex == "object" && hex[0] && hex[1] && typeof hex[0] == "string" && typeof hex[1] == "number"){
+			return hex;
+		} else if(typeof hex == "string") {
+			return Colors.getColorObjForHex(hex);
+		} else if(typeof hex == "array") {
+			return hex;
+		} else {
+			return Colors.getDefaultColorObj();
+		}
 }
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;

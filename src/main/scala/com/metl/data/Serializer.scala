@@ -65,6 +65,8 @@ abstract class Serializer {
   def fromPointList(input:List[Point]):AnyRef = throw new SerializationNotImplementedException
   def toColor(input:AnyRef):Color = throw new SerializationNotImplementedException
   def fromColor(input:Color):AnyRef = throw new SerializationNotImplementedException
+  def toMeTLUndeletedCanvasContent(input:T):MeTLUndeletedCanvasContent = throw new SerializationNotImplementedException
+  def fromMeTLUndeletedCanvasContent(input:MeTLUndeletedCanvasContent):T = throw new SerializationNotImplementedException
   def toMeTLUnhandledStanza(input:T):MeTLUnhandledStanza = throw new SerializationNotImplementedException
   def fromMeTLUnhandledStanza(input:MeTLUnhandledStanza):T = throw new SerializationNotImplementedException
   def toMeTLUnhandledData(input:T):MeTLUnhandledData = throw new SerializationNotImplementedException
@@ -92,6 +94,7 @@ abstract class Serializer {
     case f:MeTLFile => fromMeTLFile(f)
     case v:MeTLVideoStream => fromMeTLVideoStream(v)
     case t:MeTLTheme => fromTheme(t)
+    case uc:MeTLUndeletedCanvasContent => fromMeTLUndeletedCanvasContent(uc)
     case cc:MeTLUnhandledCanvasContent => fromMeTLUnhandledCanvasContent(cc)
     case ms:MeTLUnhandledStanza => fromMeTLUnhandledStanza(ms)
     case mx:MeTLUnhandledData => fromMeTLUnhandledData(mx)
@@ -161,4 +164,6 @@ class PassthroughSerializer extends Serializer {
   override def fromMeTLUnhandledStanza(input:MeTLUnhandledStanza):T = input.asInstanceOf[Object]
   override def toMeTLUnhandledCanvasContent(input:AnyRef):MeTLUnhandledCanvasContent = input.asInstanceOf[MeTLUnhandledCanvasContent]
   override def fromMeTLUnhandledCanvasContent(input:MeTLUnhandledCanvasContent):T = input.asInstanceOf[Object]
+  override def toMeTLUndeletedCanvasContent(input:T):MeTLUndeletedCanvasContent = input.asInstanceOf[MeTLUndeletedCanvasContent]
+  override def fromMeTLUndeletedCanvasContent(input:MeTLUndeletedCanvasContent):T = input.asInstanceOf[Object]
 }

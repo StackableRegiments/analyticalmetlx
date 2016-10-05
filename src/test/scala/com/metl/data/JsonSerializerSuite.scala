@@ -153,109 +153,107 @@ class JsonSerializerHelperSuite extends FunSuite with GeneratorDrivenPropertyChe
 class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with ShouldMatchers with MeTLMoveDeltaMatchers with MeTLDataGenerators {
 
   var jsonSerializer: JsonSerializer = _
-  implicit val formats = Serialization.formats(NoTypeHints) + new PrivacySerializer
 
   before {
     jsonSerializer = new JsonSerializer("empty")
   }
 
   test("parse metl move delta to json and back") {
-    forAll (genMoveDelta) { (genMoveDelta: MeTLMoveDelta) =>
+    forAll (genMoveDelta) { (gennedMoveDelta: MeTLMoveDelta) =>
 
-      val json = jsonSerializer.fromMeTLMoveDelta(genMoveDelta)
+      val json = jsonSerializer.fromMeTLMoveDelta(gennedMoveDelta)
       val md = jsonSerializer.toMeTLMoveDelta(json)
 
-      md should equal(genMoveDelta)
+      md should equal(gennedMoveDelta)
     }
   }
 
   test("parse metl ink to json and back") {
-    forAll (genInk) { (genInk: MeTLInk) =>
+    forAll (genInk) { (gennedInk: MeTLInk) =>
 
-      val json = jsonSerializer.fromMeTLInk(genInk)
+      val json = jsonSerializer.fromMeTLInk(gennedInk)
       val ink = jsonSerializer.toMeTLInk(json)
 
-      ink should equal(genInk)
+      ink should equal(gennedInk)
     }
   }
 
-  ignore("parse metl image to json and back") {
-    forAll (genImage) { (genImage: MeTLImage) =>
+  test("parse metl image to json and back") {
+    forAll (genImage) { (gennedImage: MeTLImage) =>
 
-      val json = jsonSerializer.fromMeTLImage(genImage)
+      val json = jsonSerializer.fromMeTLImage(gennedImage)
       val image = jsonSerializer.toMeTLImage(json)
-      info("toMeTLImage: Creates Full(Array.empty[Byte]) instead of Empty, and Array instead of WrappedArray")
+      //info("toMeTLImage: Creates Full(Array.empty[Byte]) instead of Empty, and Array instead of WrappedArray")
 
-      image should equal(genImage)
+      image should equal(gennedImage)
     }
-  }
 
-  test("parse metl text to json and back") {
-    forAll (genText) { (genText: MeTLText) =>
+    test("parse metl text to json and back") {
+      forAll (genText) { (gennedText: MeTLText) =>
 
-      val json = jsonSerializer.fromMeTLText(genText)
-      val text = jsonSerializer.toMeTLText(json)
+        val json = jsonSerializer.fromMeTLText(gennedText)
+        val text = jsonSerializer.toMeTLText(json)
 
-      text should equal(genText)
+        text should equal(gennedText)
+      }
     }
-  }
 
-  test("parse metl dirty ink to json and back") {
-    forAll (genDirtyInk) { (genDirtyInk: MeTLDirtyInk) =>
+    test("parse metl multi-word text to json and back") {
+      forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) =>
 
-      val json = jsonSerializer.fromMeTLDirtyInk(genDirtyInk)
-      val dirtyInk = jsonSerializer.toMeTLDirtyInk(json)
+        val json = jsonSerializer.fromMeTLMultiWordText(gennedText)
+        val text = jsonSerializer.toMeTLMultiWordText(json)
 
-      dirtyInk should equal(genDirtyInk)
+        text should equal(gennedText)
+      }
     }
-  }
 
-  test("parse metl dirty image to json and back") {
-    forAll (genDirtyImage) { (genDirtyImage: MeTLDirtyImage) =>
+    test("parse metl dirty ink to json and back") {
+      forAll (genDirtyInk) { (gennedDirtyInk: MeTLDirtyInk) =>
 
-      val json = jsonSerializer.fromMeTLDirtyImage(genDirtyImage)
-      val dirtyImage = jsonSerializer.toMeTLDirtyImage(json)
+        val json = jsonSerializer.fromMeTLDirtyInk(gennedDirtyInk)
+        val dirtyInk = jsonSerializer.toMeTLDirtyInk(json)
 
-      dirtyImage should equal(genDirtyImage)
+        dirtyInk should equal(gennedDirtyInk)
+      }
     }
-  }
 
-  test("parse metl dirty text to json and back") {
-    forAll (genDirtyText) { (genDirtyText: MeTLDirtyText) =>
+    test("parse metl dirty image to json and back") {
+      forAll (genDirtyImage) { (gennedDirtyImage: MeTLDirtyImage) =>
 
-      val json = jsonSerializer.fromMeTLDirtyText(genDirtyText)
-      val dirtyText = jsonSerializer.toMeTLDirtyText(json)
+        val json = jsonSerializer.fromMeTLDirtyImage(gennedDirtyImage)
+        val dirtyImage = jsonSerializer.toMeTLDirtyImage(json)
 
-      dirtyText should equal(genDirtyText)
+        dirtyImage should equal(gennedDirtyImage)
+      }
     }
-  }
 
-  test("parse metl command to json and back") {
-    forAll (genCommand) { (genCommand: MeTLCommand) =>
+    test("parse metl dirty text to json and back") {
+      forAll (genDirtyText) { (gennedDirtyText: MeTLDirtyText) =>
 
-      val json = jsonSerializer.fromMeTLCommand(genCommand)
-      val command = jsonSerializer.toMeTLCommand(json)
+        val json = jsonSerializer.fromMeTLDirtyText(gennedDirtyText)
+        val dirtyText = jsonSerializer.toMeTLDirtyText(json)
 
-      command should equal(genCommand)
+        dirtyText should equal(gennedDirtyText)
+      }
     }
-  }
 
-  test("theme to json and back"){
-    forAll(genTheme){ (genTheme: MeTLTheme) =>
-      val json = jsonSerializer.fromTheme(genTheme)
-      val theme = jsonSerializer.toTheme(json)
+    test("parse metl command to json and back") {
+      forAll (genCommand) { (gennedCommand: MeTLCommand) =>
 
-      theme should equal(genTheme)
+        val json = jsonSerializer.fromMeTLCommand(gennedCommand)
+        val command = jsonSerializer.toMeTLCommand(json)
+
+        command should equal(gennedCommand)
+      }
     }
-  }
 
-  ignore("parse submission to json and back") {
-    forAll (genSubmission) { (genSubmission: MeTLSubmission) =>
-
-      val json = jsonSerializer.fromSubmission(genSubmission)
-      val submission = jsonSerializer.toSubmission(json)
-
-      submission should equal(genSubmission)
+    test("parse submission to json and back") {
+      forAll (genSubmission) { (gennedSubmission: MeTLSubmission) =>
+        val json = jsonSerializer.fromSubmission(gennedSubmission)
+        val submission = jsonSerializer.toSubmission(json)
+        submission should equal(gennedSubmission)
+      }
     }
   }
 }
