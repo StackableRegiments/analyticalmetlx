@@ -179,12 +179,12 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
       }
     }
 
-    ignore("parse metl image to json and back") {
+    test("parse metl image to json and back") {
       forAll (genImage) { (gennedImage: MeTLImage) =>
 
         val json = jsonSerializer.fromMeTLImage(gennedImage)
         val image = jsonSerializer.toMeTLImage(json)
-        info("toMeTLImage: Creates Full(Array.empty[Byte]) instead of Empty, and Array instead of WrappedArray")
+        //info("toMeTLImage: Creates Full(Array.empty[Byte]) instead of Empty, and Array instead of WrappedArray")
 
         image should equal(gennedImage)
       }
@@ -250,7 +250,7 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
       }
     }
 
-    ignore("parse submission to json and back") {
+    test("parse submission to json and back") {
       forAll (genSubmission) { (gennedSubmission: MeTLSubmission) =>
         val json = jsonSerializer.fromSubmission(gennedSubmission)
         val submission = jsonSerializer.toSubmission(json)

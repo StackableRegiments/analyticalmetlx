@@ -637,7 +637,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       case input:JObject => {
         val mc = parseJObjForMeTLContent(input,config)
         val cc = parseJObjForCanvasContent(input)
-        val slide = getIntByName(input,"slide")
+        val slide = getStringByName(input,"slide")
         val url = getStringByName(input,"url")
         val title = getStringByName(input,"title")
         val blacklistObjs = getListOfObjectsByName(input,"blacklist")
@@ -646,7 +646,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
           val highlight = toColor(getColorByName(blo,"highlight"))
           SubmissionBlacklistedPerson(username,highlight)
         }).toList
-        MeTLSubmission(config,mc.author,mc.timestamp,title,slide,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
+        MeTLSubmission(config,mc.author,mc.timestamp,title,slide.toInt,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
       }
       case _ => MeTLSubmission.empty
     }
