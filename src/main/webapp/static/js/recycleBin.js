@@ -1,5 +1,6 @@
 var RecycleBin = (function(){
     var deletedContent = [];
+		var undeletedContent = [];
 		var recycleBinDatagrid = {};
 		var actionButtonsTemplate = {};
 		var reRenderDatagrid = function(){
@@ -38,23 +39,28 @@ var RecycleBin = (function(){
 						readOnly:true,
 						sorting:false,
 						itemTemplate:function(thumbnailUrl,stanza){
+							var defaultElem = $("<span/>",{text:"no preview"});
 							if ("type" in stanza){
+								var popupTitle = sprintf("Deleted %s from %s at %s on slide %s",stanza.type,stanza.author,new Date(stanza.timestamp),stanza.slide);
 								if (stanza.type == "ink" || stanza.type == "image"){
-									var imgSrc = stanza.canvas.toDataURL("image/png");
-									var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
-										var title = sprintf("Deleted content from %s at %s on slide %s",stanza.author,new Date(stanza.timestamp),stanza.slide);
-										$.jAlert({
-											title:title,
-											closeOnClick:true,
-											width:"90%",
-											content:$("<img/>",{src:imgSrc})[0].outerHTML
-										});
-									});							
-									return img;
+									if ("canvas" in stanza){
+										var imgSrc = stanza.canvas.toDataURL("image/png");
+										var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+											$.jAlert({
+												title:popupTitle,
+												closeOnClick:true,
+												width:"90%",
+												content:$("<img/>",{src:imgSrc})[0].outerHTML
+											});
+										});							
+										return img;
+									} else {
+										return defaultElem;
+									}
 								} else {
-									return $("<span/>",{text:"no preview"});
+									return defaultElem; 
 								}
-							} else return $("<span/>");
+							} else return defaultElem;
 						}
 					},
 					{name:"slide",type:"number",title:"Slide",readOnly:true},
@@ -86,7 +92,6 @@ var RecycleBin = (function(){
 									oldIdentity:stanza.identity,
 									newIdentity:newIdentity	
 								};
-								console.log("restoring:",stanza,newStanza,newUndeletedContentItem);
 								sendStanza(newStanza);
 								sendStanza(newUndeletedContentItem);
 							});
@@ -127,17 +132,23 @@ var RecycleBin = (function(){
 				reRenderDatagrid();
     });
 		var filteredRecycleBin = function(){
+			var content = _.reject(deletedContent,function(dc){
+				return _.some(undeletedContent,function(udc){
+					return udc.elementType == dc.type && udc.oldIdentity == dc.identity && udc.timestamp > dc.timestamp;
+				});
+			});
 			if (Conversations.shouldModifyConversation()){
-				return deletedContent;
+				return content;
 			}	else {
 				var me = UserSettings.getUsername();
-				_.filter(deletedContent,function(stanza){
-					return stanza.author = me;
+				return _.filter(content,function(stanza){
+					return stanza.author == me;
 				});
 			}
 		};
     var clearState = function(){
-        deletedContent = [];
+			deletedContent = [];
+			undeletedContent = [];
     };
     var historyReceivedFunction = function(history){
         try {
@@ -157,38 +168,52 @@ var RecycleBin = (function(){
         }
     };
     var onCanvasContentDeleted = function(stanza,skipRender){
-			if ("type" in stanza){
-				switch(stanza.type){
-					case "ink":
-						prerenderInk(stanza);
-						break;
-					case "text":
-						prerenderText(stanza);
-						break;
-					case "image":
-						prerenderImage(stanza);
-						break;
-					case "multiWordText":
-						prerenderText(stanza);
-						break;
-					case "video":
-						//prerenderVideo(stanza);
-						break;
-					default:
-						break;
+			try {
+				if ("type" in stanza){
+					switch(stanza.type){
+						case "ink":
+							prerenderInk(stanza);
+							break;
+						case "text":
+							prerenderText(stanza);
+							break;
+						case "image":
+							var image = stanza;
+							var dataImage = new Image();
+							image.imageData = dataImage;
+							dataImage.onload = function(){
+									if(image.width == 0){
+											image.width = dataImage.naturalWidth;
+									}
+									if(image.height == 0){
+											image.height = dataImage.naturalHeight;
+									}
+									image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
+									prerenderImage(image);
+							}
+							dataImage.src = calculateImageSource(image);
+							break;
+						case "multiWordText":
+							prerenderText(stanza);
+							break;
+						case "video":
+							//prerenderVideo(stanza);
+							break;
+						default:
+							break;
+					}
 				}
+				if ("identity" in stanza && "type" in stanza){
+					deletedContent.push(stanza);
+					reRenderDatagrid();
+				}
+			} catch (e) {
+				console.log("RecycleBin.onCanvasContentDeleted",e,stanza);
 			}
-			deletedContent = _.filter(deletedContent,function(elem){
-				return "identity" in elem && "type" in elem && "identity" in stanza && "type" in stanza && elem.identity != stanza.identity && elem.type != stanza.type;
-			});
-			deletedContent.push(stanza);
-			reRenderDatagrid();
     };
 		var onStanzaReceived = function(stanza){
 			if (stanza != undefined && "type" in stanza && stanza.type == "undeletedCanvasContent" && "elementType" in stanza && "oldIdentity" in stanza){
-				deletedContent = _.filter(deletedContent,function(dc){
-					return stanza.elementType != dc.type && stanza.oldIdentity != dc.identity;
-				});
+				undeletedContent.push(stanza);
 				reRenderDatagrid();
 			}
 		};
@@ -203,7 +228,15 @@ var RecycleBin = (function(){
 			});
 		});
     return {
-			getAllDeletedContent:function(){return filteredRecycleBin();},
+			getAllDeletedContent:function(){
+				return filteredRecycleBin();
+			},
+			getRawDeletedContent:function(){
+				return deletedContent;
+			},
+			getUndeletedContent:function(){
+				return undeletedContent;
+			},
 			reRender:reRenderDatagrid
     };
 })();
