@@ -1,6 +1,7 @@
 package com.metl.data
 
 import com.metl.utils._
+import com.metl.model._
 
 import net.liftweb.util.Helpers._
 import net.liftweb.common._
@@ -44,8 +45,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   }
 
   protected var outputHook:MeTLStanza => Unit = (s) => {}
-
   protected var stanzas:List[MeTLStanza] = List.empty[MeTLStanza]
+  protected var themes:List[Theme] = List.empty[Theme]
   protected var canvasContents:List[MeTLCanvasContent] = List.empty[MeTLCanvasContent]
   protected var highlighters:List[MeTLInk] = List.empty[MeTLInk]
   protected var inks:List[MeTLInk] = List.empty[MeTLInk]
@@ -68,6 +69,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var videoStreams:List[MeTLVideoStream] = List.empty[MeTLVideoStream]
   protected var unhandledCanvasContents:List[MeTLUnhandledCanvasContent] = List.empty[MeTLUnhandledCanvasContent]
   protected var unhandledStanzas:List[MeTLUnhandledStanza] = List.empty[MeTLUnhandledStanza]
+  protected var undeletedCanvasContents:List[MeTLUndeletedCanvasContent] = List.empty[MeTLUndeletedCanvasContent]
+  protected var deletedCanvasContents:List[MeTLCanvasContent] = List.empty[MeTLCanvasContent]
 
   def getLatestCommands:Map[String,MeTLCommand] = latestCommands
 
@@ -78,7 +81,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getImages = images
   def getVideos = videos
   def getTexts = texts
-  def getMultiWordTexts = multiWordTexts 
+  def getMultiWordTexts = multiWordTexts
   def getQuizzes = quizzes
   def getQuizResponses = quizResponses
   def getSubmissions = submissions
@@ -88,6 +91,9 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getVideoStreams = videoStreams
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
+  def getThemes = themes
+  def getUndeletedCanvasContents = undeletedCanvasContents
+  def getDeletedCanvasContents = deletedCanvasContents
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -137,10 +143,16 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLVideoStream => addVideoStream(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
+    case s:MeTLUndeletedCanvasContent => addMeTLUndeletedCanvasContent(s)
     case _ => {
       warn("makeHistory: I don't know what to do with a MeTLStanza: %s".format(s))
       this
     }
+  }
+
+  def addTheme(t:Theme) = {
+    themes = t :: themes
+    println("Theme count: %s".format(themes.length))
   }
 
   def addStanza(s:MeTLStanza) = Stopwatch.time("History.addStanza",{
@@ -224,6 +236,13 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
     this
   })
+  def addMeTLUndeletedCanvasContent(s:MeTLUndeletedCanvasContent,store:Boolean = true) = Stopwatch.time("History.addMeTLUndeletedCanvasContent",{
+    if (store){
+      outputHook(s)
+      undeletedCanvasContents = undeletedCanvasContents ::: List(s)
+    }
+    this
+  })
   def addMeTLUnhandledStanza(s:MeTLUnhandledStanza,store:Boolean = true) = Stopwatch.time("History.addMeTLUnhandledStanza",{
     if (store){
       outputHook(s)
@@ -279,6 +298,13 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     this
   })
 
+  def addDeletedCanvasContent(s:MeTLCanvasContent,store:Boolean = true) = Stopwatch.time("History.addDeletedCanvasContent",{ // this function is only here for reconstructing archived histories.  It shouldn't be used by the general use-case of the MeTL behaviour.
+    if (store){
+      outputHook(s)
+      deletedCanvasContents = deletedCanvasContents ::: List(s)
+    }
+  })
+
   def addAttendance(s:Attendance,store:Boolean = true) = Stopwatch.time("History.addAttendance",{
     if (store){
       outputHook(s)
@@ -290,7 +316,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     if (store){
       outputHook(s)
       val (candidates,remainder) = files.partition(_.id == s.id)
-      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))  
+      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))
     }
     this
   })
@@ -454,8 +480,10 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     item.map(s => s match {
       case i:MeTLInk => {
         calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
-        if (store)
+        if (store){
           outputHook(dirtyInk)
+        }
+        deletedCanvasContents = deletedCanvasContents ::: List(i)
         update(true)
       }
       case _ => {}
@@ -474,8 +502,10 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     item.map(s => s match {
       case i:MeTLImage => {
         calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
-        if (store)
+        if (store){
           outputHook(dirtyImage)
+        }
+        deletedCanvasContents = deletedCanvasContents ::: List(i)
         update(true)
       }
       case _ => {}
@@ -488,14 +518,15 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     val (item,remaining) = getCanvasContents.partition(s => s match {
       case i:MeTLVideo => dirtyVideo.isDirtierFor(i)
       case _ => false
-    }
-    )
+    })
     canvasContents = remaining
     item.map(s => s match {
       case i:MeTLVideo => {
         calculateBoundsWithout(i.left,i.right,i.top,i.bottom)
-        if (store)
+        if (store){
           outputHook(dirtyVideo)
+        }
+        deletedCanvasContents = deletedCanvasContents ::: List(i)
         update(true)
       }
       case _ => {}
@@ -514,14 +545,18 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     item.map(s => s match {
       case t:MeTLText => {
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
-        if (store)
+        if (store){
           outputHook(dirtyText)
+        }
+        deletedCanvasContents = deletedCanvasContents ::: List(t)
         update(true)
       }
       case t:MeTLMultiWordText => {
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
-        if (store)
+        if (store){
           outputHook(dirtyText)
+        }
+        deletedCanvasContents = deletedCanvasContents ::: List(t)
         update(true)
       }
       case _ => {}
@@ -540,8 +575,10 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     item.map(s => s match {
       case t:MeTLMultiWordText => {
         calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
-        if (store)
+        if (store) {
           outputHook(dirtyText)
+        }
+        deletedCanvasContents = deletedCanvasContents ::: List(t)
         update(true)
       }
       case _ => {}

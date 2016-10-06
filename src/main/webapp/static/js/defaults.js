@@ -51,6 +51,9 @@ var Colors = (function(){
             return "#"+toHex(opacity)+rgb.substring(1,7);
         }
     };
+		var getColorForColorPartsFunction = function(a,r,g,b){
+			return ["#"+toHex(r)+toHex(g)+toHex(b),a];
+		};
     var getColorForNameFunction = function(name){
         if (name.indexOf("#") == 0 && name.length == 7){
             var a = 255;
@@ -73,7 +76,25 @@ var Colors = (function(){
             }
         }
     };
-
+    var getColorObjForHexFunction = function(hex){
+			var name = hex;
+			if (name.indexOf("#") == 0){
+				name = name.substring(1);
+			}
+			if (name.length == 6){
+					var a = 255;
+					var r = get8BitHexFromString(name,0);
+					var g = get8BitHexFromString(name,2);
+					var b = get8BitHexFromString(name,4);
+					return [toHex(r)+toHex(g)+toHex(b),a];
+			} else if (name.length == 8){
+					var a = get8BitHexFromString(name,0);
+					var r = get8BitHexFromString(name,2);
+					var g = get8BitHexFromString(name,4);
+					var b = get8BitHexFromString(name,6);
+					return [toHex(r)+toHex(g)+toHex(b),a];
+			} else return [defaultColor[1],defaultColor[2]];
+    };
 		var niceColours = [
 			"#D4C2FC",
 			"#7B287D",
@@ -115,8 +136,12 @@ var Colors = (function(){
     return {
         getAllNamedColors:getAllNamedColorsFunction,
         getNameForColor:getNameForColorFunction,
+				getColorForColorParts:getColorForColorPartsFunction,
         getColorForName:getColorForNameFunction,
-				getColorForSeed:colorFor
+				getColorObjForHex:getColorObjForHexFunction,
+				getColorForSeed:colorFor,
+				getDefaultColor:function(){return defaultColor;},
+				getDefaultColorObj:function(){return [defaultColor[1],defaultColor[2]];}
     }
 })();
 

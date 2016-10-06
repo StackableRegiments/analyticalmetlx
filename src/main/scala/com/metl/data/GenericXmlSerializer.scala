@@ -2,6 +2,7 @@ package com.metl.data
 
 import com.metl.utils._
 
+import com.metl.model._
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -32,6 +33,24 @@ trait XmlUtils {
     <privacy>{p.privacy.toString.toLowerCase}</privacy>
     <slide>{p.slide}</slide>
     <identity>{p.identity}</identity>
+  }
+  def themeToXml(t:MeTLTheme):NodeSeq = <theme>
+  <author>{t.author}</author>
+  <text>{t.theme.text}</text>
+  <origin>{t.theme.origin}</origin>
+  <location>{t.location}</location>
+  <metlMetaData><timestamp>{t.timestamp}</timestamp></metlMetaData>
+  <audiences>{t.audiences.map(a => {
+    <audience domain={a.domain} name={a.name} type={a.audienceType} action={a.action}/>
+  })}</audiences>
+  </theme>
+  def parseTheme(x:NodeSeq,config:ServerConfiguration = ServerConfiguration.empty):MeTLTheme = {
+    val m = parseMeTLContent(x)
+    val author = getStringByName(x,"author")
+    val text = getStringByName(x,"text")
+    val location = getStringByName(x,"location")
+    val origin = getStringByName(x,"origin")
+    MeTLTheme(config,m.author,m.timestamp,location,Theme(author,text,origin),m.audiences)
   }
   def parseMeTLContent(i:NodeSeq,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
     val author = getStringByName(i,"author")
@@ -92,8 +111,10 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       case i:NodeSeq if hasChild(i,"attendance") => toMeTLAttendance(i)
       //      case i:NodeSeq if hasChild(i,"body") => toMeTLCommand(i)
       case i:NodeSeq if hasChild(i,"command") => toMeTLCommand(i)
+      case i:NodeSeq if hasChild(i,"theme") => parseTheme(i)
       case i:NodeSeq if hasChild(i,"fileResource") => toMeTLFile(i)
       case i:NodeSeq if hasChild(i,"videoStream") => toMeTLVideoStream(i)
+      case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
       case other:NodeSeq => toMeTLUnhandledData(other)
@@ -121,16 +142,26 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     metlContentToXml(rootName,input,parsedCanvasContentToXml(ParsedCanvasContent(input.target,input.privacy,input.slide,input.identity)) ++ additionalNodes)
   })
   override def fromHistory(input:History):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromHistory", {
-    <history jid={input.jid}>{input.getAll.map(i => fromMeTLData(i))}</history>
+      <history jid={input.jid}>{input.getAll.map(i => fromMeTLData(i))}<deletedContents>{input.getDeletedCanvasContents.map(dcc => fromMeTLData(dcc))}</deletedContents></history>
   })
 
   override def toHistory(input:NodeSeq):History = Stopwatch.time("GenericXmlSerializer.toHistory",{
     val history = new History((input \ "@jid").headOption.map(_.text).getOrElse(""))
     input match {
-      case e:Elem => e.child.foreach(c => toMeTLData(c) match {
-        case ms:MeTLStanza => history.addStanza(ms)
-        case _ => {}
-      })
+      case e:Elem => e.child.foreach{
+        case el:Elem if el.label == "deletedContents" => {
+          el.child.foreach{
+            case c:NodeSeq => toMeTLData(c) match {
+              case ms:MeTLCanvasContent => history.addDeletedCanvasContent(ms)
+              case _ => {}
+            }
+          }
+        }
+        case c:NodeSeq => toMeTLData(c) match {
+          case ms:MeTLStanza => history.addStanza(ms)
+          case _ => {}
+        }
+      }
     }
     history
   })
@@ -158,7 +189,21 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     case s:String if s == xmlType => XML.loadString(i.unhandled)
     case _ => NodeSeq.Empty
   }
-
+  override def toMeTLUndeletedCanvasContent(input:NodeSeq):MeTLUndeletedCanvasContent = {
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val elementType = getStringByName(input,"elementType")
+    val oldIdentity = getStringByName(input,"oldIdentity")
+    val newIdentity = getStringByName(input,"newIdentity")
+    MeTLUndeletedCanvasContent(config,m.author,m.timestamp,c.target,c.privacy,c.slide,c.identity,elementType,oldIdentity,newIdentity,m.audiences)
+  }
+  override def fromMeTLUndeletedCanvasContent(input:MeTLUndeletedCanvasContent):NodeSeq = {
+    canvasContentToXml("undeletedCanvasContent",input,Seq(
+      <elementType>{input.elementType}</elementType>,
+      <oldIdentity>{input.oldElementIdentity}</oldIdentity>,
+      <newIdentity>{input.newElementIdentity}</newIdentity>
+    ))
+  }
   override def toMeTLMoveDelta(input:NodeSeq):MeTLMoveDelta = Stopwatch.time("GenericXmlSerializer.toMeTLMoveDelta", {
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)

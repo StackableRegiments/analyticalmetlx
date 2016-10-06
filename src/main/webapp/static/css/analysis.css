@@ -31,6 +31,7 @@ body{
 
 #lang text{
     stroke:black;
+    fill:white;
     stroke-width:0.5;
 }
 .cloudWord{
