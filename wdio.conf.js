@@ -41,12 +41,18 @@ exports.config = {
     capabilities: {
         teacher:{
             desiredCapabilities:{
-                browserName: 'chrome'
+                browserName: 'chrome',
+		name:'teacher',
+		build:'$SHA SNAP_PIPELINE_COUNTER : $SNAP_COMMIT_SHORT',
+		project:'simple'
             }
         },
         student:{
             desiredCapabilities:{
-                browserName: 'chrome'
+                browserName: 'chrome',
+		name:'student',
+		build:'$SHA SNAP_PIPELINE_COUNTER : $SNAP_COMMIT_SHORT',
+		project:'simple'
             }
         }
     },
