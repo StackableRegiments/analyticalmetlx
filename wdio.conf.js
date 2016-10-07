@@ -43,7 +43,7 @@ exports.config = {
             desiredCapabilities:{
                 browserName: 'chrome',
 		name:'teacher',
-		build:'$SHA SNAP_PIPELINE_COUNTER : $SNAP_COMMIT_SHORT',
+		build:'$SNAP_PIPELINE_COUNTER : $SHA_COMMIT_SHORT',
 		project:'simple'
             }
         },
@@ -51,7 +51,7 @@ exports.config = {
             desiredCapabilities:{
                 browserName: 'chrome',
 		name:'student',
-		build:'$SHA SNAP_PIPELINE_COUNTER : $SNAP_COMMIT_SHORT',
+		build:'$SNAP_PIPELINE_COUNTER : $SHA_COMMIT_SHORT',
 		project:'simple'
             }
         }
