@@ -106,6 +106,7 @@ class CryptoSuite extends FunSuite with CryptoSuiteBehaviours {
     def descbc = new DESCBCCrypto
     def aescbc = new AESCBCCrypto
 
+    /*
     ignore("construct rsa commutative crypto") { 
         info("unable to construct, 'java.security.NoSuchAlgorithmException: Cannot find any provider supporting RSA/None/NoPadding'")
         val crypto = new RSACommutative
@@ -116,6 +117,7 @@ class CryptoSuite extends FunSuite with CryptoSuiteBehaviours {
         info("unable to construct, 'java.security.InvalidAlgorithmParameterException: ECB mode cannot use IV'")
         val crypto = new DESECBCrypto
     }
+    */
 
     testsFor(encryptAndDecrypt(rsaNormal))
     testsFor(xmlKeysRSA(rsaNormal))

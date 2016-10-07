@@ -29,6 +29,7 @@ var Progress = (function(){
         syncMoveReceived:{},
         userGroupsReceived:{},
         usernameReceived:{},
-        userOptionsReceived:{}
+        userOptionsReceived:{},
+				onCanvasContentDeleted:{}
     }
 })();

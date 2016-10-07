@@ -57,6 +57,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       H2UnhandledCanvasContent,
       H2UnhandledStanza,
       H2UnhandledContent,
+      H2UndeletedCanvasContent,
       DatabaseVersion
     ):_*
   )
@@ -147,6 +148,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       case s:MeTLMoveDelta => Some(serializer.fromMeTLMoveDelta(s).room(jid))
       case s:MeTLFile => Some(serializer.fromMeTLFile(s).room(jid))
       case s:MeTLVideoStream => Some(serializer.fromMeTLVideoStream(s).room(jid))
+      case s:MeTLUndeletedCanvasContent => Some(serializer.fromMeTLUndeletedCanvasContent(s).room(jid))
       case s:MeTLUnhandledStanza => Some(serializer.fromMeTLUnhandledStanza(s).room(jid))
       case s:MeTLUnhandledCanvasContent => Some(serializer.fromMeTLUnhandledCanvasContent(s).room(jid))
       case other => {
@@ -190,6 +192,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
       () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
+      () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
     ).par.map(f => f()).toList//.toList.foreach(group => group.foreach(gf => gf()))

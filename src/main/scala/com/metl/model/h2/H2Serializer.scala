@@ -81,6 +81,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
           case "file" => toMeTLFile(i.asInstanceOf[H2File])
           case "videoStream" => toMeTLVideoStream(i.asInstanceOf[H2VideoStream])
           case "quizResponse" => toMeTLQuizResponse(i.asInstanceOf[H2QuizResponse])
+          case "undeletedCanvasContent" => toMeTLUndeletedCanvasContent(i.asInstanceOf[H2UndeletedCanvasContent])
           case "unhandledCanvasContent" => toMeTLUnhandledCanvasContent(i.asInstanceOf[H2UnhandledCanvasContent])
           case "unhandledStanza" => toMeTLUnhandledStanza(i.asInstanceOf[H2UnhandledStanza])
           //case "unhandledData" => toMeTLUnhandledData(i.asInstanceOf[H2UnhandledContent]) //this is below the interest of the serializer
@@ -125,6 +126,14 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   override def fromMeTLAttendance(i:Attendance):H2Attendance = {
     incStanza(H2Attendance.create,i,"attendance").location(i.location).present(i.present)
   }
+  def toMeTLUndeletedCanvasContent(input:H2UndeletedCanvasContent):MeTLUndeletedCanvasContent = {
+    val cc = decCanvasContent(input)
+    MeTLUndeletedCanvasContent(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,input.elementType.get,input.oldIdentity.get,input.newIdentity.get,cc.audiences)
+  }
+  override def fromMeTLUndeletedCanvasContent(input:MeTLUndeletedCanvasContent):H2UndeletedCanvasContent = {
+    incCanvasContent(H2UndeletedCanvasContent.create,input,"undeletedCanvasContent").oldIdentity(input.oldElementIdentity).newIdentity(input.newElementIdentity).elementType(input.elementType)
+  }
+
   def toMeTLInk(i:H2Ink):MeTLInk = {
     val cc = decCanvasContent(i)
     MeTLInk(config,cc.author,cc.timestamp,i.checksum.get,i.startingSum.get,toPointList(i.points.get),toColor(i.color.get),i.thickness.get,i.isHighlighter.get,cc.target,cc.privacy,cc.slide,cc.identity)
