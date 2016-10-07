@@ -103,7 +103,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   def getRoomProvider(name:String,filePath:String) = {
     val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
     val safetiedIdleTimeout = Some(idleTimeout.getOrElse(30 * 60 * 1000L))
-    println("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
+    trace("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
     new HistoryCachingRoomProvider(name,safetiedIdleTimeout)
   }
   protected def ifConfigured(in:NodeSeq,elementName:String,action:NodeSeq=>Unit, permitMultipleValues:Boolean = false):Unit = {
@@ -203,7 +203,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
       Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
     },true)
-    println("configured groupsProviders: %s".format(Globals.groupsProviders))
+    info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
     xmppServer = (for (
@@ -242,7 +242,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       })
     ) yield {
       val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy)
-      println("setting up resourceCaches with config: %s".format(cacheConfig))
+      info("setting up resourceCaches with config: %s".format(cacheConfig))
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
   }
@@ -354,7 +354,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
 
-class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){
+class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
   import net.sf.ehcache.loader.{CacheLoader}
   import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
@@ -374,7 +374,6 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     def init:Unit = {}
     def load(key:Object):Object = key match {
       case k:A => {
-        //println("%s MISS %s".format(cacheName,key))
         creationFunc(k).asInstanceOf[Object]
       }
       case _ => null
@@ -390,7 +389,13 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   def update(key:A,value:B):Unit = {
     cache.put(new Element(key,value))
   }
-  def startup = cache.initialise
+  def startup = try {
+    cache.initialise
+  } catch {
+    case e:Exception => {
+      warn("exception initializing ehcache: %s".format(e.getMessage))
+    }
+  }
   def shutdown = cache.dispose()
 }
 

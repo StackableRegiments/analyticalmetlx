@@ -7,28 +7,29 @@
     "globals_path" : "",
 
     "selenium" : {
-        "start_process" : true,
-        "server_path" : "tools/selenium-2.53.1-server.jar",
+        "start_process" : false,
+        "server_path" : "",
         "log_path" : "logs",
         "host" : "127.0.0.1",
         "port" : 4444,
         "cli_args" : {
-            "webdriver.chrome.driver" : "tools/chromedriver/2.24-x64-chromedriver",
-            "webdriver.gecko.driver" : "tools/geckodriver/0.10.0-x64-geckodriver",
-            "webdriver.ie.driver" : "tools/iedriver/2.53.1-x64-IEDriverServer.exe"
+            "webdriver.chrome.driver" : "",
+            "webdriver.ie.driver" : ""
         }
     },
 
     "test_settings" : {
         "default" : {
             "launch_url" : "http://localhost",
-            "selenium_port"  : 4444,
-            "selenium_host"  : "localhost",
+            "selenium_port"  : 80,
+            "selenium_host"  : "ondemand.saucelabs.com",
             "silent": true,
             "screenshots" : {
                 "enabled" : false,
                 "path" : ""
             },
+            "username":"${SAUCE_USERNAME}",
+            "access_key":"${SAUCE_ACCESS_KEY}",
             "desiredCapabilities": {
                 "browserName": "chrome",
                 "javascriptEnabled": true,

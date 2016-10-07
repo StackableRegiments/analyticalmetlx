@@ -19,9 +19,9 @@ import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.json.JsonAST._
 
-class Analytics {
+class Analytics extends Logger {
   def render(in:NodeSeq):NodeSeq = S.param("source").map(source => {
-    println("Loading dashboard for %s".format(source))
+    info("Loading dashboard for %s".format(source))
     val clazz = "lift:comet?type=Analytics&amp;name=%s".format(source)
     <div class={clazz}>{in}</div>
   }).openOr(<div>No context provided</div>)
