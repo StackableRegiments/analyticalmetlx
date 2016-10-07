@@ -100,7 +100,7 @@ class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpS
 class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends HttpServletRequestWrapper(request){
   protected val cachedData = IOUtils.toByteArray(getInputStream)
   def duplicate:CloneableHttpServletRequestWrapper = {
-    val clonedReq = new MockHttpServletRequest(new java.net.URL(request.getRequestURL.toString),request.getContextPath)    
+    val clonedReq = new MockHttpServletRequest(new java.net.URL(request.getRequestURL.toString),request.getContextPath)
     clonedReq.session = request.getSession
     clonedReq.parameters = parameters
     val bytes = getBytes
@@ -191,7 +191,7 @@ class LowLevelSessionStore {
 }
 
 trait HttpReqUtils {
-  protected val reqIdParameter = "replayRequest"  
+  protected val reqIdParameter = "replayRequest"
   protected def getIdFromReq(req:HttpServletRequest):String = {
     getReqId(req).getOrElse(req.getParameter(reqIdParameter))
   }
@@ -220,7 +220,7 @@ trait HttpReqUtils {
       case null => None
       case s:String if s.length > 0 => Some(s)
       case other => Some(other.toString)
-    } 
+    }
   }
   protected def embedReqId(req:HttpServletRequest,id:String):HttpServletRequest = {
     req.setAttribute(reqIdParameter,id)
@@ -264,7 +264,7 @@ class LoggedInFilter extends Filter with HttpReqUtils {
           sessionStore.updateSession(session,(s:AuthSession) => {
             val newId = generateIdForReq(req)
             val newAuthSession:InProgressAuthSession = auth.generateStore(EmptyAuthSession(session),s.getStoredRequests.updated(newId,freezeRequest(req)))
-            embedReqId(req,newId) 
+            embedReqId(req,newId)
             newAuthSession
           })
           true
@@ -344,7 +344,7 @@ class LoggedInFilter extends Filter with HttpReqUtils {
       rejectWhenNotAuthenticated = (configRoot \\ "serverConfiguration" \\ "authenticationConfiguration" \\ "rejectWhenNotAuthenticated").flatMap(rejections => getChildElemsFrom(rejections).flatMap(childElem => predicateFunc(childElem))).toList
 
       FilterAuthenticators.authenticator = Some(new MultiAuthenticator(sessionStore,(configRoot \\ "serverConfiguration" \\ "authentication").theSeq.flatMap{
-        case e:Elem => e.child.toList 
+        case e:Elem => e.child.toList
         case _ => Nil
       }.flatMap(elem => {
         val name = (elem \\ "@name").headOption.map(_.text).getOrElse("unlabelled authenticator")
@@ -474,8 +474,8 @@ class LoggedInFilter extends Filter with HttpReqUtils {
         }
         case Right(s) => {
           s match {
-            case has@HealthyAuthSession(Session,requests,username,groups,attrs) => { //let the request through 
-              val storedReqId = getIdFromReq(httpReq) 
+            case has@HealthyAuthSession(Session,requests,username,groups,attrs) => { //let the request through
+              val storedReqId = getIdFromReq(httpReq)
               requests.get(storedReqId).map(storedReq => {
                 sessionStore.updateSession(Session,s => HealthyAuthSession(Session,requests - storedReqId,username,groups,attrs)) // clear the rewrite
                 //sessionStore.updateSession(Session,s => HealthyAuthSession(Session,Map.empty[String,HttpServletRequest],username,groups,attrs)) // clear the rewrite
