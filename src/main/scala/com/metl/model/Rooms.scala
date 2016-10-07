@@ -238,7 +238,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     case sl@ServerToLocalMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ServerToLocalMeTLStanza",sendToChildren(s))
     case Ping => Stopwatch.time("MeTLRoom.ping",{
       if (possiblyCloseRoom){
-
       } else {
         heartbeat
       }
@@ -291,6 +290,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.foreach(j => j._3 ! a)
   })
   def addTheme(theme:Theme) = {
+    info("Theme added: %s".format(theme))
     sendStanzaToServer(MeTLTheme(config,theme.author,new java.util.Date().getTime,location,theme,Nil))
   }
   protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
@@ -318,6 +318,8 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   private def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom",{
     if (location != "global" && joinedUsers.length == 0 && !recentInterest) {
       debug("MeTLRoom(%s):heartbeat.closingRoom".format(location))
+      chunker.close(this)
+      debug("MeTLRoom(%s):closing final chunks".format(location))
       creator.removeMeTLRoom(location)
       true
     } else {
