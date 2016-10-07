@@ -42,17 +42,17 @@ exports.config = {
         teacher:{
             desiredCapabilities:{
                 browserName: 'chrome',
-		name:'teacher',
-		build:'$SNAP_PIPELINE_COUNTER : $SHA_COMMIT_SHORT',
-		project:'simple'
+                name:'teacher',
+                build:'$SNAP_PIPELINE_COUNTER : $SHA_COMMIT_SHORT',
+                project:'simple'
             }
         },
         student:{
             desiredCapabilities:{
                 browserName: 'chrome',
-		name:'student',
-		build:'$SNAP_PIPELINE_COUNTER : $SHA_COMMIT_SHORT',
-		project:'simple'
+                name:'student',
+                build:'$SNAP_PIPELINE_COUNTER : $SHA_COMMIT_SHORT',
+                project:'simple'
             }
         }
     },
@@ -127,7 +127,7 @@ exports.config = {
     // Test reporter for stdout.
     // The only one supported by default is 'dot'
     // see also: http://webdriver.io/guide/testrunner/reporters.html
-    // reporters: ['dot'],
+    reporters: ['dot','mocha-sauce-notifying-reporter'],
     //
     // Options to be passed to Mocha.
     // See the full list at http://mochajs.org/
