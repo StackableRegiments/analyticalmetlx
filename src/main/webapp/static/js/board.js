@@ -103,7 +103,7 @@ function batchTransform(){
         inkIds:[],
         textIds:[],
         multiWordTextIds:[],
-				videoIds:[],
+        videoIds:[],
         imageIds:[],
         xOrigin:0,
         yOrigin:0,
@@ -133,16 +133,16 @@ function sendInk(ink){
 }
 function hexToRgb(hex) {
     if(typeof hex == "object" && hex.alpha) {
-			return Colors.getColorForColorParts(hex.alpha,hex.red,hex.green,hex.blue);
-		} else if (typeof hex == "object" && hex[0] && hex[1] && typeof hex[0] == "string" && typeof hex[1] == "number"){
-			return hex;
-		} else if(typeof hex == "string") {
-			return Colors.getColorObjForHex(hex);
-		} else if(typeof hex == "array") {
-			return hex;
-		} else {
-			return Colors.getDefaultColorObj();
-		}
+        return Colors.getColorForColorParts(hex.alpha,hex.red,hex.green,hex.blue);
+    } else if (typeof hex == "object" && hex[0] && hex[1] && typeof hex[0] == "string" && typeof hex[1] == "number"){
+        return hex;
+    } else if(typeof hex == "string") {
+        return Colors.getColorObjForHex(hex);
+    } else if(typeof hex == "array") {
+        return hex;
+    } else {
+        return Colors.getDefaultColorObj();
+    }
 }
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
@@ -163,18 +163,18 @@ function richTextEditorToStanza(t){
     if(!t.bounds) t.doc.invalidateBounds();
     var bounds = t.bounds;
     var text = t.doc.save();
-		if (t.slide == undefined){
-			t.slide = Conversations.getCurrentSlideJid();
-		};
-		if (t.author == undefined){
-			t.author = UserSettings.getUsername();
-		};
-		if (t.target == undefined){
-			t.target = "presentationSpace";
-		};
-		if (t.privacy == undefined){
-			t.privacy = Privacy.getCurrentPrivacy();
-		};
+    if (t.slide == undefined){
+        t.slide = Conversations.getCurrentSlideJid();
+    };
+    if (t.author == undefined){
+        t.author = UserSettings.getUsername();
+    };
+    if (t.target == undefined){
+        t.target = "presentationSpace";
+    };
+    if (t.privacy == undefined){
+        t.privacy = Privacy.getCurrentPrivacy();
+    };
 
     return {
         author:t.author,
@@ -196,7 +196,6 @@ function richTextEditorToStanza(t){
 function sendRichText(t){
     Modes.text.echoesToDisregard[t.identity] = true;
     var stanza = richTextEditorToStanza(t);
-    console.log(stanza);
     sendStanza(stanza);
 }
 sendRichText = _.debounce(sendRichText,1000);
@@ -206,7 +205,7 @@ var stanzaHandlers = {
     move:moveReceived,
     moveDelta:transformReceived,
     image:imageReceived,
-		video:videoReceived,
+    video:videoReceived,
     text:textReceived,
     multiWordText:richTextReceived,
     command:commandReceived,
@@ -237,19 +236,19 @@ function commandReceived(c){
             return;
         }
         if(Conversations.getIsSyncedToTeacher()){
-					console.log("teacherViewMoved",c);
+            console.log("teacherViewMoved",c);
             var f = function(){
-							var controllerIdentity = c.parameters[4];
-							var slide = ps[5];
-							var autoZoomingMode = c.parameters[6];
-							if (slide == Conversations.getCurrentSlide().id.toString()){
-								if (autoZoomingMode == "true"){
-									zoomToFit();
-								} else {
-									zoomToPage();
-									TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
-								}
-							}
+                var controllerIdentity = c.parameters[4];
+                var slide = ps[5];
+                var autoZoomingMode = c.parameters[6];
+                if (slide == Conversations.getCurrentSlide().id.toString()){
+                    if (autoZoomingMode == "true"){
+                        zoomToFit();
+                    } else {
+                        zoomToPage();
+                        TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
+                    }
+                }
             };
             if(UserSettings.getIsInteractive()){
                 // interactive users don't chase the teacher's viewbox, only projectors do.
@@ -668,7 +667,7 @@ function transformReceived(transform){
                          transform.textIds.length,
                          transform.multiWordTextIds.length,
                          transform.inkIds.length,
-												 transform.videoIds.length));
+                         transform.videoIds.length));
     _.each(trackerFrom(transform.identity),function(tracker){
         updateTracking(tracker);
     });
@@ -904,7 +903,7 @@ function drawInk(ink,incCanvasContext){
     }
 }
 function drawVideo(video,incCanvasContext){
-	  var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(video.bounds);
     visibleBounds.push(video.bounds);
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
@@ -914,25 +913,25 @@ function drawVideo(video,incCanvasContext){
     }
 }
 function videoReceived(video){
-	calculateVideoBounds(video);
-	incorporateBoardBounds(video.bounds);
-	boardContent.videos[video.identity] = video;
-	prerenderVideo(video);
-	WorkQueue.enqueue(function(){
-			if(isInClearSpace(video.bounds)){
-					try {
-							drawVideo(video);
-							Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-					} catch(e){
-							console.log("drawVideo exception",e);
-					}
-					return false;
-			}
-			else{
-					console.log("Rerendering video in contested space");
-					return true;
-			}
-	});
+    calculateVideoBounds(video);
+    incorporateBoardBounds(video.bounds);
+    boardContent.videos[video.identity] = video;
+    prerenderVideo(video);
+    WorkQueue.enqueue(function(){
+        if(isInClearSpace(video.bounds)){
+            try {
+                drawVideo(video);
+                Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+            } catch(e){
+                console.log("drawVideo exception",e);
+            }
+            return false;
+        }
+        else{
+            console.log("Rerendering video in contested space");
+            return true;
+        }
+    });
 }
 function imageReceived(image){
     var dataImage = new Image();

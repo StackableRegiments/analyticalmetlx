@@ -1,3 +1,6 @@
+.functional.sh
+std.out
+.wdio.conf.dyn.js
 target
 output
 logs
