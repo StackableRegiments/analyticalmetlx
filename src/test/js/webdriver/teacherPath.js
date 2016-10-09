@@ -55,22 +55,22 @@ describe('Single teacher running', function() {
         user.keyboard(600,500,"This is a second paragraph.  It exists to be differentiated from the first paragraph.");
         assert.equal(_.keys(user.texts).length,2);
         assert.equal(_.keys(user.textStanzas).length,2);
-        console.log(user.textStanzas[_.keys(user.texts)[1]]);
         assert.equal(user.textStanzas[_.keys(user.texts)[1]].words.length,[
             "Consistently sized run"].length);
     });
-    it("should have selection handles",function(){
-        console.log(user.interactables);
+    it("should have be draggable",function(){
+        var active = user.textStanzas[_.keys(user.texts)[1]];
+        assert.equal(active.x,600);
+        assert.equal(active.y,500);
         assert.equal(user.interactables.manualMove.length,1);
         var handle = user.interactables.manualMove[0];
         var dragPos = user.worldToScreen(handle.bounds[0],handle.bounds[1]);
-        console.log(user.interactables);
         browser.moveToObject("#board",dragPos.x,dragPos.y);
         browser.buttonDown();
         browser.moveToObject("#board",dragPos.x - 200,dragPos.y);
         browser.buttonUp();
-        console.log(user.interactables);
-        browser.debug();
-        assert.equal(dragPos,{x:600,y:300});
+        active = user.textStanzas[_.keys(user.texts)[1]];
+        assert.equal(active.x,400);
+        assert.equal(active.y,500);
     });
 });
