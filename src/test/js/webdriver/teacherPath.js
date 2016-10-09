@@ -36,10 +36,17 @@ describe('Single teacher running', function() {
         browser.doDoubleClick();
         browser.click("#fontLarger");
         assert.equal(_.keys(user.texts).length,1);
-        assert.equal(user.textStanzas[_.keys(user.texts)[0]].words.length,["Before","Enlarged","After","Newline"].length);
+        assert.equal(user.textStanzas[_.keys(user.texts)[0]].words.length,[
+            "Before","Enlarged","After","Newline"].length);
         browser.moveToObject("#board",100,300);
         browser.doDoubleClick();
         browser.click("#redText");
-        assert.equal(user.textStanzas[_.keys(user.texts)[0]].words.length,["Before","Enlarged","After","Red","After","Newline"].length);
+        assert.equal(user.textStanzas[_.keys(user.texts)[0]].words.length,[
+            "Before","Enlarged","After","Red","After","Newline"].length);
+        browser.moveToObject("#board",100,400);
+        browser.doDoubleClick();
+        browser.click("#fontLarger");
+        assert.equal(user.textStanzas[_.keys(user.texts)[0]].words.length,[
+            "Before","Enlarged","After","Red","After","Enlarged","After","Newline"].length);
     });
 });
