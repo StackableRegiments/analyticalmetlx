@@ -60,6 +60,17 @@ describe('Single teacher running', function() {
             "Consistently sized run"].length);
     });
     it("should have selection handles",function(){
+        console.log(user.interactables);
         assert.equal(user.interactables.manualMove.length,1);
+        var handle = user.interactables.manualMove[0];
+        var dragPos = user.worldToScreen(handle.bounds[0],handle.bounds[1]);
+        console.log(user.interactables);
+        browser.moveToObject("#board",dragPos.x,dragPos.y);
+        browser.buttonDown();
+        browser.moveToObject("#board",dragPos.x - 200,dragPos.y);
+        browser.buttonUp();
+        console.log(user.interactables);
+        browser.debug();
+        assert.equal(dragPos,{x:600,y:300});
     });
 });

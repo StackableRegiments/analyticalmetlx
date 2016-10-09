@@ -2247,9 +2247,6 @@
                         return exports.formattingKeys.every(function(key) {
                             var e = _.isEqual(exports.resolveKey(run1,key),
 					      exports.resolveKey(run2,key));
-                            if(!e){
-                                console.log(run1,run2,key,e);
-                            }
                             return e;
                         });
                     };
@@ -2308,7 +2305,6 @@
                                 (typeof current.text != 'string') ||
                                 (typeof run.text != 'string')) {
                                 current = exports.clone(run);
-                                //console.log("Consolidate emit",current);
                                 emit(current);
                             } else {
                                 current.text += run.text;

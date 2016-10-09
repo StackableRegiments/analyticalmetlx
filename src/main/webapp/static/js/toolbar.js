@@ -1170,6 +1170,15 @@ var Modes = (function(){
     return {
         pushCanvasInteractable:pushCanvasInteractableFunc,
         clearCanvasInteractables:clearCanvasInteractableFunc,
+	getCanvasInteractables:function(){
+	    return _.mapValues(Modes.canvasInteractables,function(interactables){
+		return _.map(interactables,function(v){
+		    var _v = _.clone(v);
+		    _v.bounds = _v.getBounds();
+		    return _v;
+		});
+	    });
+	},
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},
