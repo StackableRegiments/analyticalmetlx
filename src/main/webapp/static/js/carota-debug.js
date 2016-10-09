@@ -2240,9 +2240,17 @@
                         script: 'normal'
                     };
 
+		    exports.resolveKey = function(run,key){
+			return (key in run)? run[key] : exports.defaultFormatting[key];
+		    }
                     exports.sameFormatting = function(run1, run2) {
                         return exports.formattingKeys.every(function(key) {
-                            return _.isEqual(run1[key],run2[key]);
+                            var e = _.isEqual(exports.resolveKey(run1,key),
+					      exports.resolveKey(run2,key));
+                            if(!e){
+                                console.log(run1,run2,key,e);
+                            }
+                            return e;
                         });
                     };
 
@@ -2300,6 +2308,7 @@
                                 (typeof current.text != 'string') ||
                                 (typeof run.text != 'string')) {
                                 current = exports.clone(run);
+                                //console.log("Consolidate emit",current);
                                 emit(current);
                             } else {
                                 current.text += run.text;
