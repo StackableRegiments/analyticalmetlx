@@ -35,8 +35,10 @@ describe('Single teacher running', function() {
         browser.leftClick();
         browser.doDoubleClick();
         browser.click("#fontLarger");
-        browser.debug();
+        browser.pause(2000);
         assert.equal(_.keys(user.texts).length,1);
-        assert.equal(_.values(user.texts)[0].words.length,3);//Normal before, large on highlighted word, normal after
+        var stanza = user.textStanzas[_.keys(user.texts)[0]];
+        console.log(stanza);
+        assert.equal(stanza.words.length,4); //Up to enlarged, enlarged, after enlarged, newline
     });
 });
