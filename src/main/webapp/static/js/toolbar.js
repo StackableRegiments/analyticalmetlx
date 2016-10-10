@@ -950,7 +950,6 @@ var Modes = (function(){
                         Modes.select.offset = {x:root.x2,y:root.y2};
                         resizeAspectLocked.rehome(root);
                         blit();
-                        console.log("Aspect locked down");
                         return false;
                     },
                     move:function(worldPos){
@@ -995,12 +994,12 @@ var Modes = (function(){
                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(Modes.select.selected.multiWordTexts,function(text,id){
                             Modes.text.echoesToDisregard[id] = true;
-                            var source = text.doc.save();
-                            _.each(source,function(run){
-                                run.size = run.size * resized.xScale;
-                            });
+                            var range = text.doc.documentRange();
+                            text.doc.select(range.start,range.end);
+                            Modes.text.scaleEditor(text.doc,resized.xScale);
+                            text.doc.select(0,0);
                             text.doc.width(text.doc.width() * resized.xScale);
-                            text.doc.load(source);
+                            text.doc.invalidateBounds();
                         });
                         registerTracker(resized.identity,function(){
                             Progress.call("onSelectionChanged");
@@ -1104,11 +1103,11 @@ var Modes = (function(){
                             word.doc.width() * resized.xScale,
                             Modes.text.minimumWidth / scale()
                         ));
+                        word.doc.invalidateBounds();
                         if(word.doc.save().length > 0){
                             sendRichText(word);
                         }
                     });
-                    Modes.text.invalidateSelectedBoxes();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();
@@ -1269,35 +1268,38 @@ var Modes = (function(){
                     }
                 }
             };
+            var scaleEditor = function(d,factor){
+                var originalRange = d.selectedRange();
+                var refStart = 0;
+                var sizes = [];
+                var refSize = carota.runs.defaultFormatting.size;
+                d.runs(function(referenceRun) {
+                    var runLength = _.size(referenceRun.text);
+                    var newEnd = refStart + runLength;
+                    d.select(refStart,newEnd,true);
+                    var size = d.selectedRange().getFormatting().size || refSize;
+                    _.each(_.range(refStart,newEnd),function(){
+                        sizes.push(size);
+                    });
+                    refStart = newEnd;
+                    refSize = size;
+                },d.range(0,originalRange.end));
+                sizes = sizes.reverse();
+                refStart = originalRange.start;
+                d.runs(function(runToAlter){
+                    var refEnd = refStart + runToAlter.text.length;
+                    d.select(refStart,refEnd,true);
+                    d.selectedRange().setFormatting("size",sizes[refStart] * factor);
+                    refStart = refEnd;
+                },originalRange);
+                d.select(originalRange.start,originalRange.end,true);
+            };
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            var originalRange = d.selectedRange();
-                            var refStart = 0;
-                            var sizes = [];
-                            var refSize = carota.runs.defaultFormatting.size;
-                            d.runs(function(referenceRun) {
-                                var runLength = _.size(referenceRun.text);
-                                var newEnd = refStart + runLength;
-                                d.select(refStart,newEnd,true);
-                                var size = d.selectedRange().getFormatting().size || refSize;
-                                _.each(_.range(refStart,newEnd),function(){
-                                    sizes.push(size);
-                                });
-                                refStart = newEnd;
-                                refSize = size;
-                            },d.range(0,originalRange.end));
-                            sizes = sizes.reverse();
-                            refStart = originalRange.start;
-                            d.runs(function(runToAlter){
-                                var refEnd = refStart + runToAlter.text.length;
-                                d.select(refStart,refEnd,true);
-                                d.selectedRange().setFormatting("size",sizes[refStart] * factor);
-                                refStart = refEnd;
-                            },originalRange);
-                            d.select(originalRange.start,originalRange.end,true);
+                            scaleEditor(d,factor);
                         }
                     });
                 };
@@ -1423,6 +1425,7 @@ var Modes = (function(){
                         }
                     });
                 },
+                scaleEditor:scaleEditor,
                 scrollToCursor:function(editor){
                     var b = editor.bounds;
                     var caretIndex = editor.doc.selectedRange().start;
@@ -2829,7 +2832,7 @@ var Modes = (function(){
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
                         currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-                        strokeCollected(currentStroke.join(" "));
+                        strokeCollected(currentStroke);
                     }
                     boardContext.globalAlpha = 1.0;
                 };

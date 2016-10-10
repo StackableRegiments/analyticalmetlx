@@ -14,11 +14,23 @@ var BoardPage = function(user) {
             user.moveToObject("#board",dragPos.x,dragPos.y);
             user.buttonDown();
             user.moveToObject("#board",dragPos.x + delta.x, dragPos.y + delta.y);
-	    if(delta.debug){
-		user.debug();
-	    }
+            if(delta.debug){
+                user.debug();
+            }
             user.buttonUp();
             return handle;
+        } },
+        swipeUp: {value: function(){
+            user.moveToObject("#board",200,10);
+            user.buttonDown();
+            user.moveToObject("#board",200,-10);
+            user.buttonUp();
+        } },
+        swipeLeft: {value: function(){
+            user.moveToObject("#board",10,10);
+            user.buttonDown();
+            user.moveToObject("#board",-10,10);
+            user.buttonUp();
         } },
         worldToScreen: { value: worldToScreen },
 

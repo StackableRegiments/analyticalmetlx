@@ -2,6 +2,8 @@ var _ = require('lodash');
 var assert = require('assert');
 var board = require('./page/board.page');
 
+var ANIMATION_DELAY = 300;
+
 describe('Single author presenting', function() {
     var user = board(teacher);
     it('should go to application', function () {
@@ -16,7 +18,7 @@ describe('Single author presenting', function() {
     });
     it("should join a new conversation", function() {
         teacher.click("#createConversationButton");
-        teacher.waitForExist(".newConversationTag",5000);
+        teacher.pause(1000);
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
         assert.equal(teacher.execute("return document.readyState").value,"complete");
@@ -63,34 +65,44 @@ describe('Single author presenting', function() {
         assert.equal(active.y,500);
         assert.equal(user.interactables.manualMove.length,1);
         var handle = user.interactables.manualMove[0];
-        user.drag(handle,{x:-200,y:0});
+        user.drag(handle,{x:-500,y:-250});
         active = user.textStanzas[_.keys(user.texts)[1]];
-        assert.equal(active.x,400);
-        assert.equal(active.y,500);
+        assert.equal(active.x,100);
+        assert.equal(active.y,250);
     });
     it("should scale aspect locked",function(){
-        teacher.click("#board",450,550);
-        var handle = user.interactables.resizeAspectLocked[0];
-        user.drag(handle,{x:-100,y:0,debug:true});
         var active = user.textStanzas[_.keys(user.texts)[1]];
-        assert.equal(active.x,400);
-        assert.equal(active.y,500);
         assert.equal(active.width,240);
-        assert.equal(active.words[0].size, 20);
+        assert.equal(active.x,100);
+
+        var handle = user.interactables.resizeAspectLocked[0];
+        user.drag(handle,{x:200,y:0});
+
+        active = user.textStanzas[_.keys(user.texts)[1]];
+        assert.equal(active.x,100);
+        assert.equal(active.width,437);
+        assert.equal(active.words[0].size, 55);
+    });
+    it("should scroll up on swipe out",function(){
+        user.swipeUp();
+    });
+    if("should reselect box",function(){
+        teacher.moveToObject("#board",200,300);
+        teacher.leftClick();
+        assert.equal(user.interactables.resizeFree.length,1);
     });
     it("should rewrap text retaining font size",function(){
-        teacher.click("#board",450,550);
         var handle = user.interactables.resizeFree[0];
-        user.drag(handle,{x:100,y:0});
+	teacher.pause(ANIMATION_DELAY);
+        user.drag(handle,{x:200,y:0});
         var active = user.textStanzas[_.keys(user.texts)[1]];
-        assert.equal(active.x,400);
-        assert.equal(active.y,500);
-        assert.equal(active.width,300);
-        assert.equal(active.words[0].size, 20);
+        assert.equal(active.x,100);
+        assert.equal(active.width,638);
+        assert.equal(active.words[0].size, 55);
     });
     it("should draw ink", function(){
         user.inkMode.click();
-        user.handwrite(_.map(_.range(300,600,5), function(i){
+        user.handwrite(_.map(_.range(300,600,15), function(i){
             return {x:i,y:i};
         }));
         assert.equal(_.keys(user.inkStanzas).length,1);
