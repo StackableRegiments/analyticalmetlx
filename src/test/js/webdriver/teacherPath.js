@@ -93,7 +93,7 @@ describe('Single author presenting', function() {
     });
     it("should rewrap text retaining font size",function(){
         var handle = user.interactables.resizeFree[0];
-	teacher.pause(ANIMATION_DELAY);
+        teacher.pause(ANIMATION_DELAY);
         user.drag(handle,{x:200,y:0});
         var active = user.textStanzas[_.keys(user.texts)[1]];
         assert.equal(active.x,100);
@@ -102,8 +102,12 @@ describe('Single author presenting', function() {
     });
     it("should draw ink", function(){
         user.inkMode.click();
+        var len = 100;
         user.handwrite(_.map(_.range(300,600,15), function(i){
-            return {x:i,y:i};
+            return {
+                x: 200 + Math.cos(i) * len--,
+                y: 200 + Math.sin(i) * len--
+            };
         }));
         assert.equal(_.keys(user.inkStanzas).length,1);
     });

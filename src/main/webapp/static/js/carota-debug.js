@@ -461,7 +461,6 @@
                     };
                     var prototype = node.derive({
                         invalidateBounds: function(){
-			    console.log(" invalidatebounds",this.bounds);
                             var bounds = this.frame.bounds();
                             var pos = this.position;
                             var result = [
@@ -470,7 +469,6 @@
                                 pos.x + this.frame.actualWidth(),
                                 pos.y + bounds.h];
                             this.bounds = result;
-			    console.log("   invalidatebounds",this.bounds);
                             this.stanza.bounds = this.bounds;
                             Progress.call("textBoundsChanged",[this.identity,this.bounds]);
                         },
