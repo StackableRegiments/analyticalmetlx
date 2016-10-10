@@ -103,12 +103,16 @@ describe('Single author presenting', function() {
     it("should draw ink", function(){
         user.inkMode.click();
         var len = 100;
-        user.handwrite(_.map(_.range(300,600,15), function(i){
+	var root = 200;
+        user.handwrite(_.map(_.range(40), function(i){
             return {
-                x: 200 + Math.cos(i) * len--,
-                y: 200 + Math.sin(i) * len--
+                x: root++ + Math.cos(i) * len--,
+                y: root + Math.sin(i) * len--
             };
         }));
         assert.equal(_.keys(user.inkStanzas).length,1);
+    });
+    it("should add an image",function(){
+	user.imageMode.click();
     });
 });
