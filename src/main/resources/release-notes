@@ -1,4 +1,5 @@
 0.7
+Bugfix: Resize selected text.
 Feature: User-Agent logging to feed analysis of client browsers/machines.
 Bugfix: Complex text serialization.
 Bugfix: Fixed remaining uses of "quiz" instead of "poll".
