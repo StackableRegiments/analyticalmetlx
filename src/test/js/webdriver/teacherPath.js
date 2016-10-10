@@ -114,5 +114,9 @@ describe('Single author presenting', function() {
     });
     it("should add an image",function(){
 	user.imageMode.click();
+	teacher.click("#board");
+	teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+	teacher.pause(1000);
+	assert.equal(_.keys(user.imageStanzas).length,1);
     });
 });

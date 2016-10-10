@@ -34,6 +34,9 @@ var BoardPage = function(user) {
         } },
         worldToScreen: { value: worldToScreen },
 
+        imageMode: { get: function() { return user.element("#imageMode"); } },
+	imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } },
+
         texts: { get: function () { return user.execute("return _.map(boardContent.multiWordTexts,function(w){var _w = _.cloneDeep(w);delete _w.doc;return _w;})").value } },
         textMode: { get: function() { return user.element("#insertText"); } },
         textStanzas: { get: function() { return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value } },
