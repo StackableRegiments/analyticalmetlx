@@ -48,7 +48,7 @@ function setupStatus(){
     }
 }
 function strokeCollected(spoints){
-    if(spoints.length > 0){
+    if(spoints.length > 0) {
         var points = spoints.split(" ").map(function(p){
             return parseFloat(p);
         });
@@ -79,6 +79,8 @@ function strokeCollected(spoints){
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
+        return ink;
+
         calculateInkBounds(ink);
         prerenderInk(ink);
         if(ink.isHighlighter){

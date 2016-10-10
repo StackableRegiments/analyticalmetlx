@@ -869,6 +869,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                         var source = scaledText.save();
                                         _.each(source,function(run){
                                             run.size = run.size * xScale;
+					    console.log(run.size);
                                         });
                                         scaledText.load(source);
                                     }

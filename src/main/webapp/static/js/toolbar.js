@@ -950,6 +950,7 @@ var Modes = (function(){
                         Modes.select.offset = {x:root.x2,y:root.y2};
                         resizeAspectLocked.rehome(root);
                         blit();
+                        console.log("Aspect locked down");
                         return false;
                     },
                     move:function(worldPos){
@@ -1060,6 +1061,8 @@ var Modes = (function(){
                     var root = Modes.select.totalSelectedBounds();
                     Modes.select.offset = {x:root.x2,y:root.y2};
                     blit();
+
+                    console.log("Free transform down");
                     return false;
                 },
                 move:function(worldPos){
@@ -1110,6 +1113,7 @@ var Modes = (function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
+                    console.log("Free transform up");
                     sendStanza(resized);
                     blit();
                     return false;
@@ -1170,15 +1174,15 @@ var Modes = (function(){
     return {
         pushCanvasInteractable:pushCanvasInteractableFunc,
         clearCanvasInteractables:clearCanvasInteractableFunc,
-	getCanvasInteractables:function(){
-	    return _.mapValues(Modes.canvasInteractables,function(interactables){
-		return _.map(interactables,function(v){
-		    var _v = _.clone(v);
-		    _v.bounds = _v.getBounds();
-		    return _v;
-		});
-	    });
-	},
+        getCanvasInteractables:function(){
+            return _.mapValues(Modes.canvasInteractables,function(interactables){
+                return _.map(interactables,function(v){
+                    var _v = _.clone(v);
+                    _v.bounds = _v.getBounds();
+                    return _v;
+                });
+            });
+        },
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},
@@ -1291,7 +1295,7 @@ var Modes = (function(){
                                 var refEnd = refStart + runToAlter.text.length;
                                 d.select(refStart,refEnd,true);
                                 d.selectedRange().setFormatting("size",sizes[refStart] * factor);
-				refStart = refEnd;
+                                refStart = refEnd;
                             },originalRange);
                             d.select(originalRange.start,originalRange.end,true);
                         }
