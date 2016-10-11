@@ -1,6 +1,7 @@
 package com.metl.data
 
 import com.metl.utils._
+import com.metl.model._
 
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -88,7 +89,7 @@ trait JsonSerializerHelper {
       case JArray(l) => {
         val objs:List[JObject] = l.flatMap((li:JValue) => li match {
           case li:JObject => List(li)
-          case _ => Nil 
+          case _ => Nil
         })
         objs
       }
@@ -210,6 +211,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     getFields(i,"commands").foreach(jf => history.addStanza(toMeTLCommand(jf.value)))
     getFields(i,"files").foreach(jf => history.addStanza(toMeTLFile(jf.value)))
     getFields(i,"videoStreams").foreach(jf => history.addStanza(toMeTLVideoStream(jf.value)))
+    getFields(i,"themes").foreach(jf => history.addStanza(toTheme(jf.value)))
     getFields(i,"deletedCanvasContents").foreach(jf => {
       toMeTLData(jf.value) match {
         case cc:MeTLCanvasContent => history.addDeletedCanvasContent(cc)
@@ -302,6 +304,26 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     ) :::
       parseMeTLContent(input) :::
       input.url.map(u => JField("url",JString(u))).toList)
+  })
+
+  override def toTheme(i:JValue):MeTLTheme = Stopwatch.time("JsonSerializer.toTheme",{
+    i match {
+      case input:JObject => {
+        val mc = parseJObjForMeTLContent(input,config)
+        val text = getStringByName(input,"text")
+        val origin = getStringByName(input,"origin")
+        val location = getStringByName(input,"location")
+        MeTLTheme(config,mc.author,mc.timestamp,location,Theme(mc.author,text,origin),mc.audiences)
+      }
+    }
+  })
+
+  override def fromTheme(t:MeTLTheme):JValue = Stopwatch.time("JsonSerializer.fromTheme",{
+    toJsObj("theme",List(
+      JField("text",JString(t.theme.text)),
+      JField("origin",JString(t.theme.origin)),
+      JField("location",JString(t.location))
+    ) ::: parseMeTLContent(t))
   })
 
   override def toMeTLFile(i:JValue):MeTLFile = Stopwatch.time("JsonSerializer.toMeTLFile",{

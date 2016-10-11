@@ -2,6 +2,7 @@ package com.metl.data
 
 import com.metl.utils._
 
+import com.metl.model._
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -32,6 +33,24 @@ trait XmlUtils {
     <privacy>{p.privacy.toString.toLowerCase}</privacy>
     <slide>{p.slide}</slide>
     <identity>{p.identity}</identity>
+  }
+  def themeToXml(t:MeTLTheme):NodeSeq = <theme>
+  <author>{t.author}</author>
+  <text>{t.theme.text}</text>
+  <origin>{t.theme.origin}</origin>
+  <location>{t.location}</location>
+  <metlMetaData><timestamp>{t.timestamp}</timestamp></metlMetaData>
+  <audiences>{t.audiences.map(a => {
+    <audience domain={a.domain} name={a.name} type={a.audienceType} action={a.action}/>
+  })}</audiences>
+  </theme>
+  def parseTheme(x:NodeSeq,config:ServerConfiguration = ServerConfiguration.empty):MeTLTheme = {
+    val m = parseMeTLContent(x)
+    val author = getStringByName(x,"author")
+    val text = getStringByName(x,"text")
+    val location = getStringByName(x,"location")
+    val origin = getStringByName(x,"origin")
+    MeTLTheme(config,m.author,m.timestamp,location,Theme(author,text,origin),m.audiences)
   }
   def parseMeTLContent(i:NodeSeq,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
     val author = getStringByName(i,"author")
@@ -92,6 +111,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       case i:NodeSeq if hasChild(i,"attendance") => toMeTLAttendance(i)
       //      case i:NodeSeq if hasChild(i,"body") => toMeTLCommand(i)
       case i:NodeSeq if hasChild(i,"command") => toMeTLCommand(i)
+      case i:NodeSeq if hasChild(i,"theme") => parseTheme(i)
       case i:NodeSeq if hasChild(i,"fileResource") => toMeTLFile(i)
       case i:NodeSeq if hasChild(i,"videoStream") => toMeTLVideoStream(i)
       case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)

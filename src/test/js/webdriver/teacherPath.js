@@ -141,4 +141,7 @@ describe('Single author presenting', function() {
         assert.equal(_.keys(user.selection.videos).length,0);
         assert.equal(_.keys(user.selection.images).length,1);
     });
+    it("should have analyzed the text contents",function(){
+	assert.equal(user.themes.length,1);
+    });
 });
