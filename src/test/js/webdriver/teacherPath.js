@@ -102,21 +102,43 @@ describe('Single author presenting', function() {
     });
     it("should draw ink", function(){
         user.inkMode.click();
-        var len = 100;
-	var root = 200;
-        user.handwrite(_.map(_.range(40), function(i){
-            return {
-                x: root++ + Math.cos(i) * len--,
-                y: root + Math.sin(i) * len--
-            };
-        }));
-        assert.equal(_.keys(user.inkStanzas).length,1);
+        for(var i = 2; i < 10; i++){
+            var len = 35;
+            var root = (len + 20) * i;
+            user.handwrite(_.map(_.range(0,8,0.3), function(j){
+                return {
+                    x: root + Math.cos(j) * len--,
+                    y: root + Math.sin(j) * len--
+                };
+            }));
+        }
+        assert.equal(_.keys(user.inkStanzas).length,8);
     });
     it("should add an image",function(){
-	user.imageMode.click();
-	teacher.click("#board");
-	teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
-	teacher.pause(1000);
-	assert.equal(_.keys(user.imageStanzas).length,1);
+        user.imageMode.click();
+        teacher.click("#board");
+        teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+        teacher.pause(1000);
+        assert.equal(_.keys(user.imageStanzas).length,1);
+    });
+    it("should enter already selected",function(){
+        assert.equal(_.keys(user.selection.images).length,1);
+    });
+    it("should clear the selection if the empty canvas is clicked",function(){
+        user.selectMode.click();
+        teacher.leftClick("#board",1,1);
+        assert.equal(_.keys(user.selection.inks).length,0);
+        assert.equal(_.keys(user.selection.texts).length,0);
+        assert.equal(_.keys(user.selection.multiWordTexts).length,0);
+        assert.equal(_.keys(user.selection.videos).length,0);
+        assert.equal(_.keys(user.selection.images).length,0);
+    });
+    it("should select all items under the mouse when clicked",function(){
+        teacher.leftClick("#board",250,250);
+        assert.equal(_.keys(user.selection.inks).length,1);
+        assert.equal(_.keys(user.selection.texts).length,0);
+        assert.equal(_.keys(user.selection.multiWordTexts).length,1);
+        assert.equal(_.keys(user.selection.videos).length,0);
+        assert.equal(_.keys(user.selection.images).length,1);
     });
 });

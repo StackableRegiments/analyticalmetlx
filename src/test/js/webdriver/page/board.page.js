@@ -34,17 +34,8 @@ var BoardPage = function(user) {
         } },
         worldToScreen: { value: worldToScreen },
 
-        imageMode: { get: function() { return user.element("#imageMode"); } },
-	imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } },
-
-        texts: { get: function () { return user.execute("return _.map(boardContent.multiWordTexts,function(w){var _w = _.cloneDeep(w);delete _w.doc;return _w;})").value } },
-        textMode: { get: function() { return user.element("#insertText"); } },
-        textStanzas: { get: function() { return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value } },
-        keyboard: { value:function(x,y,text){
-            user.moveToObject("#board",x,y);
-            user.leftClick();
-            user.keys(text.split());
-        } },
+        selectMode: { get: function() { return user.element("#selectMode"); } },
+	selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },
 
         inkMode: { get: function() { return user.element("#drawMode"); } },
         inkStanzas: { get: function() { return user.execute("return boardContent.inks").value; } },
@@ -55,7 +46,20 @@ var BoardPage = function(user) {
                 user.moveToObject("#board",pt.x,pt.y);
             });
             user.buttonUp();
-        } }
+        } },
+
+        texts: { get: function () { return user.execute("return _.map(boardContent.multiWordTexts,function(w){var _w = _.cloneDeep(w);delete _w.doc;return _w;})").value } },
+        textMode: { get: function() { return user.element("#insertText"); } },
+        textStanzas: { get: function() { return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value } },
+        keyboard: { value:function(x,y,text){
+            user.moveToObject("#board",x,y);
+            user.leftClick();
+            user.keys(text.split());
+        } },
+
+        imageMode: { get: function() { return user.element("#imageMode"); } },
+        imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } },
+
     });
 }
 module.exports = BoardPage
