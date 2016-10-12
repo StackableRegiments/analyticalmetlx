@@ -49,7 +49,9 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
       }
       case failure => debug(failure)
     }
-    case t:MeTLMultiWordText => t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
+    case t:MeTLMultiWordText => {
+      t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
+    }
     case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
       case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
       case Some(partial) => {

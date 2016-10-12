@@ -5,6 +5,13 @@ exports.config = {
     exclude: [],
     maxInstances: 10,
     capabilities: {
+        student:{
+            desiredCapabilities:{
+                browserName: 'chrome',
+                name:'student',
+                project:'single'
+            }
+        },
         teacher:{
             desiredCapabilities:{
                 browserName: 'chrome',
@@ -26,6 +33,6 @@ exports.config = {
     reporters: ['dot'],
     mochaOpts: {
         ui: 'bdd',
-	timeout:999999
+        timeout:999999
     }
 }
