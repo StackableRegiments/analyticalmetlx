@@ -25,7 +25,7 @@ install:
   - npm install wdio-sauce-service
 
 script:
-  - sbt -Xms1536m -Xmx1536m -Dmetlx.configurationFile=config/configuration.ci.xml test container:start integrationTests
+  - sbt -Xms1536m -Xmx1536m -Dmetlx.configurationFile=config/configuration.ci.xml test container:start functionalSingleTests functionalMultiTests
 
 notifications:
   email: false
