@@ -11,46 +11,47 @@ import net.liftweb.util.Helpers._
 import net.liftweb.common._
 import scala.xml._
 import com.metl.data._
+import com.metl.model._
 import Privacy._
 
 class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with ShouldMatchers with QueryXml with MeTLTextMatchers with MeTLDataGenerators {
-	test("add an ink") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  test("add an ink") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       h.addStanza(ink)
       h.getInks == List(ink) || h.getHighlighters == List(ink)
     }
-	}
-	test("add a textbox") {
-		forAll (genText) { (text: MeTLText) =>
+  }
+  test("add a textbox") {
+    forAll (genText) { (text: MeTLText) =>
       val h = new History("test")
       h.addStanza(text)
       h.getTexts == List(text)
     }
-	}
-	test("add an image") {
-		forAll (genImage) { (image: MeTLImage) =>
+  }
+  test("add an image") {
+    forAll (genImage) { (image: MeTLImage) =>
       val h = new History("test")
       h.addStanza(image)
       h.getImages == List(image)
     }
-	}
-	test("add a submission") {
-		forAll (genSubmission) { (sub: MeTLSubmission) =>
+  }
+  test("add a submission") {
+    forAll (genSubmission) { (sub: MeTLSubmission) =>
       val h = new History("test")
       h.addStanza(sub)
       h.getSubmissions == List(sub)
     }
-	}
-	test("add a command") {
-		forAll (genCommand) { (comm: MeTLCommand) =>
+  }
+  test("add a command") {
+    forAll (genCommand) { (comm: MeTLCommand) =>
       val h = new History("test")
       h.addStanza(comm)
       h.getCommands == List(comm)
     }
-	}
-	test("add an ink and then delete it") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  }
+  test("add an ink and then delete it") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       val dirtyInk = ink.generateDirty().adjustTimestamp(ink.timestamp + 1)
       h.addStanza(ink)
@@ -58,9 +59,9 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
     }
-	}
-	test("add an ink and then delete it and then undelete it") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  }
+  test("add an ink and then delete it and then undelete it") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       val dirtyInk = ink.generateDirty().adjustTimestamp(ink.timestamp + 1)
       h.addStanza(ink)
@@ -77,8 +78,8 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       })
     }
   }
-	test("add an ink and then delete it with a moveDelta") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  test("add an ink and then delete it with a moveDelta") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
@@ -86,9 +87,9 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
     }
-	}
-	test("add an ink and then delete it with a moveDelta and then undelete it") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  }
+  test("add an ink and then delete it with a moveDelta and then undelete it") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
@@ -104,9 +105,9 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
         (h.getUndeletedCanvasContents should contain (undeleteMarker))
       })
     }
-	}
-	test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  }
+  test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
@@ -125,9 +126,9 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
         (nh.getUndeletedCanvasContents should contain (undeleteMarker))
       })
     }
-	}
-	test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history and then merge the history") {
-		forAll (genInk) { (ink: MeTLInk) =>
+  }
+  test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history and then merge the history") {
+    forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
       val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
@@ -147,5 +148,5 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
         (mh.getUndeletedCanvasContents should contain (undeleteMarker))
       })
     }
-	}
+  }
 }

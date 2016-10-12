@@ -132,7 +132,7 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 case object HealthyWelcomeFromRoom
 case object Ping
 
-abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long]) extends LiftActor with ListenerManager with Logger {
+abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
   lazy val config = ServerConfiguration.configForName(configName)
   private var shouldBacklog = false
   private var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
@@ -290,6 +290,9 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     trace("%s s->l %s".format(location,a))
     joinedUsers.foreach(j => j._3 ! a)
   })
+  def addTheme(theme:Theme) = {
+    sendStanzaToServer(MeTLTheme(config,theme.author,new java.util.Date().getTime,location,theme,Nil))
+  }
   protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
     trace("%s l->s %s".format(location,s))
     showInterest
@@ -300,6 +303,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("sendingStanzaToServer: %s".format(s))
       messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
+    chunker.add(s,this)
   })
   private def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
   private def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
