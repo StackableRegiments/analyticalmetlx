@@ -5,7 +5,7 @@ var _ = require("lodash");
 // Create overrides
 var overrides = {
     specs: [
-        './src/test/js/webdriver/single/**'
+        './src/test/js/webdriver/multi/**'
     ],
     capabilities: {
         teacher:{
