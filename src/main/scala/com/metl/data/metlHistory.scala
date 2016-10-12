@@ -152,7 +152,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   def addTheme(t:Theme) = {
     themes = t :: themes
-    println("Theme count: %s".format(themes.length))
+    info("Theme count: %s".format(themes.length))
+    this
   }
 
   def addStanza(s:MeTLStanza) = Stopwatch.time("History.addStanza",{

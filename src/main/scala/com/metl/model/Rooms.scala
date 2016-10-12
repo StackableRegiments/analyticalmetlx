@@ -480,7 +480,7 @@ class XmppBridgingHistoryCachingRoom(configName:String,override val location:Str
     trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
     sendStanzaToServer(s)
   })
-  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge",{
+  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageToBridge",{
     trace("XMPPBRIDGE (%s) sendToBridge: %s".format(location,s))
     MeTLXConfiguration.xmppServer.foreach(_.relayMessageToXmppMuc(location,s))
   })

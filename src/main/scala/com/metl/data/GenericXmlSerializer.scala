@@ -34,24 +34,6 @@ trait XmlUtils {
     <slide>{p.slide}</slide>
     <identity>{p.identity}</identity>
   }
-  def themeToXml(t:MeTLTheme):NodeSeq = <theme>
-  <author>{t.author}</author>
-  <text>{t.theme.text}</text>
-  <origin>{t.theme.origin}</origin>
-  <location>{t.location}</location>
-  <metlMetaData><timestamp>{t.timestamp}</timestamp></metlMetaData>
-  <audiences>{t.audiences.map(a => {
-    <audience domain={a.domain} name={a.name} type={a.audienceType} action={a.action}/>
-  })}</audiences>
-  </theme>
-  def parseTheme(x:NodeSeq,config:ServerConfiguration = ServerConfiguration.empty):MeTLTheme = {
-    val m = parseMeTLContent(x)
-    val author = getStringByName(x,"author")
-    val text = getStringByName(x,"text")
-    val location = getStringByName(x,"location")
-    val origin = getStringByName(x,"origin")
-    MeTLTheme(config,m.author,m.timestamp,location,Theme(author,text,origin),m.audiences)
-  }
   def parseMeTLContent(i:NodeSeq,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
     val author = getStringByName(i,"author")
     val timestamp = {
@@ -111,9 +93,9 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       case i:NodeSeq if hasChild(i,"attendance") => toMeTLAttendance(i)
       //      case i:NodeSeq if hasChild(i,"body") => toMeTLCommand(i)
       case i:NodeSeq if hasChild(i,"command") => toMeTLCommand(i)
-      case i:NodeSeq if hasChild(i,"theme") => parseTheme(i)
       case i:NodeSeq if hasChild(i,"fileResource") => toMeTLFile(i)
       case i:NodeSeq if hasChild(i,"videoStream") => toMeTLVideoStream(i)
+      case i:NodeSeq if hasChild(i,"theme") => toTheme(i)
       case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
@@ -251,6 +233,21 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       <present>{input.present}</present>
     ))
   })
+  override def fromTheme(t:MeTLTheme):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromTheme",{
+    metlContentToXml("theme",t,List(
+      <text>{t.theme.text}</text>,
+      <origin>{t.theme.origin}</origin>,
+      <location>{t.location}</location>
+    ))
+  })
+  override def toTheme(x:NodeSeq):MeTLTheme = Stopwatch.time("GenericXmlSerializer.toTheme",{
+    val m = parseMeTLContent(x)
+    val text = getStringByName(x,"text")
+    val location = getStringByName(x,"location")
+    val origin = getStringByName(x,"origin")
+    MeTLTheme(config,m.author,m.timestamp,location,Theme(m.author,text,origin),m.audiences)
+  })
+
   override def toMeTLInk(input:NodeSeq):MeTLInk = Stopwatch.time("GenericXmlSerializer.toMeTLInk",{
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)
