@@ -1,6 +1,7 @@
 package com.metl.h2
 
 import com.metl.data._
+import com.metl.model._
 import com.metl.utils._
 import com.metl.h2.dbformats._
 
@@ -151,6 +152,10 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   }
   override def fromMeTLVideo(i:MeTLVideo):H2Video = incCanvasContent(H2Video.create,i,"video").source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
 
+  def toTheme(h:H2Theme):MeTLTheme = {
+    val c = decStanza(h)
+    MeTLTheme(config,c.author,c.timestamp,h.location.get,Theme(c.author,h.text.get,h.origin.get),c.audiences)
+  }
   override def fromTheme(i:MeTLTheme):H2Theme = incMeTLContent(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin)
 
   def toMeTLImage(i:H2Image):MeTLImage = {

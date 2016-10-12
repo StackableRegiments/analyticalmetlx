@@ -209,73 +209,8 @@ object StatelessHtml extends Stemmer with Logger {
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
-  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
-    val phrases = List(
-      history.collect{case t:MeTLText => t.text},
-      CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
-    <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
-  })
-  def handwriting(jid:String):Node = Stopwatch.time("StatelessHtml.handwriting(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val themes = List(
-      history.getInks.groupBy(_.author).flatMap{
-        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i,"handwriting"))
-      }).flatten
-    val themesByUser = themes.groupBy(_.author).map(kv =>
-      <userTheme>
-        <user>{kv._1}</user>
-        <themes>{kv._2.map(t => <theme>{t.text}</theme>)}</themes>
-        </userTheme>)
-    <userThemes>{themesByUser}</userThemes>
-  })
-  def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val themes = List(
-      history.getTexts.map(t => Theme(t.author,t.text,"keyboarding")).toList,
-      history.getMultiWordTexts.map(t => Theme(t.author,t.words.map(_.text).mkString(" "),"keyboarding")).toList,
-      (history.getInks ::: history.getHighlighters).groupBy(_.author).flatMap{
-        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i, "handwriting"))
-      },
-      history.getImages.groupBy(_.author).flatMap{
-        case (author,images) => CanvasContentAnalysis.ocr(images) match {
-          case (descriptions,words) => List(
-            descriptions.map(word => Theme(author, word, "imageRecognition")),
-            words.map(word => Theme(author,word,"imageTranscription"))).flatten
-        }
-      }).flatten
-    themes.map(t => debug(t.toString))
-    val themesByUser = themes.groupBy(_.author).map(kv =>
-      <userTheme>
-        <user>{kv._1}</user>
-        <themes>{kv._2.map(t => <theme><context>{t.origin}</context><content>{t.text}</content></theme>)}</themes>
-        </userTheme>)
-    <userThemes>{themesByUser}</userThemes>
-  })
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),{
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
-  })
-  def themes(slide:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(slide), Full(XmlResponse(nouns(slide))))
-  def chunks(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.chunks(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val elements = history.getCanvasContents
-    val chunked = CanvasContentAnalysis.chunk(elements)
-    Full(XmlResponse(
-      <contentRuns>
-        <slide>jid</slide>
-        <timeThreshold>{chunked.timeThreshold.toString}</timeThreshold>
-        {
-          chunked.chunksets.map(chunkset =>
-            {
-              <runs author={chunkset.author}>
-              {
-                chunkset.chunks.map(chunk => <run start={chunk.start.toString} end={chunk.end.toString} activity={chunk.activity.size.toString} miliseconds={chunk.milis.toString} />)
-              }
-              </runs>
-            })
-        }
-        </contentRuns>
-    ))
   })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
   def fullHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>)))

@@ -1,0 +1,8 @@
+{
+    "name":"localmetlsauceutils",
+    "description":"Non publishable aggregation of npm utils for Sauce testing",
+    "README":"",
+    "private":true,
+    "repository":"",
+    "license":"Apache License 2.0"
+}

@@ -40,9 +40,9 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                 delete boardContent.texts[text.id];
             }
         });
-				$.each(boardContent.videos,function(i,video){
-					prerenderVideo(video);
-				});
+        $.each(boardContent.videos,function(i,video){
+            prerenderVideo(video);
+        });
         prerenderTextMark = Date.now();
         _.each(boardContent.multiWordTexts,function(text,i){
             var editor = Modes.text.editorFor(text).doc;
@@ -82,10 +82,10 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             blit();
             blitMark = Date.now();
-						if (!UserSettings.getIsInteractive()){
-								//projector mode should always start viewing the entire slide
-								zoomToFit();
-						}
+            if (!UserSettings.getIsInteractive()){
+                //projector mode should always start viewing the entire slide
+                zoomToFit();
+            }
             if (afterFunc != undefined){
                 afterFunc();
             }
@@ -489,65 +489,65 @@ function prerenderImage(image) {
     delete image.imageData;
 }
 function prerenderVideo(video){
-	if (!("video" in video)){
-		var vid = $("<video/>",{
-			src:sprintf("/videoProxy/%s/%s",video.slide,video.identity)
-		});
-		video.video = vid[0];
-		video.getState = function(){
-			return {
-				paused:vid[0].paused,
-				ended:vid[0].ended,
-				currentTime:vid[0].currentTime,
-				duration:vid[0].duration,
-				muted:vid[0].muted,
-				volume:vid[0].volume,
-				readyState:vid[0].readyState,
-				played:vid[0].played,
-				buffered:vid[0].buffered,
-				playbackRate:vid[0].playbackRate,
-				loop:vid[0].loop	
-			};
-		};
-		video.seek = function(newPosition){
-			vid[0].currentTime = Math.min(vid[0].duration,Math.max(0,newPosition));
-			if (vid[0].paused){
-				video.play();
-			}
-		};
-		video.muted = function(newState){
-			if (newState != undefined){
-				vid[0].muted = newState;
-			}
-			return vid[0].muted;		
-		};
-		video.play = function(){
-			var paintVideoFunc = function(){
-				if (video.video.paused || video.video.ended){
-					return false;
-				} else {
-					requestAnimationFrame(function(){
-						blit();
-						paintVideoFunc();
-					});
-				}
-			}
-			video.video.addEventListener("play",function(){
-				paintVideoFunc();
-			},false);
-			if (video.video.paused || video.video.ended){
-				video.video.play();
-			}
-		};
-		video.pause = function(){
-			if (!video.video.paused){
-				video.video.pause();
-			}
-		};
-	}
-	if (!("bounds" in video)){
-		calculateVideoBounds(video);
-	}
+    if (!("video" in video)){
+        var vid = $("<video/>",{
+            src:sprintf("/videoProxy/%s/%s",video.slide,video.identity)
+        });
+        video.video = vid[0];
+        video.getState = function(){
+            return {
+                paused:vid[0].paused,
+                ended:vid[0].ended,
+                currentTime:vid[0].currentTime,
+                duration:vid[0].duration,
+                muted:vid[0].muted,
+                volume:vid[0].volume,
+                readyState:vid[0].readyState,
+                played:vid[0].played,
+                buffered:vid[0].buffered,
+                playbackRate:vid[0].playbackRate,
+                loop:vid[0].loop
+            };
+        };
+        video.seek = function(newPosition){
+            vid[0].currentTime = Math.min(vid[0].duration,Math.max(0,newPosition));
+            if (vid[0].paused){
+                video.play();
+            }
+        };
+        video.muted = function(newState){
+            if (newState != undefined){
+                vid[0].muted = newState;
+            }
+            return vid[0].muted;
+        };
+        video.play = function(){
+            var paintVideoFunc = function(){
+                if (video.video.paused || video.video.ended){
+                    return false;
+                } else {
+                    requestAnimationFrame(function(){
+                        blit();
+                        paintVideoFunc();
+                    });
+                }
+            }
+            video.video.addEventListener("play",function(){
+                paintVideoFunc();
+            },false);
+            if (video.video.paused || video.video.ended){
+                video.video.play();
+            }
+        };
+        video.pause = function(){
+            if (!video.video.paused){
+                video.video.pause();
+            }
+        };
+    }
+    if (!("bounds" in video)){
+        calculateVideoBounds(video);
+    }
 }
 function prerenderText(text){
     var canvas = $("<canvas />")[0];
@@ -696,19 +696,19 @@ function render(content,hq,incCanvasContext,incViewBounds){
                         });
                     }
                 }
-								var renderVideos = function(videos){
-									if (videos){
-										Modes.clearCanvasInteractables("videos");
-										$.each(videos,function(i,video){
-											if (intersectRect(video.bounds,viewBounds)){
-												drawVideo(video,canvasContext);
-												Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-											}
-										});
-									}
-								}
+                var renderVideos = function(videos){
+                    if (videos){
+                        Modes.clearCanvasInteractables("videos");
+                        $.each(videos,function(i,video){
+                            if (intersectRect(video.bounds,viewBounds)){
+                                drawVideo(video,canvasContext);
+                                Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+                            }
+                        });
+                    }
+                }
                 var renderImmediateContent = function(){
-										renderVideos(content.videos);
+                    renderVideos(content.videos);
                     renderInks(content.highlighters);
                     highlightersRenderedMark = Date.now();
                     $.each(content.texts,function(i,text){
@@ -753,11 +753,11 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 var renderCanvasInteractables = function(){
                     _.each(Modes.canvasInteractables,function(category){
                         _.each(category,function(interactable){
-													if (interactable != undefined && "render" in interactable){
-                            canvasContext.save();
-                            interactable.render(canvasContext);
-                            canvasContext.restore();
-													};
+                            if (interactable != undefined && "render" in interactable){
+                                canvasContext.save();
+                                interactable.render(canvasContext);
+                                canvasContext.restore();
+                            };
                         });
                     });
                 }
@@ -780,9 +780,9 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                 case "images":
                                     drawImage(item,canvasContext);
                                     break;
-																case "videos":
-																		drawVideo(item,canvasContext);
-																		break;
+                                case "videos":
+                                    drawVideo(item,canvasContext);
+                                    break;
                                 case "texts":
                                     drawText(item,canvasContext);
                                     break;
@@ -827,11 +827,11 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                         drawImage(item,canvasContext);
                                     });
                                     break;
-																case "videos":
-																		transform(x,y,function(){
-																			drawVideo(item,canvasContext);
-																		});
-																		break;
+                                case "videos":
+                                    transform(x,y,function(){
+                                        drawVideo(item,canvasContext);
+                                    });
+                                    break;
                                 case "texts":
                                     transform(x,y,function(){
                                         drawText(item,canvasContext);
@@ -858,20 +858,15 @@ function render(content,hq,incCanvasContext,incViewBounds){
                                         _.cloneDeep(item));
                                     scaledText.position = {x:bounds[0],y:bounds[1]};
                                     scaledText.load(item.doc.save());
+                                    var fullRange = scaledText.documentRange();
+                                    scaledText.select(fullRange.start,fullRange.end);
+                                    if(Modes.select.aspectLocked){
+                                        Modes.text.scaleEditor(scaledText,xScale);
+                                    }
                                     scaledText.width(Math.max(
                                         item.doc.width() * xScale,
                                         Modes.text.minimumWidth / scale()
                                     ));
-                                    if(Modes.select.aspectLocked){
-                                        /*If you're looking for the bug where it sometimes ghosts the wrong way, this is it.
-                                         save() doesn't always produce useful results
-                                         and when it doesn't you end up with NaNs.*/
-                                        var source = scaledText.save();
-                                        _.each(source,function(run){
-                                            run.size = run.size * xScale;
-                                        });
-                                        scaledText.load(source);
-                                    }
                                     carota.editor.paint(board[0], scaledText);
                                     canvasContext.restore();
                                     break;
@@ -1012,9 +1007,9 @@ var IncludeView = (function(){
             targetHeight = constrained.height / wr * hr;
             targetWidth = constrained.width;
         }
-				var notFollowable = _.every([incX,incY,incW,incH],function(elem){
-					return elem == undefined;
-				}) || notFollowable;
+        var notFollowable = _.every([incX,incY,incW,incH],function(elem){
+            return elem == undefined;
+        }) || notFollowable;
         TweenController.zoomAndPanViewbox(constrained.x,constrained.y,targetWidth,targetHeight,undefined,!shouldUpdateRequestedViewbox,notFollowable);
         Progress.call("onViewboxChanged");
     };
