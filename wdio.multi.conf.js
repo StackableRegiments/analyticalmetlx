@@ -3,7 +3,7 @@ var defaults = require("./wdio.conf.js").config;
 var _ = require("lodash");
 
 // Create overrides
-exports.config = {
+var overrides = {
     specs: [
         './src/test/js/webdriver/single/**'
     ],

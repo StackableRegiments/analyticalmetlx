@@ -3,7 +3,7 @@ var defaults = require("./wdio.conf.js").config;
 var _ = require("lodash");
 
 // Create overrides
-exports.config = {
+var overrides = {
     specs: [
         './src/test/js/webdriver/multi/**'
     ],
@@ -19,7 +19,6 @@ exports.config = {
     waitforTimeout: 999999,
     services: [],
 	  timeout:999999
-    }
 }
 
 // Send the merged config to wdio
