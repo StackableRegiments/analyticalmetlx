@@ -1,6 +1,5 @@
 exports.config = {
-    exclude: [
-    ],
+    exclude: [],
     maxInstances: 10,
     sync: true,
     logLevel: 'verbose',
@@ -17,6 +16,7 @@ exports.config = {
     framework: 'mocha',
     reporters: ['dot'],
     mochaOpts: {
-        ui: 'bdd'
+        ui: 'bdd',
+        timeout:999999
     }
 }
