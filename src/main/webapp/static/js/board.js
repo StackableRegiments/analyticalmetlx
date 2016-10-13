@@ -195,7 +195,7 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
-sendRichText = _.debounce(sendRichText,1000);
+//sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -208,8 +208,13 @@ var stanzaHandlers = {
     command:commandReceived,
     submission:submissionReceived,
     attendance:attendanceReceived,
-    file:fileReceived
+    file:fileReceived,
+    theme:themeReceived
 };
+function themeReceived(theme){
+    alert(theme);
+    boardContent.themes.push(theme);
+}
 function fileReceived(file){
     //doing nothing with files yet.
 }

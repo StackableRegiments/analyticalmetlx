@@ -1475,7 +1475,7 @@ var Modes = (function(){
                             isAuthor? blit : noop,
                             t);
                         if(isAuthor){
-                            editor.doc.contentChanged(function(){
+                            var onChange = _.debounce(function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 //source.privacy = Privacy.getCurrentPrivacy();
@@ -1484,7 +1484,8 @@ var Modes = (function(){
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
-                            });
+                            },1000);
+                            editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
                                 if(editor.doc.save().length > 0){

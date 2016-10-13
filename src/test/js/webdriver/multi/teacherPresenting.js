@@ -131,7 +131,7 @@ describe('Single author presenting', function() {
         teacherT.imageMode.click();
         teacher.click("#board");
         teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
-        teacher.pause(2000);
+        teacher.pause(4000);
         assert.equal(_.keys(teacherT.imageStanzas).length,1);
     });
     it("should enter already selected",function(){
@@ -153,6 +153,10 @@ describe('Single author presenting', function() {
         assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(_.keys(teacherT.selection.videos).length,0);
         assert.equal(_.keys(teacherT.selection.images).length,1);
+	/*
+	teacher.debug();
+	student.debug();
+	*/
     });
     it("should see all published elements",function(){
         assert.equal(_.keys(studentT.imageStanzas).length,1);
