@@ -44,7 +44,6 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(teacherT.texts).length,1);
         assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
             "Consistently sized run"].length);
-	browser.debug();
     });
     it("should highlight a word and enlarge it",function(){
         teacher.moveToObject("#board",100,100);
@@ -165,6 +164,6 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(studentT.inkStanzas).length,3);
     });
     it("should have analyzed the text contents",function(){
-        assert.equal(teacherT.themes.length,1);
+        assert.equal(teacherT.themes.length,14);
     });
 });

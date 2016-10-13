@@ -212,8 +212,8 @@ var stanzaHandlers = {
     theme:themeReceived
 };
 function themeReceived(theme){
-    alert(theme);
     boardContent.themes.push(theme);
+    Progress.call("themeReceived");
 }
 function fileReceived(file){
     //doing nothing with files yet.

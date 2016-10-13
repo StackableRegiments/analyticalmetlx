@@ -35,7 +35,7 @@ var BoardPage = function(user) {
         } },
         worldToScreen: { value: worldToScreen },
 
-        themes: {get: function(){ return user.execute("return boardContent.themes"); }},
+        themes: {get: function(){ return user.execute("return boardContent.themes").value; }},
 
         selectMode: { get: function() { return user.element("#selectMode"); } },
         selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },

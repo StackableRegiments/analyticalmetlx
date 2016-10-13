@@ -130,33 +130,28 @@ var Participants = (function(){
         if ("field" in sortObj){
             participantsDatagrid.jsGrid("sort",sortObj);
         }
-        /*
-         $.get(sprintf("/api/v1/analysis/words/%s",Conversations.getCurrentSlideJid()),function(words){
-         Analytics.word.reset();
-         var contexts = {};
-         _.each($(words).find("theme"),function(_theme){
-         var theme = $(_theme);
-         var context = theme.find("context").text();
-         _.each(theme.find("content").text().split(" "),function(t){
-         t = t.toLowerCase();
-         Analytics.word.incorporate(t);
-         if(!(t in contexts)){
-         contexts[t] = {};
-         }
-         if(!(context in contexts[t])){
-         contexts[t][context] = 0;
-         }
-         contexts[t][context]++;
-         });
-         });
-         updateThemes(Analytics.word.cloudData());
-         Analytics.word.cloud({
-         w:600,
-         h:300,
-         contexts:contexts
-         });
-         });
-         */
+        Analytics.word.reset();
+        var contexts = {};
+        _.each(boardContent.themes,function(theme){
+            _.each(theme.text.split(" "),function(t){
+                t = t.toLowerCase();
+                var context = theme.origin;
+                Analytics.word.incorporate(t);
+                if(!(t in contexts)){
+                    contexts[t] = {};
+                }
+                if(!(context in contexts[t])){
+                    contexts[t][context] = 0;
+                }
+                contexts[t][context]++;
+            });
+        });
+        updateThemes(Analytics.word.cloudData());
+        Analytics.word.cloud({
+            w:600,
+            h:300,
+            contexts:contexts
+        });
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
