@@ -1,6 +1,6 @@
 var _ = require('lodash');
 var assert = require('assert');
-var board = require('./page/board.page');
+var board = require('../page/board.page');
 var sprintf = require('sprintf-js').sprintf;
 
 var ANIMATION_DELAY = 300;

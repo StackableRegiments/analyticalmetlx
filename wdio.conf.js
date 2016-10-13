@@ -1,28 +1,7 @@
 exports.config = {
-    specs: [
-        './src/test/js/webdriver/multibrowser.js'
-    ],
     exclude: [
     ],
     maxInstances: 10,
-    capabilities: {
-        teacher:{
-            desiredCapabilities:{
-                browserName: 'chrome',
-                name:'teacher',
-                build:' : ',
-                project:'simple'
-            }
-        },
-        student:{
-            desiredCapabilities:{
-                browserName: 'chrome',
-                name:'student',
-                build:' : ',
-                project:'simple'
-            }
-        }
-    },
     sync: true,
     logLevel: 'verbose',
     coloredLogs: true,
