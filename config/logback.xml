@@ -37,7 +37,7 @@
     <appender-ref ref="SECURITY_FILE"/>
   </logger>
   <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
-  <root level="INFO">
+  <root level="TRACE">
     <appender-ref ref="STDOUT"/>
     <appender-ref ref="DEBUG"/>
   </root>

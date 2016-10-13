@@ -156,7 +156,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     val c = decStanza(h)
     MeTLTheme(config,c.author,c.timestamp,h.location.get,Theme(c.author,h.text.get,h.origin.get),c.audiences)
   }
-  override def fromTheme(i:MeTLTheme):H2Theme = incMeTLContent(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin).author(i.theme.author)
+  override def fromTheme(i:MeTLTheme):H2Theme = incMeTLContent(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin).author(i.theme.author).room(i.location)
 
   def toMeTLImage(i:H2Image):MeTLImage = {
     val cc = decCanvasContent(i)

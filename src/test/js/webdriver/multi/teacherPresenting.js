@@ -7,7 +7,7 @@ var ANIMATION_DELAY = 300;
 
 teacher.windowHandlePosition({x:0,y:0});
 student.windowHandlePosition({x:500,y:0});
-describe('Single author presenting', function() {
+describe('When a teacher presents, they', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
     it('should go to application', function () {
@@ -44,6 +44,7 @@ describe('Single author presenting', function() {
         assert.equal(_.keys(teacherT.texts).length,1);
         assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
             "Consistently sized run"].length);
+	browser.debug();
     });
     it("should highlight a word and enlarge it",function(){
         teacher.moveToObject("#board",100,100);
