@@ -156,11 +156,6 @@ var Participants = (function(){
             });
         });
         updateThemes(Analytics.word.cloudData());
-        Analytics.word.cloud({
-            w:600,
-            h:300,
-            contexts:contexts
-        });
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
