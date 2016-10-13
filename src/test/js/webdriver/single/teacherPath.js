@@ -1,6 +1,6 @@
 var _ = require('lodash');
 var assert = require('assert');
-var board = require('./page/board.page');
+var board = require('../page/board.page');
 
 describe('Single author presenting', function() {
     var user = board(teacher);
