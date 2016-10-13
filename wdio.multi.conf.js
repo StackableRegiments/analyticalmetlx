@@ -11,17 +11,13 @@ var overrides = {
         teacher:{
             desiredCapabilities:{
                 browserName: 'chrome',
-                name:'teacher',
-                build:' : ',
-                project:'simple'
+                name:'teacher'
             }
         },
         student:{
             desiredCapabilities:{
                 browserName: 'chrome',
-                name:'student',
-                build:' : ',
-                project:'simple'
+                name:'student'
             }
         }
     }

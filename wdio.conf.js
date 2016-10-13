@@ -1,4 +1,4 @@
-exports.config = {
+var config = {
     exclude: [],
     maxInstances: 10,
     sync: true,
@@ -9,14 +9,19 @@ exports.config = {
     waitforTimeout: 10000,
     connectionRetryTimeout: 90000,
     connectionRetryCount: 3,
-    services: ['sauce'],
-    user: process.env.SAUCE_USERNAME,
-    key: process.env.SAUCE_ACCESS_KEY,
-    sauceConnect: true,
+    services: [],
     framework: 'mocha',
-    reporters: ['dot'],
+    reporters: ['spec'],
     mochaOpts: {
         ui: 'bdd',
         timeout:999999
     }
 }
+
+if(process.env.CI){
+    config.services.push('sauce');
+    config.sauceConnect = true;
+}
+
+exports.config = config;
+

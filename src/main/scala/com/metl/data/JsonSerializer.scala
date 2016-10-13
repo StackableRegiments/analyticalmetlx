@@ -169,6 +169,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("images",JObject(images.map(i => JField(i.identity,fromMeTLImage(i))))),
       JField("videos",JObject(videos.map(i => JField(i.identity,fromMeTLVideo(i))))),
       JField("texts",JObject(texts.map(i => JField(i.identity,fromMeTLText(i))))),
+      JField("themes",JArray(input.getThemes.map(fromTheme _))),
       JField("multiWordTexts",JObject(multiWordTexts.map(i => JField(i.identity,fromMeTLMultiWordText(i))))),
       JField("quizzes",JArray(input.getQuizzes.map(i => fromMeTLQuiz(i)))),
       JField("quizResponses",JArray(input.getQuizResponses.map(i => fromMeTLQuizResponse(i)))),

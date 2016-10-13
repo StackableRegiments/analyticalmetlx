@@ -46,7 +46,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   protected var outputHook:MeTLStanza => Unit = (s) => {}
   protected var stanzas:List[MeTLStanza] = List.empty[MeTLStanza]
-  protected var themes:List[Theme] = List.empty[Theme]
+  protected var themes:List[MeTLTheme] = List.empty[MeTLTheme]
   protected var canvasContents:List[MeTLCanvasContent] = List.empty[MeTLCanvasContent]
   protected var highlighters:List[MeTLInk] = List.empty[MeTLInk]
   protected var inks:List[MeTLInk] = List.empty[MeTLInk]
@@ -133,6 +133,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLImage => addImage(s)
     case s:MeTLVideo => addVideo(s)
     case s:MeTLText => addText(s)
+    case s:MeTLTheme => addTheme(s)
     case s:MeTLMultiWordText => addMultiWordText(s)
     case s:MeTLQuiz => addQuiz(s)
     case s:MeTLQuizResponse => addQuizResponse(s)
@@ -150,7 +151,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
   }
 
-  def addTheme(t:Theme) = {
+  def addTheme(t:MeTLTheme) = {
     themes = t :: themes
     info("Theme count: %s".format(themes.length))
     this

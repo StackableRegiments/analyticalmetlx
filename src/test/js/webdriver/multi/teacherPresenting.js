@@ -6,13 +6,16 @@ var sprintf = require('sprintf-js').sprintf;
 var ANIMATION_DELAY = 300;
 
 teacher.windowHandlePosition({x:0,y:0});
+student.windowHandlePosition({x:500,y:0});
 describe('Single author presenting', function() {
     var teacherT = board(teacher);
+    var studentT = board(student);
     it('should go to application', function () {
         browser.url('/board');
     });
     it('should login', function () {
         teacher.setValue('input[type=text]', 'teacher');
+        student.setValue('input[type=text]', 'student');
     });
     it('should submit the login form', function () {
         browser.click('input[type=submit]');
@@ -24,11 +27,16 @@ describe('Single author presenting', function() {
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
     });
-        it("should be able to check content and it should be empty", function(){
-        assert.equal(_.keys(teacherT.texts).length,0);
+    it("student should find the conversation",function(){
+        student.setValue("#conversationSearchBox > input","teacher");
+        student.click("#searchButton");
+        student.pause(1000);
+        student.click(".newConversationTag");
+        student.waitForExist("#board");
     });
-    it("should begin in public mode",function(){
-	assert.equal(teacherT.privacy,"PUBLIC");
+    it("should be able to check content and it should be empty", function(){
+        assert.equal(_.keys(teacherT.texts).length,0);
+        assert.equal(_.keys(studentT.texts).length,0);
     });
     it("should insert a paragraph",function(){
         teacherT.textMode.click();
@@ -145,6 +153,11 @@ describe('Single author presenting', function() {
         assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(_.keys(teacherT.selection.videos).length,0);
         assert.equal(_.keys(teacherT.selection.images).length,1);
+    });
+    it("should see all published elements",function(){
+        assert.equal(_.keys(studentT.imageStanzas).length,1);
+        assert.equal(_.keys(studentT.textStanzas).length,2);
+        assert.equal(_.keys(studentT.inkStanzas).length,3);
     });
     it("should have analyzed the text contents",function(){
         assert.equal(teacherT.themes.length,1);

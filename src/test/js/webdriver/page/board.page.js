@@ -7,6 +7,7 @@ var BoardPage = function(user) {
         return user.execute(sprintf("return worldToScreen(%s,%s)",x,y)).value;
     };
     return Object.create(Page, {
+        privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
         mode: { get:function(){ return user.execute("return Modes.currentMode").value; } },
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
@@ -34,10 +35,10 @@ var BoardPage = function(user) {
         } },
         worldToScreen: { value: worldToScreen },
 
-	themes: {get: function(){ return user.execute("return boardContent.themes"); }},
+        themes: {get: function(){ return user.execute("return boardContent.themes"); }},
 
         selectMode: { get: function() { return user.element("#selectMode"); } },
-	selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },
+        selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },
 
         inkMode: { get: function() { return user.element("#drawMode"); } },
         inkStanzas: { get: function() { return user.execute("return boardContent.inks").value; } },
