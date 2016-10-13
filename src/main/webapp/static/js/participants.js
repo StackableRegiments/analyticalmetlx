@@ -65,6 +65,7 @@ var Participants = (function(){
         },0);
     }
     var onStanzaReceived = function(stanza){
+        var act = false;
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
             if(!(author in participants)){
@@ -76,26 +77,34 @@ var Participants = (function(){
             switch (stanza.type) {
             case "ink":
                 itemToEdit.inks = itemToEdit.inks + 1;
+                act = true;
                 break;
             case "image":
                 itemToEdit.images = itemToEdit.images + 1;
+                act = true;
                 break;
             case "highlighter":
                 itemToEdit.highlighters = itemToEdit.highlighters + 1;
+                act = true;
                 break;
             case "multiWordText":
                 itemToEdit.texts[stanza.identity] = countTexts(stanza);
+                act = true;
                 break;
             case "submission":
                 itemToEdit.submissions = itemToEdit.submissions + 1;
+                act = true;
                 break;
             case "quizResponse":
                 itemToEdit.quizResponses = itemToEdit.quizResponses + 1;
+                act = true;
                 break;
             }
             participants[author] = itemToEdit;
         }
-        updateParticipantsListing();
+        if(act){
+            updateParticipantsListing();
+        }
     };
     var fontSizes = d3.scaleLinear().range([6,30]);
     var themeCloud;

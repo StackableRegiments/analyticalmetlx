@@ -153,10 +153,6 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(_.keys(teacherT.selection.videos).length,0);
         assert.equal(_.keys(teacherT.selection.images).length,1);
-	/*
-	teacher.debug();
-	student.debug();
-	*/
     });
     it("should see all published elements",function(){
         assert.equal(_.keys(studentT.imageStanzas).length,1);
@@ -164,6 +160,6 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(studentT.inkStanzas).length,3);
     });
     it("should have analyzed the text contents",function(){
-        assert.equal(teacherT.themes.length,14);
+	assert(teacherT.cloudData.length > 0);
     });
 });

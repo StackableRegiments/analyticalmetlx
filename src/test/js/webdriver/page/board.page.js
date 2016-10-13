@@ -36,6 +36,7 @@ var BoardPage = function(user) {
         worldToScreen: { value: worldToScreen },
 
         themes: {get: function(){ return user.execute("return boardContent.themes").value; }},
+	cloudData: {get: function(){ return user.execute("return Analytics.word.cloudData()").value; } },
 
         selectMode: { get: function() { return user.element("#selectMode"); } },
         selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },
@@ -61,7 +62,7 @@ var BoardPage = function(user) {
         } },
 
         imageMode: { get: function() { return user.element("#imageMode"); } },
-        imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } },
+        imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } }
 
     });
 }

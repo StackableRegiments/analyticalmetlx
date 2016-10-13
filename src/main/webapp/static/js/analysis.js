@@ -524,52 +524,6 @@ var Analytics = (function(){
 
     };
     return {
-        word:word,
-        prime:function(conversation){
-            status("Retrieving",conversation);
-            $.get(sprintf("/details/%s",conversation),function(details){
-                var render = function(){
-                    Analytics.word.cloud();
-                    status("Analysed","conversation");
-                    adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
-                    chartFollowLag(attendances,details);
-                    chartAttendance(attendances);
-                }
-                $.get(sprintf("/fullClientHistory?source=%s",conversation),function(conversationHistory){
-                    status("Retrieved",conversation);
-                    incorporate(conversationHistory,details);
-                });
-                var slides = $(details).find("slide");
-                var slidesLoaded = 0;
-                console.log(slidesLoaded);
-                _.forEach(slides.find("id"),function(el){
-                    var slide = $(el).text();
-                    status("Retrieving",slide);
-                    $.get(sprintf("/fullClientHistory?source=%s",slide),function(slideHistory){
-                        status("Retrieved",slide);
-                        incorporate(slideHistory,details);
-                        status(sprintf("Incorporated %s",slides.length),"slide(s)");
-                    });
-                    status("Parsing",sprintf("usage %s",slide));
-                    $.get(sprintf("/api/v1/analysis/words/%s",slide),function(words){
-                        _.each($(words).find("theme"),function(theme){
-                            _.each($(theme).find("content").text().split(" "),function(t){
-                                t = t.toLowerCase();
-                                if(typo){
-                                    word.incorporate(t);
-                                }
-                                else{
-                                    typoQueue.push(t);
-                                }
-                            });
-                        })
-                        if(++slidesLoaded == slides.length){
-                            render();
-                            $(window).resize(render);
-                        }
-                    });
-                });
-            });
-        }
+        word:word
     };
 })();
