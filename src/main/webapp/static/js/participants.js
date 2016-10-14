@@ -104,7 +104,7 @@ var Participants = (function(){
         }
         if(act){
             updateParticipantsListing();
-        }
+       }
     };
     var fontSizes = d3.scaleLinear().range([6,30]);
     var themeCloud;
