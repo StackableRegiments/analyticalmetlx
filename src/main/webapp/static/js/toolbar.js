@@ -370,7 +370,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y){
                 WorkQueue.gracefullyResume();
@@ -680,104 +680,104 @@ var bounceButton = function(button){
     },200);
 }
 var videoControlInteractable = function(video){
-	var bounds = undefined;
-	var deactivateFunc = function(){
-			// I don't think this is necessary for this control
-	};
-	return {
-		activated:false,
-		rehome : function(root){
-			// I'm not doing anything with this stuff
-		},
-		down: function(worldPos){
-			return false; 
-		},
-		move: function(worldPos){
-			return false;
-		},
-		up: function(worldPos){
-			deactivateFunc();
-	
-			var bw = Modes.select.handlesAtZoom();
+    var bounds = undefined;
+    var deactivateFunc = function(){
+        // I don't think this is necessary for this control
+    };
+    return {
+        activated:false,
+        rehome : function(root){
+            // I'm not doing anything with this stuff
+        },
+        down: function(worldPos){
+            return false;
+        },
+        move: function(worldPos){
+            return false;
+        },
+        up: function(worldPos){
+            deactivateFunc();
 
-			var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
-			if (position < bw){
-				if (video.getState().paused){
-					video.play();
-				} else {
-					video.pause();
-				}
-			} else if (position > (video.width - bw)){
-				video.muted(!video.muted());
-			} else {
-				var mediaState = video.getState();
-				var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
-				video.seek(seekPos);
-			}
-			return false;
-		},
-		getBounds:function(){return bounds;},
-		deactivate:deactivateFunc,
-		render:function(canvasContext){
-			if (video.identity in boardContent.videos){
-				var h = Modes.select.handlesAtZoom();
-				var x = video.bounds[0];
-				var y = video.bounds[1];
-				bounds = [
-						x,
-						video.bounds[3],
-						video.bounds[2],
-						video.bounds[3] + h
-				];
+            var bw = Modes.select.handlesAtZoom();
 
-				var tl = worldToScreen(bounds[0],bounds[1]);
-				var br = worldToScreen(bounds[2],bounds[3]);
-				var width = br.x - tl.x;
-				var height = br.y - tl.y;
+            var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
+            if (position < bw){
+                if (video.getState().paused){
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            } else if (position > (video.width - bw)){
+                video.muted(!video.muted());
+            } else {
+                var mediaState = video.getState();
+                var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
+                video.seek(seekPos);
+            }
+            return false;
+        },
+        getBounds:function(){return bounds;},
+        deactivate:deactivateFunc,
+        render:function(canvasContext){
+            if (video.identity in boardContent.videos){
+                var h = Modes.select.handlesAtZoom();
+                var x = video.bounds[0];
+                var y = video.bounds[1];
+                bounds = [
+                    x,
+                    video.bounds[3],
+                    video.bounds[2],
+                    video.bounds[3] + h
+                ];
 
-				var mediaState = video.getState();
-				canvasContext.globalAlpha = 1.0;
-				canvasContext.setLineDash([]);
-				canvasContext.strokeStyle = "black";
-				canvasContext.font = sprintf("%spx FontAwesome",height);
-				
-				var buttonWidth = height;
-			
-				// play/pause button
+                var tl = worldToScreen(bounds[0],bounds[1]);
+                var br = worldToScreen(bounds[2],bounds[3]);
+                var width = br.x - tl.x;
+                var height = br.y - tl.y;
 
-				canvasContext.fillStyle = "white";
-				canvasContext.fillRect(tl.x,tl.y,buttonWidth,height); 
-				canvasContext.fillStyle = "black";
-				if (mediaState.paused){
-					canvasContext.fillText("\uF04B",tl.x,br.y);
-				} else {
-					canvasContext.fillText("\uF04C",tl.x,br.y);
-				}
-				
-				// progress meter	
+                var mediaState = video.getState();
+                canvasContext.globalAlpha = 1.0;
+                canvasContext.setLineDash([]);
+                canvasContext.strokeStyle = "black";
+                canvasContext.font = sprintf("%spx FontAwesome",height);
 
-				var progressX = tl.x + buttonWidth;
-				var progressWidth = width - buttonWidth;
-				canvasContext.fillStyle = "black";
-				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
-				canvasContext.fillStyle = "blue";
-				var progressWidth = (mediaState.currentTime / mediaState.duration) * progressWidth;
-				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
+                var buttonWidth = height;
 
-				// mute button
-				
-				var muteX = tl.x + (width - buttonWidth);
-				canvasContext.fillStyle = "white";
-				canvasContext.fillRect(muteX,tl.y,buttonWidth,height); 
-				canvasContext.fillStyle = "black";
-				if (mediaState.muted){
-					canvasContext.fillText("\uF0F3",muteX,br.y);
-				} else {
-					canvasContext.fillText("\uF1F6",muteX,br.y);
-				}
-			}
-		}
-	};
+                // play/pause button
+
+                canvasContext.fillStyle = "white";
+                canvasContext.fillRect(tl.x,tl.y,buttonWidth,height);
+                canvasContext.fillStyle = "black";
+                if (mediaState.paused){
+                    canvasContext.fillText("\uF04B",tl.x,br.y);
+                } else {
+                    canvasContext.fillText("\uF04C",tl.x,br.y);
+                }
+
+                // progress meter
+
+                var progressX = tl.x + buttonWidth;
+                var progressWidth = width - buttonWidth;
+                canvasContext.fillStyle = "black";
+                canvasContext.fillRect(progressX,tl.y,progressWidth,height);
+                canvasContext.fillStyle = "blue";
+                var progressWidth = (mediaState.currentTime / mediaState.duration) * progressWidth;
+                canvasContext.fillRect(progressX,tl.y,progressWidth,height);
+
+                // mute button
+
+                var muteX = tl.x + (width - buttonWidth);
+                canvasContext.fillStyle = "white";
+                canvasContext.fillRect(muteX,tl.y,buttonWidth,height);
+                canvasContext.fillStyle = "black";
+                if (mediaState.muted){
+                    canvasContext.fillText("\uF0F3",muteX,br.y);
+                } else {
+                    canvasContext.fillText("\uF1F6",muteX,br.y);
+                }
+            }
+        }
+    };
 };
 
 var Modes = (function(){
@@ -825,9 +825,9 @@ var Modes = (function(){
         var s = Modes.select.handlesAtZoom();
         var manualMove = (
             function(){
-								var bounds = undefined;
+                var bounds = undefined;
                 return {
-									getBounds:function(){return bounds;},
+                    getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -922,9 +922,9 @@ var Modes = (function(){
             })();
         var resizeAspectLocked = (
             function(){
-							var bounds = undefined;
+                var bounds = undefined;
                 return {
-									getBounds:function(){return bounds;},
+                    getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -948,8 +948,9 @@ var Modes = (function(){
                         resizeAspectLocked.activated = true;
                         var root = Modes.select.totalSelectedBounds();
                         Modes.select.offset = {x:root.x2,y:root.y2};
-												resizeAspectLocked.rehome(root);
+                        resizeAspectLocked.rehome(root);
                         blit();
+                        console.log("Aspect locked down");
                         return false;
                     },
                     move:function(worldPos){
@@ -1035,10 +1036,10 @@ var Modes = (function(){
             })();
 
         var resizeFree = (function(){
-					var bounds = undefined;
+            var bounds = undefined;
             return {
                 activated:false,
-								getBounds:function(){return bounds;},
+                getBounds:function(){return bounds;},
                 rehome : function(root){
                     if(!resizeFree.activated){
                         var s = Modes.select.handlesAtZoom();
@@ -1060,6 +1061,8 @@ var Modes = (function(){
                     var root = Modes.select.totalSelectedBounds();
                     Modes.select.offset = {x:root.x2,y:root.y2};
                     blit();
+
+                    console.log("Free transform down");
                     return false;
                 },
                 move:function(worldPos){
@@ -1110,6 +1113,7 @@ var Modes = (function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
+                    console.log("Free transform up");
                     sendStanza(resized);
                     blit();
                     return false;
@@ -1164,12 +1168,21 @@ var Modes = (function(){
             }
         };
     });
-		var clearCanvasInteractableFunc = function(category){
-			Modes.canvasInteractables[category] = [];
-		};
+    var clearCanvasInteractableFunc = function(category){
+        Modes.canvasInteractables[category] = [];
+    };
     return {
-				pushCanvasInteractable:pushCanvasInteractableFunc,
-				clearCanvasInteractables:clearCanvasInteractableFunc,
+        pushCanvasInteractable:pushCanvasInteractableFunc,
+        clearCanvasInteractables:clearCanvasInteractableFunc,
+        getCanvasInteractables:function(){
+            return _.mapValues(Modes.canvasInteractables,function(interactables){
+                return _.map(interactables,function(v){
+                    var _v = _.clone(v);
+                    _v.bounds = _v.getBounds();
+                    return _v;
+                });
+            });
+        },
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},
@@ -1198,8 +1211,8 @@ var Modes = (function(){
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     privacy:Privacy.getCurrentPrivacy(),
-										slide:Conversations.getCurrentSlideJid(),
-										target:"presentationSpace",
+                    slide:Conversations.getCurrentSlideJid(),
+                    target:"presentationSpace",
                     requestedWidth:width,
                     width:width,
                     height:0,
@@ -1261,61 +1274,30 @@ var Modes = (function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            var source = d.save();
-														
-														var originalRange = d.selectedRange();
-														var original = {
-															start:originalRange.start,
-															end:originalRange.end
-														};
-														var start = original.start;
-														var end = original.start;
-														var referenceRuns = [];
-														d.select(0,original.end,true);
-														var refStart = 0;
-														d.runs(function(referenceRun){
-															var newEnd = refStart + _.size(referenceRun.text);
-															d.select(refStart,newEnd,true);
-															var formatting = d.selectedRange().getFormatting();
-															referenceRuns.push({
-																start:refStart,
-																end:newEnd,
-																run:referenceRun,
-																formatting:formatting
-															});
-															refStart = newEnd;
-														},d.selectedRange());
-
-														d.select(original.start,original.end,true);
-														d.runs(function(runToAlter){
-															start = end;
-															end = start + runToAlter.text.length;
-															d.select(start,end,true);
-															var size = d.selectedRange().getFormatting().size;
-															if (size == undefined){
-																var candidate = _.findLast(referenceRuns,function(run){
-																	return "formatting" in run && "size" in run.formatting && run.end <= end; 
-																});
-																if (candidate != undefined && "formatting" in candidate && "size" in candidate.formatting){
-																	size = candidate.formatting.size;
-																}
-															};
-															if (size != undefined){
-																d.selectedRange().setFormatting("size",size * factor);
-															}
-														},d.selectedRange());
-
-														d.select(original.start,original.end,true);
-														
-/*
-                            _.each(source,function(run){
-                                run.size = run.size * factor;
-                            });
-                            d.load(source);
-*/
-                            if(d.save().length > 0){
-                                sendRichText(t);
-                            }
+                            var originalRange = d.selectedRange();
+                            var refStart = 0;
+                            var sizes = [];
+                            var refSize = carota.runs.defaultFormatting.size;
+                            d.runs(function(referenceRun) {
+                                var runLength = _.size(referenceRun.text);
+                                var newEnd = refStart + runLength;
+                                d.select(refStart,newEnd,true);
+                                var size = d.selectedRange().getFormatting().size || refSize;
+                                _.each(_.range(refStart,newEnd),function(){
+                                    sizes.push(size);
+                                });
+                                refStart = newEnd;
+                                refSize = size;
+                            },d.range(0,originalRange.end));
+                            sizes = sizes.reverse();
+                            refStart = originalRange.start;
+                            d.runs(function(runToAlter){
+                                var refEnd = refStart + runToAlter.text.length;
+                                d.select(refStart,refEnd,true);
+                                d.selectedRange().setFormatting("size",sizes[refStart] * factor);
+                                refStart = refEnd;
+                            },originalRange);
+                            d.select(originalRange.start,originalRange.end,true);
                         }
                     });
                 };
@@ -1386,7 +1368,7 @@ var Modes = (function(){
                         });
                     };
                 }
-                fontLargerSelector.click(scaleCurrentSelection(1.2));
+                fontLargerSelector.on("click",scaleCurrentSelection(1.2));
                 fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
@@ -1415,6 +1397,7 @@ var Modes = (function(){
                 });
             });
             return {
+                name:"text",
                 echoesToDisregard:{},
                 minimumWidth:240,
                 minimumHeight:function(){
@@ -1553,10 +1536,6 @@ var Modes = (function(){
                     var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
                     var texts = _.values(boardContent.multiWordTexts).filter(function(text){
                         var intersects = intersectRect(text.bounds,ray)
-                        if(intersects){
-                            console.log("intersects",text.bounds,ray);
-                            console.log(sprintf("%s clicked box by %s",Participants.code(me),Participants.code(text.author)));
-                        }
                         return intersects && (text.author == me);
                     });
                     if(texts.length > 0){
@@ -1693,7 +1672,7 @@ var Modes = (function(){
                 var reader = new FileReader();
                 reader.onload = function(readerE){
                     var vid = $("<video/>");
-										var thisVid = vid[0];
+                    var thisVid = vid[0];
                     var originalSrc = readerE.target.result;
                     var originalSize = originalSrc.length;
                     thisVid.addEventListener("loadeddata",function(e){
@@ -1702,14 +1681,14 @@ var Modes = (function(){
                         currentVideo.width = width;
                         currentVideo.height = height;
                         currentVideo.video = vid;
-												currentVideo.videoSrc = originalSrc;
+                        currentVideo.videoSrc = originalSrc;
                         onComplete();
                     },false);
                     vid.append($("<source />",{
-											src:originalSrc,
-											type:"video/mp4"
-										}));
-										vid.load();
+                        src:originalSrc,
+                        type:"video/mp4"
+                    }));
+                    vid.load();
                 }
                 reader.readAsDataURL(currentVideo.fileUpload);
             };
@@ -2175,7 +2154,7 @@ var Modes = (function(){
                             s.texts,
                             s.multiWordTexts,
                             s.images,
-														s.videos
+                            s.videos
                         );
                     }
                 }
@@ -2233,7 +2212,7 @@ var Modes = (function(){
                     texts:{},
                     inks:{},
                     multiWordTexts:{},
-										videos:{}
+                    videos:{}
                 },
                 resizeHandleSize:20,
                 setSelection:function(selected){
@@ -2311,7 +2290,7 @@ var Modes = (function(){
                         func("texts");
                         func("multiWordTexts");
                         func("inks");
-												func("videos");
+                        func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
                         Modes.select.resizing = false;
@@ -2412,7 +2391,7 @@ var Modes = (function(){
                                     texts:{},
                                     inks:{},
                                     multiWordTexts:{},
-																		videos:{}
+                                    videos:{}
                                 };
                                 var intersectAuthors = {};
                                 var intersections = {};
@@ -2430,9 +2409,9 @@ var Modes = (function(){
                                                 case "ink":
                                                     prerenderInk(item);
                                                     break;
-																								case "video":
-																										prerenderVideo(item);
-																										break;		
+                                                case "video":
+                                                    prerenderVideo(item);
+                                                    break;
                                                 default:
                                                     item.bounds = [NaN,NaN,NaN,NaN];
                                                 }
@@ -2474,9 +2453,9 @@ var Modes = (function(){
                                 /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
                                 var toggleCategory = function(category){
                                     $.each(intersected[category],function(id,item){
-																				if (!(category in Modes.select.selected)){
-																					Modes.select.selected[category] = [];
-																				}
+                                        if (!(category in Modes.select.selected)){
+                                            Modes.select.selected[category] = [];
+                                        }
                                         if(category in Modes.select.selected && id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
                                         } else {
@@ -2522,7 +2501,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
-										blit();
+                    blit();
                     blit();
                 }
             }

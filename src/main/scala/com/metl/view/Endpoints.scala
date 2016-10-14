@@ -40,14 +40,6 @@ object SystemRestHelper extends RestHelper with Stemmer with Logger {
       () => Stopwatch.time("SystemRestHelper.mergedHistory", StatelessHtml.mergedHistory(jid,onBehalfOf))
     case r @ Req(List("api","v1","history","description",jid),_,_) =>
       () => Stopwatch.time("SystemRestHelper.describeHistory", StatelessHtml.describeHistory(jid))
-    case r @ Req(List("api","v1","analysis","themes",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.themes", StatelessHtml.themes(jid))
-    case r @ Req(List("api","v1","analysis","chunks",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.chunks", StatelessHtml.chunks(jid))
-    case r @ Req(List("api","v1","analysis","words",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
-    case r @ Req(List("api","v1","analysis","handwriting",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.handwriting", Full(XmlResponse(StatelessHtml.handwriting(jid))))
     case r @ Req(List("api","v1","conversation","details",jid),_,_) =>
       () => Stopwatch.time("SystemRestHelper.details", StatelessHtml.details(jid))
     case Req(List("api","v1","conversation","search",query),_,_) =>
@@ -182,14 +174,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
     case r @ Req("describeHistory" :: _,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
-    case r @ Req(List("themes",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.themes", StatelessHtml.themes(jid))
-    case r @ Req(List("chunks",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.chunks", StatelessHtml.chunks(jid))
-    case r @ Req(List("words",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
-    case r @ Req(List("handwriting",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.handwriting", Full(XmlResponse(StatelessHtml.handwriting(jid))))
     case r @ Req(List("details",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.details", StatelessHtml.details(jid))
     case r @ Req(List("setUserOptions"),_,_) =>
@@ -281,17 +265,17 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     })
     case r@Req("reportLatency" :: Nil,_,_) => {
       val start = new java.util.Date().getTime
-      () => Stopwatch.time("MeTLRestHelper.reportLatency", {
-        for {
-          min <- r.param("minLatency")
-          max <- r.param("maxLatency")
-          mean <- r.param("meanLatency")
-          samples <- r.param("sampleCount")
-        } yield {
-          info("[%s] miliseconds clientReportedLatency".format(mean))
-        }
-        Full(PlainTextResponse((new java.util.Date().getTime - start).toString, List.empty[Tuple2[String,String]], 200))
-      })
+        () => Stopwatch.time("MeTLRestHelper.reportLatency", {
+          for {
+            min <- r.param("minLatency")
+            max <- r.param("maxLatency")
+            mean <- r.param("meanLatency")
+            samples <- r.param("sampleCount")
+          } yield {
+            info("[%s] miliseconds clientReportedLatency".format(mean))
+          }
+          Full(PlainTextResponse((new java.util.Date().getTime - start).toString, List.empty[Tuple2[String,String]], 200))
+        })
     }
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"print")

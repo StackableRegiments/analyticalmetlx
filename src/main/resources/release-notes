@@ -1,3 +1,11 @@
+0.7
+Bugfix: Resize selected text.
+Feature: User-Agent logging to feed analysis of client browsers/machines.
+Bugfix: Complex text serialization.
+Bugfix: Fixed remaining uses of "quiz" instead of "poll".
+Improvement: Additional unit testing.
+
+0.6
 Feature: analytics.
 Performance: localise fonts and images to speed up loading.
 Performance: reduce number of server calls per request.

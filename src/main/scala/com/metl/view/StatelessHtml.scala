@@ -255,28 +255,6 @@ object StatelessHtml extends Stemmer with Logger {
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),{
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
   })
-  def themes(slide:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(slide), Full(XmlResponse(nouns(slide))))
-  def chunks(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.chunks(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val elements = history.getCanvasContents
-    val chunked = CanvasContentAnalysis.chunk(elements)
-    Full(XmlResponse(
-      <contentRuns>
-        <slide>jid</slide>
-        <timeThreshold>{chunked.timeThreshold.toString}</timeThreshold>
-        {
-          chunked.chunksets.map(chunkset =>
-            {
-              <runs author={chunkset.author}>
-              {
-                chunkset.chunks.map(chunk => <run start={chunk.start.toString} end={chunk.end.toString} activity={chunk.activity.size.toString} miliseconds={chunk.milis.toString} />)
-              }
-              </runs>
-            })
-        }
-        </contentRuns>
-    ))
-  })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
   def fullHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>)))
 

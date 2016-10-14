@@ -11,14 +11,12 @@
       <Pattern>%d{MM-dd-YYYY HH:mm:ss.SSSz} - MeTL - %msg%n</Pattern>
     </encoder>
   </appender>
-  <!--
-      <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-      <file>debug.log</file>
-      <encoder>
-      <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
-      </encoder>
-      </appender>
-  -->
+  <appender name="DEBUG" class="ch.qos.logback.core.FileAppender">
+  <file>debug.log</file>
+  <encoder>
+  <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+</encoder>
+</appender>
   <!--
       <logger name="metlx.proxy.debugLogger" level="all">
       <appender-ref ref="FILE"/>
@@ -41,5 +39,6 @@
   <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
   <root level="INFO">
     <appender-ref ref="STDOUT"/>
+    <appender-ref ref="DEBUG"/>
   </root>
 </configuration>

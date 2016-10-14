@@ -3,7 +3,7 @@ import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
-version := "0.6.4"
+version := "0.7.2"
 organization := "com.stackableregiments"
 
 val scalaVersionString = "2.11.5"
@@ -178,11 +178,15 @@ traceLevel := 10
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
 
-val integrationTests = taskKey[Unit]("integration tests")
+val functionalSingleTests = taskKey[Unit]("functional single-player tests")
+val functionalMultiTests = taskKey[Unit]("functional multi-player tests")
 
 lazy val library = (project in file("library")).
   settings(
-    integrationTests := {
-      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.conf.js", ".")) #>> file("integrationTests.log") !
+    functionalSingleTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.single.conf.js", ".")) #>> file("functionalSingleTests.log") !
+    },
+    functionalMultiTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
     }
   )

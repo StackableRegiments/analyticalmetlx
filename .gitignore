@@ -1,6 +1,10 @@
+.functional.sh
+std.out
+.wdio.conf.dyn.js
 target
 output
 logs
+errorShots
 debug.log
 .ivy2
 .sbt-boot
@@ -8,7 +12,7 @@ testdb*
 .DS_Store
 node_modules
 src/main/assets/build/source/
-security.log
+*.log
 config/configuration.local.xml
 config/configuration.xml
 
