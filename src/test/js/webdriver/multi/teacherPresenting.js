@@ -10,18 +10,18 @@ student.windowHandlePosition({x:500,y:0});
 describe('When a teacher presents, they', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
-    it('should go to application', function () {
+    it('should find the application', function () {
         browser.url('/board');
     });
-    it('should login', function () {
+    it('should successfully login', function () {
         teacher.setValue('input[type=text]', 'teacher');
         student.setValue('input[type=text]', 'student');
     });
-    it('should submit the login form', function () {
+    it('should be able to submit the login form', function () {
         browser.click('input[type=submit]');
         browser.waitForExist("#conversationSearchBox");
     });
-    it("should join a new conversation", function() {
+    it("should be able to create and join a conversation", function() {
         teacher.waitForExist("#createConversationButton");
         var previousConversations = teacher.execute("return Conversations.getConversationListing()").value;
         teacher.click("#createConversationButton");
@@ -37,14 +37,14 @@ describe('When a teacher presents, they', function() {
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
     });
-    it("student should find the conversation",function(){
+    it("should have their students able to find the conversation",function(){
         student.setValue("#conversationSearchBox > input","teacher");
         student.click("#searchButton");
         student.pause(1000);
         student.click(".newConversationTag");
         student.waitForExist("#board");
     });
-    it("should be able to check content and it should be empty", function(){
+    it("should all be able to verify that the board is blank", function(){
         assert.equal(_.keys(teacherT.texts).length,0);
         assert.equal(_.keys(studentT.texts).length,0);
     });
@@ -81,7 +81,7 @@ describe('When a teacher presents, they', function() {
         assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[1]].words.length,[
             "Consistently sized run"].length);
     });
-    it("should be draggable",function(){
+    it("should be able to drag their new textbox",function(){
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,600);
         assert.equal(active.y,500);
@@ -92,7 +92,7 @@ describe('When a teacher presents, they', function() {
         assert.equal(active.x,100);
         assert.equal(active.y,250);
     });
-    it("should scale aspect locked",function(){
+    it("be able to rescale all the font in their new textbox",function(){
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.width,240);
         assert.equal(active.x,100);
@@ -108,12 +108,12 @@ describe('When a teacher presents, they', function() {
     it("should scroll up on swipe out",function(){
         teacherT.swipeUp();
     });
-    if("should reselect box",function(){
+    if("should be able to reselect their box",function(){
         teacher.moveToObject("#board",200,300);
         teacher.leftClick();
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
-    it("should rewrap text retaining font size",function(){
+    it("should be able to resize their box rewrapping instead of rescaling the text",function(){
         var handle = teacherT.interactables.resizeFree[0];
         teacher.pause(ANIMATION_DELAY);
         teacherT.drag(handle,{x:200,y:0});
@@ -122,7 +122,7 @@ describe('When a teacher presents, they', function() {
         assert.equal(active.width,638);
         assert.equal(active.words[0].size, 55);
     });
-    it("should draw ink", function(){
+    it("should be able to draw ink", function(){
         teacherT.inkMode.click();
 
         var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == "teacher";}).length;
@@ -146,17 +146,17 @@ describe('When a teacher presents, they', function() {
         }
         assert.equal(_.keys(teacherT.inkStanzas).length,4);
     });
-    it("should add an image",function(){
+    it("should be able to add an image",function(){
         teacherT.imageMode.click();
         teacher.click("#board");
         teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         teacher.pause(4000);
         assert.equal(_.keys(teacherT.imageStanzas).length,1);
     });
-    it("should enter already selected",function(){
+    it("should have their new image selected when it appears",function(){
         assert.equal(_.keys(teacherT.selection.images).length,1);
     });
-    it("should clear the selection if the empty canvas is clicked",function(){
+    it("should be able to clear their selection by clicking on an empty spot on the canvas",function(){
         teacherT.selectMode.click();
         teacher.leftClick("#board",1,1);
         assert.equal(_.keys(teacherT.selection.inks).length,0);
@@ -165,7 +165,7 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(teacherT.selection.videos).length,0);
         assert.equal(_.keys(teacherT.selection.images).length,0);
     });
-    it("should select all items under the mouse when clicked",function(){
+    it("should select all the items that are under their mouse when they click the board",function(){
         teacher.leftClick("#board",250,250);
         assert.equal(_.keys(teacherT.selection.inks).length,1);
         assert.equal(_.keys(teacherT.selection.texts).length,0);
@@ -173,12 +173,25 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(teacherT.selection.videos).length,0);
         assert.equal(_.keys(teacherT.selection.images).length,1);
     });
-    it("should see all published elements",function(){
-        assert.equal(_.keys(studentT.imageStanzas).length,1);
+    it("should have their students see all their public elements",function(){
         assert.equal(_.keys(studentT.textStanzas).length,2);
         assert.equal(_.keys(studentT.inkStanzas).length,4);
+        assert.equal(_.keys(studentT.imageStanzas).length,1);
     });
-    it("should have analyzed the text contents",function(){
+    it("should be able to delete their selected elements",function(){
+        teacherT.deleteSelection.click();
+    });
+    it("should have their students see all their remaining public elements",function(){
+        student.waitUntil(function(){
+            return _.keys(studentT.imageStanzas).length == 0;
+        });
+        assert.equal(_.keys(studentT.textStanzas).length,1);
+        assert.equal(_.keys(studentT.inkStanzas).length,3);
+    });
+    it("should have their participants view show the themes so far introduced in their conversation",function(){
         assert(teacherT.cloudData.length > 0);
+    });
+    it("should not have their students see their private content",function(){
+        teacherT.privateMode.click();
     });
 });

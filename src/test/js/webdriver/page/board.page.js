@@ -8,6 +8,9 @@ var BoardPage = function(user) {
     };
     return Object.create(Page, {
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
+	privateMode: { get:function(){ return user.element("#privateMode") } },
+	publicMode: { get:function(){ return user.element("#publicMode") } },
+	
         mode: { get:function(){ return user.execute("return Modes.currentMode").value; } },
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
