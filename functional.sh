@@ -24,6 +24,7 @@ else
     ./sbt.sh container:launch &
 fi
 
+snap-shell
 echo "Waiting for boot"
 { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
 echo "Boot complete"
