@@ -1,6 +1,6 @@
 MODE=${1:-multi}
 echo "$MODE player mode"
-: >debug.log
+touch debug.log
 
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
