@@ -8,9 +8,9 @@ var BoardPage = function(user) {
     };
     return Object.create(Page, {
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
-	privateMode: { get:function(){ return user.element("#privateMode") } },
-	publicMode: { get:function(){ return user.element("#publicMode") } },
-	
+        privateMode: { get:function(){ return user.element("#privateMode") } },
+        publicMode: { get:function(){ return user.element("#publicMode") } },
+
         mode: { get:function(){ return user.execute("return Modes.currentMode").value; } },
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
@@ -38,8 +38,11 @@ var BoardPage = function(user) {
         } },
         worldToScreen: {value: worldToScreen },
         screenToWorld: {value: function(x,y){return user.execute(sprintf("return screenToWorld(%s,%s)",x,y)).value; }},
+
         menuButton: {get: function(){return user.element("#applicationMenuButton");}},
+
         recycleBinMenu: {get: function(){return user.element("#menuRecycleBin");}},
+        recycleables:{get:function(){return user.execute('return _.map($(".rowIdentity"),function(r){return $(r).text()})').value; }},
 
         themes: {get: function(){ return user.execute("return boardContent.themes").value; }},
         cloudData: {get: function(){ return user.execute("return Analytics.word.cloudData()").value; } },

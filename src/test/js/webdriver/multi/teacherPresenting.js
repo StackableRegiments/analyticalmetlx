@@ -5,8 +5,10 @@ var sprintf = require('sprintf-js').sprintf;
 
 var ANIMATION_DELAY = 300;
 
-teacher.windowHandlePosition({x:0,y:0});
-student.windowHandlePosition({x:500,y:0});
+if(!process.env.CI){
+    teacher.windowHandlePosition({x:0,y:0});
+    student.windowHandlePosition({x:500,y:0});
+}
 describe('When a teacher presents, they', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
@@ -147,10 +149,13 @@ describe('When a teacher presents, they', function() {
         assert.equal(_.keys(teacherT.inkStanzas).length,4);
     });
     it("should be able to add an image",function(){
+        assert.equal(_.keys(teacherT.imageStanzas).length,0);
         teacherT.imageMode.click();
         teacher.click("#board");
         teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
-        teacher.pause(4000);
+        teacher.waitUntil(function(){
+            return _.keys(teacherT.imageStanzas).length == 1;
+        });
         assert.equal(_.keys(teacherT.imageStanzas).length,1);
     });
     it("should have their new image selected when it appears",function(){
@@ -193,5 +198,19 @@ describe('When a teacher presents, they', function() {
     });
     it("should not have their students see their private content",function(){
         teacherT.privateMode.click();
+        teacherT.imageMode.click();
+        teacher.click("#board");
+        teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+        teacher.waitUntil(function(){
+            return _.keys(teacherT.imageStanzas).length == 1;
+        });
+        assert.equal(_.keys(studentT.imageStanzas).length,0);
+    });
+    it("should be able to restore their deleted content from the recycle bin",function(){
+        teacherT.menuButton.click();
+        teacherT.recycleBinMenu.click();
+        teacher.waitUntil(function(){
+            return teacherT.recycleables.length == 3;
+        });
     });
 });

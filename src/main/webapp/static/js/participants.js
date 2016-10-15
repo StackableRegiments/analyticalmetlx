@@ -104,7 +104,7 @@ var Participants = (function(){
         }
         if(act){
             updateParticipantsListing();
-       }
+        }
     };
     var fontSizes = d3.scaleLinear().range([6,30]);
     var themeCloud;
@@ -268,6 +268,7 @@ var Participants = (function(){
         updateParticipantsListing();
     });
     Progress.stanzaReceived["participants"] = onStanzaReceived;
+    Progress.themeReceived["participants"] = updateParticipantsListing;
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
