@@ -15,6 +15,7 @@ if [[ "$SNAP_CI" ]]; then
 
     sbt compile
     sbt -Xms1536m -Xmx1536m -logback.configurationFile="config/logback.xml" -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
+    sleep 40
 else
     echo "Running on local"
     wmic process where "name like '%java%'" delete
@@ -22,11 +23,9 @@ else
     java -jar -Dwebdriver.chrome.driver=./tools/chromedriver/2.24-x64-chromedriver ./tools/selenium-2.53.1-server.jar &
 
     ./sbt.sh container:launch &
+    { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
 fi
 
-snap-shell
-echo "Waiting for boot"
-{ tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
 echo "Boot complete"
 ./node_modules/.bin/wdio wdio.${MODE}.conf.js
 
