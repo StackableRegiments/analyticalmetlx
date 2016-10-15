@@ -1,7 +1,6 @@
 MODE=${1:-multi}
 echo "$MODE player mode"
 touch debug.log
-echo "Detecting launch on debug.log"
 
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
@@ -16,6 +15,7 @@ if [[ "$SNAP_CI" ]]; then
     sbt compile
     sbt -Xms1536m -Xmx1536m -logback.configurationFile="config/logback.xml" -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
     sleep 40
+    ./node_modules/wdio/node_modules/.bin/wdio wdio.${MODE}.conf.js
 else
     echo "Running on local"
     wmic process where "name like '%java%'" delete
@@ -24,14 +24,6 @@ else
 
     ./sbt.sh container:launch &
     { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
-fi
-
-echo "Boot complete"
-./node_modules/.bin/wdio wdio.${MODE}.conf.js
-
-if [[ "$SNAP_CI" ]] ; then
-    echo "Closing on CI"
-else
-    echo "Closing on local"
+    ./node_modules/.bin/wdio wdio.${MODE}.conf.js
     wmic process where "name like '%java%'" delete
 fi
