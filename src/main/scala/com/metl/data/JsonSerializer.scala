@@ -257,6 +257,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       case jo:JObject if (isOfType(jo,"attendance")) => toMeTLAttendance(jo)
       case jo:JObject if (isOfType(jo,"file")) => toMeTLFile(jo)
       case jo:JObject if (isOfType(jo,"videoStream")) => toMeTLVideoStream(jo)
+      case jo:JObject if (isOfType(jo,"undeletedCanvasContent")) => toMeTLUndeletedCanvasContent(jo)
       case other:JObject if hasFields(other,List("target","privacy","slide","identity")) => toMeTLUnhandledCanvasContent(other)
       case other:JObject if hasFields(other,List("author","timestamp")) => toMeTLUnhandledStanza(other)
       case other:JObject => toMeTLUnhandledData(other)
@@ -764,7 +765,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
       JField("oldIdentity",JString(input.oldElementIdentity)),
       JField("newIdentity",JString(input.newElementIdentity)),
       JField("elementType",JString(input.elementType))
-    ) ::: parseCanvasContent(input))
+    ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   })
 
   protected val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.

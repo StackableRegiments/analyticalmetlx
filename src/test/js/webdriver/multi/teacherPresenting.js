@@ -22,8 +22,18 @@ describe('When a teacher presents, they', function() {
         browser.waitForExist("#conversationSearchBox");
     });
     it("should join a new conversation", function() {
+        teacher.waitForExist("#createConversationButton");
+        var previousConversations = teacher.execute("return Conversations.getConversationListing()").value;
         teacher.click("#createConversationButton");
-        teacher.pause(1000);
+        teacher.waitUntil(function(){
+            return teacher.execute("return Conversations.getConversationListing()").value.length == (previousConversations.length + 1);
+        },5000,"expected a new conversation to appear");
+        var newConversations = _.filter(teacher.execute("return Conversations.getConversationListing()").value,function(nc){
+            return !_.some(previousConversations,function(pc){
+                return pc == nc;
+            });
+        });
+        assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
     });
@@ -114,6 +124,15 @@ describe('When a teacher presents, they', function() {
     });
     it("should draw ink", function(){
         teacherT.inkMode.click();
+
+        var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == "teacher";}).length;
+        teacherT.handwrite(_.map(_.range(300,600,5), function(i){
+            return {x:i,y:i};
+        }));
+        teacher.waitUntil(function(){
+            return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length == (inkStanzasBefore + 1);
+        },5000,"expected new ink to appear in inkStanzas after looping through server");
+        assert.equal(_.keys(teacherT.inkStanzas).length,1);
         for(var i = 2; i < 5; i++){
             var len = 35;
             var root = (len + 20) * i;
@@ -125,7 +144,7 @@ describe('When a teacher presents, they', function() {
                 };
             }));
         }
-        assert.equal(_.keys(teacherT.inkStanzas).length,3);
+        assert.equal(_.keys(teacherT.inkStanzas).length,4);
     });
     it("should add an image",function(){
         teacherT.imageMode.click();
@@ -148,7 +167,7 @@ describe('When a teacher presents, they', function() {
     });
     it("should select all items under the mouse when clicked",function(){
         teacher.leftClick("#board",250,250);
-        assert.equal(_.keys(teacherT.selection.inks).length,0);
+        assert.equal(_.keys(teacherT.selection.inks).length,1);
         assert.equal(_.keys(teacherT.selection.texts).length,0);
         assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(_.keys(teacherT.selection.videos).length,0);
@@ -157,9 +176,9 @@ describe('When a teacher presents, they', function() {
     it("should see all published elements",function(){
         assert.equal(_.keys(studentT.imageStanzas).length,1);
         assert.equal(_.keys(studentT.textStanzas).length,2);
-        assert.equal(_.keys(studentT.inkStanzas).length,3);
+        assert.equal(_.keys(studentT.inkStanzas).length,4);
     });
     it("should have analyzed the text contents",function(){
-	assert(teacherT.cloudData.length > 0);
+        assert(teacherT.cloudData.length > 0);
     });
 });
