@@ -68,8 +68,6 @@ describe('When a teacher presents, they', function() {
         teacher.moveToObject("#board",100,300);
         teacher.doDoubleClick();
         teacher.click("#redText");
-        assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
-            "Before","Enlarged","After","Red","After"].length);
         teacher.moveToObject("#board",100,400);
         teacher.doDoubleClick();
         teacher.click("#fontLarger");
