@@ -23,7 +23,9 @@ else
     ./sbt.sh container:launch &
 fi
 
+echo "Waiting for boot"
 { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
+echo "Boot complete"
 ./node_modules/.bin/wdio wdio.${MODE}.conf.js
 
 if [[ "$SNAP_CI" ]] ; then
