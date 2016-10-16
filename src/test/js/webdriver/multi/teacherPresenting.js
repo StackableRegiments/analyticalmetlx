@@ -3,7 +3,7 @@ var assert = require('assert');
 var board = require('../page/board.page');
 var sprintf = require('sprintf-js').sprintf;
 
-var ANIMATION_DELAY = 300;
+var ANIMATION_DELAY = 500;
 
 if(!process.env.CI){
     teacher.windowHandlePosition({x:0,y:0});
@@ -17,6 +17,9 @@ var debugUnless = function(condF,fail){
         console.log(fail);
     }
 };
+var within = function(a,b,tolerance){
+    return Math.abs(a - b) <= tolerance;
+}
 describe('When a teacher presents, they', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
@@ -68,7 +71,7 @@ describe('When a teacher presents, they', function() {
     it("should highlight a word and enlarge it",function(){
         teacher.moveToObject("#board",100,100);
 
-	teacher.leftClick();
+        teacher.leftClick();
         teacher.doDoubleClick();
         teacher.waitUntil(function(){/*Paragraph*/
             var r = teacherT.selectedRanges[0];
@@ -140,7 +143,7 @@ describe('When a teacher presents, they', function() {
 
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert.equal(active.width,437);
+        assert(within(active.width,437,2));
         assert.equal(active.words[0].size, 55);
     });
     it("should scroll up on swipe out",function(){
@@ -159,6 +162,7 @@ describe('When a teacher presents, they', function() {
         assert.equal(active.x,100);
         assert.equal(active.words[0].size, 55);
         teacher.waitUntil(function(){
+            console.log(active.width);
             return active.width == 638;
         });
     });
