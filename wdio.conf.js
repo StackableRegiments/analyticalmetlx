@@ -2,7 +2,7 @@ var config = {
     exclude: [],
     maxInstances: 10,
     sync: true,
-    logLevel: 'terse',
+    logLevel: 'warn',
     coloredLogs: true,
     screenshotPath: './errorShots/',
     baseUrl: 'http://localhost:8080',

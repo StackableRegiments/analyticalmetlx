@@ -16,6 +16,12 @@ var debugUnless = function(condF,fail){
 var within = function(a,b,tolerance){
     return Math.abs(a - b) <= tolerance;
 }
+var doubleClick = function(user,x,y){
+    user.moveToObject("#board",x,y);
+    /*On the theory that the wire protocol double click is problematic*/
+    user.leftClick();
+    user.leftClick();
+}
 describe('When a teacher presents, they', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
@@ -65,13 +71,9 @@ describe('When a teacher presents, they', function() {
             "Consistently sized run"].length);
     });
     it("should highlight a word and enlarge it",function(){
-        teacher.moveToObject("#board",100,100);
-
-        teacher.leftClick();
-        teacher.doDoubleClick();
+        doubleClick(teacher,100,100);
         teacher.waitUntil(function(){/*Paragraph*/
             var r = teacherT.selectedRanges[0];
-            console.log(r);
             return r.start == 10 && r.end == 19;
         });
 
@@ -81,9 +83,7 @@ describe('When a teacher presents, they', function() {
                 ["Before","Enlarged","After"].length;
         });
 
-        teacher.moveToObject("#board",100,300);
-
-        teacher.doDoubleClick();
+	doubleClick(teacher,100,300);
         teacher.waitUntil(function(){/*Programatically*/
             var r = teacherT.selectedRanges[0];
             console.log(r);
@@ -96,9 +96,7 @@ describe('When a teacher presents, they', function() {
                 ["Before","Enlarged","After","Red","After"].length;
         });
 
-        teacher.moveToObject("#board",100,400);
-
-        teacher.doDoubleClick();
+	doubleClick(teacher,100,400);
         teacher.waitUntil(function(){/*multiple*/
             var r = teacherT.selectedRanges[0];
             console.log(r);
@@ -158,7 +156,7 @@ describe('When a teacher presents, they', function() {
         assert.equal(active.x,100);
         assert.equal(active.words[0].size, 55);
         teacher.waitUntil(function(){
-	    console.log(active.width);
+            console.log(active.width);
             return within(active.width,638,2);
         });
     });

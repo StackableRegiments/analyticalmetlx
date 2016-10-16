@@ -1564,7 +1564,7 @@ var Modes = (function(){
                     }
                 },
                 activate:function(){
-                    var doubleClickThreshold = 1000;
+                    var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;
                     setActiveMode("#textTools","#insertText");
