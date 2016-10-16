@@ -1570,7 +1570,7 @@ var Modes = (function(){
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
-                    var lastClick = Date.now();
+                    var lastClick = 0;
                     var down = function(x,y,z,worldPos){
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
