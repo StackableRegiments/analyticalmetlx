@@ -601,7 +601,7 @@
                                 endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
                             if(!(startDetails && endDetails)){
                                 /*The words aren't constructed yet*/
-				throw new Exception("range miss");
+                                throw new Exception("range miss");
                             }
                             if (startDetails.index === endDetails.index) {
                                 startDetails.word.runs(emit, {
@@ -1294,10 +1294,14 @@
                         });
 
                         doc.dblclickHandler = function(node) {
+                            keyboardX = null;
+                            doc.isActive = true;
                             node = node.parent();
                             if (node) {
                                 doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
                             }
+                            updateTextArea();
+                            doc.update();
                         };
                         doc.mousedownHandler = function(node) {
                             nextCaretToggle = 0;

@@ -3,12 +3,8 @@ var assert = require('assert');
 var board = require('../page/board.page');
 var sprintf = require('sprintf-js').sprintf;
 
-var ANIMATION_DELAY = 500;
+var ANIMATION_DELAY = 1000;
 
-if(!process.env.CI){
-    teacher.windowHandlePosition({x:0,y:0});
-    student.windowHandlePosition({x:500,y:0});
-}
 var debugUnless = function(condF,fail){
     if(!(condF())){
         browser.debug();
@@ -162,8 +158,8 @@ describe('When a teacher presents, they', function() {
         assert.equal(active.x,100);
         assert.equal(active.words[0].size, 55);
         teacher.waitUntil(function(){
-            console.log(active.width);
-            return active.width == 638;
+	    console.log(active.width);
+            return within(active.width,638,2);
         });
     });
     it("should be able to draw ink", function(){
@@ -197,8 +193,7 @@ describe('When a teacher presents, they', function() {
         teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         teacher.waitUntil(function(){
             return _.keys(teacherT.imageStanzas).length == 1;
-        });
-        assert.equal(_.keys(teacherT.imageStanzas).length,1);
+        },5000);
     });
     it("should have their new image selected when it appears",function(){
         assert.equal(_.keys(teacherT.selection.images).length,1);

@@ -1417,12 +1417,12 @@ var Modes = (function(){
                         box.doc.invalidateBounds()
                     });
                 },
-		getSelectedRanges:function(){
-		    return _.map(boardContent.multiWordTexts,function(t){
-			var r = t.doc.selectedRange();
-			return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
-		    });
-		},
+                getSelectedRanges:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+                        var r = t.doc.selectedRange();
+                        return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
+                    });
+                },
                 mapSelected:function(f){
                     var sel = Modes.select.selected.multiWordTexts;
                     _.each(boardContent.multiWordTexts,function(t){
@@ -1602,13 +1602,15 @@ var Modes = (function(){
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 doc.dblclickHandler(context.node);
                             }
+                            else{
+                                doc.mouseupHandler(context.node);
+                            }
                             lastClick = clickTime;
                             sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[editor.identity] = editor;
                             Modes.select.setSelection(sel);
-                            doc.mouseupHandler(context.node);
                         } else {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{
