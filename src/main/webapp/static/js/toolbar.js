@@ -1417,6 +1417,12 @@ var Modes = (function(){
                         box.doc.invalidateBounds()
                     });
                 },
+		getSelectedRanges:function(){
+		    return _.map(boardContent.multiWordTexts,function(t){
+			var r = t.doc.selectedRange();
+			return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
+		    });
+		},
                 mapSelected:function(f){
                     var sel = Modes.select.selected.multiWordTexts;
                     _.each(boardContent.multiWordTexts,function(t){
@@ -1558,7 +1564,7 @@ var Modes = (function(){
                     }
                 },
                 activate:function(){
-                    var doubleClickThreshold = 500;
+                    var doubleClickThreshold = 1000;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;
                     setActiveMode("#textTools","#insertText");

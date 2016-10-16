@@ -9,6 +9,14 @@ if(!process.env.CI){
     teacher.windowHandlePosition({x:0,y:0});
     student.windowHandlePosition({x:500,y:0});
 }
+var debugUnless = function(condF,fail){
+    if(!(condF())){
+        browser.debug();
+    }
+    else{
+        console.log(fail);
+    }
+};
 describe('When a teacher presents, they', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
@@ -59,23 +67,50 @@ describe('When a teacher presents, they', function() {
     });
     it("should highlight a word and enlarge it",function(){
         teacher.moveToObject("#board",100,100);
-        teacher.leftClick();
+
+	teacher.leftClick();
         teacher.doDoubleClick();
+        teacher.waitUntil(function(){/*Paragraph*/
+            var r = teacherT.selectedRanges[0];
+            console.log(r);
+            return r.start == 10 && r.end == 19;
+        });
+
         teacher.click("#fontLarger");
-        assert.equal(_.keys(teacherT.texts).length,1);
-        assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
-            "Before","Enlarged","After"].length);
+        teacher.waitUntil(function(){
+            return teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length ==
+                ["Before","Enlarged","After"].length;
+        });
+
         teacher.moveToObject("#board",100,300);
+
         teacher.doDoubleClick();
+        teacher.waitUntil(function(){/*Programatically*/
+            var r = teacherT.selectedRanges[0];
+            console.log(r);
+            return r.start == 49 && r.end == 65;
+        });
+
         teacher.click("#redText");
-        assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
-            "Before","Enlarged","After","Red","After"].length);
+        teacher.waitUntil(function(){
+            return teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length ==
+                ["Before","Enlarged","After","Red","After"].length;
+        });
+
         teacher.moveToObject("#board",100,400);
+
         teacher.doDoubleClick();
+        teacher.waitUntil(function(){/*multiple*/
+            var r = teacherT.selectedRanges[0];
+            console.log(r);
+            return r.start == 80 && r.end == 88;
+        });
+
         teacher.click("#fontLarger");
-        assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
-            "Before","Enlarged","After","Red","After","Enlarged","After"].length);
-	teacher.pause(ANIMATION_DELAY);
+        teacher.waitUntil(function(){
+            return teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length ==
+                ["Before","Enlarged","After","Red","After","Enlarged","After"].length;
+        });
     });
     it("should create another textbox",function(){
         teacherT.keyboard(600,500,"This is a second paragraph.  It exists to be differentiated from the first paragraph.");
@@ -122,8 +157,10 @@ describe('When a teacher presents, they', function() {
         teacherT.drag(handle,{x:200,y:0});
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert.equal(active.width,638);
         assert.equal(active.words[0].size, 55);
+        teacher.waitUntil(function(){
+            return active.width == 638;
+        });
     });
     it("should be able to draw ink", function(){
         teacherT.inkMode.click();
@@ -173,16 +210,21 @@ describe('When a teacher presents, they', function() {
     });
     it("should select all the items that are under their mouse when they click the board",function(){
         teacher.leftClick("#board",250,250);
-        assert.equal(_.keys(teacherT.selection.inks).length,1);
-        assert.equal(_.keys(teacherT.selection.texts).length,0);
-        assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
-        assert.equal(_.keys(teacherT.selection.videos).length,0);
-        assert.equal(_.keys(teacherT.selection.images).length,1);
+        teacher.waitUntil(function(){
+            var sel = teacherT.selection;
+            return _.keys(sel.inks).length == 1 &&
+                _.keys(sel.texts).length == 0 &&
+                _.keys(sel.multiWordTexts).length == 1 &&
+                _.keys(sel.videos).length == 0 &&
+                _.keys(sel.images).length == 1;
+        });
     });
     it("should have their students see all their public elements",function(){
-        assert.equal(_.keys(studentT.textStanzas).length,2);
-        assert.equal(_.keys(studentT.inkStanzas).length,4);
-        assert.equal(_.keys(studentT.imageStanzas).length,1);
+        student.waitUntil(function(){
+            return _.keys(studentT.textStanzas).length == 2 &&
+                _.keys(studentT.inkStanzas).length == 4 &&
+                _.keys(studentT.imageStanzas).length == 1;
+        });
     });
     it("should be able to delete their selected elements",function(){
         teacherT.deleteSelection.click();
