@@ -68,11 +68,14 @@ describe('When a teacher presents, they', function() {
         teacher.moveToObject("#board",100,300);
         teacher.doDoubleClick();
         teacher.click("#redText");
+        assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
+            "Before","Enlarged","After","Red","After"].length);
         teacher.moveToObject("#board",100,400);
         teacher.doDoubleClick();
         teacher.click("#fontLarger");
         assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
             "Before","Enlarged","After","Red","After","Enlarged","After"].length);
+	teacher.pause(ANIMATION_DELAY);
     });
     it("should create another textbox",function(){
         teacherT.keyboard(600,500,"This is a second paragraph.  It exists to be differentiated from the first paragraph.");

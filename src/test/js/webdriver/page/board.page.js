@@ -6,6 +6,15 @@ var BoardPage = function(user) {
     var worldToScreen = function(x,y){
         return user.execute(sprintf("return worldToScreen(%s,%s)",x,y)).value;
     };
+    var screenToWorld = function(x,y){
+        return user.execute(sprintf("return screenToWorld(%s,%s)",x,y)).value;
+    };
+    var scaleScreenToWorld = function(i){
+        return user.execute(sprintf("return scaleScreenToWorld(%s)",i)).value;
+    };
+    var scaleWorldToScreen = function(i){
+        return user.execute(sprintf("return scaleWorldToScreen(%s)",i)).value;
+    };
     return Object.create(Page, {
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
         privateMode: { get:function(){ return user.element("#privateMode") } },
@@ -15,6 +24,8 @@ var BoardPage = function(user) {
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
             var dragPos = worldToScreen(handle.bounds[0],handle.bounds[1]);
+            delta.x = scaleWorldToScreen(delta.x);
+            delta.y = scaleWorldToScreen(delta.y);
             user.moveToObject("#board",dragPos.x,dragPos.y);
             user.buttonDown();
             user.moveToObject("#board",dragPos.x + delta.x, dragPos.y + delta.y);
@@ -37,7 +48,7 @@ var BoardPage = function(user) {
             user.buttonUp();
         } },
         worldToScreen: {value: worldToScreen },
-        screenToWorld: {value: function(x,y){return user.execute(sprintf("return screenToWorld(%s,%s)",x,y)).value; }},
+        screenToWorld: {value: screenToWorld },
 
         menuButton: {get: function(){return user.element("#applicationMenuButton");}},
 

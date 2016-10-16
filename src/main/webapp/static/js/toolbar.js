@@ -1291,7 +1291,7 @@ var Modes = (function(){
                     d.select(refStart,refEnd,true);
                     d.selectedRange().setFormatting("size",sizes[refStart] * factor);
                     refStart = refEnd;
-                },originalRange);
+                },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
             };
             var scaleCurrentSelection = function(factor){

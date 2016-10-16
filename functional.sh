@@ -1,5 +1,6 @@
 MODE=${1:-multi}
 echo "$MODE player mode"
+rm debug.log
 touch debug.log
 
 if [[ "$SNAP_CI" ]]; then
@@ -14,7 +15,7 @@ if [[ "$SNAP_CI" ]]; then
 
     sbt compile
     sbt -Xms1536m -Xmx1536m -logback.configurationFile="config/logback.xml" -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
-    sleep 40
+    { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
     ./node_modules/wdio/node_modules/.bin/wdio wdio.${MODE}.conf.js
 else
     echo "Running on local"
