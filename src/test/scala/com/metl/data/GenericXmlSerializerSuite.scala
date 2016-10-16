@@ -358,15 +358,14 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
 
   test("theme to xml") {
     val content = MeTLTheme(ServerConfiguration.empty,"anauthor",1,"2",Theme("anauthor","sometext","anorigin"),Nil)
-    val result = XmlUtils.themeToXml(content).norm.toString
-    assert(result == (<theme>
+    val result = xmlSerializer.fromTheme(content).norm.toString
+    assert((<message timestamp="1"><theme>
       <author>anauthor</author>
+      <audiences />
       <text>sometext</text>
       <origin>anorigin</origin>
       <location>2</location>
-      <metlMetaData><timestamp>1</timestamp></metlMetaData>
-      <audiences />
-      </theme>).norm.toString)
+      </theme></message>).norm.toString === result)
   }
   test("parse theme"){
     val content = <theme>
@@ -377,7 +376,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     <origin>anorigin</origin>
     <audiences />
     </theme>
-    val result = XmlUtils.parseTheme(content)
+    val result = xmlSerializer.toTheme(content)
     assert(result === MeTLTheme(ServerConfiguration.empty,"anauthor",1,"2",Theme("anauthor","sometext","anorigin"),Nil))
   }
 

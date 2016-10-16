@@ -2,11 +2,11 @@ var config = {
     exclude: [],
     maxInstances: 10,
     sync: true,
-    logLevel: 'verbose',
+    logLevel: 'result',
     coloredLogs: true,
     screenshotPath: './errorShots/',
     baseUrl: 'http://localhost:8080',
-    waitforTimeout: 10000,
+    waitforTimeout: 2000,
     connectionRetryTimeout: 90000,
     connectionRetryCount: 3,
     services: [],
@@ -18,11 +18,14 @@ var config = {
     }
 }
 
+/*
 if(process.env.CI){
     config.services.push('sauce');
     config.user = process.env.SAUCE_USERNAME;
     config.key = process.env.SAUCE_ACCESS_KEY,
     config.sauceConnect = true;
+    config.user = process.env.SAUCE_USERNAME;
+    config.key = process.env.SAUCE_ACCESS_KEY;
 }
-
+*/
 exports.config = config;

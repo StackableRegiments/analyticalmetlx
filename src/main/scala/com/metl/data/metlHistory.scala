@@ -153,7 +153,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   def addTheme(t:MeTLTheme) = {
     themes = t :: themes
-    info("Theme count: %s".format(themes.length))
+    trace("Theme count: %s".format(themes.length))
+    outputHook(t)
     this
   }
 

@@ -18,6 +18,9 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     try{
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
+
+	console.log(json);
+	
         historyDownloadedMark = Date.now();
         boardContent = json;
         boardContent.minX = 0;
@@ -647,7 +650,8 @@ var boardContent = {
     highlighters:{},
     texts:{},
     multiWordTexts:{},
-    inks:{}
+    inks:{},
+    themes:[]
 };
 var pressureSimilarityThreshold = 32,
     viewboxX = 0,

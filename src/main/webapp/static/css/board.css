@@ -1,6 +1,9 @@
 .jsgrid-cell{
     word-wrap:break-word;
 }
+.rowIdentity{
+    display:none;
+}
 .jsgrid-header-sort-asc:before,
 .jsgrid-header-sort-desc:before
 {

@@ -195,7 +195,7 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
-sendRichText = _.debounce(sendRichText,1000);
+//sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -208,8 +208,13 @@ var stanzaHandlers = {
     command:commandReceived,
     submission:submissionReceived,
     attendance:attendanceReceived,
-    file:fileReceived
+    file:fileReceived,
+    theme:themeReceived
 };
+function themeReceived(theme){
+    boardContent.themes.push(theme);
+    Progress.call("themeReceived");
+}
 function fileReceived(file){
     //doing nothing with files yet.
 }
@@ -694,6 +699,7 @@ function deleteInk(inks,privacy,id){
         var ink = boardContent[inks][id];
         if(ink.privacy.toUpperCase() == privacy.toUpperCase()){
             delete boardContent[inks][id];
+            Progress.call("onCanvasContentDeleted",[ink]);
         }
     }
 }
@@ -701,24 +707,28 @@ function deleteImage(privacy,id){
     var image = boardContent.images[id];
     if(image.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.images[id];
+        Progress.call("onCanvasContentDeleted",[image]);
     }
 }
 function deleteVideo(privacy,id){
     var video = boardContent.videos[id];
     if(video.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.videos[id];
+        Progress.call("onCanvasContentDeleted",[video]);
     }
 }
 function deleteText(privacy,id){
     var text = boardContent.texts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.texts[id];
+        Progress.call("onCanvasContentDeleted",[text]);
     }
 }
 function deleteMultiWordText(privacy,id){
     var text = boardContent.multiWordTexts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.multiWordTexts[id];
+        Progress.call("onCanvasContentDeleted",[text]);
     }
 }
 function dirtyInkReceived(dirtyInk){

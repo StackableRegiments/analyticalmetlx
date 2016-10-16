@@ -1291,7 +1291,7 @@ var Modes = (function(){
                     d.select(refStart,refEnd,true);
                     d.selectedRange().setFormatting("size",sizes[refStart] * factor);
                     refStart = refEnd;
-                },originalRange);
+                },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
             };
             var scaleCurrentSelection = function(factor){
@@ -1417,6 +1417,12 @@ var Modes = (function(){
                         box.doc.invalidateBounds()
                     });
                 },
+                getSelectedRanges:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+                        var r = t.doc.selectedRange();
+                        return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
+                    });
+                },
                 mapSelected:function(f){
                     var sel = Modes.select.selected.multiWordTexts;
                     _.each(boardContent.multiWordTexts,function(t){
@@ -1475,7 +1481,7 @@ var Modes = (function(){
                             isAuthor? blit : noop,
                             t);
                         if(isAuthor){
-                            editor.doc.contentChanged(function(){
+                            var onChange = _.debounce(function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 //source.privacy = Privacy.getCurrentPrivacy();
@@ -1484,7 +1490,8 @@ var Modes = (function(){
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
-                            });
+                            },1000);
+                            editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
                                 if(editor.doc.save().length > 0){
@@ -1563,7 +1570,7 @@ var Modes = (function(){
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
-                    var lastClick = Date.now();
+                    var lastClick = 0;
                     var down = function(x,y,z,worldPos){
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
@@ -1595,13 +1602,15 @@ var Modes = (function(){
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 doc.dblclickHandler(context.node);
                             }
+                            else{
+                                doc.mouseupHandler(context.node);
+                            }
                             lastClick = clickTime;
                             sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[editor.identity] = editor;
                             Modes.select.setSelection(sel);
-                            doc.mouseupHandler(context.node);
                         } else {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{

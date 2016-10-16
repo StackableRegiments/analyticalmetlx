@@ -599,8 +599,10 @@
                         runs: function(emit, range) {
                             var startDetails = this.wordContainingOrdinal(Math.max(0, range.start)),
                                 endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
-                            if(!(startDetails && endDetails)) return;
-                            /*The words aren't constructed yet*/
+                            if(!(startDetails && endDetails)){
+                                /*The words aren't constructed yet*/
+                                throw new Exception("range miss");
+                            }
                             if (startDetails.index === endDetails.index) {
                                 startDetails.word.runs(emit, {
                                     start: startDetails.offset,
@@ -1292,10 +1294,14 @@
                         });
 
                         doc.dblclickHandler = function(node) {
+                            keyboardX = null;
+                            doc.isActive = true;
                             node = node.parent();
                             if (node) {
                                 doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
                             }
+                            updateTextArea();
+                            doc.update();
                         };
                         doc.mousedownHandler = function(node) {
                             nextCaretToggle = 0;
@@ -2239,13 +2245,13 @@
                         script: 'normal'
                     };
 
-		    exports.resolveKey = function(run,key){
-			return (key in run)? run[key] : exports.defaultFormatting[key];
-		    }
+                    exports.resolveKey = function(run,key){
+                        return (key in run)? run[key] : exports.defaultFormatting[key];
+                    }
                     exports.sameFormatting = function(run1, run2) {
                         return exports.formattingKeys.every(function(key) {
                             var e = _.isEqual(exports.resolveKey(run1,key),
-					      exports.resolveKey(run2,key));
+                                              exports.resolveKey(run2,key));
                             return e;
                         });
                     };

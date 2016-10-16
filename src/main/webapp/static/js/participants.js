@@ -65,6 +65,7 @@ var Participants = (function(){
         },0);
     }
     var onStanzaReceived = function(stanza){
+        var act = false;
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
             if(!(author in participants)){
@@ -76,26 +77,34 @@ var Participants = (function(){
             switch (stanza.type) {
             case "ink":
                 itemToEdit.inks = itemToEdit.inks + 1;
+                act = true;
                 break;
             case "image":
                 itemToEdit.images = itemToEdit.images + 1;
+                act = true;
                 break;
             case "highlighter":
                 itemToEdit.highlighters = itemToEdit.highlighters + 1;
+                act = true;
                 break;
             case "multiWordText":
                 itemToEdit.texts[stanza.identity] = countTexts(stanza);
+                act = true;
                 break;
             case "submission":
                 itemToEdit.submissions = itemToEdit.submissions + 1;
+                act = true;
                 break;
             case "quizResponse":
                 itemToEdit.quizResponses = itemToEdit.quizResponses + 1;
+                act = true;
                 break;
             }
             participants[author] = itemToEdit;
         }
-        updateParticipantsListing();
+        if(act){
+            updateParticipantsListing();
+        }
     };
     var fontSizes = d3.scaleLinear().range([6,30]);
     var themeCloud;
@@ -130,33 +139,23 @@ var Participants = (function(){
         if ("field" in sortObj){
             participantsDatagrid.jsGrid("sort",sortObj);
         }
-        /*
-         $.get(sprintf("/api/v1/analysis/words/%s",Conversations.getCurrentSlideJid()),function(words){
-         Analytics.word.reset();
-         var contexts = {};
-         _.each($(words).find("theme"),function(_theme){
-         var theme = $(_theme);
-         var context = theme.find("context").text();
-         _.each(theme.find("content").text().split(" "),function(t){
-         t = t.toLowerCase();
-         Analytics.word.incorporate(t);
-         if(!(t in contexts)){
-         contexts[t] = {};
-         }
-         if(!(context in contexts[t])){
-         contexts[t][context] = 0;
-         }
-         contexts[t][context]++;
-         });
-         });
-         updateThemes(Analytics.word.cloudData());
-         Analytics.word.cloud({
-         w:600,
-         h:300,
-         contexts:contexts
-         });
-         });
-         */
+        Analytics.word.reset();
+        var contexts = {};
+        _.each(boardContent.themes,function(theme){
+            _.each(theme.text.split(" "),function(t){
+                t = t.toLowerCase();
+                var context = theme.origin;
+                Analytics.word.incorporate(t);
+                if(!(t in contexts)){
+                    contexts[t] = {};
+                }
+                if(!(context in contexts[t])){
+                    contexts[t][context] = 0;
+                }
+                contexts[t][context]++;
+            });
+        });
+        updateThemes(Analytics.word.cloudData());
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
@@ -269,6 +268,7 @@ var Participants = (function(){
         updateParticipantsListing();
     });
     Progress.stanzaReceived["participants"] = onStanzaReceived;
+    Progress.themeReceived["participants"] = updateParticipantsListing;
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
