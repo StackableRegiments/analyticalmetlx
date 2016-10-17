@@ -22,8 +22,9 @@ var ConversationsPage = function(user){
       return user.waitForExist('#showImportConversationWorkflow',2000);
     } },
     importConversation: { value: function(filename) {
-      user.click('#showImportConversationWorkflow');
-	    user.waitForExist("#importConversationInputElement",200);
+// Don't open browser file dialog - unnecessary.
+//      user.click('#showImportConversationWorkflow');
+//	    user.waitForExist("#importConversationInputElement",200);
       user.chooseFile('#importConversationInputElement','src/test/resources/' + filename);
     } },
     searchForConversation: { value: function(name) {
