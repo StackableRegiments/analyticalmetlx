@@ -171,7 +171,7 @@ describe('When a teacher presents, ', function() {
         assert(active.words.length > 0);
         assert.equal(active.words[0].size, 55);
 	console.log("Active box width (expecting 638):",active.width);
-        assert(within(active.width,638,2));
+        assert(within(active.width,638,3));
     });
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
