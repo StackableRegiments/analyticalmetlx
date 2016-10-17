@@ -2314,7 +2314,7 @@ var Modes = (function(){
                         if (!(modifiers.ctrl)){
                             var tb = Modes.select.totalSelectedBounds();
                             if(tb.x != Infinity){
-                                var threshold = 10 / scale();
+                                var threshold = 3 / scale();
                                 var ray = [
                                     worldPos.x - threshold,
                                     worldPos.y - threshold,
@@ -2333,6 +2333,7 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
+			console.log(x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");

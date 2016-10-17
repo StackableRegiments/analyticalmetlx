@@ -22,8 +22,8 @@ var ConversationsPage = function(user){
       return user.waitForExist('#showImportConversationWorkflow',2000);
     } },
     importConversation: { value: function(filename) {
-//      console.log('Current directory: ' + process.cwd());
-//      user.click('#showImportConversationWorkflow');
+      user.click('#showImportConversationWorkflow');
+	    user.waitForExist("#importConversationInputElement",200);
       user.chooseFile('#importConversationInputElement','src/test/resources/' + filename);
     } },
     searchForConversation: { value: function(name) {
@@ -44,7 +44,7 @@ var ConversationsPage = function(user){
       });
     } },
     waitForConversation: { value: function(name) {
-      return user.waitForExist('td*=' + name,10000);
+      return user.waitForExist('td*=' + name,15000);
     } },
     hasConversation: { value: function(name) {
       return user.waitForExist('td*=' + name,10000);

@@ -9,12 +9,12 @@ var BoardPage = function(user) {
     var screenToWorld = function(x,y){
         return user.execute(sprintf("return screenToWorld(%s,%s)",x,y)).value;
     };
-    var scaleScreenToWorld = function(i){
-        return user.execute(sprintf("return scaleScreenToWorld(%s)",i)).value;
-    };
     var scaleWorldToScreen = function(i){
         return user.execute(sprintf("return scaleWorldToScreen(%s)",i)).value;
     };
+    var toRadians = function(degrees){
+        return (Math.PI / 180) / degrees;
+    }
     return Object.create(Page, {
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
         privateMode: { get:function(){ return user.element("#privateMode") } },
@@ -24,21 +24,38 @@ var BoardPage = function(user) {
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
             var dragPos = worldToScreen(handle.bounds[0],handle.bounds[1]);
-            delta.x = scaleWorldToScreen(delta.x);
-            delta.y = scaleWorldToScreen(delta.y);
+            var sx = scaleWorldToScreen(delta.x);
+            var sy = scaleWorldToScreen(delta.y);
             user.moveToObject("#board",dragPos.x,dragPos.y);
             user.buttonDown();
-            user.moveToObject("#board",dragPos.x + delta.x, dragPos.y + delta.y);
+            user.moveToObject("#board",dragPos.x + sx, dragPos.y + sy);
             if(delta.debug){
                 user.debug();
             }
             user.buttonUp();
             return handle;
         } },
+        clickWorld:{value:function(x,y){
+            var s = worldToScreen(x,y);
+            x = s.x;
+            y = s.y;
+            user.moveToObject("#board",x,y);
+            user.leftClick();
+        } },
+        clickScreen:{value:function(x,y){
+            user.moveToObject("#board",x,y);
+            user.leftClick();
+        }},
+        doubleClickWorld:{value:function(x,y){
+            user.moveToObject("#board",x,y);
+            /*On the theory that the wire protocol double click is problematic*/
+            user.leftClick();
+            user.leftClick();
+        } },
         swipeUp: {value: function(){
-            user.moveToObject("#board",200,10);
+            user.moveToObject("#board",200,1);
             user.buttonDown();
-            user.moveToObject("#board",200,-10);
+            user.moveToObject("#board",200,-1);
             user.buttonUp();
         } },
         swipeLeft: {value: function(){
@@ -61,9 +78,9 @@ var BoardPage = function(user) {
         selectMode: { get: function() { return user.element("#selectMode"); } },
         selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },
         deleteSelection: {get: function(){return user.element("#delete");}},
-	selectedRanges: {get: function(){
-	    return user.execute("return Modes.text.getSelectedRanges()").value;
-	}},
+        selectedRanges: {get: function(){
+            return user.execute("return Modes.text.getSelectedRanges()").value;
+        }},
 
         username: { get: function(){ return user.execute("return UserSettings.getUsername()").value; } },
 

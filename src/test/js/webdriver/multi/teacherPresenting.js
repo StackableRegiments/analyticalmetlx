@@ -8,7 +8,6 @@ var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
 var ANIMATION_DELAY = 1000;
-
 var debugUnless = function(condF,fail){
     if(!(condF())){
         browser.debug();
@@ -20,16 +19,19 @@ var debugUnless = function(condF,fail){
 var within = function(a,b,tolerance){
     return Math.abs(a - b) <= tolerance;
 };
-var doubleClick = function(user,x,y){
-    user.moveToObject("#board",x,y);
-    /*On the theory that the wire protocol double click is problematic*/
-    user.leftClick();
-    user.leftClick();
-};
-
 describe('When a teacher presents, ', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
+
+    var w = 1050;
+    var h = 940;
+    teacher.windowHandleSize({width:w,height:h});
+    teacher.waitUntil(function(){
+        var s = teacher.windowHandleSize();
+        console.log(s);
+        return s.width == w && s.height == h;
+    });
+
     it('the teacher and student should find the application', function () {
         browser.url('/board');
     });
@@ -80,7 +82,7 @@ describe('When a teacher presents, ', function() {
             "Consistently sized run"].length);
     });
     it("the teacher should highlight a word and enlarge it",function(){
-        doubleClick(teacher,100,100);
+        teacherT.doubleClickWorld(100,100);
         teacher.waitUntil(function(){/*Paragraph*/
             var r = teacherT.selectedRanges[0];
             return r.start == 10 && r.end == 19;
@@ -92,10 +94,9 @@ describe('When a teacher presents, ', function() {
                 ["Before","Enlarged","After"].length;
         });
 
-        doubleClick(teacher,100,300);
+        teacherT.doubleClickWorld(100,300);
         teacher.waitUntil(function(){/*Programatically*/
             var r = teacherT.selectedRanges[0];
-            console.log(r);
             return r.start == 49 && r.end == 65;
         });
 
@@ -105,10 +106,9 @@ describe('When a teacher presents, ', function() {
                 ["Before","Enlarged","After","Red","After"].length;
         });
 
-        doubleClick(teacher,100,400);
+        teacherT.doubleClickWorld(100,400);
         teacher.waitUntil(function(){/*multiple*/
             var r = teacherT.selectedRanges[0];
-            console.log(r);
             return r.start == 80 && r.end == 88;
         });
 
@@ -152,9 +152,8 @@ describe('When a teacher presents, ', function() {
     it("the teacher should scroll up on swipe out",function(){
         teacherT.swipeUp();
     });
-    if("the teacher should reselect their box",function(){
-        teacher.moveToObject("#board",200,300);
-        teacher.leftClick();
+    if("the teacher should be able to reselect their box",function(){
+        teacherT.clickWorld(200,300);
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
     it("the teacher should resize their box rewrapping instead of rescaling the text",function(){
@@ -163,33 +162,35 @@ describe('When a teacher presents, ', function() {
         teacherT.drag(handle,{x:200,y:0});
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-	assert(active.words);
+        assert(active.words.length > 0);
         assert.equal(active.words[0].size, 55);
-        assert(within(active.width,638,2));
+        console.log("Active box width (expecting 638):",active.width);
+        assert(within(active.width,638,3));
     });
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
 
-        var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == "teacher";}).length;
-        teacherT.handwrite(_.map(_.range(300,600,5), function(i){
+        var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length;
+        teacherT.handwrite(_.map(_.range(200,400,25), function(i){
             return {x:i,y:i};
         }));
         teacher.waitUntil(function(){
-            return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length == (inkStanzasBefore + 1);
+            return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length >= (inkStanzasBefore + 1);
         },5000,"expected new ink to appear in inkStanzas after looping through server");
-        assert.equal(_.keys(teacherT.inkStanzas).length,1);
         for(var i = 2; i < 5; i++){
             var len = 35;
             var root = (len + 20) * i;
             teacher.click(sprintf("#pen%sButton",i));
-            teacherT.handwrite(_.map(_.range(0,30,0.7), function(j){
+            teacherT.handwrite(_.map(_.range(0,5), function(j){
                 return {
                     x: root + Math.cos(j) * len--,
                     y: root + Math.sin(j) * len--
                 };
             }));
         }
-        assert.equal(_.keys(teacherT.inkStanzas).length,4);
+        teacher.waitUntil(function(){
+            return _.keys(teacherT.inkStanzas).length == 4;
+        });
     });
     it("the teacher should add an image",function(){
         assert.equal(_.keys(teacherT.imageStanzas).length,0);
@@ -199,29 +200,29 @@ describe('When a teacher presents, ', function() {
         teacher.waitUntil(function(){
             return _.keys(teacherT.imageStanzas).length == 1;
         },5000);
+        teacher.pause(ANIMATION_DELAY);
     });
     it("the teacher should have their new image selected when it appears",function(){
         assert.equal(_.keys(teacherT.selection.images).length,1);
     });
     it("the teacher should clear their selection by clicking on an empty spot on the canvas",function(){
         teacherT.selectMode.click();
-        teacher.leftClick("#board",1,1);
-        assert.equal(_.keys(teacherT.selection.inks).length,0);
-        assert.equal(_.keys(teacherT.selection.texts).length,0);
-        assert.equal(_.keys(teacherT.selection.multiWordTexts).length,0);
-        assert.equal(_.keys(teacherT.selection.videos).length,0);
-        assert.equal(_.keys(teacherT.selection.images).length,0);
+        teacherT.clickScreen(1,1);
+        var sel = teacherT.selection;
+        assert.equal(_.keys(sel.inks).length,0);
+        assert.equal(_.keys(sel.texts).length,0);
+        assert.equal(_.keys(sel.multiWordTexts).length,0);
+        assert.equal(_.keys(sel.videos).length,0);
+        assert.equal(_.keys(sel.images).length,0);
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
-        teacher.leftClick("#board",250,250);
-        teacher.waitUntil(function(){
-            var sel = teacherT.selection;
-            return _.keys(sel.inks).length == 1 &&
-                _.keys(sel.texts).length == 0 &&
-                _.keys(sel.multiWordTexts).length == 1 &&
-                _.keys(sel.videos).length == 0 &&
-                _.keys(sel.images).length == 1;
-        });
+        teacherT.clickWorld(285,690);
+        var sel = teacherT.selection;
+        assert.equal(_.keys(sel.inks).length, 1);
+        assert.equal(_.keys(sel.texts).length, 0);
+        assert.equal(_.keys(sel.multiWordTexts).length, 1);
+        assert.equal(_.keys(sel.videos).length, 0);
+        assert.equal(_.keys(sel.images).length, 1);
     });
     it("the student should see all public teacher-created elements",function(){
         student.waitUntil(function(){
