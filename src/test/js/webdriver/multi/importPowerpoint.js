@@ -58,7 +58,7 @@ describe('When a teacher presents, ', function() {
     var conversationName = importedFilename;
 
     it("should be able to import and join a conversation", function() {
-        teacher.waitForExist("#importConversationButton");
+        assert(teacherConversationsPage.waitForImportButton());
         var previousConversations = teacherConversationsPage.getConversations();
         teacherConversationsPage.importConversation(importedFilename);
         var newConversations = teacherConversationsPage.getNewConversations(previousConversations);
@@ -75,16 +75,5 @@ describe('When a teacher presents, ', function() {
         student.pause(1000);
         student.click(".newConversationTag");
         student.waitForExist("#board");
-    });
-
-    var teacherConversationPage = ConversationPage(teacher);
-    var studentConversationPage = ConversationPage(student);
-
-    it('should join an imported conversation', function () {
-      teacherConversationsPage.joinConversation(conversationName);
-      assert(teacherConversationPage.isNamed(conversationName));
-
-      studentConversationsPage.joinConversation(conversationName);
-      assert(studentConversationPage.isNamed(conversationName));
     });
 });

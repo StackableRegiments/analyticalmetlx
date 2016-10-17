@@ -53,7 +53,7 @@ describe('When a teacher presents, ', function() {
         assert(studentConversationsPage.waitForSearchBox());
     });
     it("the teacher should be able to create and join a conversation", function() {
-        teacher.waitForExist("#createConversationButton");
+        assert(teacherConversationsPage.waitForCreateButton());
         var previousConversations = teacherConversationsPage.getConversations();
         teacher.click("#createConversationButton");
         var newConversations = teacherConversationsPage.getNewConversations(previousConversations);

@@ -12,8 +12,14 @@ var ConversationsPage = function(user){
     waitForSearchBox: { value: function() {
       return user.waitForExist('#conversationSearchBox',2000);
     } },
+    waitForCreateButton: { value: function() {
+      return user.waitForExist('#createConversationButton',2000);
+    } },
     createConversation: { value: function() {
       user.click('#createConversationButton');
+    } },
+    waitForImportButton: { value: function() {
+      return user.waitForExist('#showImportConversationWorkflow',2000);
     } },
     importConversation: { value: function(filename) {
 //      console.log('Current directory: ' + process.cwd());
