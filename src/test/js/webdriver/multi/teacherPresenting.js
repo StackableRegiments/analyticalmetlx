@@ -170,7 +170,7 @@ describe('When a teacher presents, ', function() {
         assert.equal(active.x,100);
         assert(active.words.length > 0);
         assert.equal(active.words[0].size, 55);
-	console.log("Active box width (expecting 638):",active.width);
+        console.log("Active box width (expecting 638):",active.width);
         assert(within(active.width,638,3));
     });
     it("the teacher should be able to draw ink", function(){
@@ -194,7 +194,9 @@ describe('When a teacher presents, ', function() {
                 };
             }));
         }
-        assert.equal(_.keys(teacherT.inkStanzas).length,4);
+        teacher.waitUntil(function(){
+            return _.keys(teacherT.inkStanzas).length == 4;
+        });
     });
     it("the teacher should add an image",function(){
         assert.equal(_.keys(teacherT.imageStanzas).length,0);
