@@ -68,7 +68,6 @@ describe('When a teacher presents, they', function() {
         teacherT.doubleClickWorld(100,100);
         teacher.waitUntil(function(){/*Paragraph*/
             var r = teacherT.selectedRanges[0];
-            console.log(r);
             return r.start == 10 && r.end == 19;
         });
 
@@ -81,7 +80,6 @@ describe('When a teacher presents, they', function() {
         teacherT.doubleClickWorld(100,300);
         teacher.waitUntil(function(){/*Programatically*/
             var r = teacherT.selectedRanges[0];
-            console.log(r);
             return r.start == 49 && r.end == 65;
         });
 
@@ -94,7 +92,6 @@ describe('When a teacher presents, they', function() {
         teacherT.doubleClickWorld(100,400);
         teacher.waitUntil(function(){/*multiple*/
             var r = teacherT.selectedRanges[0];
-            console.log(r);
             return r.start == 80 && r.end == 88;
         });
 
@@ -139,9 +136,7 @@ describe('When a teacher presents, they', function() {
         teacherT.swipeUp();
     });
     if("should be able to reselect their box",function(){
-	console.log(teacherT.textStanzas);
         teacherT.clickWorld(200,300);
-	browser.debug();
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
     it("should be able to resize their box rewrapping instead of rescaling the text",function(){
@@ -204,7 +199,6 @@ describe('When a teacher presents, they', function() {
     it("should select all the items that are under their mouse when they click the board",function(){
         teacherT.clickWorld(285,690);
         var sel = teacherT.selection;
-	console.log(sel);
         assert.equal(_.keys(sel.inks).length, 1);
         assert.equal(_.keys(sel.texts).length, 0);
         assert.equal(_.keys(sel.multiWordTexts).length, 1);
