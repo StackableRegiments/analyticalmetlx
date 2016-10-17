@@ -181,9 +181,8 @@ describe('When a teacher presents, ', function() {
             return {x:i,y:i};
         }));
         teacher.waitUntil(function(){
-            return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length == (inkStanzasBefore + 1);
+            return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length >= (inkStanzasBefore + 1);
         },5000,"expected new ink to appear in inkStanzas after looping through server");
-        assert.equal(_.keys(teacherT.inkStanzas).length,1);
         for(var i = 2; i < 5; i++){
             var len = 35;
             var root = (len + 20) * i;
