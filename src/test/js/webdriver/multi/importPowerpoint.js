@@ -8,7 +8,6 @@ var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
 var ANIMATION_DELAY = 1000;
-
 var debugUnless = function(condF,fail){
     if(!(condF())){
         browser.debug();
@@ -17,16 +16,6 @@ var debugUnless = function(condF,fail){
         console.log(fail);
     }
 };
-var within = function(a,b,tolerance){
-    return Math.abs(a - b) <= tolerance;
-};
-var doubleClick = function(user,x,y){
-    user.moveToObject("#board",x,y);
-    /*On the theory that the wire protocol double click is problematic*/
-    user.leftClick();
-    user.leftClick();
-};
-
 describe('When a teacher presents, ', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
