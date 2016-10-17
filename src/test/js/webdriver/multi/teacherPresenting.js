@@ -37,6 +37,7 @@ describe('When a teacher presents, ', function() {
     var teacherLoginPage = LoginPage(teacher);
     var studentLoginPage = LoginPage(student);
     var teacherName = 'test.teacher.' + Math.floor(Math.random() * 10000);
+    var studentName = 'test.student.' + Math.floor(Math.random() * 10000);
 
     var teacherConversationsPage = ConversationsPage(teacher);
     var studentConversationsPage = ConversationsPage(student);
@@ -47,28 +48,10 @@ describe('When a teacher presents, ', function() {
         assert(teacherConversationsPage.waitForSearchBox());
     });
     it('the student should successfully login', function () {
-        studentLoginPage.username.setValue('test.student');
+        studentLoginPage.username.setValue(studentName);
         studentLoginPage.submit();
         assert(studentConversationsPage.waitForSearchBox());
     });
-/*
-    it("should be able to import and join a conversation", function() {
-        teacher.waitForExist("#importConversationButton");
-        var previousConversations = teacher.execute("return Conversations.getConversationListing()").value;
-        teacher.click("#createConversationButton");
-        teacher.waitUntil(function(){
-            return teacher.execute("return Conversations.getConversationListing()").value.length == (previousConversations.length + 1);
-        },5000,"expected a new conversation to appear");
-        var newConversations = _.filter(teacher.execute("return Conversations.getConversationListing()").value,function(nc){
-            return !_.some(previousConversations,function(pc){
-                return pc == nc;
-            });
-        });
-        assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
-        teacher.click(".newConversationTag");
-        teacher.waitForExist("#board");
-    });
-*/
     it("the teacher should be able to create and join a conversation", function() {
         teacher.waitForExist("#createConversationButton");
         var previousConversations = teacherConversationsPage.getConversations();
@@ -78,7 +61,7 @@ describe('When a teacher presents, ', function() {
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
     });
-    it("the student should find the conversation",function(){
+    it("the student should find and join the conversation",function(){
         student.setValue("#conversationSearchBox > input","teacher");
         student.click("#searchButton");
         student.pause(1000);
