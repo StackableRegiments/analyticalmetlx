@@ -8,7 +8,6 @@ var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
 var ANIMATION_DELAY = 1000;
-
 var debugUnless = function(condF,fail){
     if(!(condF())){
         browser.debug();
@@ -25,6 +24,7 @@ describe('When a teacher presents, ', function() {
     var studentT = board(student);
     it('the teacher and student should find the application', function () {
         browser.url('/board');
+	console.log(teacher.windowHandleSize());
     });
 
     var teacherLoginPage = LoginPage(teacher);
@@ -159,7 +159,7 @@ describe('When a teacher presents, ', function() {
         teacherT.drag(handle,{x:200,y:0});
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert(active.words);
+        assert(active.words.length > 0);
         assert.equal(active.words[0].size, 55);
         assert(within(active.width,638,2));
     });
@@ -167,7 +167,7 @@ describe('When a teacher presents, ', function() {
         teacherT.inkMode.click();
 
         var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == "teacher";}).length;
-        teacherT.handwrite(_.map(_.range(200,700,25), function(i){
+        teacherT.handwrite(_.map(_.range(200,400,25), function(i){
             return {x:i,y:i};
         }));
         teacher.waitUntil(function(){
