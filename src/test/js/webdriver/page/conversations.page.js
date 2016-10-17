@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var Page = require('./page');
 var ConversationsPage = function(user){
   return Object.create(Page, {
@@ -23,8 +24,21 @@ var ConversationsPage = function(user){
       user.element('#conversationSearchBox>input[type=text]').setValue(name);
       user.click('#searchButton');
     } },
+    getConversations: { value: function() {
+      return teacher.execute("return Conversations.getConversationListing()").value;
+    } },
+    getNewConversations: { value: function(previousConversations) {
+      teacher.waitUntil(function(){
+          return teacher.execute("return Conversations.getConversationListing()").value.length == (previousConversations.length + 1);
+      },5000,"expected a new conversation to appear");
+      return newConversations = _.filter(teacher.execute("return Conversations.getConversationListing()").value,function(nc){
+          return !_.some(previousConversations,function(pc){
+              return pc == nc;
+          });
+      });
+    } },
     waitForConversation: { value: function(name) {
-      return user.waitForExist('td*=' + name,15000);
+      return user.waitForExist('td*=' + name,10000);
     } },
     hasConversation: { value: function(name) {
       return user.waitForExist('td*=' + name,10000);

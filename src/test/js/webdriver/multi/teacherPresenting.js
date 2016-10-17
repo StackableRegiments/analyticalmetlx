@@ -19,13 +19,14 @@ var debugUnless = function(condF,fail){
 };
 var within = function(a,b,tolerance){
     return Math.abs(a - b) <= tolerance;
-}
+};
 var doubleClick = function(user,x,y){
     user.moveToObject("#board",x,y);
     /*On the theory that the wire protocol double click is problematic*/
     user.leftClick();
     user.leftClick();
-}
+};
+
 describe('When a teacher presents, ', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
@@ -70,16 +71,9 @@ describe('When a teacher presents, ', function() {
 */
     it("the teacher should be able to create and join a conversation", function() {
         teacher.waitForExist("#createConversationButton");
-        var previousConversations = teacher.execute("return Conversations.getConversationListing()").value;
+        var previousConversations = teacherConversationsPage.getConversations();
         teacher.click("#createConversationButton");
-        teacher.waitUntil(function(){
-            return teacher.execute("return Conversations.getConversationListing()").value.length == (previousConversations.length + 1);
-        },5000,"expected a new conversation to appear");
-        var newConversations = _.filter(teacher.execute("return Conversations.getConversationListing()").value,function(nc){
-            return !_.some(previousConversations,function(pc){
-                return pc == nc;
-            });
-        });
+        var newConversations = teacherConversationsPage.getNewConversations(previousConversations);
         assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
