@@ -44,22 +44,6 @@ describe('When a teacher presents, ', function() {
         studentLoginPage.submit();
         assert(studentConversationsPage.waitForSearchBox());
     });
-    it("should be able to import and join a conversation", function() {
-        teacher.waitForExist("#importConversationButton");
-        var previousConversations = teacher.execute("return Conversations.getConversationListing()").value;
-        teacher.click("#createConversationButton");
-        teacher.waitUntil(function(){
-            return teacher.execute("return Conversations.getConversationListing()").value.length == (previousConversations.length + 1);
-        },5000,"expected a new conversation to appear");
-        var newConversations = _.filter(teacher.execute("return Conversations.getConversationListing()").value,function(nc){
-            return !_.some(previousConversations,function(pc){
-                return pc == nc;
-            });
-        });
-        assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
-        teacher.click(".newConversationTag");
-        teacher.waitForExist("#board");
-    });
     it("the teacher should be able to create and join a conversation", function() {
         teacher.waitForExist("#createConversationButton");
         var previousConversations = teacher.execute("return Conversations.getConversationListing()").value;
@@ -94,7 +78,7 @@ describe('When a teacher presents, ', function() {
         assert.equal(teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length,[
             "Consistently sized run"].length);
     });
-    it("should highlight a word and enlarge it",function(){
+    it("the teacher should highlight a word and enlarge it",function(){
         teacherT.doubleClickWorld(100,100);
         teacher.waitUntil(function(){/*Paragraph*/
             var r = teacherT.selectedRanges[0];
@@ -165,7 +149,7 @@ describe('When a teacher presents, ', function() {
     it("the teacher should scroll up on swipe out",function(){
         teacherT.swipeUp();
     });
-    if("should be able to reselect their box",function(){
+    if("the teacher should be able to reselect their box",function(){
         teacherT.clickWorld(200,300);
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
