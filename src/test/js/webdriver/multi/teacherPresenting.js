@@ -111,7 +111,7 @@ describe('When a teacher presents, ', function() {
                 ["Before","Enlarged","After"].length;
         });
 
-	doubleClick(teacher,100,300);
+        doubleClick(teacher,100,300);
         teacher.waitUntil(function(){/*Programatically*/
             var r = teacherT.selectedRanges[0];
             console.log(r);
@@ -124,7 +124,7 @@ describe('When a teacher presents, ', function() {
                 ["Before","Enlarged","After","Red","After"].length;
         });
 
-	doubleClick(teacher,100,400);
+        doubleClick(teacher,100,400);
         teacher.waitUntil(function(){/*multiple*/
             var r = teacherT.selectedRanges[0];
             console.log(r);
@@ -182,11 +182,9 @@ describe('When a teacher presents, ', function() {
         teacherT.drag(handle,{x:200,y:0});
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
+	assert(active.words);
         assert.equal(active.words[0].size, 55);
-        teacher.waitUntil(function(){
-            console.log(active.width);
-            return within(active.width,638,2);
-        });
+        assert(within(active.width,638,2));
     });
     it("should be able to draw ink", function(){
         teacherT.inkMode.click();
