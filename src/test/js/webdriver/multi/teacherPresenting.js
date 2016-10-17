@@ -176,7 +176,7 @@ describe('When a teacher presents, ', function() {
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
 
-        var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == "teacher";}).length;
+        var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length;
         teacherT.handwrite(_.map(_.range(200,400,25), function(i){
             return {x:i,y:i};
         }));
