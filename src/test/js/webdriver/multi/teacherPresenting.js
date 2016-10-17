@@ -3,6 +3,10 @@ var assert = require('assert');
 var board = require('../page/board.page');
 var sprintf = require('sprintf-js').sprintf;
 
+var LoginPage = require("../page/login.page");
+var ConversationsPage = require("../page/conversations.page");
+var ConversationPage = require("../page/conversation.page");
+
 var ANIMATION_DELAY = 1000;
 
 var debugUnless = function(condF,fail){
