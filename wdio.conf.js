@@ -3,6 +3,7 @@ var config = {
     maxInstances: 10,
     sync: true,
     logLevel: 'result',
+    logOutput: 'wdio.log',
     coloredLogs: true,
     screenshotPath: './errorShots/',
     baseUrl: 'http://localhost:8080',
