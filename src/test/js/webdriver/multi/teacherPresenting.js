@@ -19,12 +19,13 @@ var debugUnless = function(condF,fail){
 var within = function(a,b,tolerance){
     return Math.abs(a - b) <= tolerance;
 }
+console.log(teacher.windowHandleSize({width:1050,height:940}));
+console.log(teacher.windowHandleSize());
 describe('When a teacher presents, ', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
     it('the teacher and student should find the application', function () {
         browser.url('/board');
-	console.log(teacher.windowHandleSize());
     });
 
     var teacherLoginPage = LoginPage(teacher);
