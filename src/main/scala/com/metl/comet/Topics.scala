@@ -26,12 +26,12 @@ object TopicServer extends LiftActor with ListenerManager with Logger{
   def createUpdate = topics
   override def lowPriority = {
     case TopicActivity(topicActivity) => Stopwatch.time("TopicServer:topicActivity",{
-      topics.find(t => t.identity == topicActivity).map(t => updateListeners(t))
+      topics.find(t => t.identity == topicActivity).map(t => sendListenersMessage(t))
     })
     case NewTopic(topic) => {
       topics = topic :: (topics.filterNot(t => t.teachingEventIdentity.get == topic.teachingEventIdentity.get))
-      updateListeners(topics)
-      updateListeners(topic)
+      sendListenersMessage(topics)
+      sendListenersMessage(topic)
     }
     case other => warn("TopicServer received unknown message: %s".format(other))
   }

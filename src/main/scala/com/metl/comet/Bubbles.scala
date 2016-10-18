@@ -646,7 +646,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
       StackQuestion.find("_id",new ObjectId(id)).map(sq => {
         val qp = new QuestionPresenter(sq)
         addQuestion(qp)
-        updateListeners(Silently(qp))
+        sendListenersMessage(Silently(qp))
       })
     } catch {
       case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
@@ -657,7 +657,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
       StackQuestion.find("_id",new ObjectId(id)).map(sq => {
         val qp = new QuestionPresenter(sq)
         addQuestion(qp)
-        updateListeners(qp)
+        sendListenersMessage(qp)
       })
     } catch {
       case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
@@ -666,13 +666,13 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
   override def lowPriority = {
     case r:RemoteSilentQuestionRecieved => Stopwatch.time("StackRouter:remoteSilentQuestionReceived",possiblyUpdateQuestionSilentlyById(r.questionId))
     case r:RemoteQuestionRecieved => Stopwatch.time("StackRouter:remoteQuestionReceived",possiblyUpdateQuestionById(r.questionId))
-    case b:Bob=> Stopwatch.time("StackRouter:bob",updateListeners(b))
-    case e:Emerge=> Stopwatch.time("StackRouter:emerge",updateListeners(e))
+    case b:Bob=> Stopwatch.time("StackRouter:bob",sendListenersMessage(b))
+    case e:Emerge=> Stopwatch.time("StackRouter:emerge",sendListenersMessage(e))
     case s:Silently=> Stopwatch.time("StackRouter:silently",{
       val qp = s.present
       //XMPPQuestionSyncActor ! QuestionSyncRequest(qp.location,qp.id,true)
     })
-    case d:Detail => Stopwatch.time("StackRouter:detail",updateListeners(d))
+    case d:Detail => Stopwatch.time("StackRouter:detail",sendListenersMessage(d))
     case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
     case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter", {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
     case other => warn("StackRouter received unknown: %s".format(other))
