@@ -16,6 +16,7 @@ if [[ "$SNAP_CI" ]]; then
     npm install wdio
 
     ls ./node_modules
+    echo "n_m/wd"
     ls ./node_modules/wdio
 
     java -jar -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
