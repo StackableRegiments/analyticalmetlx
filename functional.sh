@@ -3,6 +3,7 @@ npm -v
 node -v
 
 echo "$MODE player mode"
+rm debug.log
 touch debug.log
 
 if [[ "$SNAP_CI" ]]; then

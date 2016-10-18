@@ -23,12 +23,18 @@ describe('When a teacher presents,', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
 
-    var w = 1050;
-    var h = 940;
-    teacher.windowHandleSize({width:w,height:h});
+    var w = 1035;
+    var h = 849;
+    /*teacher.setViewportSize({width:w,height:h});
     teacher.waitUntil(function(){
-        var s = teacher.windowHandleSize();
+        var s = teacher.getViewportSize();
         return s.width == w && s.height == h;
+    });
+     */
+    teacher.waitUntil(function(){
+	var s = teacher.getViewportSize();
+	console.log(s);
+	return s.state != "pending";
     });
 
     it('the teacher and student should find the application', function () {
@@ -62,11 +68,6 @@ describe('When a teacher presents,', function() {
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
         teacher.pause(ANIMATION_DELAY);
-        var v = teacherT.viewport;
-        assert(within(v.width,800,5));
-        assert(within(v.height,780,5));
-        assert.equal(v.x,0);
-        assert.equal(v.y,0);
     });
     it("the student should find and join the conversation",function(){
         student.setValue("#conversationSearchBox > input",teacherName);
