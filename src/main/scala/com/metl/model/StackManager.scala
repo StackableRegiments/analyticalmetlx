@@ -73,8 +73,8 @@ object TopicManager extends Logger {
   })
   def renameTopic(topicId:String,newName:String):Unit = Stopwatch.time("TopicManager:renameTopic",{
     Topic.find("_id",new ObjectId(topicId)) match {
-      case t:Topic => {
-        t.rename(newName)
+      case t:Box[Topic] => {
+        t.openOrThrowException("Expected Topic to be in Box").rename(newName)
         //XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
       }
       case _ => {}
@@ -82,8 +82,8 @@ object TopicManager extends Logger {
   })
   def deleteTopic(topicId:String):Unit = Stopwatch.time("TopicManager:deleteTopic",{
     Topic.find("_id",new ObjectId(topicId)) match {
-      case t:Topic => {
-        t.delete
+      case t:Box[Topic] => {
+        t.openOrThrowException("Expected Topic to be in Box").delete
         //XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
       }
       case _ => {}
