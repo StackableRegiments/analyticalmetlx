@@ -28,7 +28,6 @@ describe('When a teacher presents,', function() {
     teacher.windowHandleSize({width:w,height:h});
     teacher.waitUntil(function(){
         var s = teacher.windowHandleSize();
-        console.log(s);
         return s.width == w && s.height == h;
     });
 
@@ -62,6 +61,12 @@ describe('When a teacher presents,', function() {
         assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
         teacher.click(".newConversationTag");
         teacher.waitForExist("#board");
+        teacher.pause(ANIMATION_DELAY);
+        var v = teacherT.viewport;
+        assert(within(v.width,800,5));
+        assert(within(v.height,780,5));
+        assert.equal(v.x,0);
+        assert.equal(v.y,0);
     });
     it("the student should find and join the conversation",function(){
         student.setValue("#conversationSearchBox > input",teacherName);
@@ -164,7 +169,6 @@ describe('When a teacher presents,', function() {
         assert.equal(active.x,100);
         assert(active.words.length > 0);
         assert.equal(active.words[0].size, 55);
-        console.log("Active box width (expecting 638):",active.width);
         assert(within(active.width,638,3));
     });
     it("the teacher should be able to draw ink", function(){
@@ -188,10 +192,15 @@ describe('When a teacher presents,', function() {
                 };
             });
             teacherT.handwrite(pts);
-            console.log("Handwriting",i,pts,teacherT.inkStanzas);
         }
+        var v = teacherT.viewport;
+	console.log(v);
+        assert(within(v.width,800,5));
+        assert(within(v.height,780,5));
+        assert.equal(v.x,0);
+        assert(within(v.y,390,5));
+
         teacher.waitUntil(function(){
-            console.log(teacherT.inkStanzas);
             return _.keys(teacherT.inkStanzas).length == 4;
         });
     });
