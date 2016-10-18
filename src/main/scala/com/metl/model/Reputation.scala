@@ -46,13 +46,13 @@ object Reputation extends Logger{
         case GainAction.ViewedAnswerOnStack => recRep.action(GainAction.ReceivedAnswerViewOnStack)
         case GainAction.ViewedCommentOnStack => recRep.action(GainAction.ReceivedCommentViewOnStack)
       }
-      val finalRecRep = reciprocatingRep.protagonist(gain.antagonist.is).antagonist(gain.protagonist.is).time(gain.time.is).conversation(gain.conversation.is).save
+      val finalRecRep = reciprocatingRep.protagonist(gain.antagonist.is).antagonist(gain.protagonist.is).time(gain.time.is).conversation(gain.conversation.is).save(true)
       addStanding(finalRecRep.protagonist.is,finalRecRep.action.is)
-      gain.save
+      gain.save(true)
       ReputationServer ! List(finalRecRep,gain)
     }
     else {
-      gain.save
+      gain.save(true)
       ReputationServer ! gain
     }
   })

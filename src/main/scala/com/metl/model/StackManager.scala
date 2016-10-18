@@ -68,7 +68,7 @@ object TopicManager extends Logger {
   }
   def createTopic(location:String):Unit = Stopwatch.time("TopicManager:createTopic %s".format(location),{
     val newTopic = Topic.createRecord.name(location).creator(currentUser.is).deleted(false)
-    newTopic.teachingEventIdentity(newTopic.identity).save
+    newTopic.teachingEventIdentity(newTopic.identity).save(true)
     //XMPPQuestionSyncActor ! TopicSyncRequest(newTopic.identity)
   })
   def renameTopic(topicId:String,newName:String):Unit = Stopwatch.time("TopicManager:renameTopic",{

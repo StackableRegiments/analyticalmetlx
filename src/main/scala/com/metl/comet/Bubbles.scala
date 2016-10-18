@@ -49,15 +49,15 @@ object BubbleConstants extends Logger{
   setDefaultAdmins
   def setDefaultAdmins = {
     List("hagand","wmck","sajames","chagan","designa","rob","joshuaj").map(user => {
-      StackAdmin.createOrUpdate(user).authcate(user).adminForAllTopics(true).save
+      StackAdmin.createOrUpdate(user).authcate(user).adminForAllTopics(true).save(true)
     })
     List("tburns","rnor2","designb","mthicks","ahannah","jpjor1").map(user => {
-      StackAdmin.createOrUpdate(user).authcate(user).save
+      StackAdmin.createOrUpdate(user).authcate(user).save(true)
     })
     Map("eecrole" -> List("aggregate","load-testing","loadTest")).map(userTuple => {
       val user = userTuple._1
       val topics = userTuple._2
-      StackAdmin.createOrUpdate(user).authcate(user).adminForTopics(topics).save
+      StackAdmin.createOrUpdate(user).authcate(user).adminForTopics(topics).save(true)
     })
   }
   val minimumVote = 1
