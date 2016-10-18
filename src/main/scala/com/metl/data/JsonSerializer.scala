@@ -515,10 +515,9 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
           MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words,mc.audiences)
         }
         catch {
-          case e => {
-            e.printStackTrace
+          case e:Throwable =>
+            e.printStackTrace()
             throw e
-          }
         }
       }
       case _ => MeTLMultiWordText.empty
