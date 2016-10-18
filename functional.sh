@@ -6,7 +6,6 @@ echo "$MODE player mode"
 rm debug.log
 touch debug.log
 
-snap-shell
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
     npm install -g sprintf-js
@@ -14,6 +13,11 @@ if [[ "$SNAP_CI" ]]; then
     npm install -g wdio-spec-reporter
     npm install -g lodash
     npm install -g wdio
+
+    ls node_modules
+    ls node_modules/wdio
+
+    snap-shell
 
     java -jar -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
 
