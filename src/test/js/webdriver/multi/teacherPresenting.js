@@ -23,18 +23,13 @@ describe('When a teacher presents,', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
 
-    var w = 1035;
-    var h = 849;
-    /*teacher.setViewportSize({width:w,height:h});
+    var w = 1024;
+    var h = 850;
+    teacher.setViewportSize({width:w,height:h});
     teacher.waitUntil(function(){
         var s = teacher.getViewportSize();
-        return s.width == w && s.height == h;
-    });
-     */
-    teacher.waitUntil(function(){
-	var s = teacher.getViewportSize();
-	console.log(s);
-	return s.state != "pending";
+        console.log(s);
+        return s.state != "pending";
     });
 
     it('the teacher and student should find the application', function () {
@@ -195,8 +190,8 @@ describe('When a teacher presents,', function() {
             teacherT.handwrite(pts);
         }
         var v = teacherT.viewport;
-	console.log(v);
-        assert(within(v.width,800,5));
+        console.log(v);
+        assert(within(v.width,785,5));
         assert(within(v.height,780,5));
         assert.equal(v.x,0);
         assert(within(v.y,390,5));
