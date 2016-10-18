@@ -189,6 +189,7 @@ describe('When a teacher presents, ', function() {
             }));
         }
         teacher.waitUntil(function(){
+	    console.log(teacherT.inkStanzas);
             return _.keys(teacherT.inkStanzas).length == 4;
         });
     });
