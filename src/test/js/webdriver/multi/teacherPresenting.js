@@ -181,15 +181,17 @@ describe('When a teacher presents, ', function() {
             var len = 35;
             var root = (len + 20) * i;
             teacher.click(sprintf("#pen%sButton",i));
-            teacherT.handwrite(_.map(_.range(0,5), function(j){
+            var pts = _.map(_.range(0,5), function(j){
                 return {
                     x: root + Math.cos(j) * len--,
                     y: root + Math.sin(j) * len--
                 };
-            }));
+            });
+            teacherT.handwrite(pts);
+            console.log("Handwriting",i,teacherT.inkStanzas);
         }
         teacher.waitUntil(function(){
-	    console.log(teacherT.inkStanzas);
+            console.log(teacherT.inkStanzas);
             return _.keys(teacherT.inkStanzas).length == 4;
         });
     });

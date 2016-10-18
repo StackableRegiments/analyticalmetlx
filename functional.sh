@@ -6,6 +6,7 @@ echo "$MODE player mode"
 rm debug.log
 touch debug.log
 
+snap-shell
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
     npm install sprintf-js
