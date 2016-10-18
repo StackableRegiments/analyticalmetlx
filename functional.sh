@@ -8,6 +8,8 @@ touch debug.log
 
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
+    sudo apt-get install g++ build-essential
+
     npm install sprintf-js
     npm install wdio-mocha-framework
     npm install wdio-spec-reporter
