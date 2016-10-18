@@ -1,12 +1,10 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-
 import com.metl.data._
 import com.metl.metl2011._
 import com.metl.auth._
 import com.metl.utils._
-
 import _root_.net.liftweb.util._
 import Helpers._
 import _root_.net.liftweb.common._
@@ -18,10 +16,10 @@ import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
 import com.metl.h2._
-
 import net.liftweb.util.Props
 import com.mongodb._
 import net.liftweb.mongodb._
+import net.liftweb.util
 
 import scala.xml._
 
@@ -140,11 +138,12 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         mongoPort <- tryo((n \ "@mongoPort").text.toInt);
         mongoDb <- tryo((n \ "@mongoDb").text)
       ) yield {  
-        val mo = new MongoOptions
-        mo.socketTimeout = 10000
-        mo.socketKeepAlive = true
+        val mo = MongoClientOptions.builder()
+          .socketTimeout(10000)
+          .socketKeepAlive(true)
+          .build()
         val srvr = new ServerAddress(mongoHost,mongoPort)
-        MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), mongoDb)
+        MongoDB.defineDb(util.DefaultConnectionIdentifier, new MongoClient(srvr, mo), mongoDb)
         //construct standingCache from DB
         com.metl.model.Reputation.populateStandingMap
         //construct LiftActors for topics with history from DB
