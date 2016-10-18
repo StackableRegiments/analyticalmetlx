@@ -20,7 +20,7 @@ if [[ "$SNAP_CI" ]]; then
     sbt compile
     sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile="config/logback.xml" -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
     { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
-    ./node_modules/wdio/node_modules/.bin/wdio wdio.${MODE}.conf.js
+    ./node_modules/.bin/wdio wdio.${MODE}.conf.js
 else
     echo "Running on local"
     wmic process where "name like '%java%'" delete
