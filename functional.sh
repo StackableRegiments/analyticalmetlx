@@ -9,11 +9,11 @@ touch debug.log
 snap-shell
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
-    npm install sprintf-js
-    npm install wdio-mocha-framework
-    npm install wdio-spec-reporter
-    npm install lodash
-    npm install wdio
+    npm install -g sprintf-js
+    npm install -g wdio-mocha-framework
+    npm install -g wdio-spec-reporter
+    npm install -g lodash
+    npm install -g wdio
 
     java -jar -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
 
