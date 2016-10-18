@@ -20,7 +20,7 @@ if [[ "$SNAP_CI" ]]; then
 
     java -jar -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
 
-    sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile="config/logback.xml" -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
+    sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile=/var/snap-ci/repo/config/logback.xml -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
     { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
     echo "Starting WDIO"
     ./node_modules/.bin/wdio wdio.${MODE}.conf.js
