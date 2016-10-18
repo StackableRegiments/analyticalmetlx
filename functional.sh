@@ -8,14 +8,14 @@ touch debug.log
 
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
-    npm install -g sprintf-js
-    npm install -g wdio-mocha-framework
-    npm install -g wdio-spec-reporter
-    npm install -g lodash
-    npm install -g wdio
+    npm install sprintf-js
+    npm install wdio-mocha-framework
+    npm install wdio-spec-reporter
+    npm install lodash
+    npm install wdio
 
-    ls node_modules
-    ls node_modules/wdio
+    ls ./node_modules
+    ls ./node_modules/wdio
 
     snap-shell
 
