@@ -8,7 +8,6 @@ touch debug.log
 
 if [[ "$SNAP_CI" ]]; then
     echo "Running in CI"
-    sudo apt-get install g++ build-essential
 
     npm install sprintf-js
     npm install wdio-mocha-framework
@@ -18,8 +17,6 @@ if [[ "$SNAP_CI" ]]; then
 
     ls ./node_modules
     ls ./node_modules/wdio
-
-    snap-shell
 
     java -jar -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
 
@@ -36,5 +33,6 @@ else
     ./sbt.sh container:launch &
     { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
     ./node_modules/.bin/wdio wdio.${MODE}.conf.js
+
     wmic process where "name like '%java%'" delete
 fi
