@@ -15,7 +15,8 @@ if [[ "$SNAP_CI" ]]; then
     npm install wdio
 
     sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile=/var/snap-ci/repo/config/logback.xml -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
-    { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
+    sleep 150
+    #{ tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
 
     echo "Starting WDIO"
     java -jar -Dwebdriver.chome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
