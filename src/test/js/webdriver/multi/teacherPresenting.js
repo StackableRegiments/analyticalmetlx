@@ -19,7 +19,7 @@ var debugUnless = function(condF,fail){
 var within = function(a,b,tolerance){
     return Math.abs(a - b) <= tolerance;
 };
-describe('When a teacher presents, ', function() {
+describe('When a teacher presents,', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
 
@@ -64,7 +64,7 @@ describe('When a teacher presents, ', function() {
         teacher.waitForExist("#board");
     });
     it("the student should find and join the conversation",function(){
-        student.setValue("#conversationSearchBox > input","teacher");
+        student.setValue("#conversationSearchBox > input",teacherName);
         student.click("#searchButton");
         student.pause(1000);
         student.click(".newConversationTag");

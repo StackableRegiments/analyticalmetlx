@@ -1,5 +1,8 @@
 var _ = require('lodash');
+var sprintf = require('sprintf-js').sprintf;
+
 var Page = require('./page');
+
 var ConversationsPage = function(user){
   return Object.create(Page, {
     // Page methods
@@ -18,14 +21,17 @@ var ConversationsPage = function(user){
     createConversation: { value: function() {
       user.click('#createConversationButton');
     } },
+    waitForNewConversation: { value: function() {
+      return user.waitForExist('.newConversationTag',2000);
+    } },
     waitForImportButton: { value: function() {
       return user.waitForExist('#showImportConversationWorkflow',2000);
     } },
     importConversation: { value: function(filename) {
-// Don't open browser file dialog - unnecessary.
-//      user.click('#showImportConversationWorkflow');
-//	    user.waitForExist("#importConversationInputElement",200);
       user.chooseFile('#importConversationInputElement','src/test/resources/' + filename);
+    } },
+    waitForImportedConversation: { value: function(teacherName,filename) {
+      return user.waitForExist(sprintf("td*=%s's (%s)",teacherName,filename),60000);
     } },
     searchForConversation: { value: function(name) {
       user.element('#conversationSearchBox>input[type=text]').setValue(name);

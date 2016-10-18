@@ -16,7 +16,7 @@ var debugUnless = function(condF,fail){
         console.log(fail);
     }
 };
-describe('When a teacher presents, ', function() {
+describe('When a teacher presents,', function() {
     var teacherT = board(teacher);
     var studentT = board(student);
     it('the teacher and student should find the application', function () {
@@ -42,14 +42,13 @@ describe('When a teacher presents, ', function() {
         assert(studentConversationsPage.waitForSearchBox());
     });
 
-    // Conversation name reflects imported filename.
-    var importedFilename = 'Test.ppt';
-    var conversationName = importedFilename;
+    var importFilename = 'Test.ppt';
 
     it("should be able to import and join a conversation", function() {
         assert(teacherConversationsPage.waitForImportButton());
         var previousConversations = teacherConversationsPage.getConversations();
-        teacherConversationsPage.importConversation(importedFilename);
+        teacherConversationsPage.importConversation(importFilename);
+        teacherConversationsPage.waitForImportedConversation(teacherName,importFilename);
         var newConversations = teacherConversationsPage.getNewConversations(previousConversations);
         assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
 //        assert.ok(newConversations[0].name);
@@ -59,7 +58,7 @@ describe('When a teacher presents, ', function() {
         teacher.waitForExist("#board");
     });
     it("the student should find and join the conversation",function(){
-        student.setValue("#conversationSearchBox > input","teacher");
+        student.setValue("#conversationSearchBox > input",teacherName);
         student.click("#searchButton");
         student.pause(1000);
         student.click(".newConversationTag");
