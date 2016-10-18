@@ -25,8 +25,8 @@ class Summaries extends Logger {
   private var topicNames = Map.empty[String,String]
   private def allQuestions ={
     def allQuestionsForTopic(topic:Topic) = {
-      val qs = StackQuestion.findAll("teachingEvent",topic.teachingEventIdentity.is).map(new QuestionPresenter(_))
-      topicNames = topicNames.updated(topic.teachingEventIdentity.is.toString,topic.name.is)
+      val qs = StackQuestion.findAll("teachingEvent",topic.teachingEventIdentity.get).map(new QuestionPresenter(_))
+      topicNames = topicNames.updated(topic.teachingEventIdentity.get.toString,topic.name.get)
       qs
     }
     TopicManager.getAll.map(allQuestionsForTopic).flatten.toList
@@ -66,12 +66,12 @@ class Summaries extends Logger {
     val c = q.context
     JObject(List(
       JField("id",JString(c.id.toString)),
-      JField("teachingEvent",JString(topicNames(c.teachingEvent.is))),
-      JField("creationDate",JInt(c.creationDate.is)),
-      JField("answers",JArray(c.answers.is.sortBy(_.creationDate).map(json))),
-      JField("votes",JArray(c.votes.is.sortBy(_.time).map(json))),
-      JField("deleted",JBool(c.deleted.is)),
-      JField("discussion",json(c.about.is))
+      JField("teachingEvent",JString(topicNames(c.teachingEvent.get))),
+      JField("creationDate",JInt(c.creationDate.get)),
+      JField("answers",JArray(c.answers.get.sortBy(_.creationDate).map(json))),
+      JField("votes",JArray(c.votes.get.sortBy(_.time).map(json))),
+      JField("deleted",JBool(c.deleted.get)),
+      JField("discussion",json(c.about.get))
     ))
   }
   def render(x:NodeSeq):NodeSeq = {

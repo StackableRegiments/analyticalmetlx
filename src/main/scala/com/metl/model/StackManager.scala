@@ -41,15 +41,15 @@ object TopicManager extends Logger {
     }
   }))
   def preloadAllTopics = Stopwatch.time("TopicManager:preloadAllTopics", getAll.foreach(preloadTopic))
-  def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic), com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.is).questions)
+  def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic), com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.get).questions)
   def getAll = Stopwatch.time("TopicManager:getAll", cachedTopics.get match {
-    case listOfTopics:List[Topic] => listOfTopics.filter(_.creator.is != "rob")
+    case listOfTopics:List[Topic] => listOfTopics.filter(_.creator.get != "rob")
     case _ => List.empty[Topic]
   })
   def get(dbId:String):Box[Topic] = Stopwatch.time("TopicManager:get(%s)".format(dbId), {
     cachedTopics.get match {
       case listOfTopics:List[Topic] => {
-        listOfTopics.find(t => t.teachingEventIdentity.is == dbId) match {
+        listOfTopics.find(t => t.teachingEventIdentity.get == dbId) match {
           case Some(topic) => Full(topic)
           case _ => Empty
         }
@@ -62,7 +62,7 @@ object TopicManager extends Logger {
     val topic = try{
       Topic.find("_id",new ObjectId(topicId))
     } catch {
-      case e:Throwable =>       Topic.find("teachingEventIdentity",topicId)
+      case e:Throwable => Topic.find("teachingEventIdentity",topicId)
     }
     topic.map(t => com.metl.comet.TopicServer ! com.metl.comet.NewTopic(t))
   }

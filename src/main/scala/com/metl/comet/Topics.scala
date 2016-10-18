@@ -29,7 +29,7 @@ object TopicServer extends LiftActor with ListenerManager with Logger{
       topics.find(t => t.identity == topicActivity).map(t => updateListeners(t))
     })
     case NewTopic(topic) => {
-      topics = topic :: (topics.filterNot(t => t.teachingEventIdentity.is == topic.teachingEventIdentity.is))
+      topics = topic :: (topics.filterNot(t => t.teachingEventIdentity.get == topic.teachingEventIdentity.get))
       updateListeners(topics)
       updateListeners(topic)
     }
@@ -41,11 +41,11 @@ class TopicActor extends CometActor with CometListener with Logger {
   def registerWith = TopicServer
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   def namesHtmlCssBind(topics:List[Topic]) =
-    "#topicListing *" #> topics.filter(topic => !topic.deleted.is).sortWith((a,b) => a.name.is < a.name.is).map(topic => {
-      ".topicName [href]" #> "/stack/%s".format(topic.teachingEventIdentity.is) &
-      ".topicName [id]" #> "topic_%s".format(topic.teachingEventIdentity.is) &
-      ".topicName *" #> Text(topic.name.is) &
-      ".topicName [title]" #> topic.name.is
+    "#topicListing *" #> topics.filter(topic => !topic.deleted.get).sortWith((a,b) => a.name.get < a.name.get).map(topic => {
+      ".topicName [href]" #> "/stack/%s".format(topic.teachingEventIdentity.get) &
+      ".topicName [id]" #> "topic_%s".format(topic.teachingEventIdentity.get) &
+      ".topicName *" #> Text(topic.name.get) &
+      ".topicName [title]" #> topic.name.get
     })
   def updateNames(topics:List[Topic]) = {
     partialUpdate(SetHtml("topicListing",namesHtmlCssBind(topics).apply(StackTemplateHolder.topicTemplate)))
