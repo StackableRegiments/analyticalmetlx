@@ -134,7 +134,7 @@ describe('When a teacher presents, ', function() {
         teacherT.drag(handle,{x:-500,y:-250});
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert.equal(active.y,250);
+        assert(within(active.y,250,2));
     });
     it("the teacher should rescale all the font in their new textbox",function(){
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
