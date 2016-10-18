@@ -1,6 +1,7 @@
 package com.metl.utils
 
 import java.net.URI
+import java.nio.charset.StandardCharsets
 import java.security.cert._
 import java.util.concurrent._
 import java.util.{ArrayList, Date}
@@ -230,7 +231,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
       for (postItem <- postItemList){
         postForm.add(new BasicNameValuePair(postItem._1,postItem._2))
       }
-      val postEntity = new UrlEncodedFormEntity(postForm,HTTP.UTF_8)
+      val postEntity = new UrlEncodedFormEntity(postForm,StandardCharsets.UTF_8)
       applyDefaultHeaders(postMethod,correctlyFormedUrl)
       addAdditionalHeaders(postMethod,additionalHeaders)
       postMethod.addHeader(new BasicHeader("Content-Type","""application/x-www-form-urlencoded"""))
@@ -250,7 +251,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
       val correctlyFormedUrl = new URI(url)
       val postMethod = new BasicHttpEntityEnclosingRequest("POST",path){override val expectContinue = false}
       val postForm = postItemList.map(postItem => postItem._1 +"="+postItem._2).mkString("&")
-      val postEntity = new StringEntity(postForm,HTTP.UTF_8)
+      val postEntity = new StringEntity(postForm,StandardCharsets.UTF_8)
       applyDefaultHeaders(postMethod,correctlyFormedUrl)
       addAdditionalHeaders(postMethod,additionalHeaders)
       postMethod.addHeader(new BasicHeader("Content-Type","""application/x-www-form-urlencoded"""))
