@@ -3,7 +3,6 @@ npm -v
 node -v
 
 echo "$MODE player mode"
-rm debug.log
 touch debug.log
 
 if [[ "$SNAP_CI" ]]; then
@@ -15,16 +14,12 @@ if [[ "$SNAP_CI" ]]; then
     npm install lodash
     npm install wdio
 
-    ls ./node_modules
-    echo "n_m/wd"
-    ls ./node_modules/wdio
-
     java -jar -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
 
     sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile=/var/snap-ci/repo/config/logback.xml -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
     { tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
     echo "Starting WDIO"
-    ./node_modules/.bin/wdio wdio.${MODE}.conf.js
+    wdio wdio.${MODE}.conf.js
 else
     echo "Running on local"
     wmic process where "name like '%java%'" delete
