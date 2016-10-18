@@ -724,7 +724,7 @@ class StackWorker(location:String) extends LiftActor with Logger {
   private lazy val stackServer = StackServerManager.get(location)
   override def messageHandler = {
     case WorkCreateQuestion(author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateQuestion",{
-      val q = StackQuestion.createRecord.about(DiscussionPoint(com.metl.model.Author(author), text)).teachingEvent(location).creationDate(timeticks).save
+      val q = StackQuestion.createRecord.about(DiscussionPoint(com.metl.model.Author(author), text)).teachingEvent(location).creationDate(timeticks).save(true)
       val rep = Informal.createRecord.time(timeticks).protagonist(author).action(GainAction.MadeQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
       val newQ = new QuestionPresenter(q)

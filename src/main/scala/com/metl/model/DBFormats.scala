@@ -339,7 +339,7 @@ object Topic extends Topic with MongoMetaRecord[Topic]
   def getDefaultValue = find("teachingEventIdentity","default") match {
     case Full(topic) => topic
     case _ => {
-      createRecord.name("default").creator("automatically created").deleted(false).teachingEventIdentity("default").save
+      createRecord.name("default").creator("automatically created").deleted(false).teachingEventIdentity("default").save(true)
     }
   }
   def defaultValue = getDefaultValue
