@@ -188,7 +188,7 @@ describe('When a teacher presents, ', function() {
                 };
             });
             teacherT.handwrite(pts);
-            console.log("Handwriting",i,teacherT.inkStanzas);
+            console.log("Handwriting",i,pts,teacherT.inkStanzas);
         }
         teacher.waitUntil(function(){
             console.log(teacherT.inkStanzas);

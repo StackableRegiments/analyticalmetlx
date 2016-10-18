@@ -96,7 +96,6 @@ var BoardPage = function(user) {
         inkMode: { get: function() { return user.element("#drawMode"); } },
         inkStanzas: { get: function() { return user.execute("return boardContent.inks").value; } },
         handwrite: { value:function(pts){
-	    console.log("Handwriting",pts);
             user.moveToObject("#board",pts[0].x,pts[0].y);
             user.buttonDown();
             _.each(pts,function(pt){
