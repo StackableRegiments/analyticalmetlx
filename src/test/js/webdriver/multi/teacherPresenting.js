@@ -134,7 +134,7 @@ describe('When a teacher presents,', function() {
         teacherT.drag(handle,{x:-500,y:-250});
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert.equal(active.y,250);
+        assert(within(active.y,250,2));
     });
     it("the teacher should rescale all the font in their new textbox",function(){
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
@@ -171,7 +171,7 @@ describe('When a teacher presents,', function() {
         teacherT.inkMode.click();
 
         var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length;
-        teacherT.handwrite(_.map(_.range(200,400,25), function(i){
+        teacherT.handwrite(_.map(_.range(280,350,25), function(i){
             return {x:i,y:i};
         }));
         teacher.waitUntil(function(){
@@ -181,14 +181,17 @@ describe('When a teacher presents,', function() {
             var len = 35;
             var root = (len + 20) * i;
             teacher.click(sprintf("#pen%sButton",i));
-            teacherT.handwrite(_.map(_.range(0,5), function(j){
+            var pts = _.map(_.range(0,5), function(j){
                 return {
                     x: root + Math.cos(j) * len--,
                     y: root + Math.sin(j) * len--
                 };
-            }));
+            });
+            teacherT.handwrite(pts);
+            console.log("Handwriting",i,pts,teacherT.inkStanzas);
         }
         teacher.waitUntil(function(){
+            console.log(teacherT.inkStanzas);
             return _.keys(teacherT.inkStanzas).length == 4;
         });
     });
