@@ -171,7 +171,7 @@ describe('When a teacher presents, ', function() {
         teacherT.inkMode.click();
 
         var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length;
-        teacherT.handwrite(_.map(_.range(200,400,25), function(i){
+        teacherT.handwrite(_.map(_.range(280,350,25), function(i){
             return {x:i,y:i};
         }));
         teacher.waitUntil(function(){
