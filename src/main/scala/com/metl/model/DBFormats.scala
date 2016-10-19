@@ -97,7 +97,7 @@ object StackAdmin extends StackAdmin with MongoMetaRecord[StackAdmin]{
   }
 }
 
-class StackAdmin extends MongoRecord[StackAdmin] with MongoId[StackAdmin]{
+class StackAdmin extends MongoRecord[StackAdmin] with ObjectIdPk[StackAdmin]{
   def meta = StackAdmin
   object authcate extends StringField(this,32)
   object adminForTopics extends MongoListField[StackAdmin,String](this)
@@ -107,7 +107,7 @@ class StackAdmin extends MongoRecord[StackAdmin] with MongoId[StackAdmin]{
   def canAddTopics:Boolean = adminForAllTopics.get
 }
 abstract class Rep
-class Informal extends Rep with MongoRecord[Informal] with MongoId[Informal]{
+class Informal extends Rep with MongoRecord[Informal] with ObjectIdPk[Informal]{
   def meta = Informal
   object action extends EnumField(this,GainAction)
   object protagonist extends StringField(this,255)
@@ -178,7 +178,7 @@ trait VoteCollector{
   def listVotes:List[Vote]
   def addVote(vote:Vote)
 }
-class StackQuestion private() extends MongoRecord[StackQuestion] with MongoId[StackQuestion] with VoteCollector{
+class StackQuestion private() extends MongoRecord[StackQuestion] with ObjectIdPk[StackQuestion] with VoteCollector{
   def meta = StackQuestion
   object teachingEvent extends StringField(this, 128)
   object slideJid extends IntField(this)
@@ -192,7 +192,7 @@ class StackQuestion private() extends MongoRecord[StackQuestion] with MongoId[St
   {
     def defaultValue = DiscussionPoint(Author("noone"), "none")
   }
-  private lazy val searchQuery = JObject(List(JField("_id",this._id.asJValue)))
+  private lazy val searchQuery = JObject(List(JField("_id",this.id.asJValue)))
   def addAnswer(answer:StackAnswer) = {
     val answerJson = StackAnswer.toJObject(answer)(StackQuestion.formats)
     val updateQuery = JObject(List(JField("$push",JObject(List(JField("answers",answerJson))))))
@@ -307,19 +307,19 @@ object StackComment extends JsonObjectMeta[StackComment]{
 }
 
 object SystemInformation extends SystemInformation with MongoMetaRecord[SystemInformation]{}
-class SystemInformation extends MongoRecord[SystemInformation] with MongoId[SystemInformation]{
+class SystemInformation extends MongoRecord[SystemInformation] with ObjectIdPk[SystemInformation]{
   def meta = SystemInformation
   object name extends StringField(this,32)
   object alreadyHydratedDB extends BooleanField(this)
 }
-class Topic extends MongoRecord[Topic] with MongoId[Topic]{
+class Topic extends MongoRecord[Topic] with ObjectIdPk[Topic]{
   def meta = Topic
-  lazy val identity = _id.get.toString
+  lazy val identity = id.get.toString
   object name extends StringField(this,255)
   object creator extends StringField(this,255)
   object deleted extends BooleanField(this)
   object teachingEventIdentity extends StringField(this,255)
-  private lazy val searchQuery = JObject(List(JField("_id",this._id.asJValue)))
+  private lazy val searchQuery = JObject(List(JField("_id",this.id.asJValue)))
   def delete = {
     val updateQuery = JObject(List(JField("$set",JObject(List(JField("deleted",JBool(true)))))))
     Topic.update(searchQuery,updateQuery)
