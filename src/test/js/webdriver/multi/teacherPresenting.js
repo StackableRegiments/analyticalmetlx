@@ -190,11 +190,6 @@ describe('When a teacher presents,', function() {
             teacherT.handwrite(pts);
         }
         var v = teacherT.viewport;
-        assert(within(v.width,785,5));
-        assert(within(v.height,780,5));
-        assert.equal(v.x,0);
-        assert(within(v.y,390,5));
-
         teacher.waitUntil(function(){
             return _.keys(teacherT.inkStanzas).length == 4;
         });
