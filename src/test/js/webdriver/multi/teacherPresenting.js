@@ -155,7 +155,7 @@ describe('When a teacher presents,', function() {
     });
     if("the teacher should be able to reselect their box",function(){
         teacherT.clickWorld(200,300);
-	assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
+        assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
     it("the teacher should resize their box rewrapping instead of rescaling the text",function(){
@@ -175,6 +175,7 @@ describe('When a teacher presents,', function() {
         teacherT.handwrite(_.map(_.range(280,350,25), function(i){
             return {x:i,y:i};
         }));
+        console.log("Ink stanzas",teacherT.inkStanzas.length);
         teacher.waitUntil(function(){
             return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length >= (inkStanzasBefore + 1);
         },5000,"expected new ink to appear in inkStanzas after looping through server");
@@ -189,6 +190,7 @@ describe('When a teacher presents,', function() {
                 };
             });
             teacherT.handwrite(pts);
+            console.log("Ink stanzas",teacherT.inkStanzas.length);
         }
         var v = teacherT.viewport;
         teacher.waitUntil(function(){
@@ -219,8 +221,7 @@ describe('When a teacher presents,', function() {
         assert.equal(_.keys(sel.images).length,0);
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
-	browser.debug();
-	console.log(teacherT.inkStanzas);
+        console.log(_.map(teacherT.inkStanzas,"bounds"));
         teacherT.clickWorld(285,620);
         var sel = teacherT.selection;
         assert.equal(_.keys(sel.inks).length, 1);
