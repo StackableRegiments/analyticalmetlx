@@ -406,7 +406,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       //trace(r.body)
         () => Stopwatch.time("MeTLStatefulRestHelper.upload", {
           r.body.map(dataUriBytes => {
-            val dataUriString = IOUtils.toString(dataUriBytes)
+            val dataUriString = new String(dataUriBytes)
             val b64Bytes = dataUriString.split(",")(1)
             val bytes = net.liftweb.util.SecurityHelpers.base64Decode(b64Bytes)
             val filename = S.params("filename").head
@@ -427,7 +427,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
             filename <- r.param("filename")
             jid <- r.param("jid")
           } yield {
-            val svg = IOUtils.toString(svgBytes)
+            val svg = new String(svgBytes)
             var quality = r.param("quality").map(_.toFloat).getOrElse(0.4f)
             val bytes = SvgConverter.toJpeg(svg,w,h,quality)
             val server = ServerConfiguration.default

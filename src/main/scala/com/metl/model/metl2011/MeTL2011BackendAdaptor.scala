@@ -61,7 +61,7 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   protected def postResource(jid:String,userGeneratedId:String,overwrite:Boolean,data:Array[Byte]):String = {
 		val uri = "%s/upload_nested.yaws?path=%s&overwrite=%s&filename=%s".format(rootAddress,generatePath(jid),overwrite,generateFilename(userGeneratedId))	
 		val response = http.getClient.postBytes(uri,data)
-		val responseString = org.apache.commons.io.IOUtils.toString(response)
+		val responseString = new String(response)
 		debug("postedResource response: %s".format(responseString))
 		((XML.loadString(responseString) \\ "resource").head \ "@url").text
 	}
@@ -163,7 +163,7 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   protected def postResource(jid:String,userGeneratedId:String,overwrite:Boolean,data:Array[Byte]):String = {
 		val uri = "%s/upload_nested.yaws?path=%s&overwrite=%s&filename=%s".format(rootAddress,generatePath(jid),overwrite,generateFilename(userGeneratedId))	
 		val response = http.getClient.postBytes(uri,data)
-		val responseString = org.apache.commons.io.IOUtils.toString(response)
+		val responseString = new String(response)
 		debug("postedResource response: %s".format(responseString))
 		((XML.loadString(responseString) \\ "resource").head \ "@url").text
 	}

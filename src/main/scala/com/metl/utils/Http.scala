@@ -69,7 +69,7 @@ trait IMeTLHttpClient {
 
 case class HTTPResponse(requestUrl:String,actOnConn:(ManagedClientConnection,String,String) => Unit,bytes:Array[Byte],statusCode:Int,headers:Map[String,String],startMilis:Long,endMilis:Long,numberOfRetries:Int = 0, numberOfRedirects:Int = 0,exceptions:List[Throwable] = List.empty[Throwable]){
   val duration = endMilis - startMilis
-  def responseAsString = IOUtils.toString(bytes)
+  def responseAsString = new String(bytes)
 }
 
 class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient(connMgr) with IMeTLHttpClient with Logger {
@@ -283,7 +283,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
     getAsString(uri,additionalHeaders)
   })
   override def getAsString(uri:String,additionalHeaders:List[(String,String)] = List.empty[(String,String)]):String = Stopwatch.time("Http.getAsString", {
-    IOUtils.toString(getAsBytes(uri,additionalHeaders))
+    new String(getAsBytes(uri,additionalHeaders))
   })
 
   override def getAsBytes(uri:String,additionalHeaders:List[(String,String)] = List.empty[(String,String)]):Array[Byte] = Stopwatch.time("Http.getAsBytes", {
