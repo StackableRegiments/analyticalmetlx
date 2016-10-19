@@ -172,10 +172,10 @@ describe('When a teacher presents,', function() {
         teacherT.inkMode.click();
 
         var inkStanzasBefore = _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length;
-        teacherT.handwrite(_.map(_.range(280,350,25), function(i){
+        teacherT.handwrite(_.map(_.range(280,630,5), function(i){
             return {x:i,y:i};
         }));
-        console.log("Ink stanzas",teacherT.inkStanzas.length);
+        console.log("Ink stanzas",_.keys(teacherT.inkStanzas).length);
         teacher.waitUntil(function(){
             return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length >= (inkStanzasBefore + 1);
         },5000,"expected new ink to appear in inkStanzas after looping through server");
@@ -190,7 +190,7 @@ describe('When a teacher presents,', function() {
                 };
             });
             teacherT.handwrite(pts);
-            console.log("Ink stanzas",teacherT.inkStanzas.length);
+            console.log("Ink stanzas",_.keys(teacherT.inkStanzas).length);
         }
         var v = teacherT.viewport;
         teacher.waitUntil(function(){
