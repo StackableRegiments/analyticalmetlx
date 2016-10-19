@@ -59,9 +59,9 @@ object GainAction extends Enumeration{
 }
 
 object StackAdmin extends StackAdmin with MongoMetaRecord[StackAdmin]{
-  ensureDBIndex
-  def ensureDBIndex = {
-    useColl(_.ensureIndex(new BasicDBObject("authcate",1),"stackAdminAuthcateIndex",false))
+  createDBIndex
+  def createDBIndex = {
+    useColl(_.createIndex(new BasicDBObject("authcate",1),new BasicDBObject("name","stackAdminAuthcateIndex").append("unique",false)))
   }
 
   def fromAuthcate(authcate:String) ={
@@ -118,10 +118,10 @@ class Informal extends Rep with MongoRecord[Informal] with MongoId[Informal]{
   object question extends ObjectIdRefField(this,StackQuestion)
 }
 object Informal extends Informal with MongoMetaRecord[Informal]{
-  ensureDBIndex
-  def ensureDBIndex = {
-    useColl(_.ensureIndex(new BasicDBObject("protagonist",1),"informalProtagonistIndex",false))
-    useColl(_.ensureIndex(new BasicDBObject("action",1),"informalActionIndex",false))
+  createDBIndex
+  def createDBIndex = {
+    useColl(_.createIndex(new BasicDBObject("protagonist",1),new BasicDBObject("name","informalProtagonistIndex").append("unique",false)))
+    useColl(_.createIndex(new BasicDBObject("action",1),new BasicDBObject("name","informalActionIndex").append("unique",false)))
   }
   import GainAction._
   def standing(who:String):Int=findAll(("protagonist",who)).map((gain:Informal)=>value(gain.action.get)).foldLeft(0){
@@ -222,10 +222,10 @@ class StackQuestion private() extends MongoRecord[StackQuestion] with MongoId[St
 }
 object StackQuestion extends StackQuestion with MongoMetaRecord[StackQuestion]
 {
-  ensureDBIndex
-  def ensureDBIndex = {
-    useColl(_.ensureIndex(new BasicDBObject("teachingEvent",1),"stackQuestionIndex",false))
-    useColl(_.ensureIndex(new BasicDBObject("deleted",1),"stackQuestionDeletedIndex",false))
+  createDBIndex
+  def createDBIndex = {
+    useColl(_.createIndex(new BasicDBObject("teachingEvent",1),new BasicDBObject("name","stackQuestionIndex").append("unique",false)))
+    useColl(_.createIndex(new BasicDBObject("deleted",1),new BasicDBObject("name","stackQuestionDeletedIndex").append("unique",false)))
   }
   def defaultValue = null.asInstanceOf[StackQuestion]
   override implicit val formats = net.liftweb.json.DefaultFormats
@@ -331,10 +331,10 @@ class Topic extends MongoRecord[Topic] with MongoId[Topic]{
 }
 object Topic extends Topic with MongoMetaRecord[Topic]
 {
-  ensureDBIndex
-  def ensureDBIndex = {
-    useColl(_.ensureIndex(new BasicDBObject("name",1),"topicNameIndex",false))
-    useColl(_.ensureIndex(new BasicDBObject("teachingEventIdentity",1),"teachingEventIdentityIndex",false))
+  createDBIndex
+  def createDBIndex = {
+    useColl(_.createIndex(new BasicDBObject("name",1),new BasicDBObject("name","topicNameIndex").append("unique",false)))
+    useColl(_.createIndex(new BasicDBObject("teachingEventIdentity",1),new BasicDBObject("name","teachingEventIdentityIndex").append("unique",false)))
   }
   def getDefaultValue = find("teachingEventIdentity","default") match {
     case Full(topic) => topic
