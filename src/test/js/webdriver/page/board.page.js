@@ -29,14 +29,15 @@ var BoardPage = function(user) {
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
             var dragPos = worldToScreen(handle.bounds[0],handle.bounds[1]);
+	    var handleWidth = handle.bounds[2] - handle.bounds[0];
+	    var handleHeight = handle.bounds[3] - handle.bounds[1];
             var sx = scaleWorldToScreen(delta.x);
             var sy = scaleWorldToScreen(delta.y);
-            user.moveToObject("#board",dragPos.x,dragPos.y);
+	    var xInset = handleWidth / 2;
+	    var yInset = handleHeight / 2;
+            user.moveToObject("#board",dragPos.x + xInset,dragPos.y + yInset);
             user.buttonDown();
-            user.moveToObject("#board",dragPos.x + sx, dragPos.y + sy);
-            if(delta.debug){
-                user.debug();
-            }
+            user.moveToObject("#board",dragPos.x + sx + xInset, dragPos.y + sy + yInset);
             user.buttonUp();
             return handle;
         } },

@@ -147,8 +147,8 @@ describe('When a teacher presents,', function() {
 
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert(within(active.width,437,2));
-        assert.equal(active.words[0].size, 55);
+        assert(within(active.width,447,2));
+        assert(within(active.words[0].size, 56,2));
     });
     it("the teacher should scroll up on swipe out",function(){
         teacherT.swipeUp();
@@ -165,8 +165,8 @@ describe('When a teacher presents,', function() {
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
         assert(active.words.length > 0);
-        assert.equal(active.words[0].size, 55);
-        assert(within(active.width,638,3));
+        assert(within(active.words[0].size, 56,2));
+	assert(within(active.width,660,3));
     });
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
