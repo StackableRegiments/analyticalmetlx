@@ -8,11 +8,12 @@ import http._
 import provider._
 import servlet._
 import rest._
-
 import org.imsglobal._
 import org.imsglobal.lti._
 import org.imsglobal.lti.launch._
 import javax.servlet.http.HttpServletRequest
+
+import com.metl.utils.ExceptionUtils
 import org.imsglobal.pox.IMSPOXRequest
 import org.apache.http.client.methods.HttpPost
 
@@ -150,7 +151,7 @@ class BrightSparkIntegrationStatelessDispatch extends RestHelper {
     case req@Req("testRemotePlugin" :: Nil,_,_) => () => {
       val response = lti.handleLtiRequest(req,pluginSession => {
         val (resultCode,resultDescription) = pluginSession.launch.result match {
-          case Left(e) => ("FAILURE","%s :: %s".format(e.getMessage,e.getStackTraceString))
+          case Left(e) => ("FAILURE","%s :: %s".format(e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
           case Right(launchResult) => ("OK","logged in with Token: %s => %s".format(pluginSession.token,launchResult.user))
         }
         val jObject = JObject(List(JField("result_code",JString(resultCode)),JField("result_description",JString(resultDescription))))

@@ -120,7 +120,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       parse(client.get(url.toString)).extract[List[T]]
     } catch {
       case e:Exception => {
-        error("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[T]
       }
     }
@@ -146,7 +146,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
-            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
             continuing = false
             bookmark = None
           }
@@ -155,7 +155,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       items
     } catch {
       case e:Exception => {
-        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[T]
       }
     }
@@ -204,7 +204,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
           trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
-            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
             continuing = false
             bookmark = None
           }
@@ -213,7 +213,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       items
     } catch {
       case e:Exception => {
-        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[D2LOrgUnit]
       }
     }
