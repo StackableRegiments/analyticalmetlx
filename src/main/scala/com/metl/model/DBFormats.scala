@@ -192,7 +192,7 @@ class StackQuestion private() extends MongoRecord[StackQuestion] with ObjectIdPk
   {
     def defaultValue = DiscussionPoint(Author("noone"), "none")
   }
-  private lazy val searchQuery = JObject(List(JField("_id",this.id.asJValue)))
+  private lazy val searchQuery = JObject(List(JField("id",this.id.asJValue)))
   def addAnswer(answer:StackAnswer) = {
     val answerJson = StackAnswer.toJObject(answer)(StackQuestion.formats)
     val updateQuery = JObject(List(JField("$push",JObject(List(JField("answers",answerJson))))))
@@ -236,7 +236,7 @@ case class StackAnswer(id:String, parentId:String,var about:DiscussionPoint, var
   def listVotes = votes
   def listDeepVotes = comments.filter(a => !a.deleted).map(a => a.listDeepVotes).foldLeft(listVotes)((acc,item) => acc ::: item)
   private lazy val mongoContextQuery = "answers.$"
-  private lazy val searchQuery = JObject(List(JField("_id",JString(parentId)),JField("answers.id",JString(id))))
+  private lazy val searchQuery = JObject(List(JField("id",JString(parentId)),JField("answers.id",JString(id))))
   def addVote(vote:Vote) = {
     val voteJson = Vote.toJObject(vote)(StackQuestion.formats)
     val updateQuery = JObject(List(JField("$push",JObject(List(JField(mongoContextQuery+".votes",voteJson))))))
@@ -303,7 +303,7 @@ case class StackComment(id:String, parentId:String,var about:DiscussionPoint, cr
   }
 }
 object StackComment extends JsonObjectMeta[StackComment]{
-  val jsCmdFormat = "function(){ var start = function(commentId,deltas){ var id = ObjectId('%s'); var f = function(parent){ if (parent.comments){parent.comments.forEach(function(c){ if(c.id == commentId){ deltas.votes.forEach(function(v){ c.votes.push(v); db.stackquestions.save(q); }); deltas.comments.forEach(function(sc){ c.comments.push(sc); db.stackquestions.save(q); }); if (deltas.deleted){ c.deleted = deltas.deleted; db.stackquestions.save(q); }; if (deltas.about){if (deltas.about.content){ c.about.content = deltas.about.content; db.stackquestions.save(q); }; }; }; f(c); });};}; var q = db.stackquestions.findOne({ _id : id});if (q){q.answers.forEach(function(a){f(a);});}; return q;}; return start('%s',%s);}"
+  val jsCmdFormat = "function(){ var start = function(commentId,deltas){ var id = ObjectId('%s'); var f = function(parent){ if (parent.comments){parent.comments.forEach(function(c){ if(c.id == commentId){ deltas.votes.forEach(function(v){ c.votes.push(v); db.stackquestions.save(q); }); deltas.comments.forEach(function(sc){ c.comments.push(sc); db.stackquestions.save(q); }); if (deltas.deleted){ c.deleted = deltas.deleted; db.stackquestions.save(q); }; if (deltas.about){if (deltas.about.content){ c.about.content = deltas.about.content; db.stackquestions.save(q); }; }; }; f(c); });};}; var q = db.stackquestions.findOne({ id : id});if (q){q.answers.forEach(function(a){f(a);});}; return q;}; return start('%s',%s);}"
 }
 
 object SystemInformation extends SystemInformation with MongoMetaRecord[SystemInformation]{}
@@ -319,7 +319,7 @@ class Topic extends MongoRecord[Topic] with ObjectIdPk[Topic]{
   object creator extends StringField(this,255)
   object deleted extends BooleanField(this)
   object teachingEventIdentity extends StringField(this,255)
-  private lazy val searchQuery = JObject(List(JField("_id",this.id.asJValue)))
+  private lazy val searchQuery = JObject(List(JField("id",this.id.asJValue)))
   def delete = {
     val updateQuery = JObject(List(JField("$set",JObject(List(JField("deleted",JBool(true)))))))
     Topic.update(searchQuery,updateQuery)
