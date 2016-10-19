@@ -513,7 +513,7 @@ abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) ex
   def activateNewInputBox(inputId:String,submitButtonId:String) = StackHelpers.activateNewInputBox(inputId,submitButtonId)
   def stackServer = StackServerManager.get(saveContext.teachingEvent.get)
   def stackWorker = StackServerManager.getWorker(saveContext.teachingEvent.get)
-  private def session = S.session.openTheBox
+  private def session = S.session.openOrThrowException("S should contain a current Lift session")
   val location:String = saveContext.teachingEvent.get
   def id:String
   def timestamp(timeSinceEpoch:Long):String = {
