@@ -972,7 +972,7 @@ class StackOverflow extends CometActor with CometListener with Logger {
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   private def setStartupQuestion = {
     detailedQuestion = StackOverflow.getRequestedDetailedQuestion((currentUser.is,location)) match {
-      case Full(qId) => questions.find(q => q.context.id == qId) match {
+      case Full(qId) => questions.find(q => q.context.id.get.toString.equals(qId)) match {
         case Some(question) => {
           Full(question)
         }
@@ -1031,7 +1031,7 @@ class StackOverflow extends CometActor with CometListener with Logger {
       val start = new Date().getTime
       AddAnswerDialog.map(_.done)
       AddCommentDialog.map(_.done)
-      val newQuestion = questions.find(q => q.context.id == questionId)
+      val newQuestion = questions.find(q => q.context.id.get.toString.equals(questionId))
       val oldDetailedQuestionId = detailedQuestion.map(dq => dq.context.id.toString).openOr("")
       if (overrideShow) detailedQuestion = newQuestion
       else detailedQuestion = newQuestion.filter(q => q.context.id.toString != oldDetailedQuestionId)
