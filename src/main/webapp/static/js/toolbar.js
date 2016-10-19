@@ -127,7 +127,7 @@ function registerPositionHandlers(contexts,down,move,up){
             worldPos.x + touchTolerance,
             worldPos.y + touchTolerance
         ];
-        var unconsumed = true;;
+        var unconsumed = true;
         _.each(Modes.canvasInteractables,function(category,label){
             _.each(category,function(interactable){
                 if(interactable != undefined && event in interactable){

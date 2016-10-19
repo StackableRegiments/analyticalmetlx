@@ -20,11 +20,11 @@ var BoardPage = function(user) {
         privateMode: { get:function(){ return user.element("#privateMode") } },
         publicMode: { get:function(){ return user.element("#publicMode") } },
 
-	viewport: {get:function(){
-	    var v = user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
-	    console.log("Viewport: ",v);
-	    return v;
-	}},
+        viewport: {get:function(){
+            var v = user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
+            console.log("Viewport: ",v);
+            return v;
+        }},
         mode: { get:function(){ return user.execute("return Modes.currentMode").value; } },
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
@@ -58,16 +58,10 @@ var BoardPage = function(user) {
             user.leftClick();
         } },
         swipeUp: {value: function(){
-            user.moveToObject("#board",1,0);
-            user.buttonDown();
-            user.moveToObject("#board",1,-1);
-            user.buttonUp();
+            user.execute("Extend.up()");
         } },
         swipeLeft: {value: function(){
-            user.moveToObject("#board",10,10);
-            user.buttonDown();
-            user.moveToObject("#board",-10,10);
-            user.buttonUp();
+            user.execute("Extend.left()");
         } },
         worldToScreen: {value: worldToScreen },
         screenToWorld: {value: screenToWorld },
