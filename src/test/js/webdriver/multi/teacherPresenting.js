@@ -166,6 +166,7 @@ describe('When a teacher presents,', function() {
         assert.equal(active.x,100);
         assert(active.words.length > 0);
         assert(within(active.words[0].size, 56,2));
+	console.log("Expected active width to be about 660",active.width);
 	assert(within(active.width,660,3));
     });
     it("the teacher should be able to draw ink", function(){
