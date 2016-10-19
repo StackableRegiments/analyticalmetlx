@@ -190,7 +190,6 @@ describe('When a teacher presents,', function() {
             teacherT.handwrite(pts);
         }
         var v = teacherT.viewport;
-        console.log(v);
         assert(within(v.width,785,5));
         assert(within(v.height,780,5));
         assert.equal(v.x,0);

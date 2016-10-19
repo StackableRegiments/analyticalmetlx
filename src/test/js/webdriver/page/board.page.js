@@ -21,7 +21,9 @@ var BoardPage = function(user) {
         publicMode: { get:function(){ return user.element("#publicMode") } },
 
 	viewport: {get:function(){
-	    return user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
+	    var v = user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
+	    console.log("Viewport: ",v);
+	    return v;
 	}},
         mode: { get:function(){ return user.execute("return Modes.currentMode").value; } },
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
