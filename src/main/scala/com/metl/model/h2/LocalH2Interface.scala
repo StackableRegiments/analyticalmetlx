@@ -92,7 +92,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
     )
     H2Conversation.findAllFields(List(H2Conversation.id,H2Conversation.created,H2Conversation.creation,H2Conversation.lastAccessed)).foreach(conv => {
-      if (conv.creation.get == null || conv.creation.get < 1){
+      if (null.asInstanceOf[Long] == conv.creation.get || conv.creation.get < 1){
         var result = conv.lastAccessed.get
         val creationString = conv.created.get
         dateFormats.foreach(df => {
