@@ -219,6 +219,7 @@ describe('When a teacher presents,', function() {
         assert.equal(_.keys(sel.images).length,0);
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
+	browser.debug();
 	console.log(teacherT.inkStanzas);
         teacherT.clickWorld(285,620);
         var sel = teacherT.selection;

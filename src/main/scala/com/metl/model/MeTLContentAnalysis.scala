@@ -10,6 +10,7 @@ import scala.xml._
 import collection._
 import net.liftweb.util.SecurityHelpers._
 import com.metl.h2.dbformats.ThemeExtraction
+import com.metl.renderer._
 
 case class Theme(author:String,text:String,origin:String)
 
@@ -34,7 +35,11 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
   def emit(t:Theme,room:MeTLRoom) = room.addTheme(t)
   def close(room:MeTLRoom) = partialChunks.foreach{
-    case (author,strokes) => CanvasContentAnalysis.extract(strokes).foreach(word => emit(Theme(author,word,"handwriting"),room))
+    case (author,strokes) => {
+      val desc = CanvasContentAnalysis.extract(strokes)
+      desc._1.foreach(word => emit(Theme(author,word,"imageRecognition"),room))
+      desc._2.foreach(word => emit(Theme(author,word,"handwriting"),room))
+    }
   }
   def add(c:MeTLStanza,room:MeTLRoom) = c match {
     /*This has a bug; it will not emit a sequence which has completed but not started a new one.
@@ -55,7 +60,9 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
     case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
       case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
       case Some(partial) => {
-        CanvasContentAnalysis.extract(partial).foreach(word => emit(Theme(i.author,word,"handwriting"),room))
+        val desc = CanvasContentAnalysis.extract(partial)
+        desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
+        desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
         partialChunks + (i.author -> List(i))
       }
       case None => partialChunks + (i.author -> (List(i)))
@@ -130,12 +137,31 @@ object CanvasContentAnalysis extends Logger {
   def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = images
     .map(ocrOne _)
     .collect{ case Right(js) => js}
-    .map(parse)
     .map(getDescriptions _)
     .foldLeft((List.empty[String],List.empty[String])){
     case (a,b) => (a._1 ::: b._1, a._2 ::: b._2)
   }
-  def ocrOne(image:MeTLImage) = {
+  def ocrBytes(bytes:Array[Byte]):Future[Either[Throwable,JValue]] = {
+    val key = (propFile \\ "visionApiKey").text
+    val uri = "vision.googleapis.com/v1/images:annotate"
+    val b64 = base64Encode(bytes)
+    val json =
+      ("requests" -> List(
+        JObject(List(
+          JField("image",
+            ("content" ->  b64 )),
+          JField("features",JArray(List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
+            ("type" -> featureType) ~
+              ("maxResults" -> 10)
+          )))
+        ))
+      ))
+    val renderedJson = compact(render(json))
+    val req = host(uri).secure << renderedJson <<? Map("key" -> key)
+    Http(req > as.String).either.right.map(response => parse(response))
+  }
+
+  def ocrOne(image:MeTLImage):Either[Throwable,JValue] = {
     ThemeExtraction.get(image.identity) match {
       case Some(t) => {
         debug("Cache hit for OCR image: %s".format(image.identity))
@@ -143,73 +169,38 @@ object CanvasContentAnalysis extends Logger {
       }
       case _ => {
         debug("Cache miss for OCR image: %s".format(image.identity))
-        val key = (propFile \\ "visionApiKey").text
-        val uri = "vision.googleapis.com/v1/images:annotate"
-        val json =
-          ("requests" -> List(
-            ("image" ->
-              ("content" ->  image.imageBytes.map(base64Encode _).openOr(""))) ~
-              ("features" -> List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
-                ("type" -> featureType) ~
-                  ("maxResults" -> 10)))))
-
-        val req = host(uri).secure << compact(render(json)) <<? Map("key" -> key)
-        val f = Http(req > as.String).either
-        debug(f)
-        val response = for(
-          s <- f.right
-        ) yield ThemeExtraction.put(image.identity,s)
-        response()
+        image.imageBytes.map(bytes => {
+          val response = for {
+            s <- ocrBytes(bytes).right
+          } yield {
+            ThemeExtraction.put(image.identity,compact(render(s)))
+            s
+          }
+          val resp:Either[Throwable,JValue] = response()
+          resp
+        }).openOr({
+          val resp:Either[Throwable,JValue] = Right(JArray(Nil))
+          resp
+        })
       }
     }
   }
 
-  def extract(inks:List[MeTLInk]):List[String] = {
+  def extract(inks:List[MeTLInk]):Tuple2[List[String],List[String]] = {
     if(inks.size < analysisThreshold) {
       debug("Not analysing themes for %s strokes".format(inks.size))
-      Nil
+      (Nil,Nil)
     }
     else {
-      val key = inks.map(_.identity).toString
-      debug("Loading themes for %s strokes".format(inks.size))
-      ThemeExtraction.get(key) match {
-        case Some(cached) => {
-          debug("Cache hit for ink set: %s".format(key))
-          simplify(cached.extraction.get)
-        }
-        case _ => {
-          debug("Cache miss for ink set: %s".format(key))
-          val myScriptKey = (propFile \\ "myScriptApiKey").text
-          val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
-
-          val json = JObject(List(
-            JField("components",JArray(inks.map(i => JObject(List(
-              JField("type",JString("stroke")),
-              JField("x",JArray(i.points.map(i => JInt(i.x.intValue)))),
-              JField("y",JArray(i.points.map(i => JInt(i.y.intValue))))))))),
-            JField("parameter",JObject(List(
-              JField("textParameter",JObject(List(
-                JField("language",JString("en_US"))))))))))
-
-          val input = compact(render(json))
-          val req = host(myScriptUrl).secure << Map(
-            ("applicationKey" -> myScriptKey),
-            ("analyzerInput" -> input))
-
-          req.setContentType("application/x-www-form-urlencoded","UTF-8")
-
-          val f = Http(req OK as.String).either
-          debug("Consuming %s bytes of MyScript cartridge".format(input.length))
-          val response = for(
-            s <- f.right
-          ) yield {
-            ThemeExtraction.put(key,s)
-          }
-          val r = response()
-          debug(r)
-          r.right.toOption.map(simplify _).getOrElse(Nil)
-        }
-      }
+      debug("Analysing themes for %s strokes".format(inks.size))
+      val h = new History("snapshot")
+      inks.foreach(h.addStanza _)
+      val bytes = SlideRenderer.render(h,800,600)
+      val response = for(s <- ocrBytes(bytes).right) yield s
+      response().right.toOption.map(r => {
+        debug("Server response: %s".format(r))
+        getDescriptions(r)
+      }).getOrElse((Nil,Nil))
     }
   }
 }

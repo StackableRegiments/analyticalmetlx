@@ -290,7 +290,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.foreach(j => j._3 ! a)
   })
   def addTheme(theme:Theme) = {
-    trace("Theme added: %s".format(theme))
     sendStanzaToServer(MeTLTheme(config,theme.author,new java.util.Date().getTime,location,theme,Nil))
   }
   protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
