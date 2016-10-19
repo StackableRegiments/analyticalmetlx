@@ -58,9 +58,9 @@ var BoardPage = function(user) {
             user.leftClick();
         } },
         swipeUp: {value: function(){
-            user.moveToObject("#board",200,1);
+            user.moveToObject("#board",10,10);
             user.buttonDown();
-            user.moveToObject("#board",200,-1);
+            user.moveToObject("#board",10,-10);
             user.buttonUp();
         } },
         swipeLeft: {value: function(){

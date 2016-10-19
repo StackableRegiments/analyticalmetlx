@@ -155,6 +155,7 @@ describe('When a teacher presents,', function() {
     });
     if("the teacher should be able to reselect their box",function(){
         teacherT.clickWorld(200,300);
+	assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
     it("the teacher should resize their box rewrapping instead of rescaling the text",function(){
@@ -218,7 +219,8 @@ describe('When a teacher presents,', function() {
         assert.equal(_.keys(sel.images).length,0);
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
-        teacherT.clickWorld(285,690);
+	console.log(teacherT.inkStanzas);
+        teacherT.clickWorld(285,620);
         var sel = teacherT.selection;
         assert.equal(_.keys(sel.inks).length, 1);
         assert.equal(_.keys(sel.texts).length, 0);
