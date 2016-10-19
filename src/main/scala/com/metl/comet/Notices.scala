@@ -60,7 +60,7 @@ case class MeTLSpam(val content:NodeSeq) extends MeTLMessage
 object Notices{
   def local(message:MeTLMessage) = {
     for(session <- S.session)
-      session.sendCometActorMessage("Notices", Box(noticesName(currentUser.is)), message)
+      session.sendCometActorMessage("Notices", Box.legacyNullTest(noticesName(currentUser.is)), message)
   }
 }
 class Notices extends CometActor with CometListener with Logger{

@@ -34,7 +34,7 @@ object ReputationServer extends LiftActor with ListenerManager with Logger {
   }
 }
 object ReputationActor{
-  def local(message:Any, session:Box[LiftSession]):Unit = session.map(s => s.sendCometActorMessage("ReputationActor", Box(currentUser.is), message))
+  def local(message:Any, session:Box[LiftSession]):Unit = session.map(s => s.sendCometActorMessage("ReputationActor", Box.legacyNullTest(currentUser.is), message))
 }
 class ReputationActor extends CometActor with CometListener with Logger {
   def registerWith = ReputationServer

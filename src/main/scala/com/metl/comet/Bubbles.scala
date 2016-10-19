@@ -910,12 +910,12 @@ object StackOverflow extends StackOverflow {
   def local(message:Any, location:String, session:Box[LiftSession]):Unit = {
     val where = Globals.stackOverflowName(location)
     for(s <- session)
-      s.sendCometActorMessage("StackOverflow", Box(where), message)
+      s.sendCometActorMessage("StackOverflow", Box.legacyNullTest(where), message)
   }
   def local(message:Any, who:String, location:String, session:Box[LiftSession]):Unit = {
     val where = Globals.stackOverflowName(who,location)
     for (s <- session)
-      s.sendCometActorMessage("StackOverflow", Box(where), message)
+      s.sendCometActorMessage("StackOverflow", Box.legacyNullTest(where), message)
   }
   def setCommentState(location:String, questionId:String,changedNode:String,newState:Boolean):Unit = setCommentState(location, questionId,changedNode,newState,localSession)
   def setCommentState(location:String, questionId:String,changedNode:String,newState:Boolean,session:Box[LiftSession]):Unit = {
