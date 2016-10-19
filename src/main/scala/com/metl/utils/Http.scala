@@ -314,7 +314,6 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
         case _ => 80
       }
       case other:Int => other
-      case _ => 80
     }
   }
   protected def determineHost(uri:URI):String = {
