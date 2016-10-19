@@ -20,6 +20,7 @@ import net.liftweb.util.Props
 import com.mongodb._
 import net.liftweb.mongodb._
 import net.liftweb.util
+import net.sf.ehcache.config.PersistenceConfiguration
 
 import scala.xml._
 
@@ -362,7 +363,13 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   import scala.collection.JavaConversions._
   protected val cm = CacheManager.getInstance()
   val cacheName = "%s_%s".format(name,nextFuncName)
-  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy).diskPersistent(false).logging(false)
+  val cacheConfiguration = new CacheConfiguration()
+    .name(cacheName)
+    .maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits)
+    .eternal(false)
+    .memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy)
+    .persistence(new PersistenceConfiguration().strategy(PersistenceConfiguration.Strategy.NONE))
+    .logging(false)
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {
