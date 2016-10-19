@@ -167,7 +167,7 @@ describe('When a teacher presents,', function() {
         assert(active.words.length > 0);
         assert(within(active.words[0].size, 56,2));
 	console.log("Expected active width to be about 660",active.width);
-	assert(within(active.width,660,5));
+	assert(within(active.width,660,10));
     });
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
@@ -223,7 +223,7 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
         console.log(_.map(teacherT.inkStanzas,"bounds"));
-        teacherT.clickWorld(285,620);
+        teacherT.clickWorld(285,650);
         var sel = teacherT.selection;
         assert.equal(_.keys(sel.inks).length, 1);
         assert.equal(_.keys(sel.texts).length, 0);
