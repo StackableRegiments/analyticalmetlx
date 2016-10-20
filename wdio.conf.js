@@ -18,12 +18,15 @@ var config = {
     }
 }
 
-/*
- if(process.env.CI){
+//if(process.env.CI) {
+if(false) {
  config.services.push('sauce');
  config.user = process.env.SAUCE_USERNAME;
  config.key = process.env.SAUCE_ACCESS_KEY,
  config.sauceConnect = true;
- }
- */
+}
+else
+{
+ config.services.push('selenium-standalone');
+}
 exports.config = config;

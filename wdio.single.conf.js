@@ -8,10 +8,10 @@ var overrides = {
         './src/test/js/webdriver/single/**'
     ],
     capabilities: {
-        teacher:{
+        user:{
             desiredCapabilities:{
                 browserName: 'chrome',
-                name:'teacher',
+                name:'user',
                 project:'single'
             }
         }
