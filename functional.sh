@@ -1,10 +1,8 @@
 MODE=${1:-multi}
-#npm -v
-#node -v
 
 echo "$MODE player mode"
-#rm debug.log
-#touch debug.log
+rm debug.log
+touch debug.log
 
 if [[ "$SNAP_CI" == "true" ]]
 then

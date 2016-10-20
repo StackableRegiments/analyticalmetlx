@@ -27,6 +27,6 @@ if(false) {
 }
 else
 {
- config.services.push('selenium-standalone');
+ //config.services.push('selenium-standalone');
 }
 exports.config = config;
