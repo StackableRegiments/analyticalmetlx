@@ -11,7 +11,7 @@ var overrides = {
         teacher:{
             desiredCapabilities:{
                 browserName: 'chrome',
-                name:'teacher',
+                name:'user',
                 project:'single'
             }
         }
