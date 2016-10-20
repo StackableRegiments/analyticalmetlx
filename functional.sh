@@ -1,12 +1,12 @@
 MODE=${1:-multi}
-npm -v
-node -v
+#npm -v
+#node -v
 
 echo "$MODE player mode"
-rm debug.log
-touch debug.log
+#rm debug.log
+#touch debug.log
 
-if [[ "$SNAP_CI" ]]; then
+if [ "$SNAP_CI" == "true" ] then
     echo "Running in CI"
 
     sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile=/var/snap-ci/repo/config/logback.xml -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
@@ -30,8 +30,8 @@ if [[ "$SNAP_CI" ]]; then
     #npm install mocha-sauce-notifying-reporter
 
     echo "Starting WDIO"
-    java -jar -Dwebdriver.chome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
-    wdio wdio.${MODE}.conf.js
+    #java -jar -Dwebdriver.chome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
+    ./node_modules/wdio/node_modules/webdriverio/bin/wdio wdio.${MODE}.conf.js
 	
     echo "stopping server: $(cat running.pid)"
     pkill -KILL -P $(cat running.pid)
