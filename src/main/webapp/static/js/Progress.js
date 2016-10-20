@@ -17,10 +17,11 @@ var Progress = (function(){
         onBoardContentChanged:{},
         onViewboxChanged:{},
         onLayoutUpdated:{},
-	textBoundsChanged:{},
+        textBoundsChanged:{},
         postRender:{},
         historyReceived:{},
         stanzaReceived:{},
+        themeReceived:{},
         currentConversationJidReceived:{},
         currentSlideJidReceived:{},
         conversationDetailsReceived:{},
@@ -30,6 +31,6 @@ var Progress = (function(){
         userGroupsReceived:{},
         usernameReceived:{},
         userOptionsReceived:{},
-				onCanvasContentDeleted:{}
+        onCanvasContentDeleted:{}
     }
 })();

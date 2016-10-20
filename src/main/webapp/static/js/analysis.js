@@ -40,11 +40,14 @@ var Analytics = (function(){
         var cloudScale = d3.scaleLinear().range([8,25]);
         var nonWords = {};
         return {
+            reset:function(){
+                counters = {};
+            },
             counts:function(){
                 return counters;
             },
             stop:function(words){
-                var stops = "a am an and are do did done is it the".split(" ");
+                var stops = "a also am an and are be do did done for in is it of that the this was".split(" ");
                 var stopped = _.clone(words);
                 _.each(stops,function(s){
                     delete stopped[s];
@@ -71,11 +74,16 @@ var Analytics = (function(){
                     nonWords[word] = true;
                 }
             },
-            cloud:function(){
-                WordCloud(word.pairs(word.stop(word.counts())),{
-                    w:$("#lang").width(),
-                    h:$("#lang").width()
+            cloudData:function(){
+                return _.sortBy(word.pairs(word.stop(word.counts())),function(d){
+                    return d.key;
                 });
+            },
+            cloud:function(opts){
+                WordCloud(word.cloudData(),_.extend({
+                    w:$("#lang").width(),
+                    h:$("#lang").height()
+                },opts));
             }
         };
     })();
@@ -349,7 +357,7 @@ var Analytics = (function(){
             .call(d3.axisLeft(y));
     }
     var adherenceToTeacher = function(attendancesHi,details){
-	$("#vis").empty();
+        $("#vis").empty();
         var author = $(details).find("author:first").text();
         var owner = _.groupBy(attendancesHi,function(action){
             return action.author == author;
@@ -516,52 +524,6 @@ var Analytics = (function(){
 
     };
     return {
-        word:word,
-        prime:function(conversation){
-            status("Retrieving",conversation);
-            $.get(sprintf("/details/%s",conversation),function(details){
-                var render = function(){
-                    Analytics.word.cloud();
-                    status("Analysed","conversation");
-                    adherenceToTeacher(_.sortBy(activity,"timestamp"),details);
-                    chartFollowLag(attendances,details);
-                    chartAttendance(attendances);
-                }
-                $.get(sprintf("/fullClientHistory?source=%s",conversation),function(conversationHistory){
-                    status("Retrieved",conversation);
-                    incorporate(conversationHistory,details);
-                });
-                var slides = $(details).find("slide");
-                var slidesLoaded = 0;
-                console.log(slidesLoaded);
-                _.forEach(slides.find("id"),function(el){
-                    var slide = $(el).text();
-                    status("Retrieving",slide);
-                    $.get(sprintf("/fullClientHistory?source=%s",slide),function(slideHistory){
-                        status("Retrieved",slide);
-                        incorporate(slideHistory,details);
-                        status(sprintf("Incorporated %s",slides.length),"slide(s)");
-                    });
-                    status("Parsing",sprintf("usage %s",slide));
-                    $.get(sprintf("/api/v1/analysis/words/%s",slide),function(words){
-                        _.each($(words).find("theme"),function(theme){
-                            _.each($(theme).find("content").text().split(" "),function(t){
-                                t = t.toLowerCase();
-                                if(typo){
-                                    word.incorporate(t);
-                                }
-                                else{
-                                    typoQueue.push(t);
-                                }
-                            });
-                        })
-                        if(++slidesLoaded == slides.length){
-                            render();
-                            $(window).resize(render);
-                        }
-                    });
-                });
-            });
-        }
+        word:word
     };
 })();

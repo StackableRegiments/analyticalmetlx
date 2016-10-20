@@ -1,6 +1,7 @@
 package com.metl.data
 
 import com.metl.utils._
+import com.metl.model._
 
 import net.liftweb.util.Helpers._
 import net.liftweb.common._
@@ -44,8 +45,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   }
 
   protected var outputHook:MeTLStanza => Unit = (s) => {}
-
   protected var stanzas:List[MeTLStanza] = List.empty[MeTLStanza]
+  protected var themes:List[MeTLTheme] = List.empty[MeTLTheme]
   protected var canvasContents:List[MeTLCanvasContent] = List.empty[MeTLCanvasContent]
   protected var highlighters:List[MeTLInk] = List.empty[MeTLInk]
   protected var inks:List[MeTLInk] = List.empty[MeTLInk]
@@ -80,7 +81,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getImages = images
   def getVideos = videos
   def getTexts = texts
-  def getMultiWordTexts = multiWordTexts 
+  def getMultiWordTexts = multiWordTexts
   def getQuizzes = quizzes
   def getQuizResponses = quizResponses
   def getSubmissions = submissions
@@ -90,6 +91,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getVideoStreams = videoStreams
   def getUnhandledCanvasContents = unhandledCanvasContents
   def getUnhandledStanzas = unhandledStanzas
+  def getThemes = themes
   def getUndeletedCanvasContents = undeletedCanvasContents
   def getDeletedCanvasContents = deletedCanvasContents
 
@@ -131,6 +133,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLImage => addImage(s)
     case s:MeTLVideo => addVideo(s)
     case s:MeTLText => addText(s)
+    case s:MeTLTheme => addTheme(s)
     case s:MeTLMultiWordText => addMultiWordText(s)
     case s:MeTLQuiz => addQuiz(s)
     case s:MeTLQuizResponse => addQuizResponse(s)
@@ -146,6 +149,13 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       warn("makeHistory: I don't know what to do with a MeTLStanza: %s".format(s))
       this
     }
+  }
+
+  def addTheme(t:MeTLTheme) = {
+    themes = t :: themes
+    trace("Theme count: %s".format(themes.length))
+    outputHook(t)
+    this
   }
 
   def addStanza(s:MeTLStanza) = Stopwatch.time("History.addStanza",{
@@ -309,7 +319,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     if (store){
       outputHook(s)
       val (candidates,remainder) = files.partition(_.id == s.id)
-      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))  
+      files = remainder ::: ((s :: candidates).sortWith((a,b) => a.timestamp > b.timestamp).headOption.toList.filterNot(_.deleted))
     }
     this
   })

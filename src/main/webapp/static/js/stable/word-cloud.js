@@ -1,4 +1,5 @@
 var WordCloud = function(data,options){
+    console.log("wordcloud",data);
     var fill = d3.scaleOrdinal(d3.schemeCategory20b);
     options = options || {};
     /*
@@ -15,6 +16,8 @@ var WordCloud = function(data,options){
     var h = options.h || 300;
     var lw = options.lw || w;
     var lh = options.lh || h;
+    var target = options.target || "#lang";
+    var contexts = options.contexts || {};
 
     var max;
     var fontSize;
@@ -30,8 +33,8 @@ var WordCloud = function(data,options){
             })
             .on("end", draw);
 
-    $("#lang").empty();
-    var svg = d3.select("#lang").append("svg")
+    $(target).empty();
+    var svg = d3.select(target).append("svg")
     svg.attr("viewBox","0 0 "+lw+" "+lh)
         .attr("width", w)
         .attr("height", h);
@@ -45,28 +48,38 @@ var WordCloud = function(data,options){
     };
 
     function draw() {
-        console.log("drawing",data);
-        var text = vis.selectAll("text")
+        var text = vis.selectAll(".word")
                 .data(data, function(d) {
                     return d.key.toLowerCase();
+                })
+                .enter()
+                .append("g")
+                .attr("class","word")
+                .attr("transform", function(d) {
+                    return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
                 });
-        text.attr("transform", function(d) {
-            return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
-        })
-            .style("font-size", function(d) {
-                return d.size + "px";
-            });
-        text.enter().append("text")
+        text.append("text")
             .text(function(d) {
                 return d.key;
             })
-            .attr("text-anchor", "middle")
-            .attr("transform", function(d) {
-                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+            .attr("stroke",function(d){
+                var context = contexts[d.key];
+                if(!context){
+                    return "none";
+                }
+                if(context.keyboarding || context.handwriting){
+                    if(context.imageTranscription || context.imageRecognition){
+                        return "purple";
+                    }
+                    return "none";
+                }
+                return "red";
             })
-            .style("fill",function(d){
-		return fill(d.value);
-	    })
+            .attr("stroke-width",function(d){
+                return fontSize(d.value) / 70;
+            })
+            .attr("text-anchor", "middle")
+            .style("fill","black")
             .style("font-size", function(d) {
                 return d.size + "px";
             })
@@ -78,9 +91,9 @@ var WordCloud = function(data,options){
 
     function update() {
         layout.font('impact').spiral('archimedean');
-        fontSize = d3.scaleSqrt().range([8, 30]);
+        fontSize = d3.scaleLinear().range([8, 50]);
         if (data.length){
-            fontSize.domain([+data[data.length - 1].value || 1, +data[0].value]);
+            fontSize.domain(d3.extent(_.map(data,"value")));
         }
         layout.stop().words(data).start();
     }
