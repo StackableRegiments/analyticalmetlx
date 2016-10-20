@@ -27,7 +27,7 @@ var reapplyStylingToServerGeneratedContent = function(contentId){
 };
 var bounceAnd = function(func){
     return function(e){
-        bounceButton(this);
+        //bounceButton(this);
         func(e);
     }
 };

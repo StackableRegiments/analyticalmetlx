@@ -166,8 +166,8 @@ describe('When a teacher presents,', function() {
         assert.equal(active.x,100);
         assert(active.words.length > 0);
         assert(within(active.words[0].size, 56,2));
-	console.log("Expected active width to be about 660",active.width);
-	assert(within(active.width,660,10));
+        console.log("Expected active width to be about 660",active.width);
+        assert(within(active.width,660,10));
     });
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
@@ -264,11 +264,38 @@ describe('When a teacher presents,', function() {
     it("the student should not see private teacher-created content",function(){
         assert.equal(_.keys(studentT.imageStanzas).length,0);
     });
-    it("the teacher should restore deleted content from the recycle bin",function(){
+    it("the teacher should be able to open the application menu",function(){
+        assert.ok(!teacherT.applicationMenu.value);
         teacherT.menuButton.click();
+        assert.ok(teacherT.applicationMenu.value);
+    });
+    it("the teacher should see deleted content in the recycle bin",function(){
         teacherT.recycleBinMenu.click();
         teacher.waitUntil(function(){
             return teacherT.recycleables.length == 3;
+        });
+    });
+    it("the teacher should be able to close the application menu",function(){
+        teacherT.menuButton.click();
+        assert.ok(!teacherT.applicationMenu.value);
+    });
+    it("the teacher should be able to add a new slide",function(){
+        assert.equal(teacherT.currentSlide.index,0);
+        teacherT.newSlide.click();
+        browser.waitUntil(function(){
+            return teacherT.currentSlide.index == 1;
+        });
+    });
+    it("the teacher should be able to go back to the first slide",function(){
+        teacherT.prevSlide.click();
+        browser.waitUntil(function(){
+            return teacherT.currentSlide.index == 0;
+        });
+    });
+    it("the teacher should be able to go forward again",function(){
+        teacherT.nextSlide.click();
+        browser.waitUntil(function(){
+            return teacherT.currentSlide.index == 1;
         });
     });
 });
