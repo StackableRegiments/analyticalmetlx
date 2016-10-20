@@ -6,7 +6,8 @@ echo "$MODE player mode"
 #rm debug.log
 #touch debug.log
 
-if [ "$SNAP_CI" == "true" ] then
+if [[ "$SNAP_CI" == "true" ]]
+then
     echo "Running in CI"
 
     sbt -Xms1536m -Xmx1536m -Dlogback.configurationFile=/var/snap-ci/repo/config/logback.xml -Dmetlx.configurationFile=/var/snap-ci/repo/config/configuration.ci.xml container:launch &
