@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat
 import org.apache.commons.codec.digest.DigestUtils
 
 case class CachedBinary(data:Array[Byte],createTime:Long) {
-	lazy val checksum = DigestUtils.shaHex(data)
+	lazy val checksum = DigestUtils.sha1Hex(data)
 }
 
 class HttpCacher {
