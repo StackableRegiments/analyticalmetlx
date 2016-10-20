@@ -1,12 +1,7 @@
-0.7
-Bugfix: Resize selected text.
-Feature: User-Agent logging to feed analysis of client browsers/machines.
-Bugfix: Complex text serialization.
-Bugfix: Fixed remaining uses of "quiz" instead of "poll".
-Improvement: Additional unit testing.
-
-0.6
-Feature: analytics.
-Performance: localise fonts and images to speed up loading.
-Performance: reduce number of server calls per request.
-Many other bug fixes and improvements.
+0.8
+Feature: METL-81 Recycle bin.
+Feature: METL-154 Slide specific word cloud.
+Feature: METL-157 Participants window to show word cloud of slide.
+Bugfix: METL-136 Multiword textboxes in analytics fix, handwriting and OCR fixes.
+Bugfix: METL-174 Aspect locked resize sometimes fails.
+Improvement: Increased automated functional testing.
