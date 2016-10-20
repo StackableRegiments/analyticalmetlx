@@ -13,11 +13,11 @@ if [[ "$SNAP_CI" ]]; then
     sleep 150
     #{ tail -n +1 -f debug.log & } | sed -n '/bootstrap.liftweb.Boot - started/q'
 
-	echo $! > running.pid
-	sleep 30
-	ps -ef | grep java
-	echo "serverStarted: $(cat running.pid)"
-	curl -vvv http://localhost:8080/serverStatus
+    echo $! > running.pid
+    sleep 30
+    ps -ef | grep java
+    echo "serverStarted: $(cat running.pid)"
+    curl -vvv http://localhost:8080/serverStatus
 	
     npm install wdio
     npm install lodash
@@ -25,19 +25,19 @@ if [[ "$SNAP_CI" ]]; then
     npm install wdio-mocha-framework
     npm install wdio-spec-reporter
     npm install wdio-selenium-standalone-service
-	#npm install wdio-sauce-service
-	#npm install sauce-connect
-	#npm install mocha-sauce-notifying-reporter
+    #npm install wdio-sauce-service
+    #npm install sauce-connect
+    #npm install mocha-sauce-notifying-reporter
 
     echo "Starting WDIO"
     java -jar -Dwebdriver.chome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
     wdio wdio.${MODE}.conf.js
 	
-	echo "stopping server: $(cat running.pid)"
-	pkill -KILL -P $(cat running.pid)
-	kill -KILL $(cat running.pid)
-	rm running.pid
-	ps -ef | grep java
+    echo "stopping server: $(cat running.pid)"
+    pkill -KILL -P $(cat running.pid)
+    kill -KILL $(cat running.pid)
+    rm running.pid
+    ps -ef | grep java
 else
     echo "Running on local"
     wmic process where "name like '%java%'" delete
