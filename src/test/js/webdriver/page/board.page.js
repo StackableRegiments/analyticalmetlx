@@ -25,16 +25,28 @@ var BoardPage = function(user) {
             console.log("Viewport: ",v);
             return v;
         }},
+        currentSlide:{ get:function(){
+            return user.execute("return Conversations.getCurrentSlide()").value;
+        }},
+        newSlide:{get:function(){
+            return user.element("#addSlideButton");
+        } },
+        prevSlide:{get:function(){
+            return user.element("#prevSlideButton");
+        } },
+        nextSlide:{get:function(){
+            return user.element("#nextSlideButton");
+        } },
         mode: { get:function(){ return user.execute("return Modes.currentMode").value; } },
         interactables: { get: function(){ return user.execute("return Modes.getCanvasInteractables()").value } },
         drag: { value:function(handle,delta){
             var dragPos = worldToScreen(handle.bounds[0],handle.bounds[1]);
-	    var handleWidth = handle.bounds[2] - handle.bounds[0];
-	    var handleHeight = handle.bounds[3] - handle.bounds[1];
+            var handleWidth = handle.bounds[2] - handle.bounds[0];
+            var handleHeight = handle.bounds[3] - handle.bounds[1];
             var sx = scaleWorldToScreen(delta.x);
             var sy = scaleWorldToScreen(delta.y);
-	    var xInset = handleWidth / 2;
-	    var yInset = handleHeight / 2;
+            var xInset = handleWidth / 2;
+            var yInset = handleHeight / 2;
             user.moveToObject("#board",dragPos.x + xInset,dragPos.y + yInset);
             user.buttonDown();
             user.moveToObject("#board",dragPos.x + sx + xInset, dragPos.y + sy + yInset);
@@ -68,6 +80,9 @@ var BoardPage = function(user) {
         screenToWorld: {value: screenToWorld },
 
         menuButton: {get: function(){return user.element("#applicationMenuButton");}},
+        applicationMenu: {get:function(){
+            return user.element(".backstage-menu.active");
+        }},
 
         recycleBinMenu: {get: function(){return user.element("#menuRecycleBin");}},
         recycleables:{get:function(){return user.execute('return _.map($(".rowIdentity"),function(r){return $(r).text()})').value; }},

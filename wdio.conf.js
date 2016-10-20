@@ -2,8 +2,8 @@ var config = {
     exclude: [],
     maxInstances: 10,
     sync: true,
-    logLevel: 'result',
-    logOutput: 'wdio.log',
+    logLevel: 'verbose',
+    logOutput: './wdio.log',
     coloredLogs: true,
     baseUrl: 'http://localhost:8080',
     waitforTimeout: 2000,
@@ -27,6 +27,6 @@ if(false) {
 }
 else
 {
- config.services.push('selenium-standalone');
+ //config.services.push('selenium-standalone');
 }
 exports.config = config;
