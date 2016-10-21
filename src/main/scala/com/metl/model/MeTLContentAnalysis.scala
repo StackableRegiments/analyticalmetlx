@@ -52,7 +52,7 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
             words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
         }
       }
-      case failure => debug(failure)
+      case failure => warn(failure)
     }
     case t:MeTLMultiWordText => {
       t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
@@ -107,11 +107,9 @@ object CanvasContentAnalysis extends Logger {
     val response = for(
       s <- f.right
     ) yield {
-      debug(s)
-        (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
+      (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
     }
     val r = response()
-    debug(r)
     r match {
       case Right(rs) => rs
       case _ => Nil
@@ -145,11 +143,11 @@ object CanvasContentAnalysis extends Logger {
     val key = (propFile \\ "visionApiKey").text
     val uri = "vision.googleapis.com/v1/images:annotate"
     val b64 = base64Encode(bytes)
+    debug("Bytes [%s]: %s".format(bytes.length,b64))
     val json =
       ("requests" -> List(
         JObject(List(
-          JField("image",
-            ("content" ->  b64 )),
+          JField("image", ("content" ->  b64 )),
           JField("features",JArray(List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
             ("type" -> featureType) ~
               ("maxResults" -> 10)
@@ -158,7 +156,11 @@ object CanvasContentAnalysis extends Logger {
       ))
     val renderedJson = compact(render(json))
     val req = host(uri).secure << renderedJson <<? Map("key" -> key)
-    Http(req > as.String).either.right.map(response => parse(response))
+    val res = Http(req > as.String).either
+    res.right.map(response => {
+      debug(response)
+      parse(response)
+    })
   }
 
   def ocrOne(image:MeTLImage):Either[Throwable,JValue] = {

@@ -259,8 +259,8 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.toList
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",{
-    trace("stanza received: %s".format(a))
-      (a,roomMetaData) match {
+    trace("stanza received: %s".format(a));
+    (a,roomMetaData) match {
       case (m:MeTLCommand,_) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
         com.metl.comet.MeTLConversationSearchActorManager ! m
         com.metl.comet.MeTLSlideDisplayActorManager ! m
@@ -284,6 +284,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
        cr.cd = config.detailsOfConversation(cr.jid)
        }
        */
+      case (c:MeTLCanvasContent ,_) => chunker.add(c,this)
       case _ => {}
     }
     trace("%s s->l %s".format(location,a))
@@ -302,7 +303,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("sendingStanzaToServer: %s".format(s))
       messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
-    chunker.add(s,this)
   })
   private def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
   private def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
