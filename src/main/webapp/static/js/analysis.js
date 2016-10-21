@@ -64,7 +64,7 @@ var Analytics = (function(){
             },
             incorporate:function(word){
                 if(word in nonWords) return;
-                if(typo.check(word)){
+                if(typo.check(word) || ! typo){
                     if(!(word in counters)){
                         counters[word] = 0;
                     }

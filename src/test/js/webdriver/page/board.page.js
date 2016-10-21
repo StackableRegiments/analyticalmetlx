@@ -96,6 +96,7 @@ var BoardPage = function(user) {
         selectedRanges: {get: function(){
             return user.execute("return Modes.text.getSelectedRanges()").value;
         }},
+	selectedLines:{get:function(){return user.execute("return Modes.text.getLinesets()").value;}},
 
         username: { get: function(){ return user.execute("return UserSettings.getUsername()").value; } },
 
