@@ -127,9 +127,7 @@ object CanvasContentAnalysis extends Logger {
       JField("textAnnotations",f) <- j;
       JField("description",JString(s)) <- f
     ) yield  s.trim
-    val res = (descriptions.distinct,words.distinct)
-    debug(res)
-    res
+    (descriptions.distinct,words.distinct)
   }
 
   def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = images
@@ -143,7 +141,6 @@ object CanvasContentAnalysis extends Logger {
     val key = (propFile \\ "visionApiKey").text
     val uri = "vision.googleapis.com/v1/images:annotate"
     val b64 = base64Encode(bytes)
-    debug("Bytes [%s]: %s".format(bytes.length,b64))
     val json =
       ("requests" -> List(
         JObject(List(
@@ -158,7 +155,6 @@ object CanvasContentAnalysis extends Logger {
     val req = host(uri).secure << renderedJson <<? Map("key" -> key)
     val res = Http(req > as.String).either
     res.right.map(response => {
-      debug(response)
       parse(response)
     })
   }

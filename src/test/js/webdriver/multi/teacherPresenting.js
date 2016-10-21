@@ -253,12 +253,17 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should create a private image",function(){
         teacherT.privateMode.click();
+	teacher.waitUntil(function(){
+	    return teacherT.privacy == "PRIVATE";
+	});
         teacherT.imageMode.click();
         teacher.click("#board");
         teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         teacher.waitUntil(function(){
-            return _.keys(teacherT.imageStanzas).length == 1;
-        });
+            var keys = _.keys(teacherT.imageStanzas).length;
+	    console.log(keys);
+            return keys == 1;
+        },5000);
         assert.equal(_.keys(studentT.imageStanzas).length,0);
     });
     it("the student should not see private teacher-created content",function(){

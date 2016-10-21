@@ -268,7 +268,11 @@ var Participants = (function(){
         updateParticipantsListing();
     });
     Progress.stanzaReceived["participants"] = onStanzaReceived;
-    Progress.themeReceived["participants"] = updateParticipantsListing;
+    Progress.themeReceived["participants"] = function(){
+        if(window.currentBackstage == "participants"){
+            updateParticipantsListing();
+        }
+    }
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
