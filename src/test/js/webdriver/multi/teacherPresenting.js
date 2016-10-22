@@ -47,6 +47,7 @@ describe('When a teacher presents,', function() {
         teacherLoginPage.username.setValue(teacherName);
         teacherLoginPage.submit();
         assert(teacherConversationsPage.waitForSearchBox());
+	browser.debug();
     });
     it('the student should successfully login', function () {
         studentLoginPage.username.setValue(studentName);
