@@ -1600,8 +1600,9 @@ var Modes = (function(){
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
-                            if(t.doc.save().length == 0){
+                            if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
+				blit();
                             }
                         });
                         var sel;
@@ -1659,7 +1660,7 @@ var Modes = (function(){
                     unregisterPositionHandlers(board);
                     _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
-                        if(_.trim(t.doc.save()).length == 0){
+                        if(t.doc.documentRange().plainText().trim().length == 0){
                             delete boardContent.multiWordTexts[t.identity];
                         }
                     });
