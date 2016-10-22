@@ -304,8 +304,6 @@ describe('When a teacher presents,', function() {
         teacherT.publicMode.click();
         teacherT.inkMode.click();
         teacherT.letters(['c','a','t']);
-        teacher.pause(3500);//Ink timeout interval
-        teacherT.handwrite([{x:250,y:250}]);//Close chunk
         teacher.waitUntil(function(){
             var text = _.map(teacherT.themes,"text");
             return _.includes(text,"CAT");
@@ -324,6 +322,7 @@ describe('When a teacher presents,', function() {
         browser.waitUntil(function(){return teacherT.currentSlide.index == 0;});
         teacherT.nextSlide.click();
         browser.waitUntil(function(){
+	    console.log(teacherT.currentSlide.index,_.keys(teacherT.texts).length);
             return teacherT.currentSlide.index == 1 && (_.keys(teacherT.texts).length == 1);
         });
         text = _.values(teacherT.textStanzas)[0];
