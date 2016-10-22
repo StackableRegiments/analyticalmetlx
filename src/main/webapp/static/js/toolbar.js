@@ -1433,6 +1433,7 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
+			console.log("Textbox",t.identity,t.doc.width());
 			t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
 			    return l.positionedWords.length;

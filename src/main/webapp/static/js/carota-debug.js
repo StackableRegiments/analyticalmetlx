@@ -492,7 +492,6 @@
                                 this.frame = per(this.words)
                                     .per(frame(0, 0, this._width, 0, this))
                                     .first();
-				console.log(this.frame);
                                 this.invalidateBounds();
                             } catch (x) {
                                 console.error("layout exception",x);

@@ -28,7 +28,6 @@ describe('When a teacher presents,', function() {
     teacher.setViewportSize({width:w,height:h});
     teacher.waitUntil(function(){
         var s = teacher.getViewportSize();
-        console.log(s);
         return s.state != "pending";
     });
 
@@ -148,7 +147,7 @@ describe('When a teacher presents,', function() {
 
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert(within(active.width,447,2));
+        assert(within(active.width,450,5));
         assert(within(active.words[0].size, 56,2));
     });
     it("the teacher should scroll up on swipe out",function(){
@@ -235,6 +234,11 @@ describe('When a teacher presents,', function() {
                 _.keys(studentT.imageStanzas).length == 1;
         });
     });
+    it("the teacher should have their participants view show the themes so far introduced on their page",function(){
+        var text = _.map(teacherT.themes,"text");
+        assert(_.includes(text,"This is a "),"keyboarding failed");
+        assert(_.includes(text,"maple leaf"),"image classification failed");
+    });
     it("the teacher should delete their selected elements",function(){
         teacherT.deleteSelection.click();
     });
@@ -244,9 +248,6 @@ describe('When a teacher presents,', function() {
         });
         assert.equal(_.keys(studentT.textStanzas).length,1);
         assert.equal(_.keys(studentT.inkStanzas).length,3);
-    });
-    it("the teacher should have their participants view show the themes so far introduced in their conversation",function(){
-        assert(teacherT.cloudData.length > 0);
     });
     it("the teacher should create a private image",function(){
         teacherT.privateMode.click();
@@ -299,14 +300,35 @@ describe('When a teacher presents,', function() {
             return teacherT.currentSlide.index == 1;
         });
     });
+    it("handwriting should be recognised",function(){
+        teacherT.publicMode.click();
+        teacherT.inkMode.click();
+        teacherT.letters(['c','a','t']);
+        teacher.pause(3500);//Ink timeout interval
+        teacherT.handwrite([{x:250,y:250}]);//Close chunk
+        teacher.waitUntil(function(){
+            var text = _.map(teacherT.themes,"text");
+            return _.includes(text,"CAT");
+        });
+    });
     it("textboxes should have the same wrap when they first appear as when they come back out of history",function(){
+        teacherT.textMode.click();
         teacherT.keyboard(50,50,"This is a paragraph of text which is being typed programatically.  It runs over multiple lines.");
+        teacher.waitUntil(function(){
+            return _.keys(teacherT.texts).length == 1;
+        });
+        var text = _.values(teacherT.textStanzas)[0];
+        assert.equal(text.width,240);
         var liveLines = teacherT.selectedLines;
         teacherT.prevSlide.click();
         browser.waitUntil(function(){return teacherT.currentSlide.index == 0;});
         teacherT.nextSlide.click();
-        browser.waitUntil(function(){return teacherT.currentSlide.index == 1;});
+        browser.waitUntil(function(){
+            return teacherT.currentSlide.index == 1 && (_.keys(teacherT.texts).length == 1);
+        });
+        text = _.values(teacherT.textStanzas)[0];
+        assert.equal(text.width,240);
         var wireLines = teacherT.selectedLines;
-        assert.equal(liveLines,wireLines);
+        assert.deepEqual(liveLines,wireLines);
     });
 });
