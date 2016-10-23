@@ -28,6 +28,7 @@ case class Chunk(activity:List[MeTLCanvasContent]){
 trait Chunker{
   def add(c:MeTLStanza,h:MeTLRoom):Unit
   def emit(t:Theme,h:MeTLRoom):Unit
+  def check(h:MeTLRoom):Unit
   def close(h:MeTLRoom):Unit
 }
 class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
@@ -41,9 +42,19 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
       desc._2.foreach(word => emit(Theme(author,word,"handwriting"),room))
     }
   }
+  def check(room:MeTLRoom) = {
+    val time = java.lang.System.currentTimeMillis();
+    partialChunks = partialChunks.filter {
+      case entry@(author,partial) if (time - latest(partial) < timeout) => true
+      case (author,i :: t) => {
+        val desc = CanvasContentAnalysis.extract(i :: t)
+        desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
+        desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
+        false
+      }
+    }
+  }
   def add(c:MeTLStanza,room:MeTLRoom) = c match {
-    /*This has a bug; it will not emit a sequence which has completed but not started a new one.
-     There needs to be a trigger of some sort on that.*/
     case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
       case Right(t) => {
         CanvasContentAnalysis.getDescriptions(t) match {

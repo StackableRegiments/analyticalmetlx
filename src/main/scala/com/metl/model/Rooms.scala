@@ -131,6 +131,7 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 
 case object HealthyWelcomeFromRoom
 case object Ping
+case object CheckChunks
 
 abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
   lazy val config = ServerConfiguration.configForName(configName)
@@ -214,13 +215,16 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     }
   }
   protected val pollInterval = new TimeSpan(2 * 60 * 1000)  // 2 minutes
+  protected val chunkExpiry = new TimeSpan(5 * 1000)  // 5 seconds
   protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
   protected var lastInterest:Long = new Date().getTime
   protected def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
+  protected def checkChunkExpiry = ActorPing.schedule(this,CheckChunks,chunkExpiry)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))
     heartbeat
+    checkChunkExpiry
   }
   def localShutdown = {
     info("MeTLRoom(%s):localShutdown".format(location))
@@ -236,6 +240,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     case j:JoinRoom => Stopwatch.time("MeTLRoom.lowPriority.JoinRoom",addConnection(j))
     case l:LeaveRoom => Stopwatch.time("MeTLRoom.lowPriority.LeaveRoom",removeConnection(l))
     case sl@ServerToLocalMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ServerToLocalMeTLStanza",sendToChildren(s))
+    case CheckChunks => {
+      chunker.check(this)
+      checkChunkExpiry
+    }
     case Ping => Stopwatch.time("MeTLRoom.ping",{
       if (possiblyCloseRoom){
       } else {
@@ -250,7 +258,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("received archived stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s,false)
     })
-
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom received unknown message")

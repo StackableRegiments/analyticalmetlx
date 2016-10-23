@@ -6,7 +6,7 @@ var config = {
     logOutput: './wdio.log',
     coloredLogs: true,
     baseUrl: 'http://localhost:8080',
-    waitforTimeout: 2000,
+    waitforTimeout: 10000,
     connectionRetryTimeout: 10000,
     connectionRetryCount: 3,
     services: [],
