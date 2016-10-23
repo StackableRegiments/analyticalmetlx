@@ -26,15 +26,17 @@ var Analytics = (function(){
     var typoQueue = [];
     var typo;
     var wordTimes = {};
-    $.get("/static/js/stable/dict/en_US.aff",function(aff){
-        status("Loading","spellcheck");
-        $.get("/static/js/stable/dict/en_US.dic",function(dict){
-            status("Parsing","spellcheck");
-            typo = new Typo("en_US",aff,dict);
-            status("Initialized","spellcheck");
-            _.each(typoQueue,word.incorporate);
-        })
-    });
+    /*
+     $.get("/static/js/stable/dict/en_US.aff",function(aff){
+     status("Loading","spellcheck");
+     $.get("/static/js/stable/dict/en_US.dic",function(dict){
+     status("Parsing","spellcheck");
+     typo = new Typo("en_US",aff,dict);
+     status("Initialized","spellcheck");
+     _.each(typoQueue,word.incorporate);
+     })
+     });
+     */
     var word = (function(){
         var counters = {};
         var cloudScale = d3.scaleLinear().range([8,25]);
@@ -64,15 +66,10 @@ var Analytics = (function(){
             },
             incorporate:function(word){
                 if(word in nonWords) return;
-                if(typo.check(word)){
-                    if(!(word in counters)){
-                        counters[word] = 0;
-                    }
-                    counters[word]++;
+                if(!(word in counters)){
+                    counters[word] = 0;
                 }
-                else{
-                    nonWords[word] = true;
-                }
+                counters[word]++;
             },
             cloudData:function(){
                 return _.sortBy(word.pairs(word.stop(word.counts())),function(d){

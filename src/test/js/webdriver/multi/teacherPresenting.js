@@ -28,7 +28,6 @@ describe('When a teacher presents,', function() {
     teacher.setViewportSize({width:w,height:h});
     teacher.waitUntil(function(){
         var s = teacher.getViewportSize();
-        console.log(s);
         return s.state != "pending";
     });
 
@@ -118,6 +117,7 @@ describe('When a teacher presents,', function() {
             return teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length ==
                 ["Before","Enlarged","After","Red","After","Enlarged","After"].length;
         });
+        console.log("A",teacherT.selectedLines);
     });
     it("the teacher should create another textbox",function(){
         teacherT.keyboard(600,500,"This is a second paragraph.  It exists to be differentiated from the first paragraph.");
@@ -147,7 +147,7 @@ describe('When a teacher presents,', function() {
 
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,100);
-        assert(within(active.width,447,2));
+        assert(within(active.width,450,5));
         assert(within(active.words[0].size, 56,2));
     });
     it("the teacher should scroll up on swipe out",function(){
@@ -166,7 +166,6 @@ describe('When a teacher presents,', function() {
         assert.equal(active.x,100);
         assert(active.words.length > 0);
         assert(within(active.words[0].size, 56,2));
-        console.log("Expected active width to be about 660",active.width);
         assert(within(active.width,660,10));
     });
     it("the teacher should be able to draw ink", function(){
@@ -176,7 +175,6 @@ describe('When a teacher presents,', function() {
         teacherT.handwrite(_.map(_.range(280,630,5), function(i){
             return {x:i,y:i};
         }));
-        console.log("Ink stanzas",_.keys(teacherT.inkStanzas).length);
         teacher.waitUntil(function(){
             return _.filter(teacherT.inkStanzas,function(inkStanza){return inkStanza.author == teacherT.username;}).length >= (inkStanzasBefore + 1);
         },5000,"expected new ink to appear in inkStanzas after looping through server");
@@ -191,7 +189,6 @@ describe('When a teacher presents,', function() {
                 };
             });
             teacherT.handwrite(pts);
-            console.log("Ink stanzas",_.keys(teacherT.inkStanzas).length);
         }
         var v = teacherT.viewport;
         teacher.waitUntil(function(){
@@ -222,7 +219,6 @@ describe('When a teacher presents,', function() {
         assert.equal(_.keys(sel.images).length,0);
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
-        console.log(_.map(teacherT.inkStanzas,"bounds"));
         teacherT.clickWorld(285,650);
         var sel = teacherT.selection;
         assert.equal(_.keys(sel.inks).length, 1);
@@ -238,6 +234,11 @@ describe('When a teacher presents,', function() {
                 _.keys(studentT.imageStanzas).length == 1;
         });
     });
+    it("the teacher should have their participants view show the themes so far introduced on their page",function(){
+        var text = _.map(teacherT.themes,"text");
+        assert(_.includes(text,"This is a "),"keyboarding failed");
+        assert(_.includes(text,"maple leaf"),"image classification failed");
+    });
     it("the teacher should delete their selected elements",function(){
         teacherT.deleteSelection.click();
     });
@@ -248,20 +249,16 @@ describe('When a teacher presents,', function() {
         assert.equal(_.keys(studentT.textStanzas).length,1);
         assert.equal(_.keys(studentT.inkStanzas).length,3);
     });
-    it("the teacher should have their participants view show the themes so far introduced in their conversation",function(){
-        assert(teacherT.cloudData.length > 0);
-    });
     it("the teacher should create a private image",function(){
         teacherT.privateMode.click();
-	teacher.waitUntil(function(){
-	    return teacherT.privacy == "PRIVATE";
-	});
+        teacher.waitUntil(function(){
+            return teacherT.privacy == "PRIVATE";
+        });
         teacherT.imageMode.click();
         teacher.click("#board");
         teacher.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         teacher.waitUntil(function(){
             var keys = _.keys(teacherT.imageStanzas).length;
-	    console.log(keys);
             return keys == 1;
         },5000);
         assert.equal(_.keys(studentT.imageStanzas).length,0);
@@ -302,5 +299,36 @@ describe('When a teacher presents,', function() {
         browser.waitUntil(function(){
             return teacherT.currentSlide.index == 1;
         });
+    });
+    it("handwriting should be recognised",function(){
+        teacherT.publicMode.click();
+        teacherT.inkMode.click();
+        teacherT.letters(['c','a','t']);
+        teacher.pause(3500);//Ink timeout interval
+        teacherT.handwrite([{x:250,y:250}]);//Close chunk
+        teacher.waitUntil(function(){
+            var text = _.map(teacherT.themes,"text");
+            return _.includes(text,"CAT");
+        });
+    });
+    it("textboxes should have the same wrap when they first appear as when they come back out of history",function(){
+        teacherT.textMode.click();
+        teacherT.keyboard(50,50,"This is a paragraph of text which is being typed programatically.  It runs over multiple lines.");
+        teacher.waitUntil(function(){
+            return _.keys(teacherT.texts).length == 1;
+        });
+        var text = _.values(teacherT.textStanzas)[0];
+        assert.equal(text.width,240);
+        var liveLines = teacherT.selectedLines;
+        teacherT.prevSlide.click();
+        browser.waitUntil(function(){return teacherT.currentSlide.index == 0;});
+        teacherT.nextSlide.click();
+        browser.waitUntil(function(){
+            return teacherT.currentSlide.index == 1 && (_.keys(teacherT.texts).length == 1);
+        });
+        text = _.values(teacherT.textStanzas)[0];
+        assert.equal(text.width,240);
+        var wireLines = teacherT.selectedLines;
+        assert.deepEqual(liveLines,wireLines);
     });
 });

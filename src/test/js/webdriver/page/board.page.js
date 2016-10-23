@@ -1,4 +1,5 @@
 var Page = require('./page');
+var Handwriting = require('../reference/ink');
 var assert = require('assert');
 var _ = require('lodash');
 var sprintf = require('sprintf-js').sprintf;
@@ -14,6 +15,30 @@ var BoardPage = function(user) {
     };
     var toRadians = function(degrees){
         return (Math.PI / 180) / degrees;
+    }
+    var handwrite = function(pts){
+        user.moveToObject("#board",pts[0].x,pts[0].y);
+        user.buttonDown();
+        _.each(pts,function(pt){
+            user.moveToObject("#board",pt.x,pt.y);
+        });
+        user.buttonUp();
+    };
+    var letter = function(l){
+        var strokes = Handwriting[l];
+        _.each(strokes,function(pts){
+            var coords = [];
+            for(var i = 0; i < pts.length; i += 3){
+                coords.push({
+                    x:pts[i],
+                    y:pts[i+1]
+                });
+            };
+            handwrite(coords);
+        });
+    }
+    var letters = function(ls){
+        _.each(ls,letter);
     }
     return Object.create(Page, {
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
@@ -96,6 +121,7 @@ var BoardPage = function(user) {
         selectedRanges: {get: function(){
             return user.execute("return Modes.text.getSelectedRanges()").value;
         }},
+        selectedLines:{get:function(){return user.execute("return Modes.text.getLinesets()").value;}},
 
         username: { get: function(){ return user.execute("return UserSettings.getUsername()").value; } },
 
@@ -110,14 +136,9 @@ var BoardPage = function(user) {
 
         inkMode: { get: function() { return user.element("#drawMode"); } },
         inkStanzas: { get: function() { return user.execute("return boardContent.inks").value; } },
-        handwrite: { value:function(pts){
-            user.moveToObject("#board",pts[0].x,pts[0].y);
-            user.buttonDown();
-            _.each(pts,function(pt){
-                user.moveToObject("#board",pt.x,pt.y);
-            });
-            user.buttonUp();
-        } },
+        handwrite: {value:handwrite},
+        letter: {value:letter},
+        letters:{value:letters},
 
         imageMode: { get: function() { return user.element("#imageMode"); } },
         imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } }

@@ -185,7 +185,7 @@ function richTextEditorToStanza(t){
         x:bounds[0],
         y:bounds[1],
         requestedWidth:bounds[2]-bounds[0],
-        width:bounds[2]-bounds[0],
+        width:t.doc.width(),
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza)
     }

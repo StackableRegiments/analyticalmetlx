@@ -75,7 +75,7 @@ object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
   lazy val propFile = XML.load(Globals.configurationFileLocation)
 
-  val analysisThreshold = 5
+  val analysisThreshold = 1
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
   def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
     es.sortBy(_.timestamp).groupBy(_.author).map {

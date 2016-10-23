@@ -1398,6 +1398,14 @@ var Modes = (function(){
                     Modes.select.activate();
                 });
             });
+            var mapSelected = function(f){
+                var sel = Modes.select.selected.multiWordTexts;
+                _.each(boardContent.multiWordTexts,function(t){
+                    if(t.identity in sel){
+                        f(t);
+                    }
+                });
+            };
             return {
                 name:"text",
                 echoesToDisregard:{},
@@ -1423,14 +1431,16 @@ var Modes = (function(){
                         return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
                     });
                 },
-                mapSelected:function(f){
-                    var sel = Modes.select.selected.multiWordTexts;
-                    _.each(boardContent.multiWordTexts,function(t){
-                        if(t.identity in sel){
-                            f(t);
-                        }
+                getLinesets:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+			console.log("Textbox",t.identity,t.doc.width());
+			t.doc.layout();
+                        return _.map(t.doc.frame.lines,function(l){
+			    return l.positionedWords.length;
+			});
                     });
                 },
+                mapSelected:mapSelected,
                 scaleEditor:scaleEditor,
                 scrollToCursor:function(editor){
                     var b = editor.bounds;
@@ -2333,7 +2343,7 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
-			console.log(x,y,worldPos,Modes.select.dragging);
+                        console.log(x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
