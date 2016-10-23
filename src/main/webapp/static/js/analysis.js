@@ -49,7 +49,8 @@ var Analytics = (function(){
                 return counters;
             },
             stop:function(words){
-                var stops = "a also am an and are be do did done for in is it of that the this was".split(" ");
+                var stops = "a also am an and as are be do did done for in is it its it's I I'd of that the they them this was".split(" ");
+		stops.push(" ");
                 var stopped = _.clone(words);
                 _.each(stops,function(s){
                     delete stopped[s];

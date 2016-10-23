@@ -106,7 +106,7 @@ var Participants = (function(){
             updateParticipantsListing();
         }
     };
-    var fontSizes = d3.scaleLinear().range([6,30]);
+    var fontSizes = d3.scaleLinear().range([9,30]);
     var themeCloud;
     var updateThemes = function(data){
         if(!themeCloud) themeCloud = d3.select("#lang")
@@ -132,7 +132,15 @@ var Participants = (function(){
             .sort(function(a,b){
                 return d3.ascending(b.value, a.value);
             });
+	words.exit()
+	    .remove();
     }
+    var contextFilters = {
+        keyboarding:true,
+        handwriting:true,
+        imageRecognition:true,
+        imageTranscription:true
+    };
     var updateParticipantsListing = function(){
         participantsDatagrid.jsGrid("loadData");
         var sortObj = participantsDatagrid.jsGrid("getSorting");
@@ -145,14 +153,17 @@ var Participants = (function(){
             _.each(theme.text.split(" "),function(t){
                 t = t.toLowerCase();
                 var context = theme.origin;
-                Analytics.word.incorporate(t);
-                if(!(t in contexts)){
-                    contexts[t] = {};
+                if(contextFilters[context] == true){
+                    console.log("Incorporating",t,context);
+                    Analytics.word.incorporate(t);
+                    if(!(t in contexts)){
+                        contexts[t] = {};
+                    }
+                    if(!(context in contexts[t])){
+                        contexts[t][context] = 0;
+                    }
+                    contexts[t][context]++;
                 }
-                if(!(context in contexts[t])){
-                    contexts[t][context] = 0;
-                }
-                contexts[t][context]++;
             });
         });
         updateThemes(Analytics.word.cloudData());
@@ -160,6 +171,7 @@ var Participants = (function(){
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
         updateActiveMenu(this);
+        updateFilters();
         updateParticipantsListing();
     };
     var updateButtons = function(){
@@ -174,6 +186,15 @@ var Participants = (function(){
     var onDetailsReceived = function(){
         updateButtons();
     };
+    var updateFilters = function(){
+        _.each(contextFilters,function(val,filter){
+            var el = $(sprintf("#%s",filter));
+            el.click(function(){
+                contextFilters[filter] = !contextFilters[filter];
+                updateParticipantsListing();
+            });
+        });
+    }
     $(function(){
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
