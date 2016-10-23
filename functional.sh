@@ -17,7 +17,7 @@ then
     ps -ef | grep java
     echo "serverStarted: $(cat running.pid)"
     curl -vvv http://localhost:8080/serverStatus
-	
+
     npm install wdio
     npm install lodash
     npm install sprintf-js
@@ -31,7 +31,7 @@ then
     echo "Starting WDIO"
     #java -jar -Dwebdriver.chome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
     ./node_modules/wdio/node_modules/webdriverio/bin/wdio wdio.${MODE}.conf.js
-	
+
     echo "stopping server: $(cat running.pid)"
     pkill -KILL -P $(cat running.pid)
     kill -KILL $(cat running.pid)
@@ -40,6 +40,7 @@ then
 else
     echo "Running on local"
     wmic process where "name like '%java%'" delete
+    wmic process where "name like '%tail.exe%'" delete
 
     java -jar -Dwebdriver.chrome.driver=./tools/chromedriver/2.24-x64-chromedriver -Djava.util.logging.config.file=logging.properties ./tools/selenium-2.53.1-server.jar &
 
@@ -48,4 +49,5 @@ else
     ./node_modules/.bin/wdio wdio.${MODE}.conf.js
 
     wmic process where "name like '%java%'" delete
+    wmic process where "name like '%tail.exe%'" delete
 fi
