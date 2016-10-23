@@ -154,7 +154,6 @@ var Participants = (function(){
                 t = t.toLowerCase();
                 var context = theme.origin;
                 if(contextFilters[context] == true){
-                    console.log("Incorporating",t,context);
                     Analytics.word.incorporate(t);
                     if(!(t in contexts)){
                         contexts[t] = {};
