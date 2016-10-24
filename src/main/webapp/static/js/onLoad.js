@@ -825,14 +825,17 @@ $(function(){
     $("#conversations").click(function(){
         window.location.href = "/conversationSearch";
     });
-		_.forEach(["aste","drop"],function(label){
-			$(document).on(label,function(clipEvent){
-				if ("originalEvent" in clipEvent && "dataTransfer" in clipEvent.originalEvent && "types" in clipEvent.originalEvent.dataTransfer){
-					var availableTypes = clipEvent.originalEvent.dataTransfer.types;
+		//$(document).attr("contenteditable",true);
+		//$("#board").attr("contenteditable",true);
+		_.forEach(["paste","drop"],function(label){
+			var func = function(ev){
+				var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
+			 	if ("types" in df){
+					var availableTypes = df.types;
 					var conditionallyActOn = function(coll,item,action){
 						var elem = _.find(coll,function(i){return i == item;});
 						if (elem != undefined && elem != null){
-							action(elem,clipEvent.originalEvent.dataTransfer.getData(elem));
+							action(elem,df.getData(elem));
 						};
 					};
 					var handled = false;
@@ -875,15 +878,42 @@ $(function(){
 							handled = true;
 						}
 					});
-					clipEvent.preventDefault();
+					ev.preventDefault();
 					return false;
 				} else {
 					return true;
 				}
+			};
+			window.addEventListener(label,function(jEv){
+				console.log("window."+label,jEv);
+				if ("originalEvent" in jEv){
+					return func(jEv.originalEvent);
+				} else {
+					return func(jEv);
+				}
+			});
+			$("#board").on(label,function(jEv){
+				if ("originalEvent" in jEv){
+					return func(jEv.originalEvent);
+				} else {
+					return false;
+				}
 			});
 		});
-		_.forEach(["dragover","dragleave","dragenter"],function(label){
-			$(document).on(label,function(deadEvent){
+		_.forEach(["beforepaste","dragover","dragleave","dragenter"],function(label){
+			window["on"+label] = function(deadEvent){
+				deadEvent.preventDefault();
+				return false;
+			};
+			$(window).on(label,function(deadEvent){
+				deadEvent.preventDefault();
+				return false;
+			});
+			$("#board")[0]["on"+label] = function(deadEvent){
+				deadEvent.preventDefault();
+				return false;
+			};
+			$("#board").on(label,function(deadEvent){
 				deadEvent.preventDefault();
 				return false;
 			});
