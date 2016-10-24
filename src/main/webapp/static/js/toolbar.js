@@ -2090,6 +2090,77 @@ var Modes = (function(){
         },
         select:(function(){
             var isAdministeringContent = false;
+						var selectionDescriber = undefined;
+						$(function(){
+							selectionDescriber = $("#selectionDescriber");
+						});
+						var updateSelectionDescriber = function(){
+							if (selectionDescriber != undefined){
+								console.log("updating selection:",Modes.select.selected,selectionDescriber);
+								var describedElements = [];
+								_.forEach(["images","texts","inks","highlighters","mulitWordTexts","videos"],function(catName){
+									var selCatName = catName == "highlighters" ? "inks" : catName;
+									var boardCatName = catName;
+									var cat = Modes.select.selected[selCatName];
+									_.forEach(cat,function(i){
+										if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]){
+											console.log("adding:",i);
+											describedElements.push(i);
+										}
+									});
+								});
+								selectionDescriber.html(_.map(describedElements,function(el){
+									var rootElem = $("<div/>",{text:"deselect"});
+									if ("type" in el){
+										switch (el.type) {
+											case "ink":
+												rootElem.on("click",function(){
+													delete Modes.select.selected.inks[el.identity];
+													Progress.call("onSelectionChanged",[Modes.select.selected]);
+													blit();
+												});
+												rootElem.append($("<span/>",{text:el.identity}));
+												break;
+											case "image":
+												rootElem.on("click",function(){
+													delete Modes.select.selected.images[el.identity];
+													Progress.call("onSelectionChanged",[Modes.select.selected]);
+													blit();
+												});
+												rootElem.append($("<span/>",{text:el.identity}));
+												break;
+											case "text":
+												rootElem.on("click",function(){
+													delete Modes.select.selected.texts[el.identity];
+													Progress.call("onSelectionChanged",[Modes.select.selected]);
+													blit();
+												});
+												rootElem.append($("<span/>",{text:el.identity}));
+												break;
+											case "multiWordText":
+												rootElem.on("click",function(){
+													delete Modes.select.selected.multiWordTexts[el.identity];
+													Progress.call("onSelectionChanged",[Modes.select.selected]);
+													blit();
+												});
+												rootElem.append($("<span/>",{text:el.identity}));
+												break;
+											case "video":
+												rootElem.on("click",function(){
+													delete Modes.select.selected.videos[el.identity];
+													Progress.call("onSelectionChanged",[Modes.select.selected]);
+													blit();
+												});
+												rootElem.append($("<span/>",{text:el.identity}));
+												break;
+											default:
+												break;	
+										}
+									}
+									return rootElem;	
+								}));
+							}
+						};
             var updateSelectionVisualState = function(sel){
                 if(sel){
                     Modes.select.selected = sel;
@@ -2131,6 +2202,7 @@ var Modes = (function(){
                     if (Modes.currentMode == Modes.select){
                         $("#selectionAdorner").empty();
                     }
+								updateSelectionDescriber();
                 }
             };
             var clearSelectionFunction = function(){
@@ -2147,6 +2219,7 @@ var Modes = (function(){
                         _.forEach(cat,function(i){
                             if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]){
                                 cat[i.identity] = boardContent[boardCatName][i.identity];
+
                             } else {
                                 changed = true;
                                 if (selCatName == "inks"){
@@ -2164,6 +2237,7 @@ var Modes = (function(){
                 });
                 if(changed){
                     Progress.call("onSelectionChanged",[Modes.select.selected]);
+										updateSelectionDescriber();
                 }
             },100);
             var banContentFunction = function(){
