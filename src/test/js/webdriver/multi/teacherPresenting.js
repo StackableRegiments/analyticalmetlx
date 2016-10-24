@@ -117,7 +117,6 @@ describe('When a teacher presents,', function() {
             return teacherT.textStanzas[_.keys(teacherT.texts)[0]].words.length ==
                 ["Before","Enlarged","After","Red","After","Enlarged","After"].length;
         });
-        console.log("A",teacherT.selectedLines);
     });
     it("the teacher should create another textbox",function(){
         teacherT.keyboard(600,500,"This is a second paragraph.  It exists to be differentiated from the first paragraph.");
@@ -309,6 +308,26 @@ describe('When a teacher presents,', function() {
             return _.includes(text,"CAT");
         });
     });
+    it("should be able to filter displayed themes by origin",function(){
+        teacherT.menuButton.click();
+        teacher.waitUntil(function(){return teacher.isVisible("#roomToolbar");});
+        teacherT.learning.click();
+        teacher.waitUntil(function(){return teacher.isVisible("#menuParticipants");});
+        teacherT.participants.click();
+
+        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
+        teacherT.toggleFilter("handwriting");
+        assert(! _.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
+        teacherT.toggleFilter("handwriting");
+        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
+
+        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "exterior";}));
+        teacherT.toggleFilter("imageRecognition");
+        assert(! _.some(teacherT.visibleThemes(),function(t){return t.text == "exterior";}));
+        teacherT.toggleFilter("imageRecognition");
+        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "exterior";}));
+        teacherT.menuButton.click();
+    });
     it("textboxes should have the same wrap when they first appear as when they come back out of history",function(){
         teacherT.textMode.click();
         teacherT.keyboard(50,50,"This is a paragraph of text which is being typed programatically.  It runs over multiple lines.");
@@ -322,7 +341,7 @@ describe('When a teacher presents,', function() {
         browser.waitUntil(function(){return teacherT.currentSlide.index == 0;});
         teacherT.nextSlide.click();
         browser.waitUntil(function(){
-	    console.log(teacherT.currentSlide.index,_.keys(teacherT.texts).length);
+            console.log(teacherT.currentSlide.index,_.keys(teacherT.texts).length);
             return teacherT.currentSlide.index == 1 && (_.keys(teacherT.texts).length == 1);
         });
         text = _.values(teacherT.textStanzas)[0];

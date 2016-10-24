@@ -188,7 +188,8 @@ var Participants = (function(){
     var updateFilters = function(){
         _.each(contextFilters,function(val,filter){
             var el = $(sprintf("#%s",filter));
-            el.click(function(){
+	    el.attr("checked",contextFilters[filter]);
+            el.off("click").on("click",function(){
                 contextFilters[filter] = !contextFilters[filter];
                 updateParticipantsListing();
             });
