@@ -40,8 +40,8 @@ object EmptyMessageBusProvider extends MessageBusProvider{
 }
 
 abstract class MessageBus(definition:MessageBusDefinition, creator:MessageBusProvider) {
-	def getDefinition:MessageBusDefinition = definition
-	def getCreator:MessageBusProvider = creator
+  def getDefinition:MessageBusDefinition = definition
+  def getCreator:MessageBusProvider = creator
   def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateTimestamp:Boolean = true):Boolean
   def recieveStanzaFromRoom[A <: MeTLStanza](stanza:A) = definition.onReceive(stanza)
   def notifyConnectionLost = definition.onConnectionLost()

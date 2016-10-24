@@ -137,7 +137,20 @@
           </div>
         </section>
         <section id="participantsPopup" class="backstage box-model-block">
-          <h2 class="nmt">Participants</h2>
+          <div class="flex-container-responsive">
+            <h2 class="nmt">Participants</h2>
+            <div id="cloudFilter" class="ml">
+              <input type="checkbox" id="keyboarding" checked="true"></input>
+              <label for="keyboarding"><span class="icon-txt">Keyboarding</span></label>
+              <input type="checkbox" id="handwriting" checked="true"></input>
+              <label for="handwriting"><span class="icon-txt">Inking</span></label>
+              <input type="checkbox" id="imageRecognition" checked="true"></input>
+              <label for="imageRecognition"><span class="icon-txt">Classification</span></label>
+              <input type="checkbox" id="imageTranscription" checked="true"></input>
+              <label for="imageTranscription"><span class="icon-txt">Recognition</span></label>
+            </div>
+            <div id="lang"></div>
+          </div>
           <div id="participantsDatagrid">
             <span class="followControls">
               <input type="checkbox" class="followValue"></input>
@@ -145,159 +158,160 @@
             </span>
           </div>
         </section>
-				<section id="recycleBinPopup" class="backstage box-model-block">
-					<h2 class="align-left mrh nmt">Recycle Bin</h2>
-					<div id="recycleBinDatagrid">
-						<div class="actionButtons">
-							<button class="restoreContent button-transparent-border mth">
-								<span>Restore content</span>
-							</button>
-						</div>
-					</div>
-				</section>
-        <section id="quizzesPopup" class="backstage box-model-block">
-          <h2 class="align-left mrh nmt">Polls</h2>
-          <div id="quizCreateButtonContainer" class="align-left">
-            <button id="quizCreationButton" class="quizCreationButton button-transparent-border mth">
-              <span>Create poll</span>
+        <section id="recycleBinPopup" class="backstage box-model-block">
+          <h2 class="align-left mrh nmt">Recycle Bin</h2>
+          <div id="recycleBinDatagrid">
+            <div class="actionButtons">
+              <button class="restoreContent button-transparent-border mth">
+                <span>Restore content</span>
+              </button>
+              <span class="rowIdentity"></div>
+          </div>
+      </div>
+      </section>
+      <section id="quizzesPopup" class="backstage box-model-block">
+        <h2 class="align-left mrh nmt">Polls</h2>
+        <div id="quizCreateButtonContainer" class="align-left">
+          <button id="quizCreationButton" class="quizCreationButton button-transparent-border mth">
+            <span>Create poll</span>
+          </button>
+        </div>
+        <div id="quizDatagrid">
+          <div class="actionsButtons">
+            <button class="editPollButton button-transparent-border mth">
+              <span>Edit poll</span>
+            </button>
+            <button class="answerPollButton button-transparent-border mth">
+              <span>Answer poll</span>
+            </button>
+            <button class="viewAnswersButton button-transparent-border mth">
+              <span>Display poll</span>
             </button>
           </div>
-          <div id="quizDatagrid">
-            <div class="actionsButtons">
-              <button class="editPollButton button-transparent-border mth">
-                <span>Edit poll</span>
-              </button>
-              <button class="answerPollButton button-transparent-border mth">
-                <span>Answer poll</span>
-              </button>
-              <button class="viewAnswersButton button-transparent-border mth">
-                <span>Display poll</span>
-              </button>
-            </div>
-            <div class="editQuizPopup">
-              <div class="voting-block block img-resp">
-                <h3>Question:</h3>
-                <input class="quizQuestion" type="text"></input>
-                <div class="flex-container-responsive">
-                  <div>
-                    <input class="addSlideImageToQuiz button-transparent-border" value="Add/Update slide image" type="button"></input>
-                    <input class="removeSlideImageFromQuiz button-transparent-border" value="Remove slide image" type="button"></input>
-                  </div>
-                  <img class="quizImagePreview ml mt" style="width:320px;height:240px"></img>
+          <div class="editQuizPopup">
+            <div class="voting-block block img-resp">
+              <h3>Question:</h3>
+              <input class="quizQuestion" type="text"></input>
+              <div class="flex-container-responsive">
+                <div>
+                  <input class="addSlideImageToQuiz button-transparent-border" value="Add/Update slide image" type="button"></input>
+                  <input class="removeSlideImageFromQuiz button-transparent-border" value="Remove slide image" type="button"></input>
                 </div>
-                <div class="flex-container-responsive">
-                  <h3>Answers:</h3>
-                  <span class="addOptionButtonContainer">
-                    <button class="ml addOptionButton button-transparent-border flex-container-row space-between">
-                      <span>Add option</span>
-                    </button>
-                  </span>
+                <img class="quizImagePreview ml mt" style="width:320px;height:240px"></img>
+              </div>
+              <div class="flex-container-responsive">
+                <h3>Answers:</h3>
+                <span class="addOptionButtonContainer">
+                  <button class="ml addOptionButton button-transparent-border flex-container-row space-between">
+                    <span>Add option</span>
+                  </button>
+                </span>
+              </div>
+              <div class="quizOptionContainer flex-container-column">
+                <!-- many ".quizOption"s are cloned from JS -->
+                <div class="quizOption">
+                  <span class="quizOptionName mrh"></span>
+                  <input type="text" class="quizOptionText"></input>
+                  <button class=" quizOptionDelete btn-icon fa fa-trash" type="button" id="delete"><div class="icon-txt">Delete</div></button>
+                </div>
+              </div>
+            </div>
+            <div class="currentQuizTeacherControls flex-container-responsive">
+              <input class="updateQuiz button-transparent-border" value="Save this poll" type="button"></input>
+              <input class="deleteQuiz button-transparent-border ml" value="Delete this poll" type="button"></input>
+            </div>
+          </div>
+          <div class="answerQuizPopup">
+            <div class="currentQuizItem">
+              <div class="voting-block block img-resp">
+                <h3 class="quizQuestion"></h3>
+                <img class="quizImagePreview" style="width:320px;height:240px"></img>
+                <div class="quizOptionCountContainer">
+                  There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
                 </div>
                 <div class="quizOptionContainer flex-container-column">
-                  <!-- many ".quizOption"s are cloned from JS -->
                   <div class="quizOption">
-                    <span class="quizOptionName mrh"></span>
-                    <input type="text" class="quizOptionText"></input>
-                    <button class=" quizOptionDelete btn-icon fa fa-trash" type="button" id="delete"><div class="icon-txt">Delete</div></button>
-                  </div>
-                </div>
-              </div>
-              <div class="currentQuizTeacherControls flex-container-responsive">
-                <input class="updateQuiz button-transparent-border" value="Save this poll" type="button"></input>
-                <input class="deleteQuiz button-transparent-border ml" value="Delete this poll" type="button"></input>
-              </div>
-            </div>
-            <div class="answerQuizPopup">
-              <div class="currentQuizItem">
-                <div class="voting-block block img-resp">
-                  <h3 class="quizQuestion"></h3>
-                  <img class="quizImagePreview" style="width:320px;height:240px"></img>
-                  <div class="quizOptionCountContainer">
-                    There are <span class="quizOptionCount"></span> answer<span class="quizOptionCountPluralizer"></span>.
-                  </div>
-                  <div class="quizOptionContainer flex-container-column">
-                    <div class="quizOption">
-                      <button   class="quizOptionButton button-transparent-border flex-container-row space-between">
-                        <span class="quizOptionName mrh"></span>
-                        <span class="quizOptionText"></span>
-                        <span class="fa fa-thumbs-up align-right mlh"></span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="viewResultsPopup">
-              <div class="currentQuizItem">
-                <div class="voting-block block img-resp">
-                  <h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
-                  <span class="quizResultsGraph"></span>
-                  <h3 class="quizQuestion"></h3>
-                  <img class="quizImagePreview"></img>
-                  <div class="quizOptionContainer flex-container-column">
-                    <!-- many ".quizOption"s are cloned from JS -->
-                    <div class="quizOption flex-container-row space-between">
+                    <button   class="quizOptionButton button-transparent-border flex-container-row space-between">
                       <span class="quizOptionName mrh"></span>
                       <span class="quizOptionText"></span>
-                      <span class="quizOptionCountContainer">
-                        <span class="quizOptionAnswerCount"></span>
-                      </span>
-                      <meter class="quizOptionMeter"></meter>
-                    </div>
+                      <span class="fa fa-thumbs-up align-right mlh"></span>
+                    </button>
                   </div>
                 </div>
-                <div class="currentQuizTeacherControls">
-                  <input class="quizResultsShouldDisplayOnSlide button-transparent-border" value="Display poll with results on canvas" type="button"></input>
-                  <input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on new slide" type="button"></input>
+              </div>
+            </div>
+          </div>
+          <div class="viewResultsPopup">
+            <div class="currentQuizItem">
+              <div class="voting-block block img-resp">
+                <h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
+                <span class="quizResultsGraph"></span>
+                <h3 class="quizQuestion"></h3>
+                <img class="quizImagePreview"></img>
+                <div class="quizOptionContainer flex-container-column">
+                  <!-- many ".quizOption"s are cloned from JS -->
+                  <div class="quizOption flex-container-row space-between">
+                    <span class="quizOptionName mrh"></span>
+                    <span class="quizOptionText"></span>
+                    <span class="quizOptionCountContainer">
+                      <span class="quizOptionAnswerCount"></span>
+                    </span>
+                    <meter class="quizOptionMeter"></meter>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-        <section id="contentFilterPopup" class="backstage box-model-block">
-          <h2 class="align-left mrh nmt">Content filters</h2>
-          <div class="content-filter-listing align-left half mrh clear">
-            <div id="contentFilterListing" class="clear box-model-block">
-              <div class="contentFilterItem flex-container-row btn-list">
-                <input type="checkbox" class="contentFilterCheckbox"></input>
-                <label class="contentFilterCheckboxLabel">
-                  <span class="contentFilterCheckboxLabelText"></span>
-                </label>
+              <div class="currentQuizTeacherControls">
+                <input class="quizResultsShouldDisplayOnSlide button-transparent-border" value="Display poll with results on canvas" type="button"></input>
+                <input class="quizResultsShouldDisplayOnNextSlide button-transparent-border" value="Display poll with results on new slide" type="button"></input>
               </div>
             </div>
           </div>
-        </section>
-        <section id="healthCheckPopup" class="backstage box-model-block">
-          <h2 class="align-left mrh nmt">Client health</h2>
-          <div class="health-check-listing align-left half mrh">
-            <div id="healthCheckListing" class="clear box-model-block">
-              <div class="healthCheckItem flex-container-row">
-              </div>
+        </div>
+      </section>
+      <section id="contentFilterPopup" class="backstage box-model-block">
+        <h2 class="align-left mrh nmt">Content filters</h2>
+        <div class="content-filter-listing align-left half mrh clear">
+          <div id="contentFilterListing" class="clear box-model-block">
+            <div class="contentFilterItem flex-container-row btn-list">
+              <input type="checkbox" class="contentFilterCheckbox"></input>
+              <label class="contentFilterCheckboxLabel">
+                <span class="contentFilterCheckboxLabelText"></span>
+              </label>
             </div>
           </div>
-          <div class="health-check-summary align-right quarter mrh">
-            <div class="healthCheckSummaryLatencyContainer">
-              <h3>Network status</h3>
-              <div>
-                <div>Latency to server: <span class="latencyAverage"></span> ms (<span class="latencyHumanReadable"></span>)</div>
-                <div>Highest: <span class="bestLatency"></span> ms </div>
-                <div>Lowest: <span class="worstLatency"></span> ms </div>
-              </div>
-              <div>
-                <h4>Network call success rate</h4>
-                Client request success rate: <span class="successRate">0</span>%
-              </div>
-              <div class="heathCheckSummaryServerResponseContainer">
-                <h4>Server response queue length</h4>
-                <div>Queue wait time: <span class="serverResponseAverage"></span> ms (<span class="serverResponseHumanReadable"></span>)</div>
-              </div>
+        </div>
+      </section>
+      <section id="healthCheckPopup" class="backstage box-model-block">
+        <h2 class="align-left mrh nmt">Client health</h2>
+        <div class="health-check-listing align-left half mrh">
+          <div id="healthCheckListing" class="clear box-model-block">
+            <div class="healthCheckItem flex-container-row">
             </div>
           </div>
-        </section>
-      </div>
-      <div class="close-section mt mlr">
-        <button class="toolbar backstageTabHeader closeButton fa fa-times nm btn-icon" type="button" id="hideBackstage"><span class="hidden">Close</span></button>
-      </div>
+        </div>
+        <div class="health-check-summary align-right quarter mrh">
+          <div class="healthCheckSummaryLatencyContainer">
+            <h3>Network status</h3>
+            <div>
+              <div>Latency to server: <span class="latencyAverage"></span> ms (<span class="latencyHumanReadable"></span>)</div>
+              <div>Highest: <span class="bestLatency"></span> ms </div>
+              <div>Lowest: <span class="worstLatency"></span> ms </div>
+            </div>
+            <div>
+              <h4>Network call success rate</h4>
+              Client request success rate: <span class="successRate">0</span>%
+            </div>
+            <div class="heathCheckSummaryServerResponseContainer">
+              <h4>Server response queue length</h4>
+              <div>Queue wait time: <span class="serverResponseAverage"></span> ms (<span class="serverResponseHumanReadable"></span>)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="close-section mt mlr">
+      <button class="toolbar backstageTabHeader closeButton fa fa-times nm btn-icon" type="button" id="hideBackstage"><span class="hidden">Close</span></button>
     </div>
   </div>
+</div>
 </span>

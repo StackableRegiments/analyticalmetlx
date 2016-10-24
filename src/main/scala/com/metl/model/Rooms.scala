@@ -131,8 +131,9 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 
 case object HealthyWelcomeFromRoom
 case object Ping
+case object CheckChunks
 
-abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long]) extends LiftActor with ListenerManager with Logger {
+abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
   lazy val config = ServerConfiguration.configForName(configName)
   private var shouldBacklog = false
   private var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
@@ -214,13 +215,16 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     }
   }
   protected val pollInterval = new TimeSpan(2 * 60 * 1000)  // 2 minutes
+  protected val chunkExpiry = new TimeSpan(5 * 1000)  // 5 seconds
   protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
   protected var lastInterest:Long = new Date().getTime
   protected def heartbeat = Schedule.schedule(this,Ping,pollInterval)
+  protected def checkChunkExpiry = Schedule.schedule(this,CheckChunks,chunkExpiry)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))
     heartbeat
+    checkChunkExpiry
   }
   def localShutdown = {
     info("MeTLRoom(%s):localShutdown".format(location))
@@ -236,9 +240,12 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     case j:JoinRoom => Stopwatch.time("MeTLRoom.lowPriority.JoinRoom",addConnection(j))
     case l:LeaveRoom => Stopwatch.time("MeTLRoom.lowPriority.LeaveRoom",removeConnection(l))
     case sl@ServerToLocalMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ServerToLocalMeTLStanza",sendToChildren(s))
+    case CheckChunks => {
+      chunker.check(this)
+      checkChunkExpiry
+    }
     case Ping => Stopwatch.time("MeTLRoom.ping",{
       if (possiblyCloseRoom){
-
       } else {
         heartbeat
       }
@@ -251,7 +258,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("received archived stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s,false)
     })
-
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom received unknown message")
@@ -260,8 +266,8 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.toList
   })
   protected def sendToChildren(a:MeTLStanza):Unit = Stopwatch.time("MeTLRoom.sendToChildren",{
-    trace("stanza received: %s".format(a))
-      (a,roomMetaData) match {
+    trace("stanza received: %s".format(a));
+    (a,roomMetaData) match {
       case (m:MeTLCommand,_) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
         com.metl.comet.MeTLConversationSearchActorManager ! m
         com.metl.comet.MeTLSlideDisplayActorManager ! m
@@ -285,11 +291,15 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
        cr.cd = config.detailsOfConversation(cr.jid)
        }
        */
+      case (c:MeTLCanvasContent ,_) => chunker.add(c,this)
       case _ => {}
     }
     trace("%s s->l %s".format(location,a))
     joinedUsers.foreach(j => j._3 ! a)
   })
+  def addTheme(theme:Theme) = {
+    sendStanzaToServer(MeTLTheme(config,theme.author,new java.util.Date().getTime,location,theme,Nil))
+  }
   protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
     trace("%s l->s %s".format(location,s))
     showInterest
@@ -314,6 +324,8 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   private def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom",{
     if (location != "global" && joinedUsers.length == 0 && !recentInterest) {
       debug("MeTLRoom(%s):heartbeat.closingRoom".format(location))
+      chunker.close(this)
+      debug("MeTLRoom(%s):closing final chunks".format(location))
       creator.removeMeTLRoom(location)
       true
     } else {
@@ -474,7 +486,7 @@ class XmppBridgingHistoryCachingRoom(configName:String,override val location:Str
     trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
     sendStanzaToServer(s)
   })
-  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageFromBridge",{
+  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageToBridge",{
     trace("XMPPBRIDGE (%s) sendToBridge: %s".format(location,s))
     MeTLXConfiguration.xmppServer.foreach(_.relayMessageToXmppMuc(location,s))
   })

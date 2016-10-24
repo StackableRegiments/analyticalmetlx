@@ -101,6 +101,7 @@ object Globals extends PropertyReader with Logger {
   }
 
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
+  val themeName = readText(propFile,"themeName")
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
