@@ -825,4 +825,67 @@ $(function(){
     $("#conversations").click(function(){
         window.location.href = "/conversationSearch";
     });
+		_.forEach(["aste","drop"],function(label){
+			$(document).on(label,function(clipEvent){
+				if ("originalEvent" in clipEvent && "dataTransfer" in clipEvent.originalEvent && "types" in clipEvent.originalEvent.dataTransfer){
+					var availableTypes = clipEvent.originalEvent.dataTransfer.types;
+					var conditionallyActOn = function(coll,item,action){
+						var elem = _.find(coll,function(i){return i == item;});
+						if (elem != undefined && elem != null){
+							action(elem,clipEvent.originalEvent.dataTransfer.getData(elem));
+						};
+					};
+					var handled = false;
+					console.log("found types: ",availableTypes);
+					conditionallyActOn(availableTypes,"Files",function(type,file){
+						if (!handled){
+							console.log("pasted attachment",type,file);
+							handled = true;
+						}
+					});
+					conditionallyActOn(availableTypes,"image/jpg",function(type,image){
+						if (!handled){
+							console.log("pasted jpg",type,image);
+							handled = true;
+						}
+					});
+					conditionallyActOn(availableTypes,"image/png",function(type,image){
+						if (!handled){
+							console.log("pasted png",type,image);
+							handled = true;
+						}
+					});
+					/*
+					conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
+						if (!handled){
+							console.log("pasted html",type,html);
+							handled = true;
+						}
+					});
+					*/
+					conditionallyActOn(availableTypes,"text/html",function(type,html){
+						if (!handled){
+							console.log("pasted html",type,html);
+							handled = true;
+						}
+					});
+					conditionallyActOn(availableTypes,"text/plain",function(type,text){
+						if (!handled){
+							console.log("pasted text",type,text);
+							handled = true;
+						}
+					});
+					clipEvent.preventDefault();
+					return false;
+				} else {
+					return true;
+				}
+			});
+		});
+		_.forEach(["dragover","dragleave","dragenter"],function(label){
+			$(document).on(label,function(deadEvent){
+				deadEvent.preventDefault();
+				return false;
+			});
+		});
 });
