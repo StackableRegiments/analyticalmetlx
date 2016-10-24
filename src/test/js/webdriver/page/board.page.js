@@ -120,7 +120,7 @@ var BoardPage = function(user) {
         themes: {get: function(){ return user.execute("return boardContent.themes").value; }},
         cloudData: {get: function(){ return user.execute("return Analytics.word.cloudData()").value; } },
 	visibleThemes: {value:function(){
-	    return user.execute("return $('#lang .word').map(function(i,e){var w = $(e);return {text:w.text(),size:w.attr('font-size')};})").value;
+	    return user.execute("return $('#lang .word').map(function(i,e){var w = $(e);return {text:w.text(),size:w.css('font-size')};})").value;
 	}},
 
         selectMode: { get: function() { return user.element("#selectMode"); } },

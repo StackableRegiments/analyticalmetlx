@@ -341,7 +341,6 @@ describe('When a teacher presents,', function() {
         browser.waitUntil(function(){return teacherT.currentSlide.index == 0;});
         teacherT.nextSlide.click();
         browser.waitUntil(function(){
-            console.log(teacherT.currentSlide.index,_.keys(teacherT.texts).length);
             return teacherT.currentSlide.index == 1 && (_.keys(teacherT.texts).length == 1);
         });
         text = _.values(teacherT.textStanzas)[0];
