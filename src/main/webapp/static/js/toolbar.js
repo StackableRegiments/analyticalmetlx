@@ -2110,7 +2110,7 @@ var Modes = (function(){
 									});
 								});
 								selectionDescriber.html(_.map(describedElements,function(el){
-									var rootElem = $("<div/>",{text:"deselect"});
+									var rootElem = $("<div/>",{text:"deselect",class:"directlyOnBackground"});
 									if ("type" in el){
 										switch (el.type) {
 											case "ink":
@@ -2208,6 +2208,7 @@ var Modes = (function(){
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
+								updateSelectionDescriber();
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
                 var changed = false;
@@ -2314,6 +2315,7 @@ var Modes = (function(){
                 resizeHandleSize:20,
                 setSelection:function(selected){
                     Modes.select.selected = _.merge(Modes.select.selected,selected);
+										updateSelectionDescriber();
                 },
                 handlesAtZoom:function(){
                     var zoom = scale();
