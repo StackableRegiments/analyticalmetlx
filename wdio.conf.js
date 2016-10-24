@@ -1,22 +1,32 @@
-exports.config = {
-    exclude: [
-    ],
+var config = {
+    exclude: [],
     maxInstances: 10,
     sync: true,
     logLevel: 'verbose',
+    logOutput: './wdio.log',
     coloredLogs: true,
-    screenshotPath: './errorShots/',
     baseUrl: 'http://localhost:8080',
     waitforTimeout: 10000,
-    connectionRetryTimeout: 90000,
+    connectionRetryTimeout: 10000,
     connectionRetryCount: 3,
-    services: ['sauce'],
-    user: process.env.SAUCE_USERNAME,
-    key: process.env.SAUCE_ACCESS_KEY,
-    sauceConnect: true,
+    services: [],
     framework: 'mocha',
-    reporters: ['dot'],
+    reporters: ['spec'],
     mochaOpts: {
-        ui: 'bdd'
+        ui: 'bdd',
+        timeout:999999
     }
 }
+
+//if(process.env.CI) {
+if(false) {
+ config.services.push('sauce');
+ config.user = process.env.SAUCE_USERNAME;
+ config.key = process.env.SAUCE_ACCESS_KEY,
+ config.sauceConnect = true;
+}
+else
+{
+ //config.services.push('selenium-standalone');
+}
+exports.config = config;

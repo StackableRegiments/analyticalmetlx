@@ -57,8 +57,10 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       H2UnhandledCanvasContent,
       H2UnhandledStanza,
       H2UnhandledContent,
-      H2UndeletedCanvasContent,
-      DatabaseVersion
+      DatabaseVersion,
+      ThemeExtraction,
+      H2Theme,
+      H2UndeletedCanvasContent
     ):_*
   )
 
@@ -131,7 +133,9 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def storeStanza[A <: MeTLStanza](jid:String,stanza:A):Option[A] = Stopwatch.time("H2Interface.storeStanza",{
     val transformedStanza:Option[_ <: H2MeTLStanza[_]] = stanza match {
       case s:MeTLStanza if s.isInstanceOf[Attendance] => Some(serializer.fromMeTLAttendance(s.asInstanceOf[Attendance]).room(jid))
-      case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make this match
+      case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make these match
+      case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).location(jid))
+      case s:MeTLTheme => Some(serializer.fromTheme(s).location(jid))
       case s:MeTLInk => Some(serializer.fromMeTLInk(s).room(jid))
       case s:MeTLMultiWordText => Some(serializer.fromMeTLMultiWordText(s).room(jid))
       case s:MeTLText => Some(serializer.fromMeTLText(s).room(jid))
@@ -152,7 +156,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       case s:MeTLUnhandledStanza => Some(serializer.fromMeTLUnhandledStanza(s).room(jid))
       case s:MeTLUnhandledCanvasContent => Some(serializer.fromMeTLUnhandledCanvasContent(s).room(jid))
       case other => {
-        warn("didn't know how to transform stanza: %s".format(other))
+        warn("didn't know how to transform stanza: %s, %s".format(other,other.getClass))
         None
       }
     }
@@ -177,6 +181,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     List(
       () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),
       () => H2Text.findAll(By(H2Text.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLText(s))),
+      () => H2Theme.findAll(By(H2Theme.location,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
       () => H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLImage(s))).toList,
       () => H2Video.findAll(By(H2Video.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideo(s))).toList,

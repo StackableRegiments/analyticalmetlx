@@ -2,6 +2,7 @@ package com.metl.data
 
 import com.metl.utils._
 
+import com.metl.model._
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -94,6 +95,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       case i:NodeSeq if hasChild(i,"command") => toMeTLCommand(i)
       case i:NodeSeq if hasChild(i,"fileResource") => toMeTLFile(i)
       case i:NodeSeq if hasChild(i,"videoStream") => toMeTLVideoStream(i)
+      case i:NodeSeq if hasChild(i,"theme") => toTheme(i)
       case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
@@ -231,6 +233,21 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
       <present>{input.present}</present>
     ))
   })
+  override def fromTheme(t:MeTLTheme):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromTheme",{
+    metlContentToXml("theme",t,List(
+      <text>{t.theme.text}</text>,
+      <origin>{t.theme.origin}</origin>,
+      <location>{t.location}</location>
+    ))
+  })
+  override def toTheme(x:NodeSeq):MeTLTheme = Stopwatch.time("GenericXmlSerializer.toTheme",{
+    val m = parseMeTLContent(x)
+    val text = getStringByName(x,"text")
+    val location = getStringByName(x,"location")
+    val origin = getStringByName(x,"origin")
+    MeTLTheme(config,m.author,m.timestamp,location,Theme(m.author,text,origin),m.audiences)
+  })
+
   override def toMeTLInk(input:NodeSeq):MeTLInk = Stopwatch.time("GenericXmlSerializer.toMeTLInk",{
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)

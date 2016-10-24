@@ -5,23 +5,21 @@ var _ = require("lodash");
 // Create overrides
 var overrides = {
     specs: [
-        './src/test/js/webdriver/multi/**'
+//        './src/test/js/webdriver/multi/**'
+        './src/test/js/webdriver/multi/teacherPresenting.js'
+//        './src/test/js/webdriver/multi/importPowerpoint.js'
     ],
     capabilities: {
         teacher:{
             desiredCapabilities:{
                 browserName: 'chrome',
-                name:'teacher',
-                build:' : ',
-                project:'simple'
+                name:'teacher'
             }
         },
         student:{
             desiredCapabilities:{
                 browserName: 'chrome',
-                name:'student',
-                build:' : ',
-                project:'simple'
+                name:'student'
             }
         }
     }

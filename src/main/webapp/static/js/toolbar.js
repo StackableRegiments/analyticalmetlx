@@ -127,7 +127,7 @@ function registerPositionHandlers(contexts,down,move,up){
             worldPos.x + touchTolerance,
             worldPos.y + touchTolerance
         ];
-        var unconsumed = true;;
+        var unconsumed = true;
         _.each(Modes.canvasInteractables,function(category,label){
             _.each(category,function(interactable){
                 if(interactable != undefined && event in interactable){
@@ -950,7 +950,6 @@ var Modes = (function(){
                         Modes.select.offset = {x:root.x2,y:root.y2};
                         resizeAspectLocked.rehome(root);
                         blit();
-                        console.log("Aspect locked down");
                         return false;
                     },
                     move:function(worldPos){
@@ -995,12 +994,12 @@ var Modes = (function(){
                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(Modes.select.selected.multiWordTexts,function(text,id){
                             Modes.text.echoesToDisregard[id] = true;
-                            var source = text.doc.save();
-                            _.each(source,function(run){
-                                run.size = run.size * resized.xScale;
-                            });
+                            var range = text.doc.documentRange();
+                            text.doc.select(range.start,range.end);
+                            Modes.text.scaleEditor(text.doc,resized.xScale);
+                            text.doc.select(0,0);
                             text.doc.width(text.doc.width() * resized.xScale);
-                            text.doc.load(source);
+                            text.doc.invalidateBounds();
                         });
                         registerTracker(resized.identity,function(){
                             Progress.call("onSelectionChanged");
@@ -1104,11 +1103,11 @@ var Modes = (function(){
                             word.doc.width() * resized.xScale,
                             Modes.text.minimumWidth / scale()
                         ));
+                        word.doc.invalidateBounds();
                         if(word.doc.save().length > 0){
                             sendRichText(word);
                         }
                     });
-                    Modes.text.invalidateSelectedBoxes();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();
@@ -1269,35 +1268,38 @@ var Modes = (function(){
                     }
                 }
             };
+            var scaleEditor = function(d,factor){
+                var originalRange = d.selectedRange();
+                var refStart = 0;
+                var sizes = [];
+                var refSize = carota.runs.defaultFormatting.size;
+                d.runs(function(referenceRun) {
+                    var runLength = _.size(referenceRun.text);
+                    var newEnd = refStart + runLength;
+                    d.select(refStart,newEnd,true);
+                    var size = d.selectedRange().getFormatting().size || refSize;
+                    _.each(_.range(refStart,newEnd),function(){
+                        sizes.push(size);
+                    });
+                    refStart = newEnd;
+                    refSize = size;
+                },d.range(0,originalRange.end));
+                sizes = sizes.reverse();
+                refStart = originalRange.start;
+                d.runs(function(runToAlter){
+                    var refEnd = refStart + runToAlter.text.length;
+                    d.select(refStart,refEnd,true);
+                    d.selectedRange().setFormatting("size",sizes[refStart] * factor);
+                    refStart = refEnd;
+                },d.range(originalRange.start,originalRange.end));
+                d.select(originalRange.start,originalRange.end,true);
+            };
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            var originalRange = d.selectedRange();
-                            var refStart = 0;
-                            var sizes = [];
-                            var refSize = carota.runs.defaultFormatting.size;
-                            d.runs(function(referenceRun) {
-                                var runLength = _.size(referenceRun.text);
-                                var newEnd = refStart + runLength;
-                                d.select(refStart,newEnd,true);
-                                var size = d.selectedRange().getFormatting().size || refSize;
-                                _.each(_.range(refStart,newEnd),function(){
-                                    sizes.push(size);
-                                });
-                                refStart = newEnd;
-                                refSize = size;
-                            },d.range(0,originalRange.end));
-                            sizes = sizes.reverse();
-                            refStart = originalRange.start;
-                            d.runs(function(runToAlter){
-                                var refEnd = refStart + runToAlter.text.length;
-                                d.select(refStart,refEnd,true);
-                                d.selectedRange().setFormatting("size",sizes[refStart] * factor);
-                                refStart = refEnd;
-                            },originalRange);
-                            d.select(originalRange.start,originalRange.end,true);
+                            scaleEditor(d,factor);
                         }
                     });
                 };
@@ -1396,6 +1398,14 @@ var Modes = (function(){
                     Modes.select.activate();
                 });
             });
+            var mapSelected = function(f){
+                var sel = Modes.select.selected.multiWordTexts;
+                _.each(boardContent.multiWordTexts,function(t){
+                    if(t.identity in sel){
+                        f(t);
+                    }
+                });
+            };
             return {
                 name:"text",
                 echoesToDisregard:{},
@@ -1415,14 +1425,23 @@ var Modes = (function(){
                         box.doc.invalidateBounds()
                     });
                 },
-                mapSelected:function(f){
-                    var sel = Modes.select.selected.multiWordTexts;
-                    _.each(boardContent.multiWordTexts,function(t){
-                        if(t.identity in sel){
-                            f(t);
-                        }
+                getSelectedRanges:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+                        var r = t.doc.selectedRange();
+                        return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
                     });
                 },
+                getLinesets:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+			console.log("Textbox",t.identity,t.doc.width());
+			t.doc.layout();
+                        return _.map(t.doc.frame.lines,function(l){
+			    return l.positionedWords.length;
+			});
+                    });
+                },
+                mapSelected:mapSelected,
+                scaleEditor:scaleEditor,
                 scrollToCursor:function(editor){
                     var b = editor.bounds;
                     var caretIndex = editor.doc.selectedRange().start;
@@ -1472,7 +1491,7 @@ var Modes = (function(){
                             isAuthor? blit : noop,
                             t);
                         if(isAuthor){
-                            editor.doc.contentChanged(function(){
+                            var onChange = _.debounce(function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 //source.privacy = Privacy.getCurrentPrivacy();
@@ -1481,7 +1500,8 @@ var Modes = (function(){
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
-                            });
+                            },1000);
+                            editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
                                 if(editor.doc.save().length > 0){
@@ -1560,7 +1580,7 @@ var Modes = (function(){
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
-                    var lastClick = Date.now();
+                    var lastClick = 0;
                     var down = function(x,y,z,worldPos){
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
@@ -1580,8 +1600,9 @@ var Modes = (function(){
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
-                            if(t.doc.save().length == 0){
+                            if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
+				blit();
                             }
                         });
                         var sel;
@@ -1592,13 +1613,15 @@ var Modes = (function(){
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 doc.dblclickHandler(context.node);
                             }
+                            else{
+                                doc.mouseupHandler(context.node);
+                            }
                             lastClick = clickTime;
                             sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[editor.identity] = editor;
                             Modes.select.setSelection(sel);
-                            doc.mouseupHandler(context.node);
                         } else {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{
@@ -1637,7 +1660,7 @@ var Modes = (function(){
                     unregisterPositionHandlers(board);
                     _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
-                        if(_.trim(t.doc.save()).length == 0){
+                        if(t.doc.documentRange().plainText().trim().length == 0){
                             delete boardContent.multiWordTexts[t.identity];
                         }
                     });
@@ -2302,7 +2325,7 @@ var Modes = (function(){
                         if (!(modifiers.ctrl)){
                             var tb = Modes.select.totalSelectedBounds();
                             if(tb.x != Infinity){
-                                var threshold = 10 / scale();
+                                var threshold = 3 / scale();
                                 var ray = [
                                     worldPos.x - threshold,
                                     worldPos.y - threshold,
@@ -2321,6 +2344,7 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
+                        console.log(x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
@@ -2829,7 +2853,7 @@ var Modes = (function(){
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
                         currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-                        strokeCollected(currentStroke.join(" "));
+                        strokeCollected(currentStroke);
                     }
                     boardContext.globalAlpha = 1.0;
                 };

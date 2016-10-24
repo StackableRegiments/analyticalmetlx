@@ -1,5 +1,6 @@
 .functional.sh
 std.out
+wdio.log
 .wdio.conf.dyn.js
 target
 output
