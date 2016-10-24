@@ -827,78 +827,78 @@ $(function(){
     });
 		//$(document).attr("contenteditable",true);
 		//$("#board").attr("contenteditable",true);
-		_.forEach(["paste","drop"],function(label){
-			var func = function(ev){
-				var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
-			 	if ("types" in df){
-					var availableTypes = df.types;
-					var conditionallyActOn = function(coll,item,action){
-						var elem = _.find(coll,function(i){return i == item;});
-						if (elem != undefined && elem != null){
-							action(elem,df.getData(elem));
-						};
+		var func = function(ev){
+			var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
+			if ("types" in df){
+				console.log("originalEvent:",ev);
+				var x = ev.offsetX;
+				var y = ev.offsetY;
+				var availableTypes = df.types;
+				var conditionallyActOn = function(coll,itemPred,action){
+					var elem = _.find(coll,itemPred);
+					if (elem != undefined && elem != null){
+						action(elem,df.getData(elem));
 					};
-					var handled = false;
-					console.log("found types: ",availableTypes);
-					conditionallyActOn(availableTypes,"Files",function(type,file){
-						if (!handled){
-							console.log("pasted attachment",type,file);
-							handled = true;
-						}
-					});
-					conditionallyActOn(availableTypes,"image/jpg",function(type,image){
-						if (!handled){
-							console.log("pasted jpg",type,image);
-							handled = true;
-						}
-					});
-					conditionallyActOn(availableTypes,"image/png",function(type,image){
-						if (!handled){
-							console.log("pasted png",type,image);
-							handled = true;
-						}
-					});
-					/*
-					conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
-						if (!handled){
-							console.log("pasted html",type,html);
-							handled = true;
-						}
-					});
-					*/
-					conditionallyActOn(availableTypes,"text/html",function(type,html){
-						if (!handled){
-							console.log("pasted html",type,html);
-							handled = true;
-						}
-					});
-					conditionallyActOn(availableTypes,"text/plain",function(type,text){
-						if (!handled){
-							console.log("pasted text",type,text);
-							handled = true;
-						}
-					});
-					ev.preventDefault();
-					return false;
-				} else {
-					return true;
+				};
+				var handled = false;
+				console.log("found types: ",availableTypes);
+				conditionallyActOn(availableTypes,function(label){return label == "Files";},function(type,file){
+					if (!handled){
+						console.log("pasted attachment",type,file,df);
+						Modes.image.handleDrop(df,x,y);
+						handled = true;
+					}
+				});
+				conditionallyActOn(availableTypes,function(label){return label.indexOf("image") == 0;},function(type,image){
+					if (!handled){
+						console.log("pasted png",type,image);
+						Modes.image.handleDrop(df,x,y);
+						handled = true;
+					}
+				});
+				/*
+				conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
+					if (!handled){
+						console.log("pasted html",type,html);
+						handled = true;
+					}
+				});
+				*/
+				conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
+					if (!handled){
+						console.log("pasted html",type,html);
+						handled = true;
+					}
+				});
+				conditionallyActOn(availableTypes,function(label){return label == "text/plain";},function(type,text){
+					if (!handled){
+						console.log("pasted text",type,text);
+						handled = true;
+					}
+				});
+				if (!handled){
+					console.log("unknown type",df);
 				}
-			};
-			window.addEventListener(label,function(jEv){
-				console.log("window."+label,jEv);
-				if ("originalEvent" in jEv){
-					return func(jEv.originalEvent);
-				} else {
-					return func(jEv);
-				}
-			});
-			$("#board").on(label,function(jEv){
-				if ("originalEvent" in jEv){
-					return func(jEv.originalEvent);
-				} else {
-					return false;
-				}
-			});
+				ev.preventDefault();
+				return false;
+			} else {
+				return true;
+			}
+		};
+		window.addEventListener("paste",function(jEv){
+			console.log("window.paste",jEv);
+			if ("originalEvent" in jEv){
+				return func(jEv.originalEvent);
+			} else {
+				return func(jEv);
+			}
+		});
+		$("#board").on("drop",function(jEv){
+			if ("originalEvent" in jEv){
+				return func(jEv.originalEvent);
+			} else {
+				return false;
+			}
 		});
 		_.forEach(["beforepaste","dragover","dragleave","dragenter"],function(label){
 			window["on"+label] = function(deadEvent){

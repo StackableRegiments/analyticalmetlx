@@ -1900,6 +1900,7 @@ var Modes = (function(){
             })();
             var clientSideProcessImage = function(onComplete){
                 if (currentImage == undefined || currentImage.fileUpload == undefined || onComplete == undefined){
+									console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
                 $("#imageWorking").show();
@@ -2024,7 +2025,6 @@ var Modes = (function(){
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
                         var files = e.target.files || e.dataTransfer.files;
-                        var limit = files.length;
                         var file = files[0];
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
@@ -2053,6 +2053,27 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
+								handleDrop:function(dataTransfer,x,y){
+									var files = dataTransfer.files;
+									var file = files[0];
+									console.log("file:",file);
+									var worldPos = screenToWorld(x,y);
+									currentImage = {
+											"type":"imageDefinition",
+											"screenX":x,
+											"screenY":y,
+											"x":worldPos.x,
+											"y":worldPos.y
+									}
+
+									if (file.type.indexOf("image") == 0){
+										console.log("setting file:",file);
+										currentImage.fileUpload = file;
+									}
+
+									console.log("clientSideProcess",dataTransfer,currentImage);
+									clientSideProcessImage(sendImageToServer);
+								},	
                 deactivate:function(){
                     resetImageUpload();
                     removeActiveMode();
