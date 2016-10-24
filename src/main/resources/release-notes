@@ -6,5 +6,6 @@ Feature: METL-172 Neutral theme for training server.
 Bugfix: METL-136 Multiword textboxes in analytics fix, handwriting and OCR fixes.
 Bugfix: METL-174 Aspect locked resize sometimes fails.
 Bugfix: METL-191 Restored Google Vision OCR.
+Bugfix: METL-195: Handle failure to retrieve group data non-destructively.
 Bugfix: Text not being committed under some circumstances
 Improvement: Increased automated functional testing.
