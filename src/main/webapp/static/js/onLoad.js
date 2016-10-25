@@ -866,8 +866,18 @@ $(function(){
 				*/
 				conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
 					if (!handled){
-						console.log("pasted text as html",type,html);
-						Modes.text.handleDrop(html,x,y);
+						var htmlElem = $(html);
+						console.log("pasted text as html",type,html,htmlElem);
+						if (htmlElem[0].tagName.toLowerCase() == "img"){
+							console.log("html => images:",htmlElem,htmlElem[0].src);
+							try {
+								Modes.image.handleDroppedSrc(htmlElem[0].src,x,y);	
+							} catch (e){
+								errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+							}
+						} else {
+							Modes.text.handleDrop(html,x,y);
+						}
 						handled = true;
 					}
 				});

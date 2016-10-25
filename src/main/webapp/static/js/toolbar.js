@@ -1950,10 +1950,21 @@ var Modes = (function(){
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
+									var originalSrc = readerE.target.result;
+									clientSideProcessImageSrc(originalSrc,onComplete,function(img){
+                    var originalSize = originalSrc.length;
+										return originalSize < newSize;
+									});
+                }
+                reader.readAsDataURL(currentImage.fileUpload);
+            };
+						var clientSideProcessImageSrc = function(originalSrc,onComplete,ifBiggerPred){
                     var renderCanvas = $("<canvas/>");
                     var img = new Image();
-                    var originalSrc = readerE.target.result;
-                    var originalSize = originalSrc.length;
+										img.setAttribute("crossOrigin","Anonymous");
+										img.onerror = function(e){
+											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+										};
                     img.onload = function(e){
                         var width = img.width;
                         var height = img.height;
@@ -1987,15 +1998,14 @@ var Modes = (function(){
                         currentImage.height = h;
                         currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
                         var newSize = currentImage.resizedImage.length;
-                        if (originalSize < newSize){
-                            currentImage.resizedImage = originalSrc;
-                        }
+												if (ifBiggerPred(newSize)){
+													currentImage.resizedImage = originalSrc;
+												}
                         onComplete();
                     };
                     img.src = originalSrc;
-                }
-                reader.readAsDataURL(currentImage.fileUpload);
-            };
+
+						};
             var sendImageToServer = function(){
                 if (currentImage.type == "imageDefinition"){
                     WorkQueue.pause();
@@ -2096,6 +2106,19 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
+								handleDroppedSrc:function(src,x,y){
+									var worldPos = screenToWorld(x,y);
+									currentImage = {
+											"type":"imageDefinition",
+											"screenX":x,
+											"screenY":y,
+											"x":worldPos.x,
+											"y":worldPos.y
+									}
+									console.log("clientSideProcess",src,currentImage);
+									clientSideProcessImageSrc(src,sendImageToServer,function(newSize){return false;});
+								},	
+
 								handleDrop:function(dataTransfer,x,y){
 									var files = dataTransfer.files;
 									var file = files[0];
