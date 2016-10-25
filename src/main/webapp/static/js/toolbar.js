@@ -1653,6 +1653,46 @@ var Modes = (function(){
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
+								handleDrop:function(html,x,y){
+									if (html.length > 0){
+										var newRuns = carota.html.parse(html,{
+											carota: { color: 'black', bold: false, size: 14 }
+										});
+										console.log("newRuns:",newRuns);
+										var worldPos = screenToWorld(x,y);
+										Modes.text.activate();
+										var clickTime = Date.now();
+										var sel;
+										Modes.select.clearSelection();
+										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+										var newEditor = createBlankText(worldPos,[{
+											text:" ",
+											italic:carota.runs.nextInsertFormatting.italic == true,
+											bold:carota.runs.nextInsertFormatting.bold == true,
+											underline:carota.runs.nextInsertFormatting.underline == true,
+											color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+											size:carota.runs.defaultFormatting.size / scale()
+										}]);
+										var newDoc = newEditor.doc;
+										newDoc.select(0,1);
+										boardContent.multiWordTexts[newEditor.identity] = newEditor;
+										sel = {multiWordTexts:{}};
+										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+										Modes.select.setSelection(sel);
+										editor = newEditor;
+										var node = newDoc.byOrdinal(0);
+										newDoc.mousedownHandler(node);
+										newDoc.mouseupHandler(node);
+										editor.doc.invalidateBounds();
+										editor.doc.isActive = true;
+										editor.doc.load(newRuns);
+										Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+												Modes.text.echoesToDisregard = {};
+										};
+										Modes.text.scrollToCursor(editor);
+										Progress.call("onSelectionChanged",[Modes.select.selected]);
+									};
+								},
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();

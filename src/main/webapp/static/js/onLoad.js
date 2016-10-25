@@ -831,8 +831,8 @@ $(function(){
 			var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
 			if ("types" in df){
 				console.log("originalEvent:",ev);
-				var x = ev.offsetX;
-				var y = ev.offsetY;
+				var x = ev.offsetX || 10;
+				var y = ev.offsetY || 10;
 				var availableTypes = df.types;
 				var conditionallyActOn = function(coll,itemPred,action){
 					var elem = _.find(coll,itemPred);
@@ -867,12 +867,14 @@ $(function(){
 				conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
 					if (!handled){
 						console.log("pasted html",type,html);
+						Modes.text.handleDrop(html,x,y);
 						handled = true;
 					}
 				});
 				conditionallyActOn(availableTypes,function(label){return label == "text/plain";},function(type,text){
 					if (!handled){
 						console.log("pasted text",type,text);
+						Modes.text.handleDrop(text,x,y);
 						handled = true;
 					}
 				});
@@ -900,22 +902,19 @@ $(function(){
 				return false;
 			}
 		});
-		_.forEach(["beforepaste","dragover","dragleave","dragenter"],function(label){
-			window["on"+label] = function(deadEvent){
-				deadEvent.preventDefault();
-				return false;
-			};
-			$(window).on(label,function(deadEvent){
-				deadEvent.preventDefault();
-				return false;
-			});
-			$("#board")[0]["on"+label] = function(deadEvent){
-				deadEvent.preventDefault();
-				return false;
-			};
-			$("#board").on(label,function(deadEvent){
-				deadEvent.preventDefault();
-				return false;
-			});
+		var deadFunc = function(deadEvent){
+			deadEvent.preventDefault();
+			return false;
+		};
+		var fakeFunc = function(deadEvent){
+			return true;
+		};
+		$(document).on("drop",deadFunc);
+		window.onbeforepaste = deadFunc;
+		_.forEach(["dragover","dragleave","dragenter"],function(label){
+			window["on"+label] = deadFunc;
+			$(window).on(label,deadFunc);
+			$("#board")[0]["on"+label] = deadFunc;
+			$("#board").on(label,deadFunc);
 		});
 });
