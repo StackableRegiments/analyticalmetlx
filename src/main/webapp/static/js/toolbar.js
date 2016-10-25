@@ -1992,7 +1992,11 @@ var Modes = (function(){
                             width:px(width),
                             height:px(height)
                         });
-                        renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
+												var ctx = renderCanvas[0].getContext("2d");
+												ctx.rect(0,0,width,height);
+												ctx.fillStyle = "white";
+												ctx.fill();
+                        ctx.drawImage(img,0,0,width,height);
                         var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
                         currentImage.width = w;
                         currentImage.height = h;
