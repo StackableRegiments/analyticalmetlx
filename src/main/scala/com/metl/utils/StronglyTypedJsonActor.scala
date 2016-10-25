@@ -89,7 +89,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener {
       } catch {
         case e:Exception => {
           val end = new java.util.Date().getTime()
-          error("Exception in ClientSideFunc::%s(%s) => %s\r\n%s".format(name,args.mkString(","),e.getMessage,e.getStackTraceString))
+          error("Exception in ClientSideFunc::%s(%s) => %s\r\n%s".format(name,args.mkString(","),e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
           Call("serverResponse",JObject(
             List(
               JField("command",JString(name)),

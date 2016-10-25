@@ -82,11 +82,11 @@ object StackAdmin extends StackAdmin with MongoMetaRecord[StackAdmin]{
     case Full(user) => true
     case _ => false
   }
-  def canAddTopicsMap:Map[String,Boolean] = Map(findAll("adminForAllTopics",true).map(user => (user.authcate.is,true)):_*).withDefault((user:String) => false)
+  def canAddTopicsMap:Map[String,Boolean] = Map(findAll("adminForAllTopics",true).map(user => (user.authcate.get,true)):_*).withDefault((user:String) => false)
   def topicMap:Map[String,List[String]] = {
-    val userMap = findAll.map(user => (user.authcate.is,user.adminForTopics.is))
-    val fullAdmins = findAll("adminForAllTopics",true).map(_.authcate.is)
-    val allTopics = (TopicManager.getAll.map(t => t.name.is).toList ::: userMap.flatMap(user => user._2)).distinct
+    val userMap = findAll.map(user => (user.authcate.get,user.adminForTopics.get))
+    val fullAdmins = findAll("adminForAllTopics",true).map(_.authcate.get)
+    val allTopics = (TopicManager.getAll.map(t => t.name.get).toList ::: userMap.flatMap(user => user._2)).distinct
     Map(allTopics.map(topic => {
       (topic, userMap.filter(u => u._2.contains(topic)).map(_._1) ::: fullAdmins)
     }):_*).withDefault((input:String) => fullAdmins)
@@ -103,8 +103,8 @@ class StackAdmin extends MongoRecord[StackAdmin] with MongoId[StackAdmin]{
   object adminForTopics extends MongoListField[StackAdmin,String](this)
   object adminForAllTopics extends BooleanField(this)
   // adding topics requires adminForAllTopics = true
-  def isAdminForTopic(topic:String):Boolean = adminForAllTopics.is || adminForTopics.is.contains(topic)
-  def canAddTopics:Boolean = adminForAllTopics.is
+  def isAdminForTopic(topic:String):Boolean = adminForAllTopics.get || adminForTopics.get.contains(topic)
+  def canAddTopics:Boolean = adminForAllTopics.get
 }
 abstract class Rep
 class Informal extends Rep with MongoRecord[Informal] with MongoId[Informal]{
@@ -124,7 +124,7 @@ object Informal extends Informal with MongoMetaRecord[Informal]{
     useColl(_.ensureIndex(new BasicDBObject("action",1),"informalActionIndex",false))
   }
   import GainAction._
-  def standing(who:String):Int=findAll(("protagonist",who)).map((gain:Informal)=>value(gain.action.is)).foldLeft(0){
+  def standing(who:String):Int=findAll(("protagonist",who)).map((gain:Informal)=>value(gain.action.get)).foldLeft(0){
     case (acc,item)=> acc + item
   }
   val scores = Map(
@@ -198,8 +198,8 @@ class StackQuestion private() extends MongoRecord[StackQuestion] with MongoId[St
     val updateQuery = JObject(List(JField("$push",JObject(List(JField("answers",answerJson))))))
     StackQuestion.update(searchQuery,updateQuery)
   }
-  def listDeepVotes = answers.is.filter(a => !a.deleted).map(a => a.listDeepVotes).foldLeft(listVotes)((acc,item) => acc ::: item)
-  def listVotes = votes.is
+  def listDeepVotes = answers.get.filter(a => !a.deleted).map(a => a.listDeepVotes).foldLeft(listVotes)((acc,item) => acc ::: item)
+  def listVotes = votes.get
   def addVote(vote:Vote) = {
     val voteJson = Vote.toJObject(vote)(StackQuestion.formats)
     val updateQuery = JObject(List(JField("$push",JObject(List(JField("votes",voteJson))))))
@@ -214,10 +214,10 @@ class StackQuestion private() extends MongoRecord[StackQuestion] with MongoId[St
     StackQuestion.update(searchQuery,updateQuery)
   }
   def totalChildCount:Int = {
-    answers.is.filter(a => !a.deleted).map(a => a.totalChildCount).sum
+    answers.get.filter(a => !a.deleted).map(a => a.totalChildCount).sum
   }
   def mostRecentActivity:Long = {
-    answers.is.filter(a => !a.deleted).map(a => a.mostRecentActivity).foldLeft(creationDate.is)((acc,item) => List(acc,item).max)
+    answers.get.filter(a => !a.deleted).map(a => a.mostRecentActivity).foldLeft(creationDate.get)((acc,item) => List(acc,item).max)
   }
 }
 object StackQuestion extends StackQuestion with MongoMetaRecord[StackQuestion]
@@ -314,7 +314,7 @@ class SystemInformation extends MongoRecord[SystemInformation] with MongoId[Syst
 }
 class Topic extends MongoRecord[Topic] with MongoId[Topic]{
   def meta = Topic
-  lazy val identity = _id.is.toString
+  lazy val identity = _id.get.toString
   object name extends StringField(this,255)
   object creator extends StringField(this,255)
   object deleted extends BooleanField(this)
@@ -339,7 +339,7 @@ object Topic extends Topic with MongoMetaRecord[Topic]
   def getDefaultValue = find("teachingEventIdentity","default") match {
     case Full(topic) => topic
     case _ => {
-      createRecord.name("default").creator("automatically created").deleted(false).teachingEventIdentity("default").save
+      createRecord.name("default").creator("automatically created").deleted(false).teachingEventIdentity("default").save(true)
     }
   }
   def defaultValue = getDefaultValue
