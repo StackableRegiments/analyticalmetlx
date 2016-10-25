@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=$(<src/main/resources/version)
+VER=$(head -n 1 src/main/resources/version)
 if [ -n "$VER" ]
 then
 	SRC_WAR="target/scala-2.11/analyticalmetlx_2.11-$VER.war"
