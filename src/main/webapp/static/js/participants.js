@@ -112,7 +112,6 @@ var Participants = (function(){
         if(!themeCloud) themeCloud = d3.select("#lang")
             .style("margin-left","1em");
         fontSizes.domain(d3.extent(_.map(data,"value")));
-	console.log(fontSizes.domain());
 	$("#lang .word").remove();
         var words = themeCloud.selectAll(".word")
                 .data(data,function(d){
