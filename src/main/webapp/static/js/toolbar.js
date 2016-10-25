@@ -1690,6 +1690,11 @@ var Modes = (function(){
 												Modes.text.echoesToDisregard = {};
 										};
 										Modes.text.scrollToCursor(editor);
+										var source = boardContent.multiWordTexts[editor.identity];
+										source.privacy = Privacy.getCurrentPrivacy();
+										source.target = "presentationSpace";
+										source.slide = Conversations.getCurrentSlideJid();
+										sendRichText(source);
 										Progress.call("onSelectionChanged",[Modes.select.selected]);
 									};
 								},

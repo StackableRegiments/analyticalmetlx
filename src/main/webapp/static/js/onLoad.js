@@ -864,17 +864,10 @@ $(function(){
 					}
 				});
 				*/
-				conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
+				conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
 					if (!handled){
-						console.log("pasted html",type,html);
+						console.log("pasted text",type,html);
 						Modes.text.handleDrop(html,x,y);
-						handled = true;
-					}
-				});
-				conditionallyActOn(availableTypes,function(label){return label == "text/plain";},function(type,text){
-					if (!handled){
-						console.log("pasted text",type,text);
-						Modes.text.handleDrop(text,x,y);
 						handled = true;
 					}
 				});
