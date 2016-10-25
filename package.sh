@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=$1
+VER=$(<src/main/resources/version)
 if [ -n "$VER" ]
 then
 	SRC_WAR="target/scala-2.11/analyticalmetlx_2.11-$VER.war"
@@ -14,6 +14,6 @@ then
 	echo "Uploading metlx-$REV.war to S3"
 #	aws --region=us-east-1 s3 cp $SRC_WAR s3://stackable-artifacts/metlx-$REV.war	
 else
-	echo "Please provide the version as the first parameter, eg 0.8.5"
+	echo "Could not locate src/main/resources/version, or it was empty."
 	exit 1
 fi
