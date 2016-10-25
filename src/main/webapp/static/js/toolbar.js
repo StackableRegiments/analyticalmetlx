@@ -1655,9 +1655,7 @@ var Modes = (function(){
                 },
 								handleDrop:function(html,x,y){
 									if (html.length > 0){
-										var newRuns = carota.html.parse(html,{
-											carota: { color: 'black', bold: false, size: 14 }
-										});
+										var newRuns = carota.html.parse(html,{});
 										console.log("newRuns:",newRuns);
 										var worldPos = screenToWorld(x,y);
 										Modes.text.activate();

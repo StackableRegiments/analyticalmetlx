@@ -864,6 +864,14 @@ $(function(){
 					}
 				});
 				*/
+				conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
+					if (!handled){
+						console.log("pasted text as html",type,html);
+						Modes.text.handleDrop(html,x,y);
+						handled = true;
+					}
+				});
+
 				conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
 					if (!handled){
 						console.log("pasted text",type,html);
