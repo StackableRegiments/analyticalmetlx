@@ -1,6 +1,7 @@
 package com.metl.snippet
 
 import com.metl.utils.ExceptionUtils
+import com.metl.BuildInfo
 import net.liftweb.http._
 import net.liftweb.util._
 import net.liftweb.common._
@@ -33,7 +34,7 @@ class VersionDescriber {
   def render = {
     (
       ".version" #> {
-        ".versionNumber *" #> Text(VersionFacts.versionNumber)
+        ".versionNumber *" #> Text(BuildInfo.version)
       } &
       ".releaseNotes" #> {
         ".releaseNotesTextItem *" #> VersionFacts.releaseNotes.map(rn => {
