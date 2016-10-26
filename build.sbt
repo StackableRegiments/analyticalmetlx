@@ -66,9 +66,8 @@ releaseProcess := Seq(
   inquireVersions,
   setReleaseVersion,
   runTest,
-  tagRelease
-  // publishArtifacts,
-//  sbtrelease,
+  tagRelease,
+  publishArtifacts
 //  pushChanges
 )
 
