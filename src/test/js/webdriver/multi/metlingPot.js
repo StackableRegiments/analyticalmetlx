@@ -62,12 +62,12 @@ describe('When the MeTLing pot processes content,', function() {
     it("it should emit image classifications",function(){
         assert(_.includes(_.map(teacherT.cloudData,"key"),"maple"));
     });
-    it("should emit recognized fragments",function(){
+    it("it should emit recognized fragments",function(){
         teacher.waitUntil(function(){
             return _.includes(_.map(teacherT.themes,"text"),"CAT");
         });
     });
-    it("should be able to filter displayed themes by origin",function(){
+    it("it should be able to filter displayed themes by origin",function(){
         assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
         teacherT.toggleFilter("handwriting");
         assert(! _.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
@@ -79,6 +79,22 @@ describe('When the MeTLing pot processes content,', function() {
         assert(! _.some(teacherT.visibleThemes(),function(t){return t.text == "plant";}));
         teacherT.toggleFilter("imageRecognition");
         assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "plant";}));
-        teacherT.menuButton.click();
+    });
+    it("it should scale words according to frequency",function(){
+        var cd = teacherT.cloudData;
+        assert.equal(1,_.filter(cd,function(c){return c.key == "plant" && c.value == 4;}).length);
+        assert.equal(1,_.filter(cd,function(c){return c.key == "content" && c.value == 3;}).length);
+        assert.equal(1,_.filter(cd,function(c){return c.key == "maple" && c.value == 2}).length);
+        assert.equal(1,_.filter(cd,function(c){return c.key == "cat" && c.value == 1;}).length);
+        var display = teacherT.visibleThemes();
+        var size = function(key){
+            return parseInt(_.find(display,function(t){return t.text == key}).size);
+        };
+        var gt = function(bigger,smaller){
+            return  size(bigger)> size(smaller);
+        };
+        assert(gt("plant","content"));
+        assert(gt("content","maple"));
+        assert(gt("maple","cat"));
     });
 });
