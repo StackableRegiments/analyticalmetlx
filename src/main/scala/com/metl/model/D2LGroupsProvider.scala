@@ -87,7 +87,7 @@ case class D2LGroupCategory(
   AutoEnroll:Boolean,
   RandomizeEnrollments:Boolean,
   Groups:List[Long],
-  AllocateAfterExpiry:Boolean,
+  AllocateAfterExpiry:Option[String],
   SelfEnrollmentExpiryDate:Option[String]
 )
 case class D2LGroup(
