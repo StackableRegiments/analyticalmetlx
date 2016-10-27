@@ -81,7 +81,7 @@ case class D2LGroupCategory(
   GroupCategoryId:Long,
   Name:String,
   Description:D2LDescription, //richtext
-  EnrollmentStyle:Option[String],
+  EnrollmentStyle:Option[String], //this is probably mandatory, but I thought it was an int representing an enum, and it's a string representation of the enum
   EnrollmentQuantity:Option[Int],
   MaxUsersPerGroup:Option[Int],
   AutoEnroll:Boolean,
