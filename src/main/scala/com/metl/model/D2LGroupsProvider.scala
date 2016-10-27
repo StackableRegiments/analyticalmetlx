@@ -263,7 +263,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
   override def getData:GroupStoreData = {
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
-    println("courses found: %s".format(courses.length))
+    trace("courses found: %s".format(courses.length))
     val compoundItems = parFlatMap[D2LOrgUnit,Tuple2[List[Tuple3[String,String,String]],List[OrgUnit]]](courses,orgUnit => { 
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       val memberDetails = (for (
