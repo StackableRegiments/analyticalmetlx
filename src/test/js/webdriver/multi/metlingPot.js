@@ -32,7 +32,6 @@ describe('When the MeTLing pot processes content,', function() {
         teacher.pause(ANIMATION_DELAY);
     });
     it("given that handwriting has been submitted",function(){
-	browser.debug();
         teacherT.inkMode.click();
         teacherT.letters(['c','a','t']);
         teacher.waitUntil(function(){
