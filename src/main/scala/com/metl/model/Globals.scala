@@ -28,7 +28,7 @@ trait PropertyReader extends Logger {
 
   protected def traceIt[A](label:String,param:String,in: => A):A = {
     val res = in
-    info("%s(%s) : %s".format(label,param,in))
+    trace("%s(%s) : %s".format(label,param,in))
     res
   }
 
@@ -101,6 +101,7 @@ object Globals extends PropertyReader with Logger {
   }
 
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
+  val themeName = readText(propFile,"themeName")
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
@@ -128,15 +129,15 @@ object Globals extends PropertyReader with Logger {
           val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
           val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(username),Nil))
           val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-          //println("userAttributes from authenticator: %s".format(userAttributes))
+          //info("userAttributes from authenticator: %s".format(userAttributes))
           val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
           if (authenticated){
             val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
             val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
             val lasd = LiftAuthStateData(true,username,groups,personalDetails)
-          //println("got state: %s".format(lasd))
+          //info("got state: %s".format(lasd))
             validState(Some(lasd))
-            println("generated authState: %s".format(lasd))
+            info("generated authState: %s".format(lasd))
             lasd
           } else {
             LiftAuthStateDataForbidden
@@ -167,3 +168,5 @@ object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
 
 object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
 object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
+
+object UserAgent extends SessionVar[Box[String]](S.userAgent)

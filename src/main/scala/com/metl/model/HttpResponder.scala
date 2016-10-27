@@ -2,7 +2,6 @@ package com.metl.model
 
 import com.metl.utils._
 import com.metl.data._
-import com.metl.liftExtensions._
 
 import net.liftweb.common._
 import net.liftweb.http._
@@ -61,7 +60,7 @@ object HttpResponder extends HttpCacher with Logger {
 
   def snapshotDataUri(jid:String,size:String) = {
     val dataUri = "data:image/jpeg;base64," + DatatypeConverter.printBase64Binary(getSnapshot(jid,size))
-    constructResponse(CachedBinary(IOUtils.toByteArray(dataUri),new Date().getTime),"image/jpg",snapshotExpiry)
+    constructResponse(CachedBinary(dataUri.getBytes,new Date().getTime),"image/jpg",snapshotExpiry)
   }
   def quizImage(jid:String,id:String) = {
     //val serverConfig = ServerConfiguration.configForName(server)

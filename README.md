@@ -19,19 +19,14 @@ An example config file which uses a local database and no authentication might l
 
 ```
 <serverConfiguration>
-	<liftConfiguration>
-		<cometRequestTimeout>25</cometRequestTimeout>
-		<maxMimeSize>1048576000</maxMimeSize>
-		<maxMimeFileSize>524288000</maxMimeFileSize>
-		<bufferUploadsOnDisk>true</bufferUploadsOnDisk>
-		<maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
-		<allowParallelSnippets>true</allowParallelSnippets>
-	</liftConfiguration>
-	<serverAddress>
-		<scheme>http</scheme>
-		<hostname>localhost</hostname>
-		<port>8080</port>
-	</serverAddress>
+  <liftConfiguration>
+    <cometRequestTimeout>25</cometRequestTimeout>
+    <maxMimeSize>1048576000</maxMimeSize>
+    <maxMimeFileSize>524288000</maxMimeFileSize>
+    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
+    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
+    <allowParallelSnippets>true</allowParallelSnippets>
+  </liftConfiguration>
   <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
@@ -57,38 +52,34 @@ An example config file which uses a local database and no authentication might l
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	<securityProvider>
-		<stableKeyProvider /> 
+		<stableKeyProvider/> 
 	</securityProvider>
+	<authenticationConfiguration>
+	  <requestUriStartWith value="/comet_request"/>
+	  <requestUriStartWith value="/ajax_request"/>
+	  <requestUriStartWith value="/favicon.ico"/>
+	  <requestUriStartWith value="/serverStatus"/>
+	  <requestUriStartWith value="/static"/>
+	  <requestUriStartWith value="/classpath"/>
+	</authenticationConfiguration>
 	<authentication>
-		<mock formSelector="#loginForm" usernameSelector="#usernameInput" passwordSelector="#passwordInput">
-			<template>
-				<div>
-					<h2>Login to MeTL</h2>
-					<div>Please choose a password.  Use only alphanumeric characters.
-					</div>
-					<form id="loginForm">
-						<label for="usernameInput">Username</label>
-						<input type="text" id="usernameInput"></input>
-						<input type="hidden" id="passwordInput" value="mockPassword"></input>
-						<input type="submit" value="Login">c</input>
-					</form>
-				</div>
-			</template>
-		</mock>
+		<mock/>
   </authentication>
   <groupsProvider>
 		<selfGroups/>
 		<flatFileGroups format="globalOverrides" location="config/globalOverrides.txt" refreshPeriod="5 minutes"/>
 		<flatFileGroups format="specificOverrides" location="config/specificOverrides.txt" refreshPeriod="5 minutes"/>
+		<flatFileGroups format="xmlSpecificOverrides" location="config/specificOverrides.xml" refreshPeriod="5 minutes"/>
 	</groupsProvider>
-	<clientAdaptors>
-		<embeddedXmppServer keystorePath="config/metl.jks" keystorePassword="helpme" />
-	</clientAdaptors>
 	<cloudConverterApiKey>anExampleApiKey</cloudConverterApiKey>
 	<textAnalysisApiKey>anExampleApiKey</textAnalysisApiKey>
 	<themeAnalysisApiKey>anExampleApiKey</themeAnalysisApiKey>
 </serverConfiguration>
 ```
+
+- Provide cloudConverterApiKey to enable upstream foreign document import into images, if required.
+- Provide textAnalysisApiKey to enable upstream text analysis, if required.
+- Provide themeAnalysisApiKey to enable upstream theme analysis, if required.
 
 ## Deployment
 

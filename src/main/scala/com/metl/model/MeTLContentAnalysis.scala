@@ -1,6 +1,7 @@
 package com.metl.model
 
-import dispatch._, Defaults._
+import dispatch._
+import dispatch.Defaults._
 import com.metl.data._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
@@ -8,27 +9,84 @@ import net.liftweb.common.Logger
 import scala.xml._
 import collection._
 import net.liftweb.util.SecurityHelpers._
+import com.metl.h2.dbformats.ThemeExtraction
+import com.metl.renderer._
 
 case class Theme(author:String,text:String,origin:String)
 
 case class Chunked(timeThreshold:Int, distanceThreshold:Int, chunksets:Seq[Chunkset])
-case class Chunkset(author:String,chunks:Seq[Chunk]){
+case class Chunkset(author:String,chunks:List[Chunk]){
   val start = chunks.map(_.start).min
   val end = chunks.map(_.end).max
 }
-case class Chunk(activity:Seq[MeTLCanvasContent]){
+case class Chunk(activity:List[MeTLCanvasContent]){
   val start = activity.headOption.map(_.timestamp).getOrElse(0L)
   val end = activity.reverse.headOption.map(_.timestamp).getOrElse(0L)
   val milis = end - start
 }
 
+trait Chunker{
+  def add(c:MeTLStanza,h:MeTLRoom):Unit
+  def emit(t:Theme,h:MeTLRoom):Unit
+  def check(h:MeTLRoom):Unit
+  def close(h:MeTLRoom):Unit
+}
+class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
+  var partialChunks = Map.empty[String,List[MeTLInk]]
+  def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
+  def emit(t:Theme,room:MeTLRoom) = room.addTheme(t)
+  def close(room:MeTLRoom) = partialChunks.foreach{
+    case (author,strokes) => {
+      val desc = CanvasContentAnalysis.extract(strokes)
+      desc._1.foreach(word => emit(Theme(author,word,"imageRecognition"),room))
+      desc._2.foreach(word => emit(Theme(author,word,"handwriting"),room))
+    }
+  }
+  def check(room:MeTLRoom) = {
+    val time = java.lang.System.currentTimeMillis();
+    partialChunks = partialChunks.filter {
+      case entry@(author,partial) if (time - latest(partial) < timeout) => true
+      case (author,i :: t) => {
+        val desc = CanvasContentAnalysis.extract(i :: t)
+        desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
+        desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
+        false
+      }
+    }
+  }
+  def add(c:MeTLStanza,room:MeTLRoom) = c match {
+    case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
+      case Right(t) => {
+        CanvasContentAnalysis.getDescriptions(t) match {
+          case (descriptions,words) => List(
+            descriptions.foreach(word => emit(Theme(i.author, word, "imageRecognition"),room)),
+            words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
+        }
+      }
+      case failure => warn(failure)
+    }
+    case t:MeTLMultiWordText => {
+      t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
+    }
+    case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
+      case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
+      case Some(partial) => {
+        val desc = CanvasContentAnalysis.extract(partial)
+        desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
+        desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
+        partialChunks + (i.author -> List(i))
+      }
+      case None => partialChunks + (i.author -> (List(i)))
+    }
+    case default => {}
+  }
+}
+
 object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
-  val filePath = Globals.configurationFileLocation
-  val propFile = XML.load(filePath)
+  lazy val propFile = XML.load(Globals.configurationFileLocation)
 
-
-  val analysisThreshold = 5
+  val analysisThreshold = 1
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
   def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
     es.sortBy(_.timestamp).groupBy(_.author).map {
@@ -60,26 +118,13 @@ object CanvasContentAnalysis extends Logger {
     val response = for(
       s <- f.right
     ) yield {
-      debug(s)
-        (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
+      (parse(s) \ "noun_phrases").children.collect{ case JString(s) => s}
     }
     val r = response()
-    debug(r)
     r match {
       case Right(rs) => rs
       case _ => Nil
     }
-  }
-  val CACHE = "inkCache.xml"
-  var cache = Map.empty[String,String]
-  try{
-    (XML.load(CACHE) \\ "result").map(result => cache = cache.updated(
-      (result \ "k").text,
-      (result \ "v").text
-    ))
-  }
-  catch{
-    case e:Throwable => println(e)
   }
   def simplify(s:String) = {
     (parse(s) \\ "textLines" \\ "label").children.collect{ case JField(_,JString(s)) => s }
@@ -88,85 +133,83 @@ object CanvasContentAnalysis extends Logger {
     val descriptions = for(
       JField("labelAnnotations",f) <- j;
       JField("description",JString(s)) <- f
-    ) yield  s
+    ) yield  s.trim
     val words = for(
       JField("textAnnotations",f) <- j;
       JField("description",JString(s)) <- f
-    ) yield  s
-    (descriptions,words)
+    ) yield  s.trim
+    (descriptions.distinct,words.distinct)
   }
 
-  def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = {
+  def ocr(images:List[MeTLImage]):Tuple2[List[String],List[String]] = images
+    .map(ocrOne _)
+    .collect{ case Right(js) => js}
+    .map(getDescriptions _)
+    .foldLeft((List.empty[String],List.empty[String])){
+    case (a,b) => (a._1 ::: b._1, a._2 ::: b._2)
+  }
+  def ocrBytes(bytes:Array[Byte]):Future[Either[Throwable,JValue]] = {
     val key = (propFile \\ "visionApiKey").text
     val uri = "vision.googleapis.com/v1/images:annotate"
+    val b64 = base64Encode(bytes)
     val json =
-      ("requests" -> images.filterNot(_.imageBytes.isEmpty).map(image =>
-        ("image" ->
-          ("content" ->  image.imageBytes.map(base64Encode _).openOr(""))) ~
-          ("features" -> List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
+      ("requests" -> List(
+        JObject(List(
+          JField("image", ("content" ->  b64 )),
+          JField("features",JArray(List("TEXT_DETECTION","LABEL_DETECTION").map(featureType =>
             ("type" -> featureType) ~
-              ("maxResults" -> 10)))))
-
-    val req = host(uri).secure << compact(render(json)) <<? Map("key" -> key)
-    val f = Http(req > as.String).either
-    debug(f)
-    val response = for(
-      s <- f.right
-    ) yield parse(s)
-    val r = response()
-    debug(r)
-    r.right.toOption.map(getDescriptions _).getOrElse((Nil,Nil))
+              ("maxResults" -> 10)
+          )))
+        ))
+      ))
+    val renderedJson = compact(render(json))
+    val req = host(uri).secure << renderedJson <<? Map("key" -> key)
+    val res = Http(req > as.String).either
+    res.right.map(response => {
+      parse(response)
+    })
   }
 
-  def extract(inks:List[MeTLInk]):List[String] = {
-    if(inks.size < analysisThreshold) {
-      debug("Not analysing themes for %s strokes".format(inks.size))
-      Nil
-    }
-    else {
-      val key = inks.map(_.identity).toString
-      debug("Loading themes for %s strokes".format(inks.size))
-      cache.get(key) match {
-        case Some(cached) => simplify(cached)
-        case _ => {
-          val myScriptKey = (propFile \\ "myScriptApiKey").text
-          val myScriptUrl = "cloud.myscript.com/api/v3.0/recognition/rest/analyzer/doSimpleRecognition.json";
-
-          val json = JObject(List(
-            JField("components",JArray(inks.map(i => JObject(List(
-              JField("type",JString("stroke")),
-              JField("x",JArray(i.points.map(i => JInt(i.x.intValue)))),
-              JField("y",JArray(i.points.map(i => JInt(i.y.intValue))))))))),
-            JField("parameter",JObject(List(
-              JField("textParameter",JObject(List(
-                JField("language",JString("en_US"))))))))))
-
-          val input = compact(render(json))
-          val req = host(myScriptUrl).secure << Map(
-            ("applicationKey" -> myScriptKey),
-            ("analyzerInput" -> input))
-
-          req.setContentType("application/x-www-form-urlencoded","UTF-8")
-
-          val f = Http(req OK as.String).either
-          debug("Consuming %s bytes of MyScript cartridge".format(input.length))
-          debug(f)
-          val response = for(
-            s <- f.right
-          ) yield {
-            cache = cache.updated(key,s)
-            XML.save(CACHE, <results> {
-              cache.map{
-                case(key,value) => <result><k>{key}</k><v>{value}</v></result>
-              }
-            } </results>)
+  def ocrOne(image:MeTLImage):Either[Throwable,JValue] = {
+    ThemeExtraction.get(image.identity) match {
+      case Some(t) => {
+        debug("Cache hit for OCR image: %s".format(image.identity))
+        Right(t.extraction.get)
+      }
+      case _ => {
+        debug("Cache miss for OCR image: %s".format(image.identity))
+        image.imageBytes.map(bytes => {
+          val response = for {
+            s <- ocrBytes(bytes).right
+          } yield {
+            ThemeExtraction.put(image.identity,compact(render(s)))
             s
           }
-          val r = response()
-          debug(r)
-          r.right.toOption.map(simplify _).getOrElse(Nil)
-        }
+          val resp:Either[Throwable,JValue] = response()
+          resp
+        }).openOr({
+          val resp:Either[Throwable,JValue] = Right(JArray(Nil))
+          resp
+        })
       }
+    }
+  }
+
+  def extract(inks:List[MeTLInk]):Tuple2[List[String],List[String]] = {
+    if(inks.size < analysisThreshold) {
+      debug("Not analysing themes for %s strokes".format(inks.size))
+      (Nil,Nil)
+    }
+    else {
+      debug("Analysing themes for %s strokes".format(inks.size))
+      val h = new History("snapshot")
+      inks.foreach(h.addStanza _)
+      val bytes = SlideRenderer.render(h,800,600)
+      val response = for(s <- ocrBytes(bytes).right) yield s
+      response().right.toOption.map(r => {
+        debug("Server response: %s".format(r))
+        getDescriptions(r)
+      }).getOrElse((Nil,Nil))
     }
   }
 }

@@ -51,6 +51,9 @@ var Colors = (function(){
             return "#"+toHex(opacity)+rgb.substring(1,7);
         }
     };
+		var getColorForColorPartsFunction = function(a,r,g,b){
+			return ["#"+toHex(r)+toHex(g)+toHex(b),a];
+		};
     var getColorForNameFunction = function(name){
         if (name.indexOf("#") == 0 && name.length == 7){
             var a = 255;
@@ -73,10 +76,72 @@ var Colors = (function(){
             }
         }
     };
+    var getColorObjForHexFunction = function(hex){
+			var name = hex;
+			if (name.indexOf("#") == 0){
+				name = name.substring(1);
+			}
+			if (name.length == 6){
+					var a = 255;
+					var r = get8BitHexFromString(name,0);
+					var g = get8BitHexFromString(name,2);
+					var b = get8BitHexFromString(name,4);
+					return [toHex(r)+toHex(g)+toHex(b),a];
+			} else if (name.length == 8){
+					var a = get8BitHexFromString(name,0);
+					var r = get8BitHexFromString(name,2);
+					var g = get8BitHexFromString(name,4);
+					var b = get8BitHexFromString(name,6);
+					return [toHex(r)+toHex(g)+toHex(b),a];
+			} else return [defaultColor[1],defaultColor[2]];
+    };
+		var niceColours = [
+			"#D4C2FC",
+			"#7B287D",
+			"#F19A3E",
+			"#DB324D",
+			"#8EFF72",
+			"#C8AD55",
+			"#0FA3B1",
+			"#88A09E",
+			"#E7BB41",
+			"#393E41",
+			"#FF5A5F",
+			"#03B954",
+			"#D10000",
+			"#CD9FCC",
+			"#8895B3",
+			"#C5D86D",
+			"#0D1321",
+			"#B8D8BA",
+			"#034748",
+			"#A57548",
+			"#7CFEF0",
+			"#6C809A",
+			"#574B60",
+			"#8D6346",
+			"#4C2C69"
+		];
+
+		var colorFor = function(seed){
+			var rawScore = _.reduce(seed.substring(0,4),function(acc,item){
+				return acc + item.charCodeAt(0);
+			},0);
+			var score = rawScore % 25;
+			var alpha = 255
+			var rgb = niceColours[score];
+			console.log("colorFor",seed,rawScore,score,rgb);
+			return [rgb,alpha];	
+		};
     return {
         getAllNamedColors:getAllNamedColorsFunction,
         getNameForColor:getNameForColorFunction,
-        getColorForName:getColorForNameFunction
+				getColorForColorParts:getColorForColorPartsFunction,
+        getColorForName:getColorForNameFunction,
+				getColorObjForHex:getColorObjForHexFunction,
+				getColorForSeed:colorFor,
+				getDefaultColor:function(){return defaultColor;},
+				getDefaultColorObj:function(){return [defaultColor[1],defaultColor[2]];}
     }
 })();
 

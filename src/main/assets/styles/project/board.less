@@ -30,6 +30,8 @@ html{
 }
 body{
     background-image:@body-backgroundimage;
+    background-size:100% 100%;
+    background-opacity:0.5;
 }
 #startAConversation button{
     width:100%;
@@ -168,7 +170,8 @@ input[type=submit]{
     pointer-events:none;
 }
 .voting-block {
-    background-color: @body-bg;
+    background-color: @block-bg;
+    color:@text-std;
 }
 td.conversationSharing{
     display:flex;

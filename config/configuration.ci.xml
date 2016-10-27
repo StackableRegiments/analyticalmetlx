@@ -1,0 +1,67 @@
+<serverConfiguration>
+  <defaultServerConfiguration>local</defaultServerConfiguration>
+  <serverConfigurations>
+    <server>
+      <type>sql</type>
+      <name>local</name>
+      <driver>org.h2.Driver</driver>
+      <url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
+    </server>
+    <server>
+      <type>transientLoopback</type>
+    </server>
+    <server>
+      <type>frontend</type>
+    </server>
+  </serverConfigurations>
+  <liftConfiguration>
+    <cometRequestTimeout>25</cometRequestTimeout>
+    <maxMimeSize>1048576000</maxMimeSize>
+    <maxMimeFileSize>524288000</maxMimeFileSize>
+    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
+    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
+    <allowParallelSnippets>true</allowParallelSnippets>
+  </liftConfiguration>
+  <caches>
+    <roomLifetime miliseconds="3600000" />
+    <resourceCache heapSize="25" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
+  </caches>
+  <importerPerformance parallelism="8" />
+  <clientConfig>
+    <xmppDomain>local.temp</xmppDomain>
+    <imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
+  </clientConfig>
+  <securityProvider>
+    <stableKeyProvider />
+	</securityProvider>	
+	<authenticationConfiguration>
+		<exclusions>
+			<requestUriStartsWith value="/comet_request/"/>
+			<requestUriStartsWith value="/ajax_request/"/>
+			<requestUriStartsWith value="/favicon.ico"/>
+			<requestUriStartsWith value="/serverStatus"/>
+			<requestUriStartsWith value="/static/"/>
+			<requestUriStartsWith value="/classpath/"/>
+		</exclusions>
+	</authenticationConfiguration>
+  <authentication>
+    <mock />
+  </authentication>
+  <groupsProvider>
+    <selfGroups/>
+    <flatFileGroups format="globalOverrides" location="config/globalOverrides.txt" refreshPeriod="5 minutes"/>
+    <flatFileGroups format="specificOverrides" location="config/specificOverrides.txt" refreshPeriod="5 minutes"/>
+  </groupsProvider>
+  <cloudConverterApiKey>secret</cloudConverterApiKey>
+  <myScriptApiKey>secret</myScriptApiKey>
+  <visionApiKey>secret</visionApiKey>
+  <oneNote>
+    <clientId>secret</clientId>
+    <clientSecret>secret</clientSecret>
+    <redirectUrl>http://localhost:8080/permitOneNote</redirectUrl>
+    <scopes>wl.signin wl.basic office.onenote_create</scopes>
+  </oneNote>
+  <lti>
+    <remotePlugin key="" secret="" />
+  </lti>
+</serverConfiguration>

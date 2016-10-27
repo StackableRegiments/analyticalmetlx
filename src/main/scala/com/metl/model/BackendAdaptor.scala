@@ -1,12 +1,10 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-
 import com.metl.data._
 import com.metl.metl2011._
 import com.metl.auth._
 import com.metl.utils._
-
 import _root_.net.liftweb.util._
 import Helpers._
 import _root_.net.liftweb.common._
@@ -18,10 +16,11 @@ import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
 import com.metl.h2._
-
 import net.liftweb.util.Props
 import com.mongodb._
 import net.liftweb.mongodb._
+import net.liftweb.util
+import net.sf.ehcache.config.PersistenceConfiguration
 
 import scala.xml._
 
@@ -50,14 +49,14 @@ object SecurityListener extends Logger {
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
-      info("%s :: %s logged in, ipAddress %s".format(sessionId,user,IPAddress.is))
+      info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(sessionId,user,IPAddress.is,UserAgent.is))
     }
   }
   def cleanupSession(in:LiftSession):Unit = {
     val thisSessionId = sessionId //in.uniqueId
     ipAddresses.remove(thisSessionId).foreach(rec => {
       if (rec.username != "forbidden"){
-          info("%s :: %s user session expired, ipAddress %s".format(thisSessionId,rec.username,Some(rec.ipAddress)))
+          info("%s :: %s user session expired, ipAddress %s, userAgent: %s".format(thisSessionId,rec.username,Some(rec.ipAddress),UserAgent.is))
       }
     })
   }
@@ -74,7 +73,7 @@ object SecurityListener extends Logger {
           ipAddresses += ((sessionId,SessionRecord(user,newIPAddress,now,now)))
         })
         if (user != "forbidden")
-          info("%s :: %s changed IP address %s".format(sessionId,user,Some(newIPAddress)))
+          info("%s :: %s changed IP address %s, userAgent: %s".format(sessionId,user,Some(newIPAddress),UserAgent.is))
       }
     } catch {
       case e:StateInStatelessException => {}
@@ -103,7 +102,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   def getRoomProvider(name:String,filePath:String) = {
     val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
     val safetiedIdleTimeout = Some(idleTimeout.getOrElse(30 * 60 * 1000L))
-    println("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
+    trace("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
     new HistoryCachingRoomProvider(name,safetiedIdleTimeout)
   }
   protected def ifConfigured(in:NodeSeq,elementName:String,action:NodeSeq=>Unit, permitMultipleValues:Boolean = false):Unit = {
@@ -140,11 +139,12 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         mongoPort <- tryo((n \ "@mongoPort").text.toInt);
         mongoDb <- tryo((n \ "@mongoDb").text)
       ) yield {  
-        val mo = new MongoOptions
-        mo.socketTimeout = 10000
-        mo.socketKeepAlive = true
+        val mo = MongoClientOptions.builder()
+          .socketTimeout(10000)
+          .socketKeepAlive(true)
+          .build()
         val srvr = new ServerAddress(mongoHost,mongoPort)
-        MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), mongoDb)
+        MongoDB.defineDb(util.DefaultConnectionIdentifier, new MongoClient(srvr, mo), mongoDb)
         //construct standingCache from DB
         com.metl.model.Reputation.populateStandingMap
         //construct LiftActors for topics with history from DB
@@ -201,9 +201,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       Globals.groupsProviders = new SelfGroupsProvider() :: Globals.groupsProviders
     },false)
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
-      Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) :: Globals.groupsProviders
+      Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
     },true)
-    println("configured groupsProviders: %s".format(Globals.groupsProviders))
+    info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
     xmppServer = (for (
@@ -242,7 +242,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       })
     ) yield {
       val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy)
-      println("setting up resourceCaches with config: %s".format(cacheConfig))
+      info("setting up resourceCaches with config: %s".format(cacheConfig))
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
   }
@@ -295,9 +295,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     }
     */
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
-    LiftRules.statelessDispatchTable.prepend(SystemRestHelper)
-    LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
-    LiftRules.statelessDispatchTable.prepend(WebMeTLRestHelper)
+    LiftRules.statelessDispatch.prepend(SystemRestHelper)
+    LiftRules.statelessDispatch.prepend(MeTLRestHelper)
+    LiftRules.statelessDispatch.prepend(WebMeTLRestHelper)
 
     LiftRules.dispatch.append(MeTLStatefulRestHelper)
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
@@ -354,7 +354,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
 
-class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig){
+class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
   import net.sf.ehcache.loader.{CacheLoader}
   import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
@@ -363,7 +363,13 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   import scala.collection.JavaConversions._
   protected val cm = CacheManager.getInstance()
   val cacheName = "%s_%s".format(name,nextFuncName)
-  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy).diskPersistent(false).logging(false)
+  val cacheConfiguration = new CacheConfiguration()
+    .name(cacheName)
+    .maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits)
+    .eternal(false)
+    .memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy)
+    .persistence(new PersistenceConfiguration().strategy(PersistenceConfiguration.Strategy.NONE))
+    .logging(false)
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {
@@ -374,7 +380,6 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     def init:Unit = {}
     def load(key:Object):Object = key match {
       case k:A => {
-        //println("%s MISS %s".format(cacheName,key))
         creationFunc(k).asInstanceOf[Object]
       }
       case _ => null
@@ -390,7 +395,13 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   def update(key:A,value:B):Unit = {
     cache.put(new Element(key,value))
   }
-  def startup = cache.initialise
+  def startup = try {
+    cache.initialise
+  } catch {
+    case e:Exception => {
+      warn("exception initializing ehcache: %s".format(e.getMessage))
+    }
+  }
   def shutdown = cache.dispose()
 }
 

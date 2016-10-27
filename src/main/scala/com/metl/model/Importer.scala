@@ -146,6 +146,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
   protected def callComplexCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Exception,List[Tuple2[Int,Array[Byte]]]] = {
     try {
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("ready to initiate cloudConverter process",2,108)),None))
+      val safeRemoteName = nextFuncName
       val encoding = "UTF-8"
       val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
       trace("apiKey: %s".format(apiKey))
@@ -153,7 +154,6 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         ("inputformat" -> inFormat),
         ("outputformat" -> outFormat)
       )))
-      //println("ERROR: %s".format(procResponse.responseAsString))
       val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter process created",3,108)),None))
 
@@ -172,7 +172,6 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         ("converteroptions" -> converterOptions)
       )
       val jsonSettings = render(importSettings)
-      //println("cloudConvertSettings: %s".format(Printer.compact(jsonSettings)))
       val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(schemify(procResponseObj.url),Printer.compact(jsonSettings).getBytes(encoding),List(("Content-Type","application/json"))))
 /*
       val defineProcResponse = describeResponse(client.postFormExpectingHTTPResponse(schemify(procResponseObj.url),List(
@@ -187,7 +186,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error: "+defineProcResponseObj.message,4,108)),Some(Left(ex))))
         throw ex
       })
-      val uploadResponse = describeResponse(client.putBytesExpectingHTTPResponse(uploadUrl + "/" + urlEncode(filename + "." + inFormat),bytes))
+      val uploadResponse = describeResponse(client.putBytesExpectingHTTPResponse("%s/%s.%s".format(uploadUrl,safeRemoteName,inFormat),bytes))
       val uploadResponseObj = parse(uploadResponse.responseAsString).extract[CloudConvertUploadResponse]
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(uploadResponseObj.message,5,108)),None))
       var completed = false
@@ -238,7 +237,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
             // we should read the page number from the filename, which should be:  "filename-%s.jpg".format(pageNumber), where filename should be the original filename, without the suffix.
             // this should TOTALLY be a regex to make it clean and strong
             var newNumber = fileTup._1
-            newNumber = newNumber.drop(filename.length + 1)
+            newNumber = newNumber.drop(safeRemoteName.length + 1)
             newNumber = newNumber.take(newNumber.length - 4)
             (newNumber.toInt,fileTup._2)
           }))
@@ -523,9 +522,13 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
           case m:MeTLInk => m.copy(slide = newLoc.getJid)
           case m:MeTLImage => m.copy(slide = newLoc.getJid)
           case m:MeTLText => m.copy(slide = newLoc.getJid)
+          case m:MeTLVideo => m.copy(slide = newLoc.getJid)
+          case m:MeTLMultiWordText => m.copy(slide = newLoc.getJid)
           case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
+          case m:MeTLDirtyVideo => m.copy(slide = newLoc.getJid)
+          case m:MeTLUndeletedCanvasContent => m.copy(slide = newLoc.getJid)
           case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
           case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
           case m:MeTLQuiz => m

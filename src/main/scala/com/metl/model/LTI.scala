@@ -8,11 +8,12 @@ import http._
 import provider._
 import servlet._
 import rest._
-
 import org.imsglobal._
 import org.imsglobal.lti._
 import org.imsglobal.lti.launch._
 import javax.servlet.http.HttpServletRequest
+
+import com.metl.utils.ExceptionUtils
 import org.imsglobal.pox.IMSPOXRequest
 import org.apache.http.client.methods.HttpPost
 
@@ -37,7 +38,6 @@ class LtiIntegration extends Logger {
   val secretMap = Map(Globals.ltiIntegrations:_*)
   def getSecretForKey(key:String):String = {
     val secret = secretMap.get(key).getOrElse("secret")
-    //println("getting secret: %s => %s".format(key,secret))
     secret
   }
 
@@ -90,7 +90,6 @@ class LtiIntegration extends Logger {
         Failure(e.getMessage,Full(e),Empty)
       }
       case Right(pluginSession) => {
-        //println("establishing LTI session: %s => %s".format(in,pluginSession))
         if (storeSession){
           sessionStore(sessionStore.updated(pluginSession.token,pluginSession))
         }
@@ -130,7 +129,6 @@ class BrightSparkIntegration extends LtiIntegration {
       userContext <- valenceContext.userContext
     ) yield {
       val uri = userContext.createAuthenticatedUri(apiUrl,method)
-      //println("making API call: %s".format(uri))
     }
 //    val appContext = ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,appUrl)
 
@@ -153,11 +151,10 @@ class BrightSparkIntegrationStatelessDispatch extends RestHelper {
     case req@Req("testRemotePlugin" :: Nil,_,_) => () => {
       val response = lti.handleLtiRequest(req,pluginSession => {
         val (resultCode,resultDescription) = pluginSession.launch.result match {
-          case Left(e) => ("FAILURE","%s :: %s".format(e.getMessage,e.getStackTraceString))
+          case Left(e) => ("FAILURE","%s :: %s".format(e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
           case Right(launchResult) => ("OK","logged in with Token: %s => %s".format(pluginSession.token,launchResult.user))
         }
         val jObject = JObject(List(JField("result_code",JString(resultCode)),JField("result_description",JString(resultDescription))))
-        //println("jsonResponse from testRemotePlugin: %s".format(jObject))
         Full(JsonResponse(jObject))
       },false)
       response
@@ -194,7 +191,6 @@ class BrightSparkIntegrationDispatch extends RestHelper {
   }
   serve {
     case req@Req(bsce :: "getConversationChooserWithValence" :: Nil,_,_) if bsce == brightSparkContextEndpoint => {
-      //println("getConversationChooser: %s".format(req))
       lti.handleLtiRequest(req,pluginSession => {
         val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(d2lMeTLAppId,d2lMeTLAppKey,d2lBaseUrl)
         val token = pluginSession.token
@@ -204,23 +200,19 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         val baseUrl = getBaseUrlFromReq(req)
         val redirectUrl = "%s/%s/%s?ltiToken=%s".format(baseUrl,brightSparkContextEndpoint,handleUserContextEndpoint,token)
         val getUserContextUrl = appContext.createWebUrlForAuthentication(new URI(redirectUrl))
-        //println("redirecting to D2L to get userContext: %s => %s\r\n%s".format(req,getUserContextUrl,newPluginSession))
         Full(RedirectResponse(getUserContextUrl.toString))
       })
     }
     case req@Req(bsce :: "getConversationChooser" :: Nil,_,_) if bsce == brightSparkContextEndpoint => {
-      //println("getConversationChooser: %s".format(req))
       lti.handleLtiRequest(req,pluginSession => {
         val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)
         Full(RedirectResponse(redirectUrl))
       })
     }
     case req@Req(bsce :: huce :: Nil,_,_) if bsce == brightSparkContextEndpoint && huce == handleUserContextEndpoint => () => {
-      //println("handleUserContext: %s".format(req))
       for (
         token <- req.param("ltiToken");
         response <- lti.handleLtiRequest(req,pluginSession => {
-          //println("receivedHandleUserContextEndpoint: %s => %s".format(req,pluginSession))
           for (
             userId <- req.param("userId");
             userKey <- req.param("userKey");
@@ -230,7 +222,6 @@ class BrightSparkIntegrationDispatch extends RestHelper {
             val uctx = appContext.createUserContext(userId,userKey)
             val newPluginSession = pluginSession.copy(valenceContext = Some(valenceContext.copy(userContext = Some(uctx))))
             lti.sessionStore(lti.sessionStore.is.updated(token,newPluginSession))
-            //println("redirecting to remoteConversationChooser: %s => %s".format(newPluginSession))
             val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(token)
             RedirectResponse(redirectUrl)
           }
@@ -240,7 +231,6 @@ class BrightSparkIntegrationDispatch extends RestHelper {
       }
     }
     case req@Req(bsce :: "remotePluginConversationChosen" :: Nil,_,_) if bsce == brightSparkContextEndpoint => () => {
-      //println("remotePluginConversationChosen: %s".format(req))
       for (
         ltiToken <- req.param("ltiToken");
         convJid <- req.param("conversationJid");
@@ -248,7 +238,6 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         remotePluginSession <- lti.sessionStore.is.get(ltiToken);
         launch <- remotePluginSession.launch.result.right.toOption
       ) yield {
-        //println("remotePluginConversationChosen in block: %s\r\n%s\r\n%s".format(req,remotePluginSession,details))
         val request = req.request
         val rootUrl = getBaseUrlFromReq(req)
         val targetUrl = rootUrl + boardFor(details.jid)
@@ -257,7 +246,6 @@ class BrightSparkIntegrationDispatch extends RestHelper {
         //val responseUrl = lti.generateQuickLinkResponse(launch.launchPresentationReturnUrl,imageUrl,title,targetUrl)
         val iframeContent = <iframe width="100%" height="600px" src={targetUrl}></iframe>
         val responseUrl = lti.generateContentResponse(launch.launchPresentationReturnUrl,iframeContent.toString)
-        //println("redirecting to: %s".format(responseUrl))
         responseUrl
       }
     }

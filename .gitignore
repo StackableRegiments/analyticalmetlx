@@ -1,4 +1,11 @@
+.functional.sh
+std.out
+wdio.log
+.wdio.conf.dyn.js
 target
+output
+logs
+errorShots
 debug.log
 .ivy2
 .sbt-boot
@@ -6,8 +13,25 @@ testdb*
 .DS_Store
 node_modules
 src/main/assets/build/source/
+<<<<<<< HEAD
 .idea
 *.swp
 security.log
 config/configuration.local.xml
 config/configuration.xml
+=======
+*.log
+config/configuration.local.xml
+config/configuration.xml
+
+# emacs temp files
+*~
+\#*\#
+.\#*
+# vim
+*.swp
+# Idea files
+.idea
+*.iml
+*.ipr
+>>>>>>> 92e00c129dd517db6860a0e328b53b4892d19ac6

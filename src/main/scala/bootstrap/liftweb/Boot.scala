@@ -91,6 +91,7 @@ class Boot extends Logger {
       Menu(Loc("SearchConversations","searchConversations" :: Nil,"Search Conversations")),
       Menu(Loc("Summaries","summaries" :: Nil,"Analytics")),
       Menu(Loc("Dashboard","dashboard" :: Nil,"Conversation level dashboarding")),
+      Menu(Loc("Enterprise dashboard","enterprise" :: Nil,"Enterprise level dashboarding")),
       //WebMeTL
       Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),
@@ -110,6 +111,7 @@ class Boot extends Logger {
     LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
+    info("started version: %s\r\nrelease-notes:\r\n%s".format(com.metl.snippet.VersionFacts.versionNumber,com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n"))) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
     trace("Boot ends")
   }
 }

@@ -168,9 +168,14 @@ var Conversations = (function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
         slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
-        var slideControls = $("#slideControls").html([constructPrevSlideButton(),constructNextSlideButton(),constructAddSlideButton()]);
+        var slideControls = $("#slideControls");
+        slideControls.empty();
+        constructPrevSlideButton(slideControls),
+        constructNextSlideButton(slideControls),
+        constructAddSlideButton(slideControls)
         slideContainer.off("scroll");
         slideContainer.on("scroll",paintThumbs);
+        indicateActiveSlide(currentSlide);
         Progress.call("onLayoutUpdated");
     }
 
@@ -245,13 +250,13 @@ var Conversations = (function(){
         }
     };
     var actOnConversationDetails = function(details){
-        var oldConversationJid = "";
-        if ("jid" in currentConversation){
-            oldConversationJid = currentConversation.jid.toString().toLowerCase();
-        };
         try{
-            updateStatus(sprintf("Updating to conversation %s",details.jid));
-            if (details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
+            var oldConversationJid = "";
+            if ("jid" in currentConversation){
+                oldConversationJid = currentConversation.jid.toString().toLowerCase();
+            };
+            //updateStatus(sprintf("Updating to conversation %s",details.jid));
+            if ("jid" in details && targetConversationJid && details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
                 if (shouldDisplayConversationFunction(details)){
                     currentConversation = details;
                     if ("configName" in details){
@@ -276,6 +281,7 @@ var Conversations = (function(){
             }
         }
         catch(e){
+            console.log("exception in actOnConversationDetails",e);
             updateStatus(sprintf("FAILED: ReceiveConversationDetails exception: %s",e));
         }
         Progress.call("onLayoutUpdated");
@@ -503,7 +509,14 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-        if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase()){
+        if (!("jid" in conversation)){
+            return false;
+        }
+        if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase() || ("UserSettings" in window && _.some(UserSettings.getUserGroups(),function(g){
+            var key = g.key ? g.key : g.type;
+            var name = g.name ? g.name : g.value;
+            return (key == "special" && name == "superuser");
+        }))){
             return true;
         } else {
             return false;
@@ -519,8 +532,16 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
+<<<<<<< HEAD
         if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(group){
             return group.name.toLowerCase() == conversation.subject.toLowerCase();
+=======
+        var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
+        if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
+            var key = g.key ? g.key : g.type;
+            var name = g.name ? g.name : g.value;
+            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
+>>>>>>> 92e00c129dd517db6860a0e328b53b4892d19ac6
         }))) {
             return true;
         } else {
@@ -554,55 +575,55 @@ var Conversations = (function(){
             console.log("refreshConversationSearchResults",e);
         }
     };
-    var constructSlideButton = function(name,label,icon,behaviour,teacherOnlyFunction){
+    var constructSlideButton = function(name,label,icon,teacherOnlyFunction,container){
         if (teacherOnlyFunction(currentConversation)){
-            return $("<button/>",{
+            container.append($("<button/>",{
                 id: name,
                 class:sprintf("toolbar fa %s btn-icon nmt",icon),
                 name: name,
                 type: "button"
             }).append($("<div class='icon-txt' />",{
                 text:label
-            })).on("click",bounceAnd(behaviour));
-        } else {
-            return $("<div/>");
+            })));
         }
     }
     var addSlideFunction = function(){
-        var currentJid = currentConversation.jid;
-        var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
-        var newIndex = currentSlideIndex + 1;
-        addSlideToConversationAtIndex(currentConversation.jid,newIndex);
-        Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
-            if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
-                if ("slides" in incomingDetails){
-                    var newSlide = _.find(incomingDetails.slides,function(s){
-                        return s.index == newIndex && s.id != currentSlide;
-                    });
-                    doMoveToSlide(newSlide.id.toString());
+        if(shouldModifyConversationFunction()){
+            var currentJid = currentConversation.jid;
+            var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
+            var newIndex = currentSlideIndex + 1;
+            addSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex);
+            Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+                if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
+                    if ("slides" in incomingDetails){
+                        var newSlide = _.find(incomingDetails.slides,function(s){
+                            return s.index == newIndex && s.id != currentSlide;
+                        });
+                        doMoveToSlide(newSlide.id.toString());
+                    }
                 }
-            }
-        };
+            };
+        }
     };
     var always = function(){return true;}
-    var constructPrevSlideButton = function(){
-        return constructSlideButton("addSlideButton","Add Slide","fa-angle-left",goToPrevSlideFunction,always);
+    var constructPrevSlideButton = function(container){
+        constructSlideButton("prevSlideButton","Prev Slide","fa-angle-left",always,container);
     }
-    var constructAddSlideButton = function(){
-        return constructSlideButton("prevSlideButton","Prev Slide","fa-plus",addSlideFunction,shouldModifyConversationFunction);
+    var constructAddSlideButton = function(container){
+        constructSlideButton("addSlideButton","Add Slide","fa-plus",shouldModifyConversationFunction,container);
     }
-    var constructNextSlideButton = function(){
-        return constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",goToNextSlideFunction,always);
+    var constructNextSlideButton = function(container){
+        constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",always,container);
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
-        var s = getCurrentSlideFunc();
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
+            var s = getCurrentSlideFunc();
             var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
             if (c != undefined && "jid" in c && s != undefined && "id" in s){
-                var newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
+                newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true&showTools=%s",newUrl,c.jid.toString(),s.id.toString(),UserSettings.getIsInteractive().toString());
             }
             window.history.replaceState({
                 path:newUrl,
@@ -701,6 +722,9 @@ var Conversations = (function(){
     Progress.historyReceived["Conversations"] = paintThumbs;
     $(function(){
         $("#thumbScrollContainer").on("scroll",paintThumbs);
+        $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
+            .on("click","#nextSlideButton",goToNextSlideFunction)
+            .on("click","#addSlideButton",addSlideFunction);
         $("#conversations").click(function(){
             showBackstage("conversations");
         });

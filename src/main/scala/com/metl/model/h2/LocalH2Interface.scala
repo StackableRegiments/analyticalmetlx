@@ -57,7 +57,10 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       H2UnhandledCanvasContent,
       H2UnhandledStanza,
       H2UnhandledContent,
-      DatabaseVersion
+      DatabaseVersion,
+      ThemeExtraction,
+      H2Theme,
+      H2UndeletedCanvasContent
     ):_*
   )
 
@@ -66,7 +69,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     DatabaseVersion.create.key("version").scope("db").intValue(-1).save
   })
   DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 2).map(versionNumber => {
-    println("upgrading db to use partialIndexes for mysql limitations (v2)")
+    info("upgrading db to use partialIndexes for mysql limitations (v2)")
     // update the partialIndexes if it's under version 2, and then increment to version 2
     H2Resource.findAllFields(List(H2Resource.id,H2Resource.identity,H2Resource.partialIdentity)).foreach(res => {
       res.partialIdentity(res.identity.get match {
@@ -81,11 +84,11 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       }).save
     })
     versionNumber.intValue(2).save
-    println("upgraded db to use partialIndexes for mysql limitations (v2)")
+    info("upgraded db to use partialIndexes for mysql limitations (v2)")
     versionNumber
-  }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
   DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 4).map(versionNumber => {
-    println("upgrading db to switch conversation creation from strings to longs (v3)")
+    info("upgrading db to switch conversation creation from strings to longs (v3)")
     val dateFormats = List(
       new java.text.SimpleDateFormat("dd/MM/yyyy h:mm:ss a"), // I think this is a C# date format -- "dd/MM/yyyy  22/05/2016 1:27:47 AM.  Of course, it misses the original timezone, so let's hope that it doesn't adjust it too badly.
       new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
@@ -105,9 +108,9 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       }
     })
     versionNumber.intValue(4).save
-    println("upgraded db to switch conversation creation from strings to longs (v3)")
+    info("upgraded db to switch conversation creation from strings to longs (v3)")
     versionNumber
-  }).foreach(versionNumber => println("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
 
   type H2Object = Object
   val RESOURCES = "resource"
@@ -130,7 +133,9 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def storeStanza[A <: MeTLStanza](jid:String,stanza:A):Option[A] = Stopwatch.time("H2Interface.storeStanza",{
     val transformedStanza:Option[_ <: H2MeTLStanza[_]] = stanza match {
       case s:MeTLStanza if s.isInstanceOf[Attendance] => Some(serializer.fromMeTLAttendance(s.asInstanceOf[Attendance]).room(jid))
-      case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make this match
+      case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make these match
+      case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).location(jid))
+      case s:MeTLTheme => Some(serializer.fromTheme(s).location(jid))
       case s:MeTLInk => Some(serializer.fromMeTLInk(s).room(jid))
       case s:MeTLMultiWordText => Some(serializer.fromMeTLMultiWordText(s).room(jid))
       case s:MeTLText => Some(serializer.fromMeTLText(s).room(jid))
@@ -147,10 +152,11 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       case s:MeTLMoveDelta => Some(serializer.fromMeTLMoveDelta(s).room(jid))
       case s:MeTLFile => Some(serializer.fromMeTLFile(s).room(jid))
       case s:MeTLVideoStream => Some(serializer.fromMeTLVideoStream(s).room(jid))
+      case s:MeTLUndeletedCanvasContent => Some(serializer.fromMeTLUndeletedCanvasContent(s).room(jid))
       case s:MeTLUnhandledStanza => Some(serializer.fromMeTLUnhandledStanza(s).room(jid))
       case s:MeTLUnhandledCanvasContent => Some(serializer.fromMeTLUnhandledCanvasContent(s).room(jid))
       case other => {
-        warn("didn't know how to transform stanza: %s".format(other))
+        warn("didn't know how to transform stanza: %s, %s".format(other,other.getClass))
         None
       }
     }
@@ -175,6 +181,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     List(
       () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),
       () => H2Text.findAll(By(H2Text.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLText(s))),
+      () => H2Theme.findAll(By(H2Theme.location,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
       () => H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLImage(s))).toList,
       () => H2Video.findAll(By(H2Video.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideo(s))).toList,
@@ -190,6 +197,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
       () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
+      () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
     ).par.map(f => f()).toList//.toList.foreach(group => group.foreach(gf => gf()))

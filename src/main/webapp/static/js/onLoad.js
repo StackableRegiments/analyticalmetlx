@@ -27,7 +27,7 @@ var reapplyStylingToServerGeneratedContent = function(contentId){
 };
 var bounceAnd = function(func){
     return function(e){
-        bounceButton(this);
+        //bounceButton(this);
         func(e);
     }
 };
@@ -107,7 +107,7 @@ var WorkQueue = (function(){
 })();
 var Pan = {
     pan:function(xDelta,yDelta){
-					takeControlOfViewbox();
+        takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         /*
@@ -118,7 +118,7 @@ var Pan = {
         TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
     },
     translate:function(xDelta,yDelta){
-					takeControlOfViewbox();
+        takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         /*
@@ -186,7 +186,7 @@ var Zoom = (function(){
     }
     return {
         scale:function(scale,ignoreLimits){
-					takeControlOfViewbox();
+            takeControlOfViewbox();
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -203,7 +203,7 @@ var Zoom = (function(){
             TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
         },
         zoom:function(scale,ignoreLimits,onComplete){
-					takeControlOfViewbox();
+            takeControlOfViewbox();
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -259,7 +259,7 @@ var TweenController = (function(){
         requestedViewboxWidth = viewboxWidth;
         requestedViewboxHeight = viewboxHeight;
     };
-		var throttleSpeed = 10;
+    var throttleSpeed = 10;
     var instantAlterViewboxFunction = _.throttle(function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
@@ -423,7 +423,7 @@ var subcategoryMapping = {
     optsToolbar:".applicationGroup"
 };
 var categoryMapping = _.fromPairs(_.flatMap({
-    metaToolbar:"integrations print",
+    metaToolbar:"integrations print recycleBin",
     optsToolbar:"settings healthCheck",
     roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
 },function(v,k){
@@ -437,11 +437,11 @@ function showBackstage(id){
     $("html").css("overflow-y","auto");
     window.currentBackstage = id;
     $(".backstage").hide();
-		if ("HealthCheckViewer" in window){
-			HealthCheckViewer.pause();
-		}
+    if ("HealthCheckViewer" in window){
+        HealthCheckViewer.pause();
+    }
 
-		$(".backstageTabHeaderGroup").hide();
+    $(".backstageTabHeaderGroup").hide();
     $(".backstageTabHeader").removeClass(active);
     $(".backstageCategory").removeClass("active");
     $(".backstageCategory").removeClass(active);
@@ -464,14 +464,14 @@ function showBackstage(id){
     $("#"+id).addClass(active);
 
     if(Conversations.inConversation()){
-			$("#backstageTabHeaders").show();
-			$("#applicationMenuButton").show();
-			$("#roomToolbar").show();
+        $("#backstageTabHeaders").show();
+        $("#applicationMenuButton").show();
+        $("#roomToolbar").show();
     }
     else{
-			$("#backstageTabHeaders").hide();
-			$("#applicationMenuButton").hide();
-			$("#roomToolbar").hide();
+        $("#backstageTabHeaders").hide();
+        $("#applicationMenuButton").hide();
+        $("#roomToolbar").hide();
     }
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
@@ -492,9 +492,9 @@ function hideBackstage(){
     $(".modeSpecificTool").removeClass(active);
     hideSpinner();
     $("#masterLayout").css({"opacity":1.0});
-		if ("HealthCheckViewer" in window){
-			HealthCheckViewer.pause();
-		}
+    if ("HealthCheckViewer" in window){
+        HealthCheckViewer.pause();
+    }
 };
 function showSpinner() {
     $("#loadingSlidePopup").show();
@@ -529,11 +529,11 @@ $(function(){
     $("#left").click(bounceAnd(Extend.left));
     $("#right").click(bounceAnd(Extend.right));
     $("#in").click(bounceAnd(function(){
-			Zoom.in();
-		}));
+        Zoom.in();
+    }));
     $("#out").click(bounceAnd(function(){
-			Zoom.out();
-		}));
+        Zoom.out();
+    }));
     $("#drawMode").click(function(){
         if(Modes.currentMode != Modes.draw){
             Modes.draw.activate();
@@ -693,10 +693,10 @@ $(function(){
         showBackstage("quizzes");
     });
     $("#submitScreenshotButton").on("click",function(){
-			if ("Submissions" in window){
-				//Submissions.requestServerSideSubmission();
-				Submissions.sendSubmission();
-			}
+        if ("Submissions" in window){
+            //Submissions.requestServerSideSubmission();
+            Submissions.sendSubmission();
+        }
     });
     if ("Conversations" in window){
         $("#enableSync").on("click",Conversations.enableSyncMove);
@@ -718,9 +718,9 @@ $(function(){
         showBackstage("customizeBrush");
         updateActiveMenu(this);
     });
-		var printPrivate = true;
-		var includeTitle = true;
-		var includePageCount = true;
+    var printPrivate = true;
+    var includeTitle = true;
+    var includePageCount = true;
     $('#menuPrint').click(function(){
         showBackstage("print");
         updateActiveMenu(this);
@@ -730,19 +730,19 @@ $(function(){
         var rangeThisSlideRadio = $("#rangeThisSlide");
         var rangeSpecifiedInput = $("#rangeSpecifiedInput");
         var printButton = $("#printButton");
-				var showPrivateCheckbox = $("#printPrivateNotes");
-				var includePageCountCheckbox = $("#printPageCount");
-				var includeTitleCheckbox = $("#printConversationTitle");
-				var pageRange = Conversations.getCurrentSlide().index + 1;
+        var showPrivateCheckbox = $("#printPrivateNotes");
+        var includePageCountCheckbox = $("#printPageCount");
+        var includeTitleCheckbox = $("#printConversationTitle");
+        var pageRange = Conversations.getCurrentSlide().index + 1;
         var uncheckAll = function(){
             _.forEach([rangeSpecifiedRadio,rangeAllRadio,rangeThisSlideRadio],function(item){
                 item.prop("checked",false);
             });
             rangeSpecifiedInput.prop("disabled",true);
         };
-				showPrivateCheckbox.prop("checked",printPrivate);
-				includeTitleCheckbox.prop("checked",includeTitle);
-				includePageCountCheckbox.prop("checked",includePageCount);
+        showPrivateCheckbox.prop("checked",printPrivate);
+        includeTitleCheckbox.prop("checked",includeTitle);
+        includePageCountCheckbox.prop("checked",includePageCount);
         uncheckAll();
         rangeThisSlideRadio.prop("checked",true);
         rangeSpecifiedInput.val(pageRange);
@@ -750,61 +750,64 @@ $(function(){
             printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s&includePrivateContent=%s&includeConversationTitle=%s&includePageCount=%s",conversationJid,pageRange,printPrivate,includeTitle,includePageCount));
         };
         updatePrintState();
-				rangeAllRadio.unbind("click");
+        rangeAllRadio.unbind("click");
         rangeAllRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
-						pageRange = "all";
+            pageRange = "all";
             updatePrintState();
         });
-				rangeSpecifiedRadio.unbind("click");
+        rangeSpecifiedRadio.unbind("click");
         rangeSpecifiedRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
             rangeSpecifiedInput.prop("disabled",false);
-						pageRange = rangeSpecifiedInput.val();
+            pageRange = rangeSpecifiedInput.val();
             updatePrintState();
         });
-				rangeSpecifiedInput.unbind("change");
+        rangeSpecifiedInput.unbind("change");
         rangeSpecifiedInput.on("change",function(){
             var text = $(this).val();
-						pageRange = text;
+            pageRange = text;
             updatePrintState();
         });
-				rangeThisSlideRadio.unbind("click");
+        rangeThisSlideRadio.unbind("click");
         rangeThisSlideRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
-						pageRange = Conversations.getCurrentSlide().index + 1;
+            pageRange = Conversations.getCurrentSlide().index + 1;
             updatePrintState();
         });
-				showPrivateCheckbox.unbind("change");
-				showPrivateCheckbox.on("change",function(){
-					printPrivate = $(this).prop("checked");
-					updatePrintState();
-				});
-				includeTitleCheckbox.unbind("change");
-				includeTitleCheckbox.on("change",function(){
-					includeTitle = $(this).prop("checked");
-					updatePrintState();
-				});
-				includePageCountCheckbox.unbind("change");
-				includePageCountCheckbox.on("change",function(){
-					includePageCount = $(this).prop("checked");
-					updatePrintState();
-				});
+        showPrivateCheckbox.unbind("change");
+        showPrivateCheckbox.on("change",function(){
+            printPrivate = $(this).prop("checked");
+            updatePrintState();
+        });
+        includeTitleCheckbox.unbind("change");
+        includeTitleCheckbox.on("change",function(){
+            includeTitle = $(this).prop("checked");
+            updatePrintState();
+        });
+        includePageCountCheckbox.unbind("change");
+        includePageCountCheckbox.on("change",function(){
+            includePageCount = $(this).prop("checked");
+            updatePrintState();
+        });
     });
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
+        Submissions.reRender();
     });
     $('#menuPolls').click(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
+        Quizzes.reRender();
     });
     $('#menuBlacklist').click(function(){
         showBackstage("blacklist");
         updateActiveMenu(this);
+        Blacklist.reRender();
     });
     $('#menuSettings').click(function(){
         showBackstage("settings");
@@ -814,14 +817,14 @@ $(function(){
         showBackstage("integrations");
         updateActiveMenu(this);
     });
-		$("#menuHealthCheck").click(function(){
-				showBackstage("healthCheck");
-				updateActiveMenu(this);
-				if ("HealthCheckViewer" in window){
-					HealthCheckViewer.resume();
-				}
-		});
-		$("#conversations").click(function(){
-			window.location.href = "/conversationSearch";
-		});
+    $("#menuHealthCheck").click(function(){
+        showBackstage("healthCheck");
+        updateActiveMenu(this);
+        if ("HealthCheckViewer" in window){
+            HealthCheckViewer.resume();
+        }
+    });
+    $("#conversations").click(function(){
+        window.location.href = "/conversationSearch";
+    });
 });

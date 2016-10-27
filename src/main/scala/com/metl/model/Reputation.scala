@@ -18,7 +18,7 @@ object Reputation extends Logger{
   }
   def allStandings:List[Standing] = Stopwatch.time("Reputation:allStandings",standingMap.map(st => Standing(st._1,st._2,0)).filter(a => a.isInstanceOf[Standing]).map(a => a.asInstanceOf[Standing]).toList)
   def populateStandingMap:Unit = Stopwatch.time("Reputation:populateStandingMap",{
-    Informal.findAll.foreach(i => addStanding(i.protagonist.is,i.action.is))
+    Informal.findAll.foreach(i => addStanding(i.protagonist.get,i.action.get))
     debug("populated standingMap: %s".format(standingMap))
   })
   def standing(who:String):Standing = Standing(who,standingMap(who),0)
@@ -34,7 +34,7 @@ object Reputation extends Logger{
   def addStandingToMap(who:String,howMuch:Int):Unit = standingMap(who) = standingMap(who) + howMuch
   val reciprocalActions = List(GainAction.VotedUp,GainAction.VotedDown,GainAction.MadeAnswerOnStack,GainAction.MadeCommentOnStack,GainAction.ViewedQuestionOnStack,GainAction.ViewedAnswerOnStack,GainAction.ViewedCommentOnStack)
   def accrue(gain:Informal)= Stopwatch.time("Reputation.accrue(%s)".format(gain),{
-    val gainAction = gain.action.is
+    val gainAction = gain.action.get
     if (reciprocalActions.contains(gainAction)){
       val recRep = Informal.createRecord
       val reciprocatingRep = gainAction match {
@@ -46,15 +46,15 @@ object Reputation extends Logger{
         case GainAction.ViewedAnswerOnStack => recRep.action(GainAction.ReceivedAnswerViewOnStack)
         case GainAction.ViewedCommentOnStack => recRep.action(GainAction.ReceivedCommentViewOnStack)
       }
-      val finalRecRep = reciprocatingRep.protagonist(gain.antagonist.is).antagonist(gain.protagonist.is).time(gain.time.is).conversation(gain.conversation.is).save
-      addStanding(finalRecRep.protagonist.is,finalRecRep.action.is)
-      gain.save
+      val finalRecRep = reciprocatingRep.protagonist(gain.antagonist.get).antagonist(gain.protagonist.get).time(gain.time.get).conversation(gain.conversation.get).save(true)
+      addStanding(finalRecRep.protagonist.get,finalRecRep.action.get)
+      gain.save(true)
       ReputationServer ! List(finalRecRep,gain)
     }
     else {
-      gain.save
+      gain.save(true)
       ReputationServer ! gain
     }
   })
-  def value(action:Informal)=Informal.value(action.action.is)
+  def value(action:Informal)=Informal.value(action.action.get)
 }

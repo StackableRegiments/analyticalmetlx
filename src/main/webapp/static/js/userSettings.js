@@ -39,13 +39,16 @@ var UserSettings = (function(){
         loadSlidesAtNativeZoom:false,
         followingTeacherViewbox:false
     };
+		var shouldUseLocalStorageFunc = function(){
+			return false;
+		}
     var setUserPrefFunction = function(prefKey,prefValue){
-        if(localStorage){
+        if(shouldUseLocalStorageFunc()){
             localStorage[prefKey] = prefValue;
         }
     };
     var getUserPrefFunction = function(prefKey){
-        if(localStorage){
+        if(shouldUseLocalStorageFunc()){
             return localStorage[prefKey] || defaultPrefs[prefKey];
         }
     };

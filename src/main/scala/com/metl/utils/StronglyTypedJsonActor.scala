@@ -18,12 +18,6 @@ import JE._
 
 import json.JsonAST._
 
-object ClientUpdate{
-  def unapply(json:JValue) = json match{
-    case JObject(List(JField("command",JString(command)), JField("params",args))) => Some(command,args)
-    case _ => None
-  }
-}
 object JNum{
   def unapply(json:JValue) = json match{
     case JInt(x) => Some(x.toDouble)
@@ -31,133 +25,87 @@ object JNum{
     case _ => None
   }
 }
-class ClientSideFunctionDefinition(val name:String,val args:List[String],val serverSideFunc:List[Any]=>JValue,val returnResultFunction:Box[String]){
-  override def equals(a:Any) = a match {
-    case ClientSideFunctionDefinition(aName,aArgs,aServerSideFunc,aReturnResultFunction) => aName == name && aArgs == args && aServerSideFunc == serverSideFunc && aReturnResultFunction == returnResultFunction
-    case _ => false
-  }
-}
-object ClientSideFunctionDefinition {
-  def apply(name:String,args:List[String],serverSideFunc:List[Any]=>JValue,returnResultFunction:Box[String]) = new ClientSideFunctionDefinition(name,args,serverSideFunc,returnResultFunction)
-  def unapply(in:ClientSideFunctionDefinition):Option[Tuple4[String,List[String],List[Any]=>JValue,Box[String]]] = {
-    Some((in.name,in.args,in.serverSideFunc,in.returnResultFunction))
-  }
-}
+
 abstract class StronglyTypedJsonActor extends CometActor with CometListener {
-	protected val functionDefinitions:List[ClientSideFunctionDefinition]
-	private def createResponse(name:String,startInstant:Option[Long],requestId:Option[String],success:Boolean,result:Option[JValue] = None,duration:Option[Long] = None):JsCmd = {
-    Call("serverResponse",JObject(List(JField("command",JString(name)),JField("success",JBool(success))) ::: requestId.map(r => List(JField("commandId",JString(r)))).getOrElse(List.empty[JField]) ::: result.map(r => JField("response",r)).toList ::: duration.map(d => JField("duration",JInt(d))).toList ::: startInstant.map(i => JField("instant",JInt(i))).toList))
+	protected val functionDefinitions:List[ClientSideFunction]
+  case class ClientSideFunction(val name:String,val args:List[String],val serverSideFunc:List[JValue]=>JValue,val returnResultFunction:Box[String],val returnResponse:Boolean = false,val returnArguments:Boolean = false){
+    import net.liftweb.json.Extraction._
+    import net.liftweb.json._
+    val jsCreationFunc = Script(JsCrVar(name,AnonFunc(ajaxCall(JsRaw("JSON.stringify(augmentArguments(arguments))"),(s:String) => {
+      val start = new java.util.Date().getTime()
+      try {
+        val exceptionOrResult = {
+          try {
+            parse(s) match {
+              case jObj:JObject => {
+                val allParams = jObj.children.flatMap{
+                  case JField(k,v) => Some(v)
+                  case _ => None
+                }
+                val params = allParams.take(args.length)
+                val bonusParams = allParams.drop(args.length)
+                val output = serverSideFunc(params)
+                Right((output,params,bonusParams))
+              }
+              case unknown => Left(new Exception("unknown object: %s".format(unknown)))
+            }
+          } catch {
+            case e:Exception => {
+              Left(e)
+            }
+          }
+        }
+        val end = new java.util.Date().getTime()
+        val returnCall = Call("serverResponse",JObject({
+          exceptionOrResult match {
+            case Right((response,params,bonusParams)) => {
+              JField("bonusArguments",JArray(bonusParams)) :: bonusParams.reverse.headOption.toList.map(ins => JField("instant",ins)) ::: {
+                returnArguments match {
+                  case true => List(JField("arguments",JArray(params)))
+                  case false => Nil
+                }
+              } ::: { 
+                returnResponse match {
+                  case true => List(JField("response",response))
+                  case false => Nil
+                }
+              }
+            }
+            case Left(e) => List(JField("error",JString(e.getMessage)))
+          }
+        } ::: List(
+          JField("command",JString(name)),
+          JField("duration",JInt(end - start)),
+          JField("serverStart",JInt(start)),
+          JField("serverEnd",JInt(end)),
+          JField("success",JBool(exceptionOrResult.isRight))
+        )))
+        (for {
+          rrf <- returnResultFunction
+          res <- exceptionOrResult.right.toOption
+        } yield {
+          returnCall & Call(rrf,res._1)
+        }).getOrElse(returnCall)
+      } catch {
+        case e:Exception => {
+          val end = new java.util.Date().getTime()
+          error("Exception in ClientSideFunc::%s(%s) => %s\r\n%s".format(name,args.mkString(","),e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+          Call("serverResponse",JObject(
+            List(
+              JField("command",JString(name)),
+              JField("duration",JInt(end - start)),
+              JField("serverStart",JInt(start)),
+              JField("serverEnd",JInt(end)),
+              JField("success",JBool(false)),
+              JField("error",JString(e.getMessage))
+            )))
+        }
+      }
+      }))))
 	}
-  object ClientSideFunction {
-    def apply(name:String,args:List[String],serverSideFunc:List[Any]=>JValue,returnResultFunction:Box[String]) = {
-      new ClientSideFunction(name,args,serverSideFunc,returnResultFunction)
-    }
-    def unapply(in:ClientSideFunction):Option[Tuple4[String,List[String],List[Any]=>JValue,Box[String]]] = {
-      Some((in.name,in.args,in.serverSideFunc,in.returnResultFunction))
-    }
-  }
-	class ClientSideFunction(val name:String,val args:List[String],val serverSideFunc:List[Any]=>JValue,val returnResultFunction:Box[String]){
-    override def equals(a:Any) = a match {
-      case ClientSideFunction(aName,aArgs,aServerSideFunc,aReturnResultFunction) => aName == name && aArgs == args && aServerSideFunc == serverSideFunc && aReturnResultFunction == returnResultFunction
-      case _ => false
-    }
-      
-		private def deconstruct(input:JValue):Any = {
-			input match {
-				case j:JObject => j
-				case JString(s) => s
-				case JInt(i) => i
-				case JNum(n) => n
-				case JArray(l) => l.map(deconstruct(_))
-				case j:JValue => j
-				case other => other.toString
-			}
-		}
-		private def deconstructArgs(funcArgs:JValue):Tuple3[Option[String],Option[Long],List[Any]] = {
-			funcArgs match {
-				case JArray(l) if (l.length > 2) => (l.headOption.map(s => deconstruct(s).toString),l.drop(1).headOption.map(i => deconstruct(i)).flatMap{
-          case bi:scala.math.BigInt => Some(bi.toLong)
-          case i:Double => Some(i.toLong)
-          case i:Float => Some(i.toLong)
-          case i:Long => Some(i)
-          case i:Int => Some(i.toLong)
-          case s:String => Some(s.toLong)
-          case other => {
-            None
-          }
-        },l.drop(2).map(deconstruct(_)))
-				case JArray(l) if (l.length > 1) => (l.headOption.map(s => deconstruct(s).toString),None,l.tail.map(deconstruct(_)))
-        case JArray(l) => (l.headOption.map(s => deconstruct(s).toString),None,List.empty[Any])
-				case JString(s) => (Some(s),None,List.empty[Any])
-				case JNum(d) => (Some(d.toString),None,List.empty[String])
-				case JNull => (None,None,List.empty[String])
-				case obj:JValue => (None,None,List(obj))
-				case _ => (None,None,List.empty[String])
-			}
-		}
-		private def matchesRequirements(funcArgs:JValue):Boolean = {
-			args.length match {
-				case 0 => funcArgs match {
-					case JArray(u) => u.length == 2
-					case u:JValue => true
-					case _ => false
-				}
-				case other => funcArgs match {
-					case JArray(u) => u.length == other + 2
-					case _ => false
-				}
-			}
-		}
-		private val jsonifiedArgs:JsExp = {
-      val instant = "new Date().getTime()"
-			val requestIdentifier = "new Date().getTime().toString()"
-			val constructList = (l:List[String]) => JsRaw("[%s]".format(l.mkString(",")))
-			args match {
-				case Nil => constructList(List(requestIdentifier,instant))
-				case List(arg) => constructList(List(requestIdentifier,instant,arg))
-				case l:List[String] if (l.length > 1) => constructList(requestIdentifier :: instant :: l)
-				case _ => JNull
-			}
-		}
-		val jsCreationFunc = Script(Function(name,args,jsonSend(name,jsonifiedArgs)))
-		def matchingFunc(input:Any):Tuple4[Boolean,Option[String],Option[Long],Option[JValue]] = input match {
-			case funcArgs:JValue if matchesRequirements(funcArgs) => {
-				val (reqId,instant,deconstructedArgs) = deconstructArgs(funcArgs)
-				try {
-					val output = Stopwatch.time("MeTLActor.ClientSideFunction.%s.serverSideFunc".format(name),{
-						serverSideFunc(deconstructedArgs)
-					})
-					returnResultFunction.map(rrf => {
-						partialUpdate(Call(rrf,output))
-					})
-					(true,reqId,instant,None)
-				} catch {
-					case e:Throwable => {
-						(false,reqId,instant,Some(JString(e.getMessage)))
-          }
-					case other => {
-						(false,reqId,instant,Some(JString(other.toString)))
-          }
-				}
-			}
-			case other:JValue => (false,Some(input.toString),None,Some(JObject(List(JField("error",JString("request didn't match function requirements")),JField("providedParams",other)))))
-			case other => (false,Some(input.toString),None,Some(JObject(List(JField("error",JString("request didn't match function requirements")),JField("unknownParams",JString(other.toString))))))
-		}
-	}
-	case object ClientSideFunctionNotFound extends ClientSideFunction("no function",List.empty[String],(l) => JNull,Empty)
-	val strongFuncs = Map(functionDefinitions.map(fd => (fd.name,ClientSideFunction(fd.name,fd.args,fd.serverSideFunc,fd.returnResultFunction))):_*)
-  val functions = NodeSeq.fromSeq(strongFuncs.values.map(_.jsCreationFunc).toList)
+  val functions = NodeSeq.fromSeq(functionDefinitions.map(_.jsCreationFunc).toList)
 	override def render = NodeSeq.Empty
 	override def fixedRender = {
 		Stopwatch.time("StronglyTypedJsonActor.fixedRender", functions)
 	}
-	override def receiveJson = {
-		case ClientUpdate(commandName,commandParams) => {
-			val c = strongFuncs.getOrElse(commandName,ClientSideFunctionNotFound)
-      val duration = new java.util.Date().getTime
-			val (success,requestIdentifier,clientStart,optionalMessage) = c.matchingFunc(commandParams)
-			createResponse(c.name,clientStart,requestIdentifier,success,optionalMessage,Some(new java.util.Date().getTime - duration))
-		}
-    case other => createResponse("unknown",None,None,false,Some(JString(other.toString)))
-  }
 }

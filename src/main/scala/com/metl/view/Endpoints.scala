@@ -32,20 +32,14 @@ object SystemRestHelper extends RestHelper with Stemmer with Logger {
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
         Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
       })
+    case r @ Req(List("api","v1","sample","global",jid),_,_) =>
+      () => Stopwatch.time("SystemRestHelper.history", Full(XmlResponse(XML.load("global.xml"))))
     case r @ Req(List("api","v1","history","public",jid),_,_) =>
       () => Stopwatch.time("SystemRestHelper.history", StatelessHtml.history(jid))
     case r @ Req(List("api","v1","history","includePrivate",jid,onBehalfOf),_,_) =>
       () => Stopwatch.time("SystemRestHelper.mergedHistory", StatelessHtml.mergedHistory(jid,onBehalfOf))
     case r @ Req(List("api","v1","history","description",jid),_,_) =>
       () => Stopwatch.time("SystemRestHelper.describeHistory", StatelessHtml.describeHistory(jid))
-    case r @ Req(List("api","v1","analysis","themes",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.themes", StatelessHtml.themes(jid))
-    case r @ Req(List("api","v1","analysis","chunks",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.chunks", StatelessHtml.chunks(jid))
-    case r @ Req(List("api","v1","analysis","words",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
-    case r @ Req(List("api","v1","analysis","handwriting",jid),_,_) =>
-      () => Stopwatch.time("SystemRestHelper.handwriting", Full(XmlResponse(StatelessHtml.handwriting(jid))))
     case r @ Req(List("api","v1","conversation","details",jid),_,_) =>
       () => Stopwatch.time("SystemRestHelper.details", StatelessHtml.details(jid))
     case Req(List("api","v1","conversation","search",query),_,_) =>
@@ -92,7 +86,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case r:Req if scheme.map(_ != r.request.scheme).getOrElse(false) => () => {
       val uri = r.request.url
       val transformed = "%s://%s:%s%s%s".format(scheme.getOrElse("http"),host.getOrElse(r.request.serverName),port.getOrElse(r.request.serverPort),r.uri,r.request.queryString.map(qs => "?%s".format(qs)).getOrElse(""))
-      println("insecure: %s, redirecting to: %s".format(uri,transformed))
+      info("insecure: %s, redirecting to: %s".format(uri,transformed))
       Full(RedirectResponse(transformed,r))
     }
     //yaws endpoints 1188
@@ -154,8 +148,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     }
     case r@Req("serverStatus" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.serverStatus", {
-        println("serverStatus")
-        println(r.param("latency"))
         r.param("latency").foreach(latency => info("[%s] miliseconds clientReportedLatency".format(latency)))
         Full(PlainTextResponse("OK", List.empty[Tuple2[String,String]], 200))
       })
@@ -182,14 +174,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
     case r @ Req("describeHistory" :: _,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
-    case r @ Req(List("themes",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.themes", StatelessHtml.themes(jid))
-    case r @ Req(List("chunks",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.chunks", StatelessHtml.chunks(jid))
-    case r @ Req(List("words",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.words", Full(XmlResponse(StatelessHtml.words(jid))))
-    case r @ Req(List("handwriting",jid),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.handwriting", Full(XmlResponse(StatelessHtml.handwriting(jid))))
     case r @ Req(List("details",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.details", StatelessHtml.details(jid))
     case r @ Req(List("setUserOptions"),_,_) =>
@@ -238,11 +222,16 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer("rest")
   serve {
+    case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
+      S.session.foreach(_.destroySession())
+      //S.containerSession.foreach(s => s.terminate)
+      Full(RedirectResponse("/conversationSearch"))
+    })
     case req@Req("videoProxy" :: slideJid :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
       val config = ServerConfiguration.default
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
         video.videoBytes.map(bytes => {
-          val fis = new ByteArrayInputStream(bytes) 
+          val fis = new ByteArrayInputStream(bytes)
           val initialSize:Long = bytes.length - 1
           val (size,start,end) = {
             (for {
@@ -274,7 +263,20 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         }).openOr(NotFoundResponse("video bytes not available"))
       }).getOrElse(NotFoundResponse("video not available")))
     })
-
+    case r@Req("reportLatency" :: Nil,_,_) => {
+      val start = new java.util.Date().getTime
+        () => Stopwatch.time("MeTLRestHelper.reportLatency", {
+          for {
+            min <- r.param("minLatency")
+            max <- r.param("maxLatency")
+            mean <- r.param("meanLatency")
+            samples <- r.param("sampleCount")
+          } yield {
+            info("[%s] miliseconds clientReportedLatency".format(mean))
+          }
+          Full(PlainTextResponse((new java.util.Date().getTime - start).toString, List.empty[Tuple2[String,String]], 200))
+        })
+    }
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
       HttpResponder.snapshotWithPrivate(jid,"print")
     })
@@ -295,7 +297,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         referer <- S.referer
       ) yield {
         Globals.oneNoteAuthToken(Full(OneNote.claimToken(token)))
-        println("permitOneNote: %s -> %s",token,referer)
+        info("permitOneNote: %s -> %s".format(token,referer))
         RedirectResponse(referer)
       }
     })
@@ -404,7 +406,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       //trace(r.body)
         () => Stopwatch.time("MeTLStatefulRestHelper.upload", {
           r.body.map(dataUriBytes => {
-            val dataUriString = IOUtils.toString(dataUriBytes)
+            val dataUriString = new String(dataUriBytes)
             val b64Bytes = dataUriString.split(",")(1)
             val bytes = net.liftweb.util.SecurityHelpers.base64Decode(b64Bytes)
             val filename = S.params("filename").head
@@ -412,6 +414,25 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
             val server = ServerConfiguration.default
             XmlResponse(<resourceUrl>{server.postResource(jid,filename,bytes)}</resourceUrl>)
           })
+        })
+    }
+    case r @ Req(List("uploadSvg"),_,_) =>{
+      debug("UploadSvg registered in MeTLStatefulRestHelper")
+      //trace(r.body)
+        () => Stopwatch.time("MeTLStatefulRestHelper.uploadSvg", {
+          for {
+            svgBytes <- r.body
+            w <- r.param("width").map(_.toInt)
+            h <- r.param("height").map(_.toInt)
+            filename <- r.param("filename")
+            jid <- r.param("jid")
+          } yield {
+            val svg = new String(svgBytes)
+            var quality = r.param("quality").map(_.toFloat).getOrElse(0.4f)
+            val bytes = SvgConverter.toJpeg(svg,w,h,quality)
+            val server = ServerConfiguration.default
+            XmlResponse(<resourceUrl>{server.postResource(jid,filename,bytes)}</resourceUrl>)
+          }
         })
     }
     case r @ Req(List("logDevice"),_,_) => () => {

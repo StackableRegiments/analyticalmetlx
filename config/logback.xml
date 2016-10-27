@@ -11,14 +11,12 @@
       <Pattern>%d{MM-dd-YYYY HH:mm:ss.SSSz} - MeTL - %msg%n</Pattern>
     </encoder>
   </appender>
-  <!--
-      <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-      <file>debug.log</file>
-      <encoder>
+  <appender name="DEBUG" class="ch.qos.logback.core.FileAppender">
+    <file>debug.log</file>
+    <encoder>
       <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
-      </encoder>
-      </appender>
-  -->
+    </encoder>
+  </appender>
   <!--
       <logger name="metlx.proxy.debugLogger" level="all">
       <appender-ref ref="FILE"/>
@@ -38,8 +36,10 @@
   <logger name="com.metl.model.SecurityListener" level="ALL">
     <appender-ref ref="SECURITY_FILE"/>
   </logger>
-  <!--  <logger name="com.metl.comet.MeTLActor" level="TRACE"/> -->
-  <root level="INFO">
+  <logger name="bootstrap.liftweb.Boot" level="ALL">
+    <appender-ref ref="DEBUG" />
+  </logger>
+  <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>

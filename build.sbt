@@ -2,9 +2,9 @@ import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
-name := "web-container-metlx"
-version := "0.2.0"
-organization := "io.github.stackableregiments"
+name := "analyticalmetlx"
+version := "0.8.5"
+organization := "com.stackableregiments"
 
 val scalaVersionString = "2.11.5"
 
@@ -104,7 +104,11 @@ libraryDependencies ++= {
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
-    "com.github.tototoshi" %% "scala-csv" % "1.3.3"
+//    "org.scalactic" %% "scalactic" % "3.0.0",
+//    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+    "com.github.tototoshi" %% "scala-csv" % "1.3.3",
+    //for batik (svg)
+    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
@@ -143,6 +147,12 @@ timingFormat := {
 }
 
 testOptions in Test += Tests.Argument("-eI")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-f", "target/test-report")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-report")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-report")
+
+// don't buffer test output, as ScalaTest does a better job
+logBuffered in Test := false
 
 // add a JVM option to use when forking a JVM for 'run'
 javaOptions += "-Xmx2G"
@@ -168,4 +178,15 @@ traceLevel := 10
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
 
-credentials += Credentials(Path.userHome / ".ivy2" / "ivy-credentials")
+val functionalSingleTests = taskKey[Unit]("functional single-player tests")
+val functionalMultiTests = taskKey[Unit]("functional multi-player tests")
+
+lazy val library = (project in file("library")).
+  settings(
+    functionalSingleTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.single.conf.js", ".")) #>> file("functionalSingleTests.log") !
+    },
+    functionalMultiTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
+    }
+  )

@@ -26,12 +26,12 @@ object TopicServer extends LiftActor with ListenerManager with Logger{
   def createUpdate = topics
   override def lowPriority = {
     case TopicActivity(topicActivity) => Stopwatch.time("TopicServer:topicActivity",{
-      topics.find(t => t.identity == topicActivity).map(t => updateListeners(t))
+      topics.find(t => t.identity == topicActivity).map(t => sendListenersMessage(t))
     })
     case NewTopic(topic) => {
-      topics = topic :: (topics.filterNot(t => t.teachingEventIdentity.is == topic.teachingEventIdentity.is))
-      updateListeners(topics)
-      updateListeners(topic)
+      topics = topic :: (topics.filterNot(t => t.teachingEventIdentity.get == topic.teachingEventIdentity.get))
+      sendListenersMessage(topics)
+      sendListenersMessage(topic)
     }
     case other => warn("TopicServer received unknown message: %s".format(other))
   }
@@ -41,11 +41,11 @@ class TopicActor extends CometActor with CometListener with Logger {
   def registerWith = TopicServer
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   def namesHtmlCssBind(topics:List[Topic]) =
-    "#topicListing *" #> topics.filter(topic => !topic.deleted.is).sortWith((a,b) => a.name.is < a.name.is).map(topic => {
-      ".topicName [href]" #> "/stack/%s".format(topic.teachingEventIdentity.is) &
-      ".topicName [id]" #> "topic_%s".format(topic.teachingEventIdentity.is) &
-      ".topicName *" #> Text(topic.name.is) &
-      ".topicName [title]" #> topic.name.is
+    "#topicListing *" #> topics.filter(topic => !topic.deleted.get).sortWith((a,b) => a.name.get < a.name.get).map(topic => {
+      ".topicName [href]" #> "/stack/%s".format(topic.teachingEventIdentity.get) &
+      ".topicName [id]" #> "topic_%s".format(topic.teachingEventIdentity.get) &
+      ".topicName *" #> Text(topic.name.get) &
+      ".topicName [title]" #> topic.name.get
     })
   def updateNames(topics:List[Topic]) = {
     partialUpdate(SetHtml("topicListing",namesHtmlCssBind(topics).apply(StackTemplateHolder.topicTemplate)))
