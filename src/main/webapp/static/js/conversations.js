@@ -532,16 +532,11 @@ var Conversations = (function(){
         if (!conversation){
             conversation = currentConversation;
         }
-<<<<<<< HEAD
-        if ("subject" in conversation && conversation.subject.toLowerCase() != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(group){
-            return group.name.toLowerCase() == conversation.subject.toLowerCase();
-=======
         var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
         if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
             var key = g.key ? g.key : g.type;
             var name = g.name ? g.name : g.value;
             return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
->>>>>>> 92e00c129dd517db6860a0e328b53b4892d19ac6
         }))) {
             return true;
         } else {

@@ -255,13 +255,9 @@ var Conversations = (function(){
 				var title = details.title.toLowerCase().trim();
 				var author = details.author;
         return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
-<<<<<<< HEAD
-					return (g.ouType == "special" && g.name == "superuser") || g.name.toLowerCase().trim() == subject;
-=======
 					var key = g.key ? g.key : g.type;
 					var name = g.name ? g.name : g.value;	
 					return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
->>>>>>> 92e00c129dd517db6860a0e328b53b4892d19ac6
         })));
     };
 
