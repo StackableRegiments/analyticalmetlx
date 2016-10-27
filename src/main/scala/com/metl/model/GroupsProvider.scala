@@ -78,9 +78,7 @@ object GroupsProvider {
               period
             )
           )
-        }).getOrElse({
-          throw new Exception("missing parameters for specificOverrides groups provider")
-        })
+        }).toList
       }
       case "specificOverrides" => {
         (for {
@@ -440,6 +438,7 @@ class GroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers
 
 class XmlGroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers {
   import scala.xml._
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
     if (sanityCheck(c)){

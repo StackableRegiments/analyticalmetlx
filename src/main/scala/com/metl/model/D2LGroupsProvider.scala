@@ -259,6 +259,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
   protected def nameSection(orgUnit:D2LOrgUnit,section:D2LSection):String = "%s_%s".format(orgUnit.Name,section.Name)
   protected def nameGroupCategory(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):String = "%s_%s".format(orgUnit.Name,groupCategory.Name)
   protected def nameGroup(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory,group:D2LGroup):String = "%s_%s_%s".format(orgUnit.Name,groupCategory.Name,group.Name)
+  protected val d2lSectionPlaceholder = D2LSection(-1,"D2LProvidedSections",D2LDescription(None,None),Nil)
   override def getData:GroupStoreData = {
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
@@ -285,7 +286,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       })
       val sectionGroupSets = sections match {
         case Nil => Nil
-        case some => List(GroupSet(GroupKeys.sectionCategory,nameSection(orgUnit,"D2L_provided_sections"),some.flatMap(_.members),some))
+        case some => List(GroupSet(GroupKeys.sectionCategory,nameSection(orgUnit,d2lSectionPlaceholder),some.flatMap(_.members),some))
       }
       val groupCategories = parFlatMap[D2LGroupCategory,GroupSet](getGroupCategories(userContext,orgUnit),groupCategory => {
         val groups = getGroups(userContext,orgUnit,groupCategory).map(group => {
