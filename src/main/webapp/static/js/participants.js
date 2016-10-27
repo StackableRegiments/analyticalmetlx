@@ -141,7 +141,8 @@ var Participants = (function(){
         keyboarding:true,
         handwriting:true,
         imageRecognition:true,
-        imageTranscription:true
+        imageTranscription:true,
+	conjugate:true
     };
     var updateParticipantsListing = function(){
         participantsDatagrid.jsGrid("loadData");
@@ -155,6 +156,9 @@ var Participants = (function(){
             _.each(theme.text.split(" "),function(t){
                 if(t.length > 0){//It will come back with empty strings
                     t = t.toLowerCase();
+		    if(contextFilters.conjugate){
+			t = nlp_compromise.text(t).root();
+		    }
                     var context = theme.origin;
                     if(contextFilters[context] == true){
                         Analytics.word.incorporate(t);
