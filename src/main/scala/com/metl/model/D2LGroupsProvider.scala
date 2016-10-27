@@ -72,7 +72,7 @@ case class D2LClassListUser(
   ProfileIdentifier:String,
   DisplayName:String,
   UserName:Option[String],
-  OrgDefinedId:Option[String],
+  OrgDefinedId:Option[String], // this is the SLU Id number or username, I believe
   Email:Option[String],
   FirstName:Option[String],
   LastName:Option[String]
