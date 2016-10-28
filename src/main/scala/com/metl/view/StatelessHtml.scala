@@ -66,7 +66,7 @@ object StatelessHtml extends Stemmer with Logger {
         debug(file)
         val reader = new FileReader(file)
         val content = IOUtils.toByteArray(reader)
-        trace(IOUtils.toString(content))
+        trace(new String(content))
         reader.close
         Full(InMemoryResponse(content,List(("Content-Type","text/cache-manifest")),Nil,200))
       }
@@ -126,7 +126,7 @@ object StatelessHtml extends Stemmer with Logger {
       image.imageBytes.map(bytes => {
         debug("found bytes: %s (%s)".format(bytes,bytes.length))
         val dataUri = "data:image/png;base64,"+net.liftweb.util.SecurityHelpers.base64Encode(bytes)
-        InMemoryResponse(IOUtils.toByteArray(dataUri),Boot.cacheStrongly,Nil,200)
+        InMemoryResponse(dataUri.getBytes(),Boot.cacheStrongly,Nil,200)
       }).openOr(NotFoundResponse("image bytes not available"))
     }).getOrElse(NotFoundResponse("image not available"))))
 
@@ -480,7 +480,7 @@ object StatelessHtml extends Stemmer with Logger {
     val c = config.detailsOfConversation(jid)
     serializer.fromConversation(shouldModifyConversation(c) match {
       case true => {
-        val json = req.body.map(bytes => net.liftweb.json.parse(IOUtils.toString(bytes)))
+        val json = req.body.map(bytes => net.liftweb.json.parse(new String(bytes)))
         debug("addSubmissionSlideToConversationAtIndex",json)
         json match {
           case Full(JArray(identities)) => {

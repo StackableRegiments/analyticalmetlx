@@ -3,7 +3,7 @@ import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
-version := "0.8.2"
+version := "0.8.5"
 organization := "com.stackableregiments"
 
 val scalaVersionString = "2.11.5"

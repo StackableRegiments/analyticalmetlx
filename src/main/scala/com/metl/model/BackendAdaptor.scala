@@ -1,12 +1,10 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-
 import com.metl.data._
 import com.metl.metl2011._
 import com.metl.auth._
 import com.metl.utils._
-
 import _root_.net.liftweb.util._
 import Helpers._
 import _root_.net.liftweb.common._
@@ -18,10 +16,11 @@ import _root_.net.liftweb.sitemap.Loc._
 import com.metl.snippet._
 import com.metl.view._
 import com.metl.h2._
-
 import net.liftweb.util.Props
 import com.mongodb._
 import net.liftweb.mongodb._
+import net.liftweb.util
+import net.sf.ehcache.config.PersistenceConfiguration
 
 import scala.xml._
 
@@ -140,11 +139,12 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         mongoPort <- tryo((n \ "@mongoPort").text.toInt);
         mongoDb <- tryo((n \ "@mongoDb").text)
       ) yield {  
-        val mo = new MongoOptions
-        mo.socketTimeout = 10000
-        mo.socketKeepAlive = true
+        val mo = MongoClientOptions.builder()
+          .socketTimeout(10000)
+          .socketKeepAlive(true)
+          .build()
         val srvr = new ServerAddress(mongoHost,mongoPort)
-        MongoDB.defineDb(DefaultMongoIdentifier, new Mongo(srvr, mo), mongoDb)
+        MongoDB.defineDb(util.DefaultConnectionIdentifier, new MongoClient(srvr, mo), mongoDb)
         //construct standingCache from DB
         com.metl.model.Reputation.populateStandingMap
         //construct LiftActors for topics with history from DB
@@ -295,9 +295,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     }
     */
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
-    LiftRules.statelessDispatchTable.prepend(SystemRestHelper)
-    LiftRules.statelessDispatchTable.prepend(MeTLRestHelper)
-    LiftRules.statelessDispatchTable.prepend(WebMeTLRestHelper)
+    LiftRules.statelessDispatch.prepend(SystemRestHelper)
+    LiftRules.statelessDispatch.prepend(MeTLRestHelper)
+    LiftRules.statelessDispatch.prepend(WebMeTLRestHelper)
 
     LiftRules.dispatch.append(MeTLStatefulRestHelper)
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
@@ -363,7 +363,13 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   import scala.collection.JavaConversions._
   protected val cm = CacheManager.getInstance()
   val cacheName = "%s_%s".format(name,nextFuncName)
-  val cacheConfiguration = new CacheConfiguration().name(cacheName).maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits).eternal(false).memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy).diskPersistent(false).logging(false)
+  val cacheConfiguration = new CacheConfiguration()
+    .name(cacheName)
+    .maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits)
+    .eternal(false)
+    .memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy)
+    .persistence(new PersistenceConfiguration().strategy(PersistenceConfiguration.Strategy.NONE))
+    .logging(false)
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {

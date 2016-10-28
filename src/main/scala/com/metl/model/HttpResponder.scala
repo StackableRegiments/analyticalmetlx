@@ -60,7 +60,7 @@ object HttpResponder extends HttpCacher with Logger {
 
   def snapshotDataUri(jid:String,size:String) = {
     val dataUri = "data:image/jpeg;base64," + DatatypeConverter.printBase64Binary(getSnapshot(jid,size))
-    constructResponse(CachedBinary(IOUtils.toByteArray(dataUri),new Date().getTime),"image/jpg",snapshotExpiry)
+    constructResponse(CachedBinary(dataUri.getBytes,new Date().getTime),"image/jpg",snapshotExpiry)
   }
   def quizImage(jid:String,id:String) = {
     //val serverConfig = ServerConfiguration.configForName(server)

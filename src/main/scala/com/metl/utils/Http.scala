@@ -1,6 +1,7 @@
 package com.metl.utils
 
 import java.net.URI
+import java.nio.charset.StandardCharsets
 import java.security.cert._
 import java.util.concurrent._
 import java.util.{ArrayList, Date}
@@ -68,7 +69,7 @@ trait IMeTLHttpClient {
 
 case class HTTPResponse(requestUrl:String,actOnConn:(ManagedClientConnection,String,String) => Unit,bytes:Array[Byte],statusCode:Int,headers:Map[String,String],startMilis:Long,endMilis:Long,numberOfRetries:Int = 0, numberOfRedirects:Int = 0,exceptions:List[Throwable] = List.empty[Throwable]){
   val duration = endMilis - startMilis
-  def responseAsString = IOUtils.toString(bytes)
+  def responseAsString = new String(bytes)
 }
 
 class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient(connMgr) with IMeTLHttpClient with Logger {
@@ -230,7 +231,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
       for (postItem <- postItemList){
         postForm.add(new BasicNameValuePair(postItem._1,postItem._2))
       }
-      val postEntity = new UrlEncodedFormEntity(postForm,HTTP.UTF_8)
+      val postEntity = new UrlEncodedFormEntity(postForm,StandardCharsets.UTF_8)
       applyDefaultHeaders(postMethod,correctlyFormedUrl)
       addAdditionalHeaders(postMethod,additionalHeaders)
       postMethod.addHeader(new BasicHeader("Content-Type","""application/x-www-form-urlencoded"""))
@@ -250,7 +251,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
       val correctlyFormedUrl = new URI(url)
       val postMethod = new BasicHttpEntityEnclosingRequest("POST",path){override val expectContinue = false}
       val postForm = postItemList.map(postItem => postItem._1 +"="+postItem._2).mkString("&")
-      val postEntity = new StringEntity(postForm,HTTP.UTF_8)
+      val postEntity = new StringEntity(postForm,StandardCharsets.UTF_8)
       applyDefaultHeaders(postMethod,correctlyFormedUrl)
       addAdditionalHeaders(postMethod,additionalHeaders)
       postMethod.addHeader(new BasicHeader("Content-Type","""application/x-www-form-urlencoded"""))
@@ -282,7 +283,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
     getAsString(uri,additionalHeaders)
   })
   override def getAsString(uri:String,additionalHeaders:List[(String,String)] = List.empty[(String,String)]):String = Stopwatch.time("Http.getAsString", {
-    IOUtils.toString(getAsBytes(uri,additionalHeaders))
+    new String(getAsBytes(uri,additionalHeaders))
   })
 
   override def getAsBytes(uri:String,additionalHeaders:List[(String,String)] = List.empty[(String,String)]):Array[Byte] = Stopwatch.time("Http.getAsBytes", {
@@ -313,7 +314,6 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
         case _ => 80
       }
       case other:Int => other
-      case _ => 80
     }
   }
   protected def determineHost(uri:URI):String = {

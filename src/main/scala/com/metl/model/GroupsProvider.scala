@@ -15,6 +15,9 @@ import scala.xml.{Source=>XmlSource,_}
 import com.metl.liftAuthenticator.LiftAuthStateData
 
 object GroupsProvider {
+  def sanityCheck(g:GroupStoreData):Boolean = {
+    g.groupsForMembers.keys.toList.length > 0
+  }
   def possiblyFilter(in:NodeSeq,gp:GroupsProvider):GroupsProvider = {
     (for {
       fNodes <- (in \\ "filter").headOption
@@ -95,7 +98,11 @@ object GroupsProvider {
             new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
             refreshPeriod,
             diskCache.read,
-            Some(g => diskCache.write(g))
+            Some(g => {
+              if (sanityCheck(g)){ // don't trash the entire file if the fetch from D2L is empty
+                diskCache.write(g)
+              }
+            })
           )
         ,overrideUsername)
       }).toList
@@ -169,6 +176,7 @@ class PassThroughGroupStoreProvider(gp:GroupStoreProvider) extends GroupStorePro
 }
 
 class CachingGroupStoreProvider(gp:GroupStoreProvider) extends PassThroughGroupStoreProvider(gp) {
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
   val startingValue:Option[GroupStoreData] = None
   val startingLastUpdated = 0L
   protected var lastUpdated = startingLastUpdated
@@ -179,8 +187,12 @@ class CachingGroupStoreProvider(gp:GroupStoreProvider) extends PassThroughGroupS
   override def getData = {
     if (shouldRefreshCache){
       val newRes = super.getData
-      storeCache(newRes)
-      newRes
+      if (sanityCheck(newRes)){
+        storeCache(newRes)
+        newRes
+      } else {
+        readCache.getOrElse(GroupStoreData())
+      }
     } else {
       readCache.getOrElse(GroupStoreData())
     }
@@ -219,8 +231,10 @@ class SpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvide
 class InMemoryCachingGroupStoreProvider(gp:GroupStoreProvider) extends CachingGroupStoreProvider(gp) {
   protected var cache:Option[GroupStoreData] = None
   override def storeCache(c:GroupStoreData):Unit = {
-    cache = Some(c)
-    lastUpdated = new java.util.Date().getTime()
+    if (cache == None || sanityCheck(c)){
+      cache = Some(c)
+      lastUpdated = new java.util.Date().getTime()
+    }
   }
   override protected def readCache:Option[GroupStoreData] = cache
 }
@@ -233,11 +247,15 @@ class FileWatchingCachingGroupStoreProvider(gp:GroupStoreProvider,path:String) e
 }
 
 class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeriod:TimeSpan,startingValue:Option[GroupStoreData] = None,storeFunc:Option[GroupStoreData=>Unit] = None) extends GroupStoreProvider { 
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
   protected var lastCache:GroupStoreData = startingValue.getOrElse(GroupStoreData())
   protected var cache = new PeriodicallyRefreshingVar[Unit](refreshPeriod,() => {
     val newCheck = new java.util.Date().getTime()
-    lastCache = gp.getData 
-    storeFunc.foreach(sf => sf(lastCache))
+    val newData = gp.getData
+    if (sanityCheck(newData)){
+      lastCache = newData 
+      storeFunc.foreach(sf => sf(lastCache))
+    }
   },startingValue.map(sv => {}))
   override def getData = lastCache
 }
@@ -245,6 +263,7 @@ class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeri
 class GroupStoreDataFile(diskStorePath:String) {
   import com.github.tototoshi.csv._
   import java.io._
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
 
   protected val groupName = "GROUP"
   protected val groupTypeName = "TYPE"
@@ -253,13 +272,15 @@ class GroupStoreDataFile(diskStorePath:String) {
 
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
-    val writer = CSVWriter.open(new File(diskStorePath))
-    writer.writeAll(
-      List(memberName,attributeValue,groupTypeName,groupName) :: 
-      c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,mi._1,g._1,g._2))) :::
-      c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
-    )
-    writer.close
+    if (sanityCheck(c)){
+      val writer = CSVWriter.open(new File(diskStorePath))
+      writer.writeAll(
+        List(memberName,attributeValue,groupTypeName,groupName) :: 
+        c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,mi._1,g._1,g._2))) :::
+        c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
+      )
+      writer.close
+    }
   }
   def read:Option[GroupStoreData] = {
     try {

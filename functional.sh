@@ -28,6 +28,9 @@ then
     #npm install sauce-connect
     #npm install mocha-sauce-notifying-reporter
 
+    java -jar -Dwebdriver.chrome.driver=./tools/chromedriver/2.24-x64-chromedriver -Djava.util.logging.config.file=logging.properties ./tools/selenium-2.53.1-server.jar &
+    sleep 30
+
     echo "Starting WDIO"
     #java -jar -Dwebdriver.chome.driver=/usr/local/bin/chromedriver ./tools/selenium-2.53.1-server.jar &
     ./node_modules/wdio/node_modules/webdriverio/bin/wdio wdio.${MODE}.conf.js

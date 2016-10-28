@@ -80,7 +80,7 @@ case class D2LClassListUser(
 case class D2LGroupCategory(
   GroupCategoryId:Long,
   Name:String,
-  Description:String, //richtext
+  Description:D2LDescription, //richtext
   EnrollmentStyle:Int,
   EnrollmentQuantity:Option[Int],
   MaxUsersPerGroup:Option[Int],
@@ -93,14 +93,18 @@ case class D2LGroupCategory(
 case class D2LGroup(
   GroupId:Long,
   Name:String,
-  Description:String, //richtext
+  Description:D2LDescription, //richtext
   Enrollments:List[Long]
 )
 case class D2LSection(
   SectionId:Long,
   Name:String,
-  Description:String, //richtext
+  Description:D2LDescription, //richtext
   Enrollments:List[Long]
+)
+case class D2LDescription(
+  Text:Option[String],
+  Html:Option[String]
 )
 
 class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
@@ -115,17 +119,21 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
 
   protected val bookMarkTag = "bookmark"
 
-  protected def fetchListFromD2L[T](url:java.net.URI)(implicit m:Manifest[T]):List[T] = {
+  protected def fetchListFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     try {
       parse(client.get(url.toString)).extract[List[T]]
     } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        List.empty[T]
+      }
       case e:Exception => {
-        error("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[T]
       }
     }
   }
-  protected def fetchPagedListFromD2L[T](masterUrl:String,userContext:ID2LUserContext)(implicit m:Manifest[T]):List[T] = {
+  protected def fetchPagedListFromD2L[T](masterUrl:String,userContext:ID2LUserContext,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     val url = userContext.createAuthenticatedUri(masterUrl,"GET")
     try {
       val firstGet = client.get(url.toString)
@@ -146,7 +154,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
-            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
             continuing = false
             bookmark = None
           }
@@ -154,8 +162,12 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       }
       items
     } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        List.empty[T]
+      }
       case e:Exception => {
-        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[T]
       }
     }
@@ -192,6 +204,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       var items = firstResp.Items
       var continuing = firstResp.PagingInfo.HasMoreItems
       var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
+      trace("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
           val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
@@ -204,7 +217,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
           trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
-            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
             continuing = false
             bookmark = None
           }
@@ -213,7 +226,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       items
     } catch {
       case e:Exception => {
-        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[D2LOrgUnit]
       }
     }
@@ -222,7 +235,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     fetchListFromD2L[D2LClassListUser](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/classlist/".format(leApiVersion,orgUnit.Identifier),"GET"))
   }
   protected def getSections(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LSection] = {
-    fetchListFromD2L[D2LSection](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/sections/".format(lpApiVersion,orgUnit.Identifier),"GET"))
+    fetchListFromD2L[D2LSection](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/sections/".format(lpApiVersion,orgUnit.Identifier),"GET"),true)
   }
   protected def getGroupCategories(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LGroupCategory] = {
     fetchListFromD2L[D2LGroupCategory](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/groupcategories/".format(lpApiVersion,orgUnit.Identifier),"GET"))
@@ -242,11 +255,14 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     }
   }
 
+  protected def nameSection(orgUnit:D2LOrgUnit,section:D2LSection):String = "%s_%s".format(orgUnit.Name,section.Name)
+  protected def nameGroupCategory(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):String = "%s_%s".format(orgUnit.Name,groupCategory.Name)
+  protected def nameGroup(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory,group:D2LGroup):String = "%s_%s_%s".format(orgUnit.Name,groupCategory.Name,group.Name)
   override def getData:GroupStoreData = {
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
     info("courses found: %s".format(courses.length))
-    val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => { 
+    val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => {
       trace("OU: %s (%s) %s".format(orgUnit.Name,orgUnit.Code, orgUnit.Type))
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       val combinedSet:List[() => List[Tuple4[String,String,String,String]]] = List(
@@ -278,7 +294,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
             member:D2LClassListUser <- membersById;
             memberName:String <- member.OrgDefinedId.filterNot(_ == "")
           ) yield {
-            (memberName,memberName,GroupKeys.section,section.Name)
+            (memberName,memberName,GroupKeys.section,nameSection(orgUnit,section))
           }
           trace("OU-Sections: %s %s".format(orgUnit.Name,constructedSections.length))
           constructedSections
@@ -294,7 +310,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
                 member:D2LClassListUser <- membersById;
                 memberName:String <- member.OrgDefinedId.filterNot(_ == "")
               ) yield {
-                (memberName,memberName,GroupKeys.group,group.Name)
+                (memberName,memberName,GroupKeys.group,nameGroup(orgUnit,groupCategory,group))
               }
             },6,"groups")
           },4,"groupCategories")

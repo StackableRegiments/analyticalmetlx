@@ -49,15 +49,15 @@ object BubbleConstants extends Logger{
   setDefaultAdmins
   def setDefaultAdmins = {
     List("hagand","wmck","sajames","chagan","designa","rob","joshuaj").map(user => {
-      StackAdmin.createOrUpdate(user).authcate(user).adminForAllTopics(true).save
+      StackAdmin.createOrUpdate(user).authcate(user).adminForAllTopics(true).save(true)
     })
     List("tburns","rnor2","designb","mthicks","ahannah","jpjor1").map(user => {
-      StackAdmin.createOrUpdate(user).authcate(user).save
+      StackAdmin.createOrUpdate(user).authcate(user).save(true)
     })
     Map("eecrole" -> List("aggregate","load-testing","loadTest")).map(userTuple => {
       val user = userTuple._1
       val topics = userTuple._2
-      StackAdmin.createOrUpdate(user).authcate(user).adminForTopics(topics).save
+      StackAdmin.createOrUpdate(user).authcate(user).adminForTopics(topics).save(true)
     })
   }
   val minimumVote = 1
@@ -121,13 +121,13 @@ object StackTemplateHolder{
 }
 
 class QuestionPresenter(val context:StackQuestion) extends Discussable(context,context) with Logger {
-  override val id = context._id.is.toString
+  override val id = context._id.get.toString
   val summaryId = "q%s".format(id)
-  val about = context.about.is
+  val about = context.about.get
   override val depth = context.totalChildCount
   override val mostRecentActivity = context.mostRecentActivity
   def update(discussionPoint:DiscussionPoint) = stackWorker ! WorkUpdateQuestion(context,discussionPoint,timeticks)
-  override def equals(other:Any) = other != null && other.isInstanceOf[QuestionPresenter] && other.asInstanceOf[QuestionPresenter].context._id.is == context._id.is
+  override def equals(other:Any) = other != null && other.isInstanceOf[QuestionPresenter] && other.asInstanceOf[QuestionPresenter].context._id.get == context._id.get
   override def hashCode = context.hashCode
   private def addAnswer(x:NodeSeq) = {
     a(()=>{
@@ -174,7 +174,7 @@ class QuestionPresenter(val context:StackQuestion) extends Discussable(context,c
         stackWorker ! WorkVoteDownQuestion(context,this,currentUser.is)
       },votingContainerId, List("questionVoter"))
   }
-  private val answers = context.answers.is.filter(!_.deleted)
+  private val answers = context.answers.get.filter(!_.deleted)
   private val visibleAnswers = answers.map(a => Answer(context,a))
   def pluralize(input:Int = depth) = input match{
     case 1 => "response"
@@ -226,7 +226,7 @@ class QuestionPresenter(val context:StackQuestion) extends Discussable(context,c
       ".branchAuthor [id]" #> summaryId &
       ".bubbleContent [class+]" #> summaryId andThen
       ".answerCount *" #> answerCount &
-      ".detailedQuestionCreationTime *" #> <div class="recency">{ timestamp(context.creationDate.is) }</div> &
+      ".detailedQuestionCreationTime *" #> <div class="recency">{ timestamp(context.creationDate.get) }</div> &
       ".pluralizable" #> pluralize() &
       ".questionTitle *" #> truncate(about.content,30)).apply(StackTemplateHolder.questionDetailTemplate)
   }
@@ -511,10 +511,10 @@ object Discussable {
 
 abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) extends Rated with Logger {
   def activateNewInputBox(inputId:String,submitButtonId:String) = StackHelpers.activateNewInputBox(inputId,submitButtonId)
-  def stackServer = StackServerManager.get(saveContext.teachingEvent.is)
-  def stackWorker = StackServerManager.getWorker(saveContext.teachingEvent.is)
-  private def session = S.session.openTheBox
-  val location:String = saveContext.teachingEvent.is
+  def stackServer = StackServerManager.get(saveContext.teachingEvent.get)
+  def stackWorker = StackServerManager.getWorker(saveContext.teachingEvent.get)
+  private def session = S.session.openOrThrowException("S should contain a current Lift session")
+  val location:String = saveContext.teachingEvent.get
   def id:String
   def timestamp(timeSinceEpoch:Long):String = {
     Discussable.dateFormat.format(new java.util.Date(timeSinceEpoch))
@@ -531,13 +531,13 @@ abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) ex
   def update(discussionPoint:DiscussionPoint):Unit
   def bindAuthor = ".authorDetails *" #> about.author.html
   def sendLocalMessage(message:Any) = {
-    StackOverflow.local(message,saveContext.teachingEvent.is)
+    StackOverflow.local(message,saveContext.teachingEvent.get)
   }
   def voteDown:Boolean = voteDown(currentUser.is)
   def voteDown(who:String):Boolean = {
     val auth = com.metl.model.Author(who)
     if (ratingFrom(auth) > BubbleConstants.minimumVote){
-      val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(about.author.name).action(GainAction.VotedDown).conversation(saveContext.teachingEvent.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(about.author.name).action(GainAction.VotedDown).conversation(saveContext.teachingEvent.get)
       voted.addVote(Vote(auth, -1, timeticks))
       Reputation.accrue(rep)
       true
@@ -550,7 +550,7 @@ abstract class Discussable(var saveContext:StackQuestion,voted:VoteCollector) ex
   def voteUp(who:String):Boolean = {
     val auth = com.metl.model.Author(who)
     if(ratingFrom(auth) < BubbleConstants.maximumVote){
-      val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(about.author.name).action(GainAction.VotedUp).conversation(saveContext.teachingEvent.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(about.author.name).action(GainAction.VotedUp).conversation(saveContext.teachingEvent.get)
       voted.addVote(Vote(auth, 1, timeticks))
       Reputation.accrue(rep)
       true
@@ -646,7 +646,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
       StackQuestion.find("_id",new ObjectId(id)).map(sq => {
         val qp = new QuestionPresenter(sq)
         addQuestion(qp)
-        updateListeners(Silently(qp))
+        sendListenersMessage(Silently(qp))
       })
     } catch {
       case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
@@ -657,7 +657,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
       StackQuestion.find("_id",new ObjectId(id)).map(sq => {
         val qp = new QuestionPresenter(sq)
         addQuestion(qp)
-        updateListeners(qp)
+        sendListenersMessage(qp)
       })
     } catch {
       case e:Throwable => error("exception thrown while fetching remoteQuestion from DB: %s".format(e.getMessage))
@@ -666,13 +666,13 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
   override def lowPriority = {
     case r:RemoteSilentQuestionRecieved => Stopwatch.time("StackRouter:remoteSilentQuestionReceived",possiblyUpdateQuestionSilentlyById(r.questionId))
     case r:RemoteQuestionRecieved => Stopwatch.time("StackRouter:remoteQuestionReceived",possiblyUpdateQuestionById(r.questionId))
-    case b:Bob=> Stopwatch.time("StackRouter:bob",updateListeners(b))
-    case e:Emerge=> Stopwatch.time("StackRouter:emerge",updateListeners(e))
+    case b:Bob=> Stopwatch.time("StackRouter:bob",sendListenersMessage(b))
+    case e:Emerge=> Stopwatch.time("StackRouter:emerge",sendListenersMessage(e))
     case s:Silently=> Stopwatch.time("StackRouter:silently",{
       val qp = s.present
       //XMPPQuestionSyncActor ! QuestionSyncRequest(qp.location,qp.id,true)
     })
-    case d:Detail => Stopwatch.time("StackRouter:detail",updateListeners(d))
+    case d:Detail => Stopwatch.time("StackRouter:detail",sendListenersMessage(d))
     case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
     case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter", {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
     case other => warn("StackRouter received unknown: %s".format(other))
@@ -684,14 +684,14 @@ class StackServer(location:String) extends StackRouter with Logger{
   override def addQuestion(question:QuestionPresenter) = Stopwatch.time("StackServer:addQuestion",{
     TopicServer ! TopicActivity(location)
     val otherQuestions = evaluatedQuestions.filterNot(q => q.id == question.id)
-    if (!question.context.deleted.is)
+    if (!question.context.deleted.get)
       evaluatedQuestions = question :: otherQuestions
     else evaluatedQuestions = otherQuestions
   })
   def fetchQuestionsFromDB = StackQuestion.findAll("teachingEvent",location).map(new QuestionPresenter(_))
   override def questions:List[QuestionPresenter] = Stopwatch.time("StackServer:questions",{
     if (!hasFetched){
-      evaluatedQuestions = fetchQuestionsFromDB.filterNot(_.context.deleted.is)
+      evaluatedQuestions = fetchQuestionsFromDB.filterNot(_.context.deleted.get)
       hasFetched = true
     }
     evaluatedQuestions
@@ -724,56 +724,56 @@ class StackWorker(location:String) extends LiftActor with Logger {
   private lazy val stackServer = StackServerManager.get(location)
   override def messageHandler = {
     case WorkCreateQuestion(author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateQuestion",{
-      val q = StackQuestion.createRecord.about(DiscussionPoint(com.metl.model.Author(author), text)).teachingEvent(location).creationDate(timeticks).save
+      val q = StackQuestion.createRecord.about(DiscussionPoint(com.metl.model.Author(author), text)).teachingEvent(location).creationDate(timeticks).save(true)
       val rep = Informal.createRecord.time(timeticks).protagonist(author).action(GainAction.MadeQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
       val newQ = new QuestionPresenter(q)
       stackServer ! newQ
-      StackOverflow.local(Detail(q._id.is.toString),author,location,session)
+      StackOverflow.local(Detail(q._id.get.toString),author,location,session)
     })
     case WorkCreateAnswerToQuestion(context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateAnswerToQuestion",{
-      val stackAnswer = StackAnswer(nextFuncName, context._id.is.toString,DiscussionPoint(com.metl.model.Author(author),text), List.empty[Vote], List.empty[StackComment], timeticks, Nil, Nil, false)
+      val stackAnswer = StackAnswer(nextFuncName, context._id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), List.empty[Vote], List.empty[StackComment], timeticks, Nil, Nil, false)
       context.addAnswer(stackAnswer)
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.is.author.name).action(GainAction.MadeAnswerOnStack).conversation(context.teachingEvent.is).question(context._id.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.get.author.name).action(GainAction.MadeAnswerOnStack).conversation(context.teachingEvent.get).question(context._id.get)
       Reputation.accrue(rep)
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s div".format(context.id))
     })
     case WorkCreateCommentOnAnswer(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnAnswer",{
-      val stackComment = StackComment(nextFuncName,parent._id.is.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
+      val stackComment = StackComment(nextFuncName,parent._id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
       context.addComment(stackComment)
       StackOverflow.setCommentState(location,parent.id.toString,context.id,true,author,session)
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent._id.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent._id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s .comments".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkCreateCommentOnComment(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnComment",{
-      val stackComment = StackComment(nextFuncName,parent._id.is.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
+      val stackComment = StackComment(nextFuncName,parent._id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
       context.addComment(stackComment)
       StackOverflow.setCommentState(location,parent.id.toString,context.id,true,author,session)
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent._id.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent._id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s .comments".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkUpdateQuestion(context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateQuestion",{
       context.updateContent(discussionPoint.content)
-      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.is.author.name).action(GainAction.EditedQuestionOnStack).conversation(context.teachingEvent.is).question(context._id.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.get.author.name).action(GainAction.EditedQuestionOnStack).conversation(context.teachingEvent.get).question(context._id.get)
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkUpdateAnswer(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateAnswer",{
       context.updateContent(discussionPoint.content)
-      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedAnswerOnStack).conversation(parent.teachingEvent.is).slide(parent.slideJid.is).question(parent._id.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedAnswerOnStack).conversation(parent.teachingEvent.get).slide(parent.slideJid.get).question(parent._id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkUpdateComment(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateComment",{
       context.updateContent(discussionPoint)
-      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedCommentOnStack).conversation(parent.teachingEvent.is).slide(parent.slideJid.is).question(parent._id.is)
+      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedCommentOnStack).conversation(parent.teachingEvent.get).slide(parent.slideJid.get).question(parent._id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
@@ -818,7 +818,7 @@ class StackWorker(location:String) extends LiftActor with Logger {
       context.delete
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s".format(context.id))
-      val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.is.author.name).action(GainAction.DeletedQuestionOnStack).conversation(location)
+      val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.get.author.name).action(GainAction.DeletedQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
     })
     case WorkDeleteAnswer(parent,context,who,timeticks) => Stopwatch.time("StackWorker:workDeleteAnswer",{
@@ -868,15 +868,15 @@ object StackOverflow extends StackOverflow {
   def localOpenAction(a:OpenRequest):Unit = a match {
     case WorkOpenQuestion(context,author,session,timeticks) => Stopwatch.time("StackWorker:workOpenQuestion",{
       val id = context._id.toString
-      val location = context.teachingEvent.is
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.is.author.name).action(GainAction.ViewedQuestionOnStack).conversation(location)
+      val location = context.teachingEvent.get
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.get.author.name).action(GainAction.ViewedQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
       local(Detail(id),author,location,session)
     })
     case WorkOpenAnswer(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenAnswer",{
       val contextId = context.id
-      val parentId = parent._id.is.toString
-      val location = parent.teachingEvent.is
+      val parentId = parent._id.get.toString
+      val location = parent.teachingEvent.get
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.ViewedAnswerOnStack).conversation(location)
       Reputation.accrue(rep)
       val currentState = getCommentState(location,parentId,contextId,who)
@@ -885,8 +885,8 @@ object StackOverflow extends StackOverflow {
     })
     case WorkOpenComment(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenComment",{
       val contextId = context.id
-      val parentId = parent._id.is.toString
-      val location = parent.teachingEvent.is
+      val parentId = parent._id.get.toString
+      val location = parent.teachingEvent.get
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.ViewedCommentOnStack).conversation(location)
       Reputation.accrue(rep)
       val currentState = getCommentState(location,parentId,contextId,who)
@@ -910,12 +910,12 @@ object StackOverflow extends StackOverflow {
   def local(message:Any, location:String, session:Box[LiftSession]):Unit = {
     val where = Globals.stackOverflowName(location)
     for(s <- session)
-      s.sendCometActorMessage("StackOverflow", Box(where), message)
+      s.sendCometActorMessage("StackOverflow", Box.legacyNullTest(where), message)
   }
   def local(message:Any, who:String, location:String, session:Box[LiftSession]):Unit = {
     val where = Globals.stackOverflowName(who,location)
     for (s <- session)
-      s.sendCometActorMessage("StackOverflow", Box(where), message)
+      s.sendCometActorMessage("StackOverflow", Box.legacyNullTest(where), message)
   }
   def setCommentState(location:String, questionId:String,changedNode:String,newState:Boolean):Unit = setCommentState(location, questionId,changedNode,newState,localSession)
   def setCommentState(location:String, questionId:String,changedNode:String,newState:Boolean,session:Box[LiftSession]):Unit = {
@@ -950,7 +950,7 @@ object StackOverflow extends StackOverflow {
 
 class StackOverflow extends CometActor with CometListener with Logger {
   private var starting:Boolean = true
-  private lazy val location = currentStack.is.teachingEventIdentity.is
+  private lazy val location = currentStack.is.teachingEventIdentity.get
   lazy val stackServer = StackServerManager.get(location)
   private lazy val stackWorker = StackServerManager.getWorker(location)
   val id = nextFuncName
@@ -982,7 +982,7 @@ class StackOverflow extends CometActor with CometListener with Logger {
     }
   }
   private def acceptNewQuestion(q:QuestionPresenter, notifySummaries:Boolean, act:()=>JsCmd)={
-    if(q.context.deleted.is){
+    if(q.context.deleted.get){
       detailedQuestion.map(dq=>{
         if(dq.summaryId == q.summaryId) {
           detailedQuestion = Empty

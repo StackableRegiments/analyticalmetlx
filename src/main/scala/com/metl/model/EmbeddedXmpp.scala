@@ -171,7 +171,7 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
           case e:DeliveryException => {
             warn("presence relaying failed %s".format(e))
           }
-          case other => throw other
+          case other:Throwable => throw other
         }
       })
     }
@@ -386,7 +386,7 @@ class MeTLMucModule(subdomain:String = "conference",conference:Conference = new 
       serverRuntimeContext.getStanzaRelay().relay(receiver, builder.build(), new IgnoreFailureStrategy())
     } catch {
       case e:DeliveryException => {}
-      case other => throw other
+      case other:Throwable => throw other
     }
   }
   def getSubdomain:String = subdomain
@@ -531,7 +531,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
             // invalid format of invite element
             createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.JID_MALFORMED, stanza)
           }
-          case other => throw other
+          case other:Throwable => throw other
         }
       } else {
         // user must be occupant to send invite
@@ -548,7 +548,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
           // invalid format of invite element
           createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.JID_MALFORMED, stanza)
         }
-        case other => throw other
+        case other:Throwable => throw other
       }
     } else {
       createMessageErrorStanza(room.getJID(), from, stanza.getID(), StanzaErrorType.MODIFY, StanzaErrorCondition.UNEXPECTED_REQUEST, stanza)
@@ -605,7 +605,7 @@ class MeTLMUCMessageHandler(conference:Conference,moduleDomain:Entity,mucModule:
       case e:DeliveryException => {
         error("presence relaying failed",e)
       }
-      case other => throw other
+      case other:Throwable => throw other
     }
   }
 }
@@ -649,7 +649,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
       }
     } catch {
       case e:XMLSemanticError => null
-      case other => throw other
+      case other:Throwable => throw other
     }
   }
 
@@ -739,7 +739,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
         case e:RuntimeException => {
           return createPresenceErrorStanza(roomJid, newOccupantJid, stanza.getID(), "auth", e.getMessage())
         }
-        case other => throw other
+        case other:Throwable => throw other
       }
       if(newRoom) {
         room.getAffiliations().add(newOccupantJid, Affiliation.Owner)
@@ -926,7 +926,7 @@ class MeTLMUCPresenceHandler(conference:Conference,mucModule:MeTLMucModule,useXm
       case e:DeliveryException => {
         error("presence relaying failed",e)
       }
-      case other => throw other
+      case other:Throwable => throw other
     }
   }
 }
