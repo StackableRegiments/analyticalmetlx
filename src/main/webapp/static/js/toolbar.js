@@ -2098,55 +2098,106 @@ var Modes = (function(){
 							if (selectionDescriber != undefined){
 								console.log("updating selection:",Modes.select.selected,selectionDescriber);
 								var describedElements = [];
-								_.forEach(["images","texts","inks","highlighters","mulitWordTexts","videos"],function(catName){
+								_.forEach(["images","texts","inks","highlighters","multiWordTexts","videos"],function(catName){
 									var selCatName = catName == "highlighters" ? "inks" : catName;
 									var boardCatName = catName;
 									var cat = Modes.select.selected[selCatName];
 									_.forEach(cat,function(i){
 										if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]){
 											console.log("adding:",i);
+											if (!("chosenForSelectionAction" in i)){
+												i.chosenForSelectionAction = true;
+											}
 											describedElements.push(i);
 										}
 									});
 								});
 								selectionDescriber.html(_.map(describedElements,function(el){
-									var rootElem = $("<div/>",{text:"deselect",class:"directlyOnBackground"});
+									var rootElem = $("<span/>",{title:"deselect",class:"directlyOnBackground describedSelectionElement permissionStates"});
+									var inputId = sprintf("selectionDescriber_%s_%s",el.type,el.identity);
+									var checkbox = $("<input/>",{type:"checkbox",id:inputId});
+									var label = $("<label/>",{id:inputId,for:inputId,text:"selected"});
+									checkbox.prop("checked",el.chosenForSelectionAction);
+									rootElem.append(checkbox);
+									rootElem.append(label);
 									if ("type" in el){
+										var stanza = el;
 										switch (el.type) {
 											case "ink":
-												rootElem.on("click",function(){
+												checkbox.on("change",function(){
+													var newState = $(this).is(":checked");
+													stanza.chosenForSelectionAction = newState;
 													delete Modes.select.selected.inks[el.identity];
 													Progress.call("onSelectionChanged",[Modes.select.selected]);
 													blit();
 												});
-												rootElem.append($("<span/>",{text:el.identity}));
+												var imgSrc = el.canvas.toDataURL("image/png");
+												var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail"});
+												rootElem.append(img);
 												break;
 											case "image":
-												rootElem.on("click",function(){
+												checkbox.on("change",function(){
+													var newState = $(this).is(":checked");
+													stanza.chosenForSelectionAction = newState;
 													delete Modes.select.selected.images[el.identity];
 													Progress.call("onSelectionChanged",[Modes.select.selected]);
 													blit();
 												});
-												rootElem.append($("<span/>",{text:el.identity}));
+												var imgSrc = calculateImageSource(stanza);
+												var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail"});
+												rootElem.append(img);
 												break;
 											case "text":
-												rootElem.on("click",function(){
+												checkbox.on("change",function(){
+													var newState = $(this).is(":checked");
+													stanza.chosenForSelectionAction = newState;
 													delete Modes.select.selected.texts[el.identity];
 													Progress.call("onSelectionChanged",[Modes.select.selected]);
 													blit();
 												});
-												rootElem.append($("<span/>",{text:el.identity}));
+												var word = stanza;
+												var run = $("<span/>",{
+														text:word.text,
+														class:"stanzaThumbnail"
+												}).css({
+														"color":word.color[0],
+														"font-family":word.font,
+														"font-style":word.italic ? "italic" : "normal",
+														"font-weight":word.bold ? "bold" : "normal",
+														"text-decoration":word.underline ? "underline" : "normal"
+												});
+												rootElem.append(run);
 												break;
 											case "multiWordText":
-												rootElem.on("click",function(){
+												checkbox.on("change",function(){
+													var newState = $(this).is(":checked");
+													stanza.chosenForSelectionAction = newState;
 													delete Modes.select.selected.multiWordTexts[el.identity];
 													Progress.call("onSelectionChanged",[Modes.select.selected]);
 													blit();
 												});
-												rootElem.append($("<span/>",{text:el.identity}));
+												var textElem = $("<span/>",{class:"stanzaThumbnail"});
+												var fontSizeMax = _.maxBy(stanza.words,function(w){return w.size;}).size;
+												var scalingFactor = 100 / fontSizeMax;
+												_.forEach(stanza.words,function(word){
+														var run = $("<span/>",{
+																text:word.text
+														}).css({
+																"color":word.color[0],
+																"font-family":word.font,
+																"font-style":word.italic ? "italic" : "normal",
+																"font-weight":word.bold ? "bold" : "normal",
+																"text-decoration":word.underline ? "underline" : "normal",
+																"font-size":sprintf("%s%%",word.size * scalingFactor)
+														});
+														textElem.append(run);
+												});
+												rootElem.append(textElem);
 												break;
 											case "video":
-												rootElem.on("click",function(){
+												checkbox.on("change",function(){
+													var newState = $(this).is(":checked");
+													stanza.chosenForSelectionAction = newState;
 													delete Modes.select.selected.videos[el.identity];
 													Progress.call("onSelectionChanged",[Modes.select.selected]);
 													blit();
@@ -2206,6 +2257,11 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
+							_.forEach(["images","text","inks","multiWordTexts","videos"],function(label){
+								_.forEach(Modes.select[label],function(el){
+									delete el["chosenForSelectionAction"];
+								});
+							});
                 Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
 								updateSelectionDescriber();
