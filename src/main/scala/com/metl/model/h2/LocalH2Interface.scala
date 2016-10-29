@@ -290,6 +290,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation = findAndModifyConversation(jid,c => c.replacePermissions(newPermissions))
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = findAndModifyConversation(jid,c => c.replaceSubject(newSubject))
   def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = findAndModifyConversation(jid,c => c.addSlideAtIndex(index))
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = findAndModifyConversation(jid,c => c.addGroupSlideAtIndex(index,grouping))
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = findAndModifyConversation(jid,c => c.replaceSlides(newSlides))
   def updateConversation(jid:String,conversation:Conversation):Conversation = {
     if (jid == conversation.jid.toString){

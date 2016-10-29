@@ -37,14 +37,14 @@ var ContentFilter = (function(){
             name:group.name,
             filterStanza:function(stanza){
                 var members = "members" in group ? group.members : [];
-                return "author" in stanza && _.contains(members,stanza.author);
+                return "author" in stanza && _.includes(members,stanza.author);
             },
             enabled:true
         };
     };
     var applyFilters = function(stanza){
-	var observed = Participants.getParticipants()[stanza.author];
-	if(observed && !observed.following) return false;
+        var observed = Participants.getParticipants()[stanza.author];
+        if(observed && !observed.following) return false;
         return _.some(filters,function(filter){
             return ("enabled" in filter && filter.enabled == true) ? filter.filterStanza(stanza) : false ;
         });
@@ -107,7 +107,7 @@ var ContentFilter = (function(){
             filters = _.concat([myPrivate,myPublic],_.map(groups,generateGroupFilter));
         } else {
             filters = _.concat([owner,myPrivate,myPublic],_.map(_.filter(groups,function(g){
-                return _.contains(g.members,UserSettings.getUsername());
+                return _.includes(g.members,UserSettings.getUsername());
             }),generateGroupFilter));
         }
         blit();

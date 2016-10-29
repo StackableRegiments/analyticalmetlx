@@ -201,7 +201,14 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             if (ungrouped.length > 0){
               shouldUpdateConversation = true
             }
-            ungrouped.foldLeft(gs.copy())((groupSet,person) => groupSet.groupingStrategy.addNewPerson(groupSet,person))
+            ungrouped.foldLeft(gs.copy())((groupSet,person) => {
+              if(person == details.author){
+                groupSet
+              }
+              else{
+                groupSet.groupingStrategy.addNewPerson(groupSet,person)
+              }
+            })
           }))
         })
         debug("newSlides: %s".format(newSlides))

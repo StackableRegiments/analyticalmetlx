@@ -173,6 +173,7 @@ var Conversations = (function(){
         constructPrevSlideButton(slideControls),
         constructNextSlideButton(slideControls),
         constructAddSlideButton(slideControls)
+        constructAddGroupSlideButton(slideControls)
         slideContainer.off("scroll");
         slideContainer.on("scroll",paintThumbs);
         indicateActiveSlide(currentSlide);
@@ -582,6 +583,25 @@ var Conversations = (function(){
             })));
         }
     }
+    var addGroupSlideFunction = function(){
+        if(shouldModifyConversationFunction()){
+            var currentJid = currentConversation.jid;
+            var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
+            var newIndex = currentSlideIndex + 1;
+            addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex);
+            Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+                if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
+                    if ("slides" in incomingDetails){
+                        var newSlide = _.find(incomingDetails.slides,function(s){
+                            return s.index == newIndex && s.id != currentSlide;
+                        });
+			setStudentsMustFollowTeacherFunction(true);
+                        doMoveToSlide(newSlide.id.toString());
+                    }
+                }
+            };
+        }
+    };
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
@@ -606,6 +626,9 @@ var Conversations = (function(){
     }
     var constructAddSlideButton = function(container){
         constructSlideButton("addSlideButton","Add Slide","fa-plus",shouldModifyConversationFunction,container);
+    }
+    var constructAddGroupSlideButton = function(container){
+        constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
     }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",always,container);
@@ -719,6 +742,7 @@ var Conversations = (function(){
         $("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
+            .on("click","#addGroupSlideButton",addGroupSlideFunction)
             .on("click","#addSlideButton",addSlideFunction);
         $("#conversations").click(function(){
             showBackstage("conversations");

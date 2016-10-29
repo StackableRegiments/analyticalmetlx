@@ -472,7 +472,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
-  //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
+                                                                                                                //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
@@ -651,98 +651,98 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-/*
-  private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
-  private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
-  private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
-  private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
-*/
+  /*
+   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
+   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
+   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+   */
   protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
     /*
-    ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
-      JArray(for {
-          tb <- Globals.tokBox.toList
-          s <- tokSession.toList
-          a <- tb.getArchives(s)
-        } yield {
-          JObject(
-            List(
-              JField("id",JString(a.id)),
-              JField("name",JString(a.name))
-            ) ::: 
-            a.url.toList.map(u => JField("url",JString(u))) :::
-            a.size.toList.map(s => JField("size",JInt(s))) :::
-            a.duration.toList.map(d => JField("size",JInt(d))) :::
-            a.createdAt.toList.map(c => JField("created",JInt(c)))
-          )
-        })
-    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-    ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
-        tb <- Globals.tokBox
-        s <- tokSession
-        a <- tb.getArchive(s,id)
-      } yield {
-        Extraction.decompose(a)
-      }).toList)
-    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-    ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
-        tb <- Globals.tokBox
-        s <- tokSession
-      } yield {
-        tb.removeArchive(s,id)
-        pretty(render(a))
-      }).toList)
-      Noop
-    }),
-    ClientSideFunction("startBroadcast",List("layout"),(args) => {
-      val layout = getArgAsString(args(0))
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSession
-        b = tb.startBroadcast(s,layout)
-      } yield {
-        Extraction.decompose(b)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
-      val id = getArgAsString(args(0))
-      val layout = getArgAsString(args(1))
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSession
-        a = tb.updateBroadcast(s,id,layout)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSession
-        b <- tb.getBroadcast(s)
-        a = tb.stopBroadcast(s,b.id)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("getBroadcast",List.empty[String],(args) => {
-      (for {
-        tb <- Globals.tokBox
-        s <- tokSession
-        a <- tb.getBroadcast(s)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-  */
+     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
+     JArray(for {
+     tb <- Globals.tokBox.toList
+     s <- tokSession.toList
+     a <- tb.getArchives(s)
+     } yield {
+     JObject(
+     List(
+     JField("id",JString(a.id)),
+     JField("name",JString(a.name))
+     ) :::
+     a.url.toList.map(u => JField("url",JString(u))) :::
+     a.size.toList.map(s => JField("size",JInt(s))) :::
+     a.duration.toList.map(d => JField("size",JInt(d))) :::
+     a.createdAt.toList.map(c => JField("created",JInt(c)))
+     )
+     })
+     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+     ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
+     val id = getArgAsString(args(0))
+     JArray((for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     a <- tb.getArchive(s,id)
+     } yield {
+     Extraction.decompose(a)
+     }).toList)
+     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+     ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
+     val id = getArgAsString(args(0))
+     JArray((for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     } yield {
+     tb.removeArchive(s,id)
+     pretty(render(a))
+     }).toList)
+     Noop
+     }),
+     ClientSideFunction("startBroadcast",List("layout"),(args) => {
+     val layout = getArgAsString(args(0))
+     (for {
+     tb <- Globals.tokBox
+     if (shouldModifyConversation())
+     s <- tokSession
+     b = tb.startBroadcast(s,layout)
+     } yield {
+     Extraction.decompose(b)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
+     val id = getArgAsString(args(0))
+     val layout = getArgAsString(args(1))
+     (for {
+     tb <- Globals.tokBox
+     if (shouldModifyConversation())
+     s <- tokSession
+     a = tb.updateBroadcast(s,id,layout)
+     } yield {
+     Extraction.decompose(a)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
+     (for {
+     tb <- Globals.tokBox
+     if (shouldModifyConversation())
+     s <- tokSession
+     b <- tb.getBroadcast(s)
+     a = tb.stopBroadcast(s,b.id)
+     } yield {
+     Extraction.decompose(a)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     ClientSideFunction("getBroadcast",List.empty[String],(args) => {
+     (for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     a <- tb.getBroadcast(s)
+     } yield {
+     Extraction.decompose(a)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     */
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -898,6 +898,18 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty),
+    ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping"),(args) => {
+      val jid = getArgAsString(args(0))
+      val index = getArgAsInt(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      val grouping = getArgAsString(args(2)) match {
+        case _ => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByTotalGroups(3),Nil)
+      }
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.addGroupSlideAtIndexOfConversation(c.jid.toString,index,grouping)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1200,35 +1212,35 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     })
     /*
-    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
-    val receiveTokBoxSession:Box[JsCmd] = (for {
-      cc <- currentConversation
-      tb <- Globals.tokBox
-    } yield {
-      val role = shouldModifyConversation() match {
-        case true => TokRole.Moderator
-        case false => TokRole.Publisher
-      }
-      val session = tokSession.getOrElse({
-        val newSession = tb.getSessionToken(cc.jid.toString(),role)
-        tokSession = Some(newSession)
-        newSession
-      })
-      val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
-        JField("sessionId",JString(session.sessionId)),
-        JField("token",JString(session.token)),
-        JField("apiKey",JInt(session.apiKey))
-      )))
-      j
-    })
-    val receiveTokBoxBroadcast:Box[JsCmd] = (for {
-      tb <- Globals.tokBox
-      s <- tokSession
-      a <- tb.getBroadcast(s)
-    } yield {
-      val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
-      j
-    })
+     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
+     val receiveTokBoxSession:Box[JsCmd] = (for {
+     cc <- currentConversation
+     tb <- Globals.tokBox
+     } yield {
+     val role = shouldModifyConversation() match {
+     case true => TokRole.Moderator
+     case false => TokRole.Publisher
+     }
+     val session = tokSession.getOrElse({
+     val newSession = tb.getSessionToken(cc.jid.toString(),role)
+     tokSession = Some(newSession)
+     newSession
+     })
+     val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+     JField("sessionId",JString(session.sessionId)),
+     JField("token",JString(session.token)),
+     JField("apiKey",JInt(session.apiKey))
+     )))
+     j
+     })
+     val receiveTokBoxBroadcast:Box[JsCmd] = (for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     a <- tb.getBroadcast(s)
+     } yield {
+     val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
+     j
+     })
      */
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
