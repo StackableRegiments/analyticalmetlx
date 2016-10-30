@@ -112,10 +112,11 @@ var Participants = (function(){
         if(!themeCloud) themeCloud = d3.select("#lang")
             .style("margin-left","1em");
         fontSizes.domain(d3.extent(_.map(data,"value")));
+	$("#lang .word").remove();
         var words = themeCloud.selectAll(".word")
                 .data(data,function(d){
                     return d.key;
-                })
+                });
         words.enter()
             .append("div")
             .attr("class","word")
@@ -126,14 +127,15 @@ var Participants = (function(){
                 return d.key;
             })
             .style("font-size",function(d){
+		console.log(d,fontSizes(d.value));
                 return fontSizes(d.value)+"px";
             })
             .merge(words)
             .sort(function(a,b){
                 return d3.ascending(b.value, a.value);
             });
-	words.exit()
-	    .remove();
+        words.exit()
+            .remove();
     }
     var contextFilters = {
         keyboarding:true,
@@ -151,17 +153,19 @@ var Participants = (function(){
         var contexts = {};
         _.each(boardContent.themes,function(theme){
             _.each(theme.text.split(" "),function(t){
-                t = t.toLowerCase();
-                var context = theme.origin;
-                if(contextFilters[context] == true){
-                    Analytics.word.incorporate(t);
-                    if(!(t in contexts)){
-                        contexts[t] = {};
+                if(t.length > 0){//It will come back with empty strings
+                    t = t.toLowerCase();
+                    var context = theme.origin;
+                    if(contextFilters[context] == true){
+                        Analytics.word.incorporate(t);
+                        if(!(t in contexts)){
+                            contexts[t] = {};
+                        }
+                        if(!(context in contexts[t])){
+                            contexts[t][context] = 0;
+                        }
+                        contexts[t][context]++;
                     }
-                    if(!(context in contexts[t])){
-                        contexts[t][context] = 0;
-                    }
-                    contexts[t][context]++;
                 }
             });
         });
@@ -188,7 +192,7 @@ var Participants = (function(){
     var updateFilters = function(){
         _.each(contextFilters,function(val,filter){
             var el = $(sprintf("#%s",filter));
-	    el.attr("checked",contextFilters[filter]);
+            el.attr("checked",contextFilters[filter]);
             el.off("click").on("click",function(){
                 contextFilters[filter] = !contextFilters[filter];
                 updateParticipantsListing();
