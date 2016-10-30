@@ -85,7 +85,15 @@ var ContentFilter = (function(){
         var label = root.find(".contentFilterCheckboxLabel");
         var labelText = root.find(".contentFilterCheckboxLabelText");
         var id = sprintf("contentFilter_%s",filter.id);
-        labelText.text(filter.name);
+        var referencedGroup = _.find(Conversations.getCurrentSlide().groupSet.groups,function(group){
+            return group.id == filter.id;
+        });
+        if(referencedGroup){
+            labelText.text(_.join(referencedGroup.members,","));
+        }
+        else{
+            labelText.text(filter.name);
+        }
         label.attr("for",id);
         cb.prop("checked",filter.enabled);
         cb.attr("id",id);

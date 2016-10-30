@@ -188,7 +188,11 @@ function isUsable(element){
             _.some(element.audiences,function(audience){
                 return audience.action == "whitelist" && _.exists(myGroups,audience.name);
             });
-    return boundsOk && sizeOk && textOk && forMyGroup;
+    var forMe = (element.author == UserSettings.getUsername() ||
+                 _.some(element.audiences,function(audience){
+                     return audience.action == "direct" && audience.name == UserSettings.getUsername();
+                 }));
+    return boundsOk && sizeOk && textOk && (forMyGroup || forMe);
 }
 function usableStanzas(){
     return _.map(boardContent.multiWordTexts).map(function(v){

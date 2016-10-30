@@ -87,7 +87,7 @@ describe('When the class breaks into groups,', function() {
             return memberships == 1;
         }));
     });
-    it("should not place the teacher in any group",function(){
+    it("the teacher does not join any group",function(){
         assert(_.every(tT.currentSlide.groupSet.groups,function(group){
             return !(_.some(group.members,teacherName));
         }));
@@ -99,16 +99,25 @@ describe('When the class breaks into groups,', function() {
         });
         browser.pause(1500);//Let everything synchronize
 
-        assert(_.includes(tT.plainTexts,"Phrase 1"));
         assert(_.includes(sA.plainTexts,"Phrase 1"));
         assert(_.includes(sB.plainTexts,"Phrase 1"));
 
-        assert(_.includes(tT.plainTexts,"Phrase 2"));
         assert(_.includes(sA.plainTexts,"Phrase 2"));
         assert(!(_.includes(sB.plainTexts,"Phrase 2")));
 
-        assert(_.includes(tT.plainTexts,"Phrase 3"));
         assert(! (_.includes(sA.plainTexts,"Phrase 3")));
         assert(_.includes(sB.plainTexts,"Phrase 3"));
+    });
+    it("the teacher can see all groups",function(){
+        assert(_.includes(tT.plainTexts,"Phrase 1"));
+        assert(_.includes(tT.plainTexts,"Phrase 2"));
+        assert(_.includes(tT.plainTexts,"Phrase 3"));
+    });
+    it("the teacher can filter out groups",function(){
+        tT.menuButton.click();
+        teacher.waitUntil(function(){return teacher.isVisible("#roomToolbar");});
+        tT.learning.click();
+        teacher.waitUntil(function(){return teacher.isVisible("#menuContentFilter");});
+        tT.contentFilter.click();
     });
 });

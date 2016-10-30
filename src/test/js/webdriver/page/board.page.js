@@ -120,6 +120,7 @@ var BoardPage = function(user) {
             return user.element(".backstage-menu.active");
         }},
         participants:{get:function(){return user.element("#menuParticipants");}},
+        contentFilter:{get:function(){return user.element("#menuContentFilter");}},
         learning:{get:function(){return user.element("#roomToolbar");}},
         toggleFilter:{value:function(name){
             user.execute(sprintf("$('#%s').click()",name));

@@ -35,9 +35,9 @@
   <logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
 
   <logger name="com.metl.data.ByTotalGroups" level="TRACE"/>
-  <logger name="com.metl.data.JsonSerializer" level="TRACE"/>
-  <logger name="com.metl.data.GenericXmlSerializer" level="TRACE"/>
-  <logger name="com.metl.h2.H2Serializer" level="TRACE"/>
+  <!--logger name="com.metl.data.JsonSerializer" level="TRACE"/-->
+  <!--logger name="com.metl.data.GenericXmlSerializer" level="TRACE"/-->
+  <!--logger name="com.metl.h2.H2Serializer" level="TRACE"/-->
 
   <logger name="com.metl.model.SecurityListener" level="ALL">
     <appender-ref ref="SECURITY_FILE"/>
