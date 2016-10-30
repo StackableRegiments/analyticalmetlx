@@ -19,8 +19,8 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
 
-	console.log(json);
-	
+        console.log(json);
+
         historyDownloadedMark = Date.now();
         boardContent = json;
         boardContent.minX = 0;
@@ -181,7 +181,22 @@ function isUsable(element){
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    return boundsOk && sizeOk && textOk;
+    console.log(element);
+    var myGroups = Conversations.getCurrentGroup();
+    var forMyGroup = _.isEmpty(element.audiences) ||
+            Conversations.isAuthor() ||
+            _.some(element.audiences,function(audience){
+                return audience.action == "whitelist" && _.exists(myGroups,audience.name);
+            });
+    return boundsOk && sizeOk && textOk && forMyGroup;
+}
+function usableStanzas(){
+    return _.map(boardContent.multiWordTexts).map(function(v){
+        return {
+            identity:v.identity,
+            usable:isUsable(v)
+        }
+    });
 }
 var leftPoint = function(xDelta,yDelta,l,x2,y2,bulge){
     var px = yDelta * l * bulge;

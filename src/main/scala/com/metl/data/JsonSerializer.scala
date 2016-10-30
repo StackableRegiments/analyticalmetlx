@@ -100,12 +100,12 @@ trait JsonSerializerHelper {
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
-class JsonSerializer(configName:String) extends Serializer with JsonSerializerHelper {
+class JsonSerializer(configName:String) extends Serializer with JsonSerializerHelper with Logger{
   type T = JValue
   lazy val config = ServerConfiguration.configForName(configName)
 
   protected def parseAudiences(input:MeTLData):List[JField] = {
-    List(
+    val res = List(
       JField("audiences",JArray(input.audiences.map(a => {
         JObject(List(
           JField("domain",JString(a.domain)),
@@ -115,8 +115,9 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         ))
       })))
     )
+    trace(res)
+    res
   }
-
   protected def parseMeTLContent(input:MeTLStanza):List[JField] = {
     List(
       JField("author",JString(input.author)),
@@ -133,6 +134,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
   }
   protected def parseJObjForAudiences(input:JObject,config:ServerConfiguration = ServerConfiguration.empty):List[Audience] = {
     ((input \ "audiences").extract[List[JObject]]).flatMap(a => {
+      info(a)
       try {
         val domain = getStringByName(a,"domain")
         val name = getStringByName(a,"name")
@@ -148,7 +150,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
   }
 
   protected def parseJObjForMeTLContent(input:JObject,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
-    val author = (input \ "author").extract[String] //getStringByName(input,"author")
+    val author = (input \ "author").extract[String] 
     val timestamp = getLongByName(input,"timestamp")
     val audiences = parseJObjForAudiences(input,config)
     ParsedMeTLContent(author,timestamp,audiences)

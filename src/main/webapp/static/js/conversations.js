@@ -7,6 +7,7 @@ var Conversations = (function(){
     var targetConversationJid = "";
     var currentTeacherSlide = 0;
     var isSyncedToTeacher = false;
+    var currentGroup = [];
 
     var conversationTemplate = undefined;
     var conversationSearchListing = undefined;
@@ -250,24 +251,42 @@ var Conversations = (function(){
             return "collaboration disabled";
         }
     };
+    var loadCurrentGroup = function(details){
+        var currentSlideDetails = _.find(details.slides,function(slide){
+            return slide.id == currentSlide;
+        });
+        console.log("loadCurrentGroup",currentSlideDetails);
+        if(currentSlideDetails){
+            currentGroup = [];
+            var groupSet = currentSlideDetails.groupSet;
+            if(groupSet){
+                _.each(groupSet.groups,function(group){
+                    if(_.includes(group.members,UserSettings.getUsername())){
+                        currentGroup.push(group.id);
+                    }
+                });
+            }
+        }
+    }
     var actOnConversationDetails = function(details){
         try{
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
             };
-            //updateStatus(sprintf("Updating to conversation %s",details.jid));
             if ("jid" in details && targetConversationJid && details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
                 if (shouldDisplayConversationFunction(details)){
                     currentConversation = details;
                     if ("configName" in details){
                         currentServerConfigName = details.configName;
                     }
+                    console.log("actOnConversationDetails",details);
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
                         Progress.call("onConversationJoin");
                         BannedState.checkIsBanned(details,true);
                         ThumbCache.clearCache();
                     }
+                    loadCurrentGroup(details);
                 }
                 else {
                     currentConversation = {};
@@ -595,7 +614,7 @@ var Conversations = (function(){
                         var newSlide = _.find(incomingDetails.slides,function(s){
                             return s.index == newIndex && s.id != currentSlide;
                         });
-			setStudentsMustFollowTeacherFunction(true);
+                        setStudentsMustFollowTeacherFunction(true);
                         doMoveToSlide(newSlide.id.toString());
                     }
                 }
@@ -729,6 +748,9 @@ var Conversations = (function(){
         }
         return newConv;
     }
+    var getCurrentGroupFunction = function(){
+        return _.clone(currentGroup);
+    };
     Progress.newConversationDetailsReceived["Conversations"] = actOnNewConversationDetailsReceived;
     Progress.conversationsReceived["Conversations"] = actOnConversations;
     Progress.syncMoveReceived["Conversations"] = actOnSyncMove;
@@ -792,6 +814,7 @@ var Conversations = (function(){
             }
             return UserSettings.getUsername() == Conversations.getCurrentConversation().author;
         },
+        getCurrentGroup : getCurrentGroupFunction,
         getCurrentTeacherSlide : function(){return currentTeacherSlide;},
         getCurrentSlideJid : function(){return currentSlide;},
         getCurrentSlide : getCurrentSlideFunc,

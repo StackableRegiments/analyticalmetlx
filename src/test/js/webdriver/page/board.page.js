@@ -40,10 +40,18 @@ var BoardPage = function(user) {
     var letters = function(ls){
         _.each(ls,letter);
     }
+    var textStanzas = function() {
+        return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value
+    };
     return Object.create(Page, {
+        driver:user,
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
         privateMode: { get:function(){ return user.element("#privateMode") } },
         publicMode: { get:function(){ return user.element("#publicMode") } },
+
+	usableStanzas: { get:function(){
+	    return user.execute("return usableStanzas()").value;
+	} },
 
         viewport: {get:function(){
             var v = user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
@@ -57,7 +65,7 @@ var BoardPage = function(user) {
             return user.element("#addSlideButton");
         } },
         addGroupSlide:{get:function(){
-	    return user.element("#addGroupSlideButton");
+            return user.element("#addGroupSlideButton");
         }},
         prevSlide:{get:function(){
             return user.element("#prevSlideButton");
@@ -138,7 +146,12 @@ var BoardPage = function(user) {
 
         texts: { get: function () { return user.execute("return _.map(boardContent.multiWordTexts,function(w){var _w = _.cloneDeep(w);delete _w.doc;return _w;})").value } },
         textMode: { get: function() { return user.element("#insertText"); } },
-        textStanzas: { get: function() { return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value } },
+        textStanzas: { get: textStanzas },
+        plainTexts: { get: function() {
+            return textStanzas().map(function(stanza){
+                return _.join(_.map(stanza.words,"text"),"").trim();
+            });
+        }},
         keyboard: { value:function(x,y,text){
             user.moveToObject("#board",x,y);
             user.leftClick();

@@ -141,6 +141,14 @@ function hexToRgb(hex) {
         return Colors.getDefaultColorObj();
     }
 }
+function audienceToStanza(a){
+    return {
+	domain:"slide",
+	'type':"groupWork",
+	action:"whitelist",
+	name:a
+    };
+}
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
     var color = hexToRgb(p.color || defaults.color);
@@ -187,7 +195,8 @@ function richTextEditorToStanza(t){
         requestedWidth:bounds[2]-bounds[0],
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
-        words:text.map(partToStanza)
+        words:text.map(partToStanza),
+	audiences:Conversations.getCurrentGroup().map(audienceToStanza)
     }
 }
 function sendRichText(t){
@@ -195,7 +204,6 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
-//sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,

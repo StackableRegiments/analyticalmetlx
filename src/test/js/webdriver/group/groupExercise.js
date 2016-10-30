@@ -8,6 +8,7 @@ var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
 describe('When the class breaks into groups,', function() {
+    var teacherName;
     var tT = board(teacher);
     var sA = board(studentA);
     var sB = board(studentB);
@@ -15,11 +16,13 @@ describe('When the class breaks into groups,', function() {
     var join = function(user,label){
         var login = LoginPage(user);
         var search = ConversationsPage(user);
-        login.username.setValue(sprintf("%s.user.%s",label,Math.floor(Math.random() * 10000)));
+        var username = sprintf("%s.user.%s",label,Math.floor(Math.random() * 10000));
+        login.username.setValue(username);
         login.submit();
         assert(search.waitForSearchBox());
         switch(label){
         case 'teacher':
+            teacherName = username;
             assert(search.waitForCreateButton());
             var previousConversations = search.getConversations();
             user.click("#createConversationButton");
@@ -70,20 +73,42 @@ describe('When the class breaks into groups,', function() {
     });
     it("the students should all be split into groups",function(){
         var groupSet = tT.currentSlide.groupSet;
-        console.log(_.map(groupSet.groups,"members"));
         assert.equal(groupSet.groups.length,2);
-        var userGroups = _.reduce(groupSet.groups,function(acc,item){
+        var groupsByUser = _.reduce(groupSet.groups,function(acc,item){
             _.each(item.members,function(member){
                 if(!(member in acc)){
                     acc[member] = 0;
                 }
                 acc[member] += 1;
             })
-	    return acc;
+            return acc;
         },{});
-	console.log("Usergroups",userGroups);
-	assert(_.every(userGroups,function(memberships){
-	    return memberships == 1;
-	}));
+        assert(_.every(groupsByUser,function(memberships){
+            return memberships == 1;
+        }));
+    });
+    it("should not place the teacher in any group",function(){
+        assert(_.every(tT.currentSlide.groupSet.groups,function(group){
+            return !(_.some(group.members,teacherName));
+        }));
+    });
+    it("students see the teacher work but not other groups",function(){
+        _.each([tT,sA,sB],function(client,i){
+            client.textMode.click();
+            client.keyboard(50,100 + i * 100,"Phrase "+(i+1));
+        });
+        browser.pause(1500);//Let everything synchronize
+
+        assert(_.includes(tT.plainTexts,"Phrase 1"));
+        assert(_.includes(sA.plainTexts,"Phrase 1"));
+        assert(_.includes(sB.plainTexts,"Phrase 1"));
+
+        assert(_.includes(tT.plainTexts,"Phrase 2"));
+        assert(_.includes(sA.plainTexts,"Phrase 2"));
+        assert(!(_.includes(sB.plainTexts,"Phrase 2")));
+
+        assert(_.includes(tT.plainTexts,"Phrase 3"));
+        assert(! (_.includes(sA.plainTexts,"Phrase 3")));
+        assert(_.includes(sB.plainTexts,"Phrase 3"));
     });
 });
