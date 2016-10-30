@@ -39,7 +39,7 @@ describe('When the MeTLing pot processes content,', function() {
         });
     });
     it("given that text has been submitted",function(){
-        var corpus = "Interesting content which is largely but not completely devoid of stopwords and has repeated content to show repeated content repeating.";
+        var corpus = "Interesting content which is largely but not completely devoid of stopwords and has repeating content to show that repeating content repeated.  Frequently contented frequently.";
         teacherT.textMode.click();
         teacherT.keyboard(100,100,corpus);
     });
@@ -57,7 +57,8 @@ describe('When the MeTLing pot processes content,', function() {
         assert(_.includes(_.map(teacherT.cloudData,"key"),"interesting"));
     });
     it("it should trim punctuation",function(){
-        assert(_.includes(_.map(teacherT.cloudData,"key"),"repeating"));
+	console.log(teacherT.cloudData);
+        assert(_.includes(_.map(teacherT.cloudData,"key"),"frequently"));
     });
     it("it should emit image classifications",function(){
         assert(_.includes(_.map(teacherT.cloudData,"key"),"maple"));
@@ -96,5 +97,10 @@ describe('When the MeTLing pot processes content,', function() {
         assert(gt("plant","content"));
         assert(gt("content","maple"));
         assert(gt("maple","cat"));
+    });
+    it("it should permit the user to toggle standard conjugation",function(){
+        assert.equal(1,_.filter(teacherT.cloudData,function(c){return c.key == "repeat" && c.value == 3}).length);
+	teacherT.toggleFilter("conjugate");
+        assert.equal(1,_.filter(teacherT.cloudData,function(c){return c.key == "repeating" && c.value == 2;}).length);
     });
 });
