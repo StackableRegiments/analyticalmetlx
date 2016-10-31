@@ -1953,7 +1953,7 @@ var Modes = (function(){
 									var originalSrc = readerE.target.result;
 									clientSideProcessImageSrc(originalSrc,onComplete,function(img){
                     var originalSize = originalSrc.length;
-										return originalSize < newSize;
+										return originalSize < img;
 									});
                 }
                 reader.readAsDataURL(currentImage.fileUpload);
@@ -2124,25 +2124,29 @@ var Modes = (function(){
 								},	
 
 								handleDrop:function(dataTransfer,x,y){
-									var files = dataTransfer.files;
-									var file = files[0];
-									console.log("file:",file);
-									var worldPos = screenToWorld(x,y);
-									currentImage = {
-											"type":"imageDefinition",
-											"screenX":x,
-											"screenY":y,
-											"x":worldPos.x,
-											"y":worldPos.y
-									}
+									var processFile = function(file){
+										console.log("file:",file);
+										if (file != null && "type" in file && file.type.indexOf("image") == 0){
+											var worldPos = screenToWorld(x,y);
+											currentImage = {
+													"type":"imageDefinition",
+													"screenX":x,
+													"screenY":y,
+													"x":worldPos.x,
+													"y":worldPos.y
+											}
+											console.log("setting file:",file);
+											currentImage.fileUpload = file;
+											console.log("clientSideProcess",dataTransfer,currentImage);
+											clientSideProcessImage(sendImageToServer);
+										}
+									};
+									_.forEach(dataTransfer.files,processFile);
+									_.forEach(dataTransfer.items,function(item){
+										var file = item.getAsFile(0);
+										processFile(file);
+									});
 
-									if (file.type.indexOf("image") == 0){
-										console.log("setting file:",file);
-										currentImage.fileUpload = file;
-									}
-
-									console.log("clientSideProcess",dataTransfer,currentImage);
-									clientSideProcessImage(sendImageToServer);
 								},	
                 deactivate:function(){
                     resetImageUpload();
