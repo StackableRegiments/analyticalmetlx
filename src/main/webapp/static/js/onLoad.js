@@ -834,63 +834,130 @@ $(function(){
 				var x = ev.offsetX || 10;
 				var y = ev.offsetY || 10;
 				var availableTypes = df.types;
+				var items = df.items;
+				var files = df.files;
+				var dataSets = _.map(availableTypes,function(type){
+					return {
+						key:type,
+						value:df.getData(type)
+					};
+				});
 				var conditionallyActOn = function(coll,itemPred,action){
 					var elem = _.find(coll,itemPred);
 					if (elem != undefined && elem != null){
 						action(elem,df.getData(elem));
 					};
 				};
-				var handled = false;
-				console.log("found types: ",availableTypes);
-				conditionallyActOn(availableTypes,function(label){return label == "Files";},function(type,file){
-					if (!handled){
-						console.log("pasted attachment",type,file,df);
-						Modes.image.handleDrop(df,x,y);
-						handled = true;
-					}
-				});
-				conditionallyActOn(availableTypes,function(label){return label.indexOf("image") == 0;},function(type,image){
-					if (!handled){
-						console.log("pasted png",type,image);
-						Modes.image.handleDrop(df,x,y);
-						handled = true;
-					}
-				});
-				/*
-				conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
-					if (!handled){
-						console.log("pasted html",type,html);
-						handled = true;
-					}
-				});
-				*/
-				conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
-					if (!handled){
-						var htmlElem = $(html);
-						console.log("pasted text as html",type,html,htmlElem);
-						if (htmlElem[0].tagName.toLowerCase() == "img"){
-							console.log("html => images:",htmlElem,htmlElem[0].src);
-							try {
-								Modes.image.handleDroppedSrc(htmlElem[0].src,x,y);	
-							} catch (e){
-								errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
-							}
+				if (_.size(availableTypes) > 1){
+					var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
+					var rootElem = $("<span/>",{id:rootId});
+					var modal = $.jAlert({
+						title:"Data to paste",
+						content:rootElem[0].outerHTML,
+						closeOnClick:true,
+						closeOnEsc:true,
+						blurBackground:true	
+					});	
+					$("#"+rootId).html(_.map(availableTypes,function(type){
+						if (type.indexOf("image") == 0){ 
+							return $("<button/>",{
+								value:type,
+								text:type
+							}).on("click",function(){
+								Modes.image.handleDrop(df,x,y);
+								modal.closeAlert();
+							});
+						} else if (type == "text/html"){
+							return $("<button/>",{
+								value:type,
+								text:type
+							}).on("click",function(){
+								var html = _.find(dataSets,function(ds){
+									return ds.key == type;
+								}).value;
+								var htmlElem = $(html);
+								html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
+								console.log("pasted text as html",type,html,htmlElem);
+								_.forEach(_.filter(htmlElem,function(node){
+									return "tagName" in node && node.tagName == "img";
+								}),function(imgNode){
+									try {
+										Modes.image.handleDroppedSrc(imgNode.src,x,y);	
+									} catch (e){
+										errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+									}
+								});
+								Modes.text.handleDrop(html,x,y);
+								modal.closeAlert();
+							});
+						} else if (type.indexOf("text") == 0){
+							return $("<button/>",{
+								value:type,
+								text:type
+							}).on("click",function(){
+								var text = _.find(dataSets,function(ds){
+									return ds.key == type;
+								}).value;
+								Modes.text.handleDrop(text,x,y);
+								modal.closeAlert();
+							});
 						} else {
-							Modes.text.handleDrop(html,x,y);
+							return $("<span/>");
 						}
-						handled = true;
-					}
-				});
+					}));
+				} else {
+					var handled = false;
+					console.log("found types: ",availableTypes);
+					conditionallyActOn(availableTypes,function(label){return label == "Files";},function(type,file){
+						if (!handled){
+							console.log("pasted attachment",type,file,df);
+							Modes.image.handleDrop(df,x,y);
+							handled = true;
+						}
+					});
+					conditionallyActOn(availableTypes,function(label){return label.indexOf("image") == 0;},function(type,image){
+						if (!handled){
+							console.log("pasted png",type,image);
+							Modes.image.handleDrop(df,x,y);
+							handled = true;
+						}
+					});
+					/*
+					conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
+						if (!handled){
+							console.log("pasted html",type,html);
+							handled = true;
+						}
+					});
+					*/
+					conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
+						if (!handled){
+							var htmlElem = $(html);
+							console.log("pasted text as html",type,html,htmlElem);
+							if (htmlElem[0].tagName.toLowerCase() == "img"){
+								console.log("html => images:",htmlElem,htmlElem[0].src);
+								try {
+									Modes.image.handleDroppedSrc(htmlElem[0].src,x,y);	
+								} catch (e){
+									errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+								}
+							} else {
+								Modes.text.handleDrop(html,x,y);
+							}
+							handled = true;
+						}
+					});
 
-				conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
+					conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
+						if (!handled){
+							console.log("pasted text",type,html);
+							Modes.text.handleDrop(html,x,y);
+							handled = true;
+						}
+					});
 					if (!handled){
-						console.log("pasted text",type,html);
-						Modes.text.handleDrop(html,x,y);
-						handled = true;
+						console.log("unknown type",df);
 					}
-				});
-				if (!handled){
-					console.log("unknown type",df);
 				}
 				ev.preventDefault();
 				return false;
