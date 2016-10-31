@@ -119,5 +119,8 @@ describe('When the class breaks into groups,', function() {
         tT.learning.click();
         teacher.waitUntil(function(){return teacher.isVisible("#menuContentFilter");});
         tT.contentFilter.click();
+        var groups = tT.currentSlide.groupSet.groups;
+	assert(teacher.isExisting("#contentFilter_"+groups[0].id));
+	assert(teacher.isExisting("#contentFilter_"+groups[1].id));
     });
 });
