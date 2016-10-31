@@ -1211,7 +1211,7 @@ var Modes = (function(){
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     privacy:Privacy.getCurrentPrivacy(),
                     slide:Conversations.getCurrentSlideJid(),
-                    target:"presentationSpace",
+                    target:canvasContentTarget(),
                     requestedWidth:width,
                     width:width,
                     height:0,
@@ -1495,7 +1495,7 @@ var Modes = (function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 //source.privacy = Privacy.getCurrentPrivacy();
-                                source.target = "presentationSpace";
+                                source.target = canvasContentTarget();
                                 source.slide = Conversations.getCurrentSlideJid();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
@@ -1739,7 +1739,7 @@ var Modes = (function(){
                                 bounds:[currentVideo.x,currentVideo.y,currentVideo.x+currentVideo.width,currentVideo.y+currentVideo.height],
                                 width:currentVideo.width,
                                 height:currentVideo.height,
-                                target:"presentationSpace",
+                                target:canvasContentTarget(),
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
                                 y:currentVideo.y
@@ -1977,7 +1977,7 @@ var Modes = (function(){
                                 bounds:[currentImage.x,currentImage.y,currentImage.x+currentImage.width,currentImage.y+currentImage.height],
                                 width:currentImage.width,
                                 height:currentImage.height,
-                                target:"presentationSpace",
+                                target:canvasContentTarget(),
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentImage.x,
                                 y:currentImage.y

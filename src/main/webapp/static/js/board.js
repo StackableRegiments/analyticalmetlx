@@ -47,6 +47,9 @@ function setupStatus(){
         });
     }
 }
+function canvasContentTarget(){
+	return "presentationSpace";
+}
 function strokeCollected(points){
     if(points.length > 0) {
         var currentSlide = Conversations.getCurrentSlideJid();
@@ -56,7 +59,7 @@ function strokeCollected(points){
             type:"ink",
             author:UserSettings.getUsername(),
             timestamp:Date.now(),
-            target:"presentationSpace",
+            target:canvasContentTarget(),
             privacy:Privacy.getCurrentPrivacy(),
             slide:currentSlide.toString(),
             isHighlighter:Modes.draw.drawingAttributes.isHighlighter
@@ -94,7 +97,7 @@ function batchTransform(){
         identity:Date.now().toString(),
         author:UserSettings.getUsername(),
         slide:currentSlide.toString(),
-        target:"presentationSpace",
+        target:canvasContentTarget(),
         privacy:Privacy.getCurrentPrivacy(),
         timestamp:Date.now(),
         inkIds:[],
@@ -120,7 +123,7 @@ function sendDirtyInk(ink){
         author:UserSettings.getUsername(),
         timestamp:Date.now(),
         slide:currentSlide.toString(),
-        target:"presentationSpace",
+        target:canvasContentTarget(),
         privacy:ink.privacy
     });
 }
@@ -167,7 +170,7 @@ function richTextEditorToStanza(t){
         t.author = UserSettings.getUsername();
     };
     if (t.target == undefined){
-        t.target = "presentationSpace";
+        t.target = canvasContentTarget();
     };
     if (t.privacy == undefined){
         t.privacy = Privacy.getCurrentPrivacy();
