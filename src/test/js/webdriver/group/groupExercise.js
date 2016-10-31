@@ -118,13 +118,16 @@ describe('When the class breaks into groups,', function() {
         sA.menuButton.click();
         sB.menuButton.click();
         browser.waitUntil(function(){return browser.isVisible("#roomToolbar");});
+
         tT.learning.click();
         sA.learning.click();
         sB.learning.click();
         browser.waitUntil(function(){return browser.isVisible("#menuContentFilter");});
+
         tT.contentFilter.click();
         sA.contentFilter.click();
         sB.contentFilter.click();
+
         var groups = tT.currentSlide.groupSet.groups;
         assert(teacher.isExisting("#contentFilter_"+groups[0].id));
         assert(teacher.isExisting("#contentFilter_"+groups[1].id));
