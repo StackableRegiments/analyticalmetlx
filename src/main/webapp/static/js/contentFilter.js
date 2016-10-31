@@ -113,12 +113,8 @@ var ContentFilter = (function(){
     var setFiltersFromGroups = function(groups){
         if (Conversations.isAuthor()){
             filters = _.concat([myPrivate,myPublic],_.map(groups,generateGroupFilter));
-        } else {
-            filters = _.concat([owner,myPrivate,myPublic],_.map(_.filter(groups,function(g){
-                return _.includes(g.members,UserSettings.getUsername());
-            }),generateGroupFilter));
+            blit();
         }
-        blit();
     };
     var setDefaultFilters = function(){
         if (Conversations.isAuthor()){

@@ -113,14 +113,26 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(tT.plainTexts,"Phrase 2"));
         assert(_.includes(tT.plainTexts,"Phrase 3"));
     });
-    it("the teacher can filter out groups",function(){
+    it("the teacher can filter out groups but the students cannot",function(){
         tT.menuButton.click();
-        teacher.waitUntil(function(){return teacher.isVisible("#roomToolbar");});
+        sA.menuButton.click();
+        sB.menuButton.click();
+        browser.waitUntil(function(){return browser.isVisible("#roomToolbar");});
         tT.learning.click();
-        teacher.waitUntil(function(){return teacher.isVisible("#menuContentFilter");});
+        sA.learning.click();
+        sB.learning.click();
+        browser.waitUntil(function(){return browser.isVisible("#menuContentFilter");});
         tT.contentFilter.click();
+        sA.contentFilter.click();
+        sB.contentFilter.click();
         var groups = tT.currentSlide.groupSet.groups;
-	assert(teacher.isExisting("#contentFilter_"+groups[0].id));
-	assert(teacher.isExisting("#contentFilter_"+groups[1].id));
+        assert(teacher.isExisting("#contentFilter_"+groups[0].id));
+        assert(teacher.isExisting("#contentFilter_"+groups[1].id));
+
+        assert(! studentA.isExisting("#contentFilter_"+groups[0].id));
+        assert(! studentA.isExisting("#contentFilter_"+groups[1].id));
+
+        assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
+        assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
     });
 });
