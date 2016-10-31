@@ -3,7 +3,7 @@ var ContentFilter = (function(){
         id:"owner",
         name:"owner",
         filterStanza:function(stanza){
-            return "author" in stanza && stanza.author == Conversations.getCurrentConversation().author;
+            return "author" in stanza && stanza.author == Conversations.getCurrentConversation().author && "target" in stanza && stanza.target == "presentationSpace";
         },
         enabled:true
     };
@@ -11,7 +11,7 @@ var ContentFilter = (function(){
         id:"myPrivate",
         name:"My private content",
         filterStanza:function(stanza){
-            return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PRIVATE";
+            return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PRIVATE" && "target" in stanza && stanza.target == "presentationSpace";
         },
         enabled:true
     };
@@ -19,7 +19,7 @@ var ContentFilter = (function(){
         id:"myPublic",
         name:"My public content",
         filterStanza:function(stanza){
-            return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PUBLIC";
+            return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PUBLIC" && "target" in stanza && stanza.target == "presentationSpace";
         },
         enabled:true
     };
@@ -27,17 +27,25 @@ var ContentFilter = (function(){
         id:"peer",
         name:"My peers' content",
         filterStanza:function(stanza){
-            return "author" in stanza && stanza.author != Conversations.getCurrentConversation().author && stanza.author != UserSettings.getUsername();
+            return "author" in stanza && stanza.author != Conversations.getCurrentConversation().author && stanza.author != UserSettings.getUsername() && "target" in stanza && stanza.target == "presentationSpace";
         },
         enabled:true
     };
+		var myNotepad = {
+				id:"notepad",
+				name:"My notepad content",
+				filterStanza:function(stanza){
+					return "author" in stanza && stanza.author == UserSettings.getUsername() && "privacy" in stanza && stanza.privacy == "PRIVATE" && "target" in stanza && stanza.target == "notepad";
+				},
+				enabled:false
+		}
     var generateGroupFilter = function(group){
         return {
             id:group.id,
             name:group.name,
             filterStanza:function(stanza){
                 var members = "members" in group ? group.members : [];
-                return "author" in stanza && _.contains(members,stanza.author);
+                return "author" in stanza && _.contains(members,stanza.author) && "target" in stanza && stanza.target == "presentationSpace";
             },
             enabled:true
         };
@@ -114,9 +122,9 @@ var ContentFilter = (function(){
     };
     var setDefaultFilters = function(){
         if (Conversations.isAuthor()){
-            filters = [myPrivate,myPublic,myPeers];
+            filters = [myPrivate,myPublic,myPeers,myNotepad];
         } else {
-            filters = [owner,myPrivate,myPublic,myPeers];
+            filters = [owner,myPrivate,myPublic,myPeers,myNotepad];
         }
         blit();
     };
