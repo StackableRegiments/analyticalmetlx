@@ -251,3 +251,14 @@ lazy val library = (project in file("library")).
       Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
     }
   )
+
+/*
+resourceGenerators in Compile <+=
+  (resourceManaged in Compile) map { (dir, v) =>
+    val file = "version"
+    val contents = "%s".format(version)
+    IO.write(file, contents)
+    Seq(file)
+  }
+}
+*/
