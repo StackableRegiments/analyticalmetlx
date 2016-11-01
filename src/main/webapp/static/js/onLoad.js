@@ -879,15 +879,18 @@ $(function(){
 								html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
 								console.log("pasted text as html",type,html,htmlElem);
 								_.forEach(_.filter(htmlElem,function(node){
-									return "tagName" in node && node.tagName == "img";
+									return "tagName" in node && node.tagName.toLowerCase() == "img";
 								}),function(imgNode){
+									console.log("image node:",imgNode);
 									try {
 										Modes.image.handleDroppedSrc(imgNode.src,x,y);	
 									} catch (e){
 										errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
 									}
 								});
-								Modes.text.handleDrop(html,x,y);
+								if (htmlElem.text().trim().length > 1){
+									Modes.text.handleDrop(html,x,y);
+								}
 								modal.closeAlert();
 							});
 						} else if (type.indexOf("text") == 0){
