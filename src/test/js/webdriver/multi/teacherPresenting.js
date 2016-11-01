@@ -233,11 +233,6 @@ describe('When a teacher presents,', function() {
                 _.keys(studentT.imageStanzas).length == 1;
         });
     });
-    it("the teacher should have their participants view show the themes so far introduced on their page",function(){
-        var text = _.map(teacherT.themes,"text");
-        assert(_.includes(text,"This is a "),"keyboarding failed");
-        assert(_.includes(text,"maple leaf"),"image classification failed");
-    });
     it("the teacher should delete their selected elements",function(){
         teacherT.deleteSelection.click();
     });
@@ -304,29 +299,8 @@ describe('When a teacher presents,', function() {
         teacherT.inkMode.click();
         teacherT.letters(['c','a','t']);
         teacher.waitUntil(function(){
-            var text = _.map(teacherT.themes,"text");
-            return _.includes(text,"CAT");
+            return _.keys(teacherT.inkStanzas).length > 0;
         });
-    });
-    it("should be able to filter displayed themes by origin",function(){
-        teacherT.menuButton.click();
-        teacher.waitUntil(function(){return teacher.isVisible("#roomToolbar");});
-        teacherT.learning.click();
-        teacher.waitUntil(function(){return teacher.isVisible("#menuParticipants");});
-        teacherT.participants.click();
-
-        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
-        teacherT.toggleFilter("handwriting");
-        assert(! _.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
-        teacherT.toggleFilter("handwriting");
-        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "cat";}));
-
-        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "exterior";}));
-        teacherT.toggleFilter("imageRecognition");
-        assert(! _.some(teacherT.visibleThemes(),function(t){return t.text == "exterior";}));
-        teacherT.toggleFilter("imageRecognition");
-        assert(_.some(teacherT.visibleThemes(),function(t){return t.text == "exterior";}));
-        teacherT.menuButton.click();
     });
     it("textboxes should have the same wrap when they first appear as when they come back out of history",function(){
         teacherT.textMode.click();
@@ -341,7 +315,6 @@ describe('When a teacher presents,', function() {
         browser.waitUntil(function(){return teacherT.currentSlide.index == 0;});
         teacherT.nextSlide.click();
         browser.waitUntil(function(){
-            console.log(teacherT.currentSlide.index,_.keys(teacherT.texts).length);
             return teacherT.currentSlide.index == 1 && (_.keys(teacherT.texts).length == 1);
         });
         text = _.values(teacherT.textStanzas)[0];
