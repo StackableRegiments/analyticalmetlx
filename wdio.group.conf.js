@@ -7,6 +7,7 @@ var overrides = {
     specs: [
         './src/test/js/webdriver/group/**'
     ],
+    maxInstances:1,
     capabilities: {
         teacher:{
             desiredCapabilities:{

@@ -138,4 +138,9 @@ describe('When the class breaks into groups,', function() {
         assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
         assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
     });
+    it("connection health should be a visible metric",function(){
+        assert(browser.isExisting("#healthStatus"));
+        assert(browser.isExisting("#participationStatus"));
+        assert(browser.isExisting("#complexityStatus"));
+    });
 });

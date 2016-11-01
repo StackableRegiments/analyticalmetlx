@@ -28,6 +28,31 @@ html{
     pointer-events:none;
     margin-left:@toolbar-btn-width;
 }
+.meters meter{
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    appearance:none;
+    height:5px;
+    width:100px;
+    background-color:white;
+    position:absolute;
+}
+#healthStatus{
+}
+#attendanceStatus{
+    top:10px;
+}
+#complexityStatus{
+    top:20px;
+}
+.meters {
+    width:100px;
+    position:relative;
+    vertical-align:top;
+}
+.meters, .username {
+    display:inline-block;
+}
 body{
     background-image:@body-backgroundimage;
     background-size:100% 100%;
