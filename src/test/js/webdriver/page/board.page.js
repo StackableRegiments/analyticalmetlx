@@ -49,6 +49,9 @@ var BoardPage = function(user) {
         privateMode: { get:function(){ return user.element("#privateMode") } },
         publicMode: { get:function(){ return user.element("#publicMode") } },
 
+	connectionHealth: { get:function(){ return user.execute("return $('#healthStatus').val()").value; } }, 
+	participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } }, 
+
 	usableStanzas: { get:function(){
 	    return user.execute("return usableStanzas()").value;
 	} },

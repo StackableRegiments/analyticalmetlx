@@ -140,7 +140,14 @@ describe('When the class breaks into groups,', function() {
     });
     it("connection health should be a visible metric",function(){
         assert(browser.isExisting("#healthStatus"));
+	assert(tT.connectionHealth > 0);
+    });
+    it("participant presence should be a visible metric",function(){
         assert(browser.isExisting("#participationStatus"));
+	console.log("participationHealth",tT.participationHealth);
+	assert(tT.participationHealth > 0);
+    });
+    it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));
     });
 });

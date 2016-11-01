@@ -29,13 +29,30 @@ html{
     margin-left:@toolbar-btn-width;
 }
 .meters meter{
-    -webkit-appearance:none;
-    -moz-appearance:none;
-    appearance:none;
     height:5px;
     width:100px;
     background-color:white;
     position:absolute;
+}
+.meters meter::-webkit-meter-bar {
+    background: #EEE;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.2) inset;
+    border-radius: 3px;
+}
+
+.meters meter::-webkit-meter-optimum-value {
+    background: #86CC00; /* Green */
+    border-radius: 3px;
+}
+
+.meters meter::-webkit-meter-suboptimum-value {
+    background: #FFDB1A; /* Yellow */
+    border-radius: 3px;
+}
+
+.meters meter::-webkit-meter-even-less-good-value {
+    background: #CC4600; /* Red */
+    border-radius: 3px;
 }
 #healthStatus{
 }
@@ -202,7 +219,7 @@ td.conversationSharing{
     display:flex;
     flex-wrap:wrap;
     .conversationSharingChoiceContainer{
-	margin:0 1em;
+        margin:0 1em;
     }
 }
 #conversationSearchBoxContainer input[type=text]{
