@@ -1957,7 +1957,7 @@ var Modes = (function(){
 										return originalSize < img;
 									});
                 }
-                reader.readAsDataURL(currentImage.fileUpload);
+                reader.readAsDataURL(state.fileUpload);
             };
 						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
 							var thisCurrentImage = state != undefined ? state : currentImage;
@@ -2126,8 +2126,9 @@ var Modes = (function(){
 
 								handleDrop:function(dataTransfer,x,y){
 									var yOffset = 0;
-									var processFile = function(file){
-										if (file != null && "type" in file && file.type.indexOf("image") == 0){
+									var processed = [];
+									var processFile = function(file,sender){
+										if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
 											var worldPos = screenToWorld(x,y + yOffset);
 											var thisCurrentImage = {
 													"type":"imageDefinition",
@@ -2137,14 +2138,16 @@ var Modes = (function(){
 													"y":worldPos.y
 											};
 											thisCurrentImage.fileUpload = file;
+											console.log("handlingDrop",file,sender,thisCurrentImage);
+											processed.push(file);
 											clientSideProcessImage(sendImageToServer,thisCurrentImage);
 											yOffset += 50;
 										}
 									};
-									_.forEach(dataTransfer.files,processFile);
+									_.forEach(dataTransfer.files,function(f){processFile(f,"file");});
 									_.forEach(dataTransfer.items,function(item){
 										var file = item.getAsFile(0);
-										processFile(file);
+										processFile(file,"item");
 									});
 
 								},	
