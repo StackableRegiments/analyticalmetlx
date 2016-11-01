@@ -75,10 +75,17 @@ object StatelessHtml extends Stemmer with Logger {
   })
 
   def listRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listRooms", {
-    Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).mkString("\r\n")))
+    Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).map(_.location).mkString("\r\n")))
+  })
+  def listUsersInRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listUsersInRooms", {
+    Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).map(room => {
+      "%s\r\n%s".format(room.location,room.getChildren.map(c => "\t%s".format(c._1)).mkString("\r\n"))
+    }).mkString("\r\n")))
   })
   def listSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessions", {
-    Full(PlainTextResponse(SecurityListener.activeSessions.map(s => "%s (%s) : %s => %s".format(s.username,s.ipAddress,s.started,s.lastActivity)).mkString("\r\n")))
+    val now = new java.util.Date().getTime
+    val sessions = SecurityListener.activeSessions.map(s => (s,(now - s.lastActivity).toDouble / 1000)).sortBy(_._2).map(s => "%s (%s) : %s => %s (%.3fs ago)".format(s._1.username,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)).mkString("\r\n")
+    Full(PlainTextResponse(sessions))
   })
 
   def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", {
