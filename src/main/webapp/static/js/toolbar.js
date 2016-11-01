@@ -1941,8 +1941,9 @@ var Modes = (function(){
                     }
                 }
             })();
-            var clientSideProcessImage = function(onComplete){
-                if (currentImage == undefined || currentImage.fileUpload == undefined || onComplete == undefined){
+            var clientSideProcessImage = function(onComplete,thisCurrentImage){
+								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
+                if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
 									console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
@@ -1951,14 +1952,15 @@ var Modes = (function(){
                 var reader = new FileReader();
                 reader.onload = function(readerE){
 									var originalSrc = readerE.target.result;
-									clientSideProcessImageSrc(originalSrc,onComplete,function(img){
+									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
                     var originalSize = originalSrc.length;
 										return originalSize < img;
 									});
                 }
                 reader.readAsDataURL(currentImage.fileUpload);
             };
-						var clientSideProcessImageSrc = function(originalSrc,onComplete,ifBiggerPred){
+						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+							var thisCurrentImage = state != undefined ? state : currentImage;
                     var renderCanvas = $("<canvas/>");
                     var img = new Image();
 										img.setAttribute("crossOrigin","Anonymous");
@@ -1998,25 +2000,25 @@ var Modes = (function(){
 												ctx.fill();
                         ctx.drawImage(img,0,0,width,height);
                         var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
-                        currentImage.width = w;
-                        currentImage.height = h;
-                        currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
-                        var newSize = currentImage.resizedImage.length;
+                        thisCurrentImage.width = w;
+                        thisCurrentImage.height = h;
+                        thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
+                        var newSize = thisCurrentImage.resizedImage.length;
 												if (ifBiggerPred(newSize)){
-													currentImage.resizedImage = originalSrc;
+													thisCurrentImage.resizedImage = originalSrc;
 												}
-                        onComplete();
+                        onComplete(thisCurrentImage);
                     };
                     img.src = originalSrc;
 
 						};
-            var sendImageToServer = function(){
-                if (currentImage.type == "imageDefinition"){
+            var sendImageToServer = function(imageDef){
+                if (imageDef.type == "imageDefinition"){
                     WorkQueue.pause();
-                    var worldPos = {x:currentImage.x,y:currentImage.y};
-                    var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+                    var worldPos = {x:imageDef.x,y:imageDef.y};
+                    var screenPos= {x:imageDef.screenX,y:imageDef.screenY};
                     var t = Date.now();
-                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var identity = sprintf("%s%s%s",UserSettings.getUsername(),t,_.uniqueId());
                     var currentSlide = Conversations.getCurrentSlideJid();
                     var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
                     $.ajax({
@@ -2032,13 +2034,13 @@ var Modes = (function(){
                                 identity:newIdentity,
                                 slide:currentSlide.toString(),
                                 source:$(e).text(),
-                                bounds:[currentImage.x,currentImage.y,currentImage.x+currentImage.width,currentImage.y+currentImage.height],
-                                width:currentImage.width,
-                                height:currentImage.height,
+                                bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
+                                width:imageDef.width,
+                                height:imageDef.height,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                x:currentImage.x,
-                                y:currentImage.y
+                                x:imageDef.x,
+                                y:imageDef.y
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2066,7 +2068,7 @@ var Modes = (function(){
                             errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
                         },
-                        data:currentImage.resizedImage,
+                        data:imageDef.resizedImage,
                         cache: false,
                         contentType: false,
                         processData: false
@@ -2112,33 +2114,31 @@ var Modes = (function(){
                 },
 								handleDroppedSrc:function(src,x,y){
 									var worldPos = screenToWorld(x,y);
-									currentImage = {
+									var thisCurrentImage = {
 											"type":"imageDefinition",
 											"screenX":x,
 											"screenY":y,
 											"x":worldPos.x,
 											"y":worldPos.y
-									}
-									console.log("clientSideProcess",src,currentImage);
-									clientSideProcessImageSrc(src,sendImageToServer,function(newSize){return false;});
+									};
+									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
 								},	
 
 								handleDrop:function(dataTransfer,x,y){
+									var yOffset = 0;
 									var processFile = function(file){
-										console.log("file:",file);
 										if (file != null && "type" in file && file.type.indexOf("image") == 0){
-											var worldPos = screenToWorld(x,y);
-											currentImage = {
+											var worldPos = screenToWorld(x,y + yOffset);
+											var thisCurrentImage = {
 													"type":"imageDefinition",
 													"screenX":x,
-													"screenY":y,
+													"screenY":y + yOffset,
 													"x":worldPos.x,
 													"y":worldPos.y
-											}
-											console.log("setting file:",file);
-											currentImage.fileUpload = file;
-											console.log("clientSideProcess",dataTransfer,currentImage);
-											clientSideProcessImage(sendImageToServer);
+											};
+											thisCurrentImage.fileUpload = file;
+											clientSideProcessImage(sendImageToServer,thisCurrentImage);
+											yOffset += 50;
 										}
 									};
 									_.forEach(dataTransfer.files,processFile);
