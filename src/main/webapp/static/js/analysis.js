@@ -50,7 +50,7 @@ var Analytics = (function(){
             },
             stop:function(words){
                 var stops = "a also am an and as are be do did done for in is it its it's i i'd of that the they them this was".split(" ");
-		stops.push(" ");
+                stops.push(" ");
                 var stopped = _.clone(words);
                 _.each(stops,function(s){
                     delete stopped[s];
@@ -66,7 +66,8 @@ var Analytics = (function(){
                 return typo;
             },
             incorporate:function(word){
-                if(word in nonWords) return;
+		word = word.replace(/[\W_]+/g,"");
+		if(word in nonWords) return;
                 if(!(word in counters)){
                     counters[word] = 0;
                 }
