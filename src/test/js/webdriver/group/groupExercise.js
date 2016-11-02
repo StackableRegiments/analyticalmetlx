@@ -16,7 +16,7 @@ describe('When the class breaks into groups,', function() {
     var join = function(user,label){
         var login = LoginPage(user);
         var search = ConversationsPage(user);
-        var username = sprintf("%s.user.%s",label,Math.floor(Math.random() * 10000));
+        var username = sprintf(label);
         login.username.setValue(username);
         login.submit();
         assert(search.waitForSearchBox());
@@ -140,12 +140,25 @@ describe('When the class breaks into groups,', function() {
     });
     it("connection health should be a visible metric",function(){
         assert(browser.isExisting("#healthStatus"));
-	assert(tT.connectionHealth > 0);
+        assert(tT.connectionHealth > 0);
     });
-    it("participant presence should be a visible metric",function(){
+    it("participant presence should not be an active metric when the class is not restricted",function(){
         assert(browser.isExisting("#participationStatus"));
-	console.log("participationHealth",tT.participationHealth);
-	assert(tT.participationHealth > 0);
+        assert.equal(tT.currentConversation.subject,"unrestricted");
+        assert.equal(tT.participationHealth,0);
+    });
+    it("given that the teacher restricts the conversation",function(){
+	tT.homeTab.click();
+	tT.conversationSearch.click();
+        teacher.click("=Edit");
+	browser.waitUntil(function(){
+	    return teacher.isVisible("h1=Edit conversation");
+	});
+	teacher.click(".conversationSharingCollapser.course");
+	teacher.click("label=Org Unit A");
+	teacher.click(".joinConversation");
+	teacher.waitForExist("#board");
+	assert.equal(tT.currentConversation.subject,"Org Unit A");
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));

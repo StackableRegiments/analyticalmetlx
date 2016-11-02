@@ -186,7 +186,7 @@ function isUsable(element){
     var forMyGroup = _.isEmpty(element.audiences) ||
             Conversations.isAuthor() ||
             _.some(element.audiences,function(audience){
-                return audience.action == "whitelist" && _.exists(myGroups,audience.name);
+                return audience.action == "whitelist" && _.includes(myGroups,audience.name);
             });
     var forMe = (element.author == UserSettings.getUsername() ||
                  _.some(element.audiences,function(audience){

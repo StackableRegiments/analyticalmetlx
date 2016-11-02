@@ -49,12 +49,12 @@ var BoardPage = function(user) {
         privateMode: { get:function(){ return user.element("#privateMode") } },
         publicMode: { get:function(){ return user.element("#publicMode") } },
 
-	connectionHealth: { get:function(){ return user.execute("return $('#healthStatus').val()").value; } }, 
-	participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } }, 
+        connectionHealth: { get:function(){ return user.execute("return $('#healthStatus').val()").value; } },
+        participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } },
 
-	usableStanzas: { get:function(){
-	    return user.execute("return usableStanzas()").value;
-	} },
+        usableStanzas: { get:function(){
+            return user.execute("return usableStanzas()").value;
+        } },
 
         viewport: {get:function(){
             var v = user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
@@ -63,6 +63,9 @@ var BoardPage = function(user) {
         }},
         currentSlide:{ get:function(){
             return user.execute("return Conversations.getCurrentSlide()").value;
+        }},
+        currentConversation:{ get:function(){
+            return user.execute("return Conversations.getCurrentConversation()").value;
         }},
         newSlide:{get:function(){
             return user.element("#addSlideButton");
@@ -122,6 +125,8 @@ var BoardPage = function(user) {
         applicationMenu: {get:function(){
             return user.element(".backstage-menu.active");
         }},
+        homeTab:{get:function(){return user.element("#metaToolbar");}},
+        conversationSearch:{get:function(){return user.element("#conversations");}},
         participants:{get:function(){return user.element("#menuParticipants");}},
         contentFilter:{get:function(){return user.element("#menuContentFilter");}},
         learning:{get:function(){return user.element("#roomToolbar");}},
