@@ -1,11 +1,13 @@
 package com.metl.comet
 
-import com.metl.utils.{Stopwatch,SynchronizedWriteMap,PeriodicallyRefreshingVar}
+import com.metl.utils.{PeriodicallyRefreshingVar, Stopwatch, SynchronizedWriteMap}
 import java.util.Date
+
 import org.apache.commons.io.IOUtils
 import net.liftweb.http._
+
 import scala.collection.mutable.{HashMap, SynchronizedMap}
-import net.liftweb.mongodb.{Limit}
+import net.liftweb.mongodb.Limit
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonParser._
@@ -19,6 +21,7 @@ import S._
 import net.liftweb.util._
 import Helpers._
 import net.liftweb.actor.LiftActor
+
 import xml.{NodeSeq, Text}
 import collection.mutable.ListBuffer
 import ElemAttr._
@@ -26,6 +29,8 @@ import org.bson.types.ObjectId
 import com.metl.model._
 import com.metl.model.Globals._
 import java.text.SimpleDateFormat
+
+import scala.reflect.runtime.universe._
 //import scala.concurrent.ops._
 import org.bson.types.ObjectId
 
@@ -1019,14 +1024,21 @@ class StackOverflow extends CometActor with CometListener with Logger {
   override def lowPriority = {
     case anything => if (!starting) actUponLowPriority(anything)
   }
+  def checkTypeOfListContent[T:TypeTag](o:T) = typeOf[T] match {
+    case t if t =:= typeOf[List[QuestionPresenter]] => Stopwatch.time("Bubbles:list[questionPresenter]",partialUpdate(updateLocation & updateDetailedQuestion & updateQuestions))
+    case unknown => warn("StackOverflow: I do not know what to do with -> %s".format(unknown))
+  }
   def actUponLowPriority(a:Any):Unit = a match {
-    case BobUp(id)=> Stopwatch.time("Bubbles:bobUp",partialUpdate(Call("bobUp",id)))
-    case BobDown(id)=> Stopwatch.time("Bubbles:bobDown",partialUpdate(Call("bobDown",id)))
-    case Emerge(selector)=> Stopwatch.time("bubbles:emerge",partialUpdate(Call("emerge",selector)))
-    case Silently(q)=> Stopwatch.time("Bubbles:silently",acceptNewQuestion(q,true,silentlyUpdateDetailedQuestion _))
+    case BobUp(id) => Stopwatch.time("Bubbles:bobUp",partialUpdate(Call("bobUp",id)))
+    case BobDown(id) => Stopwatch.time("Bubbles:bobDown",partialUpdate(Call("bobDown",id)))
+    case Emerge(selector) => Stopwatch.time("bubbles:emerge",partialUpdate(Call("emerge",selector)))
+    case Silently(q) => Stopwatch.time("Bubbles:silently",acceptNewQuestion(q,true,silentlyUpdateDetailedQuestion _))
     case SetExpansionState(q,l) => Stopwatch.time("Bubbles:setExpansionState",partialUpdate(setClientSideExpansionState(q,l)))
-    case q:QuestionPresenter=> Stopwatch.time("Bubbles:questionPresenter",partialUpdate(updateLocation & updateDetailedQuestion & updateSummaryFor(q)))
-    case qs:List[QuestionPresenter]=> Stopwatch.time("Bubbles:list[questionPresenter]",partialUpdate(updateLocation & updateDetailedQuestion & updateQuestions))
+    case q:QuestionPresenter => Stopwatch.time("Bubbles:questionPresenter",partialUpdate(updateLocation & updateDetailedQuestion & updateSummaryFor(q)))
+    // TODO: work out how to satisfy conflicting warnings:
+    // TODO: "type List takes type parameters" and
+    // TODO: "non-variable type argument com.metl.comet.QuestionPresenter in type pattern List[com.metl.comet.QuestionPresenter] (the underlying of List[com.metl.comet.QuestionPresenter]) is unchecked since it is eliminated by erasure"
+    case qs:List[QuestionPresenter] => checkTypeOfListContent(qs)
     case Detail(questionId,overrideShow) => Stopwatch.time("Bubbles:detail",{
       val start = new Date().getTime
       AddAnswerDialog.map(_.done)
@@ -1108,7 +1120,7 @@ class StackOverflow extends CometActor with CometListener with Logger {
     }
     case other => warn("Stack did not understand: %s".format(other))
   }
-  def pingLatency = Script(Function(PING_LATENCY,List.empty[String],jsonSend(PING_LATENCY,JsRaw("new Date().getTime()"))) & OnLoad(Call(PING_LATENCY)))
+  def pingLatency = Script(js.JsCmds.Function(PING_LATENCY,List.empty[String],jsonSend(PING_LATENCY,JsRaw("new Date().getTime()"))) & OnLoad(Call(PING_LATENCY)))
   def latencyGauge(x:NodeSeq) = {
     val id = nextFuncName
     <div id={id}>{x}</div> ++ pingLatency
