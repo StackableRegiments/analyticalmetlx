@@ -108,20 +108,27 @@ var BoardPage = function(user) {
         applicationMenu: {get:function(){
             return user.element(".backstage-menu.active");
         }},
-	participants:{get:function(){return user.element("#menuParticipants");}},
-	learning:{get:function(){return user.element("#roomToolbar");}},
-	toggleFilter:{value:function(name){
-	    user.execute(sprintf("$('#%s').click()",name));
-	}},
+        openParticipants:{value:function(){
+            this.menuButton.click();
+            user.waitUntil(function(){return user.isVisible("#roomToolbar");});
+            this.learning.click();
+            user.waitUntil(function(){return user.isVisible("#menuParticipants");});
+            this.participants.click();
+        }},
+        participants:{get:function(){return user.element("#menuParticipants");}},
+        learning:{get:function(){return user.element("#roomToolbar");}},
+        toggleFilter:{value:function(name){
+            user.execute(sprintf("$('#%s').click()",name));
+        }},
 
         recycleBinMenu: {get: function(){return user.element("#menuRecycleBin");}},
         recycleables:{get:function(){return user.execute('return _.map($(".rowIdentity"),function(r){return $(r).text()})').value; }},
 
         themes: {get: function(){ return user.execute("return boardContent.themes").value; }},
         cloudData: {get: function(){ return user.execute("return Analytics.word.cloudData()").value; } },
-	visibleThemes: {value:function(){
-	    return user.execute("return $('#lang .word').map(function(i,e){var w = $(e);return {text:w.text(),size:w.attr('font-size')};})").value;
-	}},
+        visibleThemes: {value:function(){
+            return user.execute("return $('#lang .word').map(function(i,e){var w = $(e);return {text:w.text(),size:w.css('font-size')};})").value;
+        }},
 
         selectMode: { get: function() { return user.element("#selectMode"); } },
         selection: {get: function(){ return user.execute("return (function(){var s = _.cloneDeep(Modes.select.selected);s.multiWordTexts = _.map(s.multiWordTexts,function(w){var _w=_.cloneDeep(w);delete _w.doc;return _w;}); return s;})()").value; } },

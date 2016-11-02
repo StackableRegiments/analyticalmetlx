@@ -33,6 +33,8 @@
   -->
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
   <logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
+	<logger name="com.metl.model.D2LInterface" level="TRACE"/>
+	<logger name="com.metl.model.D2LGroupStoreProvider" level="TRACE"/>
   <logger name="com.metl.model.SecurityListener" level="ALL">
     <appender-ref ref="SECURITY_FILE"/>
   </logger>

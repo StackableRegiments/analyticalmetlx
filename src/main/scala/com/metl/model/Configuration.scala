@@ -45,8 +45,8 @@ abstract class ConfigurationProvider extends Logger {
       (xu,x,hu,h)
     }
   }
-  protected def generatePasswordForYaws(username:String):String 
-  protected def generatePasswordForEjabberd(username:String):String 
+  protected def generatePasswordForYaws(username:String):String
+  protected def generatePasswordForEjabberd(username:String):String
   def adornUsernameForEjabberd(username:String):String = username
   def adornUsernameForYaws(username:String):String = username
   def vendClientConfiguration(username:String):Option[ClientConfiguration] = {
@@ -70,7 +70,7 @@ class StableKeyWithRemoteCheckerConfigurationProvider(scheme:String,localPort:In
   protected val ejPassword = nextFuncName
   protected val verifyPath:String = "verifyUserCredentials"
   protected val returnAddress:String = {
-    "%s:%s".format(getLocalIp,getLocalPort)    
+    "%s:%s".format(getLocalIp,getLocalPort)
   }
   protected val getLocalIp:String = {
     val socket = new java.net.Socket(remoteBackendHost,remoteBackendPort)
@@ -87,7 +87,7 @@ class StableKeyWithRemoteCheckerConfigurationProvider(scheme:String,localPort:In
   override def checkPassword(username:String,password:String):Boolean = {
     if (username.startsWith("ejUserAndIp_"))
       password == ejPassword
-    else 
+    else
       super.checkPassword(username,password)
   }
   protected def generatePasswordForEjabberd(username:String):String = nextFuncName
@@ -105,7 +105,7 @@ class StaticKeyConfigurationProvider(ejabberdUsername:Option[String],ejabberdPas
   })
   override def checkPassword(username:String,password:String):Boolean = {
     debug("checking: %s %s in %s".format(username,password,keys))
-    ejabberdUsername.filter(_ == username).map(_u => password == ejabberdPassword).getOrElse(false) || 
+    ejabberdUsername.filter(_ == username).map(_u => password == ejabberdPassword).getOrElse(false) ||
     yawsUsername.filter(_ == username).map(_u => password == yawsPassword).getOrElse(false) ||
     keys.get(username).exists(_ == password)
   }
