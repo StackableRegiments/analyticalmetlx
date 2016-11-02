@@ -983,6 +983,7 @@ class VysperXMLUtils extends LiftLogger {
   def toVysper(scalaNode:Node):XMLFragment = {
     val output = scalaNode match {
       case a:Atom[String] => new XMLText(a.text)
+      // TODO: the following Atom[x] code is unreachable due to erasure.
       case a:Atom[Double] => new XMLText(a.text.toString)
       case a:Atom[Int] => new XMLText(a.text.toString)
       case a:Atom[Long] => new XMLText(a.text.toString)
