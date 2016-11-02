@@ -850,6 +850,9 @@ $(function(){
 				if (_.size(availableTypes) > 1){
 					var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
 					var rootElem = $("<span/>",{id:rootId});
+					rootElem.append($("<span/>",{
+						text:"multiple types of data were found in the clipboard.  Please select the type you wish to paste"
+					}));
 					var modal = $.jAlert({
 						title:"Data to paste",
 						content:rootElem[0].outerHTML,
@@ -857,52 +860,98 @@ $(function(){
 						closeOnEsc:true,
 						blurBackground:true	
 					});	
-					$("#"+rootId).html(_.map(availableTypes,function(type){
-						if (type.indexOf("image") == 0){ 
-							return $("<button/>",{
-								value:type,
-								text:type
-							}).on("click",function(){
-								Modes.image.handleDrop(df,x,y);
-								modal.closeAlert();
-							});
-						} else if (type == "text/html"){
-							return $("<button/>",{
-								value:type,
-								text:type
-							}).on("click",function(){
-								var html = _.find(dataSets,function(ds){
-									return ds.key == type;
-								}).value;
-								var htmlElem = $(html);
-								var yOffset = 0;
-								html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
-								_.forEach(htmlElem.find("img"),function(imgNode){
-									try {
-										Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
-										yOffset += Math.max(imgNode.height,50);
-									} catch (e){
-										errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+
+					var acceptedTypes = [
+						{
+							key:function(t){return t == "text/html";},
+							generateButton:function(type){
+								return $("<button/>",{
+									value:type,
+									class:"fa btn-icon fa-file-code-o"
+								}).on("click",function(){
+									var html = _.find(dataSets,function(ds){
+										return ds.key == type;
+									}).value;
+									var htmlElem = $(html);
+									var yOffset = 0;
+									html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
+									_.forEach(htmlElem.find("img"),function(imgNode){
+										try {
+											Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
+											yOffset += Math.max(imgNode.height,50);
+										} catch (e){
+											errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+										}
+									});
+									if (htmlElem.text().trim().length > 1){
+										Modes.text.handleDrop(html,x,y + yOffset);
 									}
-								});
-								if (htmlElem.text().trim().length > 1){
-									Modes.text.handleDrop(html,x,y + yOffset);
-								}
-								modal.closeAlert();
-							});
-						} else if (type.indexOf("text") == 0){
-							return $("<button/>",{
-								value:type,
-								text:type
-							}).on("click",function(){
-								var text = _.find(dataSets,function(ds){
-									return ds.key == type;
-								}).value;
-								Modes.text.handleDrop(text,x,y);
-								modal.closeAlert();
-							});
-						} else {
+									modal.closeAlert();
+								}).append($("<div/>",{
+									class:"icon-txt",
+									text:"rich text and images"
+								}));
+							}
+						},
+						{
+							key:function(t){return t == "text/plain";},
+							generateButton:function(type){
+								return $("<button/>",{
+									value:type,
+									class:"fa btn-icon fa-file-text-o"
+								}).on("click",function(){
+									var text = _.find(dataSets,function(ds){
+										return ds.key == type;
+									}).value;
+									Modes.text.handleDrop(text,x,y);
+									modal.closeAlert();
+								}).append($("<div/>",{
+									class:"icon-txt",
+									text:"plain text"
+								}));
+							}
+						},
+						{
+							key:function(t){return t == "Files";},
+							generateButton:function(type){
+								return $("<button/>",{
+									value:type,
+									class:"fa btn-icon fa-file-o"
+								}).on("click",function(){
+									Modes.image.handleDrop(df,x,y);
+									modal.closeAlert();
+								}).append($("<div/>",{
+									class:"icon-txt",
+									text:"files or images"
+								}));
+							}
+						},
+						{
+							key:function(t){return t.indexOf("image/") == 0;},
+							generateButton:function(type){
+								return $("<button/>",{
+									value:type,
+									class:"fa btn-icon fa-file-image-o"
+								}).on("click",function(){
+									Modes.image.handleDrop(df,x,y);
+									modal.closeAlert();
+								}).append($("<div/>",{
+									class:"icon-txt",
+									text:"images"
+								}));
+							}
+						}
+					];	
+
+
+					$("#"+rootId).append(_.map(availableTypes,function(type){
+						var acceptedType = _.find(acceptedTypes,function(knownType){
+							return knownType.key(type);
+						});
+						if (acceptedType == undefined){
 							return $("<span/>");
+						} else {
+							return acceptedType.generateButton(type);
 						}
 					}));
 				} else {
