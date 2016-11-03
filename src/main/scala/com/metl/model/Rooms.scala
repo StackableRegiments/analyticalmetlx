@@ -285,19 +285,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       }
       case (m:Attendance,cr:ConversationRoom) => {
         trace("attendance received: %s".format(m))
-        //      if (!getAttendance.exists(_ == m.author)){
         updateGroupSets.foreach(c => {
           trace("updated conversation postGroupsUpdate: %s".format(c))
           config.updateConversation(c.jid.toString,c)
         })
-        //      }
       }
-      /*
-       case (m:MeTLCommand,cr:GlobalRoom) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
-       trace("updating conversation details")
-       cr.cd = config.detailsOfConversation(cr.jid)
-       }
-       */
       case (c:MeTLCanvasContent ,_) => chunker.add(c,this)
       case _ => {}
     }

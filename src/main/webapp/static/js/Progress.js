@@ -19,6 +19,7 @@ var Progress = (function(){
         onLayoutUpdated:{},
         textBoundsChanged:{},
         postRender:{},
+        attendanceReceived:{},
         historyReceived:{},
         stanzaReceived:{},
         themeReceived:{},

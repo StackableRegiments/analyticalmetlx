@@ -143,10 +143,10 @@ function hexToRgb(hex) {
 }
 function audienceToStanza(a){
     return {
-	domain:"slide",
-	'type':"groupWork",
-	action:"whitelist",
-	name:a
+        domain:"slide",
+        'type':"groupWork",
+        action:"whitelist",
+        name:a
     };
 }
 function partToStanza(p){
@@ -196,7 +196,7 @@ function richTextEditorToStanza(t){
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza),
-	audiences:Conversations.getCurrentGroup().map(audienceToStanza)
+        audiences:Conversations.getCurrentGroup().map(audienceToStanza)
     }
 }
 function sendRichText(t){
@@ -1039,3 +1039,4 @@ function receiveS2C(id,markup){
         console.log("receiveS2C exception:",e);
     }
 }
+

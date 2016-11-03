@@ -160,6 +160,11 @@ describe('When the class breaks into groups,', function() {
 	teacher.waitForExist("#board");
 	assert.equal(tT.currentConversation.subject,"Org Unit A");
     });
+    it("participant presence should be measured against potential participants",function(){
+	tT.newSlide.click();/*Force attendance resend*/
+	assert.equal(tT.participationHealthMax,4);
+	assert.equal(tT.participationHealth,3);
+    });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));
     });

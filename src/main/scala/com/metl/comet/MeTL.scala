@@ -651,6 +651,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
+  private lazy val RECEIVE_ATTENDANCE = "receiveAttendance"
   /*
    private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
    private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
@@ -1543,9 +1544,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
         //not relaying teacherInConversation to page
       }
-      case a:Attendance => {
-        //not relaying to page yet, because we're not using them in the webmetl client yet
-      }
+      case a:Attendance => getAttendance.map(attendances => partialUpdate(Call(RECEIVE_ATTENDANCE,attendances)))
       case _ => {
         trace("receiving: %s".format(metlStanza))
         val response = serializer.fromMeTLData(metlStanza) match {
@@ -1556,6 +1555,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     }
   })
+  def getAttendance = {
+    val expectedAttendance = currentConversation.map(c => Globals.groupsProviders.flatMap(_.getMembersFor(c.subject)).distinct).getOrElse(Nil)
+    val actualAttendance = (for(
+      conversation <- currentConversation;
+      room <- rooms.get(server,conversation.jid.toString)) yield {
+      room().getAttendances
+        .filter(_.present)
+        .map(_.author)
+        .distinct
+        .map(JString(_))
+    }).getOrElse(Nil)
+    info("actualAttendance: %s".format(actualAttendance.toString))
+    currentSlide.map(slideJid => JObject(List(
+      JField("val",JInt(actualAttendance.length)),
+      JField("max",JInt(expectedAttendance.length)))))
+  }
   private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
   private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
   private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)

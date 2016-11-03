@@ -20,28 +20,28 @@ var HealthChecker = (function(){
     };
     var check = function(){
         var clientStart = new Date().getTime();
-				var reportableHealthObj = describeHealthFunction();
-				var url = "/reportLatency"
-				if ("latency" in reportableHealthObj){
-					var reportableHealth = reportableHealthObj.latency;
-					url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
-				}
-				$.ajax(url,{
-						method:"GET",
-						success:function(time){
-								var serverWorkTime = parseInt(time);
-								var totalTime = new Date().getTime() - clientStart;
-								var latency = (totalTime - serverWorkTime) / 2;
-								addMeasureFunc("serverResponse",true,serverWorkTime);
-								addMeasureFunc("latency",true,latency);
-								_.delay(check,serverStatusInterval);
-						},
-						dataType:"text",
-						error:function(){
-								addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
-								_.delay(check,serverStatusInterval);
-						}
-				});
+        var reportableHealthObj = describeHealthFunction();
+        var url = "/reportLatency"
+        if ("latency" in reportableHealthObj){
+            var reportableHealth = reportableHealthObj.latency;
+            url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
+        }
+        $.ajax(url,{
+            method:"GET",
+            success:function(time){
+                var serverWorkTime = parseInt(time);
+                var totalTime = new Date().getTime() - clientStart;
+                var latency = (totalTime - serverWorkTime) / 2;
+                addMeasureFunc("serverResponse",true,serverWorkTime);
+                addMeasureFunc("latency",true,latency);
+                _.delay(check,serverStatusInterval);
+            },
+            dataType:"text",
+            error:function(){
+                addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
+                _.delay(check,serverStatusInterval);
+            }
+        });
     };
     var updateGraph = _.throttle(function(){
         var checkData = getAggregatedMeasuresFunc(1000);
@@ -93,7 +93,7 @@ var HealthChecker = (function(){
         });
     };
     var describeHealthFunction = function(){
-			return _.mapValues(store,function(catStore,k){
+        return _.mapValues(store,function(catStore,k){
             var v = catStore.items();
             var count = v.length;
             var durations = _.map(v,"duration");
@@ -112,6 +112,13 @@ var HealthChecker = (function(){
     };
     $(function(){
         resumeHealthCheckFunc();
+        Progress.attendanceReceived["participationHealth"] = function(attendances){
+            $("#attendanceStatus").prop({
+                value:attendances.val,
+                max:attendances.max,
+                min:0
+            });
+        };
     });
     return {
         check:check,
@@ -125,8 +132,8 @@ var HealthChecker = (function(){
 })();
 
 var augmentArguments = function(args){
-	args[_.size(args)] = new Date().getTime();
-	return args;
+    args[_.size(args)] = new Date().getTime();
+    return args;
 };
 
 var serverResponse = function(responseObj){

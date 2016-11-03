@@ -18,9 +18,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     try{
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
-
-        console.log(json);
-
         historyDownloadedMark = Date.now();
         boardContent = json;
         boardContent.minX = 0;
@@ -181,7 +178,6 @@ function isUsable(element){
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    console.log(element);
     var myGroups = Conversations.getCurrentGroup();
     var forMyGroup = _.isEmpty(element.audiences) ||
             Conversations.isAuthor() ||

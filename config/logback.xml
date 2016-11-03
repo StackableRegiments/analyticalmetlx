@@ -33,6 +33,7 @@
   -->
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
   <logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
+  <logger name="com.metl.comet.MeTLActor" level="DEBUG"/>
 
   <logger name="com.metl.data.ByTotalGroups" level="TRACE"/>
   <!--logger name="com.metl.data.JsonSerializer" level="TRACE"/-->

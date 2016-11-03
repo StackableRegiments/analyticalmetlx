@@ -51,6 +51,7 @@ var BoardPage = function(user) {
 
         connectionHealth: { get:function(){ return user.execute("return $('#healthStatus').val()").value; } },
         participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } },
+        participationHealthMax: { get:function(){ return user.execute("return $('#attendanceStatus').attr('max')").value; } },
 
         usableStanzas: { get:function(){
             return user.execute("return usableStanzas()").value;

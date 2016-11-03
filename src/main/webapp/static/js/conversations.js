@@ -255,7 +255,6 @@ var Conversations = (function(){
         var currentSlideDetails = _.find(details.slides,function(slide){
             return slide.id == currentSlide;
         });
-        console.log("loadCurrentGroup",currentSlideDetails);
         if(currentSlideDetails){
             currentGroup = [];
             var groupSet = currentSlideDetails.groupSet;
@@ -280,7 +279,6 @@ var Conversations = (function(){
                     if ("configName" in details){
                         currentServerConfigName = details.configName;
                     }
-                    console.log("actOnConversationDetails",details);
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
                         Progress.call("onConversationJoin");
                         BannedState.checkIsBanned(details,true);
@@ -866,6 +864,9 @@ function receiveNewConversationDetails(details){
 }
 function receiveConversations(listOfConversations){
     Progress.call("conversationsReceived",[listOfConversations]);
+}
+function receiveAttendance(attendances){
+    Progress.call("attendanceReceived",[attendances])
 }
 // these will be injected by lift
 //function moveToSlide(jid)
