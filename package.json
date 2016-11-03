@@ -1,8 +1,19 @@
 {
-    "name":"localmetlsauceutils",
-    "description":"Non publishable aggregation of npm utils for Sauce testing",
-    "README":"",
-    "private":true,
-    "repository":"",
-    "license":"Apache License 2.0"
+    "name":"analyticalmetlx",
+    "description":"Scala backend adaptors and a Javascript MeTL client",
+    "README":"README.md",
+    "private":false,
+    "repository" : {
+        "type" : "git",
+        "url" : "https://github.com/StackableRegiments/analyticalmetlx.git"
+    },
+    "license":"Apache-2.0",
+    "dependencies": {
+        "grunt": "0.x.x",
+        "grunt-contrib-copy": "~0.5.x",
+        "grunt-contrib-concat": "~0.3.x",
+        "grunt-contrib-uglify": "~0.3.x",
+        "grunt-contrib-less": "~0.10.x"
+    },
+    "engine": "node >= 0.10"
 }
