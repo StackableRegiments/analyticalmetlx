@@ -1653,6 +1653,49 @@ var Modes = (function(){
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
+								handleDrop:function(html,x,y){
+									if (html.length > 0){
+										var newRuns = carota.html.parse(html,{});
+										console.log("newRuns:",newRuns);
+										var worldPos = screenToWorld(x,y);
+										Modes.text.activate();
+										var clickTime = Date.now();
+										var sel;
+										Modes.select.clearSelection();
+										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+										var newEditor = createBlankText(worldPos,[{
+											text:" ",
+											italic:carota.runs.nextInsertFormatting.italic == true,
+											bold:carota.runs.nextInsertFormatting.bold == true,
+											underline:carota.runs.nextInsertFormatting.underline == true,
+											color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+											size:carota.runs.defaultFormatting.size / scale()
+										}]);
+										var newDoc = newEditor.doc;
+										newDoc.select(0,1);
+										boardContent.multiWordTexts[newEditor.identity] = newEditor;
+										sel = {multiWordTexts:{}};
+										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+										Modes.select.setSelection(sel);
+										editor = newEditor;
+										var node = newDoc.byOrdinal(0);
+										newDoc.mousedownHandler(node);
+										newDoc.mouseupHandler(node);
+										editor.doc.invalidateBounds();
+										editor.doc.isActive = true;
+										editor.doc.load(newRuns);
+										Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+												Modes.text.echoesToDisregard = {};
+										};
+										Modes.text.scrollToCursor(editor);
+										var source = boardContent.multiWordTexts[editor.identity];
+										source.privacy = Privacy.getCurrentPrivacy();
+										source.target = "presentationSpace";
+										source.slide = Conversations.getCurrentSlideJid();
+										sendRichText(source);
+										Progress.call("onSelectionChanged",[Modes.select.selected]);
+									};
+								},
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
@@ -1898,18 +1941,32 @@ var Modes = (function(){
                     }
                 }
             })();
-            var clientSideProcessImage = function(onComplete){
-                if (currentImage == undefined || currentImage.fileUpload == undefined || onComplete == undefined){
+            var clientSideProcessImage = function(onComplete,thisCurrentImage){
+								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
+                if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
+									console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
+									var originalSrc = readerE.target.result;
+									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
+                    var originalSize = originalSrc.length;
+										return originalSize < img;
+									});
+                }
+                reader.readAsDataURL(state.fileUpload);
+            };
+						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+							var thisCurrentImage = state != undefined ? state : currentImage;
                     var renderCanvas = $("<canvas/>");
                     var img = new Image();
-                    var originalSrc = readerE.target.result;
-                    var originalSize = originalSrc.length;
+										img.setAttribute("crossOrigin","Anonymous");
+										img.onerror = function(e){
+											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+										};
                     img.onload = function(e){
                         var width = img.width;
                         var height = img.height;
@@ -1937,28 +1994,31 @@ var Modes = (function(){
                             width:px(width),
                             height:px(height)
                         });
-                        renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
+												var ctx = renderCanvas[0].getContext("2d");
+												ctx.rect(0,0,width,height);
+												ctx.fillStyle = "white";
+												ctx.fill();
+                        ctx.drawImage(img,0,0,width,height);
                         var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
-                        currentImage.width = w;
-                        currentImage.height = h;
-                        currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
-                        var newSize = currentImage.resizedImage.length;
-                        if (originalSize < newSize){
-                            currentImage.resizedImage = originalSrc;
-                        }
-                        onComplete();
+                        thisCurrentImage.width = w;
+                        thisCurrentImage.height = h;
+                        thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
+                        var newSize = thisCurrentImage.resizedImage.length;
+												if (ifBiggerPred(newSize)){
+													thisCurrentImage.resizedImage = originalSrc;
+												}
+                        onComplete(thisCurrentImage);
                     };
                     img.src = originalSrc;
-                }
-                reader.readAsDataURL(currentImage.fileUpload);
-            };
-            var sendImageToServer = function(){
-                if (currentImage.type == "imageDefinition"){
+
+						};
+            var sendImageToServer = function(imageDef){
+                if (imageDef.type == "imageDefinition"){
                     WorkQueue.pause();
-                    var worldPos = {x:currentImage.x,y:currentImage.y};
-                    var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+                    var worldPos = {x:imageDef.x,y:imageDef.y};
+                    var screenPos= {x:imageDef.screenX,y:imageDef.screenY};
                     var t = Date.now();
-                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var identity = sprintf("%s%s%s",UserSettings.getUsername(),t,_.uniqueId());
                     var currentSlide = Conversations.getCurrentSlideJid();
                     var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
                     $.ajax({
@@ -1974,13 +2034,13 @@ var Modes = (function(){
                                 identity:newIdentity,
                                 slide:currentSlide.toString(),
                                 source:$(e).text(),
-                                bounds:[currentImage.x,currentImage.y,currentImage.x+currentImage.width,currentImage.y+currentImage.height],
-                                width:currentImage.width,
-                                height:currentImage.height,
+                                bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
+                                width:imageDef.width,
+                                height:imageDef.height,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                x:currentImage.x,
-                                y:currentImage.y
+                                x:imageDef.x,
+                                y:imageDef.y
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2008,7 +2068,7 @@ var Modes = (function(){
                             errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
                         },
-                        data:currentImage.resizedImage,
+                        data:imageDef.resizedImage,
                         cache: false,
                         contentType: false,
                         processData: false
@@ -2024,7 +2084,6 @@ var Modes = (function(){
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
                         var files = e.target.files || e.dataTransfer.files;
-                        var limit = files.length;
                         var file = files[0];
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
@@ -2053,6 +2112,45 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
+								handleDroppedSrc:function(src,x,y){
+									var worldPos = screenToWorld(x,y);
+									var thisCurrentImage = {
+											"type":"imageDefinition",
+											"screenX":x,
+											"screenY":y,
+											"x":worldPos.x,
+											"y":worldPos.y
+									};
+									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
+								},	
+
+								handleDrop:function(dataTransfer,x,y){
+									var yOffset = 0;
+									var processed = [];
+									var processFile = function(file,sender){
+										if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+											var worldPos = screenToWorld(x,y + yOffset);
+											var thisCurrentImage = {
+													"type":"imageDefinition",
+													"screenX":x,
+													"screenY":y + yOffset,
+													"x":worldPos.x,
+													"y":worldPos.y
+											};
+											thisCurrentImage.fileUpload = file;
+											console.log("handlingDrop",file,sender,thisCurrentImage);
+											processed.push(file);
+											clientSideProcessImage(sendImageToServer,thisCurrentImage);
+											yOffset += 50;
+										}
+									};
+									_.forEach(dataTransfer.files,function(f){processFile(f,"file");});
+									_.forEach(dataTransfer.items,function(item){
+										var file = item.getAsFile(0);
+										processFile(file,"item");
+									});
+
+								},	
                 deactivate:function(){
                     resetImageUpload();
                     removeActiveMode();
