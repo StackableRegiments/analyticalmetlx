@@ -12,6 +12,7 @@ describe('When the class breaks into groups,', function() {
     var tT = board(teacher);
     var sA = board(studentA);
     var sB = board(studentB);
+    var sC = board(studentC);
 
     var join = function(user,label){
         var login = LoginPage(user);
@@ -161,9 +162,14 @@ describe('When the class breaks into groups,', function() {
 	assert.equal(tT.currentConversation.subject,"Org Unit A");
     });
     it("participant presence should be measured against potential participants",function(){
-	tT.newSlide.click();/*Force attendance resend*/
 	assert.equal(tT.participationHealthMax,4);
 	assert.equal(tT.participationHealth,3);
+        join(studentC,'studentC');
+	studentC.waitForExist("#board");
+	assert.equal(tT.participationHealth,4);
+	browser.debug();
+    });
+    it("group restriction should apply to new entrants",function(){
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));

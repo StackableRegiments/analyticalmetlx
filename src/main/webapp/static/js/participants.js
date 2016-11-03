@@ -132,8 +132,8 @@ var Participants = (function(){
             .sort(function(a,b){
                 return d3.ascending(b.value, a.value);
             });
-	words.exit()
-	    .remove();
+        words.exit()
+            .remove();
     }
     var contextFilters = {
         keyboarding:true,
@@ -188,7 +188,7 @@ var Participants = (function(){
     var updateFilters = function(){
         _.each(contextFilters,function(val,filter){
             var el = $(sprintf("#%s",filter));
-	    el.attr("checked",contextFilters[filter]);
+            el.attr("checked",contextFilters[filter]);
             el.off("click").on("click",function(){
                 contextFilters[filter] = !contextFilters[filter];
                 updateParticipantsListing();
@@ -196,6 +196,13 @@ var Participants = (function(){
         });
     }
     $(function(){
+        Progress.attendanceReceived["participationHealth"] = function(attendances){
+            $("#attendanceStatus").prop({
+                value:attendances.val,
+                max:attendances.max,
+                min:0
+            });
+        };
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
         participantFollowControl = participantsDatagrid.find(".followControls").clone();

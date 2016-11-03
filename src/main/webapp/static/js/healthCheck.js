@@ -112,13 +112,6 @@ var HealthChecker = (function(){
     };
     $(function(){
         resumeHealthCheckFunc();
-        Progress.attendanceReceived["participationHealth"] = function(attendances){
-            $("#attendanceStatus").prop({
-                value:attendances.val,
-                max:attendances.max,
-                min:0
-            });
-        };
     });
     return {
         check:check,

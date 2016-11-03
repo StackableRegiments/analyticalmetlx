@@ -85,11 +85,17 @@ var ContentFilter = (function(){
         var label = root.find(".contentFilterCheckboxLabel");
         var labelText = root.find(".contentFilterCheckboxLabelText");
         var id = sprintf("contentFilter_%s",filter.id);
-        var referencedGroup = _.find(Conversations.getCurrentSlide().groupSet.groups,function(group){
-            return group.id == filter.id;
-        });
-        if(referencedGroup){
-            labelText.text(_.join(referencedGroup.members,","));
+        var currentSlide = Conversations.getCurrentSlide();
+        if(currentSlide && currentSlide.groupSet){
+            var referencedGroup = _.find(currentSlide.groupSet.groups,function(group){
+                return group.id == filter.id;
+            });
+            if(referencedGroup){
+                labelText.text(_.join(referencedGroup.members,","));
+            }
+            else {
+                labelText.text(filter.name);
+            }
         }
         else{
             labelText.text(filter.name);

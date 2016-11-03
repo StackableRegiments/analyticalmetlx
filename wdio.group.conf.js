@@ -26,6 +26,12 @@ var overrides = {
                 browserName: 'chrome',
                 name:'studentB'
             }
+        },
+        studentC:{
+            desiredCapabilities:{
+                browserName: 'chrome',
+                name:'studentC'
+            }
         }
     }
 }
