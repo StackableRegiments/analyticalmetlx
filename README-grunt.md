@@ -12,7 +12,8 @@ To install node.js on windows:
 Install nodejs modules:
 
     npm install -g less
-    npm install -g grunt
+    npm install -g grunt-cli
+    npm install grunt
 
 Install grunt plugins:
 
