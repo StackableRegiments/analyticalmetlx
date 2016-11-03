@@ -67,6 +67,7 @@ var WorkQueue = (function(){
     var pauseFunction = function(){
         stopResume();
         canWorkFunction(false);
+				Progress.call("afterWorkQueuePause");
     };
     var canWorkFunction = function(state){
         isAbleToWork = state;
@@ -85,6 +86,7 @@ var WorkQueue = (function(){
     var gracefullyResumeFunction = function(){
         stopResume();
         gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
+				Progress.call("beforeWorkQueueResume");
     };
     return {
         pause:pauseFunction,

@@ -1,10 +1,10 @@
 package com.metl.model
 
-import com.metl.data._
+import com.metl.data.{Group=>MeTLGroup,GroupSet=>MeTLGroupSet,_}
 import com.metl.utils._
 import com.metl.view._
 
-import com.metl.liftAuthenticator.LiftAuthStateData
+import com.metl.liftAuthenticator._
 
 import net.liftweb.http.SessionVar
 import net.liftweb.http.LiftRules
@@ -13,7 +13,7 @@ import net.liftweb.util.Helpers._
 
 import net.liftweb.util.Props
 import scala.io.Source
-import scala.xml.{Source=>XmlSource,_}
+import scala.xml.{Source=>XmlSource,Group=>XmlGroup,_}
 import com.d2lvalence.idkeyauth._
 import com.d2lvalence.idkeyauth.implementation._
 import net.liftweb.json.JsonAST
@@ -72,7 +72,7 @@ case class D2LClassListUser(
   ProfileIdentifier:String,
   DisplayName:String,
   UserName:Option[String],
-  OrgDefinedId:Option[String],
+  OrgDefinedId:Option[String], // this is the SLU Id number or username, I believe
   Email:Option[String],
   FirstName:Option[String],
   LastName:Option[String]
@@ -81,13 +81,13 @@ case class D2LGroupCategory(
   GroupCategoryId:Long,
   Name:String,
   Description:D2LDescription, //richtext
-  EnrollmentStyle:Int,
+  EnrollmentStyle:Option[String], //this is probably mandatory, but I thought it was an int representing an enum, and it's a string representation of the enum
   EnrollmentQuantity:Option[Int],
   MaxUsersPerGroup:Option[Int],
   AutoEnroll:Boolean,
   RandomizeEnrollments:Boolean,
   Groups:List[Long],
-  AllocateAfterExpiry:Boolean,
+  AllocateAfterExpiry:Option[String],
   SelfEnrollmentExpiryDate:Option[String]
 )
 case class D2LGroup(
@@ -177,7 +177,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     appContext.createUserContext(userId,userKey)
   }
 }
-
+/*
 class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupsProvider {
   val myContext = getUserContext
   protected def getMyUser(userContext:ID2LUserContext,username:String):List[D2LUser] = {
@@ -186,12 +186,13 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
   protected def getMyEnrollments(userContext:ID2LUserContext,user:D2LUser):List[D2LMyOrgUnit] = {
     fetchPagedListFromD2L[D2LMyOrgUnit]("/d2l/api/lp/%s/myenrollments/users/%s/orgUnits/".format(lpApiVersion,user.OrgDefinedId.getOrElse("")),userContext) 
   }
-  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
+  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
     (en.OrgUnit.Name :: en.OrgUnit.Code.toList).map(v => (GroupKeys.ou,v))
   }))
   override def getMembersFor(groupName:String):List[String] = Nil
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
 }
+*/
 
 class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
 
@@ -258,71 +259,50 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
   protected def nameSection(orgUnit:D2LOrgUnit,section:D2LSection):String = "%s_%s".format(orgUnit.Name,section.Name)
   protected def nameGroupCategory(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):String = "%s_%s".format(orgUnit.Name,groupCategory.Name)
   protected def nameGroup(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory,group:D2LGroup):String = "%s_%s_%s".format(orgUnit.Name,groupCategory.Name,group.Name)
+  protected val d2lSectionPlaceholder = D2LSection(-1,"D2LProvidedSections",D2LDescription(None,None),Nil)
   override def getData:GroupStoreData = {
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
-    info("courses found: %s".format(courses.length))
-    val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => {
-      trace("OU: %s (%s) %s".format(orgUnit.Name,orgUnit.Code, orgUnit.Type))
+    trace("courses found: %s".format(courses.length))
+    val compoundItems = parFlatMap[D2LOrgUnit,Tuple2[List[Tuple3[String,String,String]],List[OrgUnit]]](courses,orgUnit => { 
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
-      val combinedSet:List[() => List[Tuple4[String,String,String,String]]] = List(
-        () => {
-          val constructedMembers = (for (
-            memberLists <- members.values;
-            member <- memberLists;
-            memberName <- member.OrgDefinedId.filterNot(_ == "").toList
-          ) yield {
-            (memberName,memberName,GroupKeys.ou,orgUnit.Name) :: 
-            (memberName,member.Identifier,PersonalInformation.personalInformation,"D2L_Identifier") :: 
-            (memberName,member.ProfileIdentifier,PersonalInformation.personalInformation,"D2L_Profile_Identifier") :: 
-            (memberName,member.Identifier,PersonalInformation.personalInformation,"D2L_Identifier") :: 
-            (memberName,member.DisplayName,PersonalInformation.personalInformation,PersonalInformation.displayName) :: 
-            member.UserName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,"D2L_UserName")) ::: 
-            orgUnit.Code.toList.map(c => (memberName,memberName,GroupKeys.ou,c)) :::
-            member.FirstName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.firstName)) ::: 
-            member.LastName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.surname)) ::: 
-            member.Email.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.email))
-          }).flatten
-          trace("OU-Members: %s %s".format(orgUnit.Name,constructedMembers.toList.length))
-          constructedMembers.toList
-        },
-        () => {
-          val constructedSections = for (
-            section <- getSections(userContext,orgUnit);
-            memberId <- section.Enrollments;
-            membersById:List[D2LClassListUser] <- members.get(memberId).toList;
-            member:D2LClassListUser <- membersById;
-            memberName:String <- member.OrgDefinedId.filterNot(_ == "")
-          ) yield {
-            (memberName,memberName,GroupKeys.section,nameSection(orgUnit,section))
-          }
-          trace("OU-Sections: %s %s".format(orgUnit.Name,constructedSections.length))
-          constructedSections
-        },
-        () => {
-          val constructedGroups = parFlatMap[D2LGroupCategory,Tuple4[String,String,String,String]](getGroupCategories(userContext,orgUnit),groupCategory => {
-            trace("OU-GroupCategory: %s %s".format(orgUnit.Name,groupCategory.Name))
-            parFlatMap[D2LGroup,Tuple4[String,String,String,String]](getGroups(userContext,orgUnit,groupCategory),group => {
-              trace("OU-Group: %s %s".format(orgUnit.Name,group.Name))
-              for (
-                memberId <- group.Enrollments;   
-                membersById:List[D2LClassListUser] <- members.get(memberId).toList;
-                member:D2LClassListUser <- membersById;
-                memberName:String <- member.OrgDefinedId.filterNot(_ == "")
-              ) yield {
-                (memberName,memberName,GroupKeys.group,nameGroup(orgUnit,groupCategory,group))
-              }
-            },6,"groups")
-          },4,"groupCategories")
-          trace("OU-Groups: %s %s".format(orgUnit.Name,constructedGroups.length))
-          constructedGroups
-        }
-      )
-      parFlatMap[() => List[Tuple4[String,String,String,String]],Tuple4[String,String,String,String]](combinedSet,f => f(),3,"members_sections_groups")
-    },16,"ou").partition(_._3 != PersonalInformation.personalInformation)
-    val groupsByMember:Map[String,List[Tuple2[String,String]]] = groupData.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._3,m._4))))
-    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_._4).map(t => (t._1,t._2.distinct.map(_._1)))
-    val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._4,m._2))))
+      val memberDetails = (for (
+        memberLists <- members.values;
+        member <- memberLists;
+        memberName <- member.OrgDefinedId.filterNot(_ == "").toList
+      ) yield {
+        (memberName,member.Identifier,"D2L_Identifier") :: 
+        (memberName,member.ProfileIdentifier,"D2L_Profile_Identifier") :: 
+        (memberName,member.Identifier,"D2L_Identifier") :: 
+        (memberName,member.DisplayName,PersonalInformation.displayName) :: 
+        member.UserName.toList.map(fn => (memberName,fn,"D2L_UserName")) ::: 
+        member.FirstName.toList.map(fn => (memberName,fn,PersonalInformation.firstName)) ::: 
+        member.LastName.toList.map(fn => (memberName,fn,PersonalInformation.surname)) ::: 
+        member.Email.toList.map(fn => (memberName,fn,PersonalInformation.email))
+      }).flatten.toList
+
+      val sections = getSections(userContext,orgUnit).map(section => {
+        Group(GroupKeys.section,section.Name,section.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "")))
+      })
+      val sectionGroupSets = sections match {
+        case Nil => Nil
+        case some => List(GroupSet(GroupKeys.sectionCategory,nameSection(orgUnit,d2lSectionPlaceholder),some.flatMap(_.members),some))
+      }
+      val groupCategories = parFlatMap[D2LGroupCategory,GroupSet](getGroupCategories(userContext,orgUnit),groupCategory => {
+        val groups = getGroups(userContext,orgUnit,groupCategory).map(group => {
+          Group(GroupKeys.group,nameGroup(orgUnit,groupCategory,group),group.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "")))
+        })
+        List(GroupSet(GroupKeys.groupCategory,nameGroupCategory(orgUnit,groupCategory),groups.flatMap(_.members).distinct,groups))
+      },4,"groupCategories")
+      val children =  sectionGroupSets ::: groupCategories
+      val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,(members.values.toList.flatten.flatMap(_.OrgDefinedId).toList ::: children.flatMap(_.members)).distinct,children))
+      List((memberDetails,orgUnits))
+    },16,"ou")
+    val personalInformation = compoundItems.map(_._1)
+    val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => (m._3,m._2)).distinct))
+    val groupData = compoundItems.flatMap(_._2)
+    val groupsByMember:Map[String,List[OrgUnit]] = Map(personalDetails.keys.toList.map(u => (u,groupData.filter(_.members.contains(u)))):_*)
+    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
     GroupStoreData(groupsByMember,membersByGroup,personalDetails)
   }
 }
