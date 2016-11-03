@@ -26,54 +26,72 @@ import scala.xml._
 
 object SecurityListener extends Logger {
   import java.util.Date
-  case class SessionRecord(username:String,ipAddress:String,started:Long,lastActivity:Long)
+  class SessionRecord(val sid:String,val username:String,var ipAddress:String = "unknown",var lastActivity:Long = new Date().getTime,var userAgent:Box[String] = Empty){
+    val started:Long = new Date().getTime
+  }
   val ipAddresses = new scala.collection.mutable.HashMap[String,SessionRecord]()
   object SafeSessionIdentifier extends SessionVar[String](nextFuncName)
   object IPAddress extends SessionVar[Option[String]](None)
+  object SessionRecord extends SessionVar[Option[SessionRecord]](None)
   def activeSessions = ipAddresses.values.toList
   protected def sessionId:String = {
     SafeSessionIdentifier.is
-    //S.session.map(_.uniqueId).getOrElse("unknown")
   }
   protected def user:String = {
     Globals.currentUser.is
   }
+  def ensureSessionRecord:Unit = {
+    SessionRecord.is.map(rec => {
+      rec.lastActivity = now.getTime
+    }).getOrElse({
+      val newRecord = new SessionRecord(sessionId,user)
+      S.request.foreach(r => {
+        newRecord.ipAddress = r.remoteAddr
+        newRecord.userAgent = UserAgent.is
+      })
+      SessionRecord(Some(newRecord))
+      ipAddresses += ((sessionId, newRecord))
+    })
+  }
   def login:Unit = {
     if (user != "forbidden"){
       val now = new Date().getTime
-      ipAddresses.remove(sessionId).map(rec => {
-        ipAddresses += ((sessionId,rec.copy(username = user,lastActivity = now)))
-      }).getOrElse({
-        ipAddresses += ((sessionId,SessionRecord(user,"unknown",now,now)))
-      })
+      ensureSessionRecord
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
       info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(sessionId,user,IPAddress.is,UserAgent.is))
     }
   }
+  def cleanupAllSessions:Unit = {
+    ipAddresses.values.foreach(rec => {
+      if (rec.username != "forbidden"){
+        info("%s :: %s user session terminated by shutdown, ipAddress %s, userAgent: %s".format(rec.sid,rec.username,Some(rec.ipAddress),rec.userAgent))
+      }
+    })
+    ipAddresses.clear
+  }
   def cleanupSession(in:LiftSession):Unit = {
-    val thisSessionId = sessionId //in.uniqueId
+    val thisSessionId = sessionId
     ipAddresses.remove(thisSessionId).foreach(rec => {
       if (rec.username != "forbidden"){
-          info("%s :: %s user session expired, ipAddress %s, userAgent: %s".format(thisSessionId,rec.username,Some(rec.ipAddress),UserAgent.is))
+          info("%s :: %s user session expired, ipAddress %s, userAgent: %s".format(thisSessionId,rec.username,Some(rec.ipAddress),rec.userAgent))
       }
     })
   }
   def maintainIPAddress(r:Req):Unit = {
     try {
-      val oldIPAddress = IPAddress.is
+      val oldIPAddress = SessionRecord.is.map(_.ipAddress)
       val newIPAddress = r.remoteAddr
-      IPAddress(Some(newIPAddress))
+      ensureSessionRecord
       if (!oldIPAddress.exists(_ == newIPAddress)){
         val now = new Date().getTime
-        ipAddresses.remove(sessionId).map(rec => {
-          ipAddresses += ((sessionId,rec.copy(ipAddress = newIPAddress,lastActivity = now)))
-        }).getOrElse({
-          ipAddresses += ((sessionId,SessionRecord(user,newIPAddress,now,now)))
+        SessionRecord.is.foreach(rec => {
+          rec.ipAddress = newIPAddress
         })
-        if (user != "forbidden")
+        if (user != "forbidden"){
           info("%s :: %s changed IP address %s, userAgent: %s".format(sessionId,user,Some(newIPAddress),UserAgent.is))
+        }
       }
     } catch {
       case e:StateInStatelessException => {}
@@ -316,11 +334,14 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
+    LiftRules.unloadHooks.append(() => {
+      SecurityListener.cleanupAllSessions
+    })
     LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
     info(configs)
   }
-  def listRooms(configName:String):List[String] = configs(configName)._2.list
+  def listRooms(configName:String):List[MeTLRoom] = configs(configName)._2.list
   def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid),false)
   def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = getRoom(jid,configName,roomMetaData,false)
   def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom = {
