@@ -13,6 +13,8 @@ describe('When the class breaks into groups,', function() {
     var sA = board(studentA);
     var sB = board(studentB);
     var sC = board(studentC);
+    var sD = board(studentD);
+    var sE = board(studentE);
 
     var join = function(user,label){
         var login = LoginPage(user);
@@ -149,27 +151,78 @@ describe('When the class breaks into groups,', function() {
         assert.equal(tT.participationHealth,0);
     });
     it("given that the teacher restricts the conversation",function(){
-	tT.homeTab.click();
-	tT.conversationSearch.click();
+        tT.homeTab.click();
+        tT.conversationSearch.click();
         teacher.click("=Edit");
-	browser.waitUntil(function(){
-	    return teacher.isVisible("h1=Edit conversation");
-	});
-	teacher.click(".conversationSharingCollapser.course");
-	teacher.click("label=Org Unit A");
-	teacher.click(".joinConversation");
-	teacher.waitForExist("#board");
-	assert.equal(tT.currentConversation.subject,"Org Unit A");
+        browser.waitUntil(function(){
+            return teacher.isVisible("h1=Edit conversation");
+        });
+        teacher.click(".conversationSharingCollapser.course");
+        teacher.click("label=Org Unit A");
+        teacher.click(".joinConversation");
+        teacher.waitForExist("#board");
+        assert.equal(tT.currentConversation.subject,"Org Unit A");
+        tT.nextSlide.click();
+        teacher.waitUntil(function(){
+            return tT.currentSlide.index == 1;
+        });
     });
     it("participant presence should be measured against potential participants",function(){
-	assert.equal(tT.participationHealthMax,4);
-	assert.equal(tT.participationHealth,3);
+        assert.equal(tT.participationHealthMax,6);
+        assert.equal(tT.participationHealth,3);
         join(studentC,'studentC');
-	studentC.waitForExist("#board");
-	assert.equal(tT.participationHealth,4);
-	browser.debug();
+        studentC.waitForExist("#board");
+        assert.equal(tT.participationHealth,4);
     });
     it("group restriction should apply to new entrants",function(){
+        studentC.waitUntil(function(){
+            return sC.currentSlide.index == 1;
+        });
+        var groups = sC.currentSlide.groupSet.groups;
+        assert.equal(groups.length,3);
+        sC.menuButton.click();
+        studentC.waitUntil(function(){return studentC.isVisible("#roomToolbar");});
+        sC.learning.click();
+        studentC.waitUntil(function(){return studentC.isVisible("#menuContentFilter");});
+        sC.contentFilter.click();
+
+        assert(! studentC.isExisting("#contentFilter_"+groups[0].id));
+        assert(! studentC.isExisting("#contentFilter_"+groups[1].id));
+        assert(! studentC.isExisting("#contentFilter_"+groups[2].id));
+
+        assert(_.includes(sC.plainTexts,"Phrase 1"));
+        assert(!(_.includes(sC.plainTexts,"Phrase 2")));
+        assert(!(_.includes(sC.plainTexts,"Phrase 3")));
+
+	sC.menuButton.click();
+        sC.textMode.click();
+        sC.keyboard(50,4,"Phrase 4");
+        browser.pause(1500);//Let everything synchronize
+        assert(!(_.includes(sA.plainTexts,"Phrase 4")));
+        assert(!(_.includes(sB.plainTexts,"Phrase 4")));
+        assert(_.includes(sC.plainTexts,"Phrase 4"));
+        assert(_.includes(tT.plainTexts,"Phrase 4"));
+    });
+    it("further entrants should be allocated into existing groups",function(){
+        join(studentD,'studentD');
+        studentD.waitForExist("#board");
+        studentD.waitUntil(function(){
+            return sD.currentSlide.index == 1;
+        });
+        console.log("Groups",sD.currentSlide.groupSet.groups);
+        assert(_.includes(sD.plainTexts,"Phrase 1"));
+        assert(!(_.includes(sD.plainTexts,"Phrase 2")));
+        assert(!(_.includes(sD.plainTexts,"Phrase 3")));
+        assert(_.includes(sD.plainTexts,"Phrase 4"));
+        join(studentE,'studentE');
+        studentE.waitForExist("#board");
+        studentE.waitUntil(function(){
+            return sE.currentSlide.index == 1;
+        });
+	console.log(sE.plainTexts);
+        assert(_.includes(sE.plainTexts,"Phrase 1"));
+        assert(!(_.includes(sE.plainTexts,"Phrase 2")));
+        assert(_.includes(sE.plainTexts,"Phrase 3"));
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));

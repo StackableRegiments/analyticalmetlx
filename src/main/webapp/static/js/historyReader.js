@@ -44,10 +44,18 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             prerenderVideo(video);
         });
         prerenderTextMark = Date.now();
-        _.each(boardContent.multiWordTexts,function(text,i){
-            var editor = Modes.text.editorFor(text).doc;
-            editor.load(text.words);
-            incorporateBoardBounds(text.bounds);
+        boardContent.multiWordTexts = _.pickBy(boardContent.multiWordTexts,isUsable);
+	_.each(boardContent.multiWordTexts,function(text){
+            if(isUsable(text)){
+                console.log("Usable",text);
+                var editor = Modes.text.editorFor(text).doc;
+                editor.load(text.words);
+                incorporateBoardBounds(text.bounds);
+            }
+            else{
+                console.log("Not usable",text);
+            }
+            return isUsable(text);
         });
         renderMultiWordMark = Date.now();
 
@@ -188,6 +196,7 @@ function isUsable(element){
                  _.some(element.audiences,function(audience){
                      return audience.action == "direct" && audience.name == UserSettings.getUsername();
                  }));
+    console.log(boundsOk,sizeOk,textOk,forMyGroup,forMe);
     return boundsOk && sizeOk && textOk && (forMyGroup || forMe);
 }
 function usableStanzas(){

@@ -94,7 +94,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
-      warn("localSetup for [%s]".format(name))
+      info("localSetup for [%s]".format(name))
       com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
         currentConversation = Some(serverConfig.detailsOfConversation(convJid.toString))
       })
@@ -109,7 +109,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
         })
       })
     })
-    warn("setup slideDisplay: %s %s".format(currentConversation,currentSlide))
+    info("setup slideDisplay: %s %s".format(currentConversation,currentSlide))
   }
   protected var username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
@@ -129,7 +129,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     "#addSlideButtonContainer" #> currentConversation.filter(cc => shouldModifyConversation(username,cc)).map(cc => {
       "#addSlideButtonContainer [onclick]" #> {
         ajaxCall(Jq("#this"),(j:String) => {
-          warn("add slide button clicked: %s".format(j))
+          info("add slide button clicked: %s".format(j))
           val index = currentSlide.flatMap(cs => cc.slides.find(_.id == cs).map(_.index)).getOrElse(0)
           serverConfig.addSlideAtIndexOfConversation(cc.jid.toString,index)
           reRender
@@ -146,7 +146,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (currentConversation.exists(_.jid == newConv.jid)){
         if (!shouldDisplayConversation(newConv)){
-          warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+          info("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
           currentConversation = Empty
           currentSlide = Empty
           reRender
@@ -159,11 +159,11 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
       }
     }
     case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
-      warn("incoming syncMove: %s".format(c))
+      info("incoming syncMove: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       currentConversation.filter(cc => currentSlide.exists(_ != newJid)).map(cc => {
         cc.slides.find(_.id == newJid).foreach(slide => {
-          warn("moving to: %s".format(slide))
+          info("moving to: %s".format(slide))
           currentSlide = Some(slide.id)
           reRender
           partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
@@ -442,7 +442,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       }
     }
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
-      warn("receivedCommand: %s".format(c))
+      info("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
@@ -575,7 +575,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
       conversation.foreach(c => {
         val newConv = serverConfig.detailsOfConversation(c.jid.toString)
-        warn("receivedUpdatedConversation: %s => %s".format(c,newConv))
+        info("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender
       })
