@@ -44,7 +44,7 @@ var BoardPage = function(user) {
         return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value
     };
     return Object.create(Page, {
-        driver:user,
+        driver:{ get:function(){ return user } },
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
         privateMode: { get:function(){ return user.element("#privateMode") } },
         publicMode: { get:function(){ return user.element("#publicMode") } },

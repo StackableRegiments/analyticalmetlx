@@ -195,7 +195,7 @@ describe('When the class breaks into groups,', function() {
         assert(!(_.includes(sC.plainTexts,"Phrase 2")));
         assert(!(_.includes(sC.plainTexts,"Phrase 3")));
 
-	sC.menuButton.click();
+        sC.menuButton.click();
         sC.textMode.click();
         sC.keyboard(50,4,"Phrase 4");
         browser.pause(1500);//Let everything synchronize
@@ -210,7 +210,6 @@ describe('When the class breaks into groups,', function() {
         studentD.waitUntil(function(){
             return sD.currentSlide.index == 1;
         });
-        console.log("Groups",sD.currentSlide.groupSet.groups);
         assert(_.includes(sD.plainTexts,"Phrase 1"));
         assert(!(_.includes(sD.plainTexts,"Phrase 2")));
         assert(!(_.includes(sD.plainTexts,"Phrase 3")));
@@ -220,13 +219,40 @@ describe('When the class breaks into groups,', function() {
         studentE.waitUntil(function(){
             return sE.currentSlide.index == 1;
         });
-	console.log(sE.plainTexts);
         assert(_.includes(sE.plainTexts,"Phrase 1"));
         assert(!(_.includes(sE.plainTexts,"Phrase 2")));
         assert(_.includes(sE.plainTexts,"Phrase 3"));
     });
     it("all content types should be group restricted",function(){
-	_.each(users,function(user){console.log(user.applicationMenu)});
+        console.log("Groups",tT.currentSlide.groupSet.groups);
+        _.each(users,function(user,ui){//Close all backstages
+            if(user.applicationMenu.value != null){
+                console.log("Switching off application menu");
+                user.menuButton.click();
+                console.log(user.applicationMenu.value);
+            }
+            user.inkMode.click();
+            user.handwrite(_.map(_.range(200,400,15), function(i){
+                return {x:ui*10+i,y:i};
+            }));
+            user.imageMode.click();
+            user.driver.click("#board");
+            user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+        });
+	browser.pause(1500);//Let everything synchronize
+        assert.equal(_.keys(tT.inkStanzas).length,6);
+        assert.equal(_.keys(sA.inkStanzas).length,2);
+        assert.equal(_.keys(sB.inkStanzas).length,3);
+        assert.equal(_.keys(sC.inkStanzas).length,3);
+        assert.equal(_.keys(sD.inkStanzas).length,3);
+        assert.equal(_.keys(sE.inkStanzas).length,3);
+
+        assert.equal(_.keys(tT.imageStanzas).length,6);
+        assert.equal(_.keys(sA.imageStanzas).length,2);
+        assert.equal(_.keys(sB.imageStanzas).length,3);
+        assert.equal(_.keys(sC.imageStanzas).length,3);
+        assert.equal(_.keys(sD.imageStanzas).length,3);
+        assert.equal(_.keys(sE.imageStanzas).length,3);
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));

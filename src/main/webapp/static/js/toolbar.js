@@ -1433,11 +1433,11 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
-			console.log("Textbox",t.identity,t.doc.width());
-			t.doc.layout();
+                        console.log("Textbox",t.identity,t.doc.width());
+                        t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
-			    return l.positionedWords.length;
-			});
+                            return l.positionedWords.length;
+                        });
                     });
                 },
                 mapSelected:mapSelected,
@@ -1602,7 +1602,7 @@ var Modes = (function(){
                             t.doc.isActive = t.doc.identity == editor.identity;
                             if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
-				blit();
+                                blit();
                             }
                         });
                         var sel;
@@ -1980,7 +1980,8 @@ var Modes = (function(){
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentImage.x,
-                                y:currentImage.y
+                                y:currentImage.y,
+                                audiences:Conversations.getCurrentGroup().map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();

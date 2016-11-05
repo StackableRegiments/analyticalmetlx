@@ -75,6 +75,7 @@ function strokeCollected(points){
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
+        ink.audiences = Conversations.getCurrentGroup().map(audienceToStanza);
 
         calculateInkBounds(ink);
         prerenderInk(ink);

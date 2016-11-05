@@ -24,6 +24,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         boardContent.minY = 0;
         boardContent.maxX = boardWidth;
         boardContent.maxY = boardHeight;
+        boardContent.inks = _.pickBy(boardContent.inks,isUsable);
         $.each(boardContent.inks,function(i,ink){
             prerenderInk(ink);
         });
@@ -45,7 +46,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         });
         prerenderTextMark = Date.now();
         boardContent.multiWordTexts = _.pickBy(boardContent.multiWordTexts,isUsable);
-	_.each(boardContent.multiWordTexts,function(text){
+        _.each(boardContent.multiWordTexts,function(text){
             if(isUsable(text)){
                 console.log("Usable",text);
                 var editor = Modes.text.editorFor(text).doc;
@@ -104,6 +105,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         else{
             var loaded = 0;
             var limit = _.keys(boardContent.images).length;
+            boardContent.images = _.pickBy(boardContent.images,isUsable);
             $.each(boardContent.images,function(i,image){
                 image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
                 incorporateBoardBounds(image.bounds);
