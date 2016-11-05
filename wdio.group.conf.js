@@ -7,6 +7,9 @@ var overrides = {
     specs: [
         './src/test/js/webdriver/group/**'
     ],
+    suites:{
+        learning:['./src/test/js/webdriver/group/*.js']
+    },
     maxInstances:1,
     capabilities: {
         teacher:{

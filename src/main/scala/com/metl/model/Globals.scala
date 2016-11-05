@@ -13,6 +13,7 @@ import net.liftweb.util.Helpers._
 
 import net.liftweb.util.Props
 import scala.xml._
+import scala.util._
 import com.metl.renderer.RenderDescription
 
 import net.liftweb.http._
@@ -53,6 +54,20 @@ trait PropertyReader extends Logger {
 }
 
 object Globals extends PropertyReader with Logger {
+  val liveIntegration = System.getProperty("stackable.spending") match {
+    case "enabled" =>  true
+    case _ => false
+  }
+  val chunkingTimeout = Try(System.getProperty("metlingpot.chunking.timeout").toInt).toOption match {
+    case Some(milis) =>  milis
+    case _ => 3000
+  }
+  val chunkingThreshold = Try(System.getProperty("metlingpot.chunking.strokeThreshold").toInt).toOption match {
+    case Some(strokes) =>  strokes
+    case _ => 5
+  }
+  warn("Integrations are live: %s".format(liveIntegration))
+  warn("Chunking: %s %s".format(chunkingTimeout,chunkingThreshold))
   val configurationFileLocation = System.getProperty("metlx.configurationFile")
   List(configurationFileLocation).filter(prop => prop match {
     case null => true
@@ -74,12 +89,12 @@ object Globals extends PropertyReader with Logger {
   var isDevMode:Boolean = true
 
   var tokBox = for {
-      tbNode <- (propFile \\ "tokBox").headOption
-      apiKey <- (tbNode \\ "@apiKey").headOption.map(_.text.toInt)
-      secret <- (tbNode \\ "@secret").headOption.map(_.text)
-    } yield {
-      new TokBox(apiKey,secret)
-    }
+    tbNode <- (propFile \\ "tokBox").headOption
+    apiKey <- (tbNode \\ "@apiKey").headOption.map(_.text.toInt)
+    secret <- (tbNode \\ "@secret").headOption.map(_.text)
+  } yield {
+    new TokBox(apiKey,secret)
+  }
 
 
   val liftConfig = (propFile \\ "liftConfiguration")
@@ -135,7 +150,7 @@ object Globals extends PropertyReader with Logger {
             val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
             val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
             val lasd = LiftAuthStateData(true,username,groups,personalDetails)
-          //info("got state: %s".format(lasd))
+            //info("got state: %s".format(lasd))
             validState(Some(lasd))
             info("generated authState: %s".format(lasd))
             lasd

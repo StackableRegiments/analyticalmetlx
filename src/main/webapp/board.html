@@ -23,10 +23,10 @@
   <script data-lift="with-resource-id" src="static/js/historyReader.js"></script>
   <script data-lift="with-resource-id" src="static/js/board.js"></script>
   <script data-lift="with-resource-id" src="static/js/toolbar.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
+  <script data-lift="with-resource-id" src="static/js/userSettings.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/onLoad.js"></script>
+  <script data-lift="with-resource-id" src="static/js/onLoad.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/test.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/quizzes.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/submissions.js"></script>
@@ -34,19 +34,20 @@
   <script data-lift="with-resource-id" src="static/js/min/attachments.js"></script>
   <script data-lift="with-resource-id" src="static/js/participants.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/privacy.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/carota-debug.js"></script>
+  <script data-lift="with-resource-id" src="static/js/carota-debug.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/hotkeys.js"></script>
   <script data-lift="with-resource-id" src="static/js/contentFilter.js"></script>
-  <script data-lift="with-resource-id" src="static/js/stable/word-cloud.js"></script>
   <script src="static/js/stable/Chart.bundle.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/word-cloud.js"></script>
   <script data-lift="with-resource-id" src="static/js/analysis.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/recycleBin.js"></script>
   <!--
       <script data-lift="with-resource-id" src="static/js/stable/kurento/adapter.js"></script>
       <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
       <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
       <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
       -->
+  <script data-lift="with-resource-id" src="static/js/min/recycleBin.js"></script>
+  <script src="static/js/stable/nlp_compromise.min.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <style>
     @media screen {
@@ -110,6 +111,18 @@
 
   </style>
   <div>
+    <div id="pasteDialogTemplate">
+      <span class="dialogContent">
+        Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
+      </span>
+      <span class="dialogOptions">
+        <span class="dialogOption">
+          <button class="fa btn-icon">
+            <div class="icon-txt"></div>
+          </button>
+        </span>
+      </span>
+    </div>
     <div id="masterHeader">
       <div id="masterHeaderFlexContainer">
         <span id="floatingToggleContainer" class="main-menu">

@@ -130,6 +130,14 @@ var BoardPage = function(user) {
         conversationSearch:{get:function(){return user.element("#conversations");}},
         participants:{get:function(){return user.element("#menuParticipants");}},
         contentFilter:{get:function(){return user.element("#menuContentFilter");}},
+        openParticipants:{value:function(){
+            this.menuButton.click();
+            user.waitUntil(function(){return user.isVisible("#roomToolbar");});
+            this.learning.click();
+            user.waitUntil(function(){return user.isVisible("#menuParticipants");});
+            this.participants.click();
+        }},
+        participants:{get:function(){return user.element("#menuParticipants");}},
         learning:{get:function(){return user.element("#roomToolbar");}},
         toggleFilter:{value:function(name){
             user.execute(sprintf("$('#%s').click()",name));
@@ -141,7 +149,7 @@ var BoardPage = function(user) {
         themes: {get: function(){ return user.execute("return boardContent.themes").value; }},
         cloudData: {get: function(){ return user.execute("return Analytics.word.cloudData()").value; } },
         visibleThemes: {value:function(){
-            return user.execute("return $('#lang .word').map(function(i,e){var w = $(e);return {text:w.text(),size:w.attr('font-size')};})").value;
+            return user.execute("return $('#lang .word').map(function(i,e){var w = $(e);return {text:w.text(),size:w.css('font-size')};})").value;
         }},
 
         selectMode: { get: function() { return user.element("#selectMode"); } },

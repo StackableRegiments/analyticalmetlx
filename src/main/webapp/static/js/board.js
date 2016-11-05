@@ -950,57 +950,61 @@ function videoReceived(video){
     });
 }
 function imageReceived(image){
-    var dataImage = new Image();
-    image.imageData = dataImage;
-    dataImage.onload = function(){
-        if(image.width == 0){
-            image.width = dataImage.naturalWidth;
-        }
-        if(image.height == 0){
-            image.height = dataImage.naturalHeight;
-        }
-        image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
-        incorporateBoardBounds(image.bounds);
-        boardContent.images[image.identity]  = image;
-        updateTracking(image.identity);
-        prerenderImage(image);
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(image.bounds)){
-                try {
-                    drawImage(image);
-                } catch(e){
-                    console.log("drawImage exception",e);
+    if(isUsable(image)){
+        var dataImage = new Image();
+        image.imageData = dataImage;
+        dataImage.onload = function(){
+            if(image.width == 0){
+                image.width = dataImage.naturalWidth;
+            }
+            if(image.height == 0){
+                image.height = dataImage.naturalHeight;
+            }
+            image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
+            incorporateBoardBounds(image.bounds);
+            boardContent.images[image.identity]  = image;
+            updateTracking(image.identity);
+            prerenderImage(image);
+            WorkQueue.enqueue(function(){
+                if(isInClearSpace(image.bounds)){
+                    try {
+                        drawImage(image);
+                    } catch(e){
+                        console.log("drawImage exception",e);
+                    }
+                    return false;
                 }
-                return false;
-            }
-            else{
-                console.log("Rerendering image in contested space");
-                return true;
-            }
-        });
+                else{
+                    console.log("Rerendering image in contested space");
+                    return true;
+                }
+            });
+        }
+        dataImage.src = calculateImageSource(image);
     }
-    dataImage.src = calculateImageSource(image);
 }
 function inkReceived(ink){
-    calculateInkBounds(ink);
-    updateStrokesPending(-1,ink.identity);
-    if(prerenderInk(ink)){
-        incorporateBoardBounds(ink.bounds);
-        if(ink.isHighlighter){
-            boardContent.highlighters[ink.identity] = ink;
-        }
-        else{
-            boardContent.inks[ink.identity] = ink;
-        }
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(ink.bounds)){
-                drawInk(ink);
-                return false;
+    if(isUsable(ink)){
+        calculateInkBounds(ink);
+        updateStrokesPending(-1,ink.identity);
+        if(prerenderInk(ink)){
+            incorporateBoardBounds(ink.bounds);
+            if(ink.isHighlighter){
+                boardContent.highlighters[ink.identity] = ink;
             }
             else{
-                return true;
+                boardContent.inks[ink.identity] = ink;
             }
-        });
+            WorkQueue.enqueue(function(){
+                if(isInClearSpace(ink.bounds)){
+                    drawInk(ink);
+                    return false;
+                }
+                else{
+                    return true;
+                }
+            });
+        }
     }
 }
 function takeControlOfViewbox(){
@@ -1040,4 +1044,3 @@ function receiveS2C(id,markup){
         console.log("receiveS2C exception:",e);
     }
 }
-

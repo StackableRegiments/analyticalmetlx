@@ -78,7 +78,13 @@ trait JsonSerializerHelper {
   def getBooleanByName(input:JObject,name:String) = (input \ name).extract[Boolean]
   def getIntByName(input:JObject,name:String) = (input \ name).extract[Int]
   def getLongByName(input:JObject,name:String) = (input \ name).extract[Long]
-  def getDoubleByName(input:JObject,name:String) = (input \ name).extract[Double]
+  def getDoubleByName(input:JObject,name:String) = tryo((input \ name).extract[Double]) match {
+    case Full(d) => d
+    case malformedDouble => {
+      error("getDoubleByName failed: %s in %s".format(name,input))
+        (input \ name).extract[Int].toDouble
+    }
+  }
   def getPrivacyByName(input:JObject,name:String) = (input \ name).extract[Privacy]
   def getObjectByName(input:JObject,name:String) = input.values(name).asInstanceOf[JObject]
   def getListOfDoublesByName(input:JObject,name:String) = (input \ name).extract[List[Double]]
@@ -115,7 +121,6 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         ))
       })))
     )
-    trace(res)
     res
   }
   protected def parseMeTLContent(input:MeTLStanza):List[JField] = {
@@ -134,7 +139,6 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
   }
   protected def parseJObjForAudiences(input:JObject,config:ServerConfiguration = ServerConfiguration.empty):List[Audience] = {
     ((input \ "audiences").extract[List[JObject]]).flatMap(a => {
-      info(a)
       try {
         val domain = getStringByName(a,"domain")
         val name = getStringByName(a,"name")
@@ -150,7 +154,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
   }
 
   protected def parseJObjForMeTLContent(input:JObject,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
-    val author = (input \ "author").extract[String] 
+    val author = (input \ "author").extract[String]
     val timestamp = getLongByName(input,"timestamp")
     val audiences = parseJObjForAudiences(input,config)
     ParsedMeTLContent(author,timestamp,audiences)
@@ -451,21 +455,29 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
     ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   })
   override def toMeTLImage(i:JValue):MeTLImage = Stopwatch.time("JsonSerializer.toMeTLImage",{
-    i match {
-      case input:JObject => {
-        val mc = parseJObjForMeTLContent(input,config)
-        val cc = parseJObjForCanvasContent(input)
-        val tag = getStringByName(input,"tag")
-        val source = Full(getStringByName(input,"source"))
-        val imageBytes = source.map(u => config.getResource(u))
-        val pngBytes = Empty
-        val width = getDoubleByName(input,"width")
-        val height = getDoubleByName(input,"height")
-        val x = getDoubleByName(input,"x")
-        val y = getDoubleByName(input,"y")
-        MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+    try{
+      i match {
+        case input:JObject => {
+          val mc = parseJObjForMeTLContent(input,config)
+          val cc = parseJObjForCanvasContent(input)
+          val tag = getStringByName(input,"tag")
+          val source = Full(getStringByName(input,"source"))
+          val imageBytes = source.map(u => config.getResource(u))
+          val pngBytes = Empty
+          val width = getDoubleByName(input,"width")
+          val height = getDoubleByName(input,"height")
+          val x = getDoubleByName(input,"x")
+          val y = getDoubleByName(input,"y")
+          MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        }
+        case _ => MeTLImage.empty
       }
-      case _ => MeTLImage.empty
+    }
+    catch{
+      case e => {
+        error("JsonSerializer.toMeTLImage failed on %s: %s".format(i,e))
+        throw e
+      }
     }
   })
   override def fromMeTLImage(input:MeTLImage):JValue = Stopwatch.time("JsonSerializer.fromMeTLImage",{

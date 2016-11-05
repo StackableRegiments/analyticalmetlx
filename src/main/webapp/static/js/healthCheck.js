@@ -138,7 +138,8 @@ var serverResponse = function(responseObj){
         HealthChecker.addMeasure("latency",responseObj.success,latency);
     }
     if ("success" in responseObj && responseObj.success == false){
-        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "error encountered");
+	console.log(responseObj);
+        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
     }
 }
 

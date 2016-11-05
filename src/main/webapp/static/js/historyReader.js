@@ -19,12 +19,16 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
+
+        json.multiWordTexts = _.pickBy(json.multiWordTexts,isUsable);
+        json.images = _.pickBy(json.images,isUsable);
+        json.inks = _.pickBy(json.inks,isUsable);
+
         boardContent = json;
         boardContent.minX = 0;
         boardContent.minY = 0;
         boardContent.maxX = boardWidth;
         boardContent.maxY = boardHeight;
-        boardContent.inks = _.pickBy(boardContent.inks,isUsable);
         $.each(boardContent.inks,function(i,ink){
             prerenderInk(ink);
         });
@@ -45,10 +49,8 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             prerenderVideo(video);
         });
         prerenderTextMark = Date.now();
-        boardContent.multiWordTexts = _.pickBy(boardContent.multiWordTexts,isUsable);
         _.each(boardContent.multiWordTexts,function(text){
             if(isUsable(text)){
-                console.log("Usable",text);
                 var editor = Modes.text.editorFor(text).doc;
                 editor.load(text.words);
                 incorporateBoardBounds(text.bounds);
@@ -56,7 +58,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             else{
                 console.log("Not usable",text);
             }
-            return isUsable(text);
         });
         renderMultiWordMark = Date.now();
 
@@ -105,7 +106,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         else{
             var loaded = 0;
             var limit = _.keys(boardContent.images).length;
-            boardContent.images = _.pickBy(boardContent.images,isUsable);
             $.each(boardContent.images,function(i,image){
                 image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
                 incorporateBoardBounds(image.bounds);
@@ -198,7 +198,6 @@ function isUsable(element){
                  _.some(element.audiences,function(audience){
                      return audience.action == "direct" && audience.name == UserSettings.getUsername();
                  }));
-    console.log(boundsOk,sizeOk,textOk,forMyGroup,forMe);
     return boundsOk && sizeOk && textOk && (forMyGroup || forMe);
 }
 function usableStanzas(){

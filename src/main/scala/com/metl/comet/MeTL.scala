@@ -786,6 +786,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     },Empty),
     ClientSideFunction("sendStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
+      debug("sendStanza: %s".format(stanza.toString))
       sendStanzaToServer(stanza)
       JNull
     },Empty),

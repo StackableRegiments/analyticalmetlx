@@ -227,9 +227,7 @@ describe('When the class breaks into groups,', function() {
         console.log("Groups",tT.currentSlide.groupSet.groups);
         _.each(users,function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
-                console.log("Switching off application menu");
                 user.menuButton.click();
-                console.log(user.applicationMenu.value);
             }
             user.inkMode.click();
             user.handwrite(_.map(_.range(200,400,15), function(i){
