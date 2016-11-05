@@ -15,6 +15,7 @@ describe('When the class breaks into groups,', function() {
     var sC = board(studentC);
     var sD = board(studentD);
     var sE = board(studentE);
+    var users = [tT,sA,sB,sC,sD,sE];
 
     var join = function(user,label){
         var login = LoginPage(user);
@@ -223,6 +224,9 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(sE.plainTexts,"Phrase 1"));
         assert(!(_.includes(sE.plainTexts,"Phrase 2")));
         assert(_.includes(sE.plainTexts,"Phrase 3"));
+    });
+    it("all content types should be group restricted",function(){
+	_.each(users,function(user){console.log(user.applicationMenu)});
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));
