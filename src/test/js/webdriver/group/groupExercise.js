@@ -7,6 +7,35 @@ var LoginPage = require("../page/login.page");
 var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
+var assertSameContent = function(a,b){
+    _.each(a.inkStanzas,function(aStanza,k,i){
+        assert.equal(JSON.stringify(aStanza),JSON.stringify(b.inkStanzas[k]));
+    });
+    _.each(a.imageStanzas,function(aStanza,k){
+        assert.equal(JSON.stringify(aStanza),JSON.stringify(b.imageStanzas[k]));
+    });
+    _.each(a.textStanzas,function(aStanza){
+        var bStanza = _.find(b.textStanzas,function(stanza){
+            return aStanza.identity == stanza.identity;
+        })
+        assert.equal(JSON.stringify(aStanza),JSON.stringify(bStanza));
+    });
+};
+var assertNotSameContent = function(a,b){
+    assert(_.some(a.inkStanzas,function(aStanza,k,i){
+        return JSON.stringify(aStanza) != JSON.stringify(b.inkStanzas[k]);
+    }));
+    assert(_.some(a.imageStanzas,function(aStanza,k){
+        return JSON.stringify(aStanza) != JSON.stringify(b.imageStanzas[k]);
+    }));
+    assert(_.some(a.textStanzas,function(aStanza){
+        var bStanza = _.find(b.textStanzas,function(stanza){
+            return aStanza.identity == stanza.identity;
+        })
+        return JSON.stringify(aStanza) != JSON.stringify(bStanza);
+    }));
+};
+
 describe('When the class breaks into groups,', function() {
     var teacherName;
     var tT = board(teacher);
@@ -237,7 +266,7 @@ describe('When the class breaks into groups,', function() {
             user.driver.click("#board");
             user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         });
-	browser.pause(1500);//Let everything synchronize
+        browser.pause(1500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.inkStanzas).length,3);
@@ -251,6 +280,59 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sC.imageStanzas).length,3);
         assert.equal(_.keys(sD.imageStanzas).length,3);
         assert.equal(_.keys(sE.imageStanzas).length,3);
+    });
+    it("group peers should see me move content",function(){
+        var user = sB;
+        var peer = sE;
+        var nonPeer = sA;
+        user.inkMode.click();
+        assert.equal(_.keys(user.selection.images).length,0);
+        assert.equal(_.keys(user.selection.inks).length,0);
+        assert.equal(_.keys(user.selection.multiWordTexts).length,0);
+        user.selectMode.click();
+        user.clickScreen(200,250);
+        assert.equal(_.keys(user.selection.images).length,1);
+        assert.equal(_.keys(user.selection.inks).length,1);
+        assert.equal(_.keys(user.selection.multiWordTexts).length,1);
+        var imageStartX = _.values(user.selection.images)[0].x;
+        var textStartX = _.find(user.selection.multiWordTexts,function(text){
+            console.log("Searching text",text);
+            return text.author == "studentB";
+        }).x;
+        console.log("startX",imageStartX,textStartX);
+        assert(_.every(peer.imageStanzas,function(image){
+            return image.x == imageStartX;
+        }));
+        assert(_.some(peer.textStanzas,function(text){
+            return text.x == textStartX;
+        }));
+        user.handwrite(_.map(_.range(200,400,20), function(i){
+            return {x:i,y:i};
+        }));
+        user.driver.waitUntil(function(){
+            return _.some(user.selection.images,function(image){
+                return image.x != imageStartX;
+            }) && _.some(user.textStanzas,function(text){
+                return text.x != textStartX;
+            });
+        });
+        var textEndX = _.find(user.textStanzas,function(text){
+            return text.author == "studentB";
+        }).x;
+        var imageEndX = _.values(user.selection.images)[0].x;
+        console.log("endX",imageEndX,textEndX);
+        assert.notEqual(imageStartX,imageEndX);
+        console.log("User stanzas",user.textStanzas);
+        console.log("Peer stanzas",peer.textStanzas);
+        peer.driver.waitUntil(function(){
+            return _.some(peer.imageStanzas,function(image){
+                return image.x == imageEndX;
+            }) && _.some(peer.textStanzas,function(text){
+                return text.x == textEndX;
+            });
+        });
+        assertSameContent(user,peer);
+        assertNotSameContent(user,nonPeer);
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));

@@ -193,7 +193,7 @@ function richTextEditorToStanza(t){
         type:t.type,
         x:bounds[0],
         y:bounds[1],
-        requestedWidth:bounds[2]-bounds[0],
+        requestedWidth:t.doc.width(),
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza),
@@ -668,6 +668,7 @@ function transformReceived(transform){
             doc.position.y += transform.yTranslate;
             text.x = doc.position.x;
             text.y = doc.position.y;
+	    text.doc.invalidateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
     }
