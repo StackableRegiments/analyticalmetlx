@@ -166,7 +166,7 @@ object Globals extends PropertyReader with Logger {
   object currentUser {
     def is:String = casState.is.username
   }
-  def isSuperUser:Boolean = casState.is.eligibleGroups.contains(("special","superuser"))
+  def isSuperUser:Boolean = casState.is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
