@@ -296,10 +296,8 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(user.selection.multiWordTexts).length,1);
         var imageStartX = _.values(user.selection.images)[0].x;
         var textStartX = _.find(user.selection.multiWordTexts,function(text){
-            console.log("Searching text",text);
             return text.author == "studentB";
         }).x;
-        console.log("startX",imageStartX,textStartX);
         assert(_.every(peer.imageStanzas,function(image){
             return image.x == imageStartX;
         }));
@@ -320,10 +318,7 @@ describe('When the class breaks into groups,', function() {
             return text.author == "studentB";
         }).x;
         var imageEndX = _.values(user.selection.images)[0].x;
-        console.log("endX",imageEndX,textEndX);
         assert.notEqual(imageStartX,imageEndX);
-        console.log("User stanzas",user.textStanzas);
-        console.log("Peer stanzas",peer.textStanzas);
         peer.driver.waitUntil(function(){
             return _.some(peer.imageStanzas,function(image){
                 return image.x == imageEndX;
