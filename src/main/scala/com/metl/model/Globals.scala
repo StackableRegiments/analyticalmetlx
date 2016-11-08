@@ -166,8 +166,22 @@ object Globals extends PropertyReader with Logger {
   object currentUser {
     def is:String = casState.is.username
   }
+  // special roles
   def isSuperUser:Boolean = casState.is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
+  def isImpersonator:Boolean = casState.is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "impersonator")
 
+  def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):Boolean = {
+    if (isImpersonator){
+      val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,personalAttributes)
+      val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+      val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+      casState.validState(Some(LiftAuthStateData(true,newUsername,groups,personalDetails)))
+      SecurityListener.rebuildRecord
+      true
+    } else {
+      false
+    }
+  }
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
   val printDpi = 100

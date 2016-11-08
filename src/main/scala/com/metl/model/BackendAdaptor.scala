@@ -31,7 +31,6 @@ object SecurityListener extends Logger {
   }
   val ipAddresses = new scala.collection.mutable.HashMap[String,SessionRecord]()
   object SafeSessionIdentifier extends SessionVar[String](nextFuncName)
-  object IPAddress extends SessionVar[Option[String]](None)
   object SessionRecord extends SessionVar[Option[SessionRecord]](None)
   def activeSessions = ipAddresses.values.toList
   protected def sessionId:String = {
@@ -60,7 +59,9 @@ object SecurityListener extends Logger {
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
-      info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(sessionId,user,IPAddress.is,UserAgent.is))
+      SessionRecord.is.foreach(s => {
+        info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(s.sid,s.username,s.ipAddress,s.userAgent))
+      })
     }
   }
   def cleanupAllSessions:Unit = {
@@ -70,6 +71,14 @@ object SecurityListener extends Logger {
       }
     })
     ipAddresses.clear
+  }
+  def rebuildRecord:Unit = {
+    SessionRecord(None)
+    ipAddresses.remove(sessionId)
+    ensureSessionRecord
+    SessionRecord.is.foreach(s => {
+      info("%s :: %s rebuilt record, ipAddress %s, userAgent: %s".format(s.sid,s.username,s.ipAddress,s.userAgent))
+    })
   }
   def cleanupSession(in:LiftSession):Unit = {
     val thisSessionId = sessionId
