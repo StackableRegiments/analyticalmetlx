@@ -17,7 +17,7 @@ import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 import net.liftweb.json._
-
+import com.metl.liftAuthenticator.LiftAuthStateData
 import java.util.zip._
 
 import com.metl.model._
@@ -26,6 +26,7 @@ import com.metl.model._
   * Use Lift's templating without a session and without state
   */
 object StatelessHtml extends Stemmer with Logger {
+  implicit val formats = DefaultFormats
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml",  {
@@ -72,6 +73,14 @@ object StatelessHtml extends Stemmer with Logger {
       }
       case _ => Empty
     })
+  })
+
+  def listGroups(username:String,informationGroups:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listGroups",{
+    val prelimAuthStateData = LiftAuthStateData(false,username,Nil,informationGroups)
+    val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+    val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+    val lasd = LiftAuthStateData(false,username,groups,personalDetails)
+    Full(JsonResponse(Extraction.decompose(lasd),200))
   })
 
   def listRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listRooms", {

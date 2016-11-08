@@ -301,6 +301,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         RedirectResponse(referer)
       }
     })
+    case r@Req(List("listGroups",username),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups",StatelessHtml.listGroups(username,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
     case Req(List("listRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listUsersInRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listUsersInRooms)
     case Req(List("listSessions"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
