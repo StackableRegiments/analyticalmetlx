@@ -96,8 +96,15 @@ background-color:@block-bg;
 }
 #slideContainer {
     max-width: @slide-container-width;
-    img{
-        background-color:white;
+    img, .groupSlide{
+        background-color:none;
+	min-height:75px;
+    }
+    .groupSlide{
+	color:white;
+	font-weight:bold;
+	display:block;
+	padding:1em 0;
     }
 }
 .slideButtonContainer {
@@ -278,8 +285,6 @@ td.conversationSharing{
 .dots{
     flex-wrap:wrap;
 }
-/* fix this jodi! */
-
 .navigationNext, .navigationPrevious {
     a {
         .fa;

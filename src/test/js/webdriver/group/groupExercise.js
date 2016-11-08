@@ -104,6 +104,13 @@ describe('When the class breaks into groups,', function() {
         assert.equal(sA.currentSlide.index,1);
         assert.equal(sB.currentSlide.index,1);
     });
+    it("should list groups in its thumb",function(){
+        browser.waitUntil(function(){
+            var groupSlide = teacher.execute("return $('.activeSlide.groupSlide').length").value;
+            return groupSlide == 1;
+        });
+        assert.equal(teacher.execute("return $('.activeSlide.groupSlide').length").value,1);
+    });
     it("the students should all be split into groups",function(){
         var groupSet = tT.currentSlide.groupSet;
         assert.equal(groupSet.groups.length,2);
@@ -328,6 +335,14 @@ describe('When the class breaks into groups,', function() {
         });
         assertSameContent(user,peer);
         assertNotSameContent(user,nonPeer);
+    });
+    it("groups should not persist beyond the slide",function(){
+        tT.newSlide.click();
+        browser.waitUntil(function(){
+            return tT.currentSlide.index == 2;
+        });
+        assert.equal(tT.currentSlide.index,2);
+	assert(!tT.currentSlide.groupSet);
     });
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));

@@ -80,11 +80,24 @@ var Conversations = (function(){
             }).done(storeThumb);
         };
         var paintThumb = function(slide,slideContainer){
-            var slideImage = slideContainer.find("img");
-            if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                slideImage.attr("src",cache[slide.id].data);
-            } else {
-                fetchAndPaintThumb(slide,slideContainer,slideImage);
+            if(slide.groupSet){
+                slideContainer
+                    .addClass("groupSlide")
+                    .find("img")
+                    .replaceWith(_.map(slide.groupSet.groups,function(group){
+                        return $("<div />",{
+                            text:group.members.length,
+                            class:"thumbGroup"
+                        })[0];
+                    }));
+            }
+            else{
+                var slideImage = slideContainer.find("img");
+                if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                    slideImage.attr("src",cache[slide.id].data);
+                } else {
+                    fetchAndPaintThumb(slide,slideContainer,slideImage);
+                }
             }
         };
         var makeBlankCanvas = function(w,h){
@@ -133,7 +146,9 @@ var Conversations = (function(){
                         img.off("load");
                         possiblyUpdateThumbnail(slide);
                     });
-                    img.attr("src",blank4to3Canvas);
+                    if(!slide.groupSet){
+                        img.attr("src",blank4to3Canvas);
+                    }
                 } else {
                     possiblyUpdateThumbnail(slide);
                 }
