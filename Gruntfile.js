@@ -6,6 +6,7 @@ module.exports = function( grunt ) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-less');
+    grunt.loadNpmTasks('grunt-closure-tools');
 
     var config = {
         lint: {
@@ -56,11 +57,34 @@ module.exports = function( grunt ) {
                 },
                 files: {}
             }
+        },
+
+        closureCompiler:  {
+            options: {
+                compilerFile: 'tools/closure-compiler-v20160713.jar',
+                checkModified: true,
+                d32: false, // will use 'java -client -d32 -jar compiler.jar'
+                TieredCompilation: true, // will use 'java -server -XX:+TieredCompilation -jar compiler.jar'
+                compilerOpts: {
+                    create_source_map: null
+                }
+            },
+            minify: {
+                files: [
+                    {
+                        expand: true,
+                        src: ['src/main/webapp/static/js/*.js', '!**/*.min.js', '!**/*~'],
+                        dest: 'src/main/webapp/static/js/min',
+                        ext: '.min.js'
+                    }
+                ]
+            }
         }
     }
+
     config.less.development.files["src/main/webapp/static/assets/styles/"+grunt.config('theme')+"/main.css"] = "src/main/assets/main.less";
     grunt.initConfig(config);
 
     // Default build
-    grunt.registerTask('default', [ 'copy', 'concat', 'uglify', 'less']);
+    grunt.registerTask('default', [ 'copy', 'concat', 'uglify', 'less', 'closureCompiler']);
 };

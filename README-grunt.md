@@ -21,6 +21,7 @@ Install grunt plugins:
     npm install grunt-contrib-concat
     npm install grunt-contrib-uglify
     npm install grunt-contrib-less
+    npm install grunt-closure-tools
 
 ## Build
 

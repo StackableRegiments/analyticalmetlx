@@ -1,6 +1,8 @@
 import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
+import org.rbayer.GruntSbtPlugin._
+import GruntKeys._
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
@@ -22,6 +24,16 @@ resolvers ++= Seq(
   "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",
   "releases"        at "https://oss.sonatype.org/content/repositories/releases"
 )
+
+gruntSettings
+
+gruntNpmPath := ""
+
+//gruntPath := "node_modules/grunt/lib/grunt.js"
+
+gruntTasks in Compile := Seq("copy", "concat", "uglify", "less")
+
+gruntTasks in Test := Seq()
 
 seq(webSettings :_*)
 
@@ -198,3 +210,38 @@ lazy val library = (project in file("library")).
       Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
     }
   )
+
+/*
+lazy val minify = taskKey[Unit]("Minify javascript")
+
+minify := {
+  val s: TaskStreams = streams.value
+  s.log.info("Minifying javascript...")
+  val minifyScript: Seq[String] = if (sys.props("os.name").contains("Windows")) Seq("cmd", "/c", "minify.bat") else Seq("bash", "-c", "minify.sh")
+  if((minifyScript !) == 0) {
+    s.log.success("Minify javascript successful!")
+  } else {
+    throw new IllegalStateException("Minify javascript failed!")
+  }
+//  "minify.sh" !
+}
+*/
+
+/*
+lazy val gruntTask = taskKey[Unit]("Grunt: less -> css")
+
+gruntTask := {
+/*
+  val s: TaskStreams = streams.value
+  s.log.info("Grunting...")
+  val gruntScript: Seq[String] = if (sys.props("os.name").contains("Windows")) Seq("cmd", "/c", "grunt") else Seq("bash", "-c", "grunt")
+  if((gruntScript !) == 0) {
+    s.log.success("Grunt successful!")
+  } else {
+    throw new IllegalStateException("Grunt failed!")
+  }
+*/
+//  "node_modules/grunt-cli/bin/grunt" !
+  "node_modules\\grunt-cli\\bin\\grunt" !
+}
+*/
