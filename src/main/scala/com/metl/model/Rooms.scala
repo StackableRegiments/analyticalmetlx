@@ -219,8 +219,8 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
   protected var lastInterest:Long = new Date().getTime
-  protected def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
-  protected def checkChunkExpiry = ActorPing.schedule(this,CheckChunks,chunkExpiry)
+  protected def heartbeat = Schedule.schedule(this,Ping,pollInterval)
+  protected def checkChunkExpiry = Schedule.schedule(this,CheckChunks,chunkExpiry)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))
     heartbeat
@@ -464,7 +464,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
         updateSnapshots
       } else if (!renderInProgress){
         renderInProgress = true
-        ActorPing.schedule(this,ThumbnailRenderRequest,acceptableRenderStaleness)
+        Schedule.schedule(this,ThumbnailRenderRequest,acceptableRenderStaleness)
       }
     }
   }

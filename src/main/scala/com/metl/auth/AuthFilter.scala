@@ -886,12 +886,8 @@ class SAMLFilterAuthenticator(sessionStore:LowLevelSessionStore,samlConfiguratio
       val rawAttributes = userProfile.getAttributes
       debug("raw saml attrs: %s".format(rawAttributes))
       val attributes:List[Tuple2[String,String]] = rawAttributes.asScala.toList.flatMap {
-        case ( name: String, arrayList: java.util.ArrayList[String] ) => {
-          debug("decoding attribute: %s as an arrayList[String]: %s".format(name,arrayList))
-          arrayList.toArray.toList.map(arr => ( name, arr.toString ) )
-        }
         case ( name: String, arrayList: java.util.ArrayList[Object] ) => {
-          debug("decoding attribute: %s as an arrayList[Object]: %s".format(name,arrayList))
+          debug("decoding attribute: %s as an arrayList: %s".format(name,arrayList))
           arrayList.toArray.toList.map(arr => ( name, arr.toString ) )
         }
         case ( name: String, str: String ) => {

@@ -1,11 +1,13 @@
 package com.metl.comet
 
-import com.metl.utils.{Stopwatch,SynchronizedWriteMap,PeriodicallyRefreshingVar}
+import com.metl.utils.{PeriodicallyRefreshingVar, Stopwatch, SynchronizedWriteMap}
 import java.util.Date
+
 import org.apache.commons.io.IOUtils
 import net.liftweb.http._
+
 import scala.collection.mutable.{HashMap, SynchronizedMap}
-import net.liftweb.mongodb.{Limit}
+import net.liftweb.mongodb.Limit
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonParser._
@@ -19,6 +21,7 @@ import S._
 import net.liftweb.util._
 import Helpers._
 import net.liftweb.actor.LiftActor
+
 import xml.{NodeSeq, Text}
 import collection.mutable.ListBuffer
 import ElemAttr._
@@ -26,6 +29,8 @@ import org.bson.types.ObjectId
 import com.metl.model._
 import com.metl.model.Globals._
 import java.text.SimpleDateFormat
+
+import scala.reflect.runtime.universe._
 //import scala.concurrent.ops._
 import org.bson.types.ObjectId
 
@@ -121,13 +126,13 @@ object StackTemplateHolder{
 }
 
 class QuestionPresenter(val context:StackQuestion) extends Discussable(context,context) with Logger {
-  override val id = context._id.get.toString
+  override val id = context.id.get.toString
   val summaryId = "q%s".format(id)
   val about = context.about.get
   override val depth = context.totalChildCount
   override val mostRecentActivity = context.mostRecentActivity
   def update(discussionPoint:DiscussionPoint) = stackWorker ! WorkUpdateQuestion(context,discussionPoint,timeticks)
-  override def equals(other:Any) = other != null && other.isInstanceOf[QuestionPresenter] && other.asInstanceOf[QuestionPresenter].context._id.get == context._id.get
+  override def equals(other:Any) = other != null && other.isInstanceOf[QuestionPresenter] && other.asInstanceOf[QuestionPresenter].context.id.get == context.id.get
   override def hashCode = context.hashCode
   private def addAnswer(x:NodeSeq) = {
     a(()=>{
@@ -643,7 +648,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
   def addQuestion(question:QuestionPresenter)
   def possiblyUpdateQuestionSilentlyById(id:String) = {
     try{
-      StackQuestion.find("_id",new ObjectId(id)).map(sq => {
+      StackQuestion.find("id",new ObjectId(id)).map(sq => {
         val qp = new QuestionPresenter(sq)
         addQuestion(qp)
         sendListenersMessage(Silently(qp))
@@ -654,7 +659,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
   }
   def possiblyUpdateQuestionById(id:String) = {
     try {
-      StackQuestion.find("_id",new ObjectId(id)).map(sq => {
+      StackQuestion.find("id",new ObjectId(id)).map(sq => {
         val qp = new QuestionPresenter(sq)
         addQuestion(qp)
         sendListenersMessage(qp)
@@ -673,7 +678,7 @@ trait StackRouter extends LiftActor with ListenerManager with Logger {
       //XMPPQuestionSyncActor ! QuestionSyncRequest(qp.location,qp.id,true)
     })
     case d:Detail => Stopwatch.time("StackRouter:detail",sendListenersMessage(d))
-    case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q._id.is.toString,false))
+    case q:StackQuestion => Stopwatch.time("StackRouter:stackQuestion",{}) //XMPPQuestionSyncActor ! QuestionSyncRequest(q.teachingEvent.is,q.id.is.toString,false))
     case q:QuestionPresenter => Stopwatch.time("StackRouter:questionPresenter", {})//XMPPQuestionSyncActor ! QuestionSyncRequest(q.location,q.id,false))
     case other => warn("StackRouter received unknown: %s".format(other))
   }
@@ -729,51 +734,51 @@ class StackWorker(location:String) extends LiftActor with Logger {
       Reputation.accrue(rep)
       val newQ = new QuestionPresenter(q)
       stackServer ! newQ
-      StackOverflow.local(Detail(q._id.get.toString),author,location,session)
+      StackOverflow.local(Detail(q.id.get.toString),author,location,session)
     })
     case WorkCreateAnswerToQuestion(context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateAnswerToQuestion",{
-      val stackAnswer = StackAnswer(nextFuncName, context._id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), List.empty[Vote], List.empty[StackComment], timeticks, Nil, Nil, false)
+      val stackAnswer = StackAnswer(nextFuncName, context.id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), List.empty[Vote], List.empty[StackComment], timeticks, Nil, Nil, false)
       context.addAnswer(stackAnswer)
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.get.author.name).action(GainAction.MadeAnswerOnStack).conversation(context.teachingEvent.get).question(context._id.get)
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.get.author.name).action(GainAction.MadeAnswerOnStack).conversation(context.teachingEvent.get).question(context.id.get)
       Reputation.accrue(rep)
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s div".format(context.id))
     })
     case WorkCreateCommentOnAnswer(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnAnswer",{
-      val stackComment = StackComment(nextFuncName,parent._id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
+      val stackComment = StackComment(nextFuncName,parent.id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
       context.addComment(stackComment)
       StackOverflow.setCommentState(location,parent.id.toString,context.id,true,author,session)
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent._id.get)
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent.id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s .comments".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkCreateCommentOnComment(parent,context,author,text,session,timeticks) => Stopwatch.time("StackWorker:workCreateCommentOnComment",{
-      val stackComment = StackComment(nextFuncName,parent._id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
+      val stackComment = StackComment(nextFuncName,parent.id.get.toString,DiscussionPoint(com.metl.model.Author(author),text), timeticks, List.empty[Vote], List.empty[StackComment], false)
       context.addComment(stackComment)
       StackOverflow.setCommentState(location,parent.id.toString,context.id,true,author,session)
-      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent._id.get)
+      val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.author.name).action(GainAction.MadeCommentOnStack).conversation(location).question(parent.id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s .comments".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkUpdateQuestion(context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateQuestion",{
       context.updateContent(discussionPoint.content)
-      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.get.author.name).action(GainAction.EditedQuestionOnStack).conversation(context.teachingEvent.get).question(context._id.get)
+      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.get.author.name).action(GainAction.EditedQuestionOnStack).conversation(context.teachingEvent.get).question(context.id.get)
       stackServer ! Silently(new QuestionPresenter(context))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkUpdateAnswer(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateAnswer",{
       context.updateContent(discussionPoint.content)
-      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedAnswerOnStack).conversation(parent.teachingEvent.get).slide(parent.slideJid.get).question(parent._id.get)
+      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedAnswerOnStack).conversation(parent.teachingEvent.get).slide(parent.slideJid.get).question(parent.id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
     })
     case WorkUpdateComment(parent,context,discussionPoint,timeticks) => Stopwatch.time("StackWorker:workUpdateComment",{
       context.updateContent(discussionPoint)
-      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedCommentOnStack).conversation(parent.teachingEvent.get).slide(parent.slideJid.get).question(parent._id.get)
+      val rep = Informal.createRecord.time(timeticks).protagonist(discussionPoint.author.name).antagonist(context.about.author.name).action(GainAction.EditedCommentOnStack).conversation(parent.teachingEvent.get).slide(parent.slideJid.get).question(parent.id.get)
       stackServer ! Silently(new QuestionPresenter(parent))
       stackServer ! Emerge("#%s div".format(context.id))
       Reputation.accrue(rep)
@@ -867,7 +872,7 @@ object ExpansionStrategy{
 object StackOverflow extends StackOverflow {
   def localOpenAction(a:OpenRequest):Unit = a match {
     case WorkOpenQuestion(context,author,session,timeticks) => Stopwatch.time("StackWorker:workOpenQuestion",{
-      val id = context._id.toString
+      val id = context.id.toString
       val location = context.teachingEvent.get
       val rep = Informal.createRecord.time(timeticks).protagonist(author).antagonist(context.about.get.author.name).action(GainAction.ViewedQuestionOnStack).conversation(location)
       Reputation.accrue(rep)
@@ -875,7 +880,7 @@ object StackOverflow extends StackOverflow {
     })
     case WorkOpenAnswer(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenAnswer",{
       val contextId = context.id
-      val parentId = parent._id.get.toString
+      val parentId = parent.id.get.toString
       val location = parent.teachingEvent.get
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.ViewedAnswerOnStack).conversation(location)
       Reputation.accrue(rep)
@@ -885,7 +890,7 @@ object StackOverflow extends StackOverflow {
     })
     case WorkOpenComment(parent,context,who,session,timeticks) => Stopwatch.time("StackWorker:workOpenComment",{
       val contextId = context.id
-      val parentId = parent._id.get.toString
+      val parentId = parent.id.get.toString
       val location = parent.teachingEvent.get
       val rep = Informal.createRecord.time(timeticks).protagonist(who).antagonist(context.about.author.name).action(GainAction.ViewedCommentOnStack).conversation(location)
       Reputation.accrue(rep)
@@ -972,7 +977,7 @@ class StackOverflow extends CometActor with CometListener with Logger {
   override def lifespan:Box[TimeSpan] = Full(1 minute)
   private def setStartupQuestion = {
     detailedQuestion = StackOverflow.getRequestedDetailedQuestion((currentUser.is,location)) match {
-      case Full(qId) => questions.find(q => q.context.id == qId) match {
+      case Full(qId) => questions.find(q => q.context.id.get.toString.equals(qId)) match {
         case Some(question) => {
           Full(question)
         }
@@ -1019,19 +1024,26 @@ class StackOverflow extends CometActor with CometListener with Logger {
   override def lowPriority = {
     case anything => if (!starting) actUponLowPriority(anything)
   }
+  def checkTypeOfListContent[T:TypeTag](o:T) = typeOf[T] match {
+    case t if t =:= typeOf[List[QuestionPresenter]] => Stopwatch.time("Bubbles:list[questionPresenter]",partialUpdate(updateLocation & updateDetailedQuestion & updateQuestions))
+    case unknown => warn("StackOverflow: I do not know what to do with -> %s".format(unknown))
+  }
   def actUponLowPriority(a:Any):Unit = a match {
-    case BobUp(id)=> Stopwatch.time("Bubbles:bobUp",partialUpdate(Call("bobUp",id)))
-    case BobDown(id)=> Stopwatch.time("Bubbles:bobDown",partialUpdate(Call("bobDown",id)))
-    case Emerge(selector)=> Stopwatch.time("bubbles:emerge",partialUpdate(Call("emerge",selector)))
-    case Silently(q)=> Stopwatch.time("Bubbles:silently",acceptNewQuestion(q,true,silentlyUpdateDetailedQuestion _))
+    case BobUp(id) => Stopwatch.time("Bubbles:bobUp",partialUpdate(Call("bobUp",id)))
+    case BobDown(id) => Stopwatch.time("Bubbles:bobDown",partialUpdate(Call("bobDown",id)))
+    case Emerge(selector) => Stopwatch.time("bubbles:emerge",partialUpdate(Call("emerge",selector)))
+    case Silently(q) => Stopwatch.time("Bubbles:silently",acceptNewQuestion(q,true,silentlyUpdateDetailedQuestion _))
     case SetExpansionState(q,l) => Stopwatch.time("Bubbles:setExpansionState",partialUpdate(setClientSideExpansionState(q,l)))
-    case q:QuestionPresenter=> Stopwatch.time("Bubbles:questionPresenter",partialUpdate(updateLocation & updateDetailedQuestion & updateSummaryFor(q)))
-    case qs:List[QuestionPresenter]=> Stopwatch.time("Bubbles:list[questionPresenter]",partialUpdate(updateLocation & updateDetailedQuestion & updateQuestions))
+    case q:QuestionPresenter => Stopwatch.time("Bubbles:questionPresenter",partialUpdate(updateLocation & updateDetailedQuestion & updateSummaryFor(q)))
+    // TODO: work out how to satisfy conflicting warnings:
+    // TODO: "type List takes type parameters" and
+    // TODO: "non-variable type argument com.metl.comet.QuestionPresenter in type pattern List[com.metl.comet.QuestionPresenter] (the underlying of List[com.metl.comet.QuestionPresenter]) is unchecked since it is eliminated by erasure"
+    case qs:List[QuestionPresenter] => checkTypeOfListContent(qs)
     case Detail(questionId,overrideShow) => Stopwatch.time("Bubbles:detail",{
       val start = new Date().getTime
       AddAnswerDialog.map(_.done)
       AddCommentDialog.map(_.done)
-      val newQuestion = questions.find(q => q.context.id == questionId)
+      val newQuestion = questions.find(q => q.context.id.get.toString.equals(questionId))
       val oldDetailedQuestionId = detailedQuestion.map(dq => dq.context.id.toString).openOr("")
       if (overrideShow) detailedQuestion = newQuestion
       else detailedQuestion = newQuestion.filter(q => q.context.id.toString != oldDetailedQuestionId)
@@ -1108,7 +1120,7 @@ class StackOverflow extends CometActor with CometListener with Logger {
     }
     case other => warn("Stack did not understand: %s".format(other))
   }
-  def pingLatency = Script(Function(PING_LATENCY,List.empty[String],jsonSend(PING_LATENCY,JsRaw("new Date().getTime()"))) & OnLoad(Call(PING_LATENCY)))
+  def pingLatency = Script(js.JsCmds.Function(PING_LATENCY,List.empty[String],jsonSend(PING_LATENCY,JsRaw("new Date().getTime()"))) & OnLoad(Call(PING_LATENCY)))
   def latencyGauge(x:NodeSeq) = {
     val id = nextFuncName
     <div id={id}>{x}</div> ++ pingLatency
