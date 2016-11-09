@@ -1,3 +1,8 @@
+0.11
+Feature: METL-226: Reinstate superuser powers.
+Improvement: METL-231: Removed index page (always redirect to /conversationSearch).
+Improvement: METL-232: Dropped session timeout from 60 min to 5 min to reduce server load.
+
 0.10
 Feature: METL-199 Paste into canvas from clipboard.
 Feature: METL-205 3-tiered orgStructure and personalDetails provider.
