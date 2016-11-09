@@ -322,6 +322,15 @@ trait GroupStoreDataSerializers {
     }</groupStoreData>
   }
   def fromXml(xml:NodeSeq):GroupStoreData = {
+    /*
+    val start = new java.util.Date().getTime
+    var last = start
+    def mark(msg:String) = {
+      var (o,n) = (last,new java.util.Date().getTime)
+      println("MARK %s: %s (%sms)".format(n,msg,n - o)) 
+    }
+    mark("fromXml begins")
+    */
     val userDetails = Map((xml \\ "personalDetails").flatMap(personalDetailsNode => {
       for {
         username <- (personalDetailsNode \ "@username").headOption.map(_.text)
@@ -337,6 +346,7 @@ trait GroupStoreDataSerializers {
         (username,details.toList)
       }
     }).toList:_*)
+    //mark("fromXml personalDetails loaded")
     val orgUnits = (xml \\ "orgUnit").flatMap(orgUnitNode => {
       for {
         ouName <- (orgUnitNode \ "@name").headOption.map(_.text) 
@@ -365,11 +375,26 @@ trait GroupStoreDataSerializers {
         ou
       }
     })
-    val groupsForMembers = Map(orgUnits.flatMap(_.members).map(m => {
+    //mark("fromXml orgUnits loaded")
+    val intermediaryMemberGrouping = new scala.collection.mutable.HashMap[String,List[OrgUnit]]()
+    for {
+      ou <- orgUnits
+      member <- ou.members
+    } yield {
+      intermediaryMemberGrouping += ((member,ou :: intermediaryMemberGrouping.get(member).getOrElse(Nil)))
+    }
+    val groupsForMembers = intermediaryMemberGrouping.toMap 
+  /*
+    val members = orgUnits.flatMap(_.members).distinct
+    val groupsForMembers = Map(members.map(m => {
       (m,orgUnits.filter(_.members.contains(m)).toList)
     }):_*)
+  */
+    //mark("fromXml groupsForMembers(%s (%s avg)) formed".format(groupsForMembers.keys.toList.length,groupsForMembers.values.toList.map(_.length).sum))
     val membersForGroups = orgUnits.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
+    //mark("fromXml membersForGroups formed")
     val personalDetails = userDetails
+    //mark("fromXml personalDetails formed")
     GroupStoreData(groupsForMembers,membersForGroups,personalDetails)
   }
 }
