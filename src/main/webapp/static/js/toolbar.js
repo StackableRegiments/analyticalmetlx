@@ -1550,6 +1550,21 @@ var Modes = (function(){
                         carota.editor.paint(board[0],t.doc,true);
                     }
                 },
+                oldEditorAt : function(x,y,z,worldPos){
+                    var threshold = 10;
+                    var me = UserSettings.getUsername();
+                    var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+                    var texts = _.values(boardContent.texts).filter(function(text){
+                        var intersects = intersectRect(text.bounds,ray)
+                        return intersects && (text.author == me);
+                    });
+                    if(texts.length > 0){
+                        return texts[0];
+                    }
+                    else{
+                        return false;
+                    }
+                },
                 editorAt : function(x,y,z,worldPos){
                     var threshold = 10;
                     var me = UserSettings.getUsername();
@@ -1597,6 +1612,7 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos){
                         var clickTime = Date.now();
+												var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
@@ -1607,7 +1623,44 @@ var Modes = (function(){
                         });
                         var sel;
                         Modes.select.clearSelection();
-                        if (editor){
+												if (oldEditor){
+													var deleteTransform = batchTransform();
+													deleteTransform.isDeleted = true;
+													if ("texts" in Modes.select.selected){
+															deleteTransform.textIds = [oldEditor.identity];
+													}
+													sendStanza(deleteTransform);
+
+													carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+													var newEditor = createBlankText(worldPos,[{
+															text:oldEditor.text,
+															italic:carota.runs.nextInsertFormatting.italic == true,
+															bold:carota.runs.nextInsertFormatting.bold == true,
+															underline:carota.runs.nextInsertFormatting.underline == true,
+															color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+															size:carota.runs.defaultFormatting.size / scale()
+													}]);
+													var newDoc = newEditor.doc;
+													newDoc.select(0,1);
+													boardContent.multiWordTexts[newEditor.identity] = newEditor;
+													sel = {multiWordTexts:{}};
+													sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+													Modes.select.setSelection(sel);
+													editor = newEditor;
+
+													var source = newEditor;
+													source.privacy = Privacy.getCurrentPrivacy();
+													source.target = "presentationSpace";
+													source.slide = Conversations.getCurrentSlideJid();
+													sendRichText(source);
+													/*This is important to the zoom strategy*/
+													incorporateBoardBounds(editor.bounds);
+													
+													var node = newDoc.byOrdinal(0);
+													newDoc.mousedownHandler(node);
+													newDoc.mouseupHandler(node);
+
+												} else if (editor){
                             var doc = editor.doc;
                             var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
