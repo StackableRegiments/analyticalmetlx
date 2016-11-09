@@ -143,9 +143,10 @@ object Globals extends PropertyReader with Logger {
       })
     }
     private var actualUsername:String = "forbidden"
-    private var actuallyIsSuperUser:Boolean = false
     private var actuallyIsImpersonator:Boolean = false
-    def isSuperUser:Boolean = actuallyIsSuperUser
+    def isSuperUser:Boolean = {
+      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
+    }
     def isImpersonator:Boolean = actuallyIsImpersonator
     def authenticatedUsername:String = actualUsername
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
@@ -171,7 +172,6 @@ object Globals extends PropertyReader with Logger {
         if (authenticated){
           actualUsername = username
           val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
-          actuallyIsSuperUser = groups.exists(g => g.ouType == "special" && g.name == "superuser")
           actuallyIsImpersonator = groups.exists(g => g.ouType == "special" && g.name == "impersonator")
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
           val lasd = LiftAuthStateData(true,username,groups,personalDetails)
