@@ -89,6 +89,9 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       info("insecure: %s, redirecting to: %s".format(uri,transformed))
       Full(RedirectResponse(transformed,r))
     }
+    case r@Req(Nil,_,_) => () => {
+      Full(RedirectResponse("/conversationSearch"))
+    }
     //yaws endpoints 1188
     case r@Req(List("upload_nested"),"yaws",PostRequest) => () => {
       for (
