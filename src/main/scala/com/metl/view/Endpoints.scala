@@ -305,6 +305,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case Req(List("listUsersInRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listUsersInRooms)
     case Req(List("listSessions"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
     case r@Req(List("impersonate",newUsername),_,_) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.impersonate",StatelessHtml.impersonate(newUsername,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
+    case Req(List("deImpersonate"),_,_) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.deImpersonate",StatelessHtml.deImpersonate)
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversation(r))
