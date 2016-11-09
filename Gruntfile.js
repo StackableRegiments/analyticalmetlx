@@ -64,10 +64,7 @@ module.exports = function( grunt ) {
                 compilerFile: 'tools/closure-compiler-v20160713.jar',
                 checkModified: true,
                 d32: false, // will use 'java -client -d32 -jar compiler.jar'
-                TieredCompilation: true, // will use 'java -server -XX:+TieredCompilation -jar compiler.jar'
-                compilerOpts: {
-                    create_source_map: null
-                }
+                TieredCompilation: true // will use 'java -server -XX:+TieredCompilation -jar compiler.jar'
             },
             minify: {
                 files: [
