@@ -76,6 +76,7 @@ class Boot extends Logger {
 
     def sitemap() = SiteMap(
       Menu(Loc("about","about" :: Nil,"About MeTL")), // licenses and whatnot.
+      Menu(Loc("releaseNotes","releaseNotes" :: Nil,"Release Notes")),
       //API catalog
       Menu(Loc("API","catalog" :: Nil,"Application Programming Interfaces")),
       //2011 piggyback auth
