@@ -94,17 +94,25 @@ background-color:@block-bg;
 .plr;
 .ptb;*/
 }
+.sparkline{
+    display:inline;
+}
 #slideContainer {
     max-width: @slide-container-width;
     img, .groupSlide{
-        background-color:none;
+        background-color:white;
 	min-height:75px;
     }
     .groupSlide{
-	color:white;
+	position:relative;
+	color:black;
 	font-weight:bold;
-	display:block;
-	padding:1em 0;
+	margin-bottom:8px;
+    }
+    .groupSlideContainer{
+	position:absolute;
+	top:0;
+	left:0;
     }
 }
 .slideButtonContainer {

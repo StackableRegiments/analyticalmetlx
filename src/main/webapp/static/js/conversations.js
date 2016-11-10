@@ -58,43 +58,79 @@ var Conversations = (function(){
     var ThumbCache = (function(){
         var cacheRefreshTime = 10 * 1000; // 10 seconds
         var cache = {};
+        var groupActivity = {};
+
+        var audienceAction = function(audienceO){
+            var audience = audienceO.name;
+            var register = groupActivity[audience]
+            if(!register){
+                register = groupActivity[audience] = {
+                    bucket:0,
+                    line:_.map(_.range(20),function(){return 0})
+                }
+            }
+            register.bucket += 1;
+        }
+        var rollAudiences = function(){
+            _.each(groupActivity,function(meter){
+                meter.line.pop();
+                meter.line.unshift(meter.bucket);
+                meter.bucket = 0;
+            });
+        }
+        Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
+            console.log(stanza.audiences);
+            _.each(stanza.audiences,audienceAction);
+        }
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
         var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
-            var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
-            var storeThumb = function(data){
-                cache[slide.id] = {
-                    data:data,
-                    when:Date.now()
+            if(!slide.groupSet){
+                var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
+                var storeThumb = function(data){
+                    cache[slide.id] = {
+                        data:data,
+                        when:Date.now()
+                    };
+                    //Use the data straight away instead of recursing
+                    slideImage.attr("src",data);
                 };
-                //Use the data straight away instead of recursing
-                slideImage.attr("src",data);
-            };
-            $.ajax({
-                url:thumbUrl,
-                beforeSend: function ( xhr ) {
-                    xhr.overrideMimeType("text/plain; charset=x-user-defined");
-                },
-                dataType: "text"
-            }).done(storeThumb);
+                $.ajax({
+                    url:thumbUrl,
+                    beforeSend: function ( xhr ) {
+                        xhr.overrideMimeType("text/plain; charset=x-user-defined");
+                    },
+                    dataType: "text"
+                }).done(storeThumb);
+            }
         };
         var paintThumb = function(slide,slideContainer){
             if(slide.groupSet){
+                var groupListing = _.map(slide.groupSet.groups,function(group){
+                    return $("<div />",{
+                        text:group.members.length,
+                        class:"thumbGroup"
+                    }).append($("<div />",{
+                        class:"sparkline",
+                        id:sprintf("group_%s",group.id)
+                    }))[0];
+                });
+                var groups = $("<div />").addClass("groupSlideContainer").append(groupListing);
                 slideContainer
                     .addClass("groupSlide")
                     .find("img")
-                    .replaceWith(_.map(slide.groupSet.groups,function(group){
-                        return $("<div />",{
-                            text:group.members.length,
-                            class:"thumbGroup"
-                        })[0];
-                    }));
+                    .attr("src",blank4to3Canvas)
+                    .after(groups);
             }
             else{
                 var slideImage = slideContainer.find("img");
                 if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
                     slideImage.attr("src",cache[slide.id].data);
+                    rollAudiences();
+                    _.each(groupActivity,function(meter,group){
+                        SparkLine.sparkline(sprintf("#group_%s",group),meter.line)
+                    });
                 } else {
                     fetchAndPaintThumb(slide,slideContainer,slideImage);
                 }
@@ -137,6 +173,7 @@ var Conversations = (function(){
         }
         var clearCacheFunction = function(){
             cache = {};
+            groupActivity = {};
         };
         var paintAllThumbsFunc = function(){
             _.forEach(currentConversation.slides,function(slide){
@@ -368,10 +405,7 @@ var Conversations = (function(){
             if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
                 currentTeacherSlide = jid;
                 if (Conversations.getIsSyncedToTeacher()){
-                    if (currentSlide != jid){
-                        currentSlide = jid;
-                        doMoveToSlide(jid);
-                    }
+                    doMoveToSlide(jid);
                 }
             }
         }
@@ -685,13 +719,33 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
-        indicateActiveSlide(slideId);
-        delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-        WorkQueue.enqueue(function(){
-            loadSlide(slideId);
-            updateQueryParams();
-            return true;
-        });
+        var move = false;
+        if(Conversations.isAuthor()){
+            move = true;
+        }
+        else if(getStudentsMustFollowTeacherFunction()){
+            if(slideId == currentTeacherSlide){
+                move = true;
+            }
+        }
+        else {
+            move = true;
+        }
+        if(move){
+            if(slideId != currentSlide){
+                currentSlide = slideId;
+                indicateActiveSlide(slideId);
+                delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                WorkQueue.enqueue(function(){
+                    loadSlide(slideId);
+                    updateQueryParams();
+                    return true;
+                });
+            }
+        }
+        else{
+            alert("You must remain on the current page");
+        }
     };
     var indicateActiveSlide = function(slideId){
         $(".slideButtonContainer").removeClass("activeSlide");

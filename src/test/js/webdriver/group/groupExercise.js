@@ -104,7 +104,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(sA.currentSlide.index,1);
         assert.equal(sB.currentSlide.index,1);
     });
-    it("should list groups in its thumb",function(){
+    it("all groups should be listed on its thumb",function(){
         browser.waitUntil(function(){
             var groupSlide = teacher.execute("return $('.activeSlide.groupSlide').length").value;
             return groupSlide == 1;
@@ -127,7 +127,7 @@ describe('When the class breaks into groups,', function() {
             return memberships == 1;
         }));
     });
-    it("the teacher does not join any group",function(){
+    it("while the teacher does not join any group",function(){
         assert(_.every(tT.currentSlide.groupSet.groups,function(group){
             return !(_.some(group.members,teacherName));
         }));
@@ -201,6 +201,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(tT.currentConversation.subject,"Org Unit A");
         tT.nextSlide.click();
         teacher.waitUntil(function(){
+            console.log(tT.currentSlide);
             return tT.currentSlide.index == 1;
         });
     });
@@ -337,13 +338,28 @@ describe('When the class breaks into groups,', function() {
         assertNotSameContent(user,nonPeer);
     });
     it("groups should not persist beyond the slide",function(){
+        _.each([tT,sA,sB,sC,sD,sE],function(client,j){
+            client.inkMode.click();
+        });
+        for(var i = 0; i < 100; i++){
+            _.each([tT,sA,sB,sC,sD,sE],function(client,j){
+                client.handwrite([{
+                    x:i * j,
+                    y:i * j
+                }]);
+            });
+        }
+    });
+
+    it("groups should not persist beyond the slide",function(){
         tT.newSlide.click();
         browser.waitUntil(function(){
             return tT.currentSlide.index == 2;
         });
         assert.equal(tT.currentSlide.index,2);
-	assert(!tT.currentSlide.groupSet);
+        assert(!tT.currentSlide.groupSet);
     });
+
     it("expressive complexity should be a visible metric",function(){
         assert(browser.isExisting("#complexityStatus"));
     });
