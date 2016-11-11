@@ -1,3 +1,19 @@
+0.11
+Feature: METL-226: Reinstate superuser powers.
+Improvement: METL-231: Removed index page (always redirect to /conversationSearch).
+Improvement: METL-232: Dropped session timeout from 60 min to 5 min to reduce server load.
+
+0.10
+Feature: METL-199 Paste into canvas from clipboard.
+Feature: METL-205 3-tiered orgStructure and personalDetails provider.
+Feature: METL-218 "Who's on right now" endpoints for admin.
+Improvement: METL-224 Performance improvement for xml group diskCache load
+Bugfix: METL-197 MeTL logo missing.
+
+0.9
+Feature: METL-204 Toggle conjugation standardization in wordcloud.
+Bugfix: METL-196 Word cloud size does not represent frequency of words.
+
 0.8
 Feature: METL-81 Recycle bin.
 Feature: METL-154 Slide specific word cloud.
@@ -6,7 +22,20 @@ Feature: METL-172 Neutral theme for training server.
 Bugfix: METL-136 Multiword textboxes in analytics fix, handwriting and OCR fixes.
 Bugfix: METL-174 Aspect locked resize sometimes fails.
 Bugfix: METL-191 Restored Google Vision OCR.
-Bugfix: METL-195: Handle failure to retrieve group data non-destructively.
-Bugfix: METL-196: Word cloud size does not represent frequency of words.
-Bugfix: Text not being committed under some circumstances
+Bugfix: METL-195 Handle failure to retrieve group data non-destructively.
+Bugfix: METL-196 Word cloud size does not represent frequency of words.
+Bugfix: Text not being committed under some circumstances.
 Improvement: Increased automated functional testing.
+
+0.7
+Bugfix: Resize selected text.
+Feature: User-Agent logging to feed analysis of client browsers/machines.
+Bugfix: Complex text serialization.
+Bugfix: Fixed remaining uses of "quiz" instead of "poll".
+Improvement: Additional unit testing.
+
+0.6
+Feature: analytics.
+Performance: localise fonts and images to speed up loading.
+Performance: reduce number of server calls per request.
+Many other bug fixes and improvements.

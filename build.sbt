@@ -3,12 +3,20 @@ import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
-version := "0.8.5"
 organization := "com.stackableregiments"
+version := "0.11.1"
 
 val scalaVersionString = "2.11.5"
 
 scalaVersion := scalaVersionString
+
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "com.metl",
+    buildInfoOptions += BuildInfoOption.BuildTime
+  )
 
 resolvers ++= Seq(
   "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",

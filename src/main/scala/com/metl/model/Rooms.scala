@@ -25,7 +25,7 @@ abstract class RoomProvider(configName:String) {
   def get(jid:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom
   def removeMeTLRoom(room:String):Unit
   def exists(room:String):Boolean
-  def list:List[String]
+  def list:List[MeTLRoom]
 }
 
 object EmptyRoomProvider extends RoomProvider("empty") {
@@ -94,7 +94,7 @@ object RoomMetaDataUtils {
 
 class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) extends RoomProvider(configName) with Logger {
   protected lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
-  override def list = metlRooms.keys.asScala.toList
+  override def list = metlRooms.values.asScala.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", list.contains(room))
   override def get(room:String,roomDefinition:RoomMetaData,eternal:Boolean) = Stopwatch.time("Rooms.get",metlRooms.computeIfAbsent(room, new java.util.function.Function[String,MeTLRoom]{
     override def apply(r:String) = createNewMeTLRoom(room,roomDefinition,eternal)

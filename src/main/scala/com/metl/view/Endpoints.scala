@@ -89,6 +89,9 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       info("insecure: %s, redirecting to: %s".format(uri,transformed))
       Full(RedirectResponse(transformed,r))
     }
+    case r@Req(Nil,_,_) => () => {
+      Full(RedirectResponse("/conversationSearch"))
+    }
     //yaws endpoints 1188
     case r@Req(List("upload_nested"),"yaws",PostRequest) => () => {
       for (
@@ -301,8 +304,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         RedirectResponse(referer)
       }
     })
+    case r@Req(List("listGroups",username),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups",StatelessHtml.listGroups(username,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
     case Req(List("listRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
+    case Req(List("listUsersInRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listUsersInRooms)
     case Req(List("listSessions"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
+    case r@Req(List("impersonate",newUsername),_,_) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.impersonate",StatelessHtml.impersonate(newUsername,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
+    case Req(List("deImpersonate"),_,_) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.deImpersonate",StatelessHtml.deImpersonate)
     case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversation(r))

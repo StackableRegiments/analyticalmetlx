@@ -31,10 +31,13 @@ trait Chunker{
   def check(h:MeTLRoom):Unit
   def close(h:MeTLRoom):Unit
 }
-class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
+class ChunkAnalyzer extends Logger with Chunker{
   var partialChunks = Map.empty[String,List[MeTLInk]]
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
-  def emit(t:Theme,room:MeTLRoom) = room.addTheme(t)
+  def emit(t:Theme,room:MeTLRoom) = {
+    debug("Emitting: %s".format(t))
+    room.addTheme(t)
+  }
   def close(room:MeTLRoom) = partialChunks.foreach{
     case (author,strokes) => {
       val desc = CanvasContentAnalysis.extract(strokes)
@@ -45,7 +48,7 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
   def check(room:MeTLRoom) = {
     val time = java.lang.System.currentTimeMillis();
     partialChunks = partialChunks.filter {
-      case entry@(author,partial) if (time - latest(partial) < timeout) => true
+      case entry@(author,partial) if (time - latest(partial) < Globals.chunkingTimeout) => true
       case (author,i :: t) => {
         val desc = CanvasContentAnalysis.extract(i :: t)
         desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
@@ -54,31 +57,35 @@ class ChunkAnalyzer(timeout:Int=3000) extends Logger with Chunker{
       }
     }
   }
-  def add(c:MeTLStanza,room:MeTLRoom) = c match {
-    case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
-      case Right(t) => {
-        CanvasContentAnalysis.getDescriptions(t) match {
-          case (descriptions,words) => List(
-            descriptions.foreach(word => emit(Theme(i.author, word, "imageRecognition"),room)),
-            words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
+  def add(c:MeTLStanza,room:MeTLRoom) = {
+    if(Globals.liveIntegration){
+      c match {
+        case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
+          case Right(t) => {
+            CanvasContentAnalysis.getDescriptions(t) match {
+              case (descriptions,words) => List(
+                descriptions.foreach(word => emit(Theme(i.author, word, "imageRecognition"),room)),
+                words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
+            }
+          }
+          case failure => warn(failure)
         }
+        case t:MeTLMultiWordText => {
+          t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
+        }
+        case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
+          case Some(partial) if (i.timestamp - latest(partial) < Globals.chunkingTimeout) => partialChunks + (i.author -> (i :: partial))
+          case Some(partial) => {
+            val desc = CanvasContentAnalysis.extract(partial)
+            desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
+            desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
+            partialChunks + (i.author -> List(i))
+          }
+          case None => partialChunks + (i.author -> (List(i)))
+        }
+        case default => {}
       }
-      case failure => warn(failure)
     }
-    case t:MeTLMultiWordText => {
-      t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
-    }
-    case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
-      case Some(partial) if (i.timestamp - latest(partial) < timeout) => partialChunks + (i.author -> (i :: partial))
-      case Some(partial) => {
-        val desc = CanvasContentAnalysis.extract(partial)
-        desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
-        desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
-        partialChunks + (i.author -> List(i))
-      }
-      case None => partialChunks + (i.author -> (List(i)))
-    }
-    case default => {}
   }
 }
 
@@ -86,7 +93,6 @@ object CanvasContentAnalysis extends Logger {
   implicit val formats = net.liftweb.json.DefaultFormats
   lazy val propFile = XML.load(Globals.configurationFileLocation)
 
-  val analysisThreshold = 1
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
   def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
     es.sortBy(_.timestamp).groupBy(_.author).map {
@@ -196,12 +202,12 @@ object CanvasContentAnalysis extends Logger {
   }
 
   def extract(inks:List[MeTLInk]):Tuple2[List[String],List[String]] = {
-    if(inks.size < analysisThreshold) {
-      debug("Not analysing themes for %s strokes".format(inks.size))
+    if(inks.size < Globals.chunkingThreshold) {
+      trace("Not analysing themes for %s strokes".format(inks.size))
       (Nil,Nil)
     }
     else {
-      debug("Analysing themes for %s strokes".format(inks.size))
+      trace("Analysing themes for %s strokes".format(inks.size))
       val h = new History("snapshot")
       inks.foreach(h.addStanza _)
       val bytes = SlideRenderer.render(h,800,600)

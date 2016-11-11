@@ -69,20 +69,21 @@ class Boot extends Logger {
         debug("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
-      case _ => NotFoundAsResponse(RedirectResponse("/"))
+      case _ => NotFoundAsResponse(RedirectResponse("/conversationSearch"))
     }
 
     LiftRules.noCometSessionCmd.default.set(() => Reload:JsCmd)
 
     def sitemap() = SiteMap(
       Menu(Loc("about","about" :: Nil,"About MeTL")), // licenses and whatnot.
+      Menu(Loc("releaseNotes","releaseNotes" :: Nil,"Release Notes")),
       //API catalog
       Menu(Loc("API","catalog" :: Nil,"Application Programming Interfaces")),
       //2011 piggyback auth
       Menu(Loc("Authentication",Link("authenticationState" :: Nil,true,"/authenticationState"),"Authentication",Hidden)),
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
       //MeTLX
-      Menu(Loc("Home","index" :: Nil,"Home")),
+    //  Menu(Loc("Home","index" :: Nil,"Home")),
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
       Menu(Loc("EditConversation","editConversation" :: Nil,"Edit Conversation")),
@@ -111,7 +112,7 @@ class Boot extends Logger {
     LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
-    info("started version: %s\r\nrelease-notes:\r\n%s".format(com.metl.snippet.VersionFacts.versionNumber,com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n"))) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
+    info("started version: %s\r\nrelease-notes:\r\n%s".format(com.metl.BuildInfo.version,com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n"))) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
     trace("Boot ends")
   }
 }

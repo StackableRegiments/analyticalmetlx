@@ -18,3 +18,4 @@ dave,groupCategory,teacherDefinedGroups
 dave,group,groupA
 dave,group,groupB
 dave,group,groupC
+bob,special,impersonator

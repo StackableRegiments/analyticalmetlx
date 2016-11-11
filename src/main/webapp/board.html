@@ -17,12 +17,12 @@
   <script data-lift="with-resource-id" src="static/js/min/healthCheck.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Bench.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/defaults.js"></script>
-  <script data-lift="with-resource-id" src="static/js/Progress.js"></script>
-  <script data-lift="with-resource-id" src="static/js/DeviceConfiguration.js"></script>
-  <script data-lift="with-resource-id" src="static/js/conversations.js"></script>
-  <script data-lift="with-resource-id" src="static/js/historyReader.js"></script>
-  <script data-lift="with-resource-id" src="static/js/board.js"></script>
-  <script data-lift="with-resource-id" src="static/js/toolbar.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/Progress.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/DeviceConfiguration.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/conversations.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/historyReader.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/board.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/toolbar.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
@@ -32,13 +32,14 @@
   <script data-lift="with-resource-id" src="static/js/min/submissions.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/blacklist.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/attachments.js"></script>
-  <script data-lift="with-resource-id" src="static/js/participants.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/participants.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/privacy.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/carota-debug.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/hotkeys.js"></script>
   <script data-lift="with-resource-id" src="static/js/contentFilter.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/word-cloud.js"></script>
   <script src="static/js/stable/Chart.bundle.min.js"></script>
+  <script src="static/js/stable/nlp_compromise.min.js"></script>
   <script data-lift="with-resource-id" src="static/js/analysis.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/recycleBin.js"></script>
   <!--
@@ -110,6 +111,18 @@
 
   </style>
   <div>
+		<div id="pasteDialogTemplate">
+			<span class="dialogContent">
+				Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
+			</span>
+			<span class="dialogOptions">
+				<span class="dialogOption">
+					<button class="fa btn-icon">
+						<div class="icon-txt"></div>
+					</button>
+				</span>
+			</span>
+		</div>
     <div id="masterHeader">
       <div id="masterHeaderFlexContainer">
         <span id="floatingToggleContainer" class="main-menu">
