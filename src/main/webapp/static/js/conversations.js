@@ -79,7 +79,6 @@ var Conversations = (function(){
             });
         }
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
-            console.log(stanza.audiences);
             _.each(stanza.audiences,audienceAction);
         }
         /*

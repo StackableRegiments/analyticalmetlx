@@ -338,20 +338,6 @@ describe('When the class breaks into groups,', function() {
         assertNotSameContent(user,nonPeer);
     });
     it("groups should not persist beyond the slide",function(){
-        _.each([tT,sA,sB,sC,sD,sE],function(client,j){
-            client.inkMode.click();
-        });
-        for(var i = 0; i < 100; i++){
-            _.each([tT,sA,sB,sC,sD,sE],function(client,j){
-                client.handwrite([{
-                    x:i * j,
-                    y:i * j
-                }]);
-            });
-        }
-    });
-
-    it("groups should not persist beyond the slide",function(){
         tT.newSlide.click();
         browser.waitUntil(function(){
             return tT.currentSlide.index == 2;
