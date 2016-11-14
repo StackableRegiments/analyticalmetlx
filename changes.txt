@@ -1,3 +1,7 @@
+=================
+0.10
+=================
+
 METL-205:
 When this goes into PRD, it'll require us to redownload a cache of PRD groups in advance, so that we've got them in the new format.
 We've moved from CSV to XML in our caching format, now that the data is deeper.
