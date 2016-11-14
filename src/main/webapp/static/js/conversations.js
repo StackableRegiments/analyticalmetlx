@@ -60,16 +60,18 @@ var Conversations = (function(){
         var cache = {};
         var groupActivity = {};
 
-        var audienceAction = function(audienceO){
-            var audience = audienceO.name;
-            var register = groupActivity[audience]
-            if(!register){
-                register = groupActivity[audience] = {
+        var ensureTracking = function(audience){
+            if(!(audience in groupActivity)){
+                groupActivity[audience] = {
                     bucket:0,
                     line:_.map(_.range(20),function(){return 0})
                 }
             }
-            register.bucket += 1;
+        }
+        var audienceAction = function(audienceO){
+            var audience = audienceO.name;
+            ensureTracking(audience);
+            groupActivity[audience].bucket += 1;
         }
         var rollAudiences = function(){
             _.each(groupActivity,function(meter){
@@ -85,14 +87,16 @@ var Conversations = (function(){
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
         var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
-            if(!slide.groupSet){
+            if(slide.groupSet){
+                paintGroups(slide,slideContainer);
+            }
+            else{
                 var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
                 var storeThumb = function(data){
                     cache[slide.id] = {
                         data:data,
                         when:Date.now()
                     };
-                    //Use the data straight away instead of recursing
                     slideImage.attr("src",data);
                 };
                 $.ajax({
@@ -104,37 +108,27 @@ var Conversations = (function(){
                 }).done(storeThumb);
             }
         };
-        var paintThumb = function(slide,slideContainer){
-            if(slide.groupSet){
-                var groupListing = _.map(slide.groupSet.groups,function(group){
-                    return $("<div />",{
-                        text:group.members.length,
-                        class:"thumbGroup"
-                    }).append($("<div />",{
-                        class:"sparkline",
-                        id:sprintf("group_%s",group.id)
-                    }))[0];
-                });
-                var groups = $("<div />").addClass("groupSlideContainer").append(groupListing);
-                slideContainer
-                    .addClass("groupSlide")
-                    .find("img")
-                    .attr("src",blank4to3Canvas)
-                    .after(groups);
-            }
-            else{
-                var slideImage = slideContainer.find("img");
-                if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                    slideImage.attr("src",cache[slide.id].data);
-                    rollAudiences();
-                    _.each(groupActivity,function(meter,group){
-                        SparkLine.sparkline(sprintf("#group_%s",group),meter.line)
-                    });
-                } else {
-                    fetchAndPaintThumb(slide,slideContainer,slideImage);
-                }
-            }
-        };
+        var paintGroups = function(slide,slideContainer){
+            rollAudiences();
+            slideContainer
+                .addClass("groupSlide")
+                .find("img")
+                .attr("src",blank4to3Canvas);
+            var groups = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
+            _.each(slide.groupSet.groups,function(group){
+                ensureTracking(group.id);
+                var container = $("<div />",{
+                    text:group.members.length,
+                    class:"thumbGroup"
+                }).appendTo(groups);
+                var sparkline = $("<div />",{
+                    class:"sparkline",
+                    id:sprintf("group_%s",group.id)
+                }).appendTo(container);
+                sparkline.sparkline(groupActivity[group.id].line)
+            });
+            console.log("Added group display",slide.index);
+        }
         var makeBlankCanvas = function(w,h){
             var c = $("<canvas />");
             c.width = w;
@@ -148,26 +142,20 @@ var Conversations = (function(){
             return c[0].toDataURL();
         }
         var blank4to3Canvas = makeBlankCanvas(320,240);
-        var possiblyUpdateThumbnail = function(slide){
-            var thumbScroller = $("#thumbScrollContainer");
-            var slidesTop = 0;
-            var slidesBottom = thumbScroller.height();
-            var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
-            try {
+        var possiblyUpdateThumbnail = function(slide,scrollContainer){
+            console.log("...Painting",slide.id);
+            scrollContainer = scrollContainer || $("#thumbScrollContainer");
+            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+            if(slide.groupSet){
+                paintGroups(slide,slideContainer);
+            }
+            else{
                 var slideImage = slideContainer.find("img");
-                var slideTop = slideContainer.position().top;
-                var slideBottom = slideTop + slideContainer.height();
-                if (slideTop == slideBottom){
-                    slideImage.attr("src",blank4to3Canvas);
-                    return;
+                if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                    slideImage.attr("src",cache[slide.id].data);
+                } else {
+                    fetchAndPaintThumb(slide,slideContainer,slideImage);
                 }
-                var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-                if (isVisible){
-                    paintThumb(slide,slideContainer);
-                }
-            } catch(e) {
-                console.log("exception while painting thumb: ",e);
-                //couldn't find the slideContainer at this time.
             }
         }
         var clearCacheFunction = function(){
@@ -175,24 +163,14 @@ var Conversations = (function(){
             groupActivity = {};
         };
         var paintAllThumbsFunc = function(){
+            console.log("ThumbCache.paintAllThumbsFunc");
             _.forEach(currentConversation.slides,function(slide){
-                var img = $(sprintf("#slideContainer_%s img",slide.id));
-                if (img.height() == 0 || img.height() == undefined){
-                    img.on("load",function(){
-                        img.off("load");
-                        possiblyUpdateThumbnail(slide);
-                    });
-                    if(!slide.groupSet){
-                        img.attr("src",blank4to3Canvas);
-                    }
-                } else {
-                    possiblyUpdateThumbnail(slide);
-                }
+                possiblyUpdateThumbnail(slide,$("#thumbScrollContainer"));
             });
         };
         return {
-            paintThumb:possiblyUpdateThumbnail,
-            paintAllThumbs:_.debounce(paintAllThumbsFunc,500),
+            paint:possiblyUpdateThumbnail,
+            paintAllThumbs:paintAllThumbsFunc,
             clearCache:clearCacheFunction
         };
     })();
@@ -207,15 +185,6 @@ var Conversations = (function(){
             }
         }));
     }
-    var paintThumbs = function(){
-        try {
-            ThumbCache.paintAllThumbs();
-        }
-        catch(e){
-            console.log("exception while painting thumbs",e);
-        }
-        updateQueryParams();
-    }
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing slide display");
         var slideContainer = $("#slideContainer")
@@ -226,8 +195,6 @@ var Conversations = (function(){
         constructNextSlideButton(slideControls),
         constructAddSlideButton(slideControls)
         constructAddGroupSlideButton(slideControls)
-        slideContainer.off("scroll");
-        slideContainer.on("scroll",paintThumbs);
         indicateActiveSlide(currentSlide);
         Progress.call("onLayoutUpdated");
     }
@@ -410,10 +377,8 @@ var Conversations = (function(){
         }
     };
     var updateThumbnailFor = function(slideId) {
-        //setting index to zero because this isn't necessary.
-        var slidesContainer = $("#slideContainer");
-        var containerHeight = slidesContainer.height();
-        ThumbCache.paintThumb({id:slideId,index:0},slidesContainer,containerHeight);
+        console.log("..updateThumbnailFor",slideId);
+        ThumbCache.paint({id:slideId,index:0});
     }
     var goToNextSlideFunction = function(){
         if ("slides" in currentConversation && currentSlide > 0){
@@ -791,7 +756,6 @@ var Conversations = (function(){
             Progress.call("onConversationJoin",[conversation]);
             doMoveToSlide(firstSlide.id.toString());
         }));
-        var jidString = conversation.jid.toString();
         var row1 = newConv.find(".searchResultTopRow");
         var row2 = newConv.find(".searchResultMiddleRow");
         var row3 = newConv.find(".teacherConversationTools");
@@ -821,13 +785,10 @@ var Conversations = (function(){
     Progress.conversationsReceived["Conversations"] = actOnConversations;
     Progress.syncMoveReceived["Conversations"] = actOnSyncMove;
     Progress.conversationDetailsReceived["Conversations"] = actOnConversationDetails;
-    //    Progress.onConversationJoin["Conversations"] = refreshSlideDisplay;
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
-    Progress.onLayoutUpdated["Conversations"] = paintThumbs;
-    Progress.historyReceived["Conversations"] = paintThumbs;
+    Progress.historyReceived["Conversations"] = ThumbCache.paintAllThumbs;
     $(function(){
-        $("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
             .on("click","#addGroupSlideButton",addGroupSlideFunction)
@@ -910,6 +871,11 @@ var Conversations = (function(){
     };
 })();
 
+function updateThumb(jid){
+    console.log(".updateThumb",jid)
+    Conversations.updateThumbnail(jid);
+}
+
 function unwrap(jqs){
     return _.map(jqs,"0");
 }
@@ -920,6 +886,7 @@ function receiveCurrentConversation(jid){
     Progress.call("currentConversationJidReceived",[jid]);
 }
 function receiveConversationDetails(details){
+    console.log("receiveConversationDetails");
     Progress.call("conversationDetailsReceived",[details]);
 }
 function receiveSyncMove(jid){

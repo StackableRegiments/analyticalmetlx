@@ -150,25 +150,25 @@ case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
 case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
     if(g.contains(person)){
-      debug("Already grouped: %s".format(person))
+      trace("Already grouped: %s".format(person))
       g
     }
     else{
-      debug("Adding %s to %s".format(person,g))
+      trace("Adding %s to %s".format(person,g))
       val oldGroups = g.groups
       g.copy(groups = {
         oldGroups match {
           case l:List[Group] if l.length < numberOfGroups => {
-            debug("Adding a group")
+            trace("Adding a group")
             Group(g.server,nextFuncName,g.location,List(person)) :: l
           }
           case l:List[Group] => {
-            debug("Adding to an existing group")
+            trace("Adding to an existing group")
             l.sortWith((a,b) => a.members.length < b.members.length).headOption.map(fg => {
-              debug("  Adding to %s".format(fg))
+              trace("  Adding to %s".format(fg))
               fg.copy(members = person :: fg.members) :: l.filter(_.id != fg.id)
             }).getOrElse({
-              debug("  Adding to %s".format(l.head))
+              trace("  Adding to %s".format(l.head))
               l.head.copy(members = person :: l.head.members) :: l.drop(1)
             })
           }
@@ -203,7 +203,7 @@ object Group {
   def empty = Group(ServerConfiguration.empty,"","",Nil,Nil)
 }
 
-case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences) with Logger{
   def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(server,author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
   def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)
   def replacePermissions(newPermissions:Permissions) = copy(permissions = newPermissions, lastAccessed = new Date().getTime)

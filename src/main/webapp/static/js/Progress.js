@@ -32,8 +32,8 @@ var Progress = (function(){
         userGroupsReceived:{},
         usernameReceived:{},
         userOptionsReceived:{},
-				afterWorkQueuePause:{}, //these two are sensitive - don't put anything into these which itself would pause the workqueue, or you'll get deadlocks.
-				beforeWorkQueueResume:{},
+        afterWorkQueuePause:{}, //these two are sensitive - don't put anything into these which itself would pause the workqueue, or you'll get deadlocks.
+        beforeWorkQueueResume:{},
         onCanvasContentDeleted:{}
     }
 })();

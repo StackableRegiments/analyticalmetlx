@@ -668,7 +668,7 @@ function transformReceived(transform){
             doc.position.y += transform.yTranslate;
             text.x = doc.position.x;
             text.y = doc.position.y;
-	    text.doc.invalidateBounds();
+            text.doc.invalidateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
     }
@@ -930,25 +930,27 @@ function drawVideo(video,incCanvasContext){
     }
 }
 function videoReceived(video){
-    calculateVideoBounds(video);
-    incorporateBoardBounds(video.bounds);
-    boardContent.videos[video.identity] = video;
-    prerenderVideo(video);
-    WorkQueue.enqueue(function(){
-        if(isInClearSpace(video.bounds)){
-            try {
-                drawVideo(video);
-                Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-            } catch(e){
-                console.log("drawVideo exception",e);
+    if(isUsable(video)){
+        calculateVideoBounds(video);
+        incorporateBoardBounds(video.bounds);
+        boardContent.videos[video.identity] = video;
+        prerenderVideo(video);
+        WorkQueue.enqueue(function(){
+            if(isInClearSpace(video.bounds)){
+                try {
+                    drawVideo(video);
+                    Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+                } catch(e){
+                    console.log("drawVideo exception",e);
+                }
+                return false;
             }
-            return false;
-        }
-        else{
-            console.log("Rerendering video in contested space");
-            return true;
-        }
-    });
+            else{
+                console.log("Rerendering video in contested space");
+                return true;
+            }
+        });
+    }
 }
 function imageReceived(image){
     if(isUsable(image)){

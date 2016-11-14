@@ -20,7 +20,7 @@ var overrides = {
         }
     }
 }
-for(var i = 0; i < 8;i++){
+for(var i = 0; i < 3;i++){
     var name = "student"+String.fromCharCode(i+97).toUpperCase();
     overrides.capabilities[name] = {
 	desiredCapabilities:{

@@ -305,10 +305,10 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def getResource(identity:String):Array[Byte] = Stopwatch.time("H2Interface.getResource",{
     H2Resource.find(By(H2Resource.partialIdentity,identity.take(H2Constants.identity)),By(H2Resource.identity,identity)).map(r => {
       val b = r.bytes.get
-      debug("retrieved %s bytes for %s".format(b.length,identity))
+      trace("retrieved %s bytes for %s".format(b.length,identity))
       b
     }).openOr({
-      debug("failed to find bytes for %s".format(identity))
+      trace("failed to find bytes for %s".format(identity))
       Array.empty[Byte]
     })
 
@@ -324,7 +324,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       }
       case _ => {
         H2Resource.create.partialIdentity(possibleNewIdentity.take(H2Constants.identity)).identity(possibleNewIdentity).bytes(data).room(jid).save
-        debug("postResource: saved %s bytes in %s at %s".format(data.length,jid,possibleNewIdentity))
+        trace("postResource: saved %s bytes in %s at %s".format(data.length,jid,possibleNewIdentity))
         possibleNewIdentity
       }
     }
@@ -335,10 +335,10 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       By(H2ContextualizedResource.identity,identity)
     ).map(r => {
       val b = r.bytes.get
-      debug("retrieved %s bytes for %s".format(b.length,identity))
+      trace("retrieved %s bytes for %s".format(b.length,identity))
       b
     }).openOr({
-      debug("failed to find bytes for %s".format(identity))
+      trace("failed to find bytes for %s".format(identity))
       Array.empty[Byte]
     })
 

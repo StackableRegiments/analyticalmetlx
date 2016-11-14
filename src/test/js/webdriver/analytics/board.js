@@ -10,7 +10,7 @@ var ConversationPage = require("../page/conversation.page");
 describe('When the class breaks into groups,', function() {
     var users = {};
     var tT = board(teacher);
-    for(var i = 0; i < 8;i++){
+    for(var i = 0; i < 3;i++){
         var name = sprintf("student%s",String.fromCharCode(i+97).toUpperCase());
         users[name] = board(global[name]);
     }
@@ -46,6 +46,23 @@ describe('When the class breaks into groups,', function() {
         _.each(users,function(user,name){
             join(user.driver,name);
         });
+        _.each(users,function(user){
+            user.inkMode.click();
+        })
+        for(var i = 0; i < 3; i++){
+            var j = 0;
+            _.each(users,function(user){
+                j++;
+                user.handwrite(_.map(_.range(0,20,5),function(k){
+                    var x = 20 * i + k;
+                    var y = 25 * j + k;
+                    return {
+                        x:x,
+                        y:y
+                    }
+                }));
+            });
+        }
     });
     it('given that there is a group slide', function () {
         tT.addGroupSlide.click();
@@ -58,10 +75,12 @@ describe('When the class breaks into groups,', function() {
             user.driver.waitUntil(function(){
                 return user.currentSlide.index == 1;
             });
-            user.inkMode.click();
         });
-        for(var i = 0; i < 30; i++){
+        for(var i = 0; i < 50; i++){
             var j = 0;
+            if(i == 5){
+                browser.debug();
+            }
             _.each(users,function(user){
                 j++;
                 user.handwrite(_.map(_.range(0,20,5),function(k){
