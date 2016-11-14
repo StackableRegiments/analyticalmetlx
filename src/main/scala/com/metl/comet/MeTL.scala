@@ -1103,6 +1103,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     res
   }
 
+  def emit(source:String,value:String,domain:String) = {
+    debug("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
+    currentConversation.map(cc => {
+      val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
+      room !  LocalToServerMeTLStanza(MeTLTheme(serverConfig,username,-1L,cc.jid,Theme(source,value,domain)))
+    })
+  }
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
   private lazy val serverConfig = ServerConfiguration.default
   private lazy val server = serverConfig.name
@@ -1456,8 +1463,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCanvasContent => {
         if (c.author == username){
           currentConversation.map(cc => {
+            val t = c match {
+              case i:MeTLInk => "ink"
+              case i:MeTLImage => "img"
+              case i:MeTLMultiWordText => "txt"
+              case _ => "_"
+            }
+            val p = c.privacy match {
+              case Privacy.PRIVATE => "private"
+              case Privacy.PUBLIC => "public"
+              case _ => "_"
+            }
+            emit(p,t,"content")
             val (shouldSend,roomId,finalItem) = c.privacy match {
-              case Privacy.PRIVATE => (true,c.slide+username,c)
+              case Privacy.PRIVATE => {
+                (true,c.slide+username,c)
+              }
               case Privacy.PUBLIC => {
                 if (shouldPublishInConversation(cc)){
                   (true,c.slide,c)
