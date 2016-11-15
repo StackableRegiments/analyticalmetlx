@@ -55,6 +55,10 @@ var TokBox = (function(){
 										console.log("error when subscribing to stream",error,stream.name,stream.id);
 									}
 								});
+								subscriber.on("videoDimensionsChanged", function(event) {
+									subscriber.element.style.width = event.newValue.width + 'px';
+									subscriber.element.style.height = event.newValue.height + 'px';
+								});
 								var refreshUI = function(){
 									if (stream.id in streams){
 										button.addClass("subscribedStream");
@@ -184,6 +188,21 @@ var TokBox = (function(){
 			broadcastContainer.empty();
 		}
 	};
+	var downgradeVideoStreams = function(){
+		console.log("downgrading video quality");
+		_.forEach(streams,function(stream){
+			subscriber.restrictFramerate(true);
+		});
+	};
+	var upgradeVideoStreams = function(){
+		console.log("upgrading video quality");
+		_.forEach(streams,function(stream){
+			subscriber.restrictFramerate(false);
+		});
+	};
+	Progress.afterWorkQueuePause["videoStreaming"] = downgradeVideoStreams;
+	Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
+
 	return {
 		setTokBoxEnabledState:setTokBoxEnabledStateFunc,
 		startPublish:startPublishFunc,

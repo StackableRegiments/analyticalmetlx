@@ -1609,6 +1609,9 @@
                             if (node.nodeType == 3) {
                                 dealWithSpaces(node.nodeValue, formatting);
                             } else {
+															if (node == undefined){
+																return;
+															} else {
                                 formatting = Object.create(formatting);
 
                                 var classNames = node.attributes['class'];
@@ -1636,6 +1639,7 @@
                                     inSpace = true;
                                 }
                             }
+														}
                         }
                         recurse(root, {});
                         return result;

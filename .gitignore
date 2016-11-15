@@ -13,6 +13,13 @@ testdb*
 .DS_Store
 node_modules
 src/main/assets/build/source/
+<<<<<<< HEAD
+.idea
+*.swp
+security.log
+config/configuration.local.xml
+config/configuration.xml
+=======
 *.log
 config/configuration.local.xml
 config/configuration.xml
@@ -27,3 +34,4 @@ config/configuration.xml
 .idea
 *.iml
 *.ipr
+>>>>>>> 92e00c129dd517db6860a0e328b53b4892d19ac6

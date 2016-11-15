@@ -128,7 +128,7 @@ object Globals extends PropertyReader with Logger {
   }
 
   object currentStack extends SessionVar[Topic](Topic.defaultValue)
-  def getUserGroups:List[(String,String)] = {
+  def getUserGroups:List[OrgUnit] = {
     casState.is.eligibleGroups.toList
   }
   var groupsProviders:List[GroupsProvider] = Nil
@@ -136,37 +136,65 @@ object Globals extends PropertyReader with Logger {
   object casState {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
-    object validState extends SessionVar[Option[LiftAuthStateData]](None)
+    private object validState extends SessionVar[Option[LiftAuthStateData]](None)
     def is:LiftAuthStateData = {
       validState.is.getOrElse({
-        S.containerSession.map(s => {
-          val username = s.attribute("user").asInstanceOf[String]
-          val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-          val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]]
-          val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-          //info("userAttributes from authenticator: %s".format(userAttributes))
-          val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
-          if (authenticated){
-            val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
-            val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
-            val lasd = LiftAuthStateData(true,username,groups,personalDetails)
-            //info("got state: %s".format(lasd))
-            validState(Some(lasd))
-            info("generated authState: %s".format(lasd))
-            lasd
-          } else {
-            LiftAuthStateDataForbidden
-          }
-        }).getOrElse({
-          LiftAuthStateDataForbidden
-        })
+        assumeContainerSession
       })
+    }
+    private object actualUsername extends SessionVar[String]("forbidden")
+    private object actuallyIsImpersonator extends SessionVar[Boolean](false)
+    def isSuperUser:Boolean = {
+      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
+    }
+    def isImpersonator:Boolean = actuallyIsImpersonator.is
+    def authenticatedUsername:String = actualUsername.is
+    def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
+      if (isImpersonator){
+        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,personalAttributes)
+        val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+        val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+        val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
+        validState(Some(impersonatedState))
+        SecurityListener.ensureSessionRecord
+        impersonatedState
+      } else {
+        LiftAuthStateDataForbidden
+      }
+    }
+    def assumeContainerSession:LiftAuthStateData = {
+      S.containerSession.map(s => {
+        val username = s.attribute("user").asInstanceOf[String]
+        val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
+        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(username),Nil))
+        val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
+        val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
+        if (authenticated){
+          actualUsername(username)
+          val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+          actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
+          val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+          val lasd = LiftAuthStateData(true,username,groups,personalDetails)
+          validState(Some(lasd))
+          info("generated authState: %s".format(lasd))
+          lasd
+        } else {
+          LiftAuthStateDataForbidden
+        }
+      }).getOrElse({
+        LiftAuthStateDataForbidden
+      })
+
     }
   }
   object currentUser {
     def is:String = casState.is.username
   }
-  def isSuperUser:Boolean = casState.is.eligibleGroups.contains(("special","superuser"))
+  // special roles
+  def isSuperUser:Boolean = casState.isSuperUser
+  def isImpersonator:Boolean = casState.isImpersonator
+  def assumeContainerSession:LiftAuthStateData = casState.assumeContainerSession
+  def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = casState.impersonate(newUsername,personalAttributes)
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
@@ -184,4 +212,4 @@ object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
 object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
 object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
 
-object UserAgent extends SessionVar[Box[String]](S.userAgent)
+//object UserAgent extends SessionVar[Box[String]](S.userAgent)

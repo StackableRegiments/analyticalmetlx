@@ -1,0 +1,140 @@
+<groupStoreData>
+	<personalDetails username="david.hagen">
+		<detail key="firstname" value="David"/>
+		<detail key="surname" value="Hagan"/>
+		<detail key="email" value="david.hagan@gmail.com"/>
+	</personalDetails>
+	<personalDetails username="dave">
+		<detail key="firstname" value="Dave"/>
+		<detail key="surname" value="Hagan"/>
+		<detail key="email" value="dave@stackableregiments.com"/>
+	</personalDetails>
+	<personalDetails username="a">
+	</personalDetails>
+	<personalDetails username="b">
+	</personalDetails>
+	<personalDetails username="c">
+	</personalDetails>
+	<personalDetails username="d">
+	</personalDetails>
+	<orgUnit name="courseA" type="course">
+		<member>dave</member>
+		<groupSet name="courseAGroupSetA" type="project_groupSet">
+			<member>d</member>
+			<group name="courseAGroupSetAGroupA" type="group">
+				<member>a</member>
+			</group>
+			<group name="courseAGroupSetAGroupB" type="group">
+				<member>b</member>
+			</group>
+			<group name="courseAGroupSetAGroupC" type="group">
+				<member>c</member>
+			</group>
+		</groupSet>
+		<groupSet name="courseAGroupSetB" type="poll_groupSet">
+			<member>d</member>
+			<group name="courseAGroupSetBGroupA" type="group">
+				<member>a</member>
+			</group>
+			<group name="courseAGroupSetBGroupB" type="group">
+				<member>b</member>
+			</group>
+			<group name="courseAGroupSetBGroupC" type="group">
+				<member>c</member>
+			</group>
+		</groupSet>
+		<groupSet name="courseAGroupSetC" type="informal_groupSet">
+			<member>d</member>
+			<group name="courseAGroupSetCGroupA" type="bunch">
+				<member>a</member>
+			</group>
+			<group name="courseAGroupSetCGroupB" type="bunch">
+				<member>b</member>
+			</group>
+			<group name="courseAGroupSetCGroupC" type="bunch">
+				<member>c</member>
+			</group>
+		</groupSet>
+	</orgUnit>
+	<orgUnit name="courseB" type="course">
+		<member>d</member>
+		<groupSet name="courseBGroupSetA" type="project_groupSet">
+			<member>dave</member>
+			<member>d</member>
+			<group name="courseBGroupSetAGroupA" type="parliament">
+				<member>david.hagen</member>
+				<member>a</member>
+			</group>
+			<group name="courseBGroupSetAGroupB" type="parliament">
+				<member>b</member>
+			</group>
+			<group name="courseBGroupSetAGroupC" type="parliament">
+				<member>c</member>
+			</group>
+		</groupSet>
+		<groupSet name="courseBGroupSetB" type="poll_groupSet">
+			<member>d</member>
+			<group name="courseBGroupSetBGroupA" type="murder">
+				<member>a</member>
+			</group>
+			<group name="courseBGroupSetBGroupB" type="murder">
+				<member>b</member>
+			</group>
+			<group name="courseBGroupSetBGroupC" type="murder">
+				<member>c</member>
+			</group>
+		</groupSet>
+		<groupSet name="courseBGroupSetC" type="informal_groupSet">
+			<member>d</member>
+			<group name="courseBGroupSetCGroupA" type="crowd">
+				<member>a</member>
+			</group>
+			<group name="courseBGroupSetCGroupB" type="crowd">
+				<member>b</member>
+			</group>
+			<group name="courseBGroupSetCGroupC" type="crowd">
+				<member>c</member>
+			</group>
+		</groupSet>
+	</orgUnit>
+	<orgUnit name="courseC" type="course">
+		<member>d</member>
+		<groupSet name="courseCGroupSetA" type="project_groupSet">
+			<member>d</member>
+			<group name="courseCGroupSetAGroupA" type="pack">
+				<member>a</member>
+				<member>dave</member>
+			</group>
+			<group name="courseCGroupSetAGroupB" type="pack">
+				<member>b</member>
+			</group>
+			<group name="courseCGroupSetAGroupC" type="pack">
+				<member>c</member>
+			</group>
+		</groupSet>
+		<groupSet name="courseCGroupSetB" type="poll_groupSet">
+			<member>d</member>
+			<group name="courseCGroupSetBGroupA" type="mob">
+				<member>a</member>
+			</group>
+			<group name="courseCGroupSetBGroupB" type="mob">
+				<member>b</member>
+			</group>
+			<group name="courseCGroupSetBGroupC" type="mob">
+				<member>c</member>
+			</group>
+		</groupSet>
+		<groupSet name="courseCGroupSetC" type="informal_GroupSet">
+			<member>d</member>
+			<group name="courseCGroupSetCGroupA" type="mob">
+				<member>a</member>
+			</group>
+			<group name="courseCGroupSetCGroupB" type="mob">
+				<member>b</member>
+			</group>
+			<group name="courseCGroupSetCGroupC" type="mob">
+				<member>c</member>
+			</group>
+		</groupSet>
+	</orgUnit>
+</groupStoreData>

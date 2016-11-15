@@ -117,12 +117,12 @@ var Conversation = (function(){
 		$("#conversationTitleInput").val(conversation.title);
 		$(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
-		sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"type":"special","value":conversation.subject}]),"value"),function(item){return item.type;}),function(categoryGroups){
+		sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"ouType":"special","name":conversation.subject}]),"name"),function(item){return item.ouType;}),function(categoryGroups){
 			var rootElem = sharingCategoryTemplate.clone();
 			
 			var sharingChoiceTemplate = rootElem.find(".conversationSharingChoiceContainer").clone();
 			var container = rootElem.find(".conversationSharingChoiceContainer");
-			rootElem.find(".conversationSharingCategory").text(categoryGroups[0].type);
+			rootElem.find(".conversationSharingCategory").text(categoryGroups[0].ouType);
 			var choiceElem = container.find(".conversationSharingChoice").clone();
 			container.html(_.map(categoryGroups,function(categoryGroup){
 				var choiceId = _.uniqueId();
@@ -130,10 +130,10 @@ var Conversation = (function(){
 				var inputElem = choiceRoot.find(".conversationSharingChoiceInputElement")
 
 				inputElem.attr("id",choiceId).attr("type","radio").on("click",function(){
-					changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.value);
+					changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name);
 					reRender();
-				}).prop("checked",conversation.subject == categoryGroup.value);
-				choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.value);
+				}).prop("checked",conversation.subject == categoryGroup.name);
+				choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.name);
 				return choiceRoot;
 			}));
 			var sectionVisible = false;
@@ -149,7 +149,7 @@ var Conversation = (function(){
 					collapser.removeClass("fa-toggle-right");
 				}
 			});
-			if (_.some(categoryGroups,function(item){return item.value == conversation.subject;})){
+			if (_.some(categoryGroups,function(item){return item.name == conversation.subject;})){
 				sectionVisible = true;
 				container.show();
 				collapser.addClass("fa-toggle-right");
