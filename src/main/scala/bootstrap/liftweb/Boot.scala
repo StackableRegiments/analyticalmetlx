@@ -69,7 +69,7 @@ class Boot extends Logger {
         debug("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
-      case _ => NotFoundAsResponse(RedirectResponse("/"))
+      case _ => NotFoundAsResponse(RedirectResponse("/conversationSearch"))
     }
 
     LiftRules.noCometSessionCmd.default.set(() => Reload:JsCmd)
@@ -83,7 +83,7 @@ class Boot extends Logger {
       Menu(Loc("Authentication",Link("authenticationState" :: Nil,true,"/authenticationState"),"Authentication",Hidden)),
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
       //MeTLX
-      Menu(Loc("Home","index" :: Nil,"Home")),
+    //  Menu(Loc("Home","index" :: Nil,"Home")),
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
       Menu(Loc("EditConversation","editConversation" :: Nil,"Edit Conversation")),

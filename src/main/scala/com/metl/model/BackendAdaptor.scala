@@ -26,16 +26,18 @@ import scala.xml._
 
 object SecurityListener extends Logger {
   import java.util.Date
-  class SessionRecord(val sid:String,val username:String,var ipAddress:String = "unknown",var lastActivity:Long = new Date().getTime,var userAgent:Box[String] = Empty){
+  class SessionRecord(val sid:String,val authenticatedUser:String, var username:String = "",var ipAddress:String = "unknown",var lastActivity:Long = new Date().getTime,var userAgent:Box[String] = Empty){
     val started:Long = new Date().getTime
   }
   val ipAddresses = new scala.collection.mutable.HashMap[String,SessionRecord]()
   object SafeSessionIdentifier extends SessionVar[String](nextFuncName)
-  object IPAddress extends SessionVar[Option[String]](None)
   object SessionRecord extends SessionVar[Option[SessionRecord]](None)
   def activeSessions = ipAddresses.values.toList
   protected def sessionId:String = {
     SafeSessionIdentifier.is
+  }
+  protected def authenticatedUser:String = {
+    Globals.casState.authenticatedUsername
   }
   protected def user:String = {
     Globals.currentUser.is
@@ -44,55 +46,58 @@ object SecurityListener extends Logger {
     SessionRecord.is.map(rec => {
       rec.lastActivity = now.getTime
     }).getOrElse({
-      val newRecord = new SessionRecord(sessionId,user)
+      val currentCasState = Globals.casState.is
+      val newRecord = new SessionRecord(sessionId,authenticatedUser)
+      SessionRecord(Some(newRecord))
+      newRecord.userAgent = S.userAgent
+      newRecord.username = user
       S.request.foreach(r => {
         newRecord.ipAddress = r.remoteAddr
-        newRecord.userAgent = UserAgent.is
       })
-      SessionRecord(Some(newRecord))
       ipAddresses += ((sessionId, newRecord))
-    })
-  }
-  def login:Unit = {
-    if (user != "forbidden"){
-      val now = new Date().getTime
-      ensureSessionRecord
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
-      info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(sessionId,user,IPAddress.is,UserAgent.is))
-    }
+      info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(newRecord.sid,newRecord.authenticatedUser,newRecord.ipAddress,newRecord.userAgent))
+    })
+    val oldState = SessionRecord.is.map(sr => (sr.username,sr.ipAddress,sr.userAgent))
+    SessionRecord.is.map(newRecord => {
+      S.request.foreach(r => {
+        newRecord.ipAddress = r.remoteAddr
+      })
+      newRecord.userAgent = S.userAgent
+      newRecord.username = user
+      if (oldState.map(_._1).getOrElse("") != newRecord.username){
+        info("%s :: %s changed username %s => %s".format(sessionId,authenticatedUser,oldState.map(_._1),newRecord.username))
+      }
+      if (oldState.map(_._2).getOrElse("") != newRecord.ipAddress){
+        info("%s :: %s changed IP address %s => %s".format(sessionId,authenticatedUser,oldState.map(_._2),newRecord.ipAddress))
+      }
+      if (oldState.map(_._3).getOrElse("") != newRecord.userAgent){
+        info("%s :: %s changed userAgent %s => %s".format(sessionId,authenticatedUser,oldState.map(_._3),newRecord.userAgent))
+      }
+    })
   }
   def cleanupAllSessions:Unit = {
     ipAddresses.values.foreach(rec => {
       if (rec.username != "forbidden"){
-        info("%s :: %s user session terminated by shutdown, ipAddress %s, userAgent: %s".format(rec.sid,rec.username,Some(rec.ipAddress),rec.userAgent))
+        info("%s :: %s user session terminated by shutdown, user %s ipAddress %s, userAgent: %s".format(rec.sid,rec.authenticatedUser,rec.username,Some(rec.ipAddress),rec.userAgent))
       }
     })
     ipAddresses.clear
   }
   def cleanupSession(in:LiftSession):Unit = {
+    SessionRecord(None)
     val thisSessionId = sessionId
     ipAddresses.remove(thisSessionId).foreach(rec => {
       if (rec.username != "forbidden"){
-          info("%s :: %s user session expired, ipAddress %s, userAgent: %s".format(thisSessionId,rec.username,Some(rec.ipAddress),rec.userAgent))
+          info("%s :: %s user session expired, user %s, ipAddress %s, userAgent: %s".format(thisSessionId,rec.authenticatedUser,rec.username,Some(rec.ipAddress),rec.userAgent))
       }
     })
   }
   def maintainIPAddress(r:Req):Unit = {
     try {
-      val oldIPAddress = SessionRecord.is.map(_.ipAddress)
-      val newIPAddress = r.remoteAddr
       ensureSessionRecord
-      if (!oldIPAddress.exists(_ == newIPAddress)){
-        val now = new Date().getTime
-        SessionRecord.is.foreach(rec => {
-          rec.ipAddress = newIPAddress
-        })
-        if (user != "forbidden"){
-          info("%s :: %s changed IP address %s, userAgent: %s".format(sessionId,user,Some(newIPAddress),UserAgent.is))
-        }
-      }
     } catch {
       case e:StateInStatelessException => {}
       case e:Exception => {}
