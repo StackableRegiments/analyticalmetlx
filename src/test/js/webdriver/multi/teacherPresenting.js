@@ -319,6 +319,7 @@ describe('When a teacher presents,', function() {
         });
         text = _.values(teacherT.textStanzas)[0];
         assert.equal(text.width,240);
+	browser.debug();
         var wireLines = teacherT.selectedLines;
         assert.deepEqual(liveLines,wireLines);
     });

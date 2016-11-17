@@ -8,6 +8,7 @@ import java.util.Date
 import net.liftweb.mapper._
 import net.liftweb.common._
 
+import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, StandardDBVendor}
 import _root_.java.sql.{Connection, DriverManager}
 
@@ -215,7 +216,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       conversationCache.update(c.jid,c)
       updateMaxJid
       serializer.fromConversation(c).save
-      conversationMessageBus.sendStanzaToRoom(MeTLCommand(config,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+      onConversationDetailsUpdated(c)
       true
     } catch {
       case e:Throwable => {

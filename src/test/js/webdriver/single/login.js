@@ -21,5 +21,30 @@ describe('When the application starts,', function() {
         userLoginPage.username.setValue(userName);
         userLoginPage.submit();
         assert(userConversationsPage.waitForSearchBox());
+        user.click("#createConversationButton");
+        userConversationsPage.waitForNewConversation();
+        user.click(".newConversationTag");
+        user.waitForExist("#board");
+        user.pause(1000);
+        userT.inkMode.click();
+        var count = 20;
+        for(var i = 1; i < count; i++){
+            user.execute("$('#addSlideButton').click()");
+        }
+        for(var i = count; i > 1; i--){
+            userT.handwrite(_.map(_.range(0,60,5),function(k){
+                var x = 50 + 5 * k + i * 20;
+                var y = 50 + 5 * k;
+                return {
+                    x:x,
+                    y:y
+                }
+            }));
+	    user.pause(1000);
+            userT.prevSlide.click();
+	    user.pause(1000);
+        }
+        browser.debug();
+        browser.inkMode.click();
     });
 });

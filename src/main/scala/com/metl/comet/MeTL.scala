@@ -129,7 +129,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     "#addSlideButtonContainer" #> currentConversation.filter(cc => shouldModifyConversation(username,cc)).map(cc => {
       "#addSlideButtonContainer [onclick]" #> {
         ajaxCall(Jq("#this"),(j:String) => {
-          trace("add slide button clicked: %s".format(j))
+          debug("add slide button clicked: %s".format(j))
           val index = currentSlide.flatMap(cs => cc.slides.find(_.id == cs).map(_.index)).getOrElse(0)
           serverConfig.addSlideAtIndexOfConversation(cc.jid.toString,index)
           reRender
@@ -1106,8 +1106,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   def emit(source:String,value:String,domain:String) = {
     debug("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
     currentConversation.map(cc => {
-      val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
-      room !  LocalToServerMeTLStanza(MeTLTheme(serverConfig,username,-1L,cc.jid,Theme(source,value,domain)))
+      MeTLXConfiguration.getRoom(cc.jid.toString,server) ! LocalToServerMeTLStanza(MeTLTheme(serverConfig,username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
     })
   }
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
@@ -1358,7 +1357,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           val conv = serverConfig.getConversationForSlide(r)
           trace("trying to send truePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
+            val room = MeTLXConfiguration.getRoom(conv.toString,server,ConversationRoom(server,conv.toString))
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,true,Nil))
           } else {
             val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
@@ -1474,7 +1473,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               case Privacy.PUBLIC => "public"
               case _ => "_"
             }
-            emit(p,t,"content")
+            emit(p,c.identity,t)
             val (shouldSend,roomId,finalItem) = c.privacy match {
               case Privacy.PRIVATE => {
                 (true,c.slide+username,c)
@@ -1541,7 +1540,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     trace("IN -> %s".format(metlStanza))
     metlStanza match {
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
-        debug("/UPDATE_CONVERSATION_DETAILS")
+        debug("comet.MeTL /UPDATE_CONVERSATION_DETAILS for %s".format(name))
         val newJid = c.commandParameters(0).toInt
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
         if (currentConversation.exists(_.jid == newConv.jid)){

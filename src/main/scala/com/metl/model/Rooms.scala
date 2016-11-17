@@ -385,8 +385,6 @@ class NoCacheRoom(configName:String,override val location:String,creator:RoomPro
   }
 }
 
-case object ThumbnailRenderRequest
-
 class StartupInformation {
   private var isFirstTime = true
   def setHasStarted(value:Boolean):Unit = {
@@ -421,7 +419,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   })
   firstTime
   private var lastRender = 0L
-  private val acceptableRenderStaleness = 10000L
+  private val acceptableRenderStaleness = 0L
   override def getHistory:History = {
     showInterest
     history
@@ -468,23 +466,11 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   override def getThumbnail = {
     getSnapshot(Globals.ThumbnailSize)
   }
-  private var renderInProgress = false;
-  override def overrideableLowPriority = {
-    case ThumbnailRenderRequest => {
-      if ((new Date().getTime - lastRender) > acceptableRenderStaleness){
-        renderInProgress = false
-        updateSnapshots
-      } else if (!renderInProgress){
-        renderInProgress = true
-        ActorPing.schedule(this,ThumbnailRenderRequest,acceptableRenderStaleness)
-      }
-    }
-  }
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",{
     history.addStanza(s)
     s match {
       case c:MeTLCanvasContent if (history.lastVisuallyModified > lastRender) => {
-        this ! ThumbnailRenderRequest
+        updateSnapshots
       }
       case _ => {}
     }
