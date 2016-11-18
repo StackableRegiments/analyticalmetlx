@@ -1378,9 +1378,10 @@ var Modes = (function(){
                 var colorCodes = {
                     red:"#ff0000",
                     blue:"#0000ff",
-                    black:"#000000"
+                    black:"#000000",
+                    yellow:"#ffff00"
                 };
-                var colors = ["red","blue","black"];
+                var colors = ["red","blue","black","yellow"];
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
@@ -1510,7 +1511,8 @@ var Modes = (function(){
                                     var textColors = [
                                         $("#blackText"),
                                         $("#redText"),
-                                        $("#blueText")
+                                        $("#blueText"),
+                                        $("#yellowText")
                                     ];
                                     var setV = function(selector,prop){
                                         var isToggled = (format[prop] == true);
@@ -1534,6 +1536,7 @@ var Modes = (function(){
                                     setIf(textColors[0],"color",["#000000",255]);
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
+                                    setIf(textColors[3],"color",["#ffff00",255]);
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
