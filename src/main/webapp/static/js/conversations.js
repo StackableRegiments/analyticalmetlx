@@ -56,7 +56,7 @@ var Conversations = (function(){
         conversationSearchListing.empty();
     });
     var ThumbCache = (function(){
-        var cacheRefreshTime = 10 * 1000; // 10 seconds
+        var cacheRefreshTime = 0
         var cache = {};
         var groupActivity = {};
 
