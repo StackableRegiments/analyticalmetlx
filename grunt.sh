@@ -1,2 +1,3 @@
 cd src/main/assets/build
-grunt 
+grunt --theme=neutral
+grunt --theme=slu
