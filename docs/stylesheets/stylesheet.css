@@ -309,12 +309,13 @@ Full-Width Styles
 }
 
 #project_tagline {
-  color: #fff;
-  font-size: 24px;
-  font-weight: 300;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 200;
+  font-family: 'Advent Pro',sans-serif;
   background: none;
-  text-shadow: #111 0px 0px 10px;
-  margin-top: 45px;
+  text-shadow: #111 0px 0px 0px;
+  margin-top: 35px;
   margin-left: 150px;
 }
 
@@ -330,11 +331,11 @@ Full-Width Styles
 
 #footer_wrap {
   background: #212121;
-  background: -moz-linear-gradient(bottom, #373737, #212121);
-  background: -webkit-linear-gradient(bottom, #373737, #212121);
-  background: -ms-linear-gradient(bottom, #373737, #212121);
-  background: -o-linear-gradient(bottom, #373737, #212121);
-  background: linear-gradient(bottom, #373737, #212121);
+  background: -moz-linear-gradient(top, #373737, #212121);
+  background: -webkit-linear-gradient(top, #373737, #212121);
+  background: -ms-linear-gradient(top, #373737, #212121);
+  background: -o-linear-gradient(top, #373737, #212121);
+  background: linear-gradient(top, #373737, #212121);
 }
 
 #footer_wrap .inner {
