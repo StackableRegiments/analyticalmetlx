@@ -271,6 +271,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("received archived stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s,false)
     })
+    case u@UpdateThumb(slide) => joinedUsers.foreach(_._3 ! u)
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom received unknown message")
@@ -428,8 +429,12 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     if (history.lastVisuallyModified > lastRender){
       snapshots = makeSnapshots
       lastRender = history.lastVisuallyModified
-      if(isPublic){
-        joinedUsers.foreach(j => j._3 ! UpdateThumb(history.jid))
+      roomMetaData match {
+        case s:SlideRoom => {
+          debug("Snapshot update")
+          MeTLXConfiguration.getRoom(s.cd.jid.toString,configName) ! UpdateThumb(history.jid)
+        }
+        case _ => {}
       }
     }
   })
@@ -470,6 +475,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     history.addStanza(s)
     s match {
       case c:MeTLCanvasContent if (history.lastVisuallyModified > lastRender) => {
+        debug("content received")
         updateSnapshots
       }
       case _ => {}

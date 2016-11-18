@@ -1127,7 +1127,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
-    case UpdateThumb(slide) => partialUpdate(Call(UPDATE_THUMB,JString(slide)))
+    case UpdateThumb(slide) => {
+      debug("Updating thumb %s for actor: %s".format(slide,name))
+      partialUpdate(Call(UPDATE_THUMB,JString(slide)))
+    }
     case JoinThisSlide(slide) => moveToSlide(slide)
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
