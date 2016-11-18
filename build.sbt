@@ -4,7 +4,7 @@ import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "0.11.2"
+version := "0.12.1"
 
 val scalaVersionString = "2.11.5"
 

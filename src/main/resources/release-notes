@@ -1,3 +1,6 @@
+0.12
+Feature: METL-95: Added yellow text capability.
+
 0.11
 Feature: METL-225, 226, 227: Reinstate and improve superuser powers.
 Improvement: METL-231: Removed index page (always redirect to /conversationSearch).
