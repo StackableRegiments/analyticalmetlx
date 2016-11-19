@@ -1207,7 +1207,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case false => TokRole.Publisher
       }
       session <- tokSession.map(s => Some(s)).getOrElse({
-        val newSession = tb.getSessionToken(cc.jid.toString(),role).right.toOption
+        val newSession = tb.getSessionToken(cc.jid.toString(),role).left.map(e => {
+          error("exception initializing tokboxSession:",e)
+        }).right.toOption
         tokSession = newSession
         newSession
       })
