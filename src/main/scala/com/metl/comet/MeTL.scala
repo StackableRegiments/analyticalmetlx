@@ -651,15 +651,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-/*
   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
-*/
   protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
-    /*
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
           tb <- Globals.tokBox.toList
@@ -694,11 +691,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         tb <- Globals.tokBox
         s <- tokSession
       } yield {
-        tb.removeArchive(s,id)
-        pretty(render(a))
+        val a = tb.removeArchive(s,id)
+        JObject(List(
+          JField("session",Extraction.decompose(s)),
+          JField("success",JBool(a))
+        ))
       }).toList)
-      Noop
-    }),
+    },None),
     ClientSideFunction("startBroadcast",List("layout"),(args) => {
       val layout = getArgAsString(args(0))
       (for {
@@ -742,7 +741,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         Extraction.decompose(a)
       }).getOrElse(JNull)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-  */
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -1154,6 +1152,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   })
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   private def refreshClientSideStateJs = {
+    try {
     currentConversation.map(cc => {
       if (!shouldDisplayConversation(cc)){
         warn("refreshClientSideState kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
@@ -1199,21 +1198,21 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
     })
-    /*
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     val receiveTokBoxSession:Box[JsCmd] = (for {
       cc <- currentConversation
       tb <- Globals.tokBox
-    } yield {
-      val role = shouldModifyConversation() match {
+      role = shouldModifyConversation() match {
         case true => TokRole.Moderator
         case false => TokRole.Publisher
       }
-      val session = tokSession.getOrElse({
-        val newSession = tb.getSessionToken(cc.jid.toString(),role)
-        tokSession = Some(newSession)
+      session <- tokSession.map(s => Some(s)).getOrElse({
+        val newSession = tb.getSessionToken(cc.jid.toString(),role).right.toOption
+        tokSession = newSession
         newSession
       })
+    } yield {
+
       val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
         JField("sessionId",JString(session.sessionId)),
         JField("token",JString(session.token)),
@@ -1229,14 +1228,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
       j
     })
-     */
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     debug(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser/*,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast*/)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
+    } catch {
+      case e:Exception => {
+        error("exception in refreshClientSideJs",e)
+        Noop
+      }
+    }
+
   }
   private def joinConversation(jid:String):Box[Conversation] = {
     val details = serverConfig.detailsOfConversation(jid)

@@ -214,18 +214,24 @@ var TokBox = (function(){
 })();
 
 function receiveTokBoxSessionToken(tokenMsg){
+	/*
 	if ("token" in tokenMsg){
 		TokBox.receiveTokBoxSession(tokenMsg);
 	}
+	*/
 }
 function receiveTokBoxEnabled(isEnabled){
+	/*
 	TokBox.setTokBoxEnabledState(isEnabled);
+	*/
 }
 function receiveTokBoxArchives(archives){
 	console.log("archives:",archives);
 }
 function receiveTokBoxBroadcast(broadcast){
+	/*
 	TokBox.receiveBroadcast(broadcast);
+	*/
 }
 //injected by lift
 //function getTokBoxToken(id){}
