@@ -80,6 +80,16 @@ var Conversations = (function(){
                 meter.bucket = 0;
             });
         }
+        setInterval(rollAudiences,1000);
+        setInterval(function(){
+            var scrollContainer = $("#thumbScrollContainer");
+            _.each(currentConversation.slides,function(slide){
+                if(slide.groupSet){
+                    var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                    paintGroups(slide,slideContainer);
+                }
+            });
+        },2000);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
             _.each(stanza.audiences,audienceAction);
         }
@@ -88,7 +98,6 @@ var Conversations = (function(){
          */
         var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
             if(slide.groupSet){
-                paintGroups(slide,slideContainer);
             }
             else{
                 var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
@@ -109,27 +118,28 @@ var Conversations = (function(){
             }
         };
         var paintGroups = function(slide,slideContainer){
-            rollAudiences();
-            slideContainer
-                .addClass("groupSlide")
-                .find("img")
-                .attr("src",blank4to3Canvas);
-            var groups = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
-            _.each(slide.groupSet.groups,function(group){
-                ensureTracking(group.id);
-                var container = $("<div />",{
-                    text:group.members.length,
-                    class:"thumbGroup"
-                }).appendTo(groups);
-                var sparkline = $("<div />",{
-                    class:"sparkline",
-                    id:sprintf("group_%s",group.id)
-                }).appendTo(container);
-                sparkline.sparkline(groupActivity[group.id].line)
+            WorkQueue.enqueue(function(){
+                slideContainer
+                    .addClass("groupSlide")
+                    .find("img")
+                    .attr("src",blank4to3Canvas);
+		slideContainer.find(".groupSlideContainer").remove();
+                var groups = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
+                _.each(slide.groupSet.groups,function(group){
+                    ensureTracking(group.id);
+                    var container = $("<div />",{
+                        text:group.members.length,
+                        class:"thumbGroup"
+                    }).appendTo(groups);
+                    var sparkline = $("<div />",{
+                        class:"sparkline",
+                        id:sprintf("group_%s",group.id)
+                    }).appendTo(container);
+                    sparkline.sparkline(groupActivity[group.id].line);
+                });
             });
-            console.log("Added group display",slide.index);
         }
-        var makeBlankCanvas = function(w,h){
+        var blank4to3Canvas = (function(w,h){
             var c = $("<canvas />");
             c.width = w;
             c.height = h;
@@ -140,30 +150,29 @@ var Conversations = (function(){
             ctx.fillStyle="white";
             ctx.fill();
             return c[0].toDataURL();
-        }
-        var blank4to3Canvas = makeBlankCanvas(320,240);
-        var possiblyUpdateThumbnail = function(slide,scrollContainer){
-            scrollContainer = scrollContainer || $("#thumbScrollContainer");
-            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-            if(slide.groupSet){
-                paintGroups(slide,slideContainer);
-            }
-            else{
-                var slideImage = slideContainer.find("img");
-                if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                    slideImage.attr("src",cache[slide.id].data);
-                } else {
-                    fetchAndPaintThumb(slide,slideContainer,slideImage);
-                }
-            }
-        }
-        var clearCacheFunction = function(){
-            cache = {};
-            groupActivity = {};
-        };
+        })(320,240);
+
         return {
-            paint:possiblyUpdateThumbnail,
-            clearCache:clearCacheFunction
+            paint:function(slide,scrollContainer){
+                console.log("updateThumbnail",slide);
+                scrollContainer = scrollContainer || $("#thumbScrollContainer");
+                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                if(slide.groupSet){
+                    //paintGroups(slide,slideContainer);
+                }
+                else{
+                    var slideImage = slideContainer.find("img");
+                    if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                        slideImage.attr("src",cache[slide.id].data);
+                    } else {
+                        fetchAndPaintThumb(slide,slideContainer,slideImage);
+                    }
+                }
+            },
+            clearCache:function(){
+                cache = {};
+                groupActivity = {};
+            }
         };
     })();
 
@@ -393,7 +402,8 @@ var Conversations = (function(){
         }
     };
     var updateThumbnailFor = function(slideId) {
-        ThumbCache.paint({id:slideId,index:0});
+        var slide = _.find(currentConversation.slides, ['id',parseInt(slideId)]);
+        ThumbCache.paint(slide);
     }
     var goToNextSlideFunction = function(){
         if ("slides" in currentConversation && currentSlide > 0){
@@ -712,6 +722,7 @@ var Conversations = (function(){
         }
         if(move){
             if(slideId != currentSlide){
+                Progress.call("beforeLeavingSlide",[slideId]);
                 currentSlide = slideId;
                 indicateActiveSlide(slideId);
                 delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];

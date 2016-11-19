@@ -12,6 +12,7 @@ var Progress = (function(){
             });
         },
         onPrivacyChanged:{},
+        beforeLeavingSlide:{},
         onConversationJoin:{},
         onSelectionChanged:{},
         onBoardContentChanged:{},

@@ -273,8 +273,7 @@ describe('When the class breaks into groups,', function() {
             user.driver.click("#board");
             user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         });
-        browser.pause(1500);//Let everything synchronize
-	browser.debug();
+        browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.inkStanzas).length,3);
@@ -338,6 +337,7 @@ describe('When the class breaks into groups,', function() {
         assertNotSameContent(user,nonPeer);
     });
     it("groups should not persist beyond the slide",function(){
+	browser.debug();
         tT.newSlide.click();
         browser.waitUntil(function(){
             return tT.currentSlide.index == 2;

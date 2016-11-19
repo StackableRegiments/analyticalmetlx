@@ -1502,6 +1502,10 @@ var Modes = (function(){
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+			    Progress.beforeLeavingSlide[t.identity] = function(){
+				onChange.flush();
+				delete Progress.beforeLeavingSlide[t.identity];
+			    };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
