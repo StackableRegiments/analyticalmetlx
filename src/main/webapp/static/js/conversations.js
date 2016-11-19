@@ -143,7 +143,6 @@ var Conversations = (function(){
         }
         var blank4to3Canvas = makeBlankCanvas(320,240);
         var possiblyUpdateThumbnail = function(slide,scrollContainer){
-            console.log("...Painting",slide.id);
             scrollContainer = scrollContainer || $("#thumbScrollContainer");
             var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
             if(slide.groupSet){
@@ -164,8 +163,9 @@ var Conversations = (function(){
         };
         var paintAllThumbsFunc = function(){
             console.log("ThumbCache.paintAllThumbsFunc");
+            var container = $("#thumbScrollContainer");
             _.forEach(currentConversation.slides,function(slide){
-                possiblyUpdateThumbnail(slide,$("#thumbScrollContainer"));
+                possiblyUpdateThumbnail(slide,container);
             });
         };
         return {
@@ -186,9 +186,21 @@ var Conversations = (function(){
         }));
     }
     var refreshSlideDisplay = function(){
-        updateStatus("Refreshing slide display");
+        console.log("Refreshing slide display");
         var slideContainer = $("#slideContainer")
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
+        _.each(_.filter(currentConversation.slides,function(slide){
+            return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
+        }),function(slide){
+            slideContainer.append(constructSlide(slide)[0]);
+	    updateThumbnailFor(slide.id);
+        });
+	var keep = _.map(currentConversation.slides,constructSlideId);
+        $(".slideButtonContainer").filter(function(i,el){
+	    var id = $(el).attr("id");
+	    console.log(keep,id);
+            return ! _.includes(keep,id);
+        }).remove();
+        $(".slideButtonContainer").sort(function(a,b){return a.index - b.index;}).detach().appendTo(slideContainer);
         var slideControls = $("#slideControls");
         slideControls.empty();
         constructPrevSlideButton(slideControls),
@@ -718,10 +730,13 @@ var Conversations = (function(){
         var position = activeSlide.find(".slideThumbnailNumber").text();
         $("#currentSlide").text(position);
     };
+    var constructSlideId = function(slide){
+	return sprintf("slideContainer_%s",slide.id);
+    }
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
         var newSlide = $("<div/>",{
-            id: sprintf("slideContainer_%s",slide.id),
+            id: constructSlideId(slide),
             class:"slideButtonContainer"
         });
         $("<img/>",{

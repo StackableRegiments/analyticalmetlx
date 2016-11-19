@@ -277,6 +277,7 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should be able to add a new slide",function(){
         assert.equal(teacherT.currentSlide.index,0);
+	browser.debug();
         teacherT.newSlide.click();
         browser.waitUntil(function(){
             return teacherT.currentSlide.index == 1;
@@ -319,7 +320,6 @@ describe('When a teacher presents,', function() {
         });
         text = _.values(teacherT.textStanzas)[0];
         assert.equal(text.width,240);
-	browser.debug();
         var wireLines = teacherT.selectedLines;
         assert.deepEqual(liveLines,wireLines);
     });
