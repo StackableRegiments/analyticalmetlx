@@ -161,16 +161,8 @@ var Conversations = (function(){
             cache = {};
             groupActivity = {};
         };
-        var paintAllThumbsFunc = function(){
-            console.log("ThumbCache.paintAllThumbsFunc");
-            var container = $("#thumbScrollContainer");
-            _.forEach(currentConversation.slides,function(slide){
-                possiblyUpdateThumbnail(slide,container);
-            });
-        };
         return {
             paint:possiblyUpdateThumbnail,
-            paintAllThumbs:paintAllThumbsFunc,
             clearCache:clearCacheFunction
         };
     })();
@@ -188,19 +180,31 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         console.log("Refreshing slide display");
         var slideContainer = $("#slideContainer")
+        //Add the new slides
         _.each(_.filter(currentConversation.slides,function(slide){
             return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
         }),function(slide){
             slideContainer.append(constructSlide(slide)[0]);
-	    updateThumbnailFor(slide.id);
+            updateThumbnailFor(slide.id);
         });
-	var keep = _.map(currentConversation.slides,constructSlideId);
-        $(".slideButtonContainer").filter(function(i,el){
-	    var id = $(el).attr("id");
-	    console.log(keep,id);
-            return ! _.includes(keep,id);
-        }).remove();
-        $(".slideButtonContainer").sort(function(a,b){return a.index - b.index;}).detach().appendTo(slideContainer);
+        //Remove the deleted slides
+        _.each(_.filter(currentConversation.slides,function(slide){
+            var keep = _.map(currentConversation.slides,constructSlideId);
+            $(".slideButtonContainer").filter(function(i,el){
+                var id = $(el).attr("id");
+                return ! _.includes(keep,id);
+            }).remove();
+        }));
+        //Apply the new index positions
+        var positions = _.fromPairs(_.map(currentConversation.slides,function(slide){
+            return [constructSlideId(slide),slide.index];
+        }));
+        $(".slideButtonContainer").sort(function(ja,jb){
+            var ia = $(ja).attr("id");
+            var ib = $(jb).attr("id");
+            return positions[ia] - positions[ib];
+        }).detach().appendTo(slideContainer);
+        //Build the UI
         var slideControls = $("#slideControls");
         slideControls.empty();
         constructPrevSlideButton(slideControls),
@@ -389,7 +393,6 @@ var Conversations = (function(){
         }
     };
     var updateThumbnailFor = function(slideId) {
-        console.log("..updateThumbnailFor",slideId);
         ThumbCache.paint({id:slideId,index:0});
     }
     var goToNextSlideFunction = function(){
@@ -712,11 +715,8 @@ var Conversations = (function(){
                 currentSlide = slideId;
                 indicateActiveSlide(slideId);
                 delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-                WorkQueue.enqueue(function(){
-                    loadSlide(slideId);
-                    updateQueryParams();
-                    return true;
-                });
+                loadSlide(slideId);
+                updateQueryParams();
             }
         }
         else{
@@ -731,7 +731,7 @@ var Conversations = (function(){
         $("#currentSlide").text(position);
     };
     var constructSlideId = function(slide){
-	return sprintf("slideContainer_%s",slide.id);
+        return sprintf("slideContainer_%s",slide.id);
     }
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
@@ -802,7 +802,6 @@ var Conversations = (function(){
     Progress.conversationDetailsReceived["Conversations"] = actOnConversationDetails;
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
-    Progress.historyReceived["Conversations"] = ThumbCache.paintAllThumbs;
     $(function(){
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)

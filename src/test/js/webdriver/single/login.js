@@ -31,9 +31,9 @@ describe('When the application starts,', function() {
         for(var i = 1; i < count; i++){
             user.execute("$('#addSlideButton').click()");
         }
-        for(var i = count; i > 1; i--){
+        for(var j = count; j > 20; j--){
             userT.handwrite(_.map(_.range(0,60,5),function(k){
-                var x = 50 + 5 * k + i * 20;
+                var x = 50 + 5 * k + j * 20;
                 var y = 50 + 5 * k;
                 return {
                     x:x,

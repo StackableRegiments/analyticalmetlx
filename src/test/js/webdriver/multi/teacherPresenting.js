@@ -277,7 +277,6 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should be able to add a new slide",function(){
         assert.equal(teacherT.currentSlide.index,0);
-	browser.debug();
         teacherT.newSlide.click();
         browser.waitUntil(function(){
             return teacherT.currentSlide.index == 1;

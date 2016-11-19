@@ -201,7 +201,6 @@ describe('When the class breaks into groups,', function() {
         assert.equal(tT.currentConversation.subject,"Org Unit A");
         tT.nextSlide.click();
         teacher.waitUntil(function(){
-            console.log(tT.currentSlide);
             return tT.currentSlide.index == 1;
         });
     });
@@ -275,6 +274,7 @@ describe('When the class breaks into groups,', function() {
             user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         });
         browser.pause(1500);//Let everything synchronize
+	browser.debug();
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.inkStanzas).length,3);
