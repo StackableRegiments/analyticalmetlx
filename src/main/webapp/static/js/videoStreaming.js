@@ -145,9 +145,9 @@ var TokBox = (function(){
 		}	
 		$(".subscribedStream").removeClass("subscribedStream");
 		if (thisPublisher != undefined){
-			streamButton.addClass("subscribedStream");
+			streamButton.addClass("publishedStream");
 		} else {
-			streamButton.removeClass("subscribedStream");
+			streamButton.removeClass("publishedStream");
 		}
 		_.forEach(streams,function(s){
 			console.log("refreshing s:",s);
@@ -178,11 +178,13 @@ var TokBox = (function(){
 				thisPublisher = publisher;
 				console.log("publishing",publisher,session);
 				session.publish(publisher);
+				$("#videoConfStartButton").addClass("publishedStream");
 			} else {
 				$(".publisherVideoElem").remove();
 				var pub = thisPublisher;
 				thisPublisher = undefined;
 				session.unpublish(pub);
+				$("#videoConfStartButton").removeClass("publishedStream");
 				//tokBoxVideoElemPublisher.remove();
 			}
 		}
@@ -201,7 +203,7 @@ var TokBox = (function(){
 	var downgradeVideoStreams = function(){
 		console.log("downgrading video quality");
 		_.forEach(streams,function(stream){
-			if ("subscriber" in stream){
+			if ("subscriber" in stream && stream.subscriber != null){
 				stream.subscriber.restrictFramerate(true);
 			}
 		});
@@ -209,7 +211,7 @@ var TokBox = (function(){
 	var upgradeVideoStreams = function(){
 		console.log("upgrading video quality");
 		_.forEach(streams,function(stream){
-			if ("subscriber" in stream){
+			if ("subscriber" in stream && stream.subscriber != null){
 				stream.subscriber.restrictFramerate(false);
 			}
 		});
