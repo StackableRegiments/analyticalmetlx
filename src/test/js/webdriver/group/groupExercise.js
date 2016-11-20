@@ -343,9 +343,37 @@ describe('When the class breaks into groups,', function() {
         });
         assert.equal(tT.currentSlide.index,2);
         assert(!tT.currentSlide.groupSet);
+        _.each(users,function(user,ui){//Close all backstages
+            if(user.applicationMenu.value != null){
+                user.menuButton.click();
+            }
+            user.inkMode.click();
+            user.handwrite(_.map(_.range(200,400,15), function(i){
+                return {x:ui*10+i,y:i};
+            }));
+            user.imageMode.click();
+            user.driver.click("#board");
+            user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+        });
+        browser.pause(2500);//Let everything synchronize
+        assert.equal(_.keys(tT.inkStanzas).length,6);
+        assert.equal(_.keys(sA.inkStanzas).length,6);
+        assert.equal(_.keys(sB.inkStanzas).length,6);
+        assert.equal(_.keys(sC.inkStanzas).length,6);
+        assert.equal(_.keys(sD.inkStanzas).length,6);
+        assert.equal(_.keys(sE.inkStanzas).length,6);
+
+        assert.equal(_.keys(tT.imageStanzas).length,6);
+        assert.equal(_.keys(sA.imageStanzas).length,6);
+        assert.equal(_.keys(sB.imageStanzas).length,6);
+        assert.equal(_.keys(sC.imageStanzas).length,6);
+        assert.equal(_.keys(sD.imageStanzas).length,6);
+        assert.equal(_.keys(sE.imageStanzas).length,6);
+
     });
 
     it("expressive complexity should be a visible metric",function(){
+	browser.debug();
         assert(browser.isExisting("#complexityStatus"));
     });
 });

@@ -65,7 +65,7 @@ var Conversations = (function(){
             if(!(audience in groupActivity)){
                 groupActivity[audience] = {
                     bucket:0,
-                    line:_.map(_.range(20),function(){return 0})
+                    line:_.map(_.range(50),function(){return 0})
                 }
             }
         }
@@ -81,8 +81,8 @@ var Conversations = (function(){
                 meter.bucket = 0;
             });
         }
-        var SENSOR_INTERVAL = 1000;
-        var DISPLAY_INTERVAL = 1000;
+        var SENSOR_INTERVAL = 500;
+        var DISPLAY_INTERVAL = 2500;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(function(){
             _.each(currentConversation.slides,function(slide){
@@ -99,10 +99,18 @@ var Conversations = (function(){
                         trace.update(groupActivity[group.id].line);
                     });
                 }
+		var conversationActivity = $("#conversationActivity");
+		ensureTracking("anyone");
+		groupTraces.anyone = groupTraces.anyone || {};
+                if(conversationActivity.find("svg").length == 0){
+                    groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                }
+                groupTraces.anyone.update(groupActivity.anyone.line);
             });
         },DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
             _.each(stanza.audiences,audienceAction);
+            audienceAction({name:"anyone"});
         }
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
@@ -153,9 +161,9 @@ var Conversations = (function(){
                     if(!(group.id in groupTraces)){
                         groupTraces[group.id] = {};
                     }
-                    groupTraces[group.id].group = group;
                     groupTraces[group.id].update = SparkLine.svg(groupContainer,groupActivity[group.id].line,80,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
+                groupTraces[group.id].group = group;
                 groupContainer.find('.count').text(group.members.length);
             });
         }
@@ -174,7 +182,6 @@ var Conversations = (function(){
 
         return {
             paint:function(slide,scrollContainer){
-                console.log("updateThumbnail",slide);
                 scrollContainer = scrollContainer || $("#thumbScrollContainer");
                 var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
                 if(slide.groupSet){
@@ -748,6 +755,7 @@ var Conversations = (function(){
                 delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
                 loadSlide(slideId);
                 updateQueryParams();
+                loadCurrentGroup(currentConversation);
             }
         }
         else{
