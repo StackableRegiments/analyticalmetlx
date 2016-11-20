@@ -1,5 +1,8 @@
 0.13
 Pre-release-feature: METL-243: Video conferencing.
+Pre-release-feature: METL-208: Group-activity slides.
+Pre-release-feature: METL-209: Liveness meters.
+Pre-release-feature: UNKNOWN: Thumbnail render immediacy and responsiveness.
 
 0.12
 Feature: METL-95: Added yellow text capability.
