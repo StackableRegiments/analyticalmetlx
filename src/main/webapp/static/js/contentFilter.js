@@ -150,6 +150,7 @@ var ContentFilter = (function(){
     };
     Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
     Progress.onConversationJoin["ContentFilter"] = conversationJoined;
+    Progress.afterJoiningSlide["ContentFilter"] = conversationJoined;
     return {
         getFilters:getFiltersFunction,
         setFilter:setFilterFunction

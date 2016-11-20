@@ -370,4 +370,45 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sD.imageStanzas).length,6);
         assert.equal(_.keys(sE.imageStanzas).length,6);
     });
+    it("the teacher should not have group filters on the non group slide",function(){
+        tT.menuButton.click();
+        sA.menuButton.click();
+        sB.menuButton.click();
+        browser.waitUntil(function(){return browser.isVisible("#roomToolbar");});
+
+        tT.learning.click();
+        sA.learning.click();
+        sB.learning.click();
+        browser.waitUntil(function(){return browser.isVisible("#menuContentFilter");});
+
+        tT.contentFilter.click();
+        sA.contentFilter.click();
+        sB.contentFilter.click();
+
+        assert.equal(teacher.execute("return $('.contentFilterItem').length").value,3);
+    });
+    it("the teacher should regain their group filters on returning to the group slide",function(){
+        tT.menuButton.click();
+        tT.prevSlide.click();
+        browser.waitUntil(function(){
+            return tT.currentSlide.index == 1;
+        });
+        tT.menuButton.click();
+        teacher.waitUntil(function(){return teacher.isVisible("#roomToolbar");});
+
+        tT.learning.click();
+        teacher.waitUntil(function(){return teacher.isVisible("#menuContentFilter");});
+
+        tT.contentFilter.click();
+
+        var groups = tT.currentSlide.groupSet.groups;
+        assert(teacher.isExisting("#contentFilter_"+groups[0].id));
+        assert(teacher.isExisting("#contentFilter_"+groups[1].id));
+
+        assert(! studentA.isExisting("#contentFilter_"+groups[0].id));
+        assert(! studentA.isExisting("#contentFilter_"+groups[1].id));
+
+        assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
+        assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
+    });
 });

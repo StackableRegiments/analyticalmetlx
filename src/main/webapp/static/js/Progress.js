@@ -13,6 +13,7 @@ var Progress = (function(){
         },
         onPrivacyChanged:{},
         beforeLeavingSlide:{},
+        afterJoiningSlide:{},
         onConversationJoin:{},
         onSelectionChanged:{},
         onBoardContentChanged:{},

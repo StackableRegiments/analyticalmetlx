@@ -27,6 +27,7 @@ describe('When the application starts,', function() {
         user.waitForExist("#board");
         user.pause(1000);
         userT.inkMode.click();
+        browser.debug();
         var count = 20;
         for(var i = 1; i < count; i++){
             user.execute("$('#addSlideButton').click()");
@@ -44,7 +45,6 @@ describe('When the application starts,', function() {
             userT.prevSlide.click();
 	    user.pause(1000);
         }
-        browser.debug();
         browser.inkMode.click();
     });
 });

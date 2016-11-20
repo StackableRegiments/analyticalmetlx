@@ -756,6 +756,7 @@ var Conversations = (function(){
                 loadSlide(slideId);
                 updateQueryParams();
                 loadCurrentGroup(currentConversation);
+                Progress.call("afterJoiningSlide",[slideId]);
             }
         }
         else{
