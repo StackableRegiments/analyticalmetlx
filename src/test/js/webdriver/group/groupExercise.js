@@ -369,11 +369,5 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sC.imageStanzas).length,6);
         assert.equal(_.keys(sD.imageStanzas).length,6);
         assert.equal(_.keys(sE.imageStanzas).length,6);
-
-    });
-
-    it("expressive complexity should be a visible metric",function(){
-	browser.debug();
-        assert(browser.isExisting("#complexityStatus"));
     });
 });
