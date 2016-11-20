@@ -59,6 +59,7 @@ var Conversations = (function(){
         var cacheRefreshTime = 0
         var cache = {};
         var groupActivity = {};
+        var groupTraces = {};
 
         var ensureTracking = function(audience){
             if(!(audience in groupActivity)){
@@ -80,16 +81,26 @@ var Conversations = (function(){
                 meter.bucket = 0;
             });
         }
-        setInterval(rollAudiences,1000);
+        var SENSOR_INTERVAL = 1000;
+        var DISPLAY_INTERVAL = 1000;
+        setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(function(){
-            var scrollContainer = $("#thumbScrollContainer");
             _.each(currentConversation.slides,function(slide){
                 if(slide.groupSet){
-                    var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                    paintGroups(slide,slideContainer);
+                    if(! _.every(slide.groupSet.groups,function(group){
+                        return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
+                    })){
+                        var scrollContainer = $("#thumbScrollContainer");
+                        var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                        paintGroups(slide,slideContainer);
+                    }
+                    _.each(slide.groupSet.groups,function(group){
+                        var trace = groupTraces[group.id];
+                        trace.update(groupActivity[group.id].line);
+                    });
                 }
             });
-        },2000);
+        },DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
             _.each(stanza.audiences,audienceAction);
         }
@@ -118,25 +129,34 @@ var Conversations = (function(){
             }
         };
         var paintGroups = function(slide,slideContainer){
-            WorkQueue.enqueue(function(){
+            console.log("Paint groups");
+            var groupsContainer = slideContainer.find(".groupSlideContainer")
+            if(groupsContainer.length == 0){
+                groupsContainer = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
                 slideContainer
                     .addClass("groupSlide")
                     .find("img")
                     .attr("src",blank4to3Canvas);
-		slideContainer.find(".groupSlideContainer").remove();
-                var groups = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
-                _.each(slide.groupSet.groups,function(group){
-                    ensureTracking(group.id);
-                    var container = $("<div />",{
-                        text:group.members.length,
+            }
+            _.each(slide.groupSet.groups,function(group){
+                ensureTracking(group.id);
+                var label = sprintf("group_%s",group.id);
+                var groupContainer = groupsContainer.find("#"+label);
+                if(groupContainer.length == 0){
+                    groupContainer = $("<div />",{
+                        id:label,
                         class:"thumbGroup"
-                    }).appendTo(groups);
-                    var sparkline = $("<div />",{
-                        class:"sparkline",
-                        id:sprintf("group_%s",group.id)
-                    }).appendTo(container);
-                    sparkline.sparkline(groupActivity[group.id].line);
-                });
+                    }).append($("<span />",{
+                        text:group.members.length,
+                        class:"count"
+                    })).appendTo(groupsContainer);
+                    if(!(group.id in groupTraces)){
+                        groupTraces[group.id] = {};
+                    }
+                    groupTraces[group.id].group = group;
+                    groupTraces[group.id].update = SparkLine.svg(groupContainer,groupActivity[group.id].line,80,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                }
+                groupContainer.find('.count').text(group.members.length);
             });
         }
         var blank4to3Canvas = (function(w,h){
@@ -158,7 +178,6 @@ var Conversations = (function(){
                 scrollContainer = scrollContainer || $("#thumbScrollContainer");
                 var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
                 if(slide.groupSet){
-                    //paintGroups(slide,slideContainer);
                 }
                 else{
                     var slideImage = slideContainer.find("img");
@@ -172,6 +191,7 @@ var Conversations = (function(){
             clearCache:function(){
                 cache = {};
                 groupActivity = {};
+                groupTraces = {};
             }
         };
     })();

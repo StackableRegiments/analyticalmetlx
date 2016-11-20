@@ -337,7 +337,6 @@ describe('When the class breaks into groups,', function() {
         assertNotSameContent(user,nonPeer);
     });
     it("groups should not persist beyond the slide",function(){
-	browser.debug();
         tT.newSlide.click();
         browser.waitUntil(function(){
             return tT.currentSlide.index == 2;
