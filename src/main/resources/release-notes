@@ -1,7 +1,20 @@
+0.13
+Pre-release-feature: METL-243: Video conferencing.
+
+0.12
+Feature: METL-95: Added yellow text capability.
+
+0.11
+Feature: METL-225, 226, 227: Reinstate and improve superuser powers.
+Improvement: METL-231: Removed index page (always redirect to /conversationSearch).
+Improvement: METL-232: Dropped session timeout from 60 min to 5 min to reduce server load.
+Improvement: METL-223: Move release notes behind link on /about page.
+
 0.10
 Feature: METL-199 Paste into canvas from clipboard.
 Feature: METL-205 3-tiered orgStructure and personalDetails provider.
 Feature: METL-218 "Who's on right now" endpoints for admin.
+Improvement: METL-224 Performance improvement for xml group diskCache load
 Bugfix: METL-197 MeTL logo missing.
 
 0.9

@@ -25,59 +25,67 @@ var TokBox = (function(){
 				},
 				"streamCreated":function(ev){
 					if ("capabilities" in session && "subscribe" in session.capabilities && session.capabilities.subscribe == 1){
+						console.log("streamCreated",ev,streams);
 						var stream = ev.stream;
-						var rootElem = $(subscriberSection.clone());
-						var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
-						var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
-						rootElem.find(".icon-txt").text(ev.stream.name);
-						var button = rootElem.find(".videoConfSubscribeButton");
-						if (stream.id in streams){
-							button.addClass("subscribedStream");
-						} else {
-							button.removeClass("subscribedStream");
-						}
-						rootElem.find(".videoConfSubscribeButton").on("click",function(){
-							if (stream.id in streams){
-								var subscriber = streams[stream.id];
-								delete streams[stream.id];
-								session.unsubscribe(subscriber.subscriber);
-								console.log("unsubscribed from stream:",stream.name,stream.id);
-							} else {
-								var subscriber = session.subscribe(stream,uniqueId,{
-									insertMode:"append",
-									width:320,
-									height:240
-								},function(error){
-									if (!error){
-										console.log("subscribed to stream:",stream.name,stream.id);
-									} else {
-										rootElem.remove();
-										console.log("error when subscribing to stream",error,stream.name,stream.id);
-									}
-								});
-								subscriber.on("videoDimensionsChanged", function(event) {
-									subscriber.element.style.width = event.newValue.width + 'px';
-									subscriber.element.style.height = event.newValue.height + 'px';
-								});
-								var refreshUI = function(){
-									if (stream.id in streams){
-										button.addClass("subscribedStream");
-									} else {
-										button.removeClass("subscribedStream");
-									}
-								};
-								streams[stream.id] = {
-									videoSelectorId:uniqueId,
-									elem:rootElem,
-									subscriber:subscriber,
-									refreshVisual:refreshUI
-								};
-							}
+						var oldStream = streams[stream.id];
+						if (oldStream == undefined){
+							oldStream = {
+								stream: stream,
+								subscribed: false,
+								refreshVisual:function(){}
+							};
+							streams[stream.id] = oldStream;
+							var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
+							var rootElem = $(subscriberSection.clone());
+							var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
+							rootElem.find(".icon-txt").text(ev.stream.name);
+							var button = rootElem.find(".videoConfSubscribeButton");
+							var refreshUI = function(){
+								if (oldStream.subscribed){
+									button.addClass("subscribedStream");
+								} else {
+									button.removeClass("subscribedStream");
+								}
+							};
+							refreshUI();
+							rootElem.find(".videoConfSubscribeButton").on("click",function(){
+								var s = streams[stream.id];
+								if (s.subscribed){
+									s.subscribed = false;
+									session.unsubscribe(s.subscriber);
+									console.log("unsubscribed from stream:",s.stream.name,s.stream.id);
+								} else {
+									s.subscribed = true;
+									var subscriber = session.subscribe(s.stream,uniqueId,{
+										insertMode:"append",
+										width:320,
+										height:240
+									},function(error){
+										if (!error){
+											console.log("subscribed to stream:",s.stream.name,s.stream.id);
+										} else {
+											rootElem.remove();
+											console.log("error when subscribing to stream",error,s.stream.name,s.stream.id);
+										}
+									});
+									subscriber.on("videoDimensionsChanged", function(event) {
+										subscriber.element.style.width = event.newValue.width + 'px';
+										subscriber.element.style.height = event.newValue.height + 'px';
+									});
+									s.subscriber = subscriber;
+									s.refreshVisual = refreshUI;
+								}
+								refreshVisualState();
+							});
+							subscriptionsContainer.append(rootElem);
+							streamContainer.append(tokBoxVideoElemSubscriber);
+							oldStream.videoSelectorId = uniqueId;
+							oldStream.elem = rootElem;
 							refreshVisualState();
-						});
-						subscriptionsContainer.append(rootElem);
-						streamContainer.append(tokBoxVideoElemSubscriber);
-						refreshVisualState();
+						} else {
+							oldStream["stream"] = stream;
+							console.log("updating stream with a new version of it, for whatever reason.",ev);
+						}
 					}
 				},
 				"sessionConnected":function(ev){
@@ -137,13 +145,15 @@ var TokBox = (function(){
 		}	
 		$(".subscribedStream").removeClass("subscribedStream");
 		if (thisPublisher != undefined){
-			streamButton.addClass("subscribedStream");
+			streamButton.addClass("publishedStream");
 		} else {
-			streamButton.removeClass("subscribedStream");
+			streamButton.removeClass("publishedStream");
 		}
 		_.forEach(streams,function(s){
 			console.log("refreshing s:",s);
-			s.refreshVisual();
+			if ("refreshVisual" in s){
+				s.refreshVisual();
+			}
 		});
 	};
 	var thisPublisher = undefined;
@@ -168,11 +178,13 @@ var TokBox = (function(){
 				thisPublisher = publisher;
 				console.log("publishing",publisher,session);
 				session.publish(publisher);
+				$("#videoConfStartButton").addClass("publishedStream");
 			} else {
 				$(".publisherVideoElem").remove();
 				var pub = thisPublisher;
 				thisPublisher = undefined;
 				session.unpublish(pub);
+				$("#videoConfStartButton").removeClass("publishedStream");
 				//tokBoxVideoElemPublisher.remove();
 			}
 		}
@@ -191,13 +203,17 @@ var TokBox = (function(){
 	var downgradeVideoStreams = function(){
 		console.log("downgrading video quality");
 		_.forEach(streams,function(stream){
-			subscriber.restrictFramerate(true);
+			if ("subscriber" in stream && stream.subscriber != null){
+				stream.subscriber.restrictFramerate(true);
+			}
 		});
 	};
 	var upgradeVideoStreams = function(){
 		console.log("upgrading video quality");
 		_.forEach(streams,function(stream){
-			subscriber.restrictFramerate(false);
+			if ("subscriber" in stream && stream.subscriber != null){
+				stream.subscriber.restrictFramerate(false);
+			}
 		});
 	};
 	Progress.afterWorkQueuePause["videoStreaming"] = downgradeVideoStreams;

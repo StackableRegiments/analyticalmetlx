@@ -17,7 +17,7 @@ import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 import net.liftweb.json._
-
+import com.metl.liftAuthenticator.LiftAuthStateData
 import java.util.zip._
 
 import com.metl.model._
@@ -26,6 +26,7 @@ import com.metl.model._
   * Use Lift's templating without a session and without state
   */
 object StatelessHtml extends Stemmer with Logger {
+  implicit val formats = DefaultFormats
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml",  {
@@ -74,6 +75,14 @@ object StatelessHtml extends Stemmer with Logger {
     })
   })
 
+  def listGroups(username:String,informationGroups:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listGroups",{
+    val prelimAuthStateData = LiftAuthStateData(false,username,Nil,informationGroups)
+    val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+    val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+    val lasd = LiftAuthStateData(false,username,groups,personalDetails)
+    Full(JsonResponse(Extraction.decompose(lasd),200))
+  })
+
   def listRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listRooms", {
     Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).map(_.location).mkString("\r\n")))
   })
@@ -84,10 +93,57 @@ object StatelessHtml extends Stemmer with Logger {
   })
   def listSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessions", {
     val now = new java.util.Date().getTime
-    val sessions = SecurityListener.activeSessions.map(s => (s,(now - s.lastActivity).toDouble / 1000)).sortBy(_._2).map(s => "%s (%s) : %s => %s (%.3fs ago)".format(s._1.username,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)).mkString("\r\n")
+    val sessions = SecurityListener.activeSessions.map(s => (s,(now - s.lastActivity).toDouble / 1000)).sortBy(_._2).map(s => {
+      if (s._1.authenticatedUser == s._1.username){
+        "%s (%s) : %s => %s (%.3fs ago)".format(s._1.authenticatedUser,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
+      } else {
+        "%s impersonating %s (%s) : %s => %s (%.3fs ago)".format(s._1.authenticatedUser,s._1.username,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
+      }
+    }).mkString("\r\n")
     Full(PlainTextResponse(sessions))
   })
-
+  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
+    Full(JsonResponse(Extraction.decompose(user),200))
+    /*
+    Full(JsonResponse(JObject(List(
+      JField("authenticated",JBool(user.authenticated)),
+      JField("username",JString(user.username)),
+      JField("eligibleGroups",JArray(user.eligibleGroups.map(g => {
+        JObject(List(
+          JField("ouType",JString(g.ouType)),
+          JField("name",JString(g.name)),
+          JField("members",JArray(g.members.map(m => JString(m)))),
+          JField("groupSets",JArray(g.groupSets.map(gs => {
+            JObject(List(
+              JField("groupSetType",JString(gs.groupSetType)),
+              JField("name",JString(gs.name)),
+              JField("members",JArray(gs.members.map(m => JString(m)))),
+              JField("groups",JArray(gs.groups.map(gp => {
+                JObject(List(
+                  JField("groupType",JString(gp.groupType)),
+                  JField("name",JString(gp.name)),
+                  JField("members",JArray(gp.members.map(m => JString(m))))
+                ))
+              })))
+            ))
+          })))
+        ))
+      }).toList)),
+      JField("personalDetails",JArray(user.informationGroups.map(t => {
+        JObject(List(
+          JField("key",JString(t._1)),
+          JField("value",JString(t._2))
+        ))
+      }).toList))
+    )),200))
+    */
+  })
+  def impersonate(newUsername:String,params:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {
+    describeUser(Globals.impersonate(newUsername,params))
+  })
+  def deImpersonate:Box[LiftResponse] = Stopwatch.time("StatelessHtml.deImpersonate", {
+    describeUser(Globals.assumeContainerSession)
+  })
   def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", {
     <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
   })
