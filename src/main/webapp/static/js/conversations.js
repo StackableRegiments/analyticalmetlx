@@ -735,6 +735,7 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
+	console.log("doMoveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;

@@ -132,6 +132,7 @@ var ContentFilter = (function(){
     };
     var conversationJoined = function(){
         var cs = Conversations.getCurrentSlide();
+	console.log("Setting up filters for",cs);
         if (cs != undefined && "groupSet" in cs){
             setFiltersFromGroups(cs.groupSet.groups);
         } else {
@@ -148,6 +149,7 @@ var ContentFilter = (function(){
         renderContentFilters();
         blit();
     };
+    Progress.currentSlideJidReceived["ContentFilter"] = conversationJoined;
     Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
     Progress.onConversationJoin["ContentFilter"] = conversationJoined;
     Progress.afterJoiningSlide["ContentFilter"] = conversationJoined;
