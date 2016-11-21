@@ -204,12 +204,11 @@ var TokBox = (function(){
 				var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId,"class":"publisherVideoElem"});
 				streamContainer.append(tokBoxVideoElemPublisher);
 				var targetResolution = sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight));
-				console.log("target resolution:",targetResolution)
+				console.log("target resolution:",targetResolution);
 				var publisher = OT.initPublisher(publisherUniqueId, {
 					name:UserSettings.getUsername(),
 					width:videoWidth,
 					height:videoHeight,
-					//resolution:targetResolution,
 					frameRate:safeFps(videoFps),
 					insertMode:"append"
 				},function(error){
