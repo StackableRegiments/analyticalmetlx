@@ -3,30 +3,33 @@ var TokBox = (function(){
 	var videoHeight = 120;
 	var videoFps = 15;
 	
-	var validWidths = [1280,640,320];
-	var validHeights = [720,480,240];
-	var validFpss = [30,15,7,1];
+	var validWidths = [320,640,1280];
+	var validHeights = [240,480,720];
+	var validFpss = [1,7,15,30];
 
 	var safeFps = function(preferred){
-		var candidate = _.filter(validFpss,function(c){return c <= preferred;})[0];
+		var coll = validFpss;
+		var candidate = _.reverse(_.filter(coll,function(c){return c <= preferred;}))[0];
 		if (candidate == undefined){
-			candidate = 1;
+			candidate = coll[0];
 		} 
 		console.log("safeFps:",candidate);
 		return candidate;
 	};
 	var safeWidth = function(preferred){
-		var candidate = _.filter(validWidths,function(c){return c <= preferred;})[0];
+		var coll = validWidths;
+		var candidate = _.reverse(_.filter(coll,function(c){return c <= preferred;}))[0];
 		if (candidate == undefined){
-			candidate = 320;
+			candidate = coll[0];
 		} 
 		console.log("safeWidth:",candidate);
 		return candidate;
 	};
 	var safeHeight = function(preferred){
-		var candidate = _.filter(validHeights,function(c){return c <= preferred;})[0];
+		var coll = validHeights;
+		var candidate = _.reverse(_.filter(coll,function(c){return c <= preferred;}))[0];
 		if (candidate == undefined){
-			candidate = 240;
+			candidate = coll[0];
 		} 
 		console.log("safeHeight:",candidate);
 		return candidate;
@@ -200,16 +203,18 @@ var TokBox = (function(){
 				var publisherUniqueId = sprintf("tokBoxVideoElemPublisher_%s",_.uniqueId());
 				var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId,"class":"publisherVideoElem"});
 				streamContainer.append(tokBoxVideoElemPublisher);
+				var targetResolution = sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight));
+				console.log("target resolution:",targetResolution)
 				var publisher = OT.initPublisher(publisherUniqueId, {
 					name:UserSettings.getUsername(),
 					width:videoWidth,
 					height:videoHeight,
-					resolution:sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight)),
+					//resolution:targetResolution,
 					frameRate:safeFps(videoFps),
 					insertMode:"append"
 				},function(error){
 					if (error){
-						console("error:",error);
+						console.log("tokbox error:",error);
 					}
 				});
 				thisPublisher = publisher;
