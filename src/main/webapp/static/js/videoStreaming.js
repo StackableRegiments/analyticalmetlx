@@ -94,8 +94,8 @@ var TokBox = (function(){
                                     s.subscribed = true;
                                     var subscriber = session.subscribe(s.stream,uniqueId,{
                                         insertMode:"append",
-                                        width:safeWidth(videoWidth),
-                                        height:safeHeight(videoHeight)
+                                        width:videoWidth,
+                                        height:videoHeight
                                     },function(error){
                                         if (!error){
                                             console.log("subscribed to stream:",s.stream.name,s.stream.id);
