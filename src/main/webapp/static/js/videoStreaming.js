@@ -194,7 +194,6 @@ var TokBox = (function(){
             }
         });
     };
-
     var thisPublisher = undefined;
     var startPublishFunc = function(){
         refreshVisualState();
@@ -210,7 +209,6 @@ var TokBox = (function(){
                     name:UserSettings.getUsername(),
                     width:videoWidth,
                     height:videoHeight,
-                    //resolution:targetResolution,
                     frameRate:safeFps(videoFps),
                     insertMode:"append"
                 },function(error){
