@@ -1,4 +1,37 @@
 var TokBox = (function(){
+	var videoWidth = 160;
+	var videoHeight = 120;
+	var videoFps = 15;
+	
+	var validWidths = [1280,640,320];
+	var validHeights = [720,480,240];
+	var validFpss = [30,15,7,1];
+
+	var safeFps = function(preferred){
+		var candidate = _.filter(validFpss,function(c){return c <= preferred;})[0];
+		if (candidate == undefined){
+			candidate = 1;
+		} 
+		console.log("safeFps:",candidate);
+		return candidate;
+	};
+	var safeWidth = function(preferred){
+		var candidate = _.filter(validWidths,function(c){return c <= preferred;})[0];
+		if (candidate == undefined){
+			candidate = 320;
+		} 
+		console.log("safeWidth:",candidate);
+		return candidate;
+	};
+	var safeHeight = function(preferred){
+		var candidate = _.filter(validHeights,function(c){return c <= preferred;})[0];
+		if (candidate == undefined){
+			candidate = 240;
+		} 
+		console.log("safeHeight:",candidate);
+		return candidate;
+	};
+
 	var session = undefined;
 	var isConnected = function(){
 		return session != undefined && "isConnected" in session && session.isConnected();
@@ -58,8 +91,8 @@ var TokBox = (function(){
 									s.subscribed = true;
 									var subscriber = session.subscribe(s.stream,uniqueId,{
 										insertMode:"append",
-										width:320,
-										height:240
+										width:safeWidth(videoWidth),
+										height:safeHeight(videoHeight)
 									},function(error){
 										if (!error){
 											console.log("subscribed to stream:",s.stream.name,s.stream.id);
@@ -68,6 +101,8 @@ var TokBox = (function(){
 											console.log("error when subscribing to stream",error,s.stream.name,s.stream.id);
 										}
 									});
+									subscriber.element.style.width = videoWidth;
+									subscriber.element.style.height = videoHeight;
 									subscriber.on("videoDimensionsChanged", function(event) {
 										subscriber.element.style.width = event.newValue.width + 'px';
 										subscriber.element.style.height = event.newValue.height + 'px';
@@ -166,16 +201,20 @@ var TokBox = (function(){
 				var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId,"class":"publisherVideoElem"});
 				streamContainer.append(tokBoxVideoElemPublisher);
 				var publisher = OT.initPublisher(publisherUniqueId, {
-					insertMode:"append",
-					width:320,
-					height:240,
-					name:UserSettings.getUsername()	
+					name:UserSettings.getUsername(),
+					width:videoWidth,
+					height:videoHeight,
+					resolution:sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight)),
+					frameRate:safeFps(videoFps),
+					insertMode:"append"
 				},function(error){
 					if (error){
 						console("error:",error);
 					}
 				});
 				thisPublisher = publisher;
+				publisher.element.style.width = videoWidth;
+				publisher.element.style.height = videoHeight;
 				console.log("publishing",publisher,session);
 				session.publish(publisher);
 				$("#videoConfStartButton").addClass("publishedStream");
@@ -185,7 +224,6 @@ var TokBox = (function(){
 				thisPublisher = undefined;
 				session.unpublish(pub);
 				$("#videoConfStartButton").removeClass("publishedStream");
-				//tokBoxVideoElemPublisher.remove();
 			}
 		}
 		refreshVisualState();
@@ -225,7 +263,34 @@ var TokBox = (function(){
 		receiveBroadcast:receiveBroadcastFunc,
 		receiveTokBoxSession:receiveTokBoxSessionFunc,
 		getIsConnected:isConnected,
-		getSession:function(){return session;}
+		getSession:function(){return session;},
+		resizeVideo:function(w,h,fps){
+			if (w != undefined){
+				videoWidth = w;
+			}
+			if (h != undefined){
+				videoHeight = h;
+			}
+			if (fps != undefined){
+				videoFps = fps;
+			}
+			if (isConnected() && thisPublisher != undefined){
+				startPublishFunc();
+				startPublishFunc();
+			}
+			_.forEach(streams,function(stream){
+				if ("subscriber" in stream && stream.subscriber != null){
+					stream.subscriber.setPreferredResolution({
+						width:videoWidth,
+						height:videoHeight
+					});
+					if ("refreshVisual" in stream){
+						stream.refreshVisual();
+					}
+				}
+			})
+			refreshVisualState();
+		}
 	};
 })();
 
