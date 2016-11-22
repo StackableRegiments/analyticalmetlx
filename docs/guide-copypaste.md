@@ -5,7 +5,7 @@ title: Copy and Paste
 
 Content may be pasted or drag-and-dropped from the clipboard into the MeTL canvas.  
 
-## Limitations
+### Limitations
 
 This feature is subject to the limitations defined by the source application, clipboard (supplied by the operating system) 
 and the web browser, so the behaviour when pasting content into MeTL will vary depending on the exact combination used.
@@ -28,7 +28,7 @@ select how and what to paste:
 - Rich text: a text will be created from the copied content, retaining formatting where possible.
 - File: an image will be created from the copied content (if it contains a valid image file).
 
-## Alternatives
+### Alternatives
 
 Other methods of importing content into MeTL include:
   
