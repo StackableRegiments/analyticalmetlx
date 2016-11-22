@@ -117,29 +117,24 @@
     display:inline-block;
     }
 
-		#loadingSpinner {
-			height:100%;
-			width:100%;
-			left:0;
-			top:0;
-			position:absolute;
-			z-index:100;
-		}
+    
   </style>
   <div>
-		<img id="loadingSpinner" src="/static/images/spinner.gif"></img>
-		<div id="pasteDialogTemplate">
-			<span class="dialogContent">
-				Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
-			</span>
-			<span class="dialogOptions">
-				<span class="dialogOption">
-					<button class="fa btn-icon">
-						<div class="icon-txt"></div>
-					</button>
-				</span>
-			</span>
-		</div>
+    <div id="loadingSpinner">
+      <img src="/static/images/spinner.gif"></img>
+    </div>
+    <div id="pasteDialogTemplate">
+      <span class="dialogContent">
+        Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
+      </span>
+      <span class="dialogOptions">
+        <span class="dialogOption">
+          <button class="fa btn-icon">
+            <div class="icon-txt"></div>
+          </button>
+        </span>
+      </span>
+    </div>
     <div id="masterHeader">
       <div id="masterHeaderFlexContainer">
         <span id="floatingToggleContainer" class="main-menu">
