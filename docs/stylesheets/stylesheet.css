@@ -297,7 +297,7 @@ Full-Width Styles
 }
 
 #header_wrap .inner {
-  padding: 10px 20px 20px 10px;
+  padding: 10px 20px 10px 10px;
 }
 
 #project_title {
@@ -309,6 +309,7 @@ Full-Width Styles
 }
 
 #project_tagline {
+  margin: 0px 0px 0px 20px;
   color: #ffffff;
   font-size: 30px;
   font-weight: 200;
@@ -319,6 +320,47 @@ Full-Width Styles
   margin-left: 150px;
 }
 
+#nav {
+  margin: 0px 0px 0px 20px;
+}
+
+#nav-doc {
+  background: #373737;
+  margin: 0px 0px 0px 0px;
+  padding-left: 25px;
+}
+
+#side-guide {
+  float: right;
+  /*width: 25%;*/
+  background: #373737;
+  margin: 0px 0px 0px 0px;
+  padding-left: 25px;
+}
+
+#side-guide ul {
+  width: 100%;
+}
+
+#side-guide li {
+  color: #eee;
+  font-size: 0.75em;
+  width: 100%;
+  text-align: left;
+}
+
+.nav_link a, #nav-doc a, #side-guide a {
+  color: #eee;
+  font-size: 15px;
+  font-weight: 200;
+  font-family: 'Advent Pro',sans-serif;
+  text-shadow: #111 0px 0px 10px;
+}
+
+.nav_link a, #nav-doc a{
+  margin-right: 25px;
+}
+
 #main_content_wrap {
   background: #f2f2f2;
   border-top: 1px solid #111;
@@ -326,7 +368,7 @@ Full-Width Styles
 }
 
 #main_content {
-  padding-top: 20px;
+  padding-top: 0px;
 }
 
 #footer_wrap {
