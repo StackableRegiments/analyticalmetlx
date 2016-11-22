@@ -767,8 +767,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getResource",List("source"),(args) => JString("not yet implemented"),Empty),
     ClientSideFunction("moveToSlide",List("where"),(args) => {
       val where = getArgAsString(args(0))
-      trace("moveToSlideRequested(%s)".format(where))
-      moveToSlide(where)
+      debug("moveToSlideRequested(%s)".format(where))
+      backgroundWorker ! BackgroundFunc(() => {
+        moveToSlide(where)
+        refreshClientSideStateJs(false)
+      },S.session)
       JNull
     },Empty),
     ClientSideFunction("joinRoom",List("where"),(args) => {
@@ -1118,17 +1121,52 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   }).getOrElse(Globals.currentUser.is)
   private val serializer = new JsonSerializer("frontend")
   def registerWith = MeTLActorManager
+  val scriptContainerId = "scriptContainer_%s".format(nextFuncName)
   override def render = {
-    OnLoad(refreshClientSideStateJs(true))
+    backgroundWorker ! BackgroundFunc(() => refreshClientSideStateJs(true),S.session)
+    OnLoad(showLoader)
+  }
+  def showLoader:JsCmd = Show("loadingSpinner")
+  def hideLoader:JsCmd = Hide("loadingSpinner")
+  case class DoCmd(cmd:JsCmd)
+  case class BackgroundFunc(func:()=>JsCmd,session:Box[LiftSession])
+  case class BackgroundAction(action:()=>Unit,session:Box[LiftSession])
+  protected lazy val thisComet = this
+  protected object backgroundWorker extends LiftActor {
+    override def messageHandler = {
+      case BackgroundAction(func,session) => {
+        session.map(s => {
+          S.initIfUninitted(s){
+            func()
+          }
+        }).getOrElse({
+          func()
+        })
+      }
+      case BackgroundFunc(func,session) => {
+        thisComet ! DoCmd(session.map(s => {
+          S.initIfUninitted(s){
+            func()
+          }
+        }).getOrElse(func()))
+      }
+      case _ => {}
+    }
   }
   override def lowPriority = {
+    case DoCmd(jsCmd) => partialUpdate(jsCmd)
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
     case UpdateThumb(slide) => {
       debug("Updating thumb %s for actor: %s".format(slide,name))
       partialUpdate(Call(UPDATE_THUMB,JString(slide)))
     }
-    case JoinThisSlide(slide) => moveToSlide(slide)
+    case JoinThisSlide(slide) => {
+      backgroundWorker ! BackgroundFunc(() => {
+        moveToSlide(slide)
+        refreshClientSideStateJs(false)
+      },S.session)
+    }
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
@@ -1136,27 +1174,34 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
   protected var isInteractiveUser:Box[Boolean] = Empty
+
+
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
-    trace("created metlactor: %s".format(name))
-    joinRoomByJid("global")
-    name.foreach(nameString => {
-      warn("localSetup for [%s]".format(name))
-      com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
-        joinConversation(convJid.toString)
-      })
-      com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
-        moveToSlide(slideJid.toString)
-        slideJid
-      }).getOrElse({
-        currentConversation.foreach(cc => {
-          cc.slides.sortWith((a,b) => a.index < b.index).headOption.map(firstSlide => {
-            moveToSlide(firstSlide.id.toString)
+    debug("created metlactor: %s => %s".format(name,S.session))
+    backgroundWorker ! BackgroundAction(() => {
+      debug("startedWorker: %s".format(name))
+      joinRoomByJid("global")
+      name.foreach(nameString => {
+        warn("localSetup for [%s]".format(name))
+        com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
+          joinConversation(convJid.toString)
+        })
+        com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
+          moveToSlide(slideJid.toString)
+          slideJid
+        }).getOrElse({
+          currentConversation.foreach(cc => {
+            cc.slides.sortWith((a,b) => a.index < b.index).headOption.map(firstSlide => {
+              moveToSlide(firstSlide.id.toString)
+            })
           })
         })
+        isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
       })
-      isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
-    })
+      partialUpdate(refreshClientSideStateJs(true))
+      debug("completedWorker: %s".format(name))
+    },S.session)
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
     rooms.get((serverName,jid)) match {
@@ -1258,9 +1303,17 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     trace(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast)
+    val loadComplete = for {
+      h <- receiveHistory
+      u <- receiveUsername
+      c <- receiveCurrentConversation
+      cd <- receiveConversationDetails
+      s <- receiveCurrentSlide
+    } yield {
+      hideLoader
+    }
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
-
   }
   private def joinConversation(jid:String):Box[Conversation] = {
     val details = serverConfig.detailsOfConversation(jid)
@@ -1333,7 +1386,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         joinRoomByJid(jid+username)
       }
     })
-    partialUpdate(refreshClientSideStateJs(false))
   }
   private def leaveAllRooms(shuttingDown:Boolean = false) = {
     trace("leaving all rooms: %s".format(rooms))
