@@ -596,7 +596,7 @@ var Conversations = (function(){
             return false;
         }
         if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase() || ("UserSettings" in window && _.some(UserSettings.getUserGroups(),function(g){
-            var key = g.key ? g.key : g.type;
+            var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
             return (key == "special" && name == "superuser");
         }))){
@@ -617,7 +617,7 @@ var Conversations = (function(){
         }
         var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
         if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
-            var key = g.key ? g.key : g.type;
+            var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
             return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
         }))) {

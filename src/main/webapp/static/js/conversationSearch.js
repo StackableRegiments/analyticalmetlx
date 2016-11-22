@@ -245,19 +245,19 @@ var Conversations = (function(){
     });
     var shouldModifyConversation = function(details){
         return (details.author == username || _.some(userGroups,function(g){
-            var key = g.key ? g.key : g.type;
-            var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser");
-        }));
+					var key = g.key ? g.key : g.ouType;
+					var name = g.name ? g.name : g.value;	
+					return (key == "special" && name == "superuser");
+				}));
     };
     var shouldDisplayConversation = function(details){
         var subject = details.subject.toLowerCase().trim();
         var title = details.title.toLowerCase().trim();
         var author = details.author;
         return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
-            var key = g.key ? g.key : g.type;
-            var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
+					var key = g.key ? g.key : g.ouType;
+					var name = g.name ? g.name : g.value;	
+					return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
         })));
     };
 
