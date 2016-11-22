@@ -332,7 +332,9 @@ Full-Width Styles
 
 #side-guide {
   float: right;
-  /*width: 25%;*/
+  position: relative;
+  z-index: 5;
+  width: 25%;
   background: #373737;
   margin: 0px 0px 0px 0px;
   padding-left: 25px;
@@ -347,6 +349,10 @@ Full-Width Styles
   font-size: 0.75em;
   width: 100%;
   text-align: left;
+}
+
+#side-guide li a {
+  padding-left: 10px;
 }
 
 .nav_link a, #nav-doc a, #side-guide a {
