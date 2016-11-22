@@ -1,4 +1,10 @@
-0.12
+0.12.2
+Bugfix: METL-230: Paste image from clipboard fails in Firefox.
+Bugfix: METL-245: MeTL actor fails during construction.
+Bugfix: METL-247: Attendances are not using their index.
+Bugfix: METL-248: Superuser powers don't let a user search for and/or enter any conversation.
+
+0.12.1
 Feature: METL-95: Added yellow text capability.
 
 0.11
