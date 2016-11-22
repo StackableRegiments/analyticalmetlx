@@ -1324,6 +1324,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       currentConversation = Full(details)
       val conversationJid = details.jid.toString
       joinRoomByJid(conversationJid)
+      /*
+      if (shouldModifyConversation(username,details)){
+        MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
+      }
+      */
       //      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
       //joinRoomByJid(conversationJid,"loopback")
       currentConversation
