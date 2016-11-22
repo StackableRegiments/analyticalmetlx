@@ -111,6 +111,17 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     info("upgraded db to switch conversation creation from strings to longs (v3)")
     versionNumber
   }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 5).map(versionNumber => {
+    info("upgrading db to use room to position themes, not location, because room is indexed")
+    H2Theme.findAll.foreach(theme => {
+      if (theme.room.get == null){
+        theme.room(theme.location.get).save
+      }
+    })
+    versionNumber.intValue(5).save
+    info("upgraded db to use room to position themes, which is indexed, where location wasn't.")
+    versionNumber
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
 
   type H2Object = Object
   val RESOURCES = "resource"
