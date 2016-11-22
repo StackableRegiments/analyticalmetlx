@@ -92,9 +92,6 @@ class Metl extends Logger {
         S.param("slideId").foreach(sid => {
           try {
             name += "_SLIDE:%s".format(sid.toInt)
-            if (shouldModifyConversation(Globals.currentUser.is,conversation)){
-              MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
-            }
           } catch {
             case e:Exception => {
               error("invalid argument passed in slideId: %s".format(sid),e)
