@@ -111,6 +111,17 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     info("upgraded db to switch conversation creation from strings to longs (v3)")
     versionNumber
   }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 5).map(versionNumber => {
+    info("upgrading db to use room to position themes, not location, because room is indexed")
+    H2Theme.findAll.foreach(theme => {
+      if (theme.room.get == null){
+        theme.room(theme.location.get).save
+      }
+    })
+    versionNumber.intValue(5).save
+    info("upgraded db to use room to position themes, which is indexed, where location wasn't.")
+    versionNumber
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
 
   type H2Object = Object
   val RESOURCES = "resource"
@@ -135,7 +146,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       case s:MeTLStanza if s.isInstanceOf[Attendance] => Some(serializer.fromMeTLAttendance(s.asInstanceOf[Attendance]).room(jid))
       case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make these match
       case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).location(jid))
-      case s:MeTLTheme => Some(serializer.fromTheme(s).location(jid))
+      case s:MeTLTheme => Some(serializer.fromTheme(s).room(jid))
       case s:MeTLInk => Some(serializer.fromMeTLInk(s).room(jid))
       case s:MeTLMultiWordText => Some(serializer.fromMeTLMultiWordText(s).room(jid))
       case s:MeTLText => Some(serializer.fromMeTLText(s).room(jid))
@@ -181,7 +192,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     List(
       () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),
       () => H2Text.findAll(By(H2Text.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLText(s))),
-      () => H2Theme.findAll(By(H2Theme.location,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
+      () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
       () => H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLImage(s))).toList,
       () => H2Video.findAll(By(H2Video.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideo(s))).toList,
@@ -195,7 +206,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       () => H2QuizResponse.findAll(By(H2QuizResponse.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s))),
       () => H2File.findAll(By(H2File.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLFile(s))).toList,
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
-      () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
+      () => H2Attendance.findAll(By(H2Attendance.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
