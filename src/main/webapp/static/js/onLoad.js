@@ -845,12 +845,6 @@ $(function(){
 						value:df.getData(type)
 					};
 				});
-				var extractHtmlNodes = function(raw){
-					var safeRoot = $("<span/>");
-					safeRoot[0].innerHTML = raw;
-					safeRoot.find("*").removeAttr("onload").removeAttr("jsaction").removeAttr("onerror").removeAttr("loaded"); 
-					return safeRoot;
-				};
 				var conditionallyActOn = function(coll,itemPred,action){
 					var elem = _.find(coll,itemPred);
 					if (elem != undefined && elem != null){
@@ -879,8 +873,9 @@ $(function(){
 								var html = _.find(dataSets,function(ds){
 									return ds.key == type;
 								}).value;
-								var htmlElem = extractHtmlNodes(html);
+								var htmlElem = $(html);
 								var yOffset = 0;
+								html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
 								_.forEach(htmlElem.find("img"),function(imgNode){
 									try {
 										Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
@@ -890,8 +885,7 @@ $(function(){
 									}
 								});
 								if (htmlElem.text().trim().length > 1){
-									var safeHtml = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
-									Modes.text.handleDrop(safeHtml,x,y + yOffset);
+									Modes.text.handleDrop(html,x,y + yOffset);
 								}
 							}
 						},
@@ -967,8 +961,9 @@ $(function(){
 					*/
 					conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
 						if (!handled){
-							var htmlElem = extractHtmlNodes(html);
+							var htmlElem = $(html);
 							var yOffset = 0;
+							html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
 							_.forEach(htmlElem.find("img"),function(imgNode){
 								try {
 									Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
@@ -978,8 +973,7 @@ $(function(){
 								}
 							});
 							if (htmlElem.text().trim().length > 1){
-								var safeHtml = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
-								Modes.text.handleDrop(safeHtml,x,y + yOffset);
+								Modes.text.handleDrop(html,x,y + yOffset);
 							}
 							handled = true;
 						}
