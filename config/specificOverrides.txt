@@ -19,3 +19,5 @@ dave,group,groupA
 dave,group,groupB
 dave,group,groupC
 bob,special,impersonator
+metl|admin,special,superuser
+(metladmin),special,superuser

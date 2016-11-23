@@ -1944,7 +1944,7 @@ var Modes = (function(){
                     }
                 }
             })();
-            var clientSideProcessImage = function(onComplete,thisCurrentImage){
+            var clientSideProcessImage = function(onComplete,thisCurrentImage,crossOrigin){
 								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
                 if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
 									console.log("returning because currentImage is empty",currentImage);
@@ -1958,16 +1958,19 @@ var Modes = (function(){
 									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
                     var originalSize = originalSrc.length;
 										return originalSize < img;
-									});
+									},crossOrigin);
                 }
                 reader.readAsDataURL(state.fileUpload);
             };
-						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred,crossOrigin){
 							var thisCurrentImage = state != undefined ? state : currentImage;
                     var renderCanvas = $("<canvas/>");
                     var img = new Image();
-										img.setAttribute("crossOrigin","Anonymous");
+										if (crossOrigin){
+											img.setAttribute("crossOrigin","Anonymous");
+										}
 										img.onerror = function(e){
+											console.log("error taking inserted image:",e);
 											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
 										};
                     img.onload = function(e){
@@ -2124,7 +2127,7 @@ var Modes = (function(){
 											"x":worldPos.x,
 											"y":worldPos.y
 									};
-									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
+									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;},true);
 								},	
 
 								handleDrop:function(dataTransfer,x,y){
@@ -2143,7 +2146,7 @@ var Modes = (function(){
 											thisCurrentImage.fileUpload = file;
 											console.log("handlingDrop",file,sender,thisCurrentImage);
 											processed.push(file);
-											clientSideProcessImage(sendImageToServer,thisCurrentImage);
+											clientSideProcessImage(sendImageToServer,thisCurrentImage,true);
 											yOffset += 50;
 										}
 									};
