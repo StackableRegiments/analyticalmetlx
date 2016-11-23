@@ -846,9 +846,11 @@ $(function(){
 					};
 				});
 				var extractHtmlNodes = function(raw){
+					console.log("rawHtml",raw);
 					var safeRoot = $("<span/>");
 					safeRoot[0].innerHTML = raw;
 					safeRoot.find("*").removeAttr("onload").removeAttr("jsaction").removeAttr("onerror").removeAttr("loaded"); 
+					console.log("safeHtml",safeRoot);
 					return safeRoot;
 				};
 				var conditionallyActOn = function(coll,itemPred,action){
