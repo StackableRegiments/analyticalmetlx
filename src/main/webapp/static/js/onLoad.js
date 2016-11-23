@@ -846,12 +846,10 @@ $(function(){
 					};
 				});
 				var extractHtmlNodes = function(raw){
-					console.log("rawHtml",raw);
 					var safeRoot = $("<span/>");
 					safeRoot[0].innerHTML = raw;
-					safeRoot.find("*").removeAttr("onload").removeAttr("jsaction").removeAttr("onerror").removeAttr("loaded"); 
-					console.log("safeHtml",safeRoot);
 					return safeRoot;
+					//return $($.parseHTML(raw,null,false));
 				};
 				var conditionallyActOn = function(coll,itemPred,action){
 					var elem = _.find(coll,itemPred);
@@ -881,6 +879,8 @@ $(function(){
 								var html = _.find(dataSets,function(ds){
 									return ds.key == type;
 								}).value;
+								//console.log("beforeJoin",html);
+								//var htmlElem = $(html);
 								var htmlElem = extractHtmlNodes(html);
 								var yOffset = 0;
 								_.forEach(htmlElem.find("img"),function(imgNode){
@@ -891,10 +891,12 @@ $(function(){
 										errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
 									}
 								});
+								/*
 								if (htmlElem.text().trim().length > 1){
 									var safeHtml = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
 									Modes.text.handleDrop(safeHtml,x,y + yOffset);
 								}
+								*/
 							}
 						},
 						{
