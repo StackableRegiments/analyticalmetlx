@@ -145,7 +145,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     val transformedStanza:Option[_ <: H2MeTLStanza[_]] = stanza match {
       case s:MeTLStanza if s.isInstanceOf[Attendance] => Some(serializer.fromMeTLAttendance(s.asInstanceOf[Attendance]).room(jid))
       case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make these match
-      case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).location(jid))
+      case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).room(jid))
       case s:MeTLTheme => Some(serializer.fromTheme(s).room(jid))
       case s:MeTLInk => Some(serializer.fromMeTLInk(s).room(jid))
       case s:MeTLMultiWordText => Some(serializer.fromMeTLMultiWordText(s).room(jid))
