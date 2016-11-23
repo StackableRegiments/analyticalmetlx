@@ -99,9 +99,9 @@ var Conversations = (function(){
                         trace.update(groupActivity[group.id].line);
                     });
                 }
-		var conversationActivity = $("#conversationActivity");
-		ensureTracking("anyone");
-		groupTraces.anyone = groupTraces.anyone || {};
+                var conversationActivity = $("#conversationActivity");
+                ensureTracking("anyone");
+                groupTraces.anyone = groupTraces.anyone || {};
                 if(conversationActivity.find("svg").length == 0){
                     groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
@@ -182,16 +182,18 @@ var Conversations = (function(){
 
         return {
             paint:function(slide,scrollContainer){
-                scrollContainer = scrollContainer || $("#thumbScrollContainer");
-                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                if(slide.groupSet){
-                }
-                else{
-                    var slideImage = slideContainer.find("img");
-                    if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                        slideImage.attr("src",cache[slide.id].data);
-                    } else {
-                        fetchAndPaintThumb(slide,slideContainer,slideImage);
+                if(slide){
+                    scrollContainer = scrollContainer || $("#thumbScrollContainer");
+                    var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                    if(slide.groupSet){
+                    }
+                    else{
+                        var slideImage = slideContainer.find("img");
+                        if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
+                            slideImage.attr("src",cache[slide.id].data);
+                        } else {
+                            fetchAndPaintThumb(slide,slideContainer,slideImage);
+                        }
                     }
                 }
             },
@@ -735,7 +737,7 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
-	console.log("doMoveToSlide",slideId);
+        console.log("doMoveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;

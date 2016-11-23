@@ -19,6 +19,8 @@ var SparkLine = (function(){
 
         function redraw(data) {
             y.domain(d3.extent(data));
+	    data.unshift(0);
+	    data.push(0);
             graph.selectAll("path")
                 .data([data])
                 .attr("d", line)

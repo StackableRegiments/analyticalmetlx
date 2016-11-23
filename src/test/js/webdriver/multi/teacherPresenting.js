@@ -126,6 +126,7 @@ describe('When a teacher presents,', function() {
             "Consistently sized run"].length);
     });
     it("the teacher should drag their new textbox",function(){
+	browser.debug();
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert.equal(active.x,600);
         assert.equal(active.y,500);
