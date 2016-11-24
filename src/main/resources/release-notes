@@ -1,3 +1,6 @@
+0.12.4
+Bugfix: METL-250: Superusers get broken board and search screens when they enter blocked conversations.
+
 0.12.3
 Bugfix: METL-245: MeTL actor fails during construction.
 Bugfix: METL-247: Attendances are not using their index.
