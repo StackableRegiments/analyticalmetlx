@@ -3,7 +3,8 @@ layout: default
 title: Overview
 ---
 
-MeTL supports learning in a collaborative space for teachers and students, providing deep analysis of user interaction and engagement.
+MeTL supports learning in a collaborative space for teachers and students, providing deep analysis of user interaction 
+and engagement.
 
 ## Concepts
 
@@ -31,12 +32,6 @@ Quizzes, submissions and attachments use this space, as they are not specific to
 A server global room carries configuration data to all connected clients
 (when a conversation is shared differently, for instance, this is broadcast globally in case that
 conversation needs to be added or removed from a search result).
-
-## Documentation
-
-- <a href="userGuide.html">User Guide</a>
-- <a href="faq.html">Frequently Asked Questions</a>
-- <a href="features.html">Feature Compatibility</a>
 
 ## Authors and Contributors
 

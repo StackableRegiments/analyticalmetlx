@@ -195,8 +195,9 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       })
     case Req("render" :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render",  {
       val server = ServerConfiguration.default
-      val history = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-      val image = SlideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
+      val room = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
+      val history = room.getHistory
+      val image = room.slideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
       Full(InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200))
     })
     case Req("thumbnail" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {

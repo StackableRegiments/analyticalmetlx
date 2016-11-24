@@ -22,8 +22,6 @@ case class Dimensions(left:Double,top:Double,right:Double,bottom:Double,width:Do
 
 class RenderDescription(val width:Int,val height:Int)
 
-object SlideRenderer extends SlideRenderer
-
 class SlideRenderer extends Logger {
   ///*
   protected val JAVA_DEFAULT_DPI = 72.0
@@ -95,13 +93,18 @@ class SlideRenderer extends Logger {
       new AWTColor(c.red,c.green,c.blue,Math.max(0,Math.min(255,overrideAlpha)))
   }
   protected val emptyImage:Image = new BufferedImage(1,1,BufferedImage.TYPE_4BYTE_ABGR)
+
+  protected val imageCache:scala.collection.mutable.HashMap[String,Image] = scala.collection.mutable.HashMap.empty[String,Image]
   protected def getImageFor(metlImage:MeTLImage):Image = Stopwatch.time("SlideRenderer.getImageFor",{
-    metlImage.imageBytes.map(ib => {
-      val stream = new ByteArrayInputStream(ib)
-      val image = ImageIO.read(stream).asInstanceOf[Image]
-      stream.close()
-      image
-    }).openOr(emptyImage)
+    imageCache.get(metlImage.identity).getOrElse({
+      metlImage.imageBytes.map(ib => {
+        val stream = new ByteArrayInputStream(ib)
+        val image = ImageIO.read(stream).asInstanceOf[Image]
+        stream.close()
+        imageCache.update(metlImage.identity,image)
+        image
+      }).openOr(emptyImage)
+    })
   })
   protected val defaultObserver:Graphics2D = {
     val tempImage = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR)

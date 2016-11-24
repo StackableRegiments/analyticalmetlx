@@ -826,7 +826,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val imageIds = getArgAsListOfStrings(args(5))
       val videoIds = getArgAsListOfStrings(args(6))
       val now = new Date().getTime
-      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
+      val pubRoom = rooms.get((server,slideJid.toString)).map(_())
+      val pubHistory = pubRoom.map(_.getHistory).getOrElse(History.empty)
 
       val title = "submission%s%s.jpg".format(username,now.toString)
 
@@ -881,7 +882,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           (width,height) match {
           case (a:Int,b:Int) if a > 0 && b > 0 => {
             val blacklistedPeople = coloredAuthors.values.toList
-            val imageBytes = SlideRenderer.render(mergedHistory,width,height)
+            val imageBytes = pubRoom.map(_.slideRenderer.render(mergedHistory,width,height)).getOrElse(Array.empty[Byte])
             val uri = serverConfig.postResource(conversationJid,title,imageBytes)
             val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
             trace("banned with the following: %s".format(submission))
@@ -937,7 +938,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             val now = new java.util.Date().getTime
             val identity = "%s%s".format(username,now.toString)
             val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-            val dimensions = SlideRenderer.measureImage(tempSubImage)
+            val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
             val subImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
             slideRoom ! LocalToServerMeTLStanza(subImage)
           })
@@ -961,7 +962,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               val now = new java.util.Date().getTime
               val identity = "%s%s".format(username,now.toString)
               val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-              val dimensions = SlideRenderer.measureImage(tempSubImage)
+              val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
               val subImage = MeTLImage(serverConfig,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
               slideRoom ! LocalToServerMeTLStanza(subImage)
             })

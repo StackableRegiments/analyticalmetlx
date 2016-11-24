@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" type="text/css" media="screen" href="{{ site.baseurl }}/stylesheets/stylesheet.css"/>
     <link rel='stylesheet' type='text/css' href="{{ site.baseurl }}/stylesheets/googleFonts.css"/>
+    <link rel='stylesheet' type='text/css' href="{{ site.baseurl }}/stylesheets/font-awesome.min.css"/>
     <link rel="icon" type="image/x-icon" href="{{ site.baseurl }}/images/favicon.ico">
 
     <title>MeTL</title>
@@ -20,15 +21,12 @@
     <header class="inner">
         <a id="forkme_banner" href="https://github.com/StackableRegiments/analyticalmetlx">View on GitHub</a>
 
-        <img id="project_title" src="images/MeTL-logo.png" alt="MeTL" align="left" height="100px" border="0px"/>
+        <a href="{{ site.baseurl }}/index.html">
+            <img id="project_title" src="images/MeTL-logo.png" alt="MeTL" align="left" height="100px" border="0px"/>
+        </a>
+
         <h2 id="project_tagline">An open realtime system to manage learning</h2>
+
+        {% include nav.html %}
     </header>
 </div>
-
-<div id="navigation" class="inner">
-	<span>Overview</span>
-</div>
-
-<!-- MAIN CONTENT -->
-<div id="main_content_wrap" class="outer">
-    <section id="main_content" class="inner">

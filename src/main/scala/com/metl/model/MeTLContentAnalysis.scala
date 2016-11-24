@@ -201,6 +201,7 @@ object CanvasContentAnalysis extends Logger {
     }
   }
 
+  protected val slideRenderer = new SlideRenderer()
   def extract(inks:List[MeTLInk]):Tuple2[List[String],List[String]] = {
     if(inks.size < Globals.chunkingThreshold) {
       trace("Not analysing themes for %s strokes".format(inks.size))
@@ -210,7 +211,7 @@ object CanvasContentAnalysis extends Logger {
       trace("Analysing themes for %s strokes".format(inks.size))
       val h = new History("snapshot")
       inks.foreach(h.addStanza _)
-      val bytes = SlideRenderer.render(h,800,600)
+      val bytes = slideRenderer.render(h,800,600)
       val response = for(s <- ocrBytes(bytes).right) yield s
       response().right.toOption.map(r => {
         debug("Server response: %s".format(r))
