@@ -1,0 +1,6 @@
+---
+layout: guide
+title: Ink
+---
+
+
