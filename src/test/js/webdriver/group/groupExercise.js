@@ -198,13 +198,14 @@ describe('When the class breaks into groups,', function() {
         teacher.click("label=Org Unit A");
         teacher.click(".joinConversation");
         teacher.waitForExist("#board");
-        assert.equal(tT.currentConversation.subject,"Org Unit A");
+	teacher.waitForExist("#nextSlideButton");
         tT.nextSlide.click();
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
         });
     });
     it("participant presence should be measured against potential participants",function(){
+        assert.equal(tT.currentConversation.subject,"Org Unit A");
         assert.equal(tT.participationHealthMax,6);
         assert.equal(tT.participationHealth,3);
         join(studentC,'studentC');
