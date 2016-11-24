@@ -8,6 +8,7 @@ import java.util.Date
 import net.liftweb.mapper._
 import net.liftweb.common._
 
+import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, StandardDBVendor}
 import _root_.java.sql.{Connection, DriverManager}
 
@@ -349,7 +350,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       conversationCache.update(c.jid,c)
       updateMaxJid
       serializer.fromConversation(c).save
-      conversationMessageBus.sendStanzaToRoom(MeTLCommand(config,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+      onConversationDetailsUpdated(c)
       true
     } catch {
       case e:Throwable => {
@@ -424,6 +425,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation = findAndModifyConversation(jid,c => c.replacePermissions(newPermissions))
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = findAndModifyConversation(jid,c => c.replaceSubject(newSubject))
   def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = findAndModifyConversation(jid,c => c.addSlideAtIndex(index))
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = findAndModifyConversation(jid,c => c.addGroupSlideAtIndex(index,grouping))
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = findAndModifyConversation(jid,c => c.replaceSlides(newSlides))
   def updateConversation(jid:String,conversation:Conversation):Conversation = {
     if (jid == conversation.jid.toString){
@@ -438,10 +440,10 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   def getResource(identity:String):Array[Byte] = Stopwatch.time("H2Interface.getResource",{
     H2Resource.find(By(H2Resource.partialIdentity,identity.take(H2Constants.identity)),By(H2Resource.identity,identity)).map(r => {
       val b = r.bytes.get
-      debug("retrieved %s bytes for %s".format(b.length,identity))
+      trace("retrieved %s bytes for %s".format(b.length,identity))
       b
     }).openOr({
-      debug("failed to find bytes for %s".format(identity))
+      trace("failed to find bytes for %s".format(identity))
       Array.empty[Byte]
     })
 
@@ -457,7 +459,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       }
       case _ => {
         H2Resource.create.partialIdentity(possibleNewIdentity.take(H2Constants.identity)).identity(possibleNewIdentity).bytes(data).room(jid).save
-        debug("postResource: saved %s bytes in %s at %s".format(data.length,jid,possibleNewIdentity))
+        trace("postResource: saved %s bytes in %s at %s".format(data.length,jid,possibleNewIdentity))
         possibleNewIdentity
       }
     }
@@ -468,10 +470,10 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       By(H2ContextualizedResource.identity,identity)
     ).map(r => {
       val b = r.bytes.get
-      debug("retrieved %s bytes for %s".format(b.length,identity))
+      trace("retrieved %s bytes for %s".format(b.length,identity))
       b
     }).openOr({
-      debug("failed to find bytes for %s".format(identity))
+      trace("failed to find bytes for %s".format(identity))
       Array.empty[Byte]
     })
 

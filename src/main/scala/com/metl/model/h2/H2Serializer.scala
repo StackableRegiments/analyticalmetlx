@@ -31,6 +31,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   def fromPrivacy(i:Privacy):String = i.toString.toLowerCase.trim
 
   protected def parseAudiences(in:String):List[Audience] = {
+    trace("parseAudiences",in)
     tryo((scala.xml.XML.loadString(in) \ "audience").flatMap(a => {
       for (
         domain <- (a \ "@domain").headOption;
@@ -43,13 +44,18 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     }).toList).openOr(Nil)
   }
   protected def incAudiences(in:List[Audience]) = {
+    trace("incAudiences",in)
     <audiences>{
       in.map(a => {
         <audience domain={a.domain} name={a.name} type={a.audienceType} action={a.action}/>
       })
     }</audiences>
   }
-  protected def decStanza[A <:H2MeTLStanza[A]](rec:A):ParsedMeTLContent = ParsedMeTLContent(rec.author.get,rec.timestamp.get,parseAudiences(rec.audiences.get))
+  protected def decStanza[A <:H2MeTLStanza[A]](rec:A):ParsedMeTLContent = {
+    val res = ParsedMeTLContent(rec.author.get,rec.timestamp.get,parseAudiences(rec.audiences.get))
+    trace("decStanza",res)
+    res
+  }
   protected def decCanvasContent[A <: H2MeTLCanvasContent[A]](rec:A):ParsedCanvasContent = {
     val mc = decStanza(rec)
     ParsedCanvasContent(rec.target.get,rec.identity.get,rec.slide.get,toPrivacy(rec.privacy.get),mc.author,mc.timestamp,mc.audiences)
@@ -138,7 +144,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
 
   def toMeTLInk(i:H2Ink):MeTLInk = {
     val cc = decCanvasContent(i)
-    MeTLInk(config,cc.author,cc.timestamp,i.checksum.get,i.startingSum.get,toPointList(i.points.get),toColor(i.color.get),i.thickness.get,i.isHighlighter.get,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLInk(config,cc.author,cc.timestamp,i.checksum.get,i.startingSum.get,toPointList(i.points.get),toColor(i.color.get),i.thickness.get,i.isHighlighter.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLInk(i:MeTLInk):H2Ink = incCanvasContent(H2Ink.create,i,"ink").checksum(i.checksum).startingSum(i.startingSum).points(fromPointList(i.points).toString).color(fromColor(i.color).toString).thickness(i.thickness).isHighlighter(i.isHighlighter)
   def toMeTLVideo(i:H2Video):MeTLVideo = {
@@ -174,7 +180,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case _ => Empty
     }
     val imageBytes = url.map(u => config.getResource(u))
-    MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   def toMeTLImage(i:H2Image,imageData:Array[Byte]):MeTLImage = {
     val cc = decCanvasContent(i)
@@ -187,11 +193,17 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   }
   override def fromMeTLImage(i:MeTLImage):H2Image = incCanvasContent(H2Image.create,i,"image").tag(i.tag).source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
   def decodeMultiWords(wordString:String) = net.liftweb.json.parse(wordString).extract[List[MeTLTextWord]]
+  def decodeAudiences(audienceString:String) = {
+    trace(audienceString)
+    net.liftweb.json.parse(audienceString).extract[List[Audience]]
+  }
   def toMeTLMultiWordText(i:H2MultiWordText):MeTLMultiWordText = {
     val cc = decCanvasContent(i)
-    MeTLMultiWordText(config,cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get))
+    trace("toMeTLMultiWordText",cc)
+    MeTLMultiWordText(config,cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get),cc.audiences)
   }
   def encodeMultiWords(words:Seq[MeTLTextWord]):String = net.liftweb.json.Serialization.write(words)
+  
   override def fromMeTLMultiWordText(t:MeTLMultiWordText):H2MultiWordText = incCanvasContent(H2MultiWordText.create,t,"multiWordText").x(t.x).y(t.y).width(t.width).height(t.height).requestedWidth(t.requestedWidth).tag(t.tag).words(encodeMultiWords(t.words))
   def toMeTLText(i:H2Text):MeTLText = {
     val cc = decCanvasContent(i)

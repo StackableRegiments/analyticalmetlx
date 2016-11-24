@@ -809,6 +809,7 @@ var Modes = (function(){
             Modes.canvasInteractables[category] = [];
         }
         Modes.canvasInteractables[category].push(interaction);
+        console.log("Pushing",category);
     }
     $(function(){
         var attrs = {opacity:1};
@@ -1434,11 +1435,11 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
-			console.log("Textbox",t.identity,t.doc.width());
-			t.doc.layout();
+                        console.log("Textbox",t.identity,t.doc.width());
+                        t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
-			    return l.positionedWords.length;
-			});
+                            return l.positionedWords.length;
+                        });
                     });
                 },
                 mapSelected:mapSelected,
@@ -1502,6 +1503,10 @@ var Modes = (function(){
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+			    Progress.beforeLeavingSlide[t.identity] = function(){
+				onChange.flush();
+				delete Progress.beforeLeavingSlide[t.identity];
+			    };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
@@ -1605,7 +1610,7 @@ var Modes = (function(){
                             t.doc.isActive = t.doc.identity == editor.identity;
                             if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
-				blit();
+                                blit();
                             }
                         });
                         var sel;
@@ -1656,49 +1661,49 @@ var Modes = (function(){
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
-								handleDrop:function(html,x,y){
-									if (html.length > 0){
-										var newRuns = carota.html.parse(html,{});
-										console.log("newRuns:",newRuns);
-										var worldPos = screenToWorld(x,y);
-										Modes.text.activate();
-										var clickTime = Date.now();
-										var sel;
-										Modes.select.clearSelection();
-										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-										var newEditor = createBlankText(worldPos,[{
-											text:" ",
-											italic:carota.runs.nextInsertFormatting.italic == true,
-											bold:carota.runs.nextInsertFormatting.bold == true,
-											underline:carota.runs.nextInsertFormatting.underline == true,
-											color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-											size:carota.runs.defaultFormatting.size / scale()
-										}]);
-										var newDoc = newEditor.doc;
-										newDoc.select(0,1);
-										boardContent.multiWordTexts[newEditor.identity] = newEditor;
-										sel = {multiWordTexts:{}};
-										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-										Modes.select.setSelection(sel);
-										editor = newEditor;
-										var node = newDoc.byOrdinal(0);
-										newDoc.mousedownHandler(node);
-										newDoc.mouseupHandler(node);
-										editor.doc.invalidateBounds();
-										editor.doc.isActive = true;
-										editor.doc.load(newRuns);
-										Progress.historyReceived["ClearMultiTextEchoes"] = function(){
-												Modes.text.echoesToDisregard = {};
-										};
-										Modes.text.scrollToCursor(editor);
-										var source = boardContent.multiWordTexts[editor.identity];
-										source.privacy = Privacy.getCurrentPrivacy();
-										source.target = "presentationSpace";
-										source.slide = Conversations.getCurrentSlideJid();
-										sendRichText(source);
-										Progress.call("onSelectionChanged",[Modes.select.selected]);
-									};
-								},
+                handleDrop:function(html,x,y){
+                    if (html.length > 0){
+                        var newRuns = carota.html.parse(html,{});
+                        console.log("newRuns:",newRuns);
+                        var worldPos = screenToWorld(x,y);
+                        Modes.text.activate();
+                        var clickTime = Date.now();
+                        var sel;
+                        Modes.select.clearSelection();
+                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                        var newEditor = createBlankText(worldPos,[{
+                            text:" ",
+                            italic:carota.runs.nextInsertFormatting.italic == true,
+                            bold:carota.runs.nextInsertFormatting.bold == true,
+                            underline:carota.runs.nextInsertFormatting.underline == true,
+                            color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+                            size:carota.runs.defaultFormatting.size / scale()
+                        }]);
+                        var newDoc = newEditor.doc;
+                        newDoc.select(0,1);
+                        boardContent.multiWordTexts[newEditor.identity] = newEditor;
+                        sel = {multiWordTexts:{}};
+                        sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+                        Modes.select.setSelection(sel);
+                        editor = newEditor;
+                        var node = newDoc.byOrdinal(0);
+                        newDoc.mousedownHandler(node);
+                        newDoc.mouseupHandler(node);
+                        editor.doc.invalidateBounds();
+                        editor.doc.isActive = true;
+                        editor.doc.load(newRuns);
+                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                            Modes.text.echoesToDisregard = {};
+                        };
+                        Modes.text.scrollToCursor(editor);
+                        var source = boardContent.multiWordTexts[editor.identity];
+                        source.privacy = Privacy.getCurrentPrivacy();
+                        source.target = "presentationSpace";
+                        source.slide = Conversations.getCurrentSlideJid();
+                        sendRichText(source);
+                        Progress.call("onSelectionChanged",[Modes.select.selected]);
+                    };
+                },
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
@@ -1945,76 +1950,75 @@ var Modes = (function(){
                 }
             })();
             var clientSideProcessImage = function(onComplete,thisCurrentImage){
-								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
+                var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
                 if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
-									console.log("returning because currentImage is empty",currentImage);
+                    console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
-									var originalSrc = readerE.target.result;
-									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
-                    var originalSize = originalSrc.length;
-										return originalSize < img;
-									});
+                    var originalSrc = readerE.target.result;
+                    clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
+                        var originalSize = originalSrc.length;
+                        return originalSize < img;
+                    });
                 }
                 reader.readAsDataURL(state.fileUpload);
             };
-						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
-							var thisCurrentImage = state != undefined ? state : currentImage;
-                    var renderCanvas = $("<canvas/>");
-                    var img = new Image();
-										img.setAttribute("crossOrigin","Anonymous");
-										img.onerror = function(e){
-											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
-										};
-                    img.onload = function(e){
-                        var width = img.width;
-                        var height = img.height;
-                        var dims = imageModes.getResizeFunction()(width,height);
-                        var w = dims.w;
-                        var h = dims.h;
-                        var quality = dims.q;
-                        /*
-                         renderCanvas.width = w;
-                         renderCanvas.height = h;
-                         renderCanvas.attr("width",w);
-                         renderCanvas.attr("height",h);
-                         renderCanvas.css({
-                         width:px(w),
-                         height:px(h)
-                         });
-                         renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                         currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
-                         */
-                        renderCanvas.width = width;
-                        renderCanvas.height = height;
-                        renderCanvas.attr("width",width);
-                        renderCanvas.attr("height",height);
-                        renderCanvas.css({
-                            width:px(width),
-                            height:px(height)
-                        });
-												var ctx = renderCanvas[0].getContext("2d");
-												ctx.rect(0,0,width,height);
-												ctx.fillStyle = "white";
-												ctx.fill();
-                        ctx.drawImage(img,0,0,width,height);
-                        var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
-                        thisCurrentImage.width = w;
-                        thisCurrentImage.height = h;
-                        thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
-                        var newSize = thisCurrentImage.resizedImage.length;
-												if (ifBiggerPred(newSize)){
-													thisCurrentImage.resizedImage = originalSrc;
-												}
-                        onComplete(thisCurrentImage);
-                    };
-                    img.src = originalSrc;
-
-						};
+            var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+                var thisCurrentImage = state != undefined ? state : currentImage;
+                var renderCanvas = $("<canvas/>");
+                var img = new Image();
+                img.setAttribute("crossOrigin","Anonymous");
+                img.onerror = function(e){
+                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+                };
+                img.onload = function(e){
+                    var width = img.width;
+                    var height = img.height;
+                    var dims = imageModes.getResizeFunction()(width,height);
+                    var w = dims.w;
+                    var h = dims.h;
+                    var quality = dims.q;
+                    /*
+                     renderCanvas.width = w;
+                     renderCanvas.height = h;
+                     renderCanvas.attr("width",w);
+                     renderCanvas.attr("height",h);
+                     renderCanvas.css({
+                     width:px(w),
+                     height:px(h)
+                     });
+                     renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                     currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+                     */
+                    renderCanvas.width = width;
+                    renderCanvas.height = height;
+                    renderCanvas.attr("width",width);
+                    renderCanvas.attr("height",height);
+                    renderCanvas.css({
+                        width:px(width),
+                        height:px(height)
+                    });
+                    var ctx = renderCanvas[0].getContext("2d");
+                    ctx.rect(0,0,width,height);
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                    ctx.drawImage(img,0,0,width,height);
+                    var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
+                    thisCurrentImage.width = w;
+                    thisCurrentImage.height = h;
+                    thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
+                    var newSize = thisCurrentImage.resizedImage.length;
+                    if (ifBiggerPred(newSize)){
+                        thisCurrentImage.resizedImage = originalSrc;
+                    }
+                    onComplete(thisCurrentImage);
+                };
+                img.src = originalSrc;
+            };
             var sendImageToServer = function(imageDef){
                 if (imageDef.type == "imageDefinition"){
                     WorkQueue.pause();
@@ -2040,10 +2044,11 @@ var Modes = (function(){
                                 bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
                                 width:imageDef.width,
                                 height:imageDef.height,
+				x:imageDef.x,
+				y:imageDef.y,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                x:imageDef.x,
-                                y:imageDef.y
+                                audiences:Conversations.getCurrentGroup().map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2115,45 +2120,45 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
-								handleDroppedSrc:function(src,x,y){
-									var worldPos = screenToWorld(x,y);
-									var thisCurrentImage = {
-											"type":"imageDefinition",
-											"screenX":x,
-											"screenY":y,
-											"x":worldPos.x,
-											"y":worldPos.y
-									};
-									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
-								},	
+                handleDroppedSrc:function(src,x,y){
+                    var worldPos = screenToWorld(x,y);
+                    var thisCurrentImage = {
+                        "type":"imageDefinition",
+                        "screenX":x,
+                        "screenY":y,
+                        "x":worldPos.x,
+                        "y":worldPos.y
+                    };
+                    clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
+                },
 
-								handleDrop:function(dataTransfer,x,y){
-									var yOffset = 0;
-									var processed = [];
-									var processFile = function(file,sender){
-										if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
-											var worldPos = screenToWorld(x,y + yOffset);
-											var thisCurrentImage = {
-													"type":"imageDefinition",
-													"screenX":x,
-													"screenY":y + yOffset,
-													"x":worldPos.x,
-													"y":worldPos.y
-											};
-											thisCurrentImage.fileUpload = file;
-											console.log("handlingDrop",file,sender,thisCurrentImage);
-											processed.push(file);
-											clientSideProcessImage(sendImageToServer,thisCurrentImage);
-											yOffset += 50;
-										}
-									};
-									_.forEach(dataTransfer.files,function(f){processFile(f,"file");});
-									_.forEach(dataTransfer.items,function(item){
-										var file = item.getAsFile(0);
-										processFile(file,"item");
-									});
+                handleDrop:function(dataTransfer,x,y){
+                    var yOffset = 0;
+                    var processed = [];
+                    var processFile = function(file,sender){
+                        if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+                            var worldPos = screenToWorld(x,y + yOffset);
+                            var thisCurrentImage = {
+                                "type":"imageDefinition",
+                                "screenX":x,
+                                "screenY":y + yOffset,
+                                "x":worldPos.x,
+                                "y":worldPos.y
+                            };
+                            thisCurrentImage.fileUpload = file;
+                            console.log("handlingDrop",file,sender,thisCurrentImage);
+                            processed.push(file);
+                            clientSideProcessImage(sendImageToServer,thisCurrentImage);
+                            yOffset += 50;
+                        }
+                    };
+                    _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
+                    _.forEach(dataTransfer.items,function(item){
+                        var file = item.getAsFile(0);
+                        processFile(file,"item");
+                    });
 
-								},	
+                },
                 deactivate:function(){
                     resetImageUpload();
                     removeActiveMode();
@@ -2445,7 +2450,7 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
-                        console.log(x,y,worldPos,Modes.select.dragging);
+                        console.log("SELECT DOWN",x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");

@@ -18,10 +18,12 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     try{
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
-
-	console.log(json);
-	
         historyDownloadedMark = Date.now();
+
+        json.multiWordTexts = _.pickBy(json.multiWordTexts,isUsable);
+        json.images = _.pickBy(json.images,isUsable);
+        json.inks = _.pickBy(json.inks,isUsable);
+
         boardContent = json;
         boardContent.minX = 0;
         boardContent.minY = 0;
@@ -47,10 +49,15 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             prerenderVideo(video);
         });
         prerenderTextMark = Date.now();
-        _.each(boardContent.multiWordTexts,function(text,i){
-            var editor = Modes.text.editorFor(text).doc;
-            editor.load(text.words);
-            incorporateBoardBounds(text.bounds);
+        _.each(boardContent.multiWordTexts,function(text){
+            if(isUsable(text)){
+                var editor = Modes.text.editorFor(text).doc;
+                editor.load(text.words);
+                incorporateBoardBounds(text.bounds);
+            }
+            else{
+                console.log("Not usable",text);
+            }
         });
         renderMultiWordMark = Date.now();
 
@@ -181,7 +188,25 @@ function isUsable(element){
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    return boundsOk && sizeOk && textOk;
+    var myGroups = Conversations.getCurrentGroup();
+    var forMyGroup = _.isEmpty(element.audiences) ||
+            Conversations.isAuthor() ||
+            _.some(element.audiences,function(audience){
+                return audience.action == "whitelist" && _.includes(myGroups,audience.name);
+            });
+    var forMe = (element.author == UserSettings.getUsername() ||
+                 _.some(element.audiences,function(audience){
+                     return audience.action == "direct" && audience.name == UserSettings.getUsername();
+                 }));
+    return boundsOk && sizeOk && textOk && (forMyGroup || forMe);
+}
+function usableStanzas(){
+    return _.map(boardContent.multiWordTexts).map(function(v){
+        return {
+            identity:v.identity,
+            usable:isUsable(v)
+        }
+    });
 }
 var leftPoint = function(xDelta,yDelta,l,x2,y2,bulge){
     var px = yDelta * l * bulge;

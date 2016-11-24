@@ -368,6 +368,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = Conversation.empty
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
   override def getImage(jid:String,identity:String) = MeTLImage.empty

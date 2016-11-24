@@ -124,7 +124,7 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     metlContentToXml(rootName,input,parsedCanvasContentToXml(ParsedCanvasContent(input.target,input.privacy,input.slide,input.identity)) ++ additionalNodes)
   })
   override def fromHistory(input:History):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromHistory", {
-      <history jid={input.jid}>{input.getAll.map(i => fromMeTLData(i))}<deletedContents>{input.getDeletedCanvasContents.map(dcc => fromMeTLData(dcc))}</deletedContents></history>
+    <history jid={input.jid}>{input.getAll.map(i => fromMeTLData(i))}<deletedContents>{input.getDeletedCanvasContents.map(dcc => fromMeTLData(dcc))}</deletedContents></history>
   })
 
   override def toHistory(input:NodeSeq):History = Stopwatch.time("GenericXmlSerializer.toHistory",{
@@ -337,6 +337,12 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
   <blue>{input.color.blue}</blue>
   </color>
   </word>
+  def fromAudience(input:Audience) = <audience>
+  <domain>{input.domain}</domain>
+  <name>{input.name}</name>
+  <audienceType>{input.name}</audienceType>
+  <action>{input.name}</action>
+  </audience>
   override def fromMeTLMultiWordText(input:MeTLMultiWordText) = Stopwatch.time("GenericXmlSerializer.fromMeTLMultiWordText", canvasContentToXml("multiWordText",input,List(
     <x>{input.x}</x>,
     <y>{input.y}</y>,
@@ -344,7 +350,8 @@ class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
     <height>{input.height}</height>,
     <tag>{input.tag}</tag>,
     <requestedWidth>{input.requestedWidth}</requestedWidth>,
-    <words>{input.words.map(fromMeTLWord _)}</words>
+    <words>{input.words.map(fromMeTLWord _)}</words>,
+    <audiences>{input.audiences.map(fromAudience _)}</audiences>
   )))
   override def toMeTLText(input:NodeSeq):MeTLText = Stopwatch.time("GenericXmlSerializer.toMeTLText",{
     val m = parseMeTLContent(input,config)
