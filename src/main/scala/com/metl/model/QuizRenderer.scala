@@ -48,7 +48,7 @@ class QuizRenderer extends Logger {
     val r = (rgb >> 16) & 0xFF
     val g = (rgb >> 8) & 0xFF
     val b = rgb & 0xFF
-    println("getting color from gradient: %s %s (%s,%s,%s)".format(position,max,r,g,b))
+    trace("getting color from gradient: %s %s (%s,%s,%s)".format(position,max,r,g,b))
     new AWTColor(r,g,b,255)
   }
   protected def makeBlankImage(width:Int,height:Int) = Stopwatch.time("SlideRenderer.makeBlankImage",{
@@ -156,7 +156,7 @@ class QuizRenderer extends Logger {
         val layout3 = new TextLayout(styledText3.getIterator(),frc)
         layout3.draw(g, columnStartX + textRow3Offset, textRow3 - columnSeparator)
 
-        println("rendering column: %s : (%s,%s,%s,%s)".format(option.name,x,y,w,h))
+        trace("rendering column: %s : (%s,%s,%s,%s)".format(option.name,x,y,w,h))
         columnStartX += columnSpace
       })
     }

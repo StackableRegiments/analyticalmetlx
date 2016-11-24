@@ -41,15 +41,15 @@ object TopicManager extends Logger {
     }
   }))
   def preloadAllTopics = Stopwatch.time("TopicManager:preloadAllTopics", getAll.foreach(preloadTopic))
-  def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic), com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.is).questions)
+  def preloadTopic(topic:Topic) = Stopwatch.time("TopicManager:preloadTopic %s".format(topic), com.metl.comet.StackServerManager.get(topic.teachingEventIdentity.get).questions)
   def getAll = Stopwatch.time("TopicManager:getAll", cachedTopics.get match {
-    case listOfTopics:List[Topic] => listOfTopics.filter(_.creator.is != "rob")
+    case listOfTopics:List[Topic] => listOfTopics.filter(_.creator.get != "rob")
     case _ => List.empty[Topic]
   })
   def get(dbId:String):Box[Topic] = Stopwatch.time("TopicManager:get(%s)".format(dbId), {
     cachedTopics.get match {
       case listOfTopics:List[Topic] => {
-        listOfTopics.find(t => t.teachingEventIdentity.is == dbId) match {
+        listOfTopics.find(t => t.teachingEventIdentity.get == dbId) match {
           case Some(topic) => Full(topic)
           case _ => Empty
         }
@@ -62,19 +62,19 @@ object TopicManager extends Logger {
     val topic = try{
       Topic.find("_id",new ObjectId(topicId))
     } catch {
-      case e:Throwable =>       Topic.find("teachingEventIdentity",topicId)
+      case e:Throwable => Topic.find("teachingEventIdentity",topicId)
     }
     topic.map(t => com.metl.comet.TopicServer ! com.metl.comet.NewTopic(t))
   }
   def createTopic(location:String):Unit = Stopwatch.time("TopicManager:createTopic %s".format(location),{
     val newTopic = Topic.createRecord.name(location).creator(currentUser.is).deleted(false)
-    newTopic.teachingEventIdentity(newTopic.identity).save
+    newTopic.teachingEventIdentity(newTopic.identity).save(true)
     //XMPPQuestionSyncActor ! TopicSyncRequest(newTopic.identity)
   })
   def renameTopic(topicId:String,newName:String):Unit = Stopwatch.time("TopicManager:renameTopic",{
     Topic.find("_id",new ObjectId(topicId)) match {
-      case t:Topic => {
-        t.rename(newName)
+      case t:Box[Topic] => {
+        t.openOrThrowException("Expected Topic to be in Box").rename(newName)
         //XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
       }
       case _ => {}
@@ -82,8 +82,8 @@ object TopicManager extends Logger {
   })
   def deleteTopic(topicId:String):Unit = Stopwatch.time("TopicManager:deleteTopic",{
     Topic.find("_id",new ObjectId(topicId)) match {
-      case t:Topic => {
-        t.delete
+      case t:Box[Topic] => {
+        t.openOrThrowException("Expected Topic to be in Box").delete
         //XMPPQuestionSyncActor ! TopicSyncRequest(t.identity)
       }
       case _ => {}

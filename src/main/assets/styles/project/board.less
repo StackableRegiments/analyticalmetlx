@@ -1,3 +1,20 @@
+#loadingSpinner {
+    height:100%;
+    width:100%;
+    left:0;
+    top:0;
+    position:absolute;
+    z-index:100;
+    background-image:@body-backgroundimage;
+    background-size:100% 100%;
+    background-opacity:0.3;
+}
+#loadingSpinner i{
+    width:100%;
+    color:@font-color;
+    font-size:8em;
+    margin-top:10%;
+}
 #optionBlocks{
     flex-wrap:wrap;
 }
@@ -30,6 +47,8 @@ html{
 }
 body{
     background-image:@body-backgroundimage;
+    background-size:100% 100%;
+    background-opacity:0.5;
 }
 #startAConversation button{
     width:100%;
@@ -168,13 +187,14 @@ input[type=submit]{
     pointer-events:none;
 }
 .voting-block {
-    background-color: @body-bg;
+    background-color: @block-bg;
+    color:@text-std;
 }
 td.conversationSharing{
     display:flex;
     flex-wrap:wrap;
     .conversationSharingChoiceContainer{
-	margin:0 1em;
+        margin:0 1em;
     }
 }
 #conversationSearchBoxContainer input[type=text]{

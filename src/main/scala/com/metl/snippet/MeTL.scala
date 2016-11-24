@@ -2,6 +2,7 @@ package com.metl.snippet
 
 import com.metl.data._
 import com.metl.utils._
+import com.metl.liftAuthenticator._
 
 
 import net.liftweb._
@@ -26,9 +27,9 @@ class Metl extends Logger {
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
     (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && c != Conversation.empty
   }
-  def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[Tuple2[String,String]] = Globals.getUserGroups):Boolean = {
+  def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
     val subject = c.subject.trim.toLowerCase
-    Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:Tuple2[String,String]) => ug._2.toLowerCase.trim == subject)) && c != Conversation.empty)
+    Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:OrgUnit) => ug.name.toLowerCase.trim == subject)) && c != Conversation.empty)
   }
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
     (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty
@@ -91,9 +92,6 @@ class Metl extends Logger {
         S.param("slideId").foreach(sid => {
           try {
             name += "_SLIDE:%s".format(sid.toInt)
-            if (shouldModifyConversation(Globals.currentUser.is,conversation)){
-              MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
-            }
           } catch {
             case e:Exception => {
               error("invalid argument passed in slideId: %s".format(sid),e)

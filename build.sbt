@@ -2,13 +2,21 @@ import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
-name := "web-container-metlx"
-version := "0.2.0"
-organization := "io.github.stackableregiments"
+name := "analyticalmetlx"
+organization := "com.stackableregiments"
+version := "0.12.2"
 
 val scalaVersionString = "2.11.5"
 
 scalaVersion := scalaVersionString
+
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "com.metl",
+    buildInfoOptions += BuildInfoOption.BuildTime
+  )
 
 resolvers ++= Seq(
   "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",
@@ -177,3 +185,16 @@ traceLevel := 10
 
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
+
+val functionalSingleTests = taskKey[Unit]("functional single-player tests")
+val functionalMultiTests = taskKey[Unit]("functional multi-player tests")
+
+lazy val library = (project in file("library")).
+  settings(
+    functionalSingleTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.single.conf.js", ".")) #>> file("functionalSingleTests.log") !
+    },
+    functionalMultiTests := {
+      Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
+    }
+  )

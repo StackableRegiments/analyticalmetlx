@@ -105,6 +105,16 @@ class H2MultiWordText extends H2MeTLCanvasContent[H2MultiWordText]{
 object H2MultiWordText extends H2MultiWordText with LongKeyedMetaMapper[H2MultiWordText]{
 }
 
+class H2UndeletedCanvasContent extends H2MeTLCanvasContent[H2UndeletedCanvasContent]{
+  def getSingleton = H2UndeletedCanvasContent
+  object elementType extends MappedMeTLString(this,64)
+  object oldIdentity extends MappedMeTLString(this,H2Constants.identity)
+  object newIdentity extends MappedMeTLString(this,H2Constants.identity)
+}
+
+object H2UndeletedCanvasContent extends H2UndeletedCanvasContent with LongKeyedMetaMapper[H2UndeletedCanvasContent]{
+}
+
 class H2Text extends H2MeTLCanvasContent[H2Text] {
   def getSingleton = H2Text
   object text extends MappedText(this)
@@ -244,6 +254,16 @@ class H2File extends H2MeTLStanza[H2File]{
 object H2File extends H2File with LongKeyedMetaMapper[H2File]{
 }
 
+class H2Theme extends H2MeTLStanza[H2Theme]{
+  def getSingleton = H2Theme
+  object text extends MappedText(this)
+  object location extends MappedMeTLString(this,4096)
+  object origin extends MappedMeTLString(this,64)
+}
+object H2Theme extends H2Theme with LongKeyedMetaMapper[H2Theme]{
+}
+
+
 class H2VideoStream extends H2MeTLStanza[H2VideoStream]{
   def getSingleton = H2VideoStream
   object partialIdentity extends MappedMeTLString(this,H2Constants.identity) with H2MeTLIndexedString
@@ -291,4 +311,19 @@ class DatabaseVersion extends LongKeyedMapper[DatabaseVersion] with IdPK {
   object intValue extends MappedInt(this){
     override def defaultValue = -1
   }
+}
+
+object ThemeExtraction extends ThemeExtraction with LongKeyedMetaMapper[ThemeExtraction]{
+  def put(identity:String,extraction:String) = {
+    ThemeExtraction.create.identity(identity).extraction(extraction).save
+    extraction
+  }
+  def get(identity:String):Option[ThemeExtraction] = {
+    ThemeExtraction.find(By(ThemeExtraction.identity,identity))
+  }
+}
+class ThemeExtraction extends LongKeyedMapper[ThemeExtraction] with IdPK{
+  def getSingleton = ThemeExtraction
+  object identity extends MappedText(this)
+  object extraction extends MappedText(this)
 }

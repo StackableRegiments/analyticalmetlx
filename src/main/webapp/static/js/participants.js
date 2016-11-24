@@ -1,11 +1,6 @@
 var Participants = (function(){
-	/*
-    var participantItemTemplate = {};
-    var participantHeaderTemplate = {};
-    var participantsContainer = {};
-		*/
-		var participantsDatagrid = {};
-		var participantFollowControl = {};
+    var participantsDatagrid = {};
+    var participantFollowControl = {};
     var participants = {};
     var newParticipant = {
         inks:0,
@@ -16,11 +11,12 @@ var Participants = (function(){
         submissions:0,
         following:true
     };
-		var reRenderParticipants = function(){
-			updateParticipantsListing();
-		};
+    var reRenderParticipants = function(){
+        updateParticipantsListing();
+    };
     var onHistoryReceived = function(history){
         var newParticipants = {};
+        Analytics.word.reset();
         var ensure = function(author){
             return newParticipants[author] || _.cloneDeep(newParticipant);
         }
@@ -49,7 +45,7 @@ var Participants = (function(){
         _.each(_.groupBy(history.multiWordTexts,"author"),function(authorStanzas,author){
             var itemToEdit = ensure(author);
             _.each(authorStanzas,function(stanza){
-								var total = countTexts(stanza);
+                var total = countTexts(stanza);
                 newParticipants[author].texts[stanza.identity] = total;
             });
         });
@@ -60,6 +56,7 @@ var Participants = (function(){
         });
 
         participants = newParticipants;
+
         updateParticipantsListing();
     };
     var countTexts = function(stanza){
@@ -68,6 +65,7 @@ var Participants = (function(){
         },0);
     }
     var onStanzaReceived = function(stanza){
+        var act = false;
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
             if(!(author in participants)){
@@ -79,70 +77,113 @@ var Participants = (function(){
             switch (stanza.type) {
             case "ink":
                 itemToEdit.inks = itemToEdit.inks + 1;
+                act = true;
                 break;
             case "image":
                 itemToEdit.images = itemToEdit.images + 1;
+                act = true;
                 break;
             case "highlighter":
                 itemToEdit.highlighters = itemToEdit.highlighters + 1;
+                act = true;
                 break;
             case "multiWordText":
                 itemToEdit.texts[stanza.identity] = countTexts(stanza);
+                act = true;
                 break;
             case "submission":
                 itemToEdit.submissions = itemToEdit.submissions + 1;
+                act = true;
                 break;
             case "quizResponse":
                 itemToEdit.quizResponses = itemToEdit.quizResponses + 1;
+                act = true;
                 break;
-
             }
             participants[author] = itemToEdit;
         }
-        updateParticipantsListing();
+        if(act){
+            updateParticipantsListing();
+        }
+    };
+    var fontSizes = d3.scaleLinear().range([9,30]);
+    var themeCloud;
+    var updateThemes = function(data){
+        if(!themeCloud) themeCloud = d3.select("#lang")
+            .style("margin-left","1em");
+        fontSizes.domain(d3.extent(_.map(data,"value")));
+	$("#lang .word").remove();
+        var words = themeCloud.selectAll(".word")
+                .data(data,function(d){
+                    return d.key;
+                });
+        words.enter()
+            .append("div")
+            .attr("class","word")
+            .style("margin-right","1em")
+            .style("display","inline-block")
+            .style("vertical-align","middle")
+            .text(function(d){
+                return d.key;
+            })
+            .style("font-size",function(d){
+		console.log(d,fontSizes(d.value));
+                return fontSizes(d.value)+"px";
+            })
+            .merge(words)
+            .sort(function(a,b){
+                return d3.ascending(b.value, a.value);
+            });
+        words.exit()
+            .remove();
+    }
+    var contextFilters = {
+        keyboarding:true,
+        handwriting:true,
+        imageRecognition:true,
+        imageTranscription:true,
+	conjugate:true
     };
     var updateParticipantsListing = function(){
-				participantsDatagrid.jsGrid("loadData");
-				var sortObj = participantsDatagrid.jsGrid("getSorting");
-				if ("field" in sortObj){
-						participantsDatagrid.jsGrid("sort",sortObj);
-				}
-				/*
-        try {
-            var replacementNodes = _.map(participants,function(participant){
-                var p = participantItemTemplate.clone();
-                var name = sprintf("participant_%s",participant.name)
-                var label = p.find(".followLabel").attr("for",name);
-                if(Conversations.shouldModifyConversation()){
-                    label.text(participant.name);
-                }
-                p.find(".followValue").attr("id",name).prop("checked",participant.following).on("change",function(){
-                    participant.following = $(this).is(":checked");
-                    blit();
-                });
-                p.find(".attendanceCount").text(_.size(participant.attendances));
-                p.find(".inksCount").text(participant.inks);
-                p.find(".highlightersCount").text(participant.highlighters);
-                p.find(".imagesCount").text(participant.images);
-                p.find(".textsCount").text(_.reduce(participant.texts,function(acc,item){return acc + item},0));
-                p.find(".quizSubmissionsCount").text(participant.submissions);
-                p.find(".quizResponsesCount").text(participant.quizResponses);
-                return p;
-            });
-            participantsContainer.html(replacementNodes);
-        } catch(e) {
-            console.log("participantRender failed:",e,participants);
+        participantsDatagrid.jsGrid("loadData");
+        var sortObj = participantsDatagrid.jsGrid("getSorting");
+        if ("field" in sortObj){
+            participantsDatagrid.jsGrid("sort",sortObj);
         }
-				*/
+        Analytics.word.reset();
+        var contexts = {};
+        _.each(boardContent.themes,function(theme){
+            _.each(theme.text.split(" "),function(t){
+                if(t.length > 0){//It will come back with empty strings
+                    t = t.toLowerCase();
+		    if(contextFilters.conjugate){
+			t = nlp_compromise.text(t).root();
+		    }
+                    var context = theme.origin;
+                    if(contextFilters[context] == true){
+                        Analytics.word.incorporate(t);
+                        if(!(t in contexts)){
+                            contexts[t] = {};
+                        }
+                        if(!(context in contexts[t])){
+                            contexts[t][context] = 0;
+                        }
+                        contexts[t][context]++;
+                    }
+                }
+            });
+        });
+        updateThemes(Analytics.word.cloudData());
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
         updateActiveMenu(this);
+        updateFilters();
         updateParticipantsListing();
     };
     var updateButtons = function(){
         if (Conversations.shouldModifyConversation()){
-            $("#menuParticipants").click(openParticipantsMenuFunction);
+            $("#menuParticipants").off().on("click",openParticipantsMenuFunction);
             $("#menuParticipants").show();
         } else {
             $("#menuParticipants").unbind("click");
@@ -152,11 +193,21 @@ var Participants = (function(){
     var onDetailsReceived = function(){
         updateButtons();
     };
+    var updateFilters = function(){
+        _.each(contextFilters,function(val,filter){
+            var el = $(sprintf("#%s",filter));
+            el.attr("checked",contextFilters[filter]);
+            el.off("click").on("click",function(){
+                contextFilters[filter] = !contextFilters[filter];
+                updateParticipantsListing();
+            });
+        });
+    }
     $(function(){
         updateButtons();
-				participantsDatagrid = $("#participantsDatagrid");
-				participantFollowControl = participantsDatagrid.find(".followControls").clone();
-				participantsDatagrid.empty();
+        participantsDatagrid = $("#participantsDatagrid");
+        participantFollowControl = participantsDatagrid.find(".followControls").clone();
+        participantsDatagrid.empty();
         var DateField = function(config){
             jsGrid.Field.call(this,config);
         };
@@ -174,86 +225,91 @@ var Participants = (function(){
         });
         jsGrid.fields.dateField = DateField;
 
-				var gridFields = [
-					{
-						name:"name",
-						type:"text",
-						title:"Follow",
-						readOnly:true,
-						sorting:true,
-						itemTemplate:function(username,participant){
-							var rootElem = participantFollowControl.clone();
-							var elemId = sprintf("participant_%s",participant.name);
-							rootElem.find(".followValue").attr("id",elemId).prop("checked",participant.following).on("change",function(){
-								participants[participant.name].following = $(this).is(":checked");
-								blit();
-								updateParticipantsListing();
-							});
-							rootElem.find(".followLabel").attr("for",elemId).text(participant.name);
-							return rootElem;
-						}	
-					},
-					{name:"attendances",type:"number",title:"Attendances",readOnly:true},
-					{name:"images",type:"number",title:"Images",readOnly:true},
-					{name:"inks",type:"number",title:"Inks",readOnly:true},
-					{name:"highlighters",type:"number",title:"Highlighters",readOnly:true},
-					{name:"texts",type:"number",title:"Texts",readOnly:true},
-					{name:"quizResponses",type:"number",title:"Poll responses",readOnly:true},
-					{name:"submissions",type:"number",title:"Submissions",readOnly:true},
-				];
-				participantsDatagrid.jsGrid({
-					width:"100%",
-					height:"auto",
-					inserting:false,
-					editing:false,
-					sorting:true,
-					paging:true,
-					noDataContent: "No participants",
-				 	controller: {
-						loadData: function(filter){
-							var sorted = _.map(_.keys(participants),function(k){
-								var v = participants[k];
-								return {
-									name:k,
-									following:v.following,
-									attendances:_.size(v.attendances),
-									images:v.images,
-									inks:v.inks,
-									texts:_.reduce(v.texts,function(acc,item){return acc + item},0),
-									quizResponses:v.quizResponses,
-									submissions:v.submissions,
-									highlighters:v.highlighters
-								};
-							});
-							if ("sortField" in filter){
-								sorted = _.sortBy(sorted,function(sub){
-									return sub[filter.sortField];
-								});
-								if ("sortOrder" in filter && filter.sortOrder == "desc"){
-									sorted = _.reverse(sorted);
-								}
-							}
-							return sorted;
-						}
-					},
-					pageLoading:false,
-					fields: gridFields	
-				});
-				participantsDatagrid.jsGrid("sort",{
-					field:"name",
-					order:"desc"
-				});
-				updateParticipantsListing();
+        var gridFields = [
+            {
+                name:"name",
+                type:"text",
+                title:"Follow",
+                readOnly:true,
+                sorting:true,
+                itemTemplate:function(username,participant){
+                    var rootElem = participantFollowControl.clone();
+                    var elemId = sprintf("participant_%s",participant.name);
+                    rootElem.find(".followValue").attr("id",elemId).prop("checked",participant.following).on("change",function(){
+                        participants[participant.name].following = $(this).is(":checked");
+                        blit();
+                        updateParticipantsListing();
+                    });
+                    rootElem.find(".followLabel").attr("for",elemId).text(participant.name);
+                    return rootElem;
+                }
+            },
+            {name:"attendances",type:"number",title:"Attendances",readOnly:true},
+            {name:"images",type:"number",title:"Images",readOnly:true},
+            {name:"inks",type:"number",title:"Inks",readOnly:true},
+            {name:"highlighters",type:"number",title:"Highlighters",readOnly:true},
+            {name:"texts",type:"number",title:"Texts",readOnly:true},
+            {name:"quizResponses",type:"number",title:"Poll responses",readOnly:true},
+            {name:"submissions",type:"number",title:"Submissions",readOnly:true},
+        ];
+        participantsDatagrid.jsGrid({
+            width:"100%",
+            height:"auto",
+            inserting:false,
+            editing:false,
+            sorting:true,
+            paging:true,
+            noDataContent: "No participants",
+            controller: {
+                loadData: function(filter){
+                    var sorted = _.map(_.keys(participants),function(k){
+                        var v = participants[k];
+                        return {
+                            name:k,
+                            following:v.following,
+                            attendances:_.size(v.attendances),
+                            images:v.images,
+                            inks:v.inks,
+                            texts:_.reduce(v.texts,function(acc,item){return acc + item},0),
+                            quizResponses:v.quizResponses,
+                            submissions:v.submissions,
+                            highlighters:v.highlighters
+                        };
+                    });
+                    if ("sortField" in filter){
+                        sorted = _.sortBy(sorted,function(sub){
+                            return sub[filter.sortField];
+                        });
+                        if ("sortOrder" in filter && filter.sortOrder == "desc"){
+                            sorted = _.reverse(sorted);
+                        }
+                    }
+                    return sorted;
+                }
+            },
+            pageLoading:false,
+            fields: gridFields
+        });
+        participantsDatagrid.jsGrid("sort",{
+            field:"name",
+            order:"desc"
+        });
+        updateParticipantsListing();
     });
     Progress.stanzaReceived["participants"] = onStanzaReceived;
+    Progress.themeReceived["participants"] = function(){
+        if(window.currentBackstage == "participants"){
+            updateParticipantsListing();
+        }
+    }
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
         getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
-				reRender:function(){
-					reRenderParticipants();
-				},	
+        reRender:function(){
+            reRenderParticipants();
+        },
         code:function(author){
             return _.keys(participants).indexOf(author);
         }

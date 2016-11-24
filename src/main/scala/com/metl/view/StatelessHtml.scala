@@ -17,7 +17,7 @@ import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 import net.liftweb.json._
-
+import com.metl.liftAuthenticator.LiftAuthStateData
 import java.util.zip._
 
 import com.metl.model._
@@ -26,6 +26,7 @@ import com.metl.model._
   * Use Lift's templating without a session and without state
   */
 object StatelessHtml extends Stemmer with Logger {
+  implicit val formats = DefaultFormats
   val serializer = new GenericXmlSerializer("rest")
   val metlClientSerializer = new GenericXmlSerializer("metlClient"){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml",  {
@@ -66,7 +67,7 @@ object StatelessHtml extends Stemmer with Logger {
         debug(file)
         val reader = new FileReader(file)
         val content = IOUtils.toByteArray(reader)
-        trace(IOUtils.toString(content))
+        trace(new String(content))
         reader.close
         Full(InMemoryResponse(content,List(("Content-Type","text/cache-manifest")),Nil,200))
       }
@@ -74,13 +75,75 @@ object StatelessHtml extends Stemmer with Logger {
     })
   })
 
-  def listRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listRooms", {
-    Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).mkString("\r\n")))
-  })
-  def listSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessions", {
-    Full(PlainTextResponse(SecurityListener.activeSessions.map(s => "%s (%s) : %s => %s".format(s.username,s.ipAddress,s.started,s.lastActivity)).mkString("\r\n")))
+  def listGroups(username:String,informationGroups:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listGroups",{
+    val prelimAuthStateData = LiftAuthStateData(false,username,Nil,informationGroups)
+    val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+    val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
+    val lasd = LiftAuthStateData(false,username,groups,personalDetails)
+    Full(JsonResponse(Extraction.decompose(lasd),200))
   })
 
+  def listRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listRooms", {
+    Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).map(_.location).mkString("\r\n")))
+  })
+  def listUsersInRooms:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listUsersInRooms", {
+    Full(PlainTextResponse(MeTLXConfiguration.listRooms(config.name).map(room => {
+      "%s\r\n%s".format(room.location,room.getChildren.map(c => "\t%s".format(c._1)).mkString("\r\n"))
+    }).mkString("\r\n")))
+  })
+  def listSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessions", {
+    val now = new java.util.Date().getTime
+    val sessions = SecurityListener.activeSessions.map(s => (s,(now - s.lastActivity).toDouble / 1000)).sortBy(_._2).map(s => {
+      if (s._1.authenticatedUser == s._1.username){
+        "%s (%s) : %s => %s (%.3fs ago)".format(s._1.authenticatedUser,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
+      } else {
+        "%s impersonating %s (%s) : %s => %s (%.3fs ago)".format(s._1.authenticatedUser,s._1.username,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
+      }
+    }).mkString("\r\n")
+    Full(PlainTextResponse(sessions))
+  })
+  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
+    Full(JsonResponse(Extraction.decompose(user),200))
+    /*
+    Full(JsonResponse(JObject(List(
+      JField("authenticated",JBool(user.authenticated)),
+      JField("username",JString(user.username)),
+      JField("eligibleGroups",JArray(user.eligibleGroups.map(g => {
+        JObject(List(
+          JField("ouType",JString(g.ouType)),
+          JField("name",JString(g.name)),
+          JField("members",JArray(g.members.map(m => JString(m)))),
+          JField("groupSets",JArray(g.groupSets.map(gs => {
+            JObject(List(
+              JField("groupSetType",JString(gs.groupSetType)),
+              JField("name",JString(gs.name)),
+              JField("members",JArray(gs.members.map(m => JString(m)))),
+              JField("groups",JArray(gs.groups.map(gp => {
+                JObject(List(
+                  JField("groupType",JString(gp.groupType)),
+                  JField("name",JString(gp.name)),
+                  JField("members",JArray(gp.members.map(m => JString(m))))
+                ))
+              })))
+            ))
+          })))
+        ))
+      }).toList)),
+      JField("personalDetails",JArray(user.informationGroups.map(t => {
+        JObject(List(
+          JField("key",JString(t._1)),
+          JField("value",JString(t._2))
+        ))
+      }).toList))
+    )),200))
+    */
+  })
+  def impersonate(newUsername:String,params:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {
+    describeUser(Globals.impersonate(newUsername,params))
+  })
+  def deImpersonate:Box[LiftResponse] = Stopwatch.time("StatelessHtml.deImpersonate", {
+    describeUser(Globals.assumeContainerSession)
+  })
   def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", {
     <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
   })
@@ -101,7 +164,7 @@ object StatelessHtml extends Stemmer with Logger {
     XML.load("https://metl.saintleo.edu/search?query=") \\ "slide" \ "id"
   }
   def externalSlideSummary(slide:String):Box[Tuple2[String,Elem]] = Stopwatch.time("StatelessHtml.externalSlideSummary",{
-    println("externalSlideSummary %s".format(slide))
+    info("externalSlideSummary %s".format(slide))
     try{
       val outfile = "/stackable/samples/slides/%s.xml".format(slide)
       Full((slide, if(new File(outfile).exists){
@@ -114,8 +177,8 @@ object StatelessHtml extends Stemmer with Logger {
       }))
     }
     catch{
-      case e => {
-        println("externalSlideSummary exception for %s: %s".format(slide,e.getMessage))
+      case e:Exception => {
+        error("externalSlideSummary exception for %s:".format(slide,e))
         Empty
       }
     }
@@ -126,7 +189,7 @@ object StatelessHtml extends Stemmer with Logger {
       image.imageBytes.map(bytes => {
         debug("found bytes: %s (%s)".format(bytes,bytes.length))
         val dataUri = "data:image/png;base64,"+net.liftweb.util.SecurityHelpers.base64Encode(bytes)
-        InMemoryResponse(IOUtils.toByteArray(dataUri),Boot.cacheStrongly,Nil,200)
+        InMemoryResponse(dataUri.getBytes(),Boot.cacheStrongly,Nil,200)
       }).openOr(NotFoundResponse("image bytes not available"))
     }).getOrElse(NotFoundResponse("image not available"))))
 
@@ -209,72 +272,8 @@ object StatelessHtml extends Stemmer with Logger {
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), {
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
   })
-  def nouns(jid:String):Node = Stopwatch.time("StatelessHtml.loadAllThemes(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getRenderable
-    val phrases = List(
-      history.collect{case t:MeTLText => t.text},
-      CanvasContentAnalysis.extract(history.collect{case i:MeTLInk => i})).flatten
-    <userThemes><userTheme><user>everyone</user>{ CanvasContentAnalysis.thematize(phrases).map(t => <theme>{t}</theme>) }</userTheme></userThemes>
-  })
-  def handwriting(jid:String):Node = Stopwatch.time("StatelessHtml.handwriting(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val themes = List(
-      history.getInks.groupBy(_.author).flatMap{
-        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i,"handwriting"))
-      }).flatten
-    val themesByUser = themes.groupBy(_.author).map(kv =>
-      <userTheme>
-        <user>{kv._1}</user>
-        <themes>{kv._2.map(t => <theme>{t.text}</theme>)}</themes>
-        </userTheme>)
-    <userThemes>{themesByUser}</userThemes>
-  })
-  def words(jid:String):Node = Stopwatch.time("StatelessHtml.loadThemes(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val themes = List(
-      history.getTexts.map(t => Theme(t.author,t.text,"keyboarding")).toList,
-      (history.getInks ::: history.getHighlighters).groupBy(_.author).flatMap{
-        case (author,inks) => CanvasContentAnalysis.extract(inks).map(i => Theme(author, i, "handwriting"))
-      },
-      history.getImages.groupBy(_.author).flatMap{
-        case (author,images) => CanvasContentAnalysis.ocr(images) match {
-          case (descriptions,words) => List(
-            descriptions.map(word => Theme(author, word, "imageRecognition")),
-            words.map(word => Theme(author,word,"imageTranscription"))).flatten
-        }
-      }).flatten
-    debug(themes)
-    val themesByUser = themes.groupBy(_.author).map(kv =>
-      <userTheme>
-        <user>{kv._1}</user>
-        <themes>{kv._2.map(t => <theme><context>{t.origin}</context><content>{t.text}</content></theme>)}</themes>
-        </userTheme>)
-    <userThemes>{themesByUser}</userThemes>
-  })
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),{
     <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
-  })
-  def themes(slide:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.themes(%s)".format(slide), Full(XmlResponse(nouns(slide))))
-  def chunks(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.chunks(%s)".format(jid), {
-    val history = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory
-    val elements = history.getCanvasContents
-    val chunked = CanvasContentAnalysis.chunk(elements)
-    Full(XmlResponse(
-      <contentRuns>
-        <slide>jid</slide>
-        <timeThreshold>{chunked.timeThreshold.toString}</timeThreshold>
-        {
-          chunked.chunksets.map(chunkset =>
-            {
-              <runs author={chunkset.author}>
-              {
-                chunkset.chunks.map(chunk => <run start={chunk.start.toString} end={chunk.end.toString} activity={chunk.activity.size.toString} miliseconds={chunk.milis.toString} />)
-              }
-              </runs>
-            })
-        }
-        </contentRuns>
-    ))
   })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
   def fullHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>)))
@@ -544,7 +543,7 @@ object StatelessHtml extends Stemmer with Logger {
     val c = config.detailsOfConversation(jid)
     serializer.fromConversation(shouldModifyConversation(c) match {
       case true => {
-        val json = req.body.map(bytes => net.liftweb.json.parse(IOUtils.toString(bytes)))
+        val json = req.body.map(bytes => net.liftweb.json.parse(new String(bytes)))
         debug("addSubmissionSlideToConversationAtIndex",json)
         json match {
           case Full(JArray(identities)) => {

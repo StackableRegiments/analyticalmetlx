@@ -1,0 +1,61 @@
+<groupStoreData>
+  <orgUnit name="Org Unit A" type="course">
+    <member>studentA</member>
+    <member>studentB</member>
+    <member>studentC</member>
+    <member>studentD</member>
+    <member>studentE</member>
+    <member>teacher</member>
+    <groupSet>
+      <group name="group1" type="assignment">
+        <member>studentA</member>
+      </group>
+      <group name="group2" type="assignment">
+        <member>studentB</member>
+        <member>studentC</member>
+      </group>
+    </groupSet>
+  </orgUnit>
+  <personalDetails username="studentA">
+    <detail key="D2L_Identifier" value="101"/>
+    <detail key="D2L_Profile_Identifier" value="AbcDEFgHI1"/>
+    <detail key="displayName" value="Aardvark, Studento"/>
+    <detail key="firstName" value="Studento"/>
+    <detail key="surname" value="Aardvark"/>
+  </personalDetails>
+  <personalDetails username="studentB">
+    <detail key="D2L_Identifier" value="102"/>
+    <detail key="D2L_Profile_Identifier" value="AbcDEFgHI2"/>
+    <detail key="displayName" value="Bardvark, Studente"/>
+    <detail key="firstName" value="Studente"/>
+    <detail key="surname" value="Bardvark"/>
+  </personalDetails>
+  <personalDetails username="studentC">
+    <detail key="D2L_Identifier" value="103"/>
+    <detail key="D2L_Profile_Identifier" value="AbcDEFgHI3"/>
+    <detail key="displayName" value="Cardvark, Studenta"/>
+    <detail key="firstName" value="Studenta"/>
+    <detail key="surname" value="Cardvark"/>
+  </personalDetails>
+  <personalDetails username="studentD">
+    <detail key="D2L_Identifier" value="104"/>
+    <detail key="D2L_Profile_Identifier" value="AbcDEFgHI4"/>
+    <detail key="displayName" value="Dardvark, Studenti"/>
+    <detail key="firstName" value="Studenti"/>
+    <detail key="surname" value="Dardvark"/>
+  </personalDetails>
+<personalDetails username="studentE">
+    <detail key="D2L_Identifier" value="105"/>
+    <detail key="D2L_Profile_Identifier" value="AbcDEFgHI5"/>
+    <detail key="displayName" value="Eardvark, Studentu"/>
+    <detail key="firstName" value="Studentu"/>
+    <detail key="surname" value="Eardvark"/>
+  </personalDetails>
+  <personalDetails username="teacher">
+    <detail key="D2L_Identifier" value="104"/>
+    <detail key="D2L_Profile_Identifier" value="AbcDEFgHI4"/>
+    <detail key="displayName" value="Dardvark, Studenti"/>
+    <detail key="firstName" value="Studenti"/>
+    <detail key="surname" value="Dardvark"/>
+  </personalDetails>
+</groupStoreData>

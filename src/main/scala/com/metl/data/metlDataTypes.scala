@@ -1,6 +1,7 @@
 package com.metl.data
 
 import com.metl.utils._
+import com.metl.model._
 
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -40,8 +41,8 @@ object ColorConverter{
       Color.default
     }
   }
-  private def hexToInt(h:String):Int = tryo(Integer.parseInt(h,16)).openOr(0)
-  private def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
+  def hexToInt(h:String):Int = tryo(Integer.parseInt(h,16)).openOr(0)
+  def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
   def fromHexString(h:String):Color = fromARGBHexString(h)
   def fromRGBHexString(h:String):Color = {
     val r = convert2AfterN(h,1)
@@ -244,7 +245,9 @@ object MeTLStanza{
   def unapply(in:MeTLStanza) = Some((in.server,in.author,in.timestamp,in.audiences))
   def empty = MeTLStanza(ServerConfiguration.empty,"",0L)
 }
-
+case class MeTLTheme(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,theme:Theme,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences){
+  override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
+}
 case class Attendance(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,present:Boolean,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("Attendance.adjustTimestamp",copy(timestamp = newTime))
 }
@@ -829,6 +832,22 @@ case class MeTLDirtyVideo(override val server:ServerConfiguration,override val a
 }
 object MeTLDirtyVideo{
   def empty = MeTLDirtyVideo(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","",Nil)
+}
+
+case class MeTLUndeletedCanvasContent(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,override val target:String,override val privacy:Privacy, override val slide:String, override val identity:String,elementType:String,oldElementIdentity:String,newElementIdentity:String,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences) {
+  override def matches(other:MeTLCanvasContent) = other match {
+    case o:MeTLUndeletedCanvasContent => super.matches(o)
+    case _ => false
+  }
+  override def isDirtierFor(other:MeTLCanvasContent) = false
+  override def alterPrivacy(newPrivacy:Privacy):MeTLUndeletedCanvasContent = copy(privacy=newPrivacy)
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLUndeletedCanvasContent = Stopwatch.time("MeTLUndeletedCanvasContent.adjustTimestamp",{
+    copy(timestamp=newTime)
+  })
+  override def generateNewIdentity(descriptor:String):MeTLUndeletedCanvasContent = copy(identity=genNewIdentity("newMeTLUndeletedCanvasContent:"+descriptor))
+}
+object MeTLUndeletedCanvasContent{
+  def empty = MeTLUndeletedCanvasContent(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","","","","",Nil)
 }
 
 case class MeTLCommand(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,command:String,commandParameters:List[String],override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){

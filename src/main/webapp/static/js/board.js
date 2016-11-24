@@ -47,12 +47,8 @@ function setupStatus(){
         });
     }
 }
-function strokeCollected(spoints){
-    if(spoints.length > 0){
-        var points = spoints.split(" ").map(function(p){
-            return parseFloat(p);
-        });
-
+function strokeCollected(points){
+    if(points.length > 0) {
         var currentSlide = Conversations.getCurrentSlideJid();
         var ink = {
             thickness : scaleScreenToWorld(Modes.draw.drawingAttributes.width),
@@ -79,6 +75,7 @@ function strokeCollected(spoints){
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
+
         calculateInkBounds(ink);
         prerenderInk(ink);
         if(ink.isHighlighter){
@@ -103,7 +100,7 @@ function batchTransform(){
         inkIds:[],
         textIds:[],
         multiWordTextIds:[],
-				videoIds:[],
+        videoIds:[],
         imageIds:[],
         xOrigin:0,
         yOrigin:0,
@@ -132,16 +129,17 @@ function sendInk(ink){
     sendStanza(ink);
 }
 function hexToRgb(hex) {
-    if(typeof hex == "object" && hex.alpha) return hex;
-    if(typeof hex == "string") hex = [hex,255];
-    if(typeof hex == "array") hex = hex;
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex[0]);
-    return {
-        alpha: hex[1],
-        red: parseInt(result[1], 16),
-        green: parseInt(result[2], 16),
-        blue: parseInt(result[3], 16)
-    };
+    if(typeof hex == "object" && hex.alpha) {
+        return Colors.getColorForColorParts(hex.alpha,hex.red,hex.green,hex.blue);
+    } else if (typeof hex == "object" && hex[0] && hex[1] && typeof hex[0] == "string" && typeof hex[1] == "number"){
+        return hex;
+    } else if(typeof hex == "string") {
+        return Colors.getColorObjForHex(hex);
+    } else if(typeof hex == "array") {
+        return hex;
+    } else {
+        return Colors.getDefaultColorObj();
+    }
 }
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
@@ -162,18 +160,18 @@ function richTextEditorToStanza(t){
     if(!t.bounds) t.doc.invalidateBounds();
     var bounds = t.bounds;
     var text = t.doc.save();
-		if (t.slide == undefined){
-			t.slide = Conversations.getCurrentSlideJid();
-		};
-		if (t.author == undefined){
-			t.author = UserSettings.getUsername();
-		};
-		if (t.target == undefined){
-			t.target = "presentationSpace";
-		};
-		if (t.privacy == undefined){
-			t.privacy = Privacy.getCurrentPrivacy();
-		};
+    if (t.slide == undefined){
+        t.slide = Conversations.getCurrentSlideJid();
+    };
+    if (t.author == undefined){
+        t.author = UserSettings.getUsername();
+    };
+    if (t.target == undefined){
+        t.target = "presentationSpace";
+    };
+    if (t.privacy == undefined){
+        t.privacy = Privacy.getCurrentPrivacy();
+    };
 
     return {
         author:t.author,
@@ -187,7 +185,7 @@ function richTextEditorToStanza(t){
         x:bounds[0],
         y:bounds[1],
         requestedWidth:bounds[2]-bounds[0],
-        width:bounds[2]-bounds[0],
+        width:t.doc.width(),
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza)
     }
@@ -195,24 +193,28 @@ function richTextEditorToStanza(t){
 function sendRichText(t){
     Modes.text.echoesToDisregard[t.identity] = true;
     var stanza = richTextEditorToStanza(t);
-    console.log(stanza);
     sendStanza(stanza);
 }
-sendRichText = _.debounce(sendRichText,1000);
+//sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
     move:moveReceived,
     moveDelta:transformReceived,
     image:imageReceived,
-		video:videoReceived,
+    video:videoReceived,
     text:textReceived,
     multiWordText:richTextReceived,
     command:commandReceived,
     submission:submissionReceived,
     attendance:attendanceReceived,
-    file:fileReceived
+    file:fileReceived,
+    theme:themeReceived
 };
+function themeReceived(theme){
+    boardContent.themes.push(theme);
+    Progress.call("themeReceived");
+}
 function fileReceived(file){
     //doing nothing with files yet.
 }
@@ -236,19 +238,19 @@ function commandReceived(c){
             return;
         }
         if(Conversations.getIsSyncedToTeacher()){
-					console.log("teacherViewMoved",c);
+            console.log("teacherViewMoved",c);
             var f = function(){
-							var controllerIdentity = c.parameters[4];
-							var slide = ps[5];
-							var autoZoomingMode = c.parameters[6];
-							if (slide == Conversations.getCurrentSlide().id.toString()){
-								if (autoZoomingMode == "true"){
-									zoomToFit();
-								} else {
-									zoomToPage();
-									TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
-								}
-							}
+                var controllerIdentity = c.parameters[4];
+                var slide = ps[5];
+                var autoZoomingMode = c.parameters[6];
+                if (slide == Conversations.getCurrentSlide().id.toString()){
+                    if (autoZoomingMode == "true"){
+                        zoomToFit();
+                    } else {
+                        zoomToPage();
+                        TweenController.zoomAndPanViewbox(ps[0],ps[1],ps[2],ps[3],function(){},false,true);
+                    }
+                }
             };
             if(UserSettings.getIsInteractive()){
                 // interactive users don't chase the teacher's viewbox, only projectors do.
@@ -667,7 +669,7 @@ function transformReceived(transform){
                          transform.textIds.length,
                          transform.multiWordTextIds.length,
                          transform.inkIds.length,
-												 transform.videoIds.length));
+                         transform.videoIds.length));
     _.each(trackerFrom(transform.identity),function(tracker){
         updateTracking(tracker);
     });
@@ -697,6 +699,7 @@ function deleteInk(inks,privacy,id){
         var ink = boardContent[inks][id];
         if(ink.privacy.toUpperCase() == privacy.toUpperCase()){
             delete boardContent[inks][id];
+            Progress.call("onCanvasContentDeleted",[ink]);
         }
     }
 }
@@ -704,24 +707,28 @@ function deleteImage(privacy,id){
     var image = boardContent.images[id];
     if(image.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.images[id];
+        Progress.call("onCanvasContentDeleted",[image]);
     }
 }
 function deleteVideo(privacy,id){
     var video = boardContent.videos[id];
     if(video.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.videos[id];
+        Progress.call("onCanvasContentDeleted",[video]);
     }
 }
 function deleteText(privacy,id){
     var text = boardContent.texts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.texts[id];
+        Progress.call("onCanvasContentDeleted",[text]);
     }
 }
 function deleteMultiWordText(privacy,id){
     var text = boardContent.multiWordTexts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.multiWordTexts[id];
+        Progress.call("onCanvasContentDeleted",[text]);
     }
 }
 function dirtyInkReceived(dirtyInk){
@@ -903,7 +910,7 @@ function drawInk(ink,incCanvasContext){
     }
 }
 function drawVideo(video,incCanvasContext){
-	  var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(video.bounds);
     visibleBounds.push(video.bounds);
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
@@ -913,25 +920,25 @@ function drawVideo(video,incCanvasContext){
     }
 }
 function videoReceived(video){
-	calculateVideoBounds(video);
-	incorporateBoardBounds(video.bounds);
-	boardContent.videos[video.identity] = video;
-	prerenderVideo(video);
-	WorkQueue.enqueue(function(){
-			if(isInClearSpace(video.bounds)){
-					try {
-							drawVideo(video);
-							Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-					} catch(e){
-							console.log("drawVideo exception",e);
-					}
-					return false;
-			}
-			else{
-					console.log("Rerendering video in contested space");
-					return true;
-			}
-	});
+    calculateVideoBounds(video);
+    incorporateBoardBounds(video.bounds);
+    boardContent.videos[video.identity] = video;
+    prerenderVideo(video);
+    WorkQueue.enqueue(function(){
+        if(isInClearSpace(video.bounds)){
+            try {
+                drawVideo(video);
+                Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+            } catch(e){
+                console.log("drawVideo exception",e);
+            }
+            return false;
+        }
+        else{
+            console.log("Rerendering video in contested space");
+            return true;
+        }
+    });
 }
 function imageReceived(image){
     var dataImage = new Image();

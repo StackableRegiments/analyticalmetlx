@@ -127,7 +127,7 @@ function registerPositionHandlers(contexts,down,move,up){
             worldPos.x + touchTolerance,
             worldPos.y + touchTolerance
         ];
-        var unconsumed = true;;
+        var unconsumed = true;
         _.each(Modes.canvasInteractables,function(category,label){
             _.each(category,function(interactable){
                 if(interactable != undefined && event in interactable){
@@ -370,7 +370,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     }
                 }
                 isDown = false;
-								Modes.finishInteractableStates();
+                Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y){
                 WorkQueue.gracefullyResume();
@@ -680,104 +680,104 @@ var bounceButton = function(button){
     },200);
 }
 var videoControlInteractable = function(video){
-	var bounds = undefined;
-	var deactivateFunc = function(){
-			// I don't think this is necessary for this control
-	};
-	return {
-		activated:false,
-		rehome : function(root){
-			// I'm not doing anything with this stuff
-		},
-		down: function(worldPos){
-			return false; 
-		},
-		move: function(worldPos){
-			return false;
-		},
-		up: function(worldPos){
-			deactivateFunc();
-	
-			var bw = Modes.select.handlesAtZoom();
+    var bounds = undefined;
+    var deactivateFunc = function(){
+        // I don't think this is necessary for this control
+    };
+    return {
+        activated:false,
+        rehome : function(root){
+            // I'm not doing anything with this stuff
+        },
+        down: function(worldPos){
+            return false;
+        },
+        move: function(worldPos){
+            return false;
+        },
+        up: function(worldPos){
+            deactivateFunc();
 
-			var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
-			if (position < bw){
-				if (video.getState().paused){
-					video.play();
-				} else {
-					video.pause();
-				}
-			} else if (position > (video.width - bw)){
-				video.muted(!video.muted());
-			} else {
-				var mediaState = video.getState();
-				var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
-				video.seek(seekPos);
-			}
-			return false;
-		},
-		getBounds:function(){return bounds;},
-		deactivate:deactivateFunc,
-		render:function(canvasContext){
-			if (video.identity in boardContent.videos){
-				var h = Modes.select.handlesAtZoom();
-				var x = video.bounds[0];
-				var y = video.bounds[1];
-				bounds = [
-						x,
-						video.bounds[3],
-						video.bounds[2],
-						video.bounds[3] + h
-				];
+            var bw = Modes.select.handlesAtZoom();
 
-				var tl = worldToScreen(bounds[0],bounds[1]);
-				var br = worldToScreen(bounds[2],bounds[3]);
-				var width = br.x - tl.x;
-				var height = br.y - tl.y;
+            var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
+            if (position < bw){
+                if (video.getState().paused){
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            } else if (position > (video.width - bw)){
+                video.muted(!video.muted());
+            } else {
+                var mediaState = video.getState();
+                var seekPos = ((position - bw) / (video.width - (2 * bw))) * mediaState.duration;
+                video.seek(seekPos);
+            }
+            return false;
+        },
+        getBounds:function(){return bounds;},
+        deactivate:deactivateFunc,
+        render:function(canvasContext){
+            if (video.identity in boardContent.videos){
+                var h = Modes.select.handlesAtZoom();
+                var x = video.bounds[0];
+                var y = video.bounds[1];
+                bounds = [
+                    x,
+                    video.bounds[3],
+                    video.bounds[2],
+                    video.bounds[3] + h
+                ];
 
-				var mediaState = video.getState();
-				canvasContext.globalAlpha = 1.0;
-				canvasContext.setLineDash([]);
-				canvasContext.strokeStyle = "black";
-				canvasContext.font = sprintf("%spx FontAwesome",height);
-				
-				var buttonWidth = height;
-			
-				// play/pause button
+                var tl = worldToScreen(bounds[0],bounds[1]);
+                var br = worldToScreen(bounds[2],bounds[3]);
+                var width = br.x - tl.x;
+                var height = br.y - tl.y;
 
-				canvasContext.fillStyle = "white";
-				canvasContext.fillRect(tl.x,tl.y,buttonWidth,height); 
-				canvasContext.fillStyle = "black";
-				if (mediaState.paused){
-					canvasContext.fillText("\uF04B",tl.x,br.y);
-				} else {
-					canvasContext.fillText("\uF04C",tl.x,br.y);
-				}
-				
-				// progress meter	
+                var mediaState = video.getState();
+                canvasContext.globalAlpha = 1.0;
+                canvasContext.setLineDash([]);
+                canvasContext.strokeStyle = "black";
+                canvasContext.font = sprintf("%spx FontAwesome",height);
 
-				var progressX = tl.x + buttonWidth;
-				var progressWidth = width - buttonWidth;
-				canvasContext.fillStyle = "black";
-				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
-				canvasContext.fillStyle = "blue";
-				var progressWidth = (mediaState.currentTime / mediaState.duration) * progressWidth;
-				canvasContext.fillRect(progressX,tl.y,progressWidth,height); 
+                var buttonWidth = height;
 
-				// mute button
-				
-				var muteX = tl.x + (width - buttonWidth);
-				canvasContext.fillStyle = "white";
-				canvasContext.fillRect(muteX,tl.y,buttonWidth,height); 
-				canvasContext.fillStyle = "black";
-				if (mediaState.muted){
-					canvasContext.fillText("\uF0F3",muteX,br.y);
-				} else {
-					canvasContext.fillText("\uF1F6",muteX,br.y);
-				}
-			}
-		}
-	};
+                // play/pause button
+
+                canvasContext.fillStyle = "white";
+                canvasContext.fillRect(tl.x,tl.y,buttonWidth,height);
+                canvasContext.fillStyle = "black";
+                if (mediaState.paused){
+                    canvasContext.fillText("\uF04B",tl.x,br.y);
+                } else {
+                    canvasContext.fillText("\uF04C",tl.x,br.y);
+                }
+
+                // progress meter
+
+                var progressX = tl.x + buttonWidth;
+                var progressWidth = width - buttonWidth;
+                canvasContext.fillStyle = "black";
+                canvasContext.fillRect(progressX,tl.y,progressWidth,height);
+                canvasContext.fillStyle = "blue";
+                var progressWidth = (mediaState.currentTime / mediaState.duration) * progressWidth;
+                canvasContext.fillRect(progressX,tl.y,progressWidth,height);
+
+                // mute button
+
+                var muteX = tl.x + (width - buttonWidth);
+                canvasContext.fillStyle = "white";
+                canvasContext.fillRect(muteX,tl.y,buttonWidth,height);
+                canvasContext.fillStyle = "black";
+                if (mediaState.muted){
+                    canvasContext.fillText("\uF0F3",muteX,br.y);
+                } else {
+                    canvasContext.fillText("\uF1F6",muteX,br.y);
+                }
+            }
+        }
+    };
 };
 
 var Modes = (function(){
@@ -825,9 +825,9 @@ var Modes = (function(){
         var s = Modes.select.handlesAtZoom();
         var manualMove = (
             function(){
-								var bounds = undefined;
+                var bounds = undefined;
                 return {
-									getBounds:function(){return bounds;},
+                    getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -922,9 +922,9 @@ var Modes = (function(){
             })();
         var resizeAspectLocked = (
             function(){
-							var bounds = undefined;
+                var bounds = undefined;
                 return {
-									getBounds:function(){return bounds;},
+                    getBounds:function(){return bounds;},
                     activated:false,
                     originalHeight:1,
                     originalWidth:1,
@@ -948,7 +948,7 @@ var Modes = (function(){
                         resizeAspectLocked.activated = true;
                         var root = Modes.select.totalSelectedBounds();
                         Modes.select.offset = {x:root.x2,y:root.y2};
-												resizeAspectLocked.rehome(root);
+                        resizeAspectLocked.rehome(root);
                         blit();
                         return false;
                     },
@@ -994,12 +994,12 @@ var Modes = (function(){
                         resized.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                         _.each(Modes.select.selected.multiWordTexts,function(text,id){
                             Modes.text.echoesToDisregard[id] = true;
-                            var source = text.doc.save();
-                            _.each(source,function(run){
-                                run.size = run.size * resized.xScale;
-                            });
+                            var range = text.doc.documentRange();
+                            text.doc.select(range.start,range.end);
+                            Modes.text.scaleEditor(text.doc,resized.xScale);
+                            text.doc.select(0,0);
                             text.doc.width(text.doc.width() * resized.xScale);
-                            text.doc.load(source);
+                            text.doc.invalidateBounds();
                         });
                         registerTracker(resized.identity,function(){
                             Progress.call("onSelectionChanged");
@@ -1035,10 +1035,10 @@ var Modes = (function(){
             })();
 
         var resizeFree = (function(){
-					var bounds = undefined;
+            var bounds = undefined;
             return {
                 activated:false,
-								getBounds:function(){return bounds;},
+                getBounds:function(){return bounds;},
                 rehome : function(root){
                     if(!resizeFree.activated){
                         var s = Modes.select.handlesAtZoom();
@@ -1060,6 +1060,8 @@ var Modes = (function(){
                     var root = Modes.select.totalSelectedBounds();
                     Modes.select.offset = {x:root.x2,y:root.y2};
                     blit();
+
+                    console.log("Free transform down");
                     return false;
                 },
                 move:function(worldPos){
@@ -1101,15 +1103,16 @@ var Modes = (function(){
                             word.doc.width() * resized.xScale,
                             Modes.text.minimumWidth / scale()
                         ));
+                        word.doc.invalidateBounds();
                         if(word.doc.save().length > 0){
                             sendRichText(word);
                         }
                     });
-                    Modes.text.invalidateSelectedBoxes();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
+                    console.log("Free transform up");
                     sendStanza(resized);
                     blit();
                     return false;
@@ -1164,12 +1167,21 @@ var Modes = (function(){
             }
         };
     });
-		var clearCanvasInteractableFunc = function(category){
-			Modes.canvasInteractables[category] = [];
-		};
+    var clearCanvasInteractableFunc = function(category){
+        Modes.canvasInteractables[category] = [];
+    };
     return {
-				pushCanvasInteractable:pushCanvasInteractableFunc,
-				clearCanvasInteractables:clearCanvasInteractableFunc,
+        pushCanvasInteractable:pushCanvasInteractableFunc,
+        clearCanvasInteractables:clearCanvasInteractableFunc,
+        getCanvasInteractables:function(){
+            return _.mapValues(Modes.canvasInteractables,function(interactables){
+                return _.map(interactables,function(v){
+                    var _v = _.clone(v);
+                    _v.bounds = _v.getBounds();
+                    return _v;
+                });
+            });
+        },
         currentMode:noneMode,
         none:noneMode,
         canvasInteractables:{},
@@ -1198,8 +1210,8 @@ var Modes = (function(){
                     bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
                     identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
                     privacy:Privacy.getCurrentPrivacy(),
-										slide:Conversations.getCurrentSlideJid(),
-										target:"presentationSpace",
+                    slide:Conversations.getCurrentSlideJid(),
+                    target:"presentationSpace",
                     requestedWidth:width,
                     width:width,
                     height:0,
@@ -1256,66 +1268,38 @@ var Modes = (function(){
                     }
                 }
             };
+            var scaleEditor = function(d,factor){
+                var originalRange = d.selectedRange();
+                var refStart = 0;
+                var sizes = [];
+                var refSize = carota.runs.defaultFormatting.size;
+                d.runs(function(referenceRun) {
+                    var runLength = _.size(referenceRun.text);
+                    var newEnd = refStart + runLength;
+                    d.select(refStart,newEnd,true);
+                    var size = d.selectedRange().getFormatting().size || refSize;
+                    _.each(_.range(refStart,newEnd),function(){
+                        sizes.push(size);
+                    });
+                    refStart = newEnd;
+                    refSize = size;
+                },d.range(0,originalRange.end));
+                sizes = sizes.reverse();
+                refStart = originalRange.start;
+                d.runs(function(runToAlter){
+                    var refEnd = refStart + runToAlter.text.length;
+                    d.select(refStart,refEnd,true);
+                    d.selectedRange().setFormatting("size",sizes[refStart] * factor);
+                    refStart = refEnd;
+                },d.range(originalRange.start,originalRange.end));
+                d.select(originalRange.start,originalRange.end,true);
+            };
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            var source = d.save();
-														
-														var originalRange = d.selectedRange();
-														var original = {
-															start:originalRange.start,
-															end:originalRange.end
-														};
-														var start = original.start;
-														var end = original.start;
-														var referenceRuns = [];
-														d.select(0,original.end,true);
-														var refStart = 0;
-														d.runs(function(referenceRun){
-															var newEnd = refStart + _.size(referenceRun.text);
-															d.select(refStart,newEnd,true);
-															var formatting = d.selectedRange().getFormatting();
-															referenceRuns.push({
-																start:refStart,
-																end:newEnd,
-																run:referenceRun,
-																formatting:formatting
-															});
-															refStart = newEnd;
-														},d.selectedRange());
-
-														d.select(original.start,original.end,true);
-														d.runs(function(runToAlter){
-															start = end;
-															end = start + runToAlter.text.length;
-															d.select(start,end,true);
-															var size = d.selectedRange().getFormatting().size;
-															if (size == undefined){
-																var candidate = _.findLast(referenceRuns,function(run){
-																	return "formatting" in run && "size" in run.formatting && run.end <= end; 
-																});
-																if (candidate != undefined && "formatting" in candidate && "size" in candidate.formatting){
-																	size = candidate.formatting.size;
-																}
-															};
-															if (size != undefined){
-																d.selectedRange().setFormatting("size",size * factor);
-															}
-														},d.selectedRange());
-
-														d.select(original.start,original.end,true);
-														
-/*
-                            _.each(source,function(run){
-                                run.size = run.size * factor;
-                            });
-                            d.load(source);
-*/
-                            if(d.save().length > 0){
-                                sendRichText(t);
-                            }
+                            scaleEditor(d,factor);
                         }
                     });
                 };
@@ -1386,7 +1370,7 @@ var Modes = (function(){
                         });
                     };
                 }
-                fontLargerSelector.click(scaleCurrentSelection(1.2));
+                fontLargerSelector.on("click",scaleCurrentSelection(1.2));
                 fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
@@ -1394,9 +1378,10 @@ var Modes = (function(){
                 var colorCodes = {
                     red:"#ff0000",
                     blue:"#0000ff",
-                    black:"#000000"
+                    black:"#000000",
+                    yellow:"#ffff00"
                 };
-                var colors = ["red","blue","black"];
+                var colors = ["red","blue","black","yellow"];
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
@@ -1414,7 +1399,16 @@ var Modes = (function(){
                     Modes.select.activate();
                 });
             });
+            var mapSelected = function(f){
+                var sel = Modes.select.selected.multiWordTexts;
+                _.each(boardContent.multiWordTexts,function(t){
+                    if(t.identity in sel){
+                        f(t);
+                    }
+                });
+            };
             return {
+                name:"text",
                 echoesToDisregard:{},
                 minimumWidth:240,
                 minimumHeight:function(){
@@ -1432,14 +1426,23 @@ var Modes = (function(){
                         box.doc.invalidateBounds()
                     });
                 },
-                mapSelected:function(f){
-                    var sel = Modes.select.selected.multiWordTexts;
-                    _.each(boardContent.multiWordTexts,function(t){
-                        if(t.identity in sel){
-                            f(t);
-                        }
+                getSelectedRanges:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+                        var r = t.doc.selectedRange();
+                        return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
                     });
                 },
+                getLinesets:function(){
+                    return _.map(boardContent.multiWordTexts,function(t){
+			console.log("Textbox",t.identity,t.doc.width());
+			t.doc.layout();
+                        return _.map(t.doc.frame.lines,function(l){
+			    return l.positionedWords.length;
+			});
+                    });
+                },
+                mapSelected:mapSelected,
+                scaleEditor:scaleEditor,
                 scrollToCursor:function(editor){
                     var b = editor.bounds;
                     var caretIndex = editor.doc.selectedRange().start;
@@ -1489,7 +1492,7 @@ var Modes = (function(){
                             isAuthor? blit : noop,
                             t);
                         if(isAuthor){
-                            editor.doc.contentChanged(function(){
+                            var onChange = _.debounce(function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 //source.privacy = Privacy.getCurrentPrivacy();
@@ -1498,7 +1501,8 @@ var Modes = (function(){
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
-                            });
+                            },1000);
+                            editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
                                 if(editor.doc.save().length > 0){
@@ -1507,7 +1511,8 @@ var Modes = (function(){
                                     var textColors = [
                                         $("#blackText"),
                                         $("#redText"),
-                                        $("#blueText")
+                                        $("#blueText"),
+                                        $("#yellowText")
                                     ];
                                     var setV = function(selector,prop){
                                         var isToggled = (format[prop] == true);
@@ -1531,6 +1536,7 @@ var Modes = (function(){
                                     setIf(textColors[0],"color",["#000000",255]);
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
+                                    setIf(textColors[3],"color",["#ffff00",255]);
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
@@ -1553,10 +1559,6 @@ var Modes = (function(){
                     var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
                     var texts = _.values(boardContent.multiWordTexts).filter(function(text){
                         var intersects = intersectRect(text.bounds,ray)
-                        if(intersects){
-                            console.log("intersects",text.bounds,ray);
-                            console.log(sprintf("%s clicked box by %s",Participants.code(me),Participants.code(text.author)));
-                        }
                         return intersects && (text.author == me);
                     });
                     if(texts.length > 0){
@@ -1581,7 +1583,7 @@ var Modes = (function(){
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     Progress.call("onLayoutUpdated");
-                    var lastClick = Date.now();
+                    var lastClick = 0;
                     var down = function(x,y,z,worldPos){
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
@@ -1601,8 +1603,9 @@ var Modes = (function(){
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
-                            if(t.doc.save().length == 0){
+                            if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
+				blit();
                             }
                         });
                         var sel;
@@ -1613,13 +1616,15 @@ var Modes = (function(){
                             if(clickTime - lastClick <= doubleClickThreshold){
                                 doc.dblclickHandler(context.node);
                             }
+                            else{
+                                doc.mouseupHandler(context.node);
+                            }
                             lastClick = clickTime;
                             sel = {
                                 multiWordTexts:{}
                             };
                             sel.multiWordTexts[editor.identity] = editor;
                             Modes.select.setSelection(sel);
-                            doc.mouseupHandler(context.node);
                         } else {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{
@@ -1651,6 +1656,49 @@ var Modes = (function(){
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
+								handleDrop:function(html,x,y){
+									if (html.length > 0){
+										var newRuns = carota.html.parse(html,{});
+										console.log("newRuns:",newRuns);
+										var worldPos = screenToWorld(x,y);
+										Modes.text.activate();
+										var clickTime = Date.now();
+										var sel;
+										Modes.select.clearSelection();
+										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+										var newEditor = createBlankText(worldPos,[{
+											text:" ",
+											italic:carota.runs.nextInsertFormatting.italic == true,
+											bold:carota.runs.nextInsertFormatting.bold == true,
+											underline:carota.runs.nextInsertFormatting.underline == true,
+											color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+											size:carota.runs.defaultFormatting.size / scale()
+										}]);
+										var newDoc = newEditor.doc;
+										newDoc.select(0,1);
+										boardContent.multiWordTexts[newEditor.identity] = newEditor;
+										sel = {multiWordTexts:{}};
+										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+										Modes.select.setSelection(sel);
+										editor = newEditor;
+										var node = newDoc.byOrdinal(0);
+										newDoc.mousedownHandler(node);
+										newDoc.mouseupHandler(node);
+										editor.doc.invalidateBounds();
+										editor.doc.isActive = true;
+										editor.doc.load(newRuns);
+										Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+												Modes.text.echoesToDisregard = {};
+										};
+										Modes.text.scrollToCursor(editor);
+										var source = boardContent.multiWordTexts[editor.identity];
+										source.privacy = Privacy.getCurrentPrivacy();
+										source.target = "presentationSpace";
+										source.slide = Conversations.getCurrentSlideJid();
+										sendRichText(source);
+										Progress.call("onSelectionChanged",[Modes.select.selected]);
+									};
+								},
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
@@ -1658,7 +1706,7 @@ var Modes = (function(){
                     unregisterPositionHandlers(board);
                     _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
-                        if(_.trim(t.doc.save()).length == 0){
+                        if(t.doc.documentRange().plainText().trim().length == 0){
                             delete boardContent.multiWordTexts[t.identity];
                         }
                     });
@@ -1693,7 +1741,7 @@ var Modes = (function(){
                 var reader = new FileReader();
                 reader.onload = function(readerE){
                     var vid = $("<video/>");
-										var thisVid = vid[0];
+                    var thisVid = vid[0];
                     var originalSrc = readerE.target.result;
                     var originalSize = originalSrc.length;
                     thisVid.addEventListener("loadeddata",function(e){
@@ -1702,14 +1750,14 @@ var Modes = (function(){
                         currentVideo.width = width;
                         currentVideo.height = height;
                         currentVideo.video = vid;
-												currentVideo.videoSrc = originalSrc;
+                        currentVideo.videoSrc = originalSrc;
                         onComplete();
                     },false);
                     vid.append($("<source />",{
-											src:originalSrc,
-											type:"video/mp4"
-										}));
-										vid.load();
+                        src:originalSrc,
+                        type:"video/mp4"
+                    }));
+                    vid.load();
                 }
                 reader.readAsDataURL(currentVideo.fileUpload);
             };
@@ -1896,18 +1944,32 @@ var Modes = (function(){
                     }
                 }
             })();
-            var clientSideProcessImage = function(onComplete){
-                if (currentImage == undefined || currentImage.fileUpload == undefined || onComplete == undefined){
+            var clientSideProcessImage = function(onComplete,thisCurrentImage){
+								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
+                if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
+									console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
+									var originalSrc = readerE.target.result;
+									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
+                    var originalSize = originalSrc.length;
+										return originalSize < img;
+									});
+                }
+                reader.readAsDataURL(state.fileUpload);
+            };
+						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+							var thisCurrentImage = state != undefined ? state : currentImage;
                     var renderCanvas = $("<canvas/>");
                     var img = new Image();
-                    var originalSrc = readerE.target.result;
-                    var originalSize = originalSrc.length;
+										img.setAttribute("crossOrigin","Anonymous");
+										img.onerror = function(e){
+											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+										};
                     img.onload = function(e){
                         var width = img.width;
                         var height = img.height;
@@ -1935,28 +1997,31 @@ var Modes = (function(){
                             width:px(width),
                             height:px(height)
                         });
-                        renderCanvas[0].getContext("2d").drawImage(img,0,0,width,height);
+												var ctx = renderCanvas[0].getContext("2d");
+												ctx.rect(0,0,width,height);
+												ctx.fillStyle = "white";
+												ctx.fill();
+                        ctx.drawImage(img,0,0,width,height);
                         var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
-                        currentImage.width = w;
-                        currentImage.height = h;
-                        currentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
-                        var newSize = currentImage.resizedImage.length;
-                        if (originalSize < newSize){
-                            currentImage.resizedImage = originalSrc;
-                        }
-                        onComplete();
+                        thisCurrentImage.width = w;
+                        thisCurrentImage.height = h;
+                        thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
+                        var newSize = thisCurrentImage.resizedImage.length;
+												if (ifBiggerPred(newSize)){
+													thisCurrentImage.resizedImage = originalSrc;
+												}
+                        onComplete(thisCurrentImage);
                     };
                     img.src = originalSrc;
-                }
-                reader.readAsDataURL(currentImage.fileUpload);
-            };
-            var sendImageToServer = function(){
-                if (currentImage.type == "imageDefinition"){
+
+						};
+            var sendImageToServer = function(imageDef){
+                if (imageDef.type == "imageDefinition"){
                     WorkQueue.pause();
-                    var worldPos = {x:currentImage.x,y:currentImage.y};
-                    var screenPos= {x:currentImage.screenX,y:currentImage.screenY};
+                    var worldPos = {x:imageDef.x,y:imageDef.y};
+                    var screenPos= {x:imageDef.screenX,y:imageDef.screenY};
                     var t = Date.now();
-                    var identity = sprintf("%s%s",UserSettings.getUsername(),t);
+                    var identity = sprintf("%s%s%s",UserSettings.getUsername(),t,_.uniqueId());
                     var currentSlide = Conversations.getCurrentSlideJid();
                     var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentSlide.toString(),encodeURI(identity));
                     $.ajax({
@@ -1972,13 +2037,13 @@ var Modes = (function(){
                                 identity:newIdentity,
                                 slide:currentSlide.toString(),
                                 source:$(e).text(),
-                                bounds:[currentImage.x,currentImage.y,currentImage.x+currentImage.width,currentImage.y+currentImage.height],
-                                width:currentImage.width,
-                                height:currentImage.height,
+                                bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
+                                width:imageDef.width,
+                                height:imageDef.height,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                x:currentImage.x,
-                                y:currentImage.y
+                                x:imageDef.x,
+                                y:imageDef.y
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2006,7 +2071,7 @@ var Modes = (function(){
                             errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
                         },
-                        data:currentImage.resizedImage,
+                        data:imageDef.resizedImage,
                         cache: false,
                         contentType: false,
                         processData: false
@@ -2022,7 +2087,6 @@ var Modes = (function(){
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
                         var files = e.target.files || e.dataTransfer.files;
-                        var limit = files.length;
                         var file = files[0];
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
@@ -2051,6 +2115,45 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
+								handleDroppedSrc:function(src,x,y){
+									var worldPos = screenToWorld(x,y);
+									var thisCurrentImage = {
+											"type":"imageDefinition",
+											"screenX":x,
+											"screenY":y,
+											"x":worldPos.x,
+											"y":worldPos.y
+									};
+									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
+								},	
+
+								handleDrop:function(dataTransfer,x,y){
+									var yOffset = 0;
+									var processed = [];
+									var processFile = function(file,sender){
+										if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+											var worldPos = screenToWorld(x,y + yOffset);
+											var thisCurrentImage = {
+													"type":"imageDefinition",
+													"screenX":x,
+													"screenY":y + yOffset,
+													"x":worldPos.x,
+													"y":worldPos.y
+											};
+											thisCurrentImage.fileUpload = file;
+											console.log("handlingDrop",file,sender,thisCurrentImage);
+											processed.push(file);
+											clientSideProcessImage(sendImageToServer,thisCurrentImage);
+											yOffset += 50;
+										}
+									};
+									_.forEach(dataTransfer.files,function(f){processFile(f,"file");});
+									_.forEach(dataTransfer.items,function(item){
+										var file = item.getAsFile(0);
+										processFile(file,"item");
+									});
+
+								},	
                 deactivate:function(){
                     resetImageUpload();
                     removeActiveMode();
@@ -2175,7 +2278,7 @@ var Modes = (function(){
                             s.texts,
                             s.multiWordTexts,
                             s.images,
-														s.videos
+                            s.videos
                         );
                     }
                 }
@@ -2233,7 +2336,7 @@ var Modes = (function(){
                     texts:{},
                     inks:{},
                     multiWordTexts:{},
-										videos:{}
+                    videos:{}
                 },
                 resizeHandleSize:20,
                 setSelection:function(selected){
@@ -2311,7 +2414,7 @@ var Modes = (function(){
                         func("texts");
                         func("multiWordTexts");
                         func("inks");
-												func("videos");
+                        func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
                         Modes.select.resizing = false;
@@ -2323,7 +2426,7 @@ var Modes = (function(){
                         if (!(modifiers.ctrl)){
                             var tb = Modes.select.totalSelectedBounds();
                             if(tb.x != Infinity){
-                                var threshold = 10 / scale();
+                                var threshold = 3 / scale();
                                 var ray = [
                                     worldPos.x - threshold,
                                     worldPos.y - threshold,
@@ -2342,6 +2445,7 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
+                        console.log(x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
@@ -2412,7 +2516,7 @@ var Modes = (function(){
                                     texts:{},
                                     inks:{},
                                     multiWordTexts:{},
-																		videos:{}
+                                    videos:{}
                                 };
                                 var intersectAuthors = {};
                                 var intersections = {};
@@ -2430,9 +2534,9 @@ var Modes = (function(){
                                                 case "ink":
                                                     prerenderInk(item);
                                                     break;
-																								case "video":
-																										prerenderVideo(item);
-																										break;		
+                                                case "video":
+                                                    prerenderVideo(item);
+                                                    break;
                                                 default:
                                                     item.bounds = [NaN,NaN,NaN,NaN];
                                                 }
@@ -2474,9 +2578,9 @@ var Modes = (function(){
                                 /*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
                                 var toggleCategory = function(category){
                                     $.each(intersected[category],function(id,item){
-																				if (!(category in Modes.select.selected)){
-																					Modes.select.selected[category] = [];
-																				}
+                                        if (!(category in Modes.select.selected)){
+                                            Modes.select.selected[category] = [];
+                                        }
                                         if(category in Modes.select.selected && id in Modes.select.selected[category]){
                                             delete Modes.select.selected[category][id];
                                         } else {
@@ -2522,7 +2626,7 @@ var Modes = (function(){
                     $("#selectionAdorner").empty();
                     $("#selectMarquee").hide();
                     updateAdministerContentVisualState();
-										blit();
+                    blit();
                     blit();
                 }
             }
@@ -2850,7 +2954,7 @@ var Modes = (function(){
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
                         currentStroke = currentStroke.concat([x,y,mousePressure * z]);
-                        strokeCollected(currentStroke.join(" "));
+                        strokeCollected(currentStroke);
                     }
                     boardContext.globalAlpha = 1.0;
                 };

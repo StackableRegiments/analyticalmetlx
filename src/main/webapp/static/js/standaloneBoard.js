@@ -91,7 +91,9 @@ var board = function(options){
         ["cyan","#00ffff",255],
         ["green","#00ff00",255],
         ["white","#ffffff",255],
-        ["dark grey","#666666",255]
+        ["dark grey","#666666",255],
+        ["yellow","#ffff00",255],
+        ["magenta","#ff00ff",255]
     ];
     var defaultColor = colors[0];
     var toHex = function(inputNumber){

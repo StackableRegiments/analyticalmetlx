@@ -126,7 +126,6 @@ class SlideRenderer extends Logger {
               observedHeight * metlImage.scaleFactorY
             }
             case d:Double => d
-            case _ => 0.0
           }
           val internalWidth = w match {
             case d:Double if (d.isNaN) => {
@@ -134,7 +133,6 @@ class SlideRenderer extends Logger {
               observedWidth * metlImage.scaleFactorX
             }
             case d:Double => d
-            case _ => 0.0
           }
           Dimensions(x,y,x+internalWidth,y+internalHeight,internalWidth,internalHeight)
         }

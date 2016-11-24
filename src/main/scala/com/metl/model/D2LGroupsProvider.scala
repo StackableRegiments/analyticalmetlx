@@ -1,10 +1,10 @@
 package com.metl.model
 
-import com.metl.data._
+import com.metl.data.{Group=>MeTLGroup,GroupSet=>MeTLGroupSet,_}
 import com.metl.utils._
 import com.metl.view._
 
-import com.metl.liftAuthenticator.LiftAuthStateData
+import com.metl.liftAuthenticator._
 
 import net.liftweb.http.SessionVar
 import net.liftweb.http.LiftRules
@@ -13,7 +13,7 @@ import net.liftweb.util.Helpers._
 
 import net.liftweb.util.Props
 import scala.io.Source
-import scala.xml.{Source=>XmlSource,_}
+import scala.xml.{Source=>XmlSource,Group=>XmlGroup,_}
 import com.d2lvalence.idkeyauth._
 import com.d2lvalence.idkeyauth.implementation._
 import net.liftweb.json.JsonAST
@@ -72,7 +72,7 @@ case class D2LClassListUser(
   ProfileIdentifier:String,
   DisplayName:String,
   UserName:Option[String],
-  OrgDefinedId:Option[String],
+  OrgDefinedId:Option[String], // this is the SLU Id number or username, I believe
   Email:Option[String],
   FirstName:Option[String],
   LastName:Option[String]
@@ -80,27 +80,31 @@ case class D2LClassListUser(
 case class D2LGroupCategory(
   GroupCategoryId:Long,
   Name:String,
-  Description:String, //richtext
-  EnrollmentStyle:Int,
+  Description:D2LDescription, //richtext
+  EnrollmentStyle:Option[String], //this is probably mandatory, but I thought it was an int representing an enum, and it's a string representation of the enum
   EnrollmentQuantity:Option[Int],
   MaxUsersPerGroup:Option[Int],
   AutoEnroll:Boolean,
   RandomizeEnrollments:Boolean,
   Groups:List[Long],
-  AllocateAfterExpiry:Boolean,
+  AllocateAfterExpiry:Option[String],
   SelfEnrollmentExpiryDate:Option[String]
 )
 case class D2LGroup(
   GroupId:Long,
   Name:String,
-  Description:String, //richtext
+  Description:D2LDescription, //richtext
   Enrollments:List[Long]
 )
 case class D2LSection(
   SectionId:Long,
   Name:String,
-  Description:String, //richtext
+  Description:D2LDescription, //richtext
   Enrollments:List[Long]
+)
+case class D2LDescription(
+  Text:Option[String],
+  Html:Option[String]
 )
 
 class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
@@ -115,17 +119,21 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
 
   protected val bookMarkTag = "bookmark"
 
-  protected def fetchListFromD2L[T](url:java.net.URI)(implicit m:Manifest[T]):List[T] = {
+  protected def fetchListFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     try {
       parse(client.get(url.toString)).extract[List[T]]
     } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        List.empty[T]
+      }
       case e:Exception => {
-        println("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[T]
       }
     }
   }
-  protected def fetchPagedListFromD2L[T](masterUrl:String,userContext:ID2LUserContext)(implicit m:Manifest[T]):List[T] = {
+  protected def fetchPagedListFromD2L[T](masterUrl:String,userContext:ID2LUserContext,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     val url = userContext.createAuthenticatedUri(masterUrl,"GET")
     try {
       val firstGet = client.get(url.toString)
@@ -143,10 +151,10 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           items = items ::: resp.Items
           continuing = resp.PagingInfo.HasMoreItems
           bookmark = resp.PagingInfo.Bookmark
-          println("bookmark: %s, items: %s".format(bookmark,items.length))
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
-            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
             continuing = false
             bookmark = None
           }
@@ -154,8 +162,12 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       }
       items
     } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        List.empty[T]
+      }
       case e:Exception => {
-        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[T]
       }
     }
@@ -165,7 +177,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     appContext.createUserContext(userId,userKey)
   }
 }
-
+/*
 class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupsProvider {
   val myContext = getUserContext
   protected def getMyUser(userContext:ID2LUserContext,username:String):List[D2LUser] = {
@@ -174,12 +186,13 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
   protected def getMyEnrollments(userContext:ID2LUserContext,user:D2LUser):List[D2LMyOrgUnit] = {
     fetchPagedListFromD2L[D2LMyOrgUnit]("/d2l/api/lp/%s/myenrollments/users/%s/orgUnits/".format(lpApiVersion,user.OrgDefinedId.getOrElse("")),userContext) 
   }
-  override def getGroupsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
+  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
     (en.OrgUnit.Name :: en.OrgUnit.Code.toList).map(v => (GroupKeys.ou,v))
   }))
   override def getMembersFor(groupName:String):List[String] = Nil
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
 }
+*/
 
 class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
 
@@ -192,6 +205,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       var items = firstResp.Items
       var continuing = firstResp.PagingInfo.HasMoreItems
       var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
+      trace("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
           val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
@@ -201,10 +215,10 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
           items = items ::: resp.Items
           continuing = resp.PagingInfo.HasMoreItems
           bookmark = resp.PagingInfo.Bookmark
-          println("bookmark: %s, items: %s".format(bookmark,items.length))
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
-            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,e.getStackTraceString))
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
             continuing = false
             bookmark = None
           }
@@ -213,7 +227,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       items
     } catch {
       case e:Exception => {
-        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,e.getStackTraceString))
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[D2LOrgUnit]
       }
     }
@@ -222,7 +236,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     fetchListFromD2L[D2LClassListUser](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/classlist/".format(leApiVersion,orgUnit.Identifier),"GET"))
   }
   protected def getSections(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LSection] = {
-    fetchListFromD2L[D2LSection](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/sections/".format(lpApiVersion,orgUnit.Identifier),"GET"))
+    fetchListFromD2L[D2LSection](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/sections/".format(lpApiVersion,orgUnit.Identifier),"GET"),true)
   }
   protected def getGroupCategories(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LGroupCategory] = {
     fetchListFromD2L[D2LGroupCategory](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/groupcategories/".format(lpApiVersion,orgUnit.Identifier),"GET"))
@@ -242,71 +256,53 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     }
   }
 
+  protected def nameSection(orgUnit:D2LOrgUnit,section:D2LSection):String = "%s_%s".format(orgUnit.Name,section.Name)
+  protected def nameGroupCategory(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):String = "%s_%s".format(orgUnit.Name,groupCategory.Name)
+  protected def nameGroup(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory,group:D2LGroup):String = "%s_%s_%s".format(orgUnit.Name,groupCategory.Name,group.Name)
+  protected val d2lSectionPlaceholder = D2LSection(-1,"D2LProvidedSections",D2LDescription(None,None),Nil)
   override def getData:GroupStoreData = {
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
-    println("courses found: %s".format(courses.length))
-    val (groupData,personalInformation) = parFlatMap[D2LOrgUnit,Tuple4[String,String,String,String]](courses,orgUnit => { 
-      println("OU: %s (%s) %s".format(orgUnit.Name,orgUnit.Code, orgUnit.Type))
+    trace("courses found: %s".format(courses.length))
+    val compoundItems = parFlatMap[D2LOrgUnit,Tuple2[List[Tuple3[String,String,String]],List[OrgUnit]]](courses,orgUnit => { 
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
-      val combinedSet:List[() => List[Tuple4[String,String,String,String]]] = List(
-        () => {
-          val constructedMembers = (for (
-            memberLists <- members.values;
-            member <- memberLists;
-            memberName <- member.OrgDefinedId.filterNot(_ == "").toList
-          ) yield {
-            (memberName,memberName,GroupKeys.ou,orgUnit.Name) :: 
-            (memberName,member.Identifier,PersonalInformation.personalInformation,"D2L_Identifier") :: 
-            (memberName,member.ProfileIdentifier,PersonalInformation.personalInformation,"D2L_Profile_Identifier") :: 
-            (memberName,member.Identifier,PersonalInformation.personalInformation,"D2L_Identifier") :: 
-            (memberName,member.DisplayName,PersonalInformation.personalInformation,PersonalInformation.displayName) :: 
-            member.UserName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,"D2L_UserName")) ::: 
-            orgUnit.Code.toList.map(c => (memberName,memberName,GroupKeys.ou,c)) :::
-            member.FirstName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.firstName)) ::: 
-            member.LastName.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.surname)) ::: 
-            member.Email.toList.map(fn => (memberName,fn,PersonalInformation.personalInformation,PersonalInformation.email))
-          }).flatten
-          println("OU-Members: %s %s".format(orgUnit.Name,constructedMembers.toList.length))
-          constructedMembers.toList
-        },
-        () => {
-          val constructedSections = for (
-            section <- getSections(userContext,orgUnit);
-            memberId <- section.Enrollments;
-            membersById:List[D2LClassListUser] <- members.get(memberId).toList;
-            member:D2LClassListUser <- membersById;
-            memberName:String <- member.OrgDefinedId.filterNot(_ == "")
-          ) yield {
-            (memberName,memberName,GroupKeys.section,section.Name)
-          }
-          println("OU-Sections: %s %s".format(orgUnit.Name,constructedSections.length))
-          constructedSections
-        },
-        () => {
-          val constructedGroups = parFlatMap[D2LGroupCategory,Tuple4[String,String,String,String]](getGroupCategories(userContext,orgUnit),groupCategory => {
-            println("OU-GroupCategory: %s %s".format(orgUnit.Name,groupCategory.Name))
-            parFlatMap[D2LGroup,Tuple4[String,String,String,String]](getGroups(userContext,orgUnit,groupCategory),group => {
-              println("OU-Group: %s %s".format(orgUnit.Name,group.Name))
-              for (
-                memberId <- group.Enrollments;   
-                membersById:List[D2LClassListUser] <- members.get(memberId).toList;
-                member:D2LClassListUser <- membersById;
-                memberName:String <- member.OrgDefinedId.filterNot(_ == "")
-              ) yield {
-                (memberName,memberName,GroupKeys.group,group.Name)
-              }
-            },6,"groups")
-          },4,"groupCategories")
-          println("OU-Groups: %s %s".format(orgUnit.Name,constructedGroups.length))
-          constructedGroups
-        }
-      )
-      parFlatMap[() => List[Tuple4[String,String,String,String]],Tuple4[String,String,String,String]](combinedSet,f => f(),3,"members_sections_groups")
-    },16,"ou").partition(_._3 != PersonalInformation.personalInformation)
-    val groupsByMember:Map[String,List[Tuple2[String,String]]] = groupData.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._3,m._4))))
-    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_._4).map(t => (t._1,t._2.distinct.map(_._1)))
-    val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.groupBy(_._1).map(t => (t._1,t._2.distinct.map(m => (m._4,m._2))))
+      val memberDetails = (for (
+        memberLists <- members.values;
+        member <- memberLists;
+        memberName <- member.OrgDefinedId.filterNot(_ == "").toList
+      ) yield {
+        (memberName,member.Identifier,"D2L_Identifier") :: 
+        (memberName,member.ProfileIdentifier,"D2L_Profile_Identifier") :: 
+        (memberName,member.Identifier,"D2L_Identifier") :: 
+        (memberName,member.DisplayName,PersonalInformation.displayName) :: 
+        member.UserName.toList.map(fn => (memberName,fn,"D2L_UserName")) ::: 
+        member.FirstName.toList.map(fn => (memberName,fn,PersonalInformation.firstName)) ::: 
+        member.LastName.toList.map(fn => (memberName,fn,PersonalInformation.surname)) ::: 
+        member.Email.toList.map(fn => (memberName,fn,PersonalInformation.email))
+      }).flatten.toList
+
+      val sections = getSections(userContext,orgUnit).map(section => {
+        Group(GroupKeys.section,section.Name,section.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "")))
+      })
+      val sectionGroupSets = sections match {
+        case Nil => Nil
+        case some => List(GroupSet(GroupKeys.sectionCategory,nameSection(orgUnit,d2lSectionPlaceholder),some.flatMap(_.members),some))
+      }
+      val groupCategories = parFlatMap[D2LGroupCategory,GroupSet](getGroupCategories(userContext,orgUnit),groupCategory => {
+        val groups = getGroups(userContext,orgUnit,groupCategory).map(group => {
+          Group(GroupKeys.group,nameGroup(orgUnit,groupCategory,group),group.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "")))
+        })
+        List(GroupSet(GroupKeys.groupCategory,nameGroupCategory(orgUnit,groupCategory),groups.flatMap(_.members).distinct,groups))
+      },4,"groupCategories")
+      val children =  sectionGroupSets ::: groupCategories
+      val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,(members.values.toList.flatten.flatMap(_.OrgDefinedId).toList ::: children.flatMap(_.members)).distinct,children))
+      List((memberDetails,orgUnits))
+    },16,"ou")
+    val personalInformation = compoundItems.map(_._1)
+    val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => (m._3,m._2)).distinct))
+    val groupData = compoundItems.flatMap(_._2)
+    val groupsByMember:Map[String,List[OrgUnit]] = Map(personalDetails.keys.toList.map(u => (u,groupData.filter(_.members.contains(u)))):_*)
+    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
     GroupStoreData(groupsByMember,membersByGroup,personalDetails)
   }
 }

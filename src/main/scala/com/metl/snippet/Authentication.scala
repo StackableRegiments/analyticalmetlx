@@ -22,7 +22,7 @@ class AuthenticationSnippet {
         <username>{ authData.username }</username>
         <authenticated>{ authData.authenticated }</authenticated>
         <eligibleGroups>{ authData.eligibleGroups.map(eg => {
-          <authGroup type={eg._1} name={eg._2} />
+          <authGroup type={eg.ouType} name={eg.name} />
         }) }</eligibleGroups>
         <informationGroups>{authData.informationGroups.map(ig => {
           <infoGroup type={ig._1} name={ig._2} />

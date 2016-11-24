@@ -17,10 +17,11 @@ var Progress = (function(){
         onBoardContentChanged:{},
         onViewboxChanged:{},
         onLayoutUpdated:{},
-	textBoundsChanged:{},
+        textBoundsChanged:{},
         postRender:{},
         historyReceived:{},
         stanzaReceived:{},
+        themeReceived:{},
         currentConversationJidReceived:{},
         currentSlideJidReceived:{},
         conversationDetailsReceived:{},
@@ -29,6 +30,9 @@ var Progress = (function(){
         syncMoveReceived:{},
         userGroupsReceived:{},
         usernameReceived:{},
-        userOptionsReceived:{}
+        userOptionsReceived:{},
+				afterWorkQueuePause:{}, //these two are sensitive - don't put anything into these which itself would pause the workqueue, or you'll get deadlocks.
+				beforeWorkQueueResume:{},
+        onCanvasContentDeleted:{}
     }
 })();

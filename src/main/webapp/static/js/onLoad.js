@@ -27,7 +27,7 @@ var reapplyStylingToServerGeneratedContent = function(contentId){
 };
 var bounceAnd = function(func){
     return function(e){
-        bounceButton(this);
+        //bounceButton(this);
         func(e);
     }
 };
@@ -67,6 +67,7 @@ var WorkQueue = (function(){
     var pauseFunction = function(){
         stopResume();
         canWorkFunction(false);
+				Progress.call("afterWorkQueuePause");
     };
     var canWorkFunction = function(state){
         isAbleToWork = state;
@@ -85,6 +86,7 @@ var WorkQueue = (function(){
     var gracefullyResumeFunction = function(){
         stopResume();
         gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
+				Progress.call("beforeWorkQueueResume");
     };
     return {
         pause:pauseFunction,
@@ -105,7 +107,7 @@ var WorkQueue = (function(){
 })();
 var Pan = {
     pan:function(xDelta,yDelta){
-					takeControlOfViewbox();
+        takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         /*
@@ -116,7 +118,7 @@ var Pan = {
         TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
     },
     translate:function(xDelta,yDelta){
-					takeControlOfViewbox();
+        takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         /*
@@ -184,7 +186,7 @@ var Zoom = (function(){
     }
     return {
         scale:function(scale,ignoreLimits){
-					takeControlOfViewbox();
+            takeControlOfViewbox();
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -201,7 +203,7 @@ var Zoom = (function(){
             TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
         },
         zoom:function(scale,ignoreLimits,onComplete){
-					takeControlOfViewbox();
+            takeControlOfViewbox();
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -257,7 +259,7 @@ var TweenController = (function(){
         requestedViewboxWidth = viewboxWidth;
         requestedViewboxHeight = viewboxHeight;
     };
-		var throttleSpeed = 10;
+    var throttleSpeed = 10;
     var instantAlterViewboxFunction = _.throttle(function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
@@ -421,7 +423,7 @@ var subcategoryMapping = {
     optsToolbar:".applicationGroup"
 };
 var categoryMapping = _.fromPairs(_.flatMap({
-    metaToolbar:"integrations print",
+    metaToolbar:"integrations print recycleBin",
     optsToolbar:"settings healthCheck",
     roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
 },function(v,k){
@@ -435,11 +437,11 @@ function showBackstage(id){
     $("html").css("overflow-y","auto");
     window.currentBackstage = id;
     $(".backstage").hide();
-		if ("HealthCheckViewer" in window){
-			HealthCheckViewer.pause();
-		}
+    if ("HealthCheckViewer" in window){
+        HealthCheckViewer.pause();
+    }
 
-		$(".backstageTabHeaderGroup").hide();
+    $(".backstageTabHeaderGroup").hide();
     $(".backstageTabHeader").removeClass(active);
     $(".backstageCategory").removeClass("active");
     $(".backstageCategory").removeClass(active);
@@ -462,14 +464,14 @@ function showBackstage(id){
     $("#"+id).addClass(active);
 
     if(Conversations.inConversation()){
-			$("#backstageTabHeaders").show();
-			$("#applicationMenuButton").show();
-			$("#roomToolbar").show();
+        $("#backstageTabHeaders").show();
+        $("#applicationMenuButton").show();
+        $("#roomToolbar").show();
     }
     else{
-			$("#backstageTabHeaders").hide();
-			$("#applicationMenuButton").hide();
-			$("#roomToolbar").hide();
+        $("#backstageTabHeaders").hide();
+        $("#applicationMenuButton").hide();
+        $("#roomToolbar").hide();
     }
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
@@ -490,9 +492,9 @@ function hideBackstage(){
     $(".modeSpecificTool").removeClass(active);
     hideSpinner();
     $("#masterLayout").css({"opacity":1.0});
-		if ("HealthCheckViewer" in window){
-			HealthCheckViewer.pause();
-		}
+    if ("HealthCheckViewer" in window){
+        HealthCheckViewer.pause();
+    }
 };
 function showSpinner() {
     $("#loadingSlidePopup").show();
@@ -527,11 +529,11 @@ $(function(){
     $("#left").click(bounceAnd(Extend.left));
     $("#right").click(bounceAnd(Extend.right));
     $("#in").click(bounceAnd(function(){
-			Zoom.in();
-		}));
+        Zoom.in();
+    }));
     $("#out").click(bounceAnd(function(){
-			Zoom.out();
-		}));
+        Zoom.out();
+    }));
     $("#drawMode").click(function(){
         if(Modes.currentMode != Modes.draw){
             Modes.draw.activate();
@@ -691,10 +693,10 @@ $(function(){
         showBackstage("quizzes");
     });
     $("#submitScreenshotButton").on("click",function(){
-			if ("Submissions" in window){
-				//Submissions.requestServerSideSubmission();
-				Submissions.sendSubmission();
-			}
+        if ("Submissions" in window){
+            //Submissions.requestServerSideSubmission();
+            Submissions.sendSubmission();
+        }
     });
     if ("Conversations" in window){
         $("#enableSync").on("click",Conversations.enableSyncMove);
@@ -716,9 +718,9 @@ $(function(){
         showBackstage("customizeBrush");
         updateActiveMenu(this);
     });
-		var printPrivate = true;
-		var includeTitle = true;
-		var includePageCount = true;
+    var printPrivate = true;
+    var includeTitle = true;
+    var includePageCount = true;
     $('#menuPrint').click(function(){
         showBackstage("print");
         updateActiveMenu(this);
@@ -728,19 +730,19 @@ $(function(){
         var rangeThisSlideRadio = $("#rangeThisSlide");
         var rangeSpecifiedInput = $("#rangeSpecifiedInput");
         var printButton = $("#printButton");
-				var showPrivateCheckbox = $("#printPrivateNotes");
-				var includePageCountCheckbox = $("#printPageCount");
-				var includeTitleCheckbox = $("#printConversationTitle");
-				var pageRange = Conversations.getCurrentSlide().index + 1;
+        var showPrivateCheckbox = $("#printPrivateNotes");
+        var includePageCountCheckbox = $("#printPageCount");
+        var includeTitleCheckbox = $("#printConversationTitle");
+        var pageRange = Conversations.getCurrentSlide().index + 1;
         var uncheckAll = function(){
             _.forEach([rangeSpecifiedRadio,rangeAllRadio,rangeThisSlideRadio],function(item){
                 item.prop("checked",false);
             });
             rangeSpecifiedInput.prop("disabled",true);
         };
-				showPrivateCheckbox.prop("checked",printPrivate);
-				includeTitleCheckbox.prop("checked",includeTitle);
-				includePageCountCheckbox.prop("checked",includePageCount);
+        showPrivateCheckbox.prop("checked",printPrivate);
+        includeTitleCheckbox.prop("checked",includeTitle);
+        includePageCountCheckbox.prop("checked",includePageCount);
         uncheckAll();
         rangeThisSlideRadio.prop("checked",true);
         rangeSpecifiedInput.val(pageRange);
@@ -748,64 +750,64 @@ $(function(){
             printButton.attr("target","blank").attr("href",sprintf("clientSidePrintConversation?conversationJid=%s&pageRange=%s&includePrivateContent=%s&includeConversationTitle=%s&includePageCount=%s",conversationJid,pageRange,printPrivate,includeTitle,includePageCount));
         };
         updatePrintState();
-				rangeAllRadio.unbind("click");
+        rangeAllRadio.unbind("click");
         rangeAllRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
-						pageRange = "all";
+            pageRange = "all";
             updatePrintState();
         });
-				rangeSpecifiedRadio.unbind("click");
+        rangeSpecifiedRadio.unbind("click");
         rangeSpecifiedRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
             rangeSpecifiedInput.prop("disabled",false);
-						pageRange = rangeSpecifiedInput.val();
+            pageRange = rangeSpecifiedInput.val();
             updatePrintState();
         });
-				rangeSpecifiedInput.unbind("change");
+        rangeSpecifiedInput.unbind("change");
         rangeSpecifiedInput.on("change",function(){
             var text = $(this).val();
-						pageRange = text;
+            pageRange = text;
             updatePrintState();
         });
-				rangeThisSlideRadio.unbind("click");
+        rangeThisSlideRadio.unbind("click");
         rangeThisSlideRadio.on("click",function(){
             uncheckAll();
             $(this).prop("checked",true);
-						pageRange = Conversations.getCurrentSlide().index + 1;
+            pageRange = Conversations.getCurrentSlide().index + 1;
             updatePrintState();
         });
-				showPrivateCheckbox.unbind("change");
-				showPrivateCheckbox.on("change",function(){
-					printPrivate = $(this).prop("checked");
-					updatePrintState();
-				});
-				includeTitleCheckbox.unbind("change");
-				includeTitleCheckbox.on("change",function(){
-					includeTitle = $(this).prop("checked");
-					updatePrintState();
-				});
-				includePageCountCheckbox.unbind("change");
-				includePageCountCheckbox.on("change",function(){
-					includePageCount = $(this).prop("checked");
-					updatePrintState();
-				});
+        showPrivateCheckbox.unbind("change");
+        showPrivateCheckbox.on("change",function(){
+            printPrivate = $(this).prop("checked");
+            updatePrintState();
+        });
+        includeTitleCheckbox.unbind("change");
+        includeTitleCheckbox.on("change",function(){
+            includeTitle = $(this).prop("checked");
+            updatePrintState();
+        });
+        includePageCountCheckbox.unbind("change");
+        includePageCountCheckbox.on("change",function(){
+            includePageCount = $(this).prop("checked");
+            updatePrintState();
+        });
     });
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
-				Submissions.reRender();
+        Submissions.reRender();
     });
     $('#menuPolls').click(function(){
         showBackstage("quizzes");
         updateActiveMenu(this);
-				Quizzes.reRender();
+        Quizzes.reRender();
     });
     $('#menuBlacklist').click(function(){
         showBackstage("blacklist");
         updateActiveMenu(this);
-				Blacklist.reRender();
+        Blacklist.reRender();
     });
     $('#menuSettings').click(function(){
         showBackstage("settings");
@@ -815,14 +817,211 @@ $(function(){
         showBackstage("integrations");
         updateActiveMenu(this);
     });
-		$("#menuHealthCheck").click(function(){
-				showBackstage("healthCheck");
-				updateActiveMenu(this);
-				if ("HealthCheckViewer" in window){
-					HealthCheckViewer.resume();
+    $("#menuHealthCheck").click(function(){
+        showBackstage("healthCheck");
+        updateActiveMenu(this);
+        if ("HealthCheckViewer" in window){
+            HealthCheckViewer.resume();
+        }
+    });
+    $("#conversations").click(function(){
+        window.location.href = "/conversationSearch";
+    });
+		//$(document).attr("contenteditable",true);
+		//$("#board").attr("contenteditable",true);
+		var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
+		$("#pasteDialogTemplate").remove();
+		var func = function(ev){
+			var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
+			if ("types" in df){
+				var x = ev.offsetX || 10;
+				var y = ev.offsetY || 10;
+				var availableTypes = df.types;
+				var items = df.items;
+				var files = df.files;
+				var dataSets = _.map(availableTypes,function(type){
+					return {
+						key:type,
+						value:df.getData(type)
+					};
+				});
+				var conditionallyActOn = function(coll,itemPred,action){
+					var elem = _.find(coll,itemPred);
+					if (elem != undefined && elem != null){
+						action(elem,df.getData(elem));
+					};
+				};
+				if (_.size(availableTypes) > 1){
+					var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
+					var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
+					var optionContainer = rootElem.find(".dialogOptions");
+					var optionTemplate = optionContainer.find(".dialogOption").clone();
+					optionContainer.empty();
+					var modal = $.jAlert({
+						title:"Data to paste",
+						content:rootElem[0].outerHTML,
+						closeOnClick:true,
+						closeOnEsc:true,
+						blurBackground:true	
+					});	
+					var acceptedTypes = [
+						{
+							key:function(t){return t == "text/html";},
+							name:"rich text and images",
+							faClass:"fa-file-code-o",
+							onClick:function(type){	
+								var html = _.find(dataSets,function(ds){
+									return ds.key == type;
+								}).value;
+								var htmlElem = $(html);
+								var yOffset = 0;
+								html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
+								_.forEach(htmlElem.find("img"),function(imgNode){
+									try {
+										Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
+										yOffset += Math.max(imgNode.height,50);
+									} catch (e){
+										errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+									}
+								});
+								if (htmlElem.text().trim().length > 1){
+									Modes.text.handleDrop(html,x,y + yOffset);
+								}
+							}
+						},
+						{
+							key:function(t){return t == "text/plain";},
+							name:"plain text",
+							faClass:"fa-file-text-o",
+							onClick:function(type){
+								var text = _.find(dataSets,function(ds){
+									return ds.key == type;
+								}).value;
+								Modes.text.handleDrop(text,x,y);
+							}
+						},
+						{
+							key:function(t){return t == "Files";},
+							name:"files or images",
+							faClass:"fa-file-o",
+							onClick:function(type){
+								Modes.image.handleDrop(df,x,y);
+							}
+						},
+						{
+							key:function(t){return t.indexOf("image/") == 0;},
+							name:"images",
+							faClass:"fa-file-image-o",
+							onClick:function(type){
+									Modes.image.handleDrop(df,x,y);
+							}
+						}
+					];	
+
+
+					$("#"+rootId).find(".dialogOptions").html(_.map(_.filter(availableTypes,function(type){
+						return _.some(acceptedTypes,function(acceptableType){
+							return acceptableType.key(type);
+						});
+					}),function(type){
+						var knownType = _.find(acceptedTypes,function(acceptableType){
+							return acceptableType.key(type);
+						});
+						var outerElem = optionTemplate.clone();
+						var button = outerElem.find("button");
+						button.addClass(knownType.faClass);
+						button.on("click",function(){
+							knownType.onClick(type);
+							modal.closeAlert();
+						});
+						button.find(".icon-txt").text(knownType.name);
+						return outerElem;
+					}));
+				} else {
+					var handled = false;
+					conditionallyActOn(availableTypes,function(label){return label == "Files";},function(type,file){
+						if (!handled){
+							Modes.image.handleDrop(df,x,y);
+							handled = true;
+						}
+					});
+					conditionallyActOn(availableTypes,function(label){return label.indexOf("image") == 0;},function(type,image){
+						if (!handled){
+							Modes.image.handleDrop(df,x,y);
+							handled = true;
+						}
+					});
+					/*
+					conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
+						if (!handled){
+							console.log("pasted html",type,html);
+							handled = true;
+						}
+					});
+					*/
+					conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
+						if (!handled){
+							var htmlElem = $(html);
+							var yOffset = 0;
+							html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
+							_.forEach(htmlElem.find("img"),function(imgNode){
+								try {
+									Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
+									yOffset += Math.max(imgNode.height,50);
+								} catch (e){
+									errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+								}
+							});
+							if (htmlElem.text().trim().length > 1){
+								Modes.text.handleDrop(html,x,y + yOffset);
+							}
+							handled = true;
+						}
+					});
+
+					conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
+						if (!handled){
+							Modes.text.handleDrop(html,x,y);
+							handled = true;
+						}
+					});
+					if (!handled){
+						console.log("unknown type",df);
+					}
 				}
+				ev.preventDefault();
+				return false;
+			} else {
+				return true;
+			}
+		};
+		window.addEventListener("paste",function(jEv){
+			if ("originalEvent" in jEv){
+				return func(jEv.originalEvent);
+			} else {
+				return func(jEv);
+			}
 		});
-		$("#conversations").click(function(){
-			window.location.href = "/conversationSearch";
+		$("#board").on("drop",function(jEv){
+			if ("originalEvent" in jEv){
+				return func(jEv.originalEvent);
+			} else {
+				return false;
+			}
+		});
+		var deadFunc = function(deadEvent){
+			deadEvent.preventDefault();
+			return false;
+		};
+		var fakeFunc = function(deadEvent){
+			return true;
+		};
+		$(document).on("drop",deadFunc);
+		window.onbeforepaste = deadFunc;
+		_.forEach(["dragover","dragleave","dragenter"],function(label){
+			window["on"+label] = deadFunc;
+			$(window).on(label,deadFunc);
+			$("#board")[0]["on"+label] = deadFunc;
+			$("#board").on(label,deadFunc);
 		});
 });

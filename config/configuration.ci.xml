@@ -24,7 +24,7 @@
   </liftConfiguration>
   <caches>
     <roomLifetime miliseconds="3600000" />
-    <resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
+    <resourceCache heapSize="25" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
   </caches>
   <importerPerformance parallelism="8" />
   <clientConfig>
@@ -33,13 +33,22 @@
   </clientConfig>
   <securityProvider>
     <stableKeyProvider />
-  </securityProvider>
+	</securityProvider>	
+	<authenticationConfiguration>
+		<exclusions>
+			<requestUriStartsWith value="/comet_request/"/>
+			<requestUriStartsWith value="/ajax_request/"/>
+			<requestUriStartsWith value="/favicon.ico"/>
+			<requestUriStartsWith value="/serverStatus"/>
+			<requestUriStartsWith value="/static/"/>
+			<requestUriStartsWith value="/classpath/"/>
+		</exclusions>
+	</authenticationConfiguration>
   <authentication>
     <mock />
   </authentication>
   <groupsProvider>
     <selfGroups/>
-    <flatFileGroups format="stLeo" location="" refreshPeriod="1 week"/>
     <flatFileGroups format="globalOverrides" location="config/globalOverrides.txt" refreshPeriod="5 minutes"/>
     <flatFileGroups format="specificOverrides" location="config/specificOverrides.txt" refreshPeriod="5 minutes"/>
   </groupsProvider>
