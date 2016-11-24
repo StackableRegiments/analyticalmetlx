@@ -1218,10 +1218,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     debug(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
     debug(receiveUserGroups)
-    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match {
+    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))/* match {
       case Full(cc) => Full(cc)
       case _ => Full(Call("showBackstage",JString("conversations")))
-    }
+    }*/
     debug(receiveCurrentConversation)
     val receiveConversationDetails:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc)))
     debug(receiveConversationDetails)
