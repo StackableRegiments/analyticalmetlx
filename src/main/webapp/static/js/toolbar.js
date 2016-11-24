@@ -2422,6 +2422,7 @@ var Modes = (function(){
                         func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
+			console.log("DOWN",worldPos);
                         Modes.select.resizing = false;
                         Modes.select.dragging = false;
                         originPoint = {x:x,y:y};
