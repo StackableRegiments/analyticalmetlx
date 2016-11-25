@@ -341,6 +341,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     ).par
     parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
     parO.map(f => f()).toList
+    println("gotHistory: %s".format(newHistory.getAll.length))                        
     newHistory
   })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
@@ -348,7 +349,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     newGetHistory(jid)
     //newSerialGetHistory(jid)
   })
-  def oldGetHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
+  def oldGetHistory(jid:String):History = Stopwatch.time("H2Interface.oldGetHistory",{
     val newHistory = History(jid)
     List(
       () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),
@@ -381,7 +382,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   //.toList.foreach(group => group.foreach(gf => gf()))
                               //val unhandledContent = H2UnhandledContent.findAll(By(H2UnhandledContent.room,jid)).map(s => serializer.toMeTLUnhandledData(s))
                               //(inks ::: texts ::: images ::: dirtyInks ::: dirtyTexts ::: dirtyImages ::: moveDeltas ::: quizzes ::: quizResponses ::: commands ::: submissions ::: files ::: attendances ::: unhandledCanvasContent ::: unhandledStanzas /*:: unhandledContent */).foreach(s => newHistory.addStanza(s))
-      println("gotHistory: %s".format(newHistory.getAll.length))                        
       newHistory
   })
 

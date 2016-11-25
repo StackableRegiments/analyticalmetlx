@@ -14,7 +14,7 @@ object LocalH2ServerConfiguration{
 }
 
 class LocalH2BackendAdaptor(name:String,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends PersistedAdaptor(name,"localhost",onConversationDetailsUpdated){
-  override lazy val dbInterface = new H2Interface(this,filename,onConversationDetailsUpdated)
+  override val dbInterface = new H2Interface(this,filename,onConversationDetailsUpdated)
 }
 object LocalH2ServerConfigurator extends ServerConfigurator{
   override def matchFunction(e:Node) = (e \\ "type").headOption.exists(_.text == "localH2")
@@ -24,7 +24,7 @@ object LocalH2ServerConfigurator extends ServerConfigurator{
 }
 
 class SqlBackendAdaptor(name:String,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit) extends PersistedAdaptor(name,"localhost",onConversationDetailsUpdated){
-  override lazy val dbInterface = new SqlInterface(this,vendor,onConversationDetailsUpdated)
+  override val dbInterface = new SqlInterface(this,vendor,onConversationDetailsUpdated)
 }
 object SqlServerConfigurator extends ServerConfigurator{
   override def matchFunction(e:Node) = (e \\ "type").headOption.exists(_.text == "sql")

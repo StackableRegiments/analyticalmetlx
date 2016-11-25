@@ -683,13 +683,14 @@ class SlideRenderer extends Logger {
       }
       case false => h
     }
+    def sort[A <: MeTLStanza](m:List[A]):List[A] = m.sortWith((a,b) => a.timestamp < b.timestamp)
     val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts,scaledVideos) = scaledHistory.getRenderableGrouped
-    filterAccordingToTarget[MeTLImage](target,scaledImages).foreach(img => renderImage(img,g))
-    filterAccordingToTarget[MeTLVideo](target,scaledVideos).foreach(img => renderVideo(img,g))
-    filterAccordingToTarget[MeTLInk](target,scaledHighlighters).foreach(renderInk(_,g))
-    filterAccordingToTarget[MeTLText](target,scaledTexts).foreach(t => renderText(measureTextLines(t,g),g))
-    filterAccordingToTarget[MeTLMultiWordText](target,scaledMultiWordTexts).foreach(t => renderMultiWordText(t,g))
-    filterAccordingToTarget[MeTLInk](target,scaledInks).foreach(renderInk(_,g))
+    filterAccordingToTarget[MeTLImage](target,sort(scaledImages)).foreach(img => renderImage(img,g))
+    filterAccordingToTarget[MeTLVideo](target,sort(scaledVideos)).foreach(img => renderVideo(img,g))
+    filterAccordingToTarget[MeTLInk](target,sort(scaledHighlighters)).foreach(renderInk(_,g))
+    filterAccordingToTarget[MeTLText](target,sort(scaledTexts)).foreach(t => renderText(measureTextLines(t,g),g))
+    filterAccordingToTarget[MeTLMultiWordText](target,sort(scaledMultiWordTexts)).foreach(t => renderMultiWordText(t,g))
+    filterAccordingToTarget[MeTLInk](target,sort(scaledInks)).foreach(renderInk(_,g))
     imageToByteArray(unscaledImage)
   })
   def render(h:History,intWidth:Int,intHeight:Int,target:String = "presentationSpace"):Array[Byte] = Stopwatch.time("SlideRenderer.render",{

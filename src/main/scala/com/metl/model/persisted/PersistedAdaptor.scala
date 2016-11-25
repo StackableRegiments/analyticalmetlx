@@ -4,11 +4,11 @@ import com.metl.utils._
 import com.metl.data._
 
 abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Conversation=>Unit) extends ServerConfiguration(name,host,onConversationUpdated){
-  protected lazy val dbInterface:PersistenceInterface = null
-  protected val messageBusProvider = new PersistingMessageBusProvider(this,dbInterface)
-  protected val history = new PersistedHistory(this,dbInterface)
-  protected val conversations = new PersistedConversations(this,dbInterface,onConversationUpdated)
-  protected val resourceProvider = new PersistedResourceProvider(this,dbInterface)
+  protected val dbInterface:PersistenceInterface
+  protected lazy val messageBusProvider = new PersistingMessageBusProvider(this,dbInterface)
+  protected lazy val history = new PersistedHistory(this,dbInterface)
+  protected lazy val conversations = new PersistedConversations(this,dbInterface,onConversationUpdated)
+  protected lazy val resourceProvider = new PersistedResourceProvider(this,dbInterface)
   override def shutdown = {
     dbInterface.shutdown
     super.shutdown
