@@ -208,6 +208,18 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
     })
+    case Req("testFetchAndRender" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchAndRender", {
+      for {
+        width <- S.param("width")
+        height <- S.param("height")
+        config = ServerConfiguration.default
+        history = config.getMockHistory
+        slideRenderer = new SlideRenderer()
+        image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
+      } yield {
+        InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200)
+      }
+    })
   }
 }
 object WebMeTLRestHelper extends RestHelper with Logger{

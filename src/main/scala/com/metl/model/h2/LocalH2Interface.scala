@@ -122,6 +122,20 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     info("upgraded db to use room to position themes, which is indexed, where location wasn't.")
     versionNumber
   }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get <= 6).map(versionNumber => {
+    info("upgrading db to hold a copy of the mockdata")
+    val mockRoom = "mock|data"
+    H2Ink.findAll(By(H2Ink.room,mockRoom)).foreach(_.delete_!)
+    H2MultiWordText.findAll(By(H2MultiWordText.room,mockRoom)).foreach(_.delete_!)
+    H2MoveDelta.findAll(By(H2MoveDelta.room,mockRoom)).foreach(_.delete_!)
+    val h = MockData.mockHistoryValue(config)
+    h.getAll.foreach(s => {
+      storeStanza(h.jid,s)
+    })
+    versionNumber.intValue(6).save
+    info("upgraded db to hold a copy of the mockdata")
+    versionNumber
+  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
 
   type H2Object = Object
   val RESOURCES = "resource"
