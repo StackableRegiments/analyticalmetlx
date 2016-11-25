@@ -12,13 +12,13 @@ import net.liftweb.util.Helpers._
 import Privacy._
 
 
-class H2Serializer(configName:String) extends Serializer with LiftLogger {
+class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogger {
   implicit val formats = net.liftweb.json.DefaultFormats
   override type T = Object
     //type A = _ <: Object
     //override type T = A <: H2MeTLContent[A]
-  lazy val xmlSerializer = new GenericXmlSerializer(configName)
-  lazy val config = ServerConfiguration.configForName(configName)
+  val configName = config.name
+  val xmlSerializer = new GenericXmlSerializer(config)
 
   case class ParsedCanvasContent(target:String,identity:String,slide:String,privacy:Privacy,author:String,timestamp:Long,audiences:List[Audience])
   case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
@@ -164,7 +164,10 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case other:String if other.length > 0 => Full(other)
       case _ => Empty
     }
-    val imageBytes = url.map(u => config.getResource(u))
+    val imageBytes = url.map(u => {
+      val bytes = config.getResource(u)
+      bytes
+    })
     MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
   }
   override def fromMeTLImage(i:MeTLImage):H2Image = incCanvasContent(H2Image.create,i,"image").tag(i.tag).source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)

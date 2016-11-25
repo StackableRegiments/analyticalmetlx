@@ -10,8 +10,7 @@ import util._
 import Helpers._
 import collection._
 
-class MeTL2011Utils(configName:String) {
-	lazy val config = ServerConfiguration.configForName(configName)
+class MeTL2011Utils(config:ServerConfiguration) {
 	def stem(path:String):String = (("0"*(5 - path.length)) + path).takeRight(5).take(2).mkString
 	def reabsolutizeUri(uri:String,prefix:String):Box[String]={
 		try {

@@ -72,9 +72,9 @@ trait XmlUtils {
 case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
 case class ParsedCanvasContent(target:String,privacy:Privacy,slide:String,identity:String)
 
-class GenericXmlSerializer(configName:String) extends Serializer with XmlUtils{
+class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with XmlUtils{
   type T = NodeSeq
-  lazy val config = ServerConfiguration.configForName(configName)
+  val configName = config.name
 
   override def toMeTLData(input:NodeSeq):MeTLData = Stopwatch.time("GenericXmlSerializer.toMeTLStanza",{
     input match {

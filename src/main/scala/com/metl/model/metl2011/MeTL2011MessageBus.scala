@@ -11,19 +11,19 @@ import scala.xml._
 import java.util.Date
 import scala.collection.mutable.HashMap
 
-class XmppProvider(configName:String,hostname:String,credentialsFunc:()=>Tuple2[String,String],domainName:String) extends OneBusPerRoomMessageBusProvider with Logger {
+class XmppProvider(config:ServerConfiguration,hostname:String,credentialsFunc:()=>Tuple2[String,String],domainName:String) extends OneBusPerRoomMessageBusProvider with Logger {
   override def createNewMessageBus(d:MessageBusDefinition) = Stopwatch.time("XmppProvider.createNewMessageBus",{
-    new XmppMessageBus(configName,hostname,credentialsFunc,domainName,d,this)
+    new XmppMessageBus(config,hostname,credentialsFunc,domainName,d,this)
   })
   def getHostname = hostname
   def getDomainName = domainName
 }
 
-class PooledXmppProvider(configName:String,hostname:String,credentialsFunc:()=>Tuple2[String,String],domainName:String) extends OneBusPerRoomMessageBusProvider with Logger {
-  protected val connMgr = new XmppConnProvider(configName,hostname,credentialsFunc,domainName)
+class PooledXmppProvider(config:ServerConfiguration,hostname:String,credentialsFunc:()=>Tuple2[String,String],domainName:String) extends OneBusPerRoomMessageBusProvider with Logger {
+  protected val connMgr = new XmppConnProvider(config,hostname,credentialsFunc,domainName)
   override def createNewMessageBus(d:MessageBusDefinition) = Stopwatch.time("PooledXmppProvider.createNewMessageBus",{
     val conn = connMgr.getConn
-    val bus = new XmppSharedConnMessageBus(configName,hostname,credentialsFunc,domainName,d,this)
+    val bus = new XmppSharedConnMessageBus(config,hostname,credentialsFunc,domainName,d,this)
     bus.addConn(conn)
     conn.addMessageBus(d,bus)
     bus
@@ -32,14 +32,14 @@ class PooledXmppProvider(configName:String,hostname:String,credentialsFunc:()=>T
   def getDomainName = domainName
 }
 
-class XmppConnProvider(configName:String,hostname:String,credentialsFunc:()=>Tuple2[String,String],domainName:String) extends Logger {
+class XmppConnProvider(config:ServerConfiguration,hostname:String,credentialsFunc:()=>Tuple2[String,String],domainName:String) extends Logger {
   protected var conns = List.empty[MeTL2011XmppMultiConn]
   protected val maxCount = 20
   def getConn:MeTL2011XmppMultiConn = {
     debug("XMPPConnProvider:getConn")
     conns.find(c => c.getCount < maxCount).getOrElse({
       val now = new Date().getTime.toString
-      val newConn = new MeTL2011XmppMultiConn(credentialsFunc,"metlxConnector_"+now,hostname,domainName,configName,this)
+      val newConn = new MeTL2011XmppMultiConn(credentialsFunc,"metlxConnector_"+now,hostname,domainName,config,this)
       conns = newConn :: conns
       debug("XMPPConnProvider:getConn.createConn(%s)".format(newConn))
       newConn
@@ -55,9 +55,8 @@ class XmppConnProvider(configName:String,hostname:String,credentialsFunc:()=>Tup
   }
 }
 
-class MeTL2011XmppMultiConn(cf:()=>Tuple2[String,String],r:String,h:String,d:String,configName:String,creator:XmppConnProvider) extends XmppConnection[MeTLData](cf,r,h,d,None) with Logger {
-  protected lazy val serializer = new MeTL2011XmlSerializer(configName,true)
-  private lazy val config = ServerConfiguration.configForName(configName)
+class MeTL2011XmppMultiConn(cf:()=>Tuple2[String,String],r:String,h:String,d:String,config:ServerConfiguration,creator:XmppConnProvider) extends XmppConnection[MeTLData](cf,r,h,d,None) with Logger {
+  protected lazy val serializer = new MeTL2011XmlSerializer(config,true)
 
   //  override lazy val debug = true
 
@@ -130,9 +129,8 @@ class MeTL2011XmppMultiConn(cf:()=>Tuple2[String,String],r:String,h:String,d:Str
   })
 }
 
-class MeTL2011XmppConn(cf:()=>Tuple2[String,String],r:String,h:String,d:String,configName:String,bus:MessageBus) extends XmppConnection[MeTLData](cf,r,h,d,None,bus.notifyConnectionLost _,bus.notifyConnectionResumed _) with Logger {
-  protected lazy val serializer = new MeTL2011XmlSerializer(configName,true)
-  private lazy val config = ServerConfiguration.configForName(configName)
+class MeTL2011XmppConn(cf:()=>Tuple2[String,String],r:String,h:String,d:String,config:ServerConfiguration,bus:MessageBus) extends XmppConnection[MeTLData](cf,r,h,d,None,bus.notifyConnectionLost _,bus.notifyConnectionResumed _) with Logger {
+  protected lazy val serializer = new MeTL2011XmlSerializer(config,true)
 
   //    override lazy val debug = true
 
@@ -175,7 +173,7 @@ class MeTL2011XmppConn(cf:()=>Tuple2[String,String],r:String,h:String,d:String,c
   })
 }
 
-class XmppSharedConnMessageBus(configName:String,hostname:String,credentialsFunc:()=>Tuple2[String,String],domain:String,d:MessageBusDefinition,creator:MessageBusProvider) extends MessageBus(d,creator) with Logger {
+class XmppSharedConnMessageBus(config:ServerConfiguration,hostname:String,credentialsFunc:()=>Tuple2[String,String],domain:String,d:MessageBusDefinition,creator:MessageBusProvider) extends MessageBus(d,creator) with Logger {
   val jid = d.location
   protected var xmpp:Option[MeTL2011XmppMultiConn] = None
   def addConn(conn:MeTL2011XmppMultiConn) = {
@@ -239,9 +237,9 @@ class XmppSharedConnMessageBus(configName:String,hostname:String,credentialsFunc
     super.release
   }
 }
-class XmppMessageBus(configName:String,hostname:String,credentialsFunc:()=>Tuple2[String,String],domain:String,d:MessageBusDefinition,creator:MessageBusProvider) extends MessageBus(d,creator) with Logger {
+class XmppMessageBus(config:ServerConfiguration,hostname:String,credentialsFunc:()=>Tuple2[String,String],domain:String,d:MessageBusDefinition,creator:MessageBusProvider) extends MessageBus(d,creator) with Logger {
   val jid = d.location
-  lazy val xmpp = new MeTL2011XmppConn(credentialsFunc,"metlxConnector_%s".format(new Date().getTime.toString),hostname,domain,configName,this)
+  lazy val xmpp = new MeTL2011XmppConn(credentialsFunc,"metlxConnector_%s".format(new Date().getTime.toString),hostname,domain,config,this)
   xmpp.joinRoom(jid,this.hashCode.toString)
   override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,shouldUpdateStanza:Boolean = true):Boolean = stanza match {
     case i:MeTLInk =>{

@@ -83,7 +83,23 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getMockHistory:History = getHistory("mock|data") //deliberately providing an endpoint which can only return some mock data.  Individual backend adaptors can choose where to source this from, or how to store it.
 }
 
-object MockData {
+trait ResourceLoader {
+  import java.nio.charset.StandardCharsets
+  import org.apache.commons.io._
+  def readResourceAsString(resourcePath: String): String = {
+    val url = this.getClass().getClassLoader().getResource(resourcePath)
+    val file = new java.io.File(url.getFile())
+    FileUtils.readFileToString(file, StandardCharsets.UTF_8.toString)
+  }
+  def readResourceAsBytes(resourcePath: String): Array[Byte] = {
+    val url = this.getClass().getClassLoader().getResource(resourcePath)
+    val file = new java.io.File(url.getFile())
+    FileUtils.readFileToByteArray(file)
+  }
+}
+
+object MockData extends ResourceLoader {
+  import net.liftweb.common._
   def mockHistoryValue(c:ServerConfiguration) = {
     val a = "mock|author"
     val h = new History("mock|data")
@@ -101,9 +117,17 @@ object MockData {
     id += 1
     val inkId = "mockInk_%s".format(id)
     id += 1
+    val imageId = "mockImage_%s".format(id)
+    id += 1
     val mdId = "mockMoveDelta_%s".format(id)
+    def imageBytes(resourcePath:String):Box[Array[Byte]] = try {
+      val bytes = readResourceAsBytes(resourcePath)
+      Full(bytes)
+    } catch {
+      case e:Exception => Failure("could not get resource jpg",Full(e),Empty)
+    }
     List(
-      MeTLMultiWordText(c,a,4L,100.0,200.0,200.0,100.0,100.0,"mockTag",textId,t,p,s,List(
+      MeTLMultiWordText(c,a,1L,100.0,200.0,200.0,100.0,100.0,"mockTag",textId,t,p,s,List(
         MeTLTextWord("test data ",false,false,false,j,black,f,12.0),
         MeTLTextWord("must",true,false,false,j,red,f,10.0),
         MeTLTextWord(" be ",false,false,false,j,green,f,10.0),
@@ -111,25 +135,35 @@ object MockData {
         MeTLTextWord(" and ",false,false,false,j,black,f,8.0),
         MeTLTextWord("small",false,true,false,j,red,f,10.0)
       )),
-      MeTLInk(c,a,5L,1.0,1.0,List(
+      MeTLInk(c,a,2L,1.0,1.0,List(
         Point(100,250,128),
         Point(300,250,255),
         Point(300,300,128),
         Point(100,300,255),
         Point(100,250,128)
       ),red,8.0,false,t,p,s,inkId + "_not_moved"),
-      MeTLInk(c,a,5L,1.0,1.0,List(
+      MeTLInk(c,a,3L,1.0,1.0,List(
         Point(100,250,128),
         Point(300,250,255),
         Point(300,300,128),
         Point(100,300,255),
         Point(100,250,128)
       ),black,8.0,false,t,p,s,inkId),
-      MeTLMoveDelta(c,a,6L,t,p,s,mdId,100.0,100.0,
+      MeTLMultiWordText(c,a,4L,100.0,200.0,200.0,100.0,350.0,"mockTag",textId + "_not_moved",t,p,s,List(
+        MeTLTextWord("test data ",false,false,false,j,black,f,12.0),
+        MeTLTextWord("must",true,false,false,j,red,f,10.0),
+        MeTLTextWord(" be ",false,false,false,j,green,f,10.0),
+        MeTLTextWord("simple",false,false,true,j,blue,f,10.0),
+        MeTLTextWord(" and ",false,false,false,j,black,f,8.0),
+        MeTLTextWord("small",false,true,false,j,red,f,10.0)
+      )),
+      MeTLImage(c,a,5L,"",Full("mockSource_1"),imageBytes("engineering.jpg"),Empty,200,150,350,100,t,p,s,imageId),
+      MeTLImage(c,a,6L,"",Full("mockSource_1"),imageBytes("engineering.jpg"),Empty,200,150,350,100,t,p,s,imageId + "_not_moved"),
+      MeTLMoveDelta(c,a,7L,t,p,s,mdId,100.0,100.0,
         List(inkId),
         Nil,
         List(textId),
-        Nil,
+        List(imageId),
         Nil,
         -50.0,
         -50.0,
@@ -176,7 +210,7 @@ object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
 }
 
 object FrontendSerializationAdaptor extends ServerConfiguration("frontend","frontend",(c)=>{}){
-  val serializer = new GenericXmlSerializer("frontend")
+  val serializer = new GenericXmlSerializer(this)
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
   override def getConversationForSlide(slideJid:String):String = ""

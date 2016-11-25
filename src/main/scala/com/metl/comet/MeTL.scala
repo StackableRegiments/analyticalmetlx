@@ -244,7 +244,7 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
 }
 
 class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
 
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
@@ -342,7 +342,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       case n => "%s search results".format(n)
     })
   }
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
 
@@ -462,7 +462,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   import com.metl.view._
   import net.liftweb.json.Extraction
   import net.liftweb.json.DefaultFormats
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
   private lazy val RECEIVE_USERNAME = "receiveUsername"
@@ -1100,7 +1100,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   ) yield {
     user
   }).getOrElse(Globals.currentUser.is)
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
   def registerWith = MeTLActorManager
   val scriptContainerId = "scriptContainer_%s".format(nextFuncName)
   override def render = {

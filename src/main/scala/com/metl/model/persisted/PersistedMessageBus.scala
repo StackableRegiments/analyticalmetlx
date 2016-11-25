@@ -3,13 +3,13 @@ package com.metl.persisted
 import com.metl.data._
 import com.metl.utils._
 
-class PersistingMessageBusProvider(configName:String,dbInterface:PersistenceInterface) extends OneBusPerRoomMessageBusProvider {
+class PersistingMessageBusProvider(config:ServerConfiguration,dbInterface:PersistenceInterface) extends OneBusPerRoomMessageBusProvider {
   override def createNewMessageBus(d:MessageBusDefinition) = Stopwatch.time("EmbeddedPersistingMessageBusProvider.createNewMessageBus",{
-    new PersistingLoopbackMessageBus(configName,d,dbInterface,this)
+    new PersistingLoopbackMessageBus(config,d,dbInterface,this)
   })
 }
 
-class PersistingLoopbackMessageBus(configName:String,d:MessageBusDefinition,dbInterface:PersistenceInterface,provider:MessageBusProvider) extends MessageBus(d,provider){
+class PersistingLoopbackMessageBus(config:ServerConfiguration,d:MessageBusDefinition,dbInterface:PersistenceInterface,provider:MessageBusProvider) extends MessageBus(d,provider){
   val jid = d.location
   override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,shouldUpdateTimestamp:Boolean = true) = Stopwatch.time("EmbeddedPersistingMessageBusProvider.sendStanzaToRoom",{
     val newMessage = if (shouldUpdateTimestamp) {

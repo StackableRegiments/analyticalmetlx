@@ -11,8 +11,8 @@ import scala.xml.NodeSeq
 import java.io.ByteArrayInputStream
 import java.util.Date
 
-class MeTL2011History(serverName:String,http:HttpProvider) extends HistoryRetriever(serverName) with Logger {
-  val utils = new MeTL2011Utils(serverName)
+class MeTL2011History(config:ServerConfiguration,http:HttpProvider) extends HistoryRetriever(config) with Logger {
+  val utils = new MeTL2011Utils(config)
   override def makeHistory(jid:String,stanzas:List[MeTLStanza]):History = Stopwatch.time("History.makeHistory",{
 //		stanzas.foreach(s => trace("IN: %s".format(s)))
     val output = stanzas.sortBy(s => s.timestamp).foldLeft(new History(jid))((h,item) => h.addStanza(item))
@@ -20,8 +20,8 @@ class MeTL2011History(serverName:String,http:HttpProvider) extends HistoryRetrie
 		output
   })
 
-  private def publicHistoryUrl(jid:String) = "https://%s:1749/%s/%s/".format(server.host,utils.stem(jid.toString),jid)
-  private def privateHistoryUrl(username:String,jid:String) = "https://%s:1749/%s/%s/%s/".format(server.host,utils.stem(username.toString),username,jid)
+  private def publicHistoryUrl(jid:String) = "https://%s:1749/%s/%s/".format(config.host,utils.stem(jid.toString),jid)
+  private def privateHistoryUrl(username:String,jid:String) = "https://%s:1749/%s/%s/%s/".format(config.host,utils.stem(username.toString),username,jid)
   private val historySuffix = "all.zip"
   def getMeTLHistory(jid:String):History = Stopwatch.time("MeTL2011History.getMeTLHistory",{
     val url = jid.dropWhile(_.isDigit) match {
@@ -78,7 +78,7 @@ class MeTL2011History(serverName:String,http:HttpProvider) extends HistoryRetrie
 		}
   })
   def dailyXmlToListOfStanzas(input:NodeSeq):List[MeTLData] = Stopwatch.time("History.dailyXmlToListOfStanzas",{
-    val serializer = new MeTL2011XmlSerializer(serverName,true)
+    val serializer = new MeTL2011XmlSerializer(config,true)
     val output = (input \\ "message").map(i => serializer.toMeTLData(i)).toList
 		//trace("parsed %s messages from %s".format(output.length,input))
 //		output.foreach(s => trace("PARSE: %s".format(s)))
