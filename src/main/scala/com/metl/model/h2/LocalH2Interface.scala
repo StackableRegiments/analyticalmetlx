@@ -224,8 +224,131 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case _ => None
     }
   })
+  def newSerialGetHistory(jid:String):History = Stopwatch.time("H2Interface.newSerialGetHistory",{
+    val newHistory = History(jid)
+    val images = Stopwatch.time("h2.fetch.images",H2Image.findAll(By(H2Image.room,jid)).map(i => (i.source.get,i)).toList )
+    val videos = Stopwatch.time("h2.fetch.videos",H2Video.findAll(By(H2Video.room,jid)).map(v => (v.source.get,v)).toList )
+    val submissions = Stopwatch.time("h2.fetch.submissions",H2Submission.findAll(By(H2Submission.room,jid)).map(s => (s.url.get,s)).toList )
+    val files = Stopwatch.time("h2.fetch.files",H2File.findAll(By(H2File.room,jid)).map(f => (f.url.get,f)).toList )
+    val quizzes = Stopwatch.time("h2.fetch.quizzes",H2Quiz.findAll(By(H2Quiz.room,jid)).map(q => (q.url.get,q)).toList )
+    val identityList = Stopwatch.time("h2.fetch.resourceIds",(images ::: videos ::: submissions ::: files ::: quizzes ::: submissions).map(_._1.take(H2Constants.identity)))
+    val resources = Map(Stopwatch.time("h2.fetch.resources",H2Resource.findAll(ByList(H2Resource.partialIdentity,identityList))).flatMap(r => {
+      r.bytes.get match {
+        case null => None
+        case bytes => Some((r.identity.get,bytes))
+      }
+    }):_*)
+    val inks = Stopwatch.time("h2.fetch.inks",H2Ink.findAll(By(H2Ink.room,jid)))
+    val texts = Stopwatch.time("h2.fetch.texts",H2Text.findAll(By(H2Text.room,jid)))
+    val multiWords = Stopwatch.time("h2.fetch.multiWords",H2MultiWordText.findAll(By(H2MultiWordText.room,jid)))
+    val dirtyInks = Stopwatch.time("h2.fetch.dirtyInks",H2DirtyInk.findAll(By(H2DirtyInk.room,jid)))
+    val dirtyTexts = Stopwatch.time("h2.fetch.dirtyTexts",H2DirtyText.findAll(By(H2DirtyText.room,jid)))
+    val dirtyImgs = Stopwatch.time("h2.fetch.dirtyImages",H2DirtyImage.findAll(By(H2DirtyImage.room,jid)))
+    val dirtyVids = Stopwatch.time("h2.fetch.dirtyVideos",H2DirtyVideo.findAll(By(H2DirtyVideo.room,jid)))
+    val mds = Stopwatch.time("h2.fetch.moveDeltas",H2MoveDelta.findAll(By(H2MoveDelta.room,jid)))
+    val quizResponses = Stopwatch.time("h2.fetch.quizzes",H2QuizResponse.findAll(By(H2QuizResponse.room,jid)))
+    val videoStreams = Stopwatch.time("h2.fetch.vidoeStreams",H2VideoStream.findAll(By(H2VideoStream.room,jid)))
+    val attendances = Stopwatch.time("h2.fetch.attendances",H2Attendance.findAll(By(H2Attendance.location,jid)))
+    val comms = Stopwatch.time("h2.fetch.commands",H2Command.findAll(By(H2Command.room,jid)))
+    val ccs = Stopwatch.time("h2.fetch.ccs",H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)))
+    val unhandled = Stopwatch.time("h2.fetch.stanzas",H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)))
 
+    videos.foreach(s => newHistory.addStanza(serializer.toMeTLVideo(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+    images.foreach(s => newHistory.addStanza(serializer.toMeTLImage(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+    files.foreach(s => newHistory.addStanza(serializer.toMeTLFile(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+    quizzes.foreach(s => newHistory.addStanza(serializer.toMeTLQuiz(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+    submissions.foreach(s => newHistory.addStanza(serializer.toSubmission(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+      
+    inks.foreach(s => newHistory.addStanza(serializer.toMeTLInk(s)))
+    texts.foreach(s => newHistory.addStanza(serializer.toMeTLText(s)))
+    multiWords.foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s)))
+    
+    dirtyInks.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyInk(s)))
+    dirtyTexts.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyText(s)))
+    dirtyImgs.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyImage(s)))
+    dirtyVids.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyVideo(s)))
+    mds.foreach(s => newHistory.addStanza(serializer.toMeTLMoveDelta(s)))
+    quizResponses.foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s)))
+    videoStreams.foreach(s => newHistory.addStanza(serializer.toMeTLVideoStream(s)))
+    attendances.foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s)))
+    comms.foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s)))
+    ccs.foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s)))
+    unhandled.foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+
+    newHistory
+  })
+  def newGetHistory(jid:String):History = Stopwatch.time("H2Interface.newGetHistory",{
+    val newHistory = History(jid)
+    var parO = List(
+      () => {
+        var images:List[(String,H2Image)] = Nil
+        var videos:List[(String,H2Video)] = Nil
+        var submissions:List[(String,H2Submission)] = Nil
+        var files:List[(String,H2File)] = Nil
+        var quizzes:List[(String,H2Quiz)] = Nil
+        
+        val parI = List(
+          () => { 
+            images = H2Image.findAll(By(H2Image.room,jid)).map(i => (i.source.get,i)).toList 
+            true
+          },
+          () => { 
+            videos = H2Video.findAll(By(H2Video.room,jid)).map(v => (v.source.get,v)).toList 
+            true
+          },
+          () => { 
+            submissions = H2Submission.findAll(By(H2Submission.room,jid)).map(s => (s.url.get,s)).toList 
+            true
+          },
+          () => { 
+            files = H2File.findAll(By(H2File.room,jid)).map(f => (f.url.get,f)).toList 
+            true
+          },
+          () => { 
+            quizzes = H2Quiz.findAll(By(H2Quiz.room,jid)).map(q => (q.url.get,q)).toList 
+            true
+          }
+        ).par
+        parI.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5))  
+        parI.map(f => f()).toList
+        val resources = Map(H2Resource.findAll(ByList(H2Resource.partialIdentity,(images ::: videos ::: submissions ::: files ::: quizzes ::: submissions).map(_._1.take(H2Constants.identity)))).flatMap(r => {
+          r.bytes.get match {
+            case null => None
+            case bytes => Some((r.identity.get,bytes))
+          }
+        }):_*)
+
+        videos.foreach(s => newHistory.addStanza(serializer.toMeTLVideo(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+        images.foreach(s => newHistory.addStanza(serializer.toMeTLImage(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+        files.foreach(s => newHistory.addStanza(serializer.toMeTLFile(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+        quizzes.foreach(s => newHistory.addStanza(serializer.toMeTLQuiz(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+        submissions.foreach(s => newHistory.addStanza(serializer.toSubmission(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
+      },
+      () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),
+      () => H2Text.findAll(By(H2Text.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLText(s))),
+      () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
+      () => H2DirtyInk.findAll(By(H2DirtyInk.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyInk(s))),
+      () => H2DirtyText.findAll(By(H2DirtyText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyText(s))),
+      () => H2DirtyImage.findAll(By(H2DirtyImage.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyImage(s))),
+      () => H2DirtyVideo.findAll(By(H2DirtyVideo.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyVideo(s))),
+      () => H2MoveDelta.findAll(By(H2MoveDelta.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMoveDelta(s))),
+      () => H2QuizResponse.findAll(By(H2QuizResponse.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s))),
+      () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
+      () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
+      () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
+      () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
+      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+    ).par
+    parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
+    parO.map(f => f()).toList
+    newHistory
+  })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
+    //oldGetHistory(jid)
+    newGetHistory(jid)
+    //newSerialGetHistory(jid)
+  })
+  def oldGetHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
     val newHistory = History(jid)
     List(
       () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),

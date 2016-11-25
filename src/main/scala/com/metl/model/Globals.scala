@@ -204,7 +204,7 @@ object Globals extends PropertyReader with Logger {
   val MediumSize = new RenderDescription(1024,768)
   val LargeSize = new RenderDescription(1920,1080)
   val PrintSize = new RenderDescription(21 * printDpi, 29 * printDpi)
-  val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize/*,PrintSize*/)
+  val snapshotSizes = List(ThumbnailSize/*,SmallSize,MediumSize,LargeSize*//*,PrintSize*/)
 }
 
 object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
