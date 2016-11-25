@@ -559,7 +559,7 @@ object StatelessHtml extends Stemmer with Logger {
                 val now = new java.util.Date().getTime
                 val identity = nextFuncName
                 val tempSubImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-                val dimensions = com.metl.renderer.SlideRenderer.measureImage(tempSubImage)
+                val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
                 val subImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top + y,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
                 y += dimensions.height
                 slideRoom ! LocalToServerMeTLStanza(subImage)
