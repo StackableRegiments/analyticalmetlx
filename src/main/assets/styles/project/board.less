@@ -63,7 +63,7 @@ html{
         margin-top:2px;
     }
     #healthStatus{
-	margin-top:0px;
+        margin-top:0px;
     }
     svg{
         stroke:black;
@@ -79,8 +79,8 @@ html{
     }
     .heading{
         vertical-align:top;
-	position:absolute;
-	margin-left:10px;
+        position:absolute;
+        margin-left:10px;
     }
 }
 body{
@@ -118,6 +118,7 @@ body{
 }
 .slideButtonContainer {
     width:100%;
+    position:relative;
 }
 .slide-count {
     text-align:right;
@@ -158,6 +159,12 @@ body{
 .bg-tools {
     background-color:@body-bg;
 }
+.groupSlideContainer{
+    position:absolute;
+    top:0;
+    left:0;
+    pointer-events:none;
+}
 .pen .icon-txt {
     color:@subtool-fg;
     text-shadow:none;
@@ -187,6 +194,10 @@ body{
             .btn-raised.disabled;
         }
     }
+}
+.thumbGroup .sparkline{
+    stroke:black;
+    fill:@highlight;
 }
 #s2cMessageContainer {
     .block;

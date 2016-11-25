@@ -274,6 +274,7 @@ describe('When the class breaks into groups,', function() {
             user.driver.click("#board");
             user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         });
+	browser.debug();
         browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,2);
