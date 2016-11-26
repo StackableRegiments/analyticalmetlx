@@ -192,7 +192,7 @@ describe('When the class breaks into groups,', function() {
         tT.conversationSearch.click();
         teacher.click("=Edit");
         browser.waitUntil(function(){
-            return teacher.isVisible("h1=Edit conversation");
+            return teacher.isVisible(".conversationSharingCollapser.course");
         });
         teacher.click(".conversationSharingCollapser.course");
         teacher.click("label=Org Unit A");
@@ -266,6 +266,9 @@ describe('When the class breaks into groups,', function() {
             if(user.applicationMenu.value != null){
                 user.menuButton.click();
             }
+	    user.driver.waitUntil(function(){
+		return user.driver.isVisible("#drawMode")
+	    });
             user.inkMode.click();
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
@@ -274,7 +277,6 @@ describe('When the class breaks into groups,', function() {
             user.driver.click("#board");
             user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
         });
-	browser.debug();
         browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,2);
