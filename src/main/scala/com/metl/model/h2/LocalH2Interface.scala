@@ -14,13 +14,13 @@ import _root_.java.sql.{Connection, DriverManager}
 
 class H2Interface(config:ServerConfiguration,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends SqlInterface(config,new StandardDBVendor("org.h2.Driver", filename.map(f => "jdbc:h2:%s;AUTO_SERVER=TRUE".format(f)).getOrElse("jdbc:h2:mem:%s".format(config.name)),Empty,Empty){
   //adding extra db connections - it defaults to 4, with 20 being the maximum
-  override def allowTemporaryPoolExpansion = true
-  override def maxPoolSize = 1000
-  override def doNotExpandBeyond = 2000
-},onConversationDetailsUpdated) {
+  override def allowTemporaryPoolExpansion = false
+  override def maxPoolSize = 500
+  override def doNotExpandBeyond = 500
+},onConversationDetailsUpdated,500) {
 }
 
-class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit) extends PersistenceInterface(config) with Logger{
+class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit,startingPool:Int = 0,maxPoolSize:Int = 0) extends PersistenceInterface(config) with Logger{
   val configName = config.name
   val serializer = new H2Serializer(config)
 
@@ -64,6 +64,15 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2UndeletedCanvasContent
       ):_*
     )
+    // this starts our pool in advance
+    Range(0,Math.min(Math.max(startingPool,0),maxPoolSize)).toList.flatMap(ci => {
+      val c = vendor.newConnection(DefaultConnectionIdentifier)
+      println("starting connection: %s => %s".format(ci,c))
+      c
+    }).foreach(c => {
+      vendor.releaseConnection(c)
+    })
+
     //database migration script actions go here.  No try/catch, because I want to break if I can't bring it up to an appropriate version.
     DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).getOrElse({
       DatabaseVersion.create.key("version").scope("db").intValue(-1).save
@@ -358,7 +367,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
       () => {
         H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => {
-          println("found image: %s".format(s))
           newHistory.addStanza(serializer.toMeTLImage(s))
         }).toList
       },
@@ -379,9 +387,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
     ).par.map(f => f()).toList
-  //.toList.foreach(group => group.foreach(gf => gf()))
-                              //val unhandledContent = H2UnhandledContent.findAll(By(H2UnhandledContent.room,jid)).map(s => serializer.toMeTLUnhandledData(s))
-                              //(inks ::: texts ::: images ::: dirtyInks ::: dirtyTexts ::: dirtyImages ::: moveDeltas ::: quizzes ::: quizResponses ::: commands ::: submissions ::: files ::: attendances ::: unhandledCanvasContent ::: unhandledStanzas /*:: unhandledContent */).foreach(s => newHistory.addStanza(s))
       newHistory
   })
 

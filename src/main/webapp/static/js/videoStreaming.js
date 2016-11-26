@@ -46,6 +46,7 @@ var TokBox = (function(){
     var receiveTokBoxSessionFunc = function(desc){
         var support = OT.checkSystemRequirements();
         if (support == 0){
+					errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome, Firefox or Internet Explorer.");
         } else {
             session = OT.initSession(desc.apiKey,desc.sessionId);
             session.on({
@@ -209,6 +210,7 @@ var TokBox = (function(){
                     name:UserSettings.getUsername(),
                     width:videoWidth,
                     height:videoHeight,
+										resolution:"320x240",
                     frameRate:safeFps(videoFps),
                     insertMode:"append"
                 },function(error){
@@ -244,14 +246,14 @@ var TokBox = (function(){
     };
     var downgradeVideoStreams = function(){
         _.forEach(streams,function(stream){
-            if ("subscriber" in stream && stream.subscriber != null){
+            if ("subscriber" in stream && stream.subscriber != null && "restrictFramerate" in stream.subscriber){
                 stream.subscriber.restrictFramerate(true);
             }
         });
     };
     var upgradeVideoStreams = function(){
         _.forEach(streams,function(stream){
-            if ("subscriber" in stream && stream.subscriber != null){
+            if ("subscriber" in stream && stream.subscriber != null && "restrictFramerate" in stream.subscriber){
                 stream.subscriber.restrictFramerate(false);
             }
         });
