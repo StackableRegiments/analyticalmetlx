@@ -43,7 +43,17 @@
   <script data-lift="with-resource-id" src="static/js/sparkline.js"></script>
   <script data-lift="with-resource-id" src="static/js/analysis.js"></script>
   <script data-lift="with-resource-id" src="static/js/recycleBin.js"></script>
-  <script data-lift="with-resource-id" src="static/js/stable/kurento/adapter.js"></script>
+	<!--
+	<script>
+// this isn't ready yet - the WebRTC to ORTC adapter included here doesn't quite work with TokBox.  It does persuade TokBox that it has the capabilities, but then it fails to send or receive streams correctly.  So, IE, Firefox and Chrome will work, but Edge will still not work correctly.
+		if (/Edge/.test(navigator.userAgent)){
+			var scriptLoc = "https://webrtc.github.io/adapter/adapter-latest.js";
+			$.getScript(scriptLoc,function(completed){
+				eval(completed);
+			});
+		}
+	</script>
+	-->
   <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
   <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
   <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
