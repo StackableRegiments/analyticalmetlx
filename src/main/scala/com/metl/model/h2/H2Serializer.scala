@@ -12,13 +12,13 @@ import net.liftweb.util.Helpers._
 import Privacy._
 
 
-class H2Serializer(configName:String) extends Serializer with LiftLogger {
+class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogger {
   implicit val formats = net.liftweb.json.DefaultFormats
   override type T = Object
     //type A = _ <: Object
     //override type T = A <: H2MeTLContent[A]
-  lazy val xmlSerializer = new GenericXmlSerializer(configName)
-  lazy val config = ServerConfiguration.configForName(configName)
+  val configName = config.name
+  val xmlSerializer = new GenericXmlSerializer(config)
 
   case class ParsedCanvasContent(target:String,identity:String,slide:String,privacy:Privacy,author:String,timestamp:Long,audiences:List[Audience])
   case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
@@ -31,6 +31,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   def fromPrivacy(i:Privacy):String = i.toString.toLowerCase.trim
 
   protected def parseAudiences(in:String):List[Audience] = {
+    trace("parseAudiences",in)
     tryo((scala.xml.XML.loadString(in) \ "audience").flatMap(a => {
       for (
         domain <- (a \ "@domain").headOption;
@@ -43,13 +44,18 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     }).toList).openOr(Nil)
   }
   protected def incAudiences(in:List[Audience]) = {
+    trace("incAudiences",in)
     <audiences>{
       in.map(a => {
         <audience domain={a.domain} name={a.name} type={a.audienceType} action={a.action}/>
       })
     }</audiences>
   }
-  protected def decStanza[A <:H2MeTLStanza[A]](rec:A):ParsedMeTLContent = ParsedMeTLContent(rec.author.get,rec.timestamp.get,parseAudiences(rec.audiences.get))
+  protected def decStanza[A <:H2MeTLStanza[A]](rec:A):ParsedMeTLContent = {
+    val res = ParsedMeTLContent(rec.author.get,rec.timestamp.get,parseAudiences(rec.audiences.get))
+    trace("decStanza",res)
+    res
+  }
   protected def decCanvasContent[A <: H2MeTLCanvasContent[A]](rec:A):ParsedCanvasContent = {
     val mc = decStanza(rec)
     ParsedCanvasContent(rec.target.get,rec.identity.get,rec.slide.get,toPrivacy(rec.privacy.get),mc.author,mc.timestamp,mc.audiences)
@@ -138,7 +144,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
 
   def toMeTLInk(i:H2Ink):MeTLInk = {
     val cc = decCanvasContent(i)
-    MeTLInk(config,cc.author,cc.timestamp,i.checksum.get,i.startingSum.get,toPointList(i.points.get),toColor(i.color.get),i.thickness.get,i.isHighlighter.get,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLInk(config,cc.author,cc.timestamp,i.checksum.get,i.startingSum.get,toPointList(i.points.get),toColor(i.color.get),i.thickness.get,i.isHighlighter.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLInk(i:MeTLInk):H2Ink = incCanvasContent(H2Ink.create,i,"ink").checksum(i.checksum).startingSum(i.startingSum).points(fromPointList(i.points).toString).color(fromColor(i.color).toString).thickness(i.thickness).isHighlighter(i.isHighlighter)
   def toMeTLVideo(i:H2Video):MeTLVideo = {
@@ -148,7 +154,16 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case _ => Empty
     }
     val videoBytes = url.map(u => config.getResource(u))
-    MeTLVideo(config,cc.author,cc.timestamp,url,videoBytes,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLVideo(config,cc.author,cc.timestamp,url,videoBytes,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
+  }
+  def toMeTLVideo(i:H2Video,videoData:Array[Byte]):MeTLVideo = {
+    val cc = decCanvasContent(i)
+    val url = i.source.get match {
+      case other:String if other.length > 0 => Full(other)
+      case _ => Empty
+    }
+    val videoBytes = Full(videoData)//url.map(u => config.getResource(u))
+    MeTLVideo(config,cc.author,cc.timestamp,url,videoBytes,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLVideo(i:MeTLVideo):H2Video = incCanvasContent(H2Video.create,i,"video").source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
 
@@ -165,19 +180,34 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case _ => Empty
     }
     val imageBytes = url.map(u => config.getResource(u))
-    MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
+  }
+  def toMeTLImage(i:H2Image,imageData:Array[Byte]):MeTLImage = {
+    val cc = decCanvasContent(i)
+    val url = i.source.get match {
+      case other:String if other.length > 0 => Full(other)
+      case _ => Empty
+    }
+    val imageBytes = Full(imageData)//url.map(u => config.getResource(u))
+    MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLImage(i:MeTLImage):H2Image = incCanvasContent(H2Image.create,i,"image").tag(i.tag).source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
   def decodeMultiWords(wordString:String) = net.liftweb.json.parse(wordString).extract[List[MeTLTextWord]]
+  def decodeAudiences(audienceString:String) = {
+    trace(audienceString)
+    net.liftweb.json.parse(audienceString).extract[List[Audience]]
+  }
   def toMeTLMultiWordText(i:H2MultiWordText):MeTLMultiWordText = {
     val cc = decCanvasContent(i)
-    MeTLMultiWordText(config,cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get))
+    trace("toMeTLMultiWordText",cc)
+    MeTLMultiWordText(config,cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get),cc.audiences)
   }
   def encodeMultiWords(words:Seq[MeTLTextWord]):String = net.liftweb.json.Serialization.write(words)
+  
   override def fromMeTLMultiWordText(t:MeTLMultiWordText):H2MultiWordText = incCanvasContent(H2MultiWordText.create,t,"multiWordText").x(t.x).y(t.y).width(t.width).height(t.height).requestedWidth(t.requestedWidth).tag(t.tag).words(encodeMultiWords(t.words))
   def toMeTLText(i:H2Text):MeTLText = {
     val cc = decCanvasContent(i)
-    MeTLText(config,cc.author,cc.timestamp,i.text.get,i.height.get,i.width.get,i.caret.get,i.x.get,i.y.get,i.tag.get,i.style.get,i.family.get,i.weight.get,i.size.get,i.decoration.get,cc.identity,cc.target,cc.privacy,cc.slide,toColor(i.color.get))
+    MeTLText(config,cc.author,cc.timestamp,i.text.get,i.height.get,i.width.get,i.caret.get,i.x.get,i.y.get,i.tag.get,i.style.get,i.family.get,i.weight.get,i.size.get,i.decoration.get,cc.identity,cc.target,cc.privacy,cc.slide,toColor(i.color.get),cc.audiences)
   }
   override def fromMeTLText(i:MeTLText):H2Text = incCanvasContent(H2Text.create,i,"text").text(i.text).height(i.height).width(i.width).caret(i.caret).x(i.x).y(i.y).tag(i.tag).style(i.style).family(i.family).weight(i.weight).size(i.size).decoration(i.decoration).color(fromColor(i.color).toString)
   def toMeTLMoveDelta(i:H2MoveDelta):MeTLMoveDelta = {
@@ -199,27 +229,27 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
   }
   def toMeTLDirtyInk(i:H2DirtyInk):MeTLDirtyInk = {
     val cc = decCanvasContent(i)
-    MeTLDirtyInk(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLDirtyInk(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLDirtyInk(i:MeTLDirtyInk):H2DirtyInk = incCanvasContent(H2DirtyInk.create,i,"dirtyInk")
   def toMeTLDirtyImage(i:H2DirtyImage):MeTLDirtyImage = {
     val cc = decCanvasContent(i)
-    MeTLDirtyImage(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLDirtyImage(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLDirtyImage(i:MeTLDirtyImage):H2DirtyImage = incCanvasContent(H2DirtyImage.create,i,"dirtyImage")
   def toMeTLDirtyVideo(i:H2DirtyVideo):MeTLDirtyVideo = {
     val cc = decCanvasContent(i)
-    MeTLDirtyVideo(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLDirtyVideo(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLDirtyVideo(i:MeTLDirtyVideo):H2DirtyVideo = incCanvasContent(H2DirtyVideo.create,i,"dirtyVideo")
   def toMeTLDirtyText(i:H2DirtyText):MeTLDirtyText = {
     val cc = decCanvasContent(i)
-    MeTLDirtyText(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity)
+    MeTLDirtyText(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   override def fromMeTLDirtyText(i:MeTLDirtyText):H2DirtyText = incCanvasContent(H2DirtyText.create,i,"dirtyText")
   def toMeTLCommand(i:H2Command):MeTLCommand = {
     val c = decStanza(i)
-    MeTLCommand(config,c.author,c.timestamp,i.command.get,stringToStrings(i.commandParameters.get).toList)
+    MeTLCommand(config,c.author,c.timestamp,i.command.get,stringToStrings(i.commandParameters.get).toList,c.audiences)
   }
   override def fromMeTLCommand(i:MeTLCommand):H2Command = incStanza(H2Command.create,i,"command").command(i.command).commandParameters(stringsToString(i.commandParameters))
   def toMeTLFile(i:H2File):MeTLFile = {
@@ -229,6 +259,15 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case other => Some(other)
     }
     val bytes = url.map(u => config.getResource(u))
+    MeTLFile(config,c.author,c.timestamp,i.name.get,i.identity.get,url,bytes,i.deleted.get,c.audiences)
+  }
+  def toMeTLFile(i:H2File,fileBytes:Array[Byte]):MeTLFile = {
+    val c = decStanza(i)
+    val url = i.url.get match {
+      case null | "" => None
+      case other => Some(other)
+    }
+    val bytes = Full(fileBytes)//url.map(u => config.getResource(u))
     MeTLFile(config,c.author,c.timestamp,i.name.get,i.identity.get,url,bytes,i.deleted.get)
   }
   override def fromMeTLFile(i:MeTLFile):H2File = {
@@ -240,7 +279,7 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
       case null | "" => None
       case other => Some(other)
     }
-    MeTLVideoStream(config,c.author,i.identity.get,c.timestamp,url,i.deleted.get)
+    MeTLVideoStream(config,c.author,i.identity.get,c.timestamp,url,i.deleted.get,c.audiences)
   }
   override def fromMeTLVideoStream(i:MeTLVideoStream):H2VideoStream = {
     incStanza(H2VideoStream.create,i,"videoStream").partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.isDeleted)
@@ -251,8 +290,16 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     val url = i.url.get
     val bytes = config.getResource(url)
     val blacklist = blacklistFromString(i.blacklist.get)
-    MeTLSubmission(config,c.author,c.timestamp,i.title.get,i.slideJid.get,url,Full(bytes),blacklist,c.target,c.privacy,c.identity)
+    MeTLSubmission(config,c.author,c.timestamp,i.title.get,i.slideJid.get,url,Full(bytes),blacklist,c.target,c.privacy,c.identity,c.audiences)
   }
+  def toSubmission(i:H2Submission,imageData:Array[Byte]):MeTLSubmission = {
+    val c = decCanvasContent(i)
+    val url = i.url.get
+    val bytes = imageData//config.getResource(url)
+    val blacklist = blacklistFromString(i.blacklist.get)
+    MeTLSubmission(config,c.author,c.timestamp,i.title.get,i.slideJid.get,url,Full(bytes),blacklist,c.target,c.privacy,c.identity,c.audiences)
+  }
+
   override def fromSubmission(i:MeTLSubmission):H2Submission = incCanvasContent(H2Submission.create,i,"submission").title(i.title).slideJid(i.slideJid).url(i.url).blacklist(blacklistToString(i.blacklist))
   def toMeTLQuiz(i:H2Quiz):MeTLQuiz = {
     val url = i.url.get match {
@@ -262,6 +309,15 @@ class H2Serializer(configName:String) extends Serializer with LiftLogger {
     val bytes = url.map(u => config.getResource(u))
     val c = decStanza(i)
     MeTLQuiz(config,c.author,c.timestamp,i.created.get,i.question.get,i.quizId.get,url,bytes,i.isDeleted.get,optionsFromString(i.options.get))
+  }
+  def toMeTLQuiz(i:H2Quiz,imageData:Array[Byte]):MeTLQuiz = {
+    val url = i.url.get match {
+      case s:String if (s.length > 0) => Full(s)
+      case _ => Empty
+    }
+    val bytes = Full(imageData)//url.map(u => config.getResource(u))
+    val c = decStanza(i)
+    MeTLQuiz(config,c.author,c.timestamp,i.created.get,i.question.get,i.quizId.get,url,bytes,i.isDeleted.get,optionsFromString(i.options.get),c.audiences)
   }
   override def fromMeTLQuiz(i:MeTLQuiz):H2Quiz = {
     incStanza(H2Quiz.create,i,"quiz").created(i.created).question(i.question).quizId(i.id).url(i.url.openOr("")).isDeleted(i.isDeleted).options(optionsToString(i.options))

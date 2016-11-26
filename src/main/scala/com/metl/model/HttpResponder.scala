@@ -12,8 +12,8 @@ import org.apache.commons.io._
 import javax.xml.bind.DatatypeConverter
 
 object HttpResponder extends HttpCacher with Logger {
-  private val snapshotExpiry = 10 seconds
-  private val quizImageExpiry = 30 seconds
+  private val snapshotExpiry = 0 seconds
+  private val quizImageExpiry = 0 seconds
   protected val server = ServerConfiguration.default
   debug("HttpResponder for server: %s".format(server))
   def getSnapshot(jid:String,size:String) = {
@@ -34,7 +34,7 @@ object HttpResponder extends HttpCacher with Logger {
     val privateRoom = MeTLXConfiguration.getRoom(jid+Globals.currentUser.is,server.name,RoomMetaDataUtils.fromJid(jid+Globals.currentUser.is))
     val merged = publicRoom.getHistory.merge(privateRoom.getHistory)
     
-    val snap = com.metl.renderer.SlideRenderer.render(
+    val snap = privateRoom.slideRenderer.render(
       merged,
       size.trim.toLowerCase match {
         case "thumbnail" => Globals.ThumbnailSize

@@ -3,7 +3,9 @@ package com.metl.persisted
 import com.metl.data._
 import com.metl.utils._
 
-abstract class PersistenceInterface {
+abstract class PersistenceInterface(config:ServerConfiguration) {
+  def isReady:Boolean 
+  def shutdown:Boolean
   //stanzas
   def storeStanza[A <: MeTLStanza](jid:String,stanza:A):Option[A]
   def getHistory(jid:String):History
@@ -18,6 +20,7 @@ abstract class PersistenceInterface {
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation
   def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation
   def updateConversation(jid:String,conversation:Conversation):Conversation
 

@@ -5,10 +5,18 @@ import com.metl.data._
 
 abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Conversation=>Unit) extends ServerConfiguration(name,host,onConversationUpdated){
   protected val dbInterface:PersistenceInterface
-  protected val messageBusProvider = new PersistingMessageBusProvider(name,dbInterface)
-  protected val history = new PersistedHistory(name,dbInterface)
-  protected val conversations = new PersistedConversations(name,dbInterface,onConversationUpdated)
-  protected val resourceProvider = new PersistedResourceProvider(name,dbInterface)
+  protected lazy val messageBusProvider = new PersistingMessageBusProvider(this,dbInterface)
+  protected lazy val history = new PersistedHistory(this,dbInterface)
+  protected lazy val conversations = new PersistedConversations(this,dbInterface,onConversationUpdated)
+  protected lazy val resourceProvider = new PersistedResourceProvider(this,dbInterface)
+  override def shutdown = {
+    dbInterface.shutdown
+    super.shutdown
+  }
+  override def isReady = {
+    dbInterface.isReady
+    super.isReady
+  }
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString
@@ -20,6 +28,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversations.changePermissions(jid,newPermissions)
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = conversations.updateSubjectOfConversation(jid,newSubject)
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = conversations.addSlideAtIndexOfConversation(jid,index)
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = conversations.addGroupSlideAtIndexOfConversation(jid,index,grouping)
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = conversations.reorderSlidesOfConversation(jid,newSlides)
   override def updateConversation(jid:String,conversation:Conversation):Conversation = conversations.updateConversation(jid,conversation)
   override def getImage(jid:String,identity:String) = history.getMeTLHistory(jid).getImageByIdentity(identity).getOrElse(MeTLImage.empty)

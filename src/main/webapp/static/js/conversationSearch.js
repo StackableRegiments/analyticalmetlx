@@ -251,9 +251,9 @@ var Conversations = (function(){
 				}));
     };
     var shouldDisplayConversation = function(details){
-				var subject = details.subject.toLowerCase().trim();
-				var title = details.title.toLowerCase().trim();
-				var author = details.author;
+        var subject = details.subject.toLowerCase().trim();
+        var title = details.title.toLowerCase().trim();
+        var author = details.author;
         return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
 					var key = g.key ? g.key : g.ouType;
 					var name = g.name ? g.name : g.value;	
@@ -343,18 +343,18 @@ var Conversations = (function(){
     var receiveUsernameFunc = function(user){
         username = user;
     };
-		var getUsernameFunc = function(){
-			return username;
-		};
+    var getUsernameFunc = function(){
+        return username;
+    };
     var receiveUserGroupsFunc = function(groups){
         userGroups = groups;
     };
-		var getUserGroupsFunc = function(){
-			return userGroups
-		};
+    var getUserGroupsFunc = function(){
+        return userGroups
+    };
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
-				console.log("currentSearchResults:",currentSearchResults,details);
+        console.log("currentSearchResults:",currentSearchResults,details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
@@ -401,18 +401,18 @@ var Conversations = (function(){
         getConversationListing:getConversationListingFunc,
         getImportListing:getImportListingFunc,
         getQuery:getQueryFunc,
-				getUsername:getUsernameFunc,
-				getUserGroups:getUserGroupsFunc,
+        getUsername:getUsernameFunc,
+        getUserGroups:getUserGroupsFunc,
         search:searchFunc,
         create:createFunc,
-				getUserGroups:function(){return userGroups;},
-				getUsername:function(){return username;}
+        getUserGroups:function(){return userGroups;},
+        getUsername:function(){return username;}
     };
 })();
 
 function augmentArguments(args){
-	args[_.size(args)] = new Date().getTime();
-	return args;
+    args[_.size(args)] = new Date().getTime();
+    return args;
 }
 
 function serverResponse(response){ //invoked by Lift
@@ -423,6 +423,7 @@ function receiveUsername(username){ //invoked by Lift
 function receiveUserGroups(userGroups){ //invoked by Lift
     Conversations.receiveUserGroups(userGroups);
 }
+
 function receiveConversationDetails(details){ //invoked by Lift
     Conversations.receiveConversationDetails(details);
 }

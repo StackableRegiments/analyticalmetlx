@@ -204,6 +204,13 @@ var Participants = (function(){
         });
     }
     $(function(){
+        Progress.attendanceReceived["participationHealth"] = function(attendances){
+            $("#attendanceStatus").prop({
+                value:attendances.val,
+                max:attendances.max,
+                min:0
+            });
+        };
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
         participantFollowControl = participantsDatagrid.find(".followControls").clone();

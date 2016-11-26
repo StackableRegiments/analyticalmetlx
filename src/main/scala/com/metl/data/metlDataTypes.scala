@@ -12,40 +12,15 @@ object PointConverter {
   def toText(points:List[Point]):String = points.map(p => toText(p)).mkString(" ")
   def toText(point:Point):String = "%s %s %s".format(point.x,point.y,point.thickness)
   protected val pointCount = 3
-  def constructPoint(pointElements:List[String]):Option[Point] = {
-    if (pointElements.length == pointCount){
-      try {
-        val x = pointElements(0).toDouble
-        val y = pointElements(1).toDouble
-        val thickness = pointElements(2).toDouble
-        Some(Point(x,y,thickness))
-      } catch {
-        case e:Exception => {
-          None
-        }
-      }
+  protected def constructPoint(pointElements:List[String]):Option[Point] = {
+    try {
+      Some(Point(pointElements(0).toDouble,pointElements(1).toDouble,pointElements(2).toDouble))
+    } catch {
+      case e:Exception => None
     }
-    else None
   }
-  def deprecatedConstructPoint(pointElements:List[String]):Option[Point] = {
-    if (pointElements.length == pointCount){
-      val x = tryo(pointElements(0).toDouble).openOr(0.0)
-      val y = tryo(pointElements(1).toDouble).openOr(0.0)
-      val thickness = tryo(pointElements(2).toDouble).openOr(0.0)
-      Some(Point(x,y,thickness))
-    }
-    else None
-  }
-
   protected def parsePoints(incomingPoints:List[String]):List[Point] = {
-    incomingPoints.grouped(3).flatMap(constructPoint _).toList
-  }
-  def deprecatedFromText(t:String):List[Point] = deprecatedParsePoints(t.split(" ").toList)
-  protected def deprecatedParsePoints(incomingPoints:List[String]):List[Point] = {
-    incomingPoints.splitAt(pointCount) match {
-      case (currentPoint,remainingPoints) if (currentPoint.length == pointCount) => constructPoint(currentPoint).toList ::: parsePoints(remainingPoints)
-      case _ => List.empty[Point]
-    }
+    incomingPoints.grouped(3).toList.flatMap(constructPoint _)
   }
 }
 
@@ -121,12 +96,14 @@ object Presentation{
   def emtpy = Presentation(ServerConfiguration.empty,Conversation.empty)
 }
 
-case class GroupSet(override val server:ServerConfiguration,id:String,location:String,groupingStrategy:GroupingStrategy,groups:List[Group],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
+case class GroupSet(override val server:ServerConfiguration,id:String,location:String,groupingStrategy:GroupingStrategy,groups:List[Group],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+  def contains(person:String) = groups.exists(_.members.contains(person))
+}
 object GroupSet {
   def empty = GroupSet(ServerConfiguration.empty,"","",EveryoneInOneGroup,Nil,Nil)
 }
 
-abstract class GroupingStrategy{
+abstract class GroupingStrategy extends Logger {
   def addNewPerson(g:GroupSet,person:String):GroupSet
 }
 
@@ -147,17 +124,32 @@ case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
 }
 case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    val oldGroups = g.groups
-    g.copy(groups = {
-      oldGroups match {
-        case l:List[Group] if l.length < numberOfGroups => Group(g.server,nextFuncName,g.location,List(person)) :: l
-        case l:List[Group] => l.sortWith((a,b) => a.members.length < b.members.length).headOption.map(fg => {
-          fg.copy(members = person :: fg.members) :: l.filter(_.id != fg.id)
-        }).getOrElse({
-          l.head.copy(members = person :: l.head.members) :: l.drop(1)
-        })
-      }
-    })
+    if(g.contains(person)){
+      trace("Already grouped: %s".format(person))
+      g
+    }
+    else{
+      trace("Adding %s to %s".format(person,g))
+      val oldGroups = g.groups
+      g.copy(groups = {
+        oldGroups match {
+          case l:List[Group] if l.length < numberOfGroups => {
+            trace("Adding a group")
+            Group(g.server,nextFuncName,g.location,List(person)) :: l
+          }
+          case l:List[Group] => {
+            trace("Adding to an existing group")
+            l.sortWith((a,b) => a.members.length < b.members.length).headOption.map(fg => {
+              trace("  Adding to %s".format(fg))
+              fg.copy(members = person :: fg.members) :: l.filter(_.id != fg.id)
+            }).getOrElse({
+              trace("  Adding to %s".format(l.head))
+              l.head.copy(members = person :: l.head.members) :: l.drop(1)
+            })
+          }
+        }
+      })
+    }
   }
 }
 case class ComplexGroupingStrategy(data:Map[String,String]) extends GroupingStrategy {
@@ -186,7 +178,7 @@ object Group {
   def empty = Group(ServerConfiguration.empty,"","",Nil,Nil)
 }
 
-case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences) with Logger{
   def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(server,author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
   def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)
   def replacePermissions(newPermissions:Permissions) = copy(permissions = newPermissions, lastAccessed = new Date().getTime)
@@ -195,6 +187,18 @@ case class Conversation(override val server:ServerConfiguration,author:String,la
     (trimmedSubj == "unrestricted" || author.toLowerCase.trim == username.toLowerCase.trim || userGroups.exists(ug => ug.toLowerCase.trim == trimmedSubj)) && trimmedSubj != "deleted"
   }
   def replaceSubject(newSubject:String) = copy(subject=newSubject,lastAccessed=new Date().getTime)
+  def addGroupSlideAtIndex(index:Int,grouping:GroupSet) = {
+    val oldSlides = slides.map(s => {
+      if (s.index >= index){
+        s.replaceIndex(s.index + 1)
+      } else {
+        s
+      }
+    })
+    val newId = slides.map(s => s.id).max + 1
+    val newSlides = Slide(server,author,newId,index,540,720,false,"SLIDE",List(grouping)) :: oldSlides
+    replaceSlides(newSlides)
+  }
   def addSlideAtIndex(index:Int) = {
     val oldSlides = slides.map(s => {
       if (s.index >= index){

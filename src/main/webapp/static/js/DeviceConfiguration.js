@@ -5,7 +5,7 @@ var DeviceConfiguration = (function(){
     var currentDevice = "browser";
     var orientation = "landscape";
     var px = function(i){
-	return sprintf("%spx",i);
+        return sprintf("%spx",i);
     }
     var returnCurrentDeviceFunction = function(){
         return currentDevice;
@@ -181,7 +181,7 @@ var DeviceConfiguration = (function(){
             var slideContainer = comp("#slideContainer");
             var thumbScrollContainer = comp("#thumbScrollContainer");
             var thumbs = $(".thumbnail");
-						var slideControls = comp("#slideControls");
+            var slideControls = comp("#slideControls");
 
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
@@ -207,16 +207,15 @@ var DeviceConfiguration = (function(){
                 }
                 if (showSlides == true){
                     thumbsColumn.show();
-										slideControls.show()
+                    slideControls.show()
                 } else {
                     thumbsColumn.hide();
-										slideControls.hide();
+                    slideControls.hide();
                 }
                 var boardContainer = comp("#boardContainer");
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
-                comp("#thumbColumnDragHandle").width(showSlides ? DeviceConfiguration.preferredSizes.handles: 0);
-                thumbs.attr("width",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.width : 0));
+                thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
                 var bwidth = boardContainer.width();
@@ -332,14 +331,6 @@ var DeviceConfiguration = (function(){
             w.on("orientationchange",outerFit);
         }
         w.resize(outerFit);
-        /* $.get(
-         //this is a quick and dirty workaround to ensure that the devices log their useragent in a stateful manner on lift's end
-         "/logDevice",
-         {},
-         function(data){
-         }
-         );
-         */
         $("#toolsToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("tools",!sectionsVisible.tools);
             updateToolsToggleButton();
@@ -351,6 +342,13 @@ var DeviceConfiguration = (function(){
             outerFit();
         }));
         var originalSize = DeviceConfiguration.preferredSizes.handles;
+        $("#thumbColumnWidth")
+            .val(DeviceConfiguration.preferredSizes.thumbColumn.width)
+            .on("input change",function(){
+                var newValue = comp("#thumbColumnWidth").val();
+		$(".thumbnail").height(newValue * 0.75);
+		fitFunction();
+            });
     });
     var actOnCurrentDevice = function(){
         switch (currentDevice){

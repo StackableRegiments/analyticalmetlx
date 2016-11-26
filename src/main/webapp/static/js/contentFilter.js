@@ -37,14 +37,14 @@ var ContentFilter = (function(){
             name:group.name,
             filterStanza:function(stanza){
                 var members = "members" in group ? group.members : [];
-                return "author" in stanza && _.contains(members,stanza.author);
+                return "author" in stanza && _.includes(members,stanza.author);
             },
             enabled:true
         };
     };
     var applyFilters = function(stanza){
-	var observed = Participants.getParticipants()[stanza.author];
-	if(observed && !observed.following) return false;
+        var observed = Participants.getParticipants()[stanza.author];
+        if(observed && !observed.following) return false;
         return _.some(filters,function(filter){
             return ("enabled" in filter && filter.enabled == true) ? filter.filterStanza(stanza) : false ;
         });
@@ -85,7 +85,21 @@ var ContentFilter = (function(){
         var label = root.find(".contentFilterCheckboxLabel");
         var labelText = root.find(".contentFilterCheckboxLabelText");
         var id = sprintf("contentFilter_%s",filter.id);
-        labelText.text(filter.name);
+        var currentSlide = Conversations.getCurrentSlide();
+        if(currentSlide && currentSlide.groupSet){
+            var referencedGroup = _.find(currentSlide.groupSet.groups,function(group){
+                return group.id == filter.id;
+            });
+            if(referencedGroup){
+                labelText.text(_.join(referencedGroup.members,","));
+            }
+            else {
+                labelText.text(filter.name);
+            }
+        }
+        else{
+            labelText.text(filter.name);
+        }
         label.attr("for",id);
         cb.prop("checked",filter.enabled);
         cb.attr("id",id);
@@ -105,12 +119,8 @@ var ContentFilter = (function(){
     var setFiltersFromGroups = function(groups){
         if (Conversations.isAuthor()){
             filters = _.concat([myPrivate,myPublic],_.map(groups,generateGroupFilter));
-        } else {
-            filters = _.concat([owner,myPrivate,myPublic],_.map(_.filter(groups,function(g){
-                return _.contains(g.members,UserSettings.getUsername());
-            }),generateGroupFilter));
+            blit();
         }
-        blit();
     };
     var setDefaultFilters = function(){
         if (Conversations.isAuthor()){
@@ -122,6 +132,7 @@ var ContentFilter = (function(){
     };
     var conversationJoined = function(){
         var cs = Conversations.getCurrentSlide();
+	console.log("Setting up filters for",cs);
         if (cs != undefined && "groupSet" in cs){
             setFiltersFromGroups(cs.groupSet.groups);
         } else {
@@ -138,8 +149,10 @@ var ContentFilter = (function(){
         renderContentFilters();
         blit();
     };
+    Progress.currentSlideJidReceived["ContentFilter"] = conversationJoined;
     Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
     Progress.onConversationJoin["ContentFilter"] = conversationJoined;
+    Progress.afterJoiningSlide["ContentFilter"] = conversationJoined;
     return {
         getFilters:getFiltersFunction,
         setFilter:setFilterFunction

@@ -59,15 +59,12 @@ var WorkQueue = (function(){
                 blit();
                 blitNeeded = false;
             }
-            if ("Conversations" in window){
-                Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
-            }
         }
     };
     var pauseFunction = function(){
         stopResume();
         canWorkFunction(false);
-				Progress.call("afterWorkQueuePause");
+        Progress.call("afterWorkQueuePause");
     };
     var canWorkFunction = function(state){
         isAbleToWork = state;
@@ -86,7 +83,7 @@ var WorkQueue = (function(){
     var gracefullyResumeFunction = function(){
         stopResume();
         gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
-				Progress.call("beforeWorkQueueResume");
+        Progress.call("beforeWorkQueueResume");
     };
     return {
         pause:pauseFunction,
@@ -978,15 +975,14 @@ $(function(){
 							handled = true;
 						}
 					});
-
 					conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
-						if (!handled){
-							Modes.text.handleDrop(html,x,y);
-							handled = true;
-						}
+							if (!handled){
+									Modes.text.handleDrop(html,x,y);
+									handled = true;
+							}
 					});
 					if (!handled){
-						console.log("unknown type",df);
+							console.log("unknown type",df);
 					}
 				}
 				ev.preventDefault();
@@ -994,34 +990,34 @@ $(function(){
 			} else {
 				return true;
 			}
-		};
-		window.addEventListener("paste",function(jEv){
-			if ("originalEvent" in jEv){
-				return func(jEv.originalEvent);
-			} else {
-				return func(jEv);
-			}
-		});
-		$("#board").on("drop",function(jEv){
-			if ("originalEvent" in jEv){
-				return func(jEv.originalEvent);
-			} else {
-				return false;
-			}
-		});
-		var deadFunc = function(deadEvent){
-			deadEvent.preventDefault();
-			return false;
-		};
-		var fakeFunc = function(deadEvent){
-			return true;
-		};
-		$(document).on("drop",deadFunc);
-		window.onbeforepaste = deadFunc;
-		_.forEach(["dragover","dragleave","dragenter"],function(label){
-			window["on"+label] = deadFunc;
-			$(window).on(label,deadFunc);
-			$("#board")[0]["on"+label] = deadFunc;
-			$("#board").on(label,deadFunc);
-		});
+    };
+    window.addEventListener("paste",function(jEv){
+        if ("originalEvent" in jEv){
+            return func(jEv.originalEvent);
+        } else {
+            return func(jEv);
+        }
+    });
+    $("#board").on("drop",function(jEv){
+        if ("originalEvent" in jEv){
+            return func(jEv.originalEvent);
+        } else {
+            return false;
+        }
+    });
+    var deadFunc = function(deadEvent){
+        deadEvent.preventDefault();
+        return false;
+    };
+    var fakeFunc = function(deadEvent){
+        return true;
+    };
+    $(document).on("drop",deadFunc);
+    window.onbeforepaste = deadFunc;
+    _.forEach(["dragover","dragleave","dragenter"],function(label){
+        window["on"+label] = deadFunc;
+        $(window).on(label,deadFunc);
+        $("#board")[0]["on"+label] = deadFunc;
+        $("#board").on(label,deadFunc);
+    });
 });

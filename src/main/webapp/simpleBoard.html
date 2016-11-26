@@ -1,93 +1,103 @@
 <div class="lift:surround?with=defaultWebMeTL;at=content">
-    <script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
-    <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
-    <script src="static/js/stable/underscore-min.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/defaults.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/Progress.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/DeviceConfiguration.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/historyReader.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/board.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/toolbar.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/conversations.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/onLoad.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/test.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/quizzes.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/submissions.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/attachments.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/participants.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/privacy.js"></script>
-    <script src="static/js/stable/Tween.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/hotkeys.js"></script>
-    <script src="static/js/Chart.min.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/contentFilter.js"></script>
-    <link rel="stylesheet" href="static/css/board.css"></link>
-    <!--    <link rel="stylesheet" href="static/css/quiz.css"></link>
-        <link rel="stylesheet" href="static/css/ribbon.css"></link>
-            <link rel="stylesheet" href="static/css/header.css"></link>-->
-    <div class="lift:embed?what=_backstage-menu"></div>
-    <div id="masterLayout" class="flex-container-responsive">
-        <div class="shrinkWrappedColumn mrh" id="toolsColumn">
-            <div class="lift:embed?what=_ribbon" ></div>
-        </div>
-        <div class="expandoColumn expandoRow main-board mrh flex-container-column np" id="boardColumn">
-            <div class="lift:embed?what=_presentationSpace grow" ></div>
-            <div id="notices" class="body-bg">
-                <div class="headerRow1">
-                    <span id="username" ></span>
-                    <span> is working </span>
-                    <span id="currentPrivacyStatus"></span>
-                    <span> in </span>
-                    <span id="currentConversationTitle" ></span>
-                    <span> with </span>
-                    <span id="currentConversationState"></span>
-              <span id="shareContainer" class="block with-border">
-                <div id="sharingLinks">
-                    <div>
-                        <span>Join this slide: </span>
-                    <span id="shareLink">
-                      No slide selected
-                    </span>
-                    </div>
-                    <div>
-                        <span>Follow this conversation: </span>
-                    <span id="projectorLink">
-                      No conversation selected
-                    </span>
-                    </div>
-                </div>
-                <div class="closeButton btn-close fa fa-times" id="closeSharingButton"><span class="hidden">Close</span></div>
-              </span>
-                </div>
-                <div class="headerRow2">
-                    <button id="feedbackStatus" class="btn-icon fa fa-comment nmt"></button>
-                    <!--<button id="shareButton" class="btn-icon fa fa-share nmt"></button>-->
-                </div>
-                <div class="headerRow3">
-                </div>
-            </div>
-        </div>
-        <div class="shrinkWrappedColumn expandoRow block mrh npt body-bg nmb" id="thumbsColumn2">
-            <div class="lift:Metl.specificSlideDisplay">
-                <div id="slidesContainer2">
-                    <div class="slideContainer2">
-                        <a class="slideAnchor">
-                            <span class="slideIndex"></span> : <span class="slideId"></span> ( <span class="slideActive"></span> )
-                        </a>
-                    </div>
-                </div>
-                <button id="addSlideButtonContainer">Add Slide</button>
-            </div>
-        </div>
-<!--
-        <div class="shrinkWrappedColumn expandoRow block mrh npt body-bg nmb" id="thumbsColumn">
-            <div class="lift:embed?what=_thumbs"></div>
-        </div>
--->
+  <script src="static/js/stable/jquery.debounce-1.0.5.js"></script>
+  <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+  <script src="static/js/stable/underscore-min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/defaults.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/Progress.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/DeviceConfiguration.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/historyReader.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/board.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/toolbar.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/conversations.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/onLoad.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/test.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/quizzes.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/submissions.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/attachments.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/participants.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/privacy.js"></script>
+  <script src="static/js/stable/Tween.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/hotkeys.js"></script>
+  <script src="static/js/Chart.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/contentFilter.js"></script>
+  <link rel="stylesheet" href="static/css/board.css"></link>
+  <!--    <link rel="stylesheet" href="static/css/quiz.css"></link>
+          <link rel="stylesheet" href="static/css/ribbon.css"></link>
+          <link rel="stylesheet" href="static/css/header.css"></link>-->
+  <div class="lift:embed?what=_backstage-menu"></div>
+  <div id="masterLayout" class="flex-container-responsive">
+    <div class="shrinkWrappedColumn mrh" id="toolsColumn">
+      <div class="lift:embed?what=_ribbon" ></div>
     </div>
-    <div class="lift:embed?what=_dedicatedPopups"></div>
-    <div id="s2cMessageContainer" ></div>
-    <div class="lift:Metl.specificSimple" ></div>
+    <div class="expandoColumn expandoRow main-board mrh flex-container-column np" id="boardColumn">
+      <div class="lift:embed?what=_presentationSpace grow" ></div>
+      <div id="notices" class="body-bg">
+        <div class="headerRow1">
+          <span id="username" ></span>
+          <span> is working </span>
+          <span id="currentPrivacyStatus"></span>
+          <span> in </span>
+          <span id="currentConversationTitle" ></span>
+          <span> with </span>
+          <span id="currentConversationState"></span>
+          <span id="shareContainer" class="block with-border">
+            <div id="sharingLinks">
+              <div>
+                <span>Join this slide: </span>
+                <span id="shareLink">
+                  No slide selected
+                </span>
+              </div>
+              <div>
+                <span>Follow this conversation: </span>
+                <span id="projectorLink">
+                  No conversation selected
+                </span>
+              </div>
+            </div>
+            <div class="closeButton btn-close fa fa-times" id="closeSharingButton"><span class="hidden">Close</span></div>
+          </span>
+        </div>
+        <div class="headerRow2">
+          <button id="feedbackStatus" class="btn-icon fa fa-comment nmt"></button>
+          <!--<button id="shareButton" class="btn-icon fa fa-share nmt"></button>-->
+        </div>
+        <div class="headerRow3">
+        </div>
+      </div>
+      <div class="closeButton btn-close fa fa-times" id="closeSharingButton"><span class="hidden">Close</span></div>
+</span>
+</div>
+<div class="headerRow2">
+  <button id="feedbackStatus" class="btn-icon fa fa-comment nmt"></button>
+  <!--<button id="shareButton" class="btn-icon fa fa-share nmt"></button>-->
+</div>
+<div class="headerRow3">
+</div>
+</div>
+</div>
+<div class="shrinkWrappedColumn expandoRow block mrh npt body-bg nmb" id="thumbsColumn2">
+  <div class="lift:Metl.specificSlideDisplay">
+    <div id="slidesContainer2">
+      <div class="slideContainer2">
+        <a class="slideAnchor">
+          <span class="slideIndex"></span> : <span class="slideId"></span> ( <span class="slideActive"></span> )
+        </a>
+      </div>
+    </div>
+    <button id="addSlideButtonContainer">Add Slide</button>
+  </div>
+</div>
+<!--
+    <div class="shrinkWrappedColumn expandoRow block mrh npt body-bg nmb" id="thumbsColumn">
+      <div class="lift:embed?what=_thumbs"></div>
+    </div>
+    -->
+</div>
+<div class="lift:embed?what=_dedicatedPopups"></div>
+<div id="s2cMessageContainer" ></div>
+<div class="lift:Metl.specificSimple" ></div>
 </div>

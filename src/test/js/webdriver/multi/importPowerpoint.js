@@ -51,7 +51,6 @@ describe('When a teacher presents,', function() {
         teacherConversationsPage.waitForImportedConversation(teacherName,importFilename);
         var newConversations = teacherConversationsPage.getNewConversations(previousConversations);
         assert.ok(newConversations.length > 0,"expected there to be at least 1 new conversation");
-//        assert.ok(newConversations[0].name);
     });
     it("the teacher should join the conversation",function(){
         teacher.click(".newConversationTag");
