@@ -3,7 +3,9 @@ package com.metl.persisted
 import com.metl.data._
 import com.metl.utils._
 
-abstract class PersistenceInterface {
+abstract class PersistenceInterface(config:ServerConfiguration) {
+  def isReady:Boolean 
+  def shutdown:Boolean
   //stanzas
   def storeStanza[A <: MeTLStanza](jid:String,stanza:A):Option[A]
   def getHistory(jid:String):History

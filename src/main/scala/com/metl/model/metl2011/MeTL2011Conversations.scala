@@ -8,7 +8,7 @@ import net.liftweb.util._
 import org.apache.commons.io.IOUtils
 import net.liftweb.common.Logger
 
-class MeTL2011CachedConversations(configName:String, http:HttpProvider, messageBusProvider:MessageBusProvider, onConversationDetailsUpdated:(Conversation) => Unit) extends MeTL2011Conversations(configName,"",http,messageBusProvider,onConversationDetailsUpdated) with Logger {
+class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider, messageBusProvider:MessageBusProvider, onConversationDetailsUpdated:(Conversation) => Unit) extends MeTL2011Conversations(config,"",http,messageBusProvider,onConversationDetailsUpdated) with Logger {
   override val mbDef = new MessageBusDefinition("global","conversationUpdating",
     (m:MeTLStanza)=>{
       trace("Message received from the conversationUpdater's message bus: %s".format(m))
@@ -113,9 +113,9 @@ class MeTL2011CachedConversations(configName:String, http:HttpProvider, messageB
   }
 }
 
-class MeTL2011Conversations(configName:String, val searchBaseUrl:String, http:HttpProvider,messageBusProvider:MessageBusProvider,onConversationDetailsUpdated:(Conversation) => Unit) extends ConversationRetriever(configName,onConversationDetailsUpdated) with Logger {
-  lazy val utils = new MeTL2011Utils(configName)
-  lazy val serializer = new MeTL2011XmlSerializer(configName)
+class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String, http:HttpProvider,messageBusProvider:MessageBusProvider,onConversationDetailsUpdated:(Conversation) => Unit) extends ConversationRetriever(config,onConversationDetailsUpdated) with Logger {
+  lazy val utils = new MeTL2011Utils(config)
+  lazy val serializer = new MeTL2011XmlSerializer(config)
   lazy val rootAddress = "https://%s:1188".format(config.host)
   protected val mbDef = new MessageBusDefinition("global","conversationUpdating",
     (m:MeTLStanza)=>{

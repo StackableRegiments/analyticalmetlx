@@ -346,7 +346,7 @@ object Importer extends Logger {
     com.metl.comet.MeTLConversationSearchActorManager ! id
   }
   val config = ServerConfiguration.default
-  val exportSerializer = new ExportXmlSerializer(config.name)
+  val exportSerializer = new ExportXmlSerializer(config)
   def importExportedConversation(xml:NodeSeq):Box[Conversation] = {
     for (
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
@@ -615,7 +615,7 @@ class ImageDownscaler(maximumByteSize:Int) extends Logger {
   }
 }
 
-class ExportXmlSerializer(configName:String) extends GenericXmlSerializer(configName) with Logger {
+class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializer(config) with Logger {
   lazy val downscaler = new ImageDownscaler(16777216)
   protected def downscaleImage(in:Array[Byte],descriptor:String = ""):Array[Byte] = downscaler.downscaleImage(in,descriptor)
   override def toMeTLImage(input:NodeSeq):MeTLImage = {
