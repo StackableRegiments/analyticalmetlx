@@ -250,6 +250,10 @@ var Conversations = (function(){
         constructAddSlideButton(slideControls)
         constructAddGroupSlideButton(slideControls)
         indicateActiveSlide(currentSlide);
+        $(".thumbnail:not(.groupSlide)").map(function(){
+            var t = $(this);
+            t.height(t.width() * 0.75);
+        });
         Progress.call("onLayoutUpdated");
     }
 
@@ -464,6 +468,9 @@ var Conversations = (function(){
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
+        if(currentSlide != jid){
+            doMoveToSlide(jid);
+        }
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();

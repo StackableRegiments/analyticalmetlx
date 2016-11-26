@@ -43,21 +43,22 @@
   <script data-lift="with-resource-id" src="static/js/sparkline.js"></script>
   <script data-lift="with-resource-id" src="static/js/analysis.js"></script>
   <script data-lift="with-resource-id" src="static/js/recycleBin.js"></script>
-	<!--
-	<script>
-// this isn't ready yet - the WebRTC to ORTC adapter included here doesn't quite work with TokBox.  It does persuade TokBox that it has the capabilities, but then it fails to send or receive streams correctly.  So, IE, Firefox and Chrome will work, but Edge will still not work correctly.
-		if (/Edge/.test(navigator.userAgent)){
-			var scriptLoc = "https://webrtc.github.io/adapter/adapter-latest.js";
-			$.getScript(scriptLoc,function(completed){
-				eval(completed);
-			});
-		}
-	</script>
-	-->
+  <!--
+      <script>
+        // this isn't ready yet - the WebRTC to ORTC adapter included here doesn't quite work with TokBox.  It does persuade TokBox that it has the capabilities, but then it fails to send or receive streams correctly.  So, IE, Firefox and Chrome will work, but Edge will still not work correctly.
+        if (/Edge/.test(navigator.userAgent)){
+        var scriptLoc = "https://webrtc.github.io/adapter/adapter-latest.js";
+        $.getScript(scriptLoc,function(completed){
+        eval(completed);
+        });
+        }
+      </script>
+      -->
   <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
   <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
   <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
   <script src="static/js/stable/nlp_compromise.min.js"></script>
+  <script src="static/js/plugins.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <style>
     @media screen {
@@ -66,8 +67,7 @@
     }
     }
     #masterLayout {
-    height:100% !important;
-    width:100% !important;
+    flex-grow:1;
     }
     #boardColumn {
     order:2;
@@ -93,39 +93,25 @@
     left: 0px;
     z-index: 3;
     }
-    .publishedStream {
-    background:green !important;
-    }
-    .subscribedStream {
-    background:red !important;
-    }
-    .publisherVideoElem, .subscriberVideoElem {
-    display:inline-block;
-    }
-    #videoConfStartButton, .videoConfSubscribeButton {
-    background:white;
-    }
-
-
   </style>
-  <div>
-    <div id="loadingSpinner" class="loading-spinner">
-      <span class="icon-spinner">
-        <i class="fa fa-cog fa-spin fa-3x fa-fw"></i>
+  <div id="loadingSpinner" class="loading-spinner">
+    <span class="icon-spinner">
+      <i class="fa fa-cog fa-spin fa-3x fa-fw"></i>
+    </span>
+  </div>
+  <div id="pasteDialogTemplate">
+    <span class="dialogContent">
+      Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
+    </span>
+    <span class="dialogOptions">
+      <span class="dialogOption">
+        <button class="fa btn-icon">
+          <div class="icon-txt"></div>
+        </button>
       </span>
-    </div>
-    <div id="pasteDialogTemplate">
-      <span class="dialogContent">
-        Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
-      </span>
-      <span class="dialogOptions">
-        <span class="dialogOption">
-          <button class="fa btn-icon">
-            <div class="icon-txt"></div>
-          </button>
-        </span>
-      </span>
-    </div>
+    </span>
+  </div>
+  <div id="masterRows" class="flex-container-column">
     <div id="masterHeader">
       <div id="masterHeaderFlexContainer">
         <span id="floatingToggleContainer" class="main-menu">
@@ -175,13 +161,16 @@
       <div class="shrinkWrappedColumn" id="toolsColumn">
         <div class="lift:embed?what=_ribbon" ></div>
       </div>
-      <div class="expandoColumn expandoRow main-board mrh mlh flex-container-column np" id="boardColumn">
+      <div class="main-board mrh mlh flex-container-column np" id="boardColumn">
         <div class="lift:embed?what=_presentationSpace grow" ></div>
         <div id="notices" class="body-bg"></div>
       </div>
       <div class="shrinkWrappedColumn expandoRow npt nmb" id="thumbsColumn">
         <div class="lift:embed?what=_thumbs"></div>
       </div>
+    </div>
+    <div id="masterFooter">
+      <div id="pluginBar"></div>
     </div>
   </div>
   <div class="lift:embed?what=_dedicatedPopups"></div>

@@ -172,7 +172,6 @@ var DeviceConfiguration = (function(){
 
             var flexContainer = comp("#masterLayout");
 
-            var boardHeader = comp("#boardHeader");
             var applicationMenu = comp("#applicationMenu");
             var container = comp("#boardContainer");
             var boardColumn = comp("#boardColumn");
@@ -189,11 +188,9 @@ var DeviceConfiguration = (function(){
 
             var performRemeasure = function(){
                 if (showHeader == true){
-                    boardHeader.show();
                     applicationMenu.show();
                 } else {
                     applicationMenu.hide();
-                    boardHeader.hide();
                 }
 
                 if (showTools == true){
@@ -215,6 +212,7 @@ var DeviceConfiguration = (function(){
                 var boardContainer = comp("#boardContainer");
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
+                var masterFooter = comp("#masterFooter");
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -223,7 +221,7 @@ var DeviceConfiguration = (function(){
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
                     bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
+                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight - masterFooter.height();
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
@@ -346,7 +344,7 @@ var DeviceConfiguration = (function(){
             .val(DeviceConfiguration.preferredSizes.thumbColumn.width)
             .on("input change",function(){
                 var newValue = comp("#thumbColumnWidth").val();
-		$(".thumbnail").height(newValue * 0.75);
+		$(".thumbnail:not(.groupSlide)").height(newValue * 0.75);
 		fitFunction();
             });
     });
