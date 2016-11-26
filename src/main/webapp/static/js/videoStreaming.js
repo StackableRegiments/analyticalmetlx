@@ -19,6 +19,18 @@ var TokBox = (function(){
 				session.refreshVisualState();
 			}
 	};
+	var removeSessionsFunc = function(sessionIds){
+		_.forEach(sessions,function(session){
+			if (_.some(sessionIds,function(sid){
+				return sid == session.id;
+			})){
+				session.shutdown();
+				sessions = _.filter(sessions,function(s){
+					return s.id != session.id;
+				});
+			};
+		});
+	};
 	var sessionsContainer = undefined;
 	var sessionContainer = undefined;
 	$(function(){
@@ -30,6 +42,7 @@ var TokBox = (function(){
 		getSessions:function(){return sessions;},
 		receiveTokBoxSession:receiveTokBoxSessionFunc,
 		setTokBoxEnabledState:setTokBoxEnabledStateFunc,
+		removeSessions:removeSessionsFunc
 	}
 })();
 var TokBoxSession = function(desc,sessionContainer){
@@ -191,6 +204,12 @@ var TokBoxSession = function(desc,sessionContainer){
     Progress.afterWorkQueuePause["videoStreaming"] = downgradeVideoStreams;
     Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
 
+		var shutdownFunc = function(){
+			console.log("removing this session:",session);
+			session.disconnect();
+			sessionContainer.remove();
+		};
+
 		var session = OT.initSession(desc.apiKey,desc.sessionId)
 		session.on({
 			"streamDestroyed":function(ev){
@@ -296,6 +315,7 @@ var TokBoxSession = function(desc,sessionContainer){
 		id:session.id,
 		getSession:function(){return session;},
 		refreshVisualState:refreshVisualState,
+		shutdown:shutdownFunc,
 		resizeVideo:function(w,h,fps){
 			if (w != undefined){
 				videoWidth = w;
@@ -328,8 +348,13 @@ var TokBoxSession = function(desc,sessionContainer){
 
 function receiveTokBoxSessionToken(tokenMsg){
 	if ("token" in tokenMsg){
+		console.log("receiveTokBoxSession:",tokenMsg);
 		TokBox.receiveTokBoxSession(tokenMsg);
 	}
+}
+function removeTokBoxSessions(sessionIds){
+	console.log("removeTokBoxSessions",sessionIds);
+	TokBox.removeSessions(sessionIds);
 }
 function receiveTokBoxEnabled(isEnabled){
 	TokBox.setTokBoxEnabledState(isEnabled);
