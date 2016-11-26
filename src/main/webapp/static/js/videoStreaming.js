@@ -126,6 +126,7 @@ var TokBoxSession = function(desc,sessionContainer){
                 s.refreshVisual();
             }
         });
+	DeviceConfiguration.applyFit();
     };
     var togglePublishFunc = function(s){
         if (isConnected()){
