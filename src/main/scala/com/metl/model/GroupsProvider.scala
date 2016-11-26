@@ -322,15 +322,6 @@ trait GroupStoreDataSerializers {
     }</groupStoreData>
   }
   def fromXml(xml:NodeSeq):GroupStoreData = {
-    /*
-    val start = new java.util.Date().getTime
-    var last = start
-    def mark(msg:String) = {
-      var (o,n) = (last,new java.util.Date().getTime)
-      println("MARK %s: %s (%sms)".format(n,msg,n - o)) 
-    }
-    mark("fromXml begins")
-    */
     val userDetails = Map((xml \\ "personalDetails").flatMap(personalDetailsNode => {
       for {
         username <- (personalDetailsNode \ "@username").headOption.map(_.text)

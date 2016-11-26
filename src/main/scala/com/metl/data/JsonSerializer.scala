@@ -106,9 +106,9 @@ trait JsonSerializerHelper {
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
-class JsonSerializer(configName:String) extends Serializer with JsonSerializerHelper with Logger{
+class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSerializerHelper with Logger {
   type T = JValue
-  lazy val config = ServerConfiguration.configForName(configName)
+  val configName = config.name
 
   protected def parseAudiences(input:MeTLData):List[JField] = {
     val res = List(
@@ -344,7 +344,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
         val bytes = url.map(u => config.getResource(u))
-        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted)
+        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted,mc.audiences)
       }
       case _ => MeTLFile.empty
     }
@@ -365,7 +365,7 @@ class JsonSerializer(configName:String) extends Serializer with JsonSerializerHe
         val id = getStringByName(input,"id")
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
-        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted)
+        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences)
       }
       case _ => MeTLVideoStream.empty
     }

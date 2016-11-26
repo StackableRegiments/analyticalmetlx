@@ -901,14 +901,13 @@ object History {
   def empty = History("")
 }
 
-abstract class HistoryRetriever(serverName:String) {
-  lazy val server = ServerConfiguration.configForName(serverName)
+abstract class HistoryRetriever(config:ServerConfiguration) {
   def getMeTLHistory(jid:String):History
   def makeHistory(jid:String,stanzas:List[MeTLStanza]):History = Stopwatch.time("History.makeHistory",{
     stanzas.sortBy(_.timestamp).foldLeft(new History(jid))((h,item) => h.addStanza(item))
   })
 }
 
-object EmptyHistory extends HistoryRetriever("empty") {
+object EmptyHistory extends HistoryRetriever(EmptyBackendAdaptor) {
   def getMeTLHistory(jid:String) = History.empty
 }

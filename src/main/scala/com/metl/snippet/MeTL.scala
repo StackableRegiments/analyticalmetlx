@@ -283,7 +283,7 @@ class Metl extends Logger {
       ".pagesContainer *" #> Text("conversation and/or pageRange not specified")
     })
   }
-  val serializer = new JsonSerializer("frontend")
+  val serializer = new JsonSerializer(ServerConfiguration.default)
   def clientSidePrintConversation = {
     (for (
       jid <- S.param("conversationJid");

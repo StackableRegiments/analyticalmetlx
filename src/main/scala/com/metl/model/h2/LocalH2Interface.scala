@@ -12,7 +12,7 @@ import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, StandardDBVendor}
 import _root_.java.sql.{Connection, DriverManager}
 
-class H2Interface(configName:String,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends SqlInterface(configName,new StandardDBVendor("org.h2.Driver", filename.map(f => "jdbc:h2:%s;AUTO_SERVER=TRUE".format(f)).getOrElse("jdbc:h2:mem:%s".format(configName)),Empty,Empty){
+class H2Interface(config:ServerConfiguration,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends SqlInterface(config,new StandardDBVendor("org.h2.Driver", filename.map(f => "jdbc:h2:%s;AUTO_SERVER=TRUE".format(f)).getOrElse("jdbc:h2:mem:%s".format(config.name)),Empty,Empty){
   //adding extra db connections - it defaults to 4, with 20 being the maximum
   override def allowTemporaryPoolExpansion = true
   override def maxPoolSize = 1000
@@ -20,110 +20,148 @@ class H2Interface(configName:String,filename:Option[String],onConversationDetail
 },onConversationDetailsUpdated) {
 }
 
-class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit) extends PersistenceInterface with Logger{
-  lazy val serializer = new H2Serializer(configName)
-  lazy val config = ServerConfiguration.configForName(configName)
+class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit) extends PersistenceInterface(config) with Logger{
+  val configName = config.name
+  val serializer = new H2Serializer(config)
 
-  if (!DB.jndiJdbcConnAvailable_?) {
-    //                  this right here?  This needs to be addressed.  Looks like I'm going to have to bring some lift libraries into this one.
-    //      LiftRules.unloadHooks.append(vendor.closeAllConnections_! _)
-
-    DB.defineConnectionManager(DefaultConnectionIdentifier, vendor)
+  override def shutdown = {
+    vendor.closeAllConnections_!
+    true
   }
 
-  def shutdown = vendor.closeAllConnections_!
-
-  Schemifier.schemify(true,Schemifier.infoF _,
-    List(
-      H2Ink,
-      H2MultiWordText,
-      H2Text,
-      H2Image,
-      H2Video,
-      H2DirtyInk,
-      H2DirtyText,
-      H2DirtyImage,
-      H2DirtyVideo,
-      H2MoveDelta,
-      H2Quiz,
-      H2QuizResponse,
-      H2Command,
-      H2Submission,
-      H2Conversation,
-      H2Attendance,
-      H2File,
-      H2VideoStream,
-      H2Resource,
-      H2ContextualizedResource,
-      H2UnhandledCanvasContent,
-      H2UnhandledStanza,
-      H2UnhandledContent,
-      DatabaseVersion,
-      ThemeExtraction,
-      H2Theme,
-      H2UndeletedCanvasContent
-    ):_*
-  )
-
-  //database migration script actions go here.  No try/catch, because I want to break if I can't bring it up to an appropriate version.
-  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).getOrElse({
-    DatabaseVersion.create.key("version").scope("db").intValue(-1).save
-  })
-  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 2).map(versionNumber => {
-    info("upgrading db to use partialIndexes for mysql limitations (v2)")
-    // update the partialIndexes if it's under version 2, and then increment to version 2
-    H2Resource.findAllFields(List(H2Resource.id,H2Resource.identity,H2Resource.partialIdentity)).foreach(res => {
-      res.partialIdentity(res.identity.get match {
-        case null => ""
-        case other => other.take(H2Constants.identity)
-      }).save
-    })
-    H2File.findAllFields(List(H2File.id,H2File.identity,H2File.partialIdentity)).foreach(file => {
-      file.partialIdentity(file.identity.get match {
-        case null => ""
-        case other => other.take(H2Constants.identity)
-      }).save
-    })
-    versionNumber.intValue(2).save
-    info("upgraded db to use partialIndexes for mysql limitations (v2)")
-    versionNumber
-  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
-  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 4).map(versionNumber => {
-    info("upgrading db to switch conversation creation from strings to longs (v3)")
-    val dateFormats = List(
-      new java.text.SimpleDateFormat("dd/MM/yyyy h:mm:ss a"), // I think this is a C# date format -- "dd/MM/yyyy  22/05/2016 1:27:47 AM.  Of course, it misses the original timezone, so let's hope that it doesn't adjust it too badly.
-      new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
+  override def isReady = {
+    if (!DB.jndiJdbcConnAvailable_?) {
+      DB.defineConnectionManager(DefaultConnectionIdentifier, vendor)
+    }
+    Schemifier.schemify(true,Schemifier.infoF _,
+      List(
+        H2Ink,
+        H2MultiWordText,
+        H2Text,
+        H2Image,
+        H2Video,
+        H2DirtyInk,
+        H2DirtyText,
+        H2DirtyImage,
+        H2DirtyVideo,
+        H2MoveDelta,
+        H2Quiz,
+        H2QuizResponse,
+        H2Command,
+        H2Submission,
+        H2Conversation,
+        H2Attendance,
+        H2File,
+        H2VideoStream,
+        H2Resource,
+        H2ContextualizedResource,
+        H2UnhandledCanvasContent,
+        H2UnhandledStanza,
+        H2UnhandledContent,
+        DatabaseVersion,
+        ThemeExtraction,
+        H2Theme,
+        H2UndeletedCanvasContent
+      ):_*
     )
-    H2Conversation.findAllFields(List(H2Conversation.id,H2Conversation.created,H2Conversation.creation,H2Conversation.lastAccessed)).foreach(conv => {
-      if (conv.creation.get == null || conv.creation.get < 1){
-        var result = conv.lastAccessed.get
-        val creationString = conv.created.get
-        dateFormats.foreach(df => {
-          try {
-            result = df.parse(creationString).getTime()
-          } catch {
-            case e:Exception => {}
-          }
+    //database migration script actions go here.  No try/catch, because I want to break if I can't bring it up to an appropriate version.
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).getOrElse({
+      DatabaseVersion.create.key("version").scope("db").intValue(-1).save
+    })
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 2).map(versionNumber => {
+      info("upgrading db to use partialIndexes for mysql limitations (v2)")
+      // update the partialIndexes if it's under version 2, and then increment to version 2
+      H2Resource.findAllFields(List(H2Resource.id,H2Resource.identity,H2Resource.partialIdentity)).foreach(res => {
+        res.partialIdentity(res.identity.get match {
+          case null => ""
+          case other => other.take(H2Constants.identity)
+        }).save
+      })
+      H2File.findAllFields(List(H2File.id,H2File.identity,H2File.partialIdentity)).foreach(file => {
+        file.partialIdentity(file.identity.get match {
+          case null => ""
+          case other => other.take(H2Constants.identity)
+        }).save
+      })
+      versionNumber.intValue(2).save
+      info("upgraded db to use partialIndexes for mysql limitations (v2)")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 4).map(versionNumber => {
+      info("upgrading db to switch conversation creation from strings to longs (v3)")
+      val dateFormats = List(
+        new java.text.SimpleDateFormat("dd/MM/yyyy h:mm:ss a"), // I think this is a C# date format -- "dd/MM/yyyy  22/05/2016 1:27:47 AM.  Of course, it misses the original timezone, so let's hope that it doesn't adjust it too badly.
+        new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
+      )
+      H2Conversation.findAllFields(List(H2Conversation.id,H2Conversation.created,H2Conversation.creation,H2Conversation.lastAccessed)).foreach(conv => {
+        if (conv.creation.get == null || conv.creation.get < 1){
+          var result = conv.lastAccessed.get
+          val creationString = conv.created.get
+          dateFormats.foreach(df => {
+            try {
+              result = df.parse(creationString).getTime()
+            } catch {
+              case e:Exception => {}
+            }
+          })
+          conv.creation(result).save
+        }
+      })
+      versionNumber.intValue(4).save
+      info("upgraded db to switch conversation creation from strings to longs (v3)")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 5).map(versionNumber => {
+      info("upgrading db to use room to position themes, not location, because room is indexed")
+      H2Theme.findAll.foreach(theme => {
+        if (theme.room.get == null){
+          theme.room(theme.location.get).save
+        }
+      })
+      versionNumber.intValue(5).save
+      info("upgraded db to use room to position themes, which is indexed, where location wasn't.")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get <= 6).map(versionNumber => {
+      info("upgrading db to hold a copy of the mockdata")
+      val mockRoom = "mock|data"
+      H2Image.findAll(By(H2Image.room,mockRoom)).foreach(i => {
+        val id = i.source.get
+        H2Resource.find(By(H2Resource.partialIdentity,id.take(H2Constants.identity)),By(H2Resource.identity,id)).foreach(r => {
+          r.delete_!
         })
-        conv.creation(result).save
+        i.delete_!
+      })
+      H2Ink.findAll(By(H2Ink.room,mockRoom)).foreach(_.delete_!)
+      H2MultiWordText.findAll(By(H2MultiWordText.room,mockRoom)).foreach(_.delete_!)
+      H2MoveDelta.findAll(By(H2MoveDelta.room,mockRoom)).foreach(_.delete_!)
+      val h = MockData.mockHistoryValue(config)
+      val getId = {
+        var innerId = 0
+        () => {
+          innerId += 1
+          innerId
+        }
       }
-    })
-    versionNumber.intValue(4).save
-    info("upgraded db to switch conversation creation from strings to longs (v3)")
-    versionNumber
-  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
-  DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 5).map(versionNumber => {
-    info("upgrading db to use room to position themes, not location, because room is indexed")
-    H2Theme.findAll.foreach(theme => {
-      if (theme.room.get == null){
-        theme.room(theme.location.get).save
+      h.getAll.foreach{
+        case i:MeTLImage => {
+          i.imageBytes.foreach(bytes => {
+            val id = config.postResource(mockRoom,"mock_imageResource_%s".format(getId()),bytes)
+            H2Resource.find(By(H2Resource.partialIdentity,id.take(H2Constants.identity)),By(H2Resource.identity,id)).foreach(r => {
+              val newImageStanza = i.copy(source = Full(id))
+              val foundBytes = config.getResource(id)
+              storeStanza(mockRoom,newImageStanza)
+            })
+          })
+        }
+        case s:MeTLStanza => storeStanza(h.jid,s)
       }
-    })
-    versionNumber.intValue(5).save
-    info("upgraded db to use room to position themes, which is indexed, where location wasn't.")
-    versionNumber
-  }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
-
+      versionNumber.intValue(6).save
+      info("upgraded db to hold a copy of the mockdata")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    true
+  }
   type H2Object = Object
   val RESOURCES = "resource"
   val CONVERSATIONS = "conversation"
@@ -304,6 +342,7 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     ).par
     parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
     parO.map(f => f()).toList
+    println("gotHistory: %s".format(newHistory.getAll.length))                        
     newHistory
   })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
@@ -311,14 +350,19 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
     newGetHistory(jid)
     //newSerialGetHistory(jid)
   })
-  def oldGetHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
+  def oldGetHistory(jid:String):History = Stopwatch.time("H2Interface.oldGetHistory",{
     val newHistory = History(jid)
     List(
       () => H2Ink.findAll(By(H2Ink.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLInk(s))),
       () => H2Text.findAll(By(H2Text.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLText(s))),
       () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
-      () => H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLImage(s))).toList,
+      () => {
+        H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => {
+          println("found image: %s".format(s))
+          newHistory.addStanza(serializer.toMeTLImage(s))
+        }).toList
+      },
       () => H2Video.findAll(By(H2Video.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideo(s))).toList,
       () => H2DirtyInk.findAll(By(H2DirtyInk.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyInk(s))),
       () => H2DirtyText.findAll(By(H2DirtyText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLDirtyText(s))),
@@ -335,7 +379,8 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
-    ).par.map(f => f()).toList//.toList.foreach(group => group.foreach(gf => gf()))
+    ).par.map(f => f()).toList
+  //.toList.foreach(group => group.foreach(gf => gf()))
                               //val unhandledContent = H2UnhandledContent.findAll(By(H2UnhandledContent.room,jid)).map(s => serializer.toMeTLUnhandledData(s))
                               //(inks ::: texts ::: images ::: dirtyInks ::: dirtyTexts ::: dirtyImages ::: moveDeltas ::: quizzes ::: quizResponses ::: commands ::: submissions ::: files ::: attendances ::: unhandledCanvasContent ::: unhandledStanzas /*:: unhandledContent */).foreach(s => newHistory.addStanza(s))
       newHistory
@@ -439,11 +484,8 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
   //resources table
   def getResource(identity:String):Array[Byte] = Stopwatch.time("H2Interface.getResource",{
     H2Resource.find(By(H2Resource.partialIdentity,identity.take(H2Constants.identity)),By(H2Resource.identity,identity)).map(r => {
-      val b = r.bytes.get
-      trace("retrieved %s bytes for %s".format(b.length,identity))
-      b
+      r.bytes.get
     }).openOr({
-      trace("failed to find bytes for %s".format(identity))
       Array.empty[Byte]
     })
 
@@ -469,11 +511,8 @@ class SqlInterface(configName:String,vendor:StandardDBVendor,onConversationDetai
       By(H2ContextualizedResource.context,jid),
       By(H2ContextualizedResource.identity,identity)
     ).map(r => {
-      val b = r.bytes.get
-      trace("retrieved %s bytes for %s".format(b.length,identity))
-      b
+      r.bytes.get
     }).openOr({
-      trace("failed to find bytes for %s".format(identity))
       Array.empty[Byte]
     })
 

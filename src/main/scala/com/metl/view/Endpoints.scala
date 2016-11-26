@@ -25,7 +25,7 @@ trait Stemmer {
 
 object SystemRestHelper extends RestHelper with Stemmer with Logger {
   warn("SystemRestHelper inline")
-  val serializer = new GenericXmlSerializer("rest")
+  val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   serve {
     case r@Req("getRemoteUser" :: Nil,_,_) => () => Full(PlainTextResponse(S.containerRequest.map(r => (r.asInstanceOf[net.liftweb.http.provider.servlet.HTTPRequestServlet]).req.getRemoteUser).getOrElse("unknown")))
     case r@Req(List("api","v1","serverStatus"),_,_) =>
@@ -59,7 +59,7 @@ object SystemRestHelper extends RestHelper with Stemmer with Logger {
 
 object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   debug("MeTLRestHelper inline")
-  val serializer = new GenericXmlSerializer("rest")
+  val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   val host = Globals.host
   val scheme = Globals.scheme
   val port = Globals.port
@@ -209,6 +209,19 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
     })
+    case Req("testFetchAndRender" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchAndRender", {
+      for {
+        width <- S.param("width")
+        height <- S.param("height")
+      } yield {
+        val config = ServerConfiguration.default
+        val history = config.getMockHistory
+        println("history.getAll: %s".format(history.getAll.length))
+        val slideRenderer = new SlideRenderer()
+        val image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
+        InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200)
+      }
+    })
   }
 }
 object WebMeTLRestHelper extends RestHelper with Logger{
@@ -224,7 +237,7 @@ object WebMeTLRestHelper extends RestHelper with Logger{
 object MeTLStatefulRestHelper extends RestHelper with Logger {
   import java.io._
   debug("MeTLStatefulRestHelper inline")
-  val serializer = new GenericXmlSerializer("rest")
+  val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   serve {
     case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
       S.session.foreach(_.destroySession())

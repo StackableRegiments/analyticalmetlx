@@ -306,6 +306,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     )
     val servers = ServerConfiguration.getServerConfigurations
+    servers.foreach(_.isReady)
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name,filePath)))):_*)
   }
   var xmppServer:Option[EmbeddedXmppServer] = None
@@ -329,6 +330,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     setupClientConfigFromFile(Globals.configurationFileLocation)
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
+
     configs.values.foreach(c => {
       getRoom("global",c._1.name,GlobalRoom(c._1.name),true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
