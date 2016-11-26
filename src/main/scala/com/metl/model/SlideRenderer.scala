@@ -230,7 +230,16 @@ class SlideRenderer extends Logger {
     val bounds = textLayout.getBounds
     PreparedTextRun(word.text,textLayout,word.color,0,0,bounds.getWidth.floatValue,bounds.getHeight.floatValue,metrics)
   }
+  protected val textCache = scala.collection.mutable.HashMap[Tuple6[Double,Double,Double,Double,Double,Seq[MeTLTextWord]],List[PreparedTextLine]]()
   protected def measureTextLines(metlText:MeTLMultiWordText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.measureMultiWordTextLines",{
+    val identifier = (metlText.x, metlText.y, metlText.width, metlText.height, metlText.requestedWidth,metlText.words)
+    textCache.get(identifier).getOrElse({
+      val newRuns = actuallyMeasureTextLines(metlText,g)
+      textCache += ((identifier,newRuns))
+      newRuns
+    })
+  })
+  protected def actuallyMeasureTextLines(metlText:MeTLMultiWordText,g:Graphics2D):List[PreparedTextLine] = Stopwatch.time("SlideRenderer.actuallyMeasureMultiWordTextLines",{
     val originX = metlText.x.floatValue
     val limit = metlText.x + metlText.width
     val frc = g.getFontRenderContext()

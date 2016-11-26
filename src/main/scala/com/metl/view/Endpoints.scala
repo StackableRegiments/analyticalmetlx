@@ -63,6 +63,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   val host = Globals.host
   val scheme = Globals.scheme
   val port = Globals.port
+  val slideRenderer = new SlideRenderer()
   val crossDomainPolicy = {
     <cross-domain-policy>
     <allow-access-from domain="*" />
@@ -216,8 +217,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       } yield {
         val config = ServerConfiguration.default
         val history = config.getMockHistory
-        println("history.getAll: %s".format(history.getAll.length))
-        val slideRenderer = new SlideRenderer()
         val image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
         InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200)
       }
