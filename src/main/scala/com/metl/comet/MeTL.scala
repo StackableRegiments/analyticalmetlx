@@ -767,7 +767,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getResource",List("source"),(args) => JString("not yet implemented"),Empty),
     ClientSideFunction("moveToSlide",List("where"),(args) => {
       val where = getArgAsString(args(0))
-      debug("moveToSlideRequested(%s)".format(where))
+      trace("moveToSlideRequested(%s)".format(where))
       backgroundWorker ! BackgroundFunc(() => {
         moveToSlide(where)
         refreshClientSideStateJs(false)
@@ -1105,7 +1105,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   }
 
   def emit(source:String,value:String,domain:String) = {
-    debug("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
+    trace("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
     currentConversation.map(cc => {
       MeTLXConfiguration.getRoom(cc.jid.toString,server) ! LocalToServerMeTLStanza(MeTLTheme(serverConfig,username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
     })
@@ -1159,7 +1159,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
     case UpdateThumb(slide) => {
-      debug("Updating thumb %s for actor: %s".format(slide,name))
+      trace("Updating thumb %s for actor: %s".format(slide,name))
       partialUpdate(Call(UPDATE_THUMB,JString(slide)))
     }
     case JoinThisSlide(slide) => {
@@ -1179,7 +1179,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
 
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
-    debug("created metlactor: %s => %s".format(name,S.session))
+    trace("created metlactor: %s => %s".format(name,S.session))
     backgroundWorker ! BackgroundAction(() => {
       debug("startedWorker: %s".format(name))
       joinRoomByJid("global")
