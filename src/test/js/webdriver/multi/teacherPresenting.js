@@ -75,7 +75,7 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should highlight a word and enlarge it",function(){
         teacherT.doubleClickWorld(100,100);
-        teacher.waitUntil(function(){/*Paragraph*/
+        teacher.waitUntil(function(){
             var r = teacherT.selectedRanges[0];
             return r.start == 10 && r.end == 19;
         });
@@ -87,7 +87,7 @@ describe('When a teacher presents,', function() {
         });
 
         teacherT.doubleClickWorld(100,300);
-        teacher.waitUntil(function(){/*Programatically*/
+        teacher.waitUntil(function(){
             var r = teacherT.selectedRanges[0];
             return r.start == 49 && r.end == 65;
         });
@@ -99,7 +99,7 @@ describe('When a teacher presents,', function() {
         });
 
         teacherT.doubleClickWorld(100,400);
-        teacher.waitUntil(function(){/*multiple*/
+        teacher.waitUntil(function(){
             var r = teacherT.selectedRanges[0];
             return r.start == 80 && r.end == 88;
         });
@@ -137,7 +137,6 @@ describe('When a teacher presents,', function() {
         teacherT.drag(handle,{x:200,y:0});
 
         active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
-        console.log(active);
         assert(within(active.x,106,1));
         assert(within(active.width,520,1));
         assert(within(active.words[0].size, 65,1));
@@ -152,7 +151,6 @@ describe('When a teacher presents,', function() {
         teacher.pause(ANIMATION_DELAY);
         teacherT.drag(handle,{x:200,y:0});
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
-        console.log(active);
         assert(within(active.x,106,1));
         assert(active.words.length > 0);
         assert(within(active.width,736,1));
@@ -312,5 +310,14 @@ describe('When a teacher presents,', function() {
         assert.equal(text.width,240);
         var wireLines = teacherT.selectedLines;
         assert.deepEqual(liveLines,wireLines);
+    });
+    it("the teacher should be able to resize their thumbnails from the main page",function(){
+        assert.equal(teacherT.thumbWidth,102);
+        teacherT.resizeThumb.click();
+        for(var i = 0; i < 50; i++){
+            teacher.keys("Right arrow");
+            teacher.pause(5);
+        }
+        assert.equal(teacherT.thumbWidth,177);
     });
 });

@@ -342,7 +342,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     ).par
     parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
     parO.map(f => f()).toList
-    println("gotHistory: %s".format(newHistory.getAll.length))                        
     newHistory
   })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
