@@ -655,14 +655,16 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val UPDATE_THUMB = "updateThumb"
   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+  private lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
-  protected var tokSession:Option[TokBoxSession] = None
+  protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
+  protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   override lazy val functionDefinitions = List(
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
         tb <- Globals.tokBox.toList
-        s <- tokSession.toList
+        s <- tokSessions.toList.flatMap(_._2)
         a <- tb.getArchives(s)
       } yield {
         JObject(
@@ -681,7 +683,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val id = getArgAsString(args(0))
       JArray((for {
         tb <- Globals.tokBox
-        s <- tokSession
+        s <- tokSessions.toList.flatMap(_._2).headOption
         a <- tb.getArchive(s,id)
       } yield {
         Extraction.decompose(a)
@@ -691,7 +693,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val id = getArgAsString(args(0))
       JArray((for {
         tb <- Globals.tokBox
-        s <- tokSession
+        s <- tokSessions.toList.flatMap(_._2).headOption
       } yield {
         val a = tb.removeArchive(s,id)
         JObject(List(
@@ -705,7 +707,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         (for {
           tb <- Globals.tokBox
           if (shouldModifyConversation())
-          s <- tokSession
+          s <- tokSessions.toList.flatMap(_._2).headOption
           b = tb.startBroadcast(s,layout)
         } yield {
           Extraction.decompose(b)
@@ -717,7 +719,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         (for {
           tb <- Globals.tokBox
           if (shouldModifyConversation())
-          s <- tokSession
+          s <- tokSessions.toList.flatMap(_._2).headOption
           a = tb.updateBroadcast(s,id,layout)
         } yield {
           Extraction.decompose(a)
@@ -727,7 +729,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       (for {
         tb <- Globals.tokBox
         if (shouldModifyConversation())
-        s <- tokSession
+        s <- tokSessions.toList.flatMap(_._2).headOption
         b <- tb.getBroadcast(s)
         a = tb.stopBroadcast(s,b.id)
       } yield {
@@ -737,7 +739,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getBroadcast",List.empty[String],(args) => {
       (for {
         tb <- Globals.tokBox
-        s <- tokSession
+        s <- tokSessions.toList.flatMap(_._2).headOption
         a <- tb.getBroadcast(s)
       } yield {
         Extraction.decompose(a)
@@ -1268,32 +1270,37 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     })
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
-    val receiveTokBoxSession:Box[JsCmd] = (for {
-      cc <- currentConversation
-      tb <- Globals.tokBox
-      role = shouldModifyConversation() match {
-        case true => TokRole.Moderator
-        case false => TokRole.Publisher
-      }
-      session <- tokSession.map(s => Some(s)).getOrElse({
-        val newSession = tb.getSessionToken(cc.jid.toString(),role).left.map(e => {
-          error("exception initializing tokboxSession:",e)
-        }).right.toOption
-        tokSession = newSession
-        newSession
+    def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
+      val sessionName = tokSessionTup._1
+      val tokSession = tokSessionTup._2
+      (for {
+        cc <- currentConversation
+        tb <- Globals.tokBox
+        role = shouldModifyConversation() match {
+          case true => TokRole.Moderator
+          case false => TokRole.Publisher
+        }
+        session <- tokSession.map(s => Some(s)).getOrElse({
+          val newSession = tb.getSessionToken(sessionName,role).left.map(e => {
+            error("exception initializing tokboxSession:",e)
+          }).right.toOption
+          tokSessionCol += ((sessionName,newSession))
+          newSession
+        })
+      } yield {
+        val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+          JField("sessionId",JString(session.sessionId)),
+          JField("token",JString(session.token)),
+          JField("apiKey",JInt(session.apiKey))
+        )))
+        j
       })
-    } yield {
-
-      val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
-        JField("sessionId",JString(session.sessionId)),
-        JField("token",JString(session.token)),
-        JField("apiKey",JInt(session.apiKey))
-      )))
-      j
     })
+    val receiveTokBoxSessions:List[Box[JsCmd]] = receiveTokBoxSessionsFunc(tokSessions)
+    val receiveTokBoxSlideSpecificSessions:List[Box[JsCmd]] = receiveTokBoxSessionsFunc(tokSlideSpecificSessions)
     val receiveTokBoxBroadcast:Box[JsCmd] = (for {
       tb <- Globals.tokBox
-      s <- tokSession
+      s <- tokSessions.toList.flatMap(_._2).headOption
       a <- tb.getBroadcast(s)
     } yield {
       val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
@@ -1313,7 +1320,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     } yield {
       hideLoader
     }
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast,loadComplete)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
@@ -1324,6 +1331,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       trace("conversation available")
       currentConversation = Full(details)
       val conversationJid = details.jid.toString
+      tokSessions += ((conversationJid,None))
       joinRoomByJid(conversationJid)
       /*
        if (shouldModifyConversation(username,details)){
@@ -1338,6 +1346,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
+      tokSessions -= details.jid.toString
       reRender// partialUpdate(RedirectTo(noBoard))
       Empty
     }
@@ -1390,6 +1399,24 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
+        val sessionsToClose = for {
+          sessionTup <- tokSlideSpecificSessions.toList
+          tokSess <- sessionTup._2
+        } yield {
+          tokSess
+        }
+        println("shutting down tokSessions: %s".format(sessionsToClose))
+        partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(sessionsToClose.map(tokSess => JString(tokSess.sessionId)))))
+        tokSlideSpecificSessions.clear()
+        tokSlideSpecificSessions ++= (for {
+          slide <- cc.slides
+          if slide.id == slideId
+          groupSet <- slide.groupSet
+          group <- groupSet.groups
+          if (group.members.contains(username) || shouldModifyConversation(cc))
+        } yield {
+          (group.id,None)
+        })
       }
     })
   }

@@ -757,22 +757,24 @@ var Conversations = (function(){
         else {
             move = true;
         }
-        if(move){
-            if(slideId != currentSlide){
-                Progress.call("beforeLeavingSlide",[slideId]);
-                currentSlide = slideId;
-                indicateActiveSlide(slideId);
-                delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-                loadSlide(slideId);
-                updateQueryParams();
-                loadCurrentGroup(currentConversation);
-                Progress.call("afterJoiningSlide",[slideId]);
+        if(slideId != currentSlide){
+            if(move){
+                if(slideId != currentSlide){
+                    Progress.call("beforeLeavingSlide",[slideId]);
+                    currentSlide = slideId;
+                    indicateActiveSlide(slideId);
+                    delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                    loadSlide(slideId);
+                    updateQueryParams();
+                    loadCurrentGroup(currentConversation);
+                    Progress.call("afterJoiningSlide",[slideId]);
+                }
+                else{
+                    alert("You must remain on the current page");
+                }
             }
         }
-        else{
-            alert("You must remain on the current page");
-        }
-    };
+    }
     var indicateActiveSlide = function(slideId){
         $(".slideButtonContainer").removeClass("activeSlide");
         var activeSlide = $(sprintf("#slideContainer_%s",slideId));

@@ -63,6 +63,7 @@ describe('When a teacher presents,', function() {
         student.waitForExist("#board");
     });
     it("both should see a blank board", function(){
+	browser.debug();
         assert.equal(_.keys(teacherT.texts).length,0);
         assert.equal(_.keys(studentT.texts).length,0);
     });

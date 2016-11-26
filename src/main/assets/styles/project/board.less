@@ -28,18 +28,22 @@
 }
 #pluginBar{
     scroll-x:auto;
+    display:table-row;
+    background-color:transparent;
 }
 .plugin{
     background-color:@board-bg;
     color:@text-std;
-    padding-left:1em;
+    padding:0 2px;
     min-height:4em;
-    display:inline-block;
+    display:table-cell;
+    empty-cells:show;
     .pluginName{
         background-color:@body-bg;
         color:white;
         font-weight:bold;
         text-align:center;
+	padding:0 1em;
     }
 }
 #masterHeader{
