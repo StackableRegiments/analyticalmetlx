@@ -658,6 +658,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
   protected var tokSession:Option[TokBoxSession] = None
+  protected var globalTokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
@@ -1291,6 +1292,30 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       )))
       j
     })
+    val receiveTokBoxGlobalSession:Box[JsCmd] = (for {
+      cc <- currentConversation
+      tb <- Globals.tokBox
+      role = shouldModifyConversation() match {
+        case true => TokRole.Moderator
+        case false => TokRole.Publisher
+      }
+      session <- globalTokSession.map(s => Some(s)).getOrElse({
+        val newSession = tb.getSessionToken("global",role).left.map(e => {
+          error("exception initializing tokboxSession:",e)
+        }).right.toOption
+        globalTokSession = newSession
+        newSession
+      })
+    } yield {
+
+      val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+        JField("sessionId",JString(session.sessionId)),
+        JField("token",JString(session.token)),
+        JField("apiKey",JInt(session.apiKey))
+      )))
+      j
+    })
+
     val receiveTokBoxBroadcast:Box[JsCmd] = (for {
       tb <- Globals.tokBox
       s <- tokSession
@@ -1313,7 +1338,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     } yield {
       hideLoader
     }
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast,loadComplete)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast,receiveTokBoxGlobalSession,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
