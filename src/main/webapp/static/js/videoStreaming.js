@@ -46,6 +46,7 @@ var TokBox = (function(){
 	}
 })();
 var TokBoxSession = function(desc,sessionContainer){
+	var autoSubscribeAndPublish = true;
     var videoWidth = 160;
     var videoHeight = 120;
     var videoFps = 15;
@@ -136,36 +137,36 @@ var TokBoxSession = function(desc,sessionContainer){
 			}
 		};
     var startPublishFunc = function(){
-        refreshVisualState();
-        console.log("attempting to start send:",isConnected(),session);
-        if (isConnected()){
-            if (thisPublisher == undefined){
-                var publisherUniqueId = sprintf("tokBoxVideoElemPublisher_%s",_.uniqueId());
-                var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId,"class":"publisherVideoElem"});
-                streamContainer.append(tokBoxVideoElemPublisher);
-                var targetResolution = sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight));
-                console.log("target resolution:",targetResolution)
-                var publisher = OT.initPublisher(publisherUniqueId, {
-                    name:UserSettings.getUsername(),
-                    width:videoWidth,
-                    height:videoHeight,
-										resolution:"320x240",
-                    frameRate:safeFps(videoFps),
-                    insertMode:"append"
-                },function(error){
-                    if (error){
-                        console.log("tokbox error:",error);
-                    }
-                });
-								thisPublisher = publisher;
-                publisher.element.style.width = videoWidth;
-                publisher.element.style.height = videoHeight;
-                console.log("publishing",publisher,session);
-                session.publish(publisher);
-                sessionContainer.find(".videoConfStartButton").addClass("publishedStream");
-            }
+			refreshVisualState();
+			console.log("attempting to start send:",isConnected(),session);
+			if (isConnected()){
+				if (thisPublisher == undefined){
+					var publisherUniqueId = sprintf("tokBoxVideoElemPublisher_%s",_.uniqueId());
+					var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId,"class":"publisherVideoElem"});
+					streamContainer.append(tokBoxVideoElemPublisher);
+					var targetResolution = sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight));
+					console.log("target resolution:",targetResolution)
+					var publisher = OT.initPublisher(publisherUniqueId, {
+						name:UserSettings.getUsername(),
+						width:videoWidth,
+						height:videoHeight,
+						resolution:"320x240",
+						frameRate:safeFps(videoFps),
+						insertMode:"append"
+					},function(error){
+						if (error){
+							console.log("tokbox error:",error);
+						}
+					});
+					thisPublisher = publisher;
+					publisher.element.style.width = videoWidth;
+					publisher.element.style.height = videoHeight;
+					console.log("publishing",publisher,session);
+					session.publish(publisher);
+					sessionContainer.find(".videoConfStartButton").addClass("publishedStream");
 				}
-        refreshVisualState();
+			}
+			refreshVisualState();
 		};
 		var stopPublishFunc = function(s){
 			refreshVisualState();
@@ -178,28 +179,28 @@ var TokBoxSession = function(desc,sessionContainer){
 			refreshVisualState();
     };
     var receiveBroadcastFunc = function(broadcast){
-        console.log("broadcast:",broadcast);
-        if (broadcast != null && "broadcastUrls" in broadcast && "hls" in broadcast.broadcastUrls){
-            var rootElem = broadcastButton.clone();
-            rootElem.attr("href",broadcast.broadcastUrls.hls);
-            broadcastContainer.append(rootElem);
-        } else {
-            broadcastContainer.empty();
-        }
+			console.log("broadcast:",broadcast);
+			if (broadcast != null && "broadcastUrls" in broadcast && "hls" in broadcast.broadcastUrls){
+				var rootElem = broadcastButton.clone();
+				rootElem.attr("href",broadcast.broadcastUrls.hls);
+				broadcastContainer.append(rootElem);
+			} else {
+				broadcastContainer.empty();
+			}
     };
     var downgradeVideoStreams = function(){
-        _.forEach(streams,function(stream){
-            if ("subscriber" in stream && stream.subscriber != null && "restrictFramerate" in stream.subscriber){
-                stream.subscriber.restrictFramerate(true);
-            }
-        });
+			_.forEach(streams,function(stream){
+				if ("subscriber" in stream && stream.subscriber != null && "restrictFramerate" in stream.subscriber){
+					stream.subscriber.restrictFramerate(true);
+				}
+			});
     };
     var upgradeVideoStreams = function(){
-        _.forEach(streams,function(stream){
-            if ("subscriber" in stream && stream.subscriber != null && "restrictFramerate" in stream.subscriber){
-                stream.subscriber.restrictFramerate(false);
-            }
-        });
+			_.forEach(streams,function(stream){
+				if ("subscriber" in stream && stream.subscriber != null && "restrictFramerate" in stream.subscriber){
+					stream.subscriber.restrictFramerate(false);
+				}
+			});
     };
     Progress.afterWorkQueuePause["videoStreaming"] = downgradeVideoStreams;
     Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
@@ -232,55 +233,65 @@ var TokBoxSession = function(desc,sessionContainer){
 							subscribed: false,
 							refreshVisual:function(){}
 						};
-						streams[stream.id] = oldStream;
-						var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
-						var rootElem = $(subscriberSection.clone());
-						var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
-						rootElem.find(".icon-txt").text(ev.stream.name);
-						var button = rootElem.find(".videoConfSubscribeButton");
-						var refreshUI = function(){
-							if (oldStream.subscribed){
-								button.addClass("subscribedStream");
-							} else {
-								button.removeClass("subscribedStream");
-							}
-						};
-						refreshUI();
-						rootElem.find(".videoConfSubscribeButton").on("click",function(){
-						var s = streams[stream.id];
-						if (s.subscribed){
-							s.subscribed = false;
-							session.unsubscribe(s.subscriber);
-							console.log("unsubscribed from stream:",s.stream.name,s.stream.id);
+					streams[stream.id] = oldStream;
+					var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
+					var rootElem = $(subscriberSection.clone());
+					var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
+					rootElem.find(".icon-txt").text(ev.stream.name);
+					var button = rootElem.find(".videoConfSubscribeButton");
+					var refreshUI = function(){
+						if (oldStream.subscribed){
+							button.addClass("subscribedStream");
 						} else {
-							s.subscribed = true;
-							var subscriber = session.subscribe(s.stream,uniqueId,{
-								insertMode:"append",
-								width:videoWidth,
-								height:videoHeight
-							},function(error){
-								if (!error){
-										console.log("subscribed to stream:",s.stream.name,s.stream.id);
-								} else {
-										rootElem.remove();
-										console.log("error when subscribing to stream",error,s.stream.name,s.stream.id);
-								}
-							});
-							subscriber.element.style.width = videoWidth;
-							subscriber.element.style.height = videoHeight;
-							subscriber.on("videoDimensionsChanged", function(event) {
-								subscriber.element.style.width = event.newValue.width + 'px';
-								subscriber.element.style.height = event.newValue.height + 'px';
-							});
-							s.subscriber = subscriber;
-							s.refreshVisual = refreshUI;
+							button.removeClass("subscribedStream");
+						}
+					};
+					refreshUI();
+					var s = streams[stream.id];
+					var toggleSubscription = function(){
+						if (s.subscribed){
+							stopSubscribing();
+						} else {
+							startSubscribing();
 						}
 						refreshVisualState();
-					});
+					};
+					var startSubscribing = function(){
+						s.subscribed = true;
+						var subscriber = session.subscribe(s.stream,uniqueId,{
+							insertMode:"append",
+							width:videoWidth,
+							height:videoHeight
+						},function(error){
+							if (!error){
+									console.log("subscribed to stream:",s.stream.name,s.stream.id);
+							} else {
+									rootElem.remove();
+									console.log("error when subscribing to stream",error,s.stream.name,s.stream.id);
+							}
+						});
+						subscriber.element.style.width = videoWidth;
+						subscriber.element.style.height = videoHeight;
+						subscriber.on("videoDimensionsChanged", function(event) {
+							subscriber.element.style.width = event.newValue.width + 'px';
+							subscriber.element.style.height = event.newValue.height + 'px';
+						});
+						s.subscriber = subscriber;
+						s.refreshVisual = refreshUI;
+					};
+					var stopSubscribing = function(){
+						s.subscribed = false;
+						session.unsubscribe(s.subscriber);
+						console.log("unsubscribed from stream:",s.stream.name,s.stream.id);
+					};
+					rootElem.find(".videoConfSubscribeButton").on("click",toggleSubscription);
 					subscriptionsContainer.append(rootElem);
 					streamContainer.append(tokBoxVideoElemSubscriber);
 					oldStream.videoSelectorId = uniqueId;
 					oldStream.elem = rootElem;
+					if (autoSubscribeAndPublish){
+						startSubscribing();
+					}
 					refreshVisualState();
 				} else {
 					oldStream["stream"] = stream;
@@ -289,20 +300,23 @@ var TokBoxSession = function(desc,sessionContainer){
 			}
 		},
 		"sessionConnected":function(ev){
-				refreshVisualState();
+			refreshVisualState();
 		},
 		"sessionDisconnected":function(ev){
-				refreshVisualState();
+			refreshVisualState();
 		},
 		"sessionReconnected":function(ev){
-				refreshVisualState();
+			refreshVisualState();
 		},
 		"sessionReconnecting":function(ev){
-				refreshVisualState();
+			refreshVisualState();
 		}
 	});
 	session.connect(desc.token,function(error){
 		if (!error){
+			if (autoSubscribeAndPublish){
+				startPublishFunc();
+			}
 		} else {
 			console.log("error when connecting to tokBox",error,desc);
 		}
