@@ -243,7 +243,6 @@ var TokBox = (function(){
         }
     };
     var downgradeVideoStreams = function(){
-        console.log("downgrading video quality");
         _.forEach(streams,function(stream){
             if ("subscriber" in stream && stream.subscriber != null){
                 stream.subscriber.restrictFramerate(true);
@@ -251,7 +250,6 @@ var TokBox = (function(){
         });
     };
     var upgradeVideoStreams = function(){
-        console.log("upgrading video quality");
         _.forEach(streams,function(stream){
             if ("subscriber" in stream && stream.subscriber != null){
                 stream.subscriber.restrictFramerate(false);

@@ -201,7 +201,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             val grouped = gs.groups.flatMap(g => g.members).distinct
             val ungrouped = a.filterNot(m => grouped.contains(m))
             if (ungrouped.length > 0){
-              debug("ungrouped: %s".format(ungrouped))
+              trace("ungrouped: %s".format(ungrouped))
               shouldUpdateConversation = true
               ungrouped.foldLeft(gs.copy())((groupSet,person) => {
                 if(person == details.author){
@@ -293,7 +293,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       }
       case (m:Attendance,cr:ConversationRoom) => {
         updateGroupSets.foreach(c => {
-          debug("Updating %s because of calculating groups based on %s => %s".format(c.jid,m.author,
+          trace("Updating %s because of calculating groups based on %s => %s".format(c.jid,m.author,
             (for(
               slide <- c.slides;
               groupSet <- slide.groupSet;
@@ -432,7 +432,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       lastRender = history.lastVisuallyModified
       roomMetaData match {
         case s:SlideRoom => {
-          debug("Snapshot update")
+          trace("Snapshot update")
           MeTLXConfiguration.getRoom(s.cd.jid.toString,configName) ! UpdateThumb(history.jid)
         }
         case _ => {}
@@ -446,9 +446,9 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
           case false => history
         }
-        debug("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
+        trace("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
         val result = slideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
-        debug("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
+        trace("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
         result
       }
       case _ => {
@@ -476,7 +476,6 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     history.addStanza(s)
     s match {
       case c:MeTLCanvasContent if (history.lastVisuallyModified > lastRender) => {
-        debug("content received")
         updateSnapshots
       }
       case _ => {}

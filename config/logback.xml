@@ -32,11 +32,11 @@
       <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
   -->
   <logger name="com.metl.comet.MeTLActor" level="DEBUG"/>
-  <logger name="com.metl.h2.SqlInterface" level="DEBUG"/>
-  <logger name="com.metl.data.Conversation" level="DEBUG"/>
+  <logger name="com.metl.h2.SqlInterface" level="WARN"/>
+  <logger name="com.metl.data.Conversation" level="WARN"/>
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
-  <logger name="com.metl.model.CanvasContentAnalysis" level="DEBUG"/>
-  <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="DEBUG"/>
+  <logger name="com.metl.model.CanvasContentAnalysis" level="WARN"/>
+  <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="WARN"/>
   <logger name="com.metl.model.SecurityListener" level="WARN">
     <appender-ref ref="SECURITY_FILE"/>
   </logger>
