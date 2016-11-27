@@ -261,7 +261,6 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(sE.plainTexts,"Phrase 3"));
     });
     it("all content types should be group restricted",function(){
-	browser.debug();
         _.each(users,function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
                 user.menuButton.click();
