@@ -6,6 +6,8 @@ var HealthChecker = (function(){
     var catLength = 50; //keep a rolling window of the last n items of each category
     var healthChecking = true;
 
+		var clockOffset = 0;
+
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
             store[category] = timedQueue(storeLifetime);
@@ -28,10 +30,18 @@ var HealthChecker = (function(){
         }
         $.ajax(url,{
             method:"GET",
-            success:function(time){
+            success:function(jsonTime){
+							var nowTime = new Date();
+							var timeObj = JSON.parse(jsonTime);
+							var time = timeObj.serverWorkTime;
                 var serverWorkTime = parseInt(time);
                 var totalTime = new Date().getTime() - clientStart;
                 var latency = (totalTime - serverWorkTime) / 2;
+	
+							var serverSideTime = timeObj.serverTime;
+							var timeDiff = nowTime.getTime() - (serverSideTime + latency);
+							console.log("calculating time offset:",nowTime.getTime(),serverSideTime,latency);
+							clockOffset = timeDiff;
                 addMeasureFunc("serverResponse",true,serverWorkTime);
                 addMeasureFunc("latency",true,latency);
                 _.delay(check,serverStatusInterval);
@@ -48,9 +58,13 @@ var HealthChecker = (function(){
         var describedData = describeHealthFunction();
         HealthCheckViewer.refreshDisplays(checkData,describedData);
     },500);
-    var resumeHealthCheckFunc = function(){
+    var resumeHealthCheckFunc = function(immediate){
         healthChecking = true;
-        _.delay(check,serverStatusInterval);
+				if (immediate){
+					check();
+				} else {
+					_.delay(check,serverStatusInterval);
+				}
     };
     var pauseHealthCheckFunc = function(){
         healthChecking = false;
@@ -111,9 +125,15 @@ var HealthChecker = (function(){
         });
     };
     $(function(){
-        resumeHealthCheckFunc();
+        resumeHealthCheckFunc(true);
     });
     return {
+				getTimeOffset:function(){
+					return clockOffset;
+				},
+				getServerTime:function(){
+					return new Date(new Date().getTime() + clockOffset);
+				},	
         check:check,
         resumeHealthCheck:resumeHealthCheckFunc,
         pauseHealthCheck:pauseHealthCheckFunc,

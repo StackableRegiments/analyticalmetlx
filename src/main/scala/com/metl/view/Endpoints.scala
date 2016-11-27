@@ -282,15 +282,27 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case r@Req("reportLatency" :: Nil,_,_) => {
       val start = new java.util.Date().getTime
         () => Stopwatch.time("MeTLRestHelper.reportLatency", {
-          for {
+          val latencyMetrics = for {
             min <- r.param("minLatency")
             max <- r.param("maxLatency")
             mean <- r.param("meanLatency")
             samples <- r.param("sampleCount")
           } yield {
             info("[%s] miliseconds clientReportedLatency".format(mean))
+            (min,max,mean,samples)
           }
-          Full(PlainTextResponse((new java.util.Date().getTime - start).toString, List.empty[Tuple2[String,String]], 200))
+          val now = new java.util.Date().getTime
+          Full(JsonResponse(JObject(List(
+            JField("serverWorkTime",JInt(now - start)),
+            JField("serverTime",JInt(now))
+          ) ::: latencyMetrics.map(lm => {
+            List(
+              JField("minLatency",JDouble(lm._1.toDouble)),
+              JField("maxLatency",JDouble(lm._2.toDouble)),
+              JField("meanLatency",JDouble(lm._3.toDouble)),
+              JField("sampleCount",JDouble(lm._4.toInt))
+            )
+          }).getOrElse(Nil)),200))
         })
     }
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
