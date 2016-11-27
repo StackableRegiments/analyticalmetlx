@@ -42,6 +42,7 @@ var Plugins = (function(){
                 style:".groupsPluginMember{margin-left:0.5em;}",
                 load:function(bus,params) {
                     var render = function(){
+			try{
                         container.empty();
                         var slide = Conversations.getCurrentSlide();
                         if(slide){
@@ -61,6 +62,10 @@ var Plugins = (function(){
                                 });
                             }
                         }
+			}
+			catch(e){
+			    console.log("Groups plugin render e",e);
+			}
                     };
                     bus.afterJoiningSlide["Groups plugin"] = render;
                     bus.conversationDetailsReceived["Groups plugin"] = render;

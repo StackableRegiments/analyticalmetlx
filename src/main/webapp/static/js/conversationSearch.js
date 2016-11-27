@@ -358,6 +358,7 @@ var Conversations = (function(){
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
+	console.log("receiveSearchResults",results);
         currentSearchResults = results;
         reRender();
     };

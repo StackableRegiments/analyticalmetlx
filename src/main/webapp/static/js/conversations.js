@@ -468,9 +468,6 @@ var Conversations = (function(){
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
-        if(currentSlide != jid){
-            doMoveToSlide(jid);
-        }
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
@@ -757,22 +754,25 @@ var Conversations = (function(){
         else {
             move = true;
         }
-        if(slideId != currentSlide){
-            if(move){
-                if(slideId != currentSlide){
-                    Progress.call("beforeLeavingSlide",[slideId]);
-                    currentSlide = slideId;
-                    indicateActiveSlide(slideId);
-                    delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-                    loadSlide(slideId);
-                    updateQueryParams();
-                    loadCurrentGroup(currentConversation);
-                    Progress.call("afterJoiningSlide",[slideId]);
-                }
-                else{
-                    alert("You must remain on the current page");
-                }
+        if(move){
+            if(slideId != currentSlide){
+		try{
+                Progress.call("beforeLeavingSlide",[slideId]);
+                currentSlide = slideId;
+                indicateActiveSlide(slideId);
+                delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                loadSlide(slideId);
+                updateQueryParams();
+                loadCurrentGroup(currentConversation);
+                Progress.call("afterJoiningSlide",[slideId]);
+		}
+		catch(e){
+		    console.log(e);
+		}
             }
+        }
+        else{
+            alert("You must remain on the current page");
         }
     }
     var indicateActiveSlide = function(slideId){

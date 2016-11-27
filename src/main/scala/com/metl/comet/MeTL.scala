@@ -81,7 +81,10 @@ trait ConversationFilter {
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is.toLowerCase.trim
     lazy val myGroups = Globals.casState.is.eligibleGroups.toList
-    in.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
+    in.groupBy(_.jid).flatMap{
+      case (jid,result :: _) => Some(result)
+      case _ => None
+    }.toList.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
   }
 }
 
@@ -268,13 +271,14 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       query = Some(q)
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
+      debug(listing.toString())
       trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))
       val newConv = serverConfig.createConversation(title,username)
-      listing = newConv :: listing
+      listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
   )
@@ -446,8 +450,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
-        //listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-        listing = newConv :: listing.filterNot(_.jid == newConv.jid)//query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
+        listing = newConv :: listing.filterNot(_.jid == newConv.jid)
           reRender
       } else if (listing.exists(_.jid == newConv.jid)){
         listing = listing.filterNot(_.jid == newConv.jid)
@@ -1271,7 +1274,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     })
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
-      println(tokSessionTup)
       val sessionName = tokSessionTup._1
       val tokSession = tokSessionTup._2
       (for {
@@ -1285,7 +1287,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           val newSession = tb.getSessionToken(sessionName,role).left.map(e => {
             error("exception initializing tokboxSession:",e)
           }).right.toOption
-          println("generating tokBox session in %s for: %s %s".format(name,sessionName,newSession))
+          trace("generating tokBox session in %s for: %s %s".format(name,sessionName,newSession))
           tokSessionCol += ((sessionName,newSession))
           newSession
         })
@@ -1408,8 +1410,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         } yield {
           tokSess
         }
-        println("shutting down tokSessions: %s".format(sessionsToClose))
-        partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(sessionsToClose.map(tokSess => JString(tokSess.sessionId)))))
+        sessionsToClose.map(tokSess => JString(tokSess.sessionId)) match {
+          case Nil => {}
+          case toClose => {
+            trace("shutting down tokSessions: %s".format(toClose))
+            partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(toClose)))
+          }
+        }
         tokSlideSpecificSessions.clear()
         tokSlideSpecificSessions ++= (for {
           slide <- cc.slides
