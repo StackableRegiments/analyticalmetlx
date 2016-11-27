@@ -64,7 +64,7 @@ import org.apache.vysper.xml.fragment.{Renderer => vXmlRenderer}
 import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.metl2011._
 
-class VysperClientXmlSerializer extends GenericXmlSerializer("vysper") with LiftLogger {
+class VysperClientXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializer(config) with LiftLogger {
   override def getValueOfNode(content:NodeSeq,name:String):String = {
     trace("getValueOfNode: %s %s".format(content,name))
     (content \\ name).headOption.map(_.text).getOrElse("")
@@ -113,7 +113,7 @@ class EmbeddedXmppServerRoomAdaptor(serverRuntimeContext:ServerRuntimeContext,co
   val conferenceString = "conference.%s".format(domainString)
   lazy val config = ServerConfiguration.default
   lazy val configName = config.name
-  val serializer = new VysperClientXmlSerializer
+  val serializer = new VysperClientXmlSerializer(config)
   val converter = new VysperXMLUtils
   protected val xmppMessageDeliveryStrategy = new IgnoreFailureStrategy()
   def relayMessageToMeTLRoom(message:Stanza):Unit = {

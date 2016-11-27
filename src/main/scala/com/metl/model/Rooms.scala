@@ -134,6 +134,7 @@ case object Ping
 case object CheckChunks
 
 abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
+  lazy val slideRenderer = new SlideRenderer
   lazy val config = ServerConfiguration.configForName(configName)
   private var shouldBacklog = false
   private var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
@@ -357,7 +358,7 @@ class NoCacheRoom(configName:String,override val location:String,creator:RoomPro
   override def getThumbnail = {
     roomMetaData match {
       case s:SlideRoom => {
-        SlideRenderer.render(getHistory,Globals.ThumbnailSize,"presentationSpace")
+        slideRenderer.render(getHistory,Globals.ThumbnailSize,"presentationSpace")
       }
       case _ => {
         Array.empty[Byte]
@@ -367,7 +368,7 @@ class NoCacheRoom(configName:String,override val location:String,creator:RoomPro
   override def getSnapshot(size:RenderDescription) = {
     roomMetaData match {
       case s:SlideRoom => {
-        SlideRenderer.render(getHistory,size,"presentationSpace")
+        slideRenderer.render(getHistory,size,"presentationSpace")
       }
       case _ => {
         Array.empty[Byte]
@@ -431,7 +432,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           case false => history
         }
         debug("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
-        val result = SlideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
+        val result = slideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
         debug("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
         result
       }
@@ -445,7 +446,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     snapshots.get(size).getOrElse({
       roomMetaData match {
         case s:SlideRoom => {
-          SlideRenderer.render(getHistory,size,"presentationSpace")
+          slideRenderer.render(getHistory,size,"presentationSpace")
         }
         case _ => {
           Array.empty[Byte]
