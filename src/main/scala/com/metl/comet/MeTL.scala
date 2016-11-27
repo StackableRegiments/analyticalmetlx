@@ -1271,6 +1271,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     })
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
+      println(tokSessionTup)
       val sessionName = tokSessionTup._1
       val tokSession = tokSessionTup._2
       (for {
@@ -1280,13 +1281,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           case true => TokRole.Moderator
           case false => TokRole.Publisher
         }
-        session <- tokSession.map(s => Some(s)).getOrElse({
+        session <- synchronized { tokSession.map(s => Some(s)).getOrElse({
           val newSession = tb.getSessionToken(sessionName,role).left.map(e => {
             error("exception initializing tokboxSession:",e)
           }).right.toOption
+          println("generating tokBox session in %s for: %s %s".format(name,sessionName,newSession))
           tokSessionCol += ((sessionName,newSession))
           newSession
         })
+        }
       } yield {
         val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
           JField("sessionId",JString(session.sessionId)),
@@ -1414,7 +1417,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           groupSet <- slide.groupSet
           group <- groupSet.groups
           if (group.members.contains(username) || shouldModifyConversation(cc))
-        } yield {
+            } yield {
           (group.id,None)
         })
       }
