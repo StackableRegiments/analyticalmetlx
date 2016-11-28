@@ -1,3 +1,7 @@
+0.12.5
+Feature: METL-251: Diagnostic endpoint to monitor server performance.
+Improvement: METL-116: Performance optimisations.
+
 0.12.4
 Bugfix: METL-250: Superusers get broken board and search screens when they enter blocked conversations.
 
