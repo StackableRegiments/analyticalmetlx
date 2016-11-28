@@ -292,6 +292,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sE.imageStanzas).length,3);
     });
     it("group peers should see me move content",function(){
+	browser.debug();
         var user = sB;
         var peer = sE;
         var nonPeer = sA;
