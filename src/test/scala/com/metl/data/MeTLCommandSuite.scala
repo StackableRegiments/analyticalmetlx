@@ -18,7 +18,7 @@ class MeTLCommandSuite extends FunSuite with GeneratorDrivenPropertyChecks with 
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract command from xml") {

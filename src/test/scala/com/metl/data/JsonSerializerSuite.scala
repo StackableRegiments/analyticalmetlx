@@ -155,7 +155,7 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
   var jsonSerializer: JsonSerializer = _
 
   before {
-    jsonSerializer = new JsonSerializer("empty")
+    jsonSerializer = new JsonSerializer(EmptyBackendAdaptor)
   }
 
   test("parse metl move delta to json and back") {
