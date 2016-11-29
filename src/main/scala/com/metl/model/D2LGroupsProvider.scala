@@ -63,6 +63,27 @@ Enrollment.RoleInfo
 
 */
 
+case class D2LActivation(
+  IsActive:Boolean
+)
+
+case class D2LUserResponse(
+  PagingInfo:D2LPagingInfo,
+  Items:List[D2LUser]
+)
+case class D2LUser(
+  OrgId:Long,
+  UserId:Long,
+  FirstName:Option[String],
+  MiddleName:Option[String],
+  LastName:Option[String],
+  UserName:Option[String],
+  ExternalEmail:Option[String],
+  OrgDefinedId:String,
+  UniqueIdentifier:String,
+  Activation:D2LActivation
+)
+
 case class D2LEnrollment(
   OrgUnit:D2LOrgUnitInfo,
   Role:D2LRoleInfo
@@ -117,6 +138,7 @@ case class D2LOrgUnitTypeInfo(
   Code:String,
   Name:String
 )
+/*
 case class D2LUser(
   Identifier:Option[String],
   DisplayName:Option[String],
@@ -125,6 +147,7 @@ case class D2LUser(
   ProfileBadgeUrl:Option[String],
   ProfileIdentifier:Option[String]
 )
+*/
 case class D2LOrgUnit(
   Identifier:String, //this is actually a number
   Type:D2LOrgUnitTypeInfo,
@@ -314,7 +337,6 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
-      println("first resp: %s".format(first))
       val firstResp = first.extract[D2LEnrollmentResponse]
       var items = firstResp.Items
       var continuing = firstResp.PagingInfo.HasMoreItems
@@ -343,6 +365,42 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       case e:Exception => {
         warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[D2LEnrollment]
+      }
+    }
+  }
+  def getUsers(userContext:ID2LUserContext):List[D2LUser] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/".format(lpApiVersion),"GET")
+    try {
+      val firstGet = client.get(url.toString)
+      var first = parse(firstGet)
+      val firstResp = first.extract[D2LUserResponse]
+      var items = firstResp.Items
+      var continuing = firstResp.PagingInfo.HasMoreItems
+      var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
+      trace("bookmark: %s, items: %s".format(bookmark,items.length))
+      while (continuing){
+        try {
+          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
+          val url = u.toString
+          val respObj = parse(client.get(url))
+          val resp = respObj.extract[D2LUserResponse]
+          items = items ::: resp.Items
+          continuing = resp.PagingInfo.HasMoreItems
+          bookmark = resp.PagingInfo.Bookmark
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+            continuing = false
+            bookmark = None
+          }
+        }
+      }
+      items
+    } catch {
+      case e:Exception => {
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        List.empty[D2LUser]
       }
     }
   }
