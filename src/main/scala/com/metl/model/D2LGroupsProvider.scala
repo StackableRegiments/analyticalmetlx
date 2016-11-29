@@ -210,6 +210,7 @@ case class D2LDescription(
 )
 
 class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
+  protected val pageSize = 200
   protected val httpConnectionTimeout = 10 // 10 seconds
   protected val httpReadTimeout = 60 * 1000 // 60 seconds
   protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
@@ -221,6 +222,20 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
 
   protected val bookMarkTag = "bookmark"
 
+  protected def fetchFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
+    try {
+      Some(parse(client.get(url.toString)).extract[T])
+    } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        None
+      }
+      case e:Exception => {
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        None
+      }
+    }
+  }
   protected def fetchListFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     try {
       parse(client.get(url.toString)).extract[List[T]]
@@ -333,7 +348,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
 
   def getEnrollments(userContext:ID2LUserContext,userId:String):List[D2LEnrollment] = {
-    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/".format(lpApiVersion,userId),"GET")
+    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/?pagesize=%s".format(lpApiVersion,userId,pageSize),"GET")
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
@@ -344,7 +359,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       trace("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
-          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/%s".format(lpApiVersion,userId,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
+          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/%s".format(lpApiVersion,userId,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
           val url = u.toString
           val respObj = parse(client.get(url))
           val resp = respObj.extract[D2LEnrollmentResponse]
@@ -368,8 +383,14 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       }
     }
   }
+  def getUserByOrgDefinedId(userContext:ID2LUserContext,orgDefinedId:String):List[D2LUser] = {
+    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,orgDefinedId),"GET"))
+  }
+  def getUserByUsername(userContext:ID2LUserContext,username:String):Option[D2LUser] = {
+    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?userName=%s".format(lpApiVersion,username),"GET"))
+  }
   def getUsers(userContext:ID2LUserContext):List[D2LUser] = {
-    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/".format(lpApiVersion),"GET")
+    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?pagesize=%s".format(lpApiVersion,pageSize),"GET")
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
@@ -380,7 +401,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       trace("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
-          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s".format(bookMarkTag,b)).getOrElse("")),"GET")
+          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
           val url = u.toString
           val respObj = parse(client.get(url))
           val resp = respObj.extract[D2LUserResponse]
