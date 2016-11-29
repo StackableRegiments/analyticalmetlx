@@ -100,9 +100,9 @@ trait JsonSerializerHelper {
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
-class JsonSerializer(configName:String) extends Serializer with JsonSerializerHelper {
+class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSerializerHelper {
   type T = JValue
-  lazy val config = ServerConfiguration.configForName(configName)
+  val configName = config.name
 
   protected def parseAudiences(input:MeTLData):List[JField] = {
     List(

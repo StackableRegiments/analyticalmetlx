@@ -9,8 +9,8 @@ import util._
 import Helpers._
 import collection._
 
-abstract class ConversationRetriever(configName:String,onConversationDetailsUpdated:(Conversation) => Unit) {
-	lazy val config = ServerConfiguration.configForName(configName)
+abstract class ConversationRetriever(config:ServerConfiguration,onConversationDetailsUpdated:(Conversation) => Unit) {
+	val configName = config.name
 	lazy val isReady:Boolean = true
 	def search(query:String):List[Conversation]
 	def conversationFor(slide:Int):Int
@@ -25,7 +25,7 @@ abstract class ConversationRetriever(configName:String,onConversationDetailsUpda
   def updateConversation(jid:String,conversation:Conversation):Conversation
 }
 
-object EmptyConversations extends ConversationRetriever("empty",(c) => {}){
+object EmptyConversations extends ConversationRetriever(EmptyBackendAdaptor,(c) => {}){
 	override def search(query:String) = List.empty[Conversation]
 	override def conversationFor(slide:Int):Int = 0
 	override def detailsOf(jid:Int) = Conversation.empty

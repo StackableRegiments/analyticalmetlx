@@ -4,7 +4,7 @@ import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "0.12.4"
+version := "0.12.6"
 
 val scalaVersionString = "2.11.5"
 
@@ -92,7 +92,7 @@ libraryDependencies ++= {
     //"io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
     //"io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "xmpp" % "3.5.+" ,
-    "com.h2database" % "h2" % "1.4.189",
+    "com.h2database" % "h2" % "1.4.192",
     "mysql" % "mysql-connector-java" % "5.1.38",
     //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "org.apache.shiro" % "shiro-core" % "1.2.4",
