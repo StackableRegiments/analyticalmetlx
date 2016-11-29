@@ -54,13 +54,15 @@ var Plugins = (function(){
                     " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
                     " .groupsPluginGroupContainer .icon-txt, .groupsPluginAllGroupsControls .icon-txt, .groupsPluginAllGroupsControls .fa{color:white;}"+
                     " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
-                    " .groupsPluginControls button, .groupsPluginControls .icon-txt{padding:0;color:white;margin-top:0;}"+
+                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;color:white;margin-top:0;}"+
+                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;color:white;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
-                    " .groupsPluginControls button{display:block;}"+
+                    " .groupsPluginGroupControls{display:flex;}"+
+                    " .groupsPluginGroupGrade{border:0.5px solid white;background-color:white;color:black;margin-bottom:1px;}"+
                     " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
                 load:function(bus,params) {
                     var render = function(){
-                        try{
+                        try {
                             overContainer.empty();
                             var slide = Conversations.getCurrentSlide();
                             if(slide){
@@ -84,31 +86,27 @@ var Plugins = (function(){
                                                 class:"icon-txt",
                                                 text:"Show all"
                                             }))).appendTo(overContainer);
-                                    button("fa-bar-chart","Apply scores",function(){}).css({"margin-top":0}).appendTo(allControls);
                                     var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                     _.each(groupSet.groups,function(group){
                                         var gc = $("<div />",{
                                             class:"groupsPluginGroupContainer"
                                         }).appendTo(container);
 
-                                        var controls = $("<div />",{
-                                            class:"groupsPluginControls groupsPluginGroup"
+                                        var grades = $("<div />",{
+                                            class:"groupsPluginGroup"
                                         }).appendTo(gc);
-                                        button("fa-share-square","Submit screen",function(){}).appendTo(controls);
-                                        $("<input />",{
-                                            type:"range",
-                                            orient:"vertical",
-                                            min:0,
-                                            max:100,
-                                            value:50
-                                        }).css({
-                                            "writing-mode":"bt-lr", /* IE */
-                                            width: "1em",
-                                            height: "5em",
-                                            "webkit-appearance":"slider-vertical"
-                                        }).appendTo(controls);
+                                        _.each("A B C D".split(" "),function(grade){
+                                            $("<div />",{
+						text:grade,
+						class:"groupsPluginGroupGrade btn-icon"
+					    }).appendTo(grades);
+                                        });
 
                                         var right = $("<div />").appendTo(gc);
+					var controls = $("<div />",{
+					    class:"groupsPluginGroupControls"
+					}).appendTo(right);
+                                        button("fa-share-square","Submit screen",Submissions.sendSubmission).appendTo(controls);
                                         var id = _.uniqueId("l");
                                         var isolate = $("<div />",{
                                             class:"isolateGroup"
@@ -120,13 +118,15 @@ var Plugins = (function(){
                                             _.each(groupSet.groups,function(g){
                                                 ContentFilter.setFilter(g.id,false);
                                             });
-					    ContentFilter.setFilter(group.id,true);
+                                            ContentFilter.setFilter(group.id,true);
                                         })).append($("<label />",{
                                             for:id
                                         }).append($("<span />",{
                                             class:"icon-txt",
                                             text:"Isolate"
-                                        }))).appendTo(right);
+                                        }).css({
+					    "margin-top":"5px"
+					}))).appendTo(controls);
                                         var members = $("<div />",{
                                             class:"groupsPluginGroup"
                                         }).appendTo(right);
@@ -143,7 +143,7 @@ var Plugins = (function(){
                         catch(e){
                             console.log("Groups plugin render e",e);
                         }
-                    };
+                    }
                     bus.afterJoiningSlide["Groups plugin"] = render;
                     bus.conversationDetailsReceived["Groups plugin"] = render;
                     return overContainer;
