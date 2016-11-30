@@ -97,16 +97,20 @@ var Plugins = (function(){
                                         }).appendTo(gc);
                                         _.each("A B C D".split(" "),function(grade){
                                             $("<div />",{
-						text:grade,
-						class:"groupsPluginGroupGrade btn-icon"
-					    }).appendTo(grades);
+                                                text:grade,
+                                                class:"groupsPluginGroupGrade btn-icon"
+                                            }).appendTo(grades);
                                         });
 
                                         var right = $("<div />").appendTo(gc);
-					var controls = $("<div />",{
-					    class:"groupsPluginGroupControls"
-					}).appendTo(right);
-                                        button("fa-share-square","Submit screen",Submissions.sendSubmission).appendTo(controls);
+                                        var controls = $("<div />",{
+                                            class:"groupsPluginGroupControls"
+                                        }).appendTo(right);
+                                        button("fa-share-square","Submit screen",function(){
+                                            isolate.find("input").prop("checked",true).change();
+					    console.log("Isolating and screenshotting",isolate);
+					    _.defer(Submissions.sendSubmission);
+                                        }).appendTo(controls);
                                         var id = _.uniqueId("l");
                                         var isolate = $("<div />",{
                                             class:"isolateGroup"
@@ -115,6 +119,7 @@ var Plugins = (function(){
                                             name:"groupView",
                                             id:id
                                         }).change(function(){
+					    console.log("Isolate changed",group.id);
                                             _.each(groupSet.groups,function(g){
                                                 ContentFilter.setFilter(g.id,false);
                                             });
@@ -125,8 +130,8 @@ var Plugins = (function(){
                                             class:"icon-txt",
                                             text:"Isolate"
                                         }).css({
-					    "margin-top":"5px"
-					}))).appendTo(controls);
+                                            "margin-top":"5px"
+                                        }))).appendTo(controls);
                                         var members = $("<div />",{
                                             class:"groupsPluginGroup"
                                         }).appendTo(right);
@@ -163,7 +168,7 @@ $(function(){
         $("<div />",{
             text:label,
             class:"pluginName"
-        }).prependTo(container);
+        })//.prependTo(container);
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);
         container.appendTo(pluginBar);
