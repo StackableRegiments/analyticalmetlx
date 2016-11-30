@@ -209,6 +209,19 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
     }
   }
 
+  test("parse history with 2 multiWordTexts to json and back returning the last one") {
+    forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) => {
+      val h = new History("test")
+      val gennedText2 = gennedText.copy(timestamp = gennedText.timestamp + 2, words = gennedText.words.map(w => w.text + "_copied"))
+      h.addStanza(gennedText)
+      h.addStanza(gennedText2)
+      val sh = jsonSerializer.fromHistory(h)
+      val rh = jsonSerializer.toHistory(sh)
+      val rt = rh.getMultiWordTexts.head
+      rt should equal(gennedText2)
+    }}
+  }
+
   test("parse metl dirty ink to json and back") {
     forAll (genDirtyInk) { (gennedDirtyInk: MeTLDirtyInk) =>
 

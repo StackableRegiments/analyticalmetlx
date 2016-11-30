@@ -162,6 +162,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
   }
   override def fromHistory(input:History):JValue = Stopwatch.time("JsonSerializer.fromHistory",{
     val (texts,highlighters,inks,images,multiWordTexts,videos) = input.getRenderableGrouped
+    val words = (multiWordTexts.groupBy(_.identity).toList.flatMap{
+      case (identity,Nil) => None
+      case (identity,items) => items.sortBy(_.timestamp).reverse.headOption.map(head => JField(identity,fromMeTLMultiWordText(head)))
+    }).toList
     toJsObj("history",List(
       JField("jid",JString(input.jid)),
       JField("inks",JObject(inks.map(i => JField(i.identity,fromMeTLInk(i))))),
@@ -170,7 +174,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("videos",JObject(videos.map(i => JField(i.identity,fromMeTLVideo(i))))),
       JField("texts",JObject(texts.map(i => JField(i.identity,fromMeTLText(i))))),
       JField("themes",JArray(input.getThemes.map(fromTheme _))),
-      JField("multiWordTexts",JObject(multiWordTexts.map(i => JField(i.identity,fromMeTLMultiWordText(i))))),
+      JField("multiWordTexts",JObject(words)),
       JField("quizzes",JArray(input.getQuizzes.map(i => fromMeTLQuiz(i)))),
       JField("quizResponses",JArray(input.getQuizResponses.map(i => fromMeTLQuizResponse(i)))),
       JField("submissions",JArray(input.getSubmissions.map(i => fromSubmission(i)))),
