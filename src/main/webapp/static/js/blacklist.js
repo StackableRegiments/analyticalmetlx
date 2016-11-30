@@ -140,6 +140,7 @@ var Blacklist = (function(){
         }
     };
     var renderBlacklistAuthorsInPlace = function(){
+			WorkQueue.enqueue(function(){
         blacklistAuthorsContainer.empty();
         var unbanAllButton = $("#unbanAll");
         if (blacklistAuthors.length > 0){
@@ -163,6 +164,7 @@ var Blacklist = (function(){
             });
             blacklistAuthorsContainer.append(rootElem);
         });
+			});
     };
     var refreshToolState = function(conversation){
         if (Conversations.shouldModifyConversation(conversation)){
@@ -182,6 +184,7 @@ var Blacklist = (function(){
         currentBlacklist = {};
     };
     var renderBlacklistsInPlace = function(){
+			WorkQueue.enqueue(function(){
         blacklistDatagrid.jsGrid("loadData");
         var sortObj = blacklistDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
@@ -194,6 +197,7 @@ var Blacklist = (function(){
          })
          renderCurrentBlacklistInPlace();
          */
+			});
     }
     var renderCurrentBlacklistInPlace = function(){
         currentBlacklistContainer.html(renderBlacklist(currentBlacklist));

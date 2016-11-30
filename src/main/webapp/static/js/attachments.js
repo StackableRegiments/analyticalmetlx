@@ -166,12 +166,15 @@ var Attachments = (function(){
         reRenderAttachments();
     };
     var reRenderAttachments = function(){
+			WorkQueue.enqueue(function(){
         attachmentsDatagrid.jsGrid("loadData");
         var sortObj = attachmentsDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
             attachmentsDatagrid.jsGrid("sort",sortObj);
         }
+			});
     };
+		/*
     var renderAttachment = function(attachment,targetContainer,template){
         var uniq = function(label){return sprintf("attachment_%s_%s",label,attachment.id);};
         var rootElem = template.find(".attachmentItem");
@@ -192,7 +195,7 @@ var Attachments = (function(){
         }
         targetContainer.append(template);
     };
-
+		*/
     var actOnAttachment = function(newAttachment){
         var partitioned = _.partition(attachments,function(attachment){
             return attachment.id == newAttachment.id;

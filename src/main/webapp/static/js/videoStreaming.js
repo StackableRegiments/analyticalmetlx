@@ -1,4 +1,5 @@
 var TokBox = (function(){
+	var shownError = false;
     var enabled = false;
     var setTokBoxEnabledStateFunc = function(isEnabled){
         enabled = isEnabled;
@@ -10,7 +11,10 @@ var TokBox = (function(){
         if (initialized){
             var support = OT.checkSystemRequirements();
             if (support == 0){
+							if (!shownError){
                 errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome, Firefox or Internet Explorer.");
+								shownError = true;
+							}
             } else if (enabled && !(desc.sessionId in sessions)){
                 var container = sessionContainer.clone();
                 sessionsContainer.append(container);
@@ -48,7 +52,7 @@ var TokBox = (function(){
     }
 })();
 var TokBoxSession = function(desc,sessionContainer){
-    var autoSubscribeAndPublish = true;
+    var autoSubscribeAndPublish = false;
     var videoWidth = 160;
     var videoHeight = 120;
     var videoFps = 15;

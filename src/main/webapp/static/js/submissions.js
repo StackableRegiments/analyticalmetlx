@@ -3,11 +3,13 @@ var Submissions = (function(){
     var submissionsDatagrid = {};
     var insertButtonTemplate = {};
     var reRenderDatagrid = function(){
+			WorkQueue.enqueue(function(){
         submissionsDatagrid.jsGrid("loadData");
         var sortObj = submissionsDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
             submissionsDatagrid.jsGrid("sort",sortObj);
         }
+			});
     };
     $(function(){
         submissionsDatagrid = $("#submissionsDatagrid");

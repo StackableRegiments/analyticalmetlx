@@ -78,7 +78,7 @@ var WorkQueue = (function(){
             gracefullyResumeTimeout = undefined;
         }
     }
-    var gracefullyResumeDelay = 1000;
+    var gracefullyResumeDelay = 2500;
     var gracefullyResumeTimeout = undefined;
     var gracefullyResumeFunction = function(){
         stopResume();
