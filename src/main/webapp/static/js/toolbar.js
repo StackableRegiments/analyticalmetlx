@@ -809,7 +809,7 @@ var Modes = (function(){
             Modes.canvasInteractables[category] = [];
         }
         Modes.canvasInteractables[category].push(interaction);
-        console.log("Pushing",category);
+        //console.log("Pushing",category);
     }
     $(function(){
         var attrs = {opacity:1};
@@ -1847,6 +1847,15 @@ var Modes = (function(){
                     resetVideoUpload();
                 }
             });
+						Progress.beforeLeavingSlide["videos"] = function(){
+							if ("videos" in boardContent){
+								_.forEach(boardContent.videos,function(video){
+									if (video != null && video != undefined && "destroy" in video){
+										video.destroy();
+									}
+								});
+							}
+						};
             return {
                 activate:function(){
                     Modes.currentMode.deactivate();

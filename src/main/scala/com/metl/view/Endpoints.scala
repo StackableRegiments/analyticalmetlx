@@ -261,17 +261,18 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
               }
             }).getOrElse((initialSize,0L,initialSize))
           }
+          println("found video: %s, range: %s, skipping: %s".format(initialSize,(start,end,size),start))
           fis.skip(start)
           val headers = List(
             ("Connection" -> "close"),
             ("Transfer-Encoding" -> "chunked"),
             ("Content-Type" -> "video/mp4"),
-            ("Content-Range" -> "bytes %s-%s/%s".format(start,end,bytes.length.toString))
+            ("Content-Range" -> "bytes %d-%d/%d".format(start,end,bytes.length))
           )
           StreamingResponse(
             data = fis,
             onEnd = fis.close,
-            size = size,
+            size = initialSize,
             headers = headers,
             cookies = Nil,
             code = 206

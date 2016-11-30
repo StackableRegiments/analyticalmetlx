@@ -145,6 +145,7 @@ var Participants = (function(){
 	conjugate:true
     };
     var updateParticipantsListing = function(){
+			WorkQueue.enqueue(function(){
         participantsDatagrid.jsGrid("loadData");
         var sortObj = participantsDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
@@ -157,7 +158,7 @@ var Participants = (function(){
                 if(t.length > 0){//It will come back with empty strings
                     t = t.toLowerCase();
 		    if(contextFilters.conjugate){
-			t = nlp_compromise.text(t).root();
+				t = nlp_compromise.text(t).root();
 		    }
                     var context = theme.origin;
                     if(contextFilters[context] == true){
@@ -174,6 +175,7 @@ var Participants = (function(){
             });
         });
         updateThemes(Analytics.word.cloudData());
+			});
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
