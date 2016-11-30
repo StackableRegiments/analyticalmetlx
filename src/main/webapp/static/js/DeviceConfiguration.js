@@ -252,6 +252,10 @@ var DeviceConfiguration = (function(){
                 var imageAdorner = comp("#imageAdorner");
                 board.width(bwidth);
                 board.height(bheight);
+                toolsColumn.height(bheight);
+                thumbsColumn.height(bheight);
+                boardColumn.height(bheight);
+
                 boardContext.canvas.width = bwidth;
                 boardContext.canvas.height = bheight;
                 boardContext.width = bwidth;

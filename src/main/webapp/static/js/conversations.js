@@ -85,27 +85,29 @@ var Conversations = (function(){
         var DISPLAY_INTERVAL = 1000;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(function(){
-            _.each(currentConversation.slides,function(slide){
-                if(slide.groupSet){
-                    if(! _.every(slide.groupSet.groups,function(group){
-                        return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
-                    })){
-                        var scrollContainer = $("#thumbScrollContainer");
-                        var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                        paintGroups(slide,slideContainer);
+            WorkQueue.enqueue(function(){
+                _.each(currentConversation.slides,function(slide){
+                    if(slide.groupSet){
+                        if(! _.every(slide.groupSet.groups,function(group){
+                            return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
+                        })){
+                            var scrollContainer = $("#thumbScrollContainer");
+                            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                            paintGroups(slide,slideContainer);
+                        }
+                        _.each(slide.groupSet.groups,function(group){
+                            var trace = groupTraces[group.id];
+                            trace.update(groupActivity[group.id].line);
+                        });
                     }
-                    _.each(slide.groupSet.groups,function(group){
-                        var trace = groupTraces[group.id];
-                        trace.update(groupActivity[group.id].line);
-                    });
-                }
-                var conversationActivity = $("#conversationActivity");
-                ensureTracking("anyone");
-                groupTraces.anyone = groupTraces.anyone || {};
-                if(conversationActivity.find("svg").length == 0){
-                    groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
-                }
-                groupTraces.anyone.update(groupActivity.anyone.line);
+                    var conversationActivity = $("#conversationActivity");
+                    ensureTracking("anyone");
+                    groupTraces.anyone = groupTraces.anyone || {};
+                    if(conversationActivity.find("svg").length == 0){
+                        groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                    }
+                    groupTraces.anyone.update(groupActivity.anyone.line);
+                });
             });
         },DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
@@ -139,7 +141,6 @@ var Conversations = (function(){
             }
         };
         var paintGroups = function(slide,slideContainer){
-            console.log("Paint groups");
             var groupsContainer = slideContainer.find(".groupSlideContainer")
             if(groupsContainer.length == 0){
                 groupsContainer = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
@@ -191,11 +192,7 @@ var Conversations = (function(){
                     }
                     else{
                         var slideImage = slideContainer.find("img");
-                        if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                            slideImage.attr("src",cache[slide.id].data);
-                        } else {
-                            fetchAndPaintThumb(slide,slideContainer,slideImage);
-                        }
+                        fetchAndPaintThumb(slide,slideContainer,slideImage);
                     }
                 }
             },
@@ -217,15 +214,24 @@ var Conversations = (function(){
             }
         }));
     }
+    var isVisible = function(slide,thumbScroller){
+        var slidesTop = 0;
+        var slidesBottom = thumbScroller.height();
+        var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
+        var slideImage = slideContainer.find("img");
+        var slideTop = slideContainer.position().top;
+        var slideBottom = slideTop + slideContainer.height();
+        return (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+    }
     var refreshSlideDisplay = function(){
         console.log("Refreshing slide display");
         var slideContainer = $("#slideContainer")
+        var scrollContainer = $("#thumbScrollContainer");
         //Add the new slides
         _.each(_.filter(currentConversation.slides,function(slide){
             return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
         }),function(slide){
             slideContainer.append(constructSlide(slide)[0]);
-            updateThumbnailFor(slide.id);
         });
         //Remove the deleted slides
         _.each(_.filter(currentConversation.slides,function(slide){
@@ -244,6 +250,11 @@ var Conversations = (function(){
             var ib = $(jb).attr("id");
             return positions[ia] - positions[ib];
         }).detach().appendTo(slideContainer);
+        _.each(currentConversation.slides,function(slide){
+            if(isVisible(slide,scrollContainer)){
+                updateThumbnailFor(slide.id);
+            }
+        });
         //Build the UI
         var slideControls = $("#slideControls");
         slideControls.empty();
@@ -861,6 +872,7 @@ var Conversations = (function(){
             .on("click","#nextSlideButton",goToNextSlideFunction)
             .on("click","#addGroupSlideButton",addGroupSlideFunction)
             .on("click","#addSlideButton",addSlideFunction);
+        $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
