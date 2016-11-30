@@ -567,6 +567,10 @@ function prerenderVideo(video){
                 video.video.play();
             }
         };
+				video.destroy = function(){
+					video.video.removeAttribute("src");
+					video.video.load();
+				};
         video.pause = function(){
             if (!video.video.paused){
                 video.video.pause();
