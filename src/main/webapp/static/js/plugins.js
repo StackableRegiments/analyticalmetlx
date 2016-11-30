@@ -64,84 +64,86 @@ var Plugins = (function(){
                     var render = function(){
                         try {
                             overContainer.empty();
-                            var slide = Conversations.getCurrentSlide();
-                            if(slide){
-                                var groupSet = slide.groupSet;
-                                if(groupSet){
-                                    var allControls = $("<div />",{
-                                        class:"groupsPluginAllGroupsControls"
-                                    }).append($("<input />",{
-                                        type:"radio",
-                                        name:"groupView",
-                                        id:"showAll"
-                                    }).click(function(){
-                                        _.each(groupSet.groups,function(g){
-                                            ContentFilter.setFilter(g.id,true);
-                                        });
-                                    })).append($("<label />",{
-                                        for:"showAll"
-                                            }).css({
-                                                "flex-grow":0
-                                            }).append($("<span />",{
-                                                class:"icon-txt",
-                                                text:"Show all"
-                                            }))).appendTo(overContainer);
-                                    var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
-                                    _.each(groupSet.groups,function(group){
-                                        var gc = $("<div />",{
-                                            class:"groupsPluginGroupContainer"
-                                        }).appendTo(container);
-
-                                        var grades = $("<div />",{
-                                            class:"groupsPluginGroup"
-                                        }).appendTo(gc);
-                                        _.each("A B C D".split(" "),function(grade){
-                                            $("<div />",{
-                                                text:grade,
-                                                class:"groupsPluginGroupGrade btn-icon"
-                                            }).appendTo(grades);
-                                        });
-
-                                        var right = $("<div />").appendTo(gc);
-                                        var controls = $("<div />",{
-                                            class:"groupsPluginGroupControls"
-                                        }).appendTo(right);
-                                        button("fa-share-square","Submit screen",function(){
-                                            isolate.find("input").prop("checked",true).change();
-					    console.log("Isolating and screenshotting",isolate);
-					    _.defer(Submissions.sendSubmission);
-                                        }).appendTo(controls);
-                                        var id = _.uniqueId("l");
-                                        var isolate = $("<div />",{
-                                            class:"isolateGroup"
+                            if(Conversations.shouldModifyConversation()){
+                                var slide = Conversations.getCurrentSlide();
+                                if(slide){
+                                    var groupSet = slide.groupSet;
+                                    if(groupSet){
+                                        var allControls = $("<div />",{
+                                            class:"groupsPluginAllGroupsControls"
                                         }).append($("<input />",{
                                             type:"radio",
                                             name:"groupView",
-                                            id:id
-                                        }).change(function(){
-					    console.log("Isolate changed",group.id);
+                                            id:"showAll"
+                                        }).click(function(){
                                             _.each(groupSet.groups,function(g){
-                                                ContentFilter.setFilter(g.id,false);
+                                                ContentFilter.setFilter(g.id,true);
                                             });
-                                            ContentFilter.setFilter(group.id,true);
                                         })).append($("<label />",{
-                                            for:id
-                                        }).append($("<span />",{
-                                            class:"icon-txt",
-                                            text:"Isolate"
-                                        }).css({
-                                            "margin-top":"5px"
-                                        }))).appendTo(controls);
-                                        var members = $("<div />",{
-                                            class:"groupsPluginGroup"
-                                        }).appendTo(right);
-                                        _.each(group.members,function(member){
-                                            $("<div />",{
-                                                text:member,
-                                                class:"groupsPluginMember"
-                                            }).appendTo(members);
+                                            for:"showAll"
+                                                }).css({
+                                                    "flex-grow":0
+                                                }).append($("<span />",{
+                                                    class:"icon-txt",
+                                                    text:"Show all"
+                                                }))).appendTo(overContainer);
+                                        var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
+                                        _.each(groupSet.groups,function(group){
+                                            var gc = $("<div />",{
+                                                class:"groupsPluginGroupContainer"
+                                            }).appendTo(container);
+
+                                            var grades = $("<div />",{
+                                                class:"groupsPluginGroup"
+                                            }).appendTo(gc);
+                                            _.each("A B C D".split(" "),function(grade){
+                                                $("<div />",{
+                                                    text:grade,
+                                                    class:"groupsPluginGroupGrade btn-icon"
+                                                }).appendTo(grades);
+                                            });
+
+                                            var right = $("<div />").appendTo(gc);
+                                            var controls = $("<div />",{
+                                                class:"groupsPluginGroupControls"
+                                            }).appendTo(right);
+                                            button("fa-share-square","Submit screen",function(){
+                                                isolate.find("input").prop("checked",true).change();
+                                                console.log("Isolating and screenshotting",isolate);
+                                                _.defer(Submissions.sendSubmission);
+                                            }).appendTo(controls);
+                                            var id = _.uniqueId("l");
+                                            var isolate = $("<div />",{
+                                                class:"isolateGroup"
+                                            }).append($("<input />",{
+                                                type:"radio",
+                                                name:"groupView",
+                                                id:id
+                                            }).change(function(){
+                                                console.log("Isolate changed",group.id);
+                                                _.each(groupSet.groups,function(g){
+                                                    ContentFilter.setFilter(g.id,false);
+                                                });
+                                                ContentFilter.setFilter(group.id,true);
+                                            })).append($("<label />",{
+                                                for:id
+                                            }).append($("<span />",{
+                                                class:"icon-txt",
+                                                text:"Isolate"
+                                            }).css({
+                                                "margin-top":"5px"
+                                            }))).appendTo(controls);
+                                            var members = $("<div />",{
+                                                class:"groupsPluginGroup"
+                                            }).appendTo(right);
+                                            _.each(group.members,function(member){
+                                                $("<div />",{
+                                                    text:member,
+                                                    class:"groupsPluginMember"
+                                                }).appendTo(members);
+                                            });
                                         });
-                                    });
+                                    }
                                 }
                             }
                         }
@@ -166,9 +168,9 @@ $(function(){
             class:"plugin"
         });
         $("<div />",{
-            text:label,
+            text:" ",
             class:"pluginName"
-        })//.prependTo(container);
+        }).prependTo(container);
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);
         container.appendTo(pluginBar);
