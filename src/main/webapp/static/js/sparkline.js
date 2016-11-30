@@ -18,12 +18,14 @@ var SparkLine = (function(){
         graph.selectAll("path").data([data]).enter().append("svg:path").attr("d", line);
 
         function redraw(data) {
-            y.domain(d3.extent(data));
-	    data.unshift(0);
-	    data.push(0);
-            graph.selectAll("path")
-                .data([data])
-                .attr("d", line)
+            WorkQueue.enqueue(function(){
+                y.domain(d3.extent(data));
+                data.unshift(0);
+                data.push(0);
+                graph.selectAll("path")
+                    .data([data])
+                    .attr("d", line)
+            });
         }
         return redraw;
     };

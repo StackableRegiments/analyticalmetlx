@@ -82,7 +82,7 @@ var Conversations = (function(){
             });
         }
         var SENSOR_INTERVAL = 500;
-        var DISPLAY_INTERVAL = 2500;
+        var DISPLAY_INTERVAL = 1000;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(function(){
             _.each(currentConversation.slides,function(slide){
@@ -125,7 +125,9 @@ var Conversations = (function(){
                         data:data,
                         when:Date.now()
                     };
-                    slideImage.attr("src",data);
+                    WorkQueue.enqueue(function(){
+                        slideImage.attr("src",data);
+                    });
                 };
                 $.ajax({
                     url:thumbUrl,
@@ -756,19 +758,19 @@ var Conversations = (function(){
         }
         if(move){
             if(slideId != currentSlide){
-		try{
-                Progress.call("beforeLeavingSlide",[slideId]);
-                currentSlide = slideId;
-                indicateActiveSlide(slideId);
-                delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-                loadSlide(slideId);
-                updateQueryParams();
-                loadCurrentGroup(currentConversation);
-                Progress.call("afterJoiningSlide",[slideId]);
-		}
-		catch(e){
-		    console.log(e);
-		}
+                try{
+                    Progress.call("beforeLeavingSlide",[slideId]);
+                    currentSlide = slideId;
+                    indicateActiveSlide(slideId);
+                    delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                    loadSlide(slideId);
+                    updateQueryParams();
+                    loadCurrentGroup(currentConversation);
+                    Progress.call("afterJoiningSlide",[slideId]);
+                }
+                catch(e){
+                    console.log(e);
+                }
             }
         }
         else{
