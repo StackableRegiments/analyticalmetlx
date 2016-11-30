@@ -68,8 +68,7 @@ function strokeCollected(points){
         for(var p = 0; p < points.length; p += 3){
             x = points[p];
             y = points[p+1];
-            worldPos = screenToWorld(x,y);
-            scaledPoints = scaledPoints.concat([worldPos.x,worldPos.y,points[p+2]]);
+            scaledPoints = scaledPoints.concat([x,y,points[p+2]]);
         }
         ink.points = scaledPoints;
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
