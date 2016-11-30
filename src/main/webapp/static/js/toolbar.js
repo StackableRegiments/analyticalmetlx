@@ -1793,7 +1793,8 @@ var Modes = (function(){
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
-                                y:currentVideo.y
+                                y:currentVideo.y,
+                                audiences:Conversations.getCurrentGroup().map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
