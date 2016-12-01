@@ -341,6 +341,7 @@ var Conversations = (function(){
     }
     var actOnConversationDetails = function(details){
         try{
+					console.log("received conversation:",details);
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
@@ -460,10 +461,12 @@ var Conversations = (function(){
         }
     };
     var actOnCurrentConversationJidReceived = function(jid){
+				console.log("currentConversationJid received:",jid);
         targetConversationJid = jid;
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
+				console.log("currentSlideJid received:",jid);
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
@@ -619,7 +622,7 @@ var Conversations = (function(){
         }
         var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
         if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
-            var key = g.key ? g.key : g.ouType;
+            var key = g.key ? g.key : g.type;
             var name = g.name ? g.name : g.value;
             return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
         }))) {
@@ -719,6 +722,7 @@ var Conversations = (function(){
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
+			console.log("updating queryparams:",currentConversation,currentSlide,window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;

@@ -21,7 +21,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
   object XmlUtils extends XmlUtils
 
   before {
-    xmlSerializer = new GenericXmlSerializer("empty")
+    xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
   }
 
   test("extract privacy of private from content") {
@@ -453,7 +453,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
 
   test("construct generic xml serializer with empty server configuration") {
 
-    assert(xmlSerializer.config === ServerConfiguration.empty)
+    assert(xmlSerializer.configName === "empty")
   }
 
 }
