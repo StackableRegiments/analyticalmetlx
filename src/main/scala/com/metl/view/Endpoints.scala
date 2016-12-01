@@ -217,7 +217,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       } yield {
         val config = ServerConfiguration.default
         val history = config.getMockHistory
-        val image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(width.toInt,height.toInt),"presentationSpace")
+        val image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(Math.min(width.toInt,640),Math.min(height.toInt,480)),"presentationSpace")
         InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200)
       }
     })

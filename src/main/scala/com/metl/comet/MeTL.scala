@@ -30,17 +30,7 @@ import json.JsonAST._
 
 import com.metl.snippet.Metl._
 
-case class RoomJoinRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
-case class RoomLeaveRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
 case class JoinThisSlide(slide:String)
-
-object RoomJoiner extends LiftActor with Logger {
-  override def messageHandler = {
-    case RoomJoinRequest(j,u,s,i,a) => MeTLXConfiguration.getRoom(j,s) ! JoinRoom(u,i,a)
-    case RoomLeaveRequest(j,u,s,i,a) => MeTLXConfiguration.getRoom(j,s) ! LeaveRoom(u,i,a)
-    case other => warn("RoomJoiner received strange request: %s".format(other))
-  }
-}
 
 object MeTLActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
@@ -769,11 +759,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getResource",List("source"),(args) => JString("not yet implemented"),Empty),
     ClientSideFunction("moveToSlide",List("where"),(args) => {
       val where = getArgAsString(args(0))
-      trace("moveToSlideRequested(%s)".format(where))
-      backgroundWorker ! BackgroundFunc(() => {
-        moveToSlide(where)
-        refreshClientSideStateJs(false)
-      },S.session)
+      debug("moveToSlideRequested(%s)".format(where))
+      moveToSlide(where)
+      partialUpdate(refreshClientSideStateJs())
       JNull
     },Empty),
     ClientSideFunction("joinRoom",List("where"),(args) => {
@@ -1126,38 +1114,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   def registerWith = MeTLActorManager
   val scriptContainerId = "scriptContainer_%s".format(nextFuncName)
   override def render = {
-    backgroundWorker ! BackgroundFunc(() => refreshClientSideStateJs(true),S.session)
-    OnLoad(showLoader)
+    OnLoad(refreshClientSideStateJs(true))
   }
-  def showLoader:JsCmd = Show("loadingSpinner")
   def hideLoader:JsCmd = Hide("loadingSpinner")
-  case class DoCmd(cmd:JsCmd)
-  case class BackgroundFunc(func:()=>JsCmd,session:Box[LiftSession])
-  case class BackgroundAction(action:()=>Unit,session:Box[LiftSession])
-  protected lazy val thisComet = this
-  protected object backgroundWorker extends LiftActor {
-    override def messageHandler = {
-      case BackgroundAction(func,session) => {
-        session.map(s => {
-          S.initIfUninitted(s){
-            func()
-          }
-        }).getOrElse({
-          func()
-        })
-      }
-      case BackgroundFunc(func,session) => {
-        thisComet ! DoCmd(session.map(s => {
-          S.initIfUninitted(s){
-            func()
-          }
-        }).getOrElse(func()))
-      }
-      case _ => {}
-    }
-  }
+
   override def lowPriority = {
-    case DoCmd(jsCmd) => partialUpdate(jsCmd)
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
     case UpdateThumb(slide) => {
@@ -1165,10 +1126,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       partialUpdate(Call(UPDATE_THUMB,JString(slide)))
     }
     case JoinThisSlide(slide) => {
-      backgroundWorker ! BackgroundFunc(() => {
-        moveToSlide(slide)
-        refreshClientSideStateJs(false)
-      },S.session)
+      moveToSlide(slide)
+      partialUpdate(refreshClientSideStateJs())
     }
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
@@ -1178,45 +1137,34 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected var currentSlide:Box[String] = Empty
   protected var isInteractiveUser:Box[Boolean] = Empty
 
-
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
-    trace("created metlactor: %s => %s".format(name,S.session))
-    backgroundWorker ! BackgroundAction(() => {
-      debug("startedWorker: %s".format(name))
-      joinRoomByJid("global")
-      name.foreach(nameString => {
-        warn("localSetup for [%s]".format(name))
-        com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
-          joinConversation(convJid.toString)
-        })
-        com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
-          moveToSlide(slideJid.toString)
-          slideJid
-        }).getOrElse({
-          currentConversation.foreach(cc => {
-            cc.slides.sortWith((a,b) => a.index < b.index).headOption.map(firstSlide => {
-              moveToSlide(firstSlide.id.toString)
-            })
+    debug("created metlactor: %s => %s".format(name,S.session))
+    joinRoomByJid("global")
+    name.foreach(nameString => {
+      warn("localSetup for [%s]".format(name))
+      com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
+        joinConversation(convJid.toString)
+      })
+      com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
+        moveToSlide(slideJid.toString)
+        slideJid
+      }).getOrElse({
+        currentConversation.foreach(cc => {
+          cc.slides.sortWith((a,b) => a.index < b.index).headOption.map(firstSlide => {
+            moveToSlide(firstSlide.id.toString)
           })
         })
-        isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
       })
-      partialUpdate(refreshClientSideStateJs(true))
-      debug("completedWorker: %s".format(name))
-    },S.session)
+      isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
+    })
+    debug("completedWorker: %s".format(name))
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
-    rooms.get((serverName,jid)) match {
-      case None => RoomJoiner ! RoomJoinRequest(jid,username,serverName,userUniqueId,this)
-      case _ => {}
-    }
+    MeTLXConfiguration.getRoom(jid,serverName) ! JoinRoom(username,userUniqueId,this)
   })
   private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.leaveRoomByJid(%s)".format(jid),{
-    rooms.get((serverName,jid)) match {
-      case Some(s) => RoomJoiner ! RoomLeaveRequest(jid,username,serverName,userUniqueId,this)
-      case _ => {}
-    }
+    MeTLXConfiguration.getRoom(jid,serverName) ! LeaveRoom(username,userUniqueId,this)
   })
   override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
     trace("shutdown metlactor: %s".format(name))
@@ -1347,7 +1295,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       currentConversation = Empty
       currentSlide = Empty
       tokSessions -= details.jid.toString
-      reRender// partialUpdate(RedirectTo(noBoard))
+      reRender
+      partialUpdate(RedirectTo(noBoard))
       Empty
     }
   }
