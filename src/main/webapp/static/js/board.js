@@ -904,7 +904,6 @@ function drawInk(ink,incCanvasContext){
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
-    console.log("drawInk",ink.bounds);
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
         canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,ink),
 				ink.thickness / 2, ink.thickness / 2,
