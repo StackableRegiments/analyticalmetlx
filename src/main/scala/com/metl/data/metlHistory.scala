@@ -149,7 +149,7 @@ class MapHistoryCollection[A,B](keyCalc:A=>B,seedValue:Map[B,A] = Map.emty[B,A])
 */
 class MutableListHistoryCollection[A](seedValue:Seq[A] = Nil) extends HistoryCollection[A]{
   import scala.collection.mutable.{ListBuffer=>MutList}
-  protected var coll:MutList[A] = {
+  protected val coll:MutList[A] = {
     val innerColl = MutList.empty[A]
     innerColl ++= seedValue
     innerColl
