@@ -1,3 +1,7 @@
+0.12.7
+Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
+Bugfix: METL-266: Rooms not being garbage collected.
+
 0.12.6
 Feature: METL-251: Diagnostic endpoint to monitor server performance.
 Improvement: METL-116: Performance optimisations.
