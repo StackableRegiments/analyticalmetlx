@@ -761,7 +761,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val where = getArgAsString(args(0))
       debug("moveToSlideRequested(%s)".format(where))
       moveToSlide(where)
-      partialUpdate(refreshClientSideStateJs())
+      partialUpdate(refreshClientSideStateJs(true))
       JNull
     },Empty),
     ClientSideFunction("joinRoom",List("where"),(args) => {
@@ -1127,7 +1127,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
     case JoinThisSlide(slide) => {
       moveToSlide(slide)
-      partialUpdate(refreshClientSideStateJs())
+      partialUpdate(refreshClientSideStateJs(true))
     }
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
