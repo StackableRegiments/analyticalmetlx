@@ -1097,7 +1097,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   }
   def hideLoader:JsCmd = Hide("loadingSpinner")
 
-  def backgroundWorker = this
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
@@ -1116,7 +1115,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
     debug("created metlactor: %s => %s".format(name,S.session))
-    debug("startedWorker: %s".format(name))
     joinRoomByJid("global")
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
@@ -1135,7 +1133,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       })
       isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
     })
-    //partialUpdate(refreshClientSideStateJs)
     debug("completedWorker: %s".format(name))
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
@@ -1266,7 +1263,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
-      reRender// partialUpdate(RedirectTo(noBoard))
+      reRender
+      partialUpdate(RedirectTo(noBoard))
       Empty
     }
   }
