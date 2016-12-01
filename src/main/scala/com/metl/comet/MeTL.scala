@@ -441,7 +441,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
         listing = newConv :: listing.filterNot(_.jid == newConv.jid)
-          reRender
+        reRender
       } else if (listing.exists(_.jid == newConv.jid)){
         listing = listing.filterNot(_.jid == newConv.jid)
         reRender
@@ -1194,10 +1194,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     trace(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
     trace(receiveUserGroups)
-    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match {
-      case Full(cc) => Full(cc)
-      case _ => Full(Call("showBackstage",JString("conversations")))
-    }
+    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))
     trace(receiveCurrentConversation)
     val receiveConversationDetails:Box[JsCmd] = if(refreshDetails) currentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc))) else Empty
     trace(receiveConversationDetails)
