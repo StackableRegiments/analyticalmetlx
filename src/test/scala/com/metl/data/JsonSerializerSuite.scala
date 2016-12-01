@@ -212,13 +212,13 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
   test("parse history with 2 multiWordTexts to json and back returning the last one") {
     forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) => {
       val h = new History("test")
-      val gennedText2 = gennedText.copy(timestamp = gennedText.timestamp + 2, words = gennedText.words.map(w => w.text + "_copied"))
+      val gennedText2 = gennedText.copy(timestamp = gennedText.timestamp + 2, words = gennedText.words.map(w => w.copy(text = w.text + "_copied")))
       h.addStanza(gennedText)
       h.addStanza(gennedText2)
+      h.addStanza(gennedText)
       val sh = jsonSerializer.fromHistory(h)
-      val rh = jsonSerializer.toHistory(sh)
-      val rt = rh.getMultiWordTexts.head
-      rt should equal(gennedText2)
+      (sh \\ "multiWordTexts").children.toList.length should equal(1) 
+      ((sh \\ "multiWordTexts").children.toList.head \\ "timestamp") should equal(JInt(gennedText2.timestamp))
     }}
   }
 
