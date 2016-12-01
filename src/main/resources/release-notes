@@ -1,5 +1,15 @@
-0.12.2
-Bugfix: METL-230: Paste image from clipboard fails in Firefox.
+0.12.7
+Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
+Bugfix: METL-266: Rooms not being garbage collected.
+
+0.12.6
+Feature: METL-251: Diagnostic endpoint to monitor server performance.
+Improvement: METL-116: Performance optimisations.
+
+0.12.4
+Bugfix: METL-250: Superusers get broken board and search screens when they enter blocked conversations.
+
+0.12.3
 Bugfix: METL-245: MeTL actor fails during construction.
 Bugfix: METL-247: Attendances are not using their index.
 Bugfix: METL-248: Superuser powers don't let a user search for and/or enter any conversation.

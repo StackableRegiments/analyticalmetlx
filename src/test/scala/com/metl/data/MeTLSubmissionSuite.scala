@@ -18,7 +18,7 @@ class MeTLSubmissionExtractorSuite extends FunSuite with GeneratorDrivenProperty
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("usernames and highlights are nested within blacklist") {

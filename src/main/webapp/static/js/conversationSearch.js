@@ -314,11 +314,11 @@ var Conversations = (function(){
         var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
         dataGridItems = _.map(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)),function(conv){
             if (conv.subject == "deleted"){
-                conv.lifecycle = "deleted"
+                conv.lifecycle = "deleted";
             } else if (conv.creation > newThreshold){
-                conv.lifecycle = "new"
+                conv.lifecycle = "new";
             } else {
-                conv.lifecycle = "available"
+                conv.lifecycle = "available";
             }
             return conv;
         });
@@ -329,7 +329,7 @@ var Conversations = (function(){
                 conversationsDataGrid.jsGrid("sort",sortObj);
             }
         }
-        var convs = dataGridItems;//currentSearchResults;
+        var convs = dataGridItems;
         var convCount = sprintf("%s result%s",convs.length,convs.length == 1 ? "" : "s");
         $("#conversationListing").find(".aggregateContainer").find(".count").text(convCount);
     };

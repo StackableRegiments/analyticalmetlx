@@ -20,15 +20,15 @@ object MeTL2015ServerConfiguration{
 
 class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentialFunc:()=>Tuple2[String,String],conversationBusCredentialFunc:()=>Tuple2[String,String],httpCredentialFunc:()=>Tuple2[String,String]) extends ServerConfiguration(name,hostname,onConversationDetailsUpdated) with Logger {
   protected val http:HttpProvider = new DynamicallyAuthedHttpProvider(httpCredentialFunc)
-  protected lazy val history = new MeTL2011History(name,http)
-  protected lazy val messageBusProvider = new PooledXmppProvider(name,hostname,messageBusCredentialFunc,xmppDomainName)
-  protected lazy val conversationsMessageBusProvider = new XmppProvider(name,hostname,conversationBusCredentialFunc,xmppDomainName)
-  protected val conversations = new MeTL2011CachedConversations(name,http,conversationsMessageBusProvider,onConversationDetailsUpdated)
-  lazy val serializer = new MeTL2011XmlSerializer(name)
+  protected lazy val history = new MeTL2011History(this,http)
+  protected lazy val messageBusProvider = new PooledXmppProvider(this,hostname,messageBusCredentialFunc,xmppDomainName)
+  protected lazy val conversationsMessageBusProvider = new XmppProvider(this,hostname,conversationBusCredentialFunc,xmppDomainName)
+  protected val conversations = new MeTL2011CachedConversations(this,http,conversationsMessageBusProvider,onConversationDetailsUpdated)
+  lazy val serializer = new MeTL2011XmlSerializer(this)
   override def isReady = {
     conversations.isReady
   }
-  protected val resourceProvider = new MeTL2011Resources(name,http)
+  protected val resourceProvider = new MeTL2011Resources(this,http)
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString
@@ -126,11 +126,11 @@ object MeTL2015BackendAdaptorConfigurator extends ServerConfigurator{
 
 class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversationDetailsUpdated:Conversation=>Unit,httpCredentialFunc:()=>Tuple2[String,String]) extends ServerConfiguration(name,hostname,onConversationDetailsUpdated) with Logger {
   protected val http = new DynamicallyAuthedHttpProvider(httpCredentialFunc)
-  protected val history = new MeTL2011History(name,http)
+  protected val history = new MeTL2011History(this,http)
   protected val messageBusProvider = new LoopbackMessageBusProvider
-  protected val conversations = new MeTL2011CachedConversations(name,http,messageBusProvider,onConversationDetailsUpdated)
-  val serializer = new MeTL2011XmlSerializer(name)
-  protected val resourceProvider = new MeTL2011Resources(name,http)
+  protected val conversations = new MeTL2011CachedConversations(this,http,messageBusProvider,onConversationDetailsUpdated)
+  val serializer = new MeTL2011XmlSerializer(this)
+  protected val resourceProvider = new MeTL2011Resources(this,http)
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString

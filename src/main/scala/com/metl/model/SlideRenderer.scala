@@ -22,8 +22,6 @@ case class Dimensions(left:Double,top:Double,right:Double,bottom:Double,width:Do
 
 class RenderDescription(val width:Int,val height:Int)
 
-object SlideRenderer extends SlideRenderer
-
 class SlideRenderer extends Logger {
   ///*
   protected val JAVA_DEFAULT_DPI = 72.0
@@ -95,13 +93,18 @@ class SlideRenderer extends Logger {
       new AWTColor(c.red,c.green,c.blue,Math.max(0,Math.min(255,overrideAlpha)))
   }
   protected val emptyImage:Image = new BufferedImage(1,1,BufferedImage.TYPE_4BYTE_ABGR)
+
+  protected val imageCache:scala.collection.mutable.HashMap[String,Image] = scala.collection.mutable.HashMap.empty[String,Image]
   protected def getImageFor(metlImage:MeTLImage):Image = Stopwatch.time("SlideRenderer.getImageFor",{
-    metlImage.imageBytes.map(ib => {
-      val stream = new ByteArrayInputStream(ib)
-      val image = ImageIO.read(stream).asInstanceOf[Image]
-      stream.close()
-      image
-    }).openOr(emptyImage)
+    imageCache.get(metlImage.identity).getOrElse({
+      metlImage.imageBytes.map(ib => {
+        val stream = new ByteArrayInputStream(ib)
+        val image = ImageIO.read(stream).asInstanceOf[Image]
+        stream.close()
+        imageCache.update(metlImage.identity,image)
+        image
+      }).openOr(emptyImage)
+    })
   })
   protected val defaultObserver:Graphics2D = {
     val tempImage = new BufferedImage(1,1,BufferedImage.TYPE_3BYTE_BGR)
@@ -680,13 +683,14 @@ class SlideRenderer extends Logger {
       }
       case false => h
     }
+    def sort[A <: MeTLStanza](m:List[A]):List[A] = m.sortWith((a,b) => a.timestamp < b.timestamp)
     val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts,scaledVideos) = scaledHistory.getRenderableGrouped
-    filterAccordingToTarget[MeTLImage](target,scaledImages).foreach(img => renderImage(img,g))
-    filterAccordingToTarget[MeTLVideo](target,scaledVideos).foreach(img => renderVideo(img,g))
-    filterAccordingToTarget[MeTLInk](target,scaledHighlighters).foreach(renderInk(_,g))
-    filterAccordingToTarget[MeTLText](target,scaledTexts).foreach(t => renderText(measureTextLines(t,g),g))
-    filterAccordingToTarget[MeTLMultiWordText](target,scaledMultiWordTexts).foreach(t => renderMultiWordText(t,g))
-    filterAccordingToTarget[MeTLInk](target,scaledInks).foreach(renderInk(_,g))
+    filterAccordingToTarget[MeTLImage](target,sort(scaledImages)).foreach(img => renderImage(img,g))
+    filterAccordingToTarget[MeTLVideo](target,sort(scaledVideos)).foreach(img => renderVideo(img,g))
+    filterAccordingToTarget[MeTLInk](target,sort(scaledHighlighters)).foreach(renderInk(_,g))
+    filterAccordingToTarget[MeTLText](target,sort(scaledTexts)).foreach(t => renderText(measureTextLines(t,g),g))
+    filterAccordingToTarget[MeTLMultiWordText](target,sort(scaledMultiWordTexts)).foreach(t => renderMultiWordText(t,g))
+    filterAccordingToTarget[MeTLInk](target,sort(scaledInks)).foreach(renderInk(_,g))
     imageToByteArray(unscaledImage)
   })
   def render(h:History,intWidth:Int,intHeight:Int,target:String = "presentationSpace"):Array[Byte] = Stopwatch.time("SlideRenderer.render",{
