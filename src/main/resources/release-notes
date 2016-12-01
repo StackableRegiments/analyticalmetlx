@@ -6,11 +6,20 @@ Pre-release-feature: UNKNOWN: Thumbnail render immediacy and responsiveness.
 Pre-release-improvement: METL-116: Thumbnail rendering time.
 Pre-release-improvement: METL-116: History memory consumption.
 
-0.12.2
-Bugfix: METL-230: Paste image from clipboard fails in Firefox.
+0.12.6
+Feature: METL-251: Diagnostic endpoint to monitor server performance.
+Improvement: METL-116: Performance optimisations.
+
+0.12.4
+Bugfix: METL-250: Superusers get broken board and search screens when they enter blocked conversations.
+
+0.12.3
 Bugfix: METL-245: MeTL actor fails during construction.
 Bugfix: METL-247: Attendances are not using their index.
 Bugfix: METL-248: Superuser powers don't let a user search for and/or enter any conversation.
+
+0.12.2
+Bugfix: METL-230: Paste image from clipboard fails in Firefox.
 
 0.12
 Feature: METL-95: Added yellow text capability.

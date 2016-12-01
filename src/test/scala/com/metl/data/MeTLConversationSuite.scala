@@ -18,7 +18,7 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract conversation from xml") {

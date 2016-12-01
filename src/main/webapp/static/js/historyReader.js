@@ -370,7 +370,7 @@ function prerenderInk(ink){
     var canvas = $("<canvas />")[0];
     ink.canvas = canvas;
     var context = canvas.getContext("2d");
-    var privacyOffset = 0;
+    var privacyOffset = 3;
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
     if(isPrivate){
         privacyOffset = 3;

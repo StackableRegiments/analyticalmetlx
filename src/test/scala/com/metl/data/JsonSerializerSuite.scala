@@ -155,7 +155,7 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
   var jsonSerializer: JsonSerializer = _
 
   before {
-    jsonSerializer = new JsonSerializer("empty")
+    jsonSerializer = new JsonSerializer(EmptyBackendAdaptor)
   }
 
   test("parse metl move delta to json and back") {
@@ -207,6 +207,23 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
 
       text should equal(gennedText)
     }
+  }
+
+  test("parse history with 2 multiWordTexts to json and back returning the last one") {
+    forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) => {
+      val h = new History("test")
+      val gennedText2 = gennedText.copy(timestamp = gennedText.timestamp + 2, words = gennedText.words.map(w => w.copy(text = w.text + "_copied")))
+      val md = MeTLMoveDelta(gennedText.server,gennedText.author,gennedText.timestamp + 4,gennedText.target,gennedText.privacy,gennedText.slide,"testMd",100.0,100.0,Nil,Nil,List(gennedText.identity),Nil,Nil,-50.0,-50.0,1.0,1.0,Privacy.NOT_SET,false)
+      h.addStanza(gennedText)
+      h.addStanza(gennedText2)
+      h.addStanza(gennedText.copy(timestamp = gennedText.timestamp + 1))
+      h.addStanza(md)
+      h.addStanza(gennedText.copy(timestamp = gennedText.timestamp - 1))
+      val sh = jsonSerializer.fromHistory(h)
+      (sh \\ "multiWordTexts").children.toList should equal(List(JField(gennedText2.identity,jsonSerializer.fromMeTLData(md.adjustIndividualContent(gennedText2)))))
+      ((sh \\ "multiWordTexts").children.toList.head \\ "timestamp") should equal(JInt(md.timestamp))
+      ((sh \\ "multiWordTexts").children.toList.head \\ "words" \\ "text") should equal(JObject(gennedText2.words.map(w => JField("text",JString(w.text))).toList))
+    }}
   }
 
   test("parse metl dirty ink to json and back") {

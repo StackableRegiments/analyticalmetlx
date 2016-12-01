@@ -24,8 +24,8 @@ the pasted content.
 If more than one accessible item is in the clipboard when pasting then MeTL will prompt the user to 
 select how and what to paste:
 
-- Plain text: a text will be created from the copied content, without any source formatting.
-- Rich text: a text will be created from the copied content, retaining formatting where possible.
+- Plain text: text will be created from the copied content, without any source formatting.
+- Rich text: text and images (where possible) will be created from the copied content, retaining source formatting.
 - File: an image will be created from the copied content (if it contains a valid image file).
 
 ### Alternatives
