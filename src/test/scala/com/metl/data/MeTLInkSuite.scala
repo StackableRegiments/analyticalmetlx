@@ -18,7 +18,7 @@ class MeTLInkSuite extends FunSuite with GeneratorDrivenPropertyChecks with Befo
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("convert metl ink to xml") {

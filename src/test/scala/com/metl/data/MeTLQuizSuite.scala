@@ -18,7 +18,7 @@ class MeTLQuizSuite extends FunSuite with GeneratorDrivenPropertyChecks with Bef
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract metl quiz from xml with four options") {
@@ -136,7 +136,7 @@ class MeTLQuizReponseSuite extends FunSuite with GeneratorDrivenPropertyChecks w
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract metl quiz response from xml") {
