@@ -341,7 +341,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     ).par
     parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
     parO.map(f => f()).toList
-    println("gotHistory: %s".format(newHistory.getAll.length))                        
     newHistory
   })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
@@ -358,7 +357,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2MultiWordText.findAll(By(H2MultiWordText.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s))),
       () => {
         H2Image.findAll(By(H2Image.room,jid)).toList.par.map(s => {
-          println("found image: %s".format(s))
           newHistory.addStanza(serializer.toMeTLImage(s))
         }).toList
       },
