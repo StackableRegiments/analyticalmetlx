@@ -309,9 +309,17 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     })
   })
 
+  protected def getAllWithMdsAtEnd(others:List[History] = Nil) = {
+    val (moveDeltas,canvasContents) = (getAll ::: others.flatMap(_.getAll)).partition{
+      case md:MeTLMoveDelta => true
+      case _ => false
+    }
+    canvasContents ::: moveDeltas
+  }
+
   def merge(other:History):History = Stopwatch.time("History.merge",{
     val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
-      (getAll ::: other.getAll).foreach(i => newHistory.addStanza(i))
+    getAllWithMdsAtEnd(List(other)).foreach(i => newHistory.addStanza(i))
     newHistory
   })
 
@@ -843,7 +851,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   })
   def filter(filterFunc:(MeTLStanza) => Boolean):History = Stopwatch.time("History.filter",{
     val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
-    getAll.filter(filterFunc).foreach(i => newHistory.addStanza(i))
+    getAllWithMdsAtEnd().filter(filterFunc).foreach(i => newHistory.addStanza(i))
     newHistory
   })
   def filterCanvasContents(filterFunc:(MeTLCanvasContent) => Boolean, includeNonCanvasContents:Boolean = true):History = Stopwatch.time("History.filterCanvasContents",{
@@ -867,22 +875,22 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
 
   def scale(factor:Double) = Stopwatch.time("History.scale",{
     val newHistory = createHistory(jid,factor,factor,0,0)
-    getAll.foreach(i => newHistory.addStanza(i))
+    getAllWithMdsAtEnd().foreach(i => newHistory.addStanza(i))
     newHistory
   })
   def resetToOriginalVisual = Stopwatch.time("History.resetToOriginalVisual",{
     val newHistory = createHistory(jid, defaultXOffset, defaultYOffset, defaultXScale, defaultYScale)
-    getAll.foreach(i => newHistory.addStanza(i))
+    getAllWithMdsAtEnd().foreach(i => newHistory.addStanza(i))
     newHistory
   })
   def adjustToVisual(xT:Double,yT:Double,xS:Double,yS:Double) = Stopwatch.time("History.adjustVisual",{
     val newHistory = createHistory(jid,xS * xScale,yS * yScale,xT + xOffset,yT + yOffset)
-    getAll.foreach(i => newHistory.addStanza(i))
+    getAllWithMdsAtEnd().foreach(i => newHistory.addStanza(i))
     newHistory
   })
   def getUserSpecificHistory(user:String, isTeacher:Boolean = false) = Stopwatch.time("History.getUserSpecificHistory(%s)".format(user),{
     val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
-    getAll.foreach(i => i match {
+    getAllWithMdsAtEnd().foreach(i => i match {
       case q:MeTLQuiz => newHistory.addStanza(q)
       case c:MeTLCommand => newHistory.addStanza(c)
       case f:MeTLFile => newHistory.addStanza(f)
