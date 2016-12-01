@@ -25,26 +25,23 @@ describe('When the application starts,', function() {
         userConversationsPage.waitForNewConversation();
         user.click(".newConversationTag");
         user.waitForExist("#board");
-        user.pause(1000);
-        userT.inkMode.click();
-        browser.debug();
-        var count = 20;
-        for(var i = 1; i < count; i++){
-            user.execute("$('#addSlideButton').click()");
-        }
-        for(var j = count; j > 20; j--){
-            userT.handwrite(_.map(_.range(0,60,5),function(k){
-                var x = 50 + 5 * k + j * 20;
-                var y = 50 + 5 * k;
-                return {
-                    x:x,
-                    y:y
-                }
-            }));
-	    user.pause(1000);
-            userT.prevSlide.click();
-	    user.pause(1000);
-        }
-        browser.inkMode.click();
+        user.pause(3000);
+        userT.textMode.click();
+        userT.keyboard(50,50,"This is a");
+        user.pause(3000);
+        user.keys(" paragraph of text");
+        user.pause(3000);
+        user.keys(" typed with pauses in between");
+        user.pause(3000);
+        var handle = userT.interactables.manualMove[0];
+        userT.drag(handle,{x:20,y:0});
+        user.pause(3000);
+        userT.newSlide.click();
+        user.pause(3000);
+        userT.nextSlide.click();
+        user.pause(3000);
+        userT.prevSlide.click();
+        user.pause(3000);
+        console.log(userT.plainTexts);
     });
 });
