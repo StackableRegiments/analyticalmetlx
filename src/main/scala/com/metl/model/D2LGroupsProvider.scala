@@ -103,10 +103,14 @@ case class D2LGradeValue(
   GradeObjectTypeName: Option[String],
   Comments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
   PrivateComments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
-  PointsNumerator: Option[Long], //computable only
+  //PointsNumerator: Option[Long], //computable only
   PointsDenominator: Option[Long], //computable only
   WeightedDenominator: Option[Long], // computable only
-  WeightedNumerator: Option[Long] // computable only
+  WeightedNumerator: Option[Double] // computable only
+)
+case class D2LGradeValueResponse(
+  Next:Option[String],
+  Objects:List[D2LGradeValue]
 )
 case class D2LUserGradeValue(
   User:D2LUser,
@@ -286,7 +290,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   protected val bookMarkTag = "bookmark"
   protected def postToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
-      Some(parse(client.postBytes(url.toString,compactRender(json).getBytes("UTF-8"))).extract[T])
+      Some(parse(new String(client.postBytes(url.toString,compactRender(json).getBytes("UTF-8")),"UTF-8")).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
@@ -300,7 +304,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
   protected def putToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
-      Some(parse(client.putBytes(url.toString,compactRender(json).getBytes("UTF-8"))).extract[T])
+      Some(parse(new String(client.putBytes(url.toString,compactRender(json).getBytes("UTF-8")),"UTF-8")).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
@@ -448,14 +452,47 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     fetchFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,gradeObjectId),"GET"),true)
   }
   def createGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
-    postToD2L[D2LGradeObject](userContext.createAuthenticatedUrl("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"POST"),Extraction.decompose(grade),true)
+    postToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"POST"),Extraction.decompose(grade),true)
   }
   def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
-    putToD2L[D2LGradeObject](userContext.createAuthenticatedUrl("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,grade.GradeObjectIdentifier,grade.GradeUserId),"PUT"),Extraction.decompose(grade),true)
+    putToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,grade.Id),"PUT"),Extraction.decompose(grade),true)
   }
-  
+  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObject:D2LGradeObject):List[D2LGradeValue] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id),"GET")
+    var items:List[D2LGradeValue] = Nil
+    try {
+      val firstGet = client.get(url.toString)
+      var first = parse(firstGet)
+      val firstResp = first.extract[D2LGradeValueResponse]
+      items = items ::: firstResp.Objects
+      var continuing = firstResp.Next
+      while (continuing.isDefined){
+        try {
+          continuing.foreach(apiUrl => {
+            val u = userContext.createAuthenticatedUri(apiUrl,"GET")
+            val respObj = parse(client.get(u.toString))
+            val resp = respObj.extract[D2LGradeValueResponse]
+            items = items ::: resp.Objects
+            continuing = resp.Next
+          })
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(continuing,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+            continuing = None
+          }
+        }
+      }
+      items
+    } catch {
+      case e:Exception => {
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        List.empty[D2LGradeValue]
+      }
+    }
+  }
+ 
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeValue:D2LGradeValue):Option[D2LGradeValue] = {
-    putToD2L[D2LGradeValue](userContext.createAuthenticatedUrl("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeValue.GradeObjectIdentifier,gradeValue.UserId),"PUT"),Extraction.decompose(grade),true)
+    putToD2L[D2LGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeValue.GradeObjectIdentifier,gradeValue.UserId),"PUT"),Extraction.decompose(gradeValue),true)
   }
 
 
