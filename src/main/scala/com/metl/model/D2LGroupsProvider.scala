@@ -63,6 +63,69 @@ Enrollment.RoleInfo
 
 */
 
+case class D2LAssociatedTool(
+  ToolId:Long,
+  ToolItemId:Long
+)
+
+case class D2LGradeObject(
+  MaxPoints:Long,
+  CanExceedMaxPoints:Boolean,
+  IsBonus:Boolean,
+  ExcludeFromFinalGradeCalculation:Boolean,
+  GradeSchemeId:Option[Long], // must not be null on input actions
+  Id:Option[Long], // don't pass this in when POSTing
+  Name:String, //max 128 chars, must be unique, cannot contain /"*<>+=|,%
+  ShortName:String, //max 128 chars
+  GradeType:String, //Numeric,PassFail,SelectBox,Text
+  //5 - 9 cannot be set from API
+  //Calculated, Formula, FinalCalculated, FinalAdjusted, Category
+  CategoryId:Option[Long],
+  Description:Option[D2LDescription], //RichText?
+  GradeSchemeUrl:Option[String], // API URL - not when POSTing
+  Weight:Option[Long], // not when POSTing
+  ActivityId: Option[String], // not when POSTing
+  AssociatedTool: Option[D2LAssociatedTool]
+)
+case class D2LGradeValue(
+  UserId: String,  // Added to LE unstable API contract as of LMS v10.6.3
+  OrgUnitId: String,  // Added to LE unstable API contract as of LMS v10.6.3
+  DisplayedGrade: String,
+  GradeObjectIdentifier: String,
+  GradeObjectName: String,
+  GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
+//5 - 9 cannot be set from API
+//5 = Calculated, 6 = Formula, 7 = FinalCalculated, 8 = FinalAdjusted, 9 = Category
+  PointsNumerator:Option[Double], // include this if GradeObjectType = 1
+  Pass:Option[Boolean], // include this if GradeObjectType = 2
+  Value:Option[String], // include this if GradeObjectType = 3
+  Text:Option[String], // include this if GradeObjectType = 4
+  GradeObjectTypeName: Option[String],
+  Comments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
+  PrivateComments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
+  PointsNumerator: Option[Long], //computable only
+  PointsDenominator: Option[Long], //computable only
+  WeightedDenominator: Option[Long], // computable only
+  WeightedNumerator: Option[Long] // computable only
+)
+case class D2LUserGradeValue(
+  User:D2LUser,
+  GradeValue:Option[D2LGradeValue]
+)
+
+case class D2LCompetencyObjectsPage(
+  Objects:List[D2LCompetencyObject],
+  Next:Option[String] // API URL for next page
+)
+case class D2LCompetencyObject(
+  Id:Long,
+  ObjectTypeId:Long, //1 = Competency, 2 = Objective
+  Name:String,
+  Description:String,
+  ChildrenPage:Option[D2LCompetencyObjectsPage],
+  MoreChildren:Option[String] // API URL for next page
+)
+
 case class D2LActivation(
   IsActive:Boolean
 )
@@ -221,6 +284,35 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   protected implicit def formats = net.liftweb.json.DefaultFormats
 
   protected val bookMarkTag = "bookmark"
+  protected def postToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
+    try {
+      Some(parse(client.postBytes(url.toString,compactRender(json).getBytes("UTF-8"))).extract[T])
+    } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        None
+      }
+      case e:Exception => {
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        None
+      }
+    }
+  }
+  protected def putToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
+    try {
+      Some(parse(client.putBytes(url.toString,compactRender(json).getBytes("UTF-8"))).extract[T])
+    } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        None
+      }
+      case e:Exception => {
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        None
+      }
+    }
+  }
+
 
   protected def fetchFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
@@ -346,6 +438,28 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   def getRoles(userContext:ID2LUserContext):List[D2LRole] = {
     fetchListFromD2L[D2LRole](userContext.createAuthenticatedUri("/d2l/api/lp/%s/roles/".format(lpApiVersion),"GET"))
   }
+  def getObjectives(userContext:ID2LUserContext,orgUnitId:String):Option[D2LCompetencyObjectsPage] = {
+    fetchFromD2L[D2LCompetencyObjectsPage](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/competencies/structure/".format(leApiVersion,orgUnitId),"GET"),true)
+  }
+  def getGradeObjects(userContext:ID2LUserContext,orgUnitId:String):List[D2LGradeObject] = {
+    fetchListFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"GET"),true)
+  }
+  def getGradeObject(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String):Option[D2LGradeObject] = {
+    fetchFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,gradeObjectId),"GET"),true)
+  }
+  def createGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
+    postToD2L[D2LGradeObject](userContext.createAuthenticatedUrl("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"POST"),Extraction.decompose(grade),true)
+  }
+  def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
+    putToD2L[D2LGradeObject](userContext.createAuthenticatedUrl("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,grade.GradeObjectIdentifier,grade.GradeUserId),"PUT"),Extraction.decompose(grade),true)
+  }
+  
+  def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeValue:D2LGradeValue):Option[D2LGradeValue] = {
+    putToD2L[D2LGradeValue](userContext.createAuthenticatedUrl("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeValue.GradeObjectIdentifier,gradeValue.UserId),"PUT"),Extraction.decompose(grade),true)
+  }
+
+
+
 
   def getEnrollments(userContext:ID2LUserContext,userId:String):List[D2LEnrollment] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/?pagesize=%s".format(lpApiVersion,userId,pageSize),"GET")
