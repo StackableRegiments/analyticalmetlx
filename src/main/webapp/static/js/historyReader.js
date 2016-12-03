@@ -252,48 +252,51 @@ function prerenderInk(ink){
     }
     calculateInkBounds(ink);
     incorporateBoardBounds(ink.bounds);
-    var canvas = $("<canvas />")[0];
-    ink.canvas = canvas;
-    var context = canvas.getContext("2d");
     var privacyOffset = 0;
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
     if(isPrivate){
-        privacyOffset = 3;
+        privacyOffset = 0;
     }
     var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2 + privacyOffset * 2;
     var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2 + privacyOffset * 2;
 
     var scaleMeasurements = determineScaling(rawWidth,rawHeight);
+    var canvas = $("<canvas />",{
+        width:scaleMeasurements.width,
+        height:scaleMeasurements.height
+    })[0];
+    ink.canvas = canvas;
+    var context = canvas.getContext("2d");
     canvas.width = scaleMeasurements.width;
     canvas.height = scaleMeasurements.height;
     var rawPoints = ink.points;
     var points = [];
+    var x,y,pr,p;
     for (p = 0; p < rawPoints.length; p += 3){
         points.push(rawPoints[p] * scaleMeasurements.scaleX);
         points.push(rawPoints[p + 1] * scaleMeasurements.scaleY);
-        points.push(rawPoints[p + 2]);
+        points.push(rawPoints[p + 2] / 256);
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleY;
-    var x,y,pr,newPr,p;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
-        pr = points[2];
         context.lineWidth = ink.thickness + privacyOffset;
         context.strokeStyle = ink.color[0];
         context.fillStyle = ink.color[0];
         context.moveTo(x,y);
-        context.beginPath();
         for(p = 0; p < points.length; p += 3){
+            context.beginPath();
             context.moveTo(x,y);
             x = points[p]+contentOffsetX;
             y = points[p+1]+contentOffsetY;
+            pr = ink.thickness * points[p+2];
+            context.lineWidth = pr;
             context.lineTo(x,y);
+            context.stroke();
         }
         context.lineCap = "round";
-        context.stroke();
-        context.closePath();
         context.strokeStyle = "white";
         context.fillStyle = "white";
     }
@@ -303,26 +306,24 @@ function prerenderInk(ink){
     }
     x = points[0] + contentOffsetX;
     y = points[1] + contentOffsetY;
-    pr = points[2];
 
-    context.moveTo(x,y);
-    x = points[0] + contentOffsetX;
-    y = points[1] + contentOffsetY;
-    newPr = ink.thickness * (pr / 512);
     context.beginPath();
-    context.arc(x,y,newPr,0,2 * Math.PI);
+    context.moveTo(x,y);
+    pr = ink.thickness * points[2];
+    context.arc(x,y,pr/2,0,2 * Math.PI);
+    console.log("arced",x,y,pr/2);
     context.fill();
     context.lineCap = "round";
-    context.beginPath();
-    _.each(_.chunk(points,3),function(point){
+    for(p = 0; p < points.length; p += 3){
+        context.beginPath();
         context.moveTo(x,y);
-        pr = ink.thickness * (point[2] / 256);
-        x = point[0] + contentOffsetX;
-        y = point[1] + contentOffsetY;
+        x = points[p+0] + contentOffsetX;
+        y = points[p+1] + contentOffsetY;
+        pr = ink.thickness * points[p+2];
         context.lineWidth = pr;
         context.lineTo(x,y);
-    });
-    context.stroke();
+        context.stroke();
+    }
     return true;
 }
 function alertCanvas(canvas,label){
@@ -361,6 +362,7 @@ function calculateInkBounds(ink){
         minY = points[1] - hh;
         maxY = points[1] + hh;
         widths.push(points[2]);
+        console.log("point",minX,maxX,minY,maxY);
     }
     else{
         for(var cindex = 0; cindex < points.length; cindex += 3){
@@ -453,8 +455,9 @@ function prerenderVideo(video){
                         blit();
                         paintVideoFunc();
                     });
+                    return true;
                 }
-            }
+            };
             video.video.addEventListener("play",function(){
                 paintVideoFunc();
             },false);
