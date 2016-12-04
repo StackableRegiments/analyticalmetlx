@@ -18,9 +18,6 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     try{
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
-
-	console.log(json);
-	
         historyDownloadedMark = Date.now();
         boardContent = json;
         boardContent.minX = 0;
@@ -199,93 +196,6 @@ var rightPoint = function(xDelta,yDelta,l,x2,y2,bulge){
         y:py + y2
     }
 }
-var renderHull = function(ink){
-    if(ink.points.length < 6){
-        return;
-    }
-    var context = ink.canvas.getContext("2d");
-    var b = ink.bounds;
-    var minX = Infinity;
-    var minY = Infinity;
-    var pts = ink.points;
-    var ps = [];
-    var i;
-    var p;
-    for(i = 0; i < pts.length; i += 3){
-        minX = Math.min(minX,pts[i]);
-        minY = Math.min(minY,pts[i+1]);
-    }
-    minX -= ink.thickness / 2;
-    minY -= ink.thickness / 2;
-    for(i = 0; i < pts.length; i += 3){
-        ps.push(pts[i] - minX);
-        ps.push(pts[i+1] - minY);
-        ps.push(pts[i+2]);
-    }
-    var v1,v2,v3,v4;
-    var x1,y1,x2,y2;
-    var p1,p2;
-    var bulge1,bulge2;
-    var left = [];
-    var right = [];
-    try{
-        for(i = 0; i < ps.length - 3; i += 3){
-            x1 = ps[i];
-            y1 = ps[i+1];
-            p1 = ps[i+2];
-            x2 = ps[i+3];
-            y2 = ps[i+4];
-            p2 = ps[i+5];
-            var xDelta = x2 - x1;
-            var yDelta = y2 - y1;
-            if(xDelta == 0 || yDelta == 0){}
-            else{
-                var normalDistance = 1 / Math.sqrt(xDelta*xDelta + yDelta*yDelta);
-                bulge1 = ink.thickness / p1 * 64;
-                bulge2 = ink.thickness / p2 * 64;
-                v1 = leftPoint(xDelta,yDelta,normalDistance,x2,y2,bulge2);
-                v2 = rightPoint(xDelta,yDelta,normalDistance,x2,y2,bulge2);
-                v3 = leftPoint(-xDelta,-yDelta,normalDistance,x1,y1,bulge1);
-                v4 = rightPoint(-xDelta,-yDelta,normalDistance,x1,y1,bulge1);
-                left.push(v4);
-                left.push(v1);
-                right.push(v3);
-                right.push(v2);
-            }
-        }
-        var l = ps.length;
-        context.fillStyle = ink.color[0];
-        context.globalAlpha = ink.color[1] / 255;
-        context.beginPath();
-        var head = left[0];
-        context.moveTo(head.x,head.y);
-        for(i = 0; i < left.length; i++){
-            p = left[i];
-            context.lineTo(p.x,p.y);
-        }
-        for(i = right.length - 1; i >= 0; i--){
-            p = right[i];
-            context.lineTo(p.x,p.y);
-        }
-        context.fill();
-        context.closePath();
-        /*
-         var dot = function(p){
-         context.beginPath();
-         context.arc(p.x,p.y,5,0,Math.PI*2);
-         context.fill();
-         context.closePath();
-         }
-         context.fillStyle = "red";
-         left.map(dot);
-         context.fillStyle = "blue";
-         right.map(dot);
-         */
-    }
-    catch(e){
-        console.log("Couldn't render hull for",ink.points);
-    }
-}
 var determineCanvasConstants = _.once(function(){
     var currentDevice = DeviceConfiguration.getCurrentDevice();
     var maxX = 2147483647;
@@ -327,7 +237,7 @@ function determineScaling(inX,inY){
         width:outputX,
         height:outputY,
         scaleX:outputScaleX,
-        scaleY:outputScaleY,
+        scaleY:outputScaleY
     };
 }
 function prerenderInk(ink){
@@ -342,52 +252,51 @@ function prerenderInk(ink){
     }
     calculateInkBounds(ink);
     incorporateBoardBounds(ink.bounds);
-    var canvas = $("<canvas />")[0];
-    ink.canvas = canvas;
-    var context = canvas.getContext("2d");
     var privacyOffset = 0;
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
     if(isPrivate){
-        privacyOffset = 3;
+        privacyOffset = 0;
     }
-    var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness + privacyOffset * 2;
-    var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness + privacyOffset * 2;
+    var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2 + privacyOffset * 2;
+    var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2 + privacyOffset * 2;
 
     var scaleMeasurements = determineScaling(rawWidth,rawHeight);
+    var canvas = $("<canvas />",{
+        width:scaleMeasurements.width,
+        height:scaleMeasurements.height
+    })[0];
+    ink.canvas = canvas;
+    var context = canvas.getContext("2d");
     canvas.width = scaleMeasurements.width;
     canvas.height = scaleMeasurements.height;
-    $(canvas).css({
-        width:px(rawWidth),
-        height:px(rawHeight)
-    });
     var rawPoints = ink.points;
     var points = [];
+    var x,y,pr,p;
     for (p = 0; p < rawPoints.length; p += 3){
         points.push(rawPoints[p] * scaleMeasurements.scaleX);
         points.push(rawPoints[p + 1] * scaleMeasurements.scaleY);
-        points.push(rawPoints[p + 2]);
+        points.push(rawPoints[p + 2] / 256);
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleY;
-    var x,y,pr,newPr,p;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
-        pr = points[2];
         context.lineWidth = ink.thickness + privacyOffset;
         context.strokeStyle = ink.color[0];
         context.fillStyle = ink.color[0];
         context.moveTo(x,y);
-        context.beginPath();
         for(p = 0; p < points.length; p += 3){
+            context.beginPath();
             context.moveTo(x,y);
             x = points[p]+contentOffsetX;
             y = points[p+1]+contentOffsetY;
+            pr = ink.thickness * points[p+2];
+            context.lineWidth = pr;
             context.lineTo(x,y);
+            context.stroke();
         }
         context.lineCap = "round";
-        context.stroke();
-        context.closePath();
         context.strokeStyle = "white";
         context.fillStyle = "white";
     }
@@ -397,22 +306,24 @@ function prerenderInk(ink){
     }
     x = points[0] + contentOffsetX;
     y = points[1] + contentOffsetY;
-    pr = points[2];
 
-    context.moveTo(x,y);
     context.beginPath();
-    var x = points[0] + contentOffsetX;
-    var y = points[1] + contentOffsetY;
-    _.each(_.chunk(points,3),function(point){
+    context.moveTo(x,y);
+    pr = ink.thickness * points[2];
+    context.arc(x,y,pr/2,0,2 * Math.PI);
+    console.log("arced",x,y,pr/2);
+    context.fill();
+    context.lineCap = "round";
+    for(p = 0; p < points.length; p += 3){
         context.beginPath();
         context.moveTo(x,y);
-        x = point[0] + contentOffsetX;
-        y = point[1] + contentOffsetY;
+        x = points[p+0] + contentOffsetX;
+        y = points[p+1] + contentOffsetY;
+        pr = ink.thickness * points[p+2];
+        context.lineWidth = pr;
         context.lineTo(x,y);
-        context.lineWidth = ink.thickness * (point[2] / 256);
-        context.lineCap = "round";
         context.stroke();
-    });
+    }
     return true;
 }
 function alertCanvas(canvas,label){
@@ -443,17 +354,28 @@ function calculateInkBounds(ink){
     var maxY = -Infinity;
     var widths = [];
     var points = ink.points;
-    var places = 4;
-    for(var cindex = 0; cindex < points.length; cindex += 3){
-        var x = round(points[cindex]);
-        var y = round(points[cindex+1]);
-        points[cindex] = x;
-        points[cindex+1] = y;
-        widths.push(points[cindex+2]);
-        minX = Math.min(x,minX);
-        minY = Math.min(y,minY);
-        maxX = Math.max(x,maxX);
-        maxY = Math.max(y,maxY);
+    var hw = ink.thickness / 2;
+    var hh = ink.thickness / 2;
+    if(points.length == 6){
+        minX = points[0] - hw;
+        maxX = points[0] + hw;
+        minY = points[1] - hh;
+        maxY = points[1] + hh;
+        widths.push(points[2]);
+        console.log("point",minX,maxX,minY,maxY);
+    }
+    else{
+        for(var cindex = 0; cindex < points.length; cindex += 3){
+            var x = round(points[cindex]);
+            var y = round(points[cindex+1]);
+            points[cindex] = x;
+            points[cindex+1] = y;
+            widths.push(points[cindex+2]);
+            minX = Math.min(x - hw,minX);
+            minY = Math.min(y - hh,minY);
+            maxX = Math.max(x + hw ,maxX);
+            maxY = Math.max(y + hh,maxY);
+        }
     }
     ink.minX = minX;
     ink.minY = minY;
@@ -461,8 +383,8 @@ function calculateInkBounds(ink){
     ink.maxY = maxY;
     ink.width = maxX - minX;
     ink.height = maxY - minY;
-    ink.centerX = minX + ink.width / 2;
-    ink.centerY = minY + ink.height / 2;
+    ink.centerX = minX + hw;
+    ink.centerY = minY + hh;
     ink.bounds=[minX,minY,maxX,maxY];
     ink.widths=widths;
 }
@@ -533,8 +455,9 @@ function prerenderVideo(video){
                         blit();
                         paintVideoFunc();
                     });
+                    return true;
                 }
-            }
+            };
             video.video.addEventListener("play",function(){
                 paintVideoFunc();
             },false);

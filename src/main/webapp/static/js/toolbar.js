@@ -2895,6 +2895,9 @@ var Modes = (function(){
                             boardContext.globalAlpha = 1.0;
                         }
                         currentStroke = [x, y, mousePressure * z];
+			boardContext.beginPath();
+			boardContext.arc(x,y,5,0,Math.PI*2);
+			boardContext.stroke();
                     } else {
                     }
                 };
