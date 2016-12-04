@@ -80,7 +80,7 @@ var Submissions = (function(){
 				$("<input/>",{
 					type:"button",
 					class: "toolbar",
-					value:"Display Submission on next slide"
+					value:"Display Submission on next page"
 				}).on("click",function(){
 						addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity); 
 				}).appendTo(rootElem);
