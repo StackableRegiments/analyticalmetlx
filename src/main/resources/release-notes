@@ -1,3 +1,8 @@
+0.13.1
+Bugfix: METL-267: Ink shrinks after completion of stroke.
+Bugfix: METL-206: Rename Slide to Page throughout.
+Bugfix: METL-214: Rename Poll "Display on canvas" to "Display on current page".
+
 0.12.7
 Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
 Bugfix: METL-266: Rooms not being garbage collected.
