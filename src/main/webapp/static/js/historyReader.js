@@ -252,13 +252,9 @@ function prerenderInk(ink){
     }
     calculateInkBounds(ink);
     incorporateBoardBounds(ink.bounds);
-    var privacyOffset = 0;
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
-    if(isPrivate){
-        privacyOffset = 0;
-    }
-    var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2 + privacyOffset * 2;
-    var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2 + privacyOffset * 2;
+    var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2;
+    var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2;
 
     var scaleMeasurements = determineScaling(rawWidth,rawHeight);
     var canvas = $("<canvas />",{
@@ -277,14 +273,15 @@ function prerenderInk(ink){
         points.push(rawPoints[p + 1] * scaleMeasurements.scaleY);
         points.push(rawPoints[p + 2] / 256);
     }
-    var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleX;
-    var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleY;
+    var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleMeasurements.scaleX;
+    var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleMeasurements.scaleY;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
-        context.lineWidth = ink.thickness + privacyOffset;
-        context.strokeStyle = ink.color[0];
-        context.fillStyle = ink.color[0];
+        context.lineWidth = ink.thickness;
+        context.lineCap = "round";
+        context.strokeStyle = "red";
+        context.globalAlpha = 0.3;
         context.moveTo(x,y);
         for(p = 0; p < points.length; p += 3){
             context.beginPath();
@@ -292,18 +289,14 @@ function prerenderInk(ink){
             x = points[p]+contentOffsetX;
             y = points[p+1]+contentOffsetY;
             pr = ink.thickness * points[p+2];
-            context.lineWidth = pr;
+            context.lineWidth = pr + 2;
             context.lineTo(x,y);
             context.stroke();
         }
-        context.lineCap = "round";
-        context.strokeStyle = "white";
-        context.fillStyle = "white";
+        context.globalAlpha = 1.0;
     }
-    else{
-        context.strokeStyle = ink.color[0];
-        context.fillStyle = ink.color[0];
-    }
+    context.strokeStyle = ink.color[0];
+    context.fillStyle = ink.color[0];
     x = points[0] + contentOffsetX;
     y = points[1] + contentOffsetY;
 
@@ -311,7 +304,6 @@ function prerenderInk(ink){
     context.moveTo(x,y);
     pr = ink.thickness * points[2];
     context.arc(x,y,pr/2,0,2 * Math.PI);
-    console.log("arced",x,y,pr/2);
     context.fill();
     context.lineCap = "round";
     for(p = 0; p < points.length; p += 3){
@@ -362,7 +354,6 @@ function calculateInkBounds(ink){
         minY = points[1] - hh;
         maxY = points[1] + hh;
         widths.push(points[2]);
-        console.log("point",minX,maxX,minY,maxY);
     }
     else{
         for(var cindex = 0; cindex < points.length; cindex += 3){

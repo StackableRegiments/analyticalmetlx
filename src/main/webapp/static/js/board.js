@@ -912,7 +912,6 @@ function drawInk(ink,incCanvasContext){
 	    var sY = inset;
 	    var sW = c.width - sX;
 	    var sH = c.height - sY;
-            console.log("Drawing ink",sX,sY,sW,sH,"from",img.width,img.height);
             canvasContext.drawImage(img,
                                     sX, sY,
                                     sW, sH,
