@@ -1,6 +1,0 @@
----
-layout: guide
-title: Text
----
-
-
