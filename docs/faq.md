@@ -3,6 +3,13 @@ layout: doc
 title: Frequently Asked Questions
 ---
 
+## How do I select a text box?
+
+1. Click on **Select**.
+2. Touch the text box or draw a marquee around it. 
+
+[Learn More](tutorials.html)
+
 # Saint Leo University (SLU)
  
 ## How do I set up a classroom computer with MeTL?
@@ -103,8 +110,6 @@ If you want to undo a deletion, there is a feature that recovers deleted content
 2. Click the text you want to edit.
 
 This will display a selection marquee around the text, and place you into edit mode.
-
-[Learn More](tutorials.html)
 
 ## How do I zoom to a particular part of the Whiteboard?
 1. Click on **Zoom**.
