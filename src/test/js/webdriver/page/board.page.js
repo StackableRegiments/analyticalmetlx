@@ -129,6 +129,9 @@ var BoardPage = function(user) {
         homeTab:{get:function(){return user.element("#metaToolbar");}},
         conversationSearch:{get:function(){return user.element("#conversations");}},
         participants:{get:function(){return user.element("#menuParticipants");}},
+        groupBuilder:{get:function(){return user.element("#menuGroups");}},
+	allocatedMembers:{get:function(){ return user.execute("return $('#allocatedMembers .member')").value;}},
+	unallocatedMembers:{get:function(){ return user.execute("return $('#unallocatedMembers .member')").value;}},
         contentFilter:{get:function(){return user.element("#menuContentFilter");}},
         openParticipants:{value:function(){
             this.menuButton.click();

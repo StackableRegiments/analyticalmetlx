@@ -415,4 +415,12 @@ describe('When the class breaks into groups,', function() {
         assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
         assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
     });
+    it("the teacher should be able to modify groups manually",function(){
+        tT.learning.click();
+        browser.waitUntil(function(){return browser.isVisible("#menuGroups");});
+	tT.groupBuilder.click();
+        browser.waitUntil(function(){return browser.isVisible("#groupsPopup");});
+	assert.equal(tT.allocatedMembers.length,5);
+	assert.equal(tT.unallocatedMembers.length,5);
+    });
 });
