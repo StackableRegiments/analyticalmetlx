@@ -98,11 +98,13 @@ If you want to undo a deletion, there is a feature that recovers deleted content
 2. Click **Recycle Bin**.
 3. Navigate to the deleted item and click **Restore Content**.
 
-##How do I edit a text box?
+## How do I edit a text box?
 1. Click **Text**.
 2. Click the text you want to edit.
 
 This will display a selection marquee around the text, and place you into edit mode.
+
+[Learn More](tutorials.html)
 
 ## How do I zoom to a particular part of the Whiteboard?
 1. Click on **Zoom**.
