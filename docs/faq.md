@@ -8,7 +8,7 @@ title: Frequently Asked Questions
 1. Click on **Select**.
 2. Touch the text box or draw a marquee around it. 
 
-[Learn More](articulate/working-with-text-boxes/story.html)
+[Learn More](tutorials.html)
 
 # Saint Leo University (SLU)
  
