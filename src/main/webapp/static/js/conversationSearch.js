@@ -223,12 +223,10 @@ var Conversations = (function(){
         searchBoxContainer.append(searchBox);
         var qFunc = function(){
             var q = $(this).val();
-            query = q;
             searchFunc(q);
         };
         searchBox.on("keydown",function(e){
             var q = $(this).val();
-            query = q;
             if (e.keyCode == 13){
                 searchFunc(q);
             }
@@ -238,26 +236,32 @@ var Conversations = (function(){
             var title = sprintf("%s at %s",username,new Date().toString());
             createFunc(title);
         });
-        var searchButton = $("#searchButton");
-        searchButton.on("click",function(){
-            searchFunc(query);
-        });
+        permitOneSearch();
     });
+    var permitOneSearch = function(){
+        console.log("Enabling search");
+        $("#searchButton").off("click").attr("disabled",false).on("click",function(){
+            console.log("Disabling search");
+            $(this).off("click");
+            $("#searchButton").attr("disabled",true);
+            searchFunc(currentQuery);
+        });
+    }
     var shouldModifyConversation = function(details){
         return (details.author == username || _.some(userGroups,function(g){
-					var key = g.key ? g.key : g.ouType;
-					var name = g.name ? g.name : g.value;	
-					return (key == "special" && name == "superuser");
-				}));
+            var key = g.key ? g.key : g.ouType;
+            var name = g.name ? g.name : g.value;
+            return (key == "special" && name == "superuser");
+        }));
     };
     var shouldDisplayConversation = function(details){
-				var subject = details.subject.toLowerCase().trim();
-				var title = details.title.toLowerCase().trim();
-				var author = details.author;
+        var subject = details.subject.toLowerCase().trim();
+        var title = details.title.toLowerCase().trim();
+        var author = details.author;
         return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
-					var key = g.key ? g.key : g.ouType;
-					var name = g.name ? g.name : g.value;	
-					return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
+            var key = g.key ? g.key : g.ouType;
+            var name = g.name ? g.name : g.value;
+            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
         })));
     };
 
@@ -335,6 +339,7 @@ var Conversations = (function(){
     };
     var searchFunc = function(query){
         currentQuery = query.toLowerCase().trim();
+        console.log("Search func",currentQuery);
         getSearchResult(currentQuery); //injected from Lift
     };
     var createFunc = function(title){
@@ -343,22 +348,23 @@ var Conversations = (function(){
     var receiveUsernameFunc = function(user){
         username = user;
     };
-		var getUsernameFunc = function(){
-			return username;
-		};
+    var getUsernameFunc = function(){
+        return username;
+    };
     var receiveUserGroupsFunc = function(groups){
         userGroups = groups;
     };
-		var getUserGroupsFunc = function(){
-			return userGroups
-		};
+    var getUserGroupsFunc = function(){
+        return userGroups
+    };
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
-				console.log("currentSearchResults:",currentSearchResults,details);
+        console.log("currentSearchResults:",currentSearchResults,details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
         currentSearchResults = results;
+        permitOneSearch();
         reRender();
     };
     var receiveNewConversationDetailsFunc = function(details){
@@ -401,18 +407,18 @@ var Conversations = (function(){
         getConversationListing:getConversationListingFunc,
         getImportListing:getImportListingFunc,
         getQuery:getQueryFunc,
-				getUsername:getUsernameFunc,
-				getUserGroups:getUserGroupsFunc,
+        getUsername:getUsernameFunc,
+        getUserGroups:getUserGroupsFunc,
         search:searchFunc,
         create:createFunc,
-				getUserGroups:function(){return userGroups;},
-				getUsername:function(){return username;}
+        getUserGroups:function(){return userGroups;},
+        getUsername:function(){return username;}
     };
 })();
 
 function augmentArguments(args){
-	args[_.size(args)] = new Date().getTime();
-	return args;
+    args[_.size(args)] = new Date().getTime();
+    return args;
 }
 
 function serverResponse(response){ //invoked by Lift
