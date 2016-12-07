@@ -1,3 +1,6 @@
+0.13.3
+Bugfix: METL-273: Conversation search now disables while search is processing.
+
 0.13.2
 Feature: METL-162: Restyle private handwriting.
 
