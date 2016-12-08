@@ -280,9 +280,9 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 
   override def localSetup = {
     warn("localSetup for ConversationSearch [%s]".format(name))
-    query = name.map(nameString => {
+    query = Some(name.flatMap(nameString => {
       com.metl.snippet.Metl.getQueryFromName(nameString)
-    }).getOrElse(Some(username.toLowerCase.trim))
+    }).getOrElse(username.toLowerCase.trim))
     listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
     super.localSetup
   }
