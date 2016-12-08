@@ -53,6 +53,11 @@ var BoardPage = function(user) {
         participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } },
         participationHealthMax: { get:function(){ return user.execute("return $('#attendanceStatus').attr('max')").value; } },
 
+	thumbWidth: {get:function(){ return user.execute("return $('#thumbsColumn').width()").value; }},
+	resizeThumb: {get:function(delta){ return user.element("#thumbColumnWidth"); } },
+
+	pluginBar: {get:function(){return user.element("#pluginBar")}},
+
         usableStanzas: { get:function(){
             return user.execute("return usableStanzas()").value;
         } },

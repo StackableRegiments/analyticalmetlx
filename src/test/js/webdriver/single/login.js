@@ -17,6 +17,7 @@ describe('When the application starts,', function() {
     var userName = 'test.user.' + Math.floor(Math.random() * 10000);
     var userConversationsPage = ConversationsPage(user);
 
+    var delay = 2000;
     it('the user should successfully login', function () {
         userLoginPage.username.setValue(userName);
         userLoginPage.submit();
@@ -25,26 +26,23 @@ describe('When the application starts,', function() {
         userConversationsPage.waitForNewConversation();
         user.click(".newConversationTag");
         user.waitForExist("#board");
-        user.pause(1000);
-        userT.inkMode.click();
-        browser.debug();
-        var count = 20;
-        for(var i = 1; i < count; i++){
-            user.execute("$('#addSlideButton').click()");
-        }
-        for(var j = count; j > 20; j--){
-            userT.handwrite(_.map(_.range(0,60,5),function(k){
-                var x = 50 + 5 * k + j * 20;
-                var y = 50 + 5 * k;
-                return {
-                    x:x,
-                    y:y
-                }
-            }));
-	    user.pause(1000);
-            userT.prevSlide.click();
-	    user.pause(1000);
-        }
-        browser.inkMode.click();
+        user.pause(delay);
+        userT.textMode.click();
+        userT.keyboard(50,50,"This is a");
+        user.pause(delay);
+        var handle = userT.interactables.manualMove[0];
+        userT.drag(handle,{x:20,y:0});
+        user.pause(delay);
+        user.keys(" paragraph of text");
+        user.pause(delay);
+        user.keys(" typed with pauses in between");
+        user.pause(delay);
+        userT.newSlide.click();
+        user.pause(delay);
+        userT.nextSlide.click();
+        user.pause(delay);
+        userT.prevSlide.click();
+        user.pause(delay);
+        console.log(userT.plainTexts);
     });
 });

@@ -6,17 +6,42 @@
     position:absolute;
     z-index:100;
     background-image:@body-backgroundimage;
-    background-size:100% 100%;
-    background-opacity:0.3;
 }
 .template{
     display:none;
+}
+#thumbColumnWidth{
+    padding:0;
+    position:absolute;
+    width:200px;
+    height:5px;
+    right:0;
+    z-index:99;
+    transform:scaleX(-1);
+    border:none;
+    background-color:@highlight;
 }
 #loadingSpinner i{
     width:100%;
     color:@font-color;
     font-size:8em;
     margin-top:10%;
+}
+#pluginBar{
+    scroll-x:auto;
+    display:table-row;
+    background-color:transparent;
+}
+.plugin{
+    color:white;
+    padding:0 2px;
+    display:table-cell;
+    .pluginName{
+        background-color:@body-bg;
+        color:white;
+        text-align:center;
+        padding:0 1em;
+    }
 }
 #masterHeader{
     margin-top:2px;
@@ -69,7 +94,7 @@ html{
         margin-top:0px;
     }
     svg{
-        stroke:black;
+        stroke:@text-std;
         background-color:white;
         height:26px;
         fill:@highlight;
@@ -86,10 +111,14 @@ html{
         margin-left:10px;
     }
 }
+.groupBuilderGroup{
+    margin:1em;
+    display:inline-block;
+    padding:1em;
+    border:1px solid black;
+}
 body{
     background-image:@body-backgroundimage;
-    background-size:100% 100%;
-    background-opacity:0.5;
 }
 #startAConversation button{
     width:100%;
@@ -105,12 +134,10 @@ body{
     width:100%;
 }
 #slideControls{
-    position:absolute;
-    right:0;
-    top:0;
     flex-shrink:0;
     flex-grow:0;
     flex-wrap:nowrap;
+    float:right;
 }
 #slideContainer {
     max-width:10000px;
@@ -199,7 +226,7 @@ body{
     }
 }
 .thumbGroup .sparkline{
-    stroke:black;
+    stroke:@text-std;
     fill:@highlight;
 }
 #s2cMessageContainer {
@@ -214,7 +241,7 @@ body{
 }
 #thumbScrollContainer {
     top:40px;
-    height: calc(~"100vh - 40px");
+    max-height: calc(~"100vh - 40px");
     overflow-y: auto;
 }
 #shareContainer {

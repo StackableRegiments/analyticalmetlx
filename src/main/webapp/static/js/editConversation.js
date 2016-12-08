@@ -179,8 +179,8 @@ var Conversation = (function(){
                             return false;
                         }
                     });
-                    if (!("groupSet" in returnedSlide)){
-                        returnedSlide.groupSet = [];
+                    if (!("groupSets" in returnedSlide)){
+                        returnedSlide.groupSets = [];
                     }
                     returnedSlide.index = newIndex;
                     newIndex = newIndex + 1;

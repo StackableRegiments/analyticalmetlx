@@ -90,7 +90,6 @@ trait JsonSerializerHelper {
   def getListOfDoublesByName(input:JObject,name:String) = (input \ name).extract[List[Double]]
   def getListOfStringsByName(input:JObject,name:String) = (input \ name).extract[List[String]]
   def getListOfObjectsByName(input:JObject,name:String) = {
-    //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
     input.obj.find(_.name == name).toList.flatMap(_.value match {
       case JArray(l) => {
         val objs:List[JObject] = l.flatMap((li:JValue) => li match {
@@ -847,7 +846,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val defaultWidth = getIntByName(input,"defaultWidth")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
-        val groupSet = getListOfObjectsByName(input,"groupSet").map(gs => toGroupSet(gs))
+        val groupSet = getListOfObjectsByName(input,"groupSets").map(gs => toGroupSet(gs))
         Slide(config,author,id,index,defaultHeight,defaultWidth,exposed,slideType,groupSet)
       }
       case _ => Slide.empty
@@ -861,8 +860,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("defaultHeight",JInt(input.defaultHeight)),
       JField("defaultWidth",JInt(input.defaultWidth)),
       JField("exposed",JBool(input.exposed)),
-      JField("slideType",JString(input.slideType))
-    ) ::: List(input.groupSet.map(gs => JField("groupSet",fromGroupSet(gs)))).flatten)
+      JField("slideType",JString(input.slideType)),
+      JField("groupSets",JArray(input.groupSet.map(fromGroupSet _)))))
   })
   override def toGroupSet(i:JValue):GroupSet = Stopwatch.time("JsonSerializer.toGroupSet",{
     i match {

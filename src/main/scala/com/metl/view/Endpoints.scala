@@ -266,12 +266,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
             ("Connection" -> "close"),
             ("Transfer-Encoding" -> "chunked"),
             ("Content-Type" -> "video/mp4"),
-            ("Content-Range" -> "bytes %s-%s/%s".format(start,end,bytes.length.toString))
+            ("Content-Range" -> "bytes %d-%d/%d".format(start,end,bytes.length))
           )
           StreamingResponse(
             data = fis,
             onEnd = fis.close,
-            size = size,
+            size = initialSize,
             headers = headers,
             cookies = Nil,
             code = 206

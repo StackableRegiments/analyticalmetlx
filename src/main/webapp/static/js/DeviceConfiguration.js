@@ -5,7 +5,7 @@ var DeviceConfiguration = (function(){
     var currentDevice = "browser";
     var orientation = "landscape";
     var px = function(i){
-	return sprintf("%spx",i);
+        return sprintf("%spx",i);
     }
     var returnCurrentDeviceFunction = function(){
         return currentDevice;
@@ -172,7 +172,6 @@ var DeviceConfiguration = (function(){
 
             var flexContainer = comp("#masterLayout");
 
-            var boardHeader = comp("#boardHeader");
             var applicationMenu = comp("#applicationMenu");
             var container = comp("#boardContainer");
             var boardColumn = comp("#boardColumn");
@@ -181,7 +180,7 @@ var DeviceConfiguration = (function(){
             var slideContainer = comp("#slideContainer");
             var thumbScrollContainer = comp("#thumbScrollContainer");
             var thumbs = $(".thumbnail");
-						var slideControls = comp("#slideControls");
+            var slideControls = comp("#slideControls");
 
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
@@ -189,11 +188,9 @@ var DeviceConfiguration = (function(){
 
             var performRemeasure = function(){
                 if (showHeader == true){
-                    boardHeader.show();
                     applicationMenu.show();
                 } else {
                     applicationMenu.hide();
-                    boardHeader.hide();
                 }
 
                 if (showTools == true){
@@ -207,16 +204,16 @@ var DeviceConfiguration = (function(){
                 }
                 if (showSlides == true){
                     thumbsColumn.show();
-										slideControls.show()
+                    slideControls.show()
                 } else {
                     thumbsColumn.hide();
-										slideControls.hide();
+                    slideControls.hide();
                 }
                 var boardContainer = comp("#boardContainer");
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
-                comp("#thumbColumnDragHandle").width(showSlides ? DeviceConfiguration.preferredSizes.handles: 0);
-                thumbs.attr("width",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.width : 0));
+                var masterFooter = comp("#masterFooter");
+                thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
                 var bwidth = boardContainer.width();
@@ -224,7 +221,7 @@ var DeviceConfiguration = (function(){
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
                     bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight;
+                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight - masterFooter.height();
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
@@ -255,6 +252,10 @@ var DeviceConfiguration = (function(){
                 var imageAdorner = comp("#imageAdorner");
                 board.width(bwidth);
                 board.height(bheight);
+                toolsColumn.height(bheight);
+                thumbsColumn.height(bheight);
+                boardColumn.height(bheight);
+
                 boardContext.canvas.width = bwidth;
                 boardContext.canvas.height = bheight;
                 boardContext.width = bwidth;
@@ -332,14 +333,6 @@ var DeviceConfiguration = (function(){
             w.on("orientationchange",outerFit);
         }
         w.resize(outerFit);
-        /* $.get(
-         //this is a quick and dirty workaround to ensure that the devices log their useragent in a stateful manner on lift's end
-         "/logDevice",
-         {},
-         function(data){
-         }
-         );
-         */
         $("#toolsToggleButton").on("click",bounceAnd(function(){
             setSectionVisibility("tools",!sectionsVisible.tools);
             updateToolsToggleButton();
@@ -351,6 +344,13 @@ var DeviceConfiguration = (function(){
             outerFit();
         }));
         var originalSize = DeviceConfiguration.preferredSizes.handles;
+        $("#thumbColumnWidth")
+            .val(DeviceConfiguration.preferredSizes.thumbColumn.width)
+            .on("input change",function(){
+                var newValue = comp("#thumbColumnWidth").val();
+		$(".thumbnail:not(.groupSlide)").height(newValue * 0.75);
+		fitFunction();
+            });
     });
     var actOnCurrentDevice = function(){
         switch (currentDevice){

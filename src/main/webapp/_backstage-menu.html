@@ -139,14 +139,18 @@
         <section id="groupsPopup" class="backstage box-model-block">
           <h2 class="nmt">Group builder</h2>
           <div class="flex-container-responsive ml">
-            <div class="allocatedMembers"></div>
-            <div class="unallocatedMembers"></div>
-          </div>
-          <div class="template">
-            <div class="member">
-              <div class="name"></div>
+            <div>
+              <h3>Unallocated</h3>
+              <div class="unallocatedMembers"></div>
             </div>
-            <div class="group"></div>
+            <div style="flex-grow:1;margin-left:1em;">
+              <h3>Groups</h3>
+              <div class="groups"></div>
+            </div>
+            <div>
+              <h3>Allocated</h3>
+              <div class="allocatedMembers"></div>
+            </div>
           </div>
         </section>
         <section id="participantsPopup" class="backstage box-model-block">

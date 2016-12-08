@@ -71,7 +71,10 @@ trait ConversationFilter {
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is.toLowerCase.trim
     lazy val myGroups = Globals.casState.is.eligibleGroups.toList
-    in.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
+    in.groupBy(_.jid).flatMap{
+      case (jid,result :: _) => Some(result)
+      case _ => None
+    }.toList.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
   }
 }
 
@@ -258,13 +261,14 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       query = Some(q)
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
+      debug(listing.toString())
       trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))
       val newConv = serverConfig.createConversation(title,username)
-      listing = newConv :: listing
+      listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
   )
@@ -436,9 +440,8 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
-        //listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-        listing = newConv :: listing.filterNot(_.jid == newConv.jid)//query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-          reRender
+        listing = newConv :: listing.filterNot(_.jid == newConv.jid)
+        reRender
       } else if (listing.exists(_.jid == newConv.jid)){
         listing = listing.filterNot(_.jid == newConv.jid)
         reRender
@@ -893,6 +896,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty),
+    ClientSideFunction("overrideAllocation",List("conversationJid","slideObject"),(args) => {
+      debug("Override allocation: %s".format(args))
+      val newSlide = serializer.toSlide(getArgAsJValue(args(1)))
+      val c = serverConfig.detailsOfConversation(getArgAsString(args(0)))
+      debug("Parsed values: %s".format(newSlide,c))
+      serializer.fromConversation(serverConfig.updateConversation(c.jid.toString,c.copy(slides = newSlide :: c.slides.filterNot(_.id == newSlide.id))))
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1191,10 +1201,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     trace(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
     trace(receiveUserGroups)
-    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match {
-      case Full(cc) => Full(cc)
-      case _ => Full(Call("showBackstage",JString("conversations")))
-    }
+    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))
     trace(receiveCurrentConversation)
     val receiveConversationDetails:Box[JsCmd] = if(refreshDetails) currentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc))) else Empty
     trace(receiveConversationDetails)
@@ -1228,13 +1235,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           case true => TokRole.Moderator
           case false => TokRole.Publisher
         }
-        session <- tokSession.map(s => Some(s)).getOrElse({
+        session <- synchronized { tokSession.map(s => Some(s)).getOrElse({
           val newSession = tb.getSessionToken(sessionName,role).left.map(e => {
             error("exception initializing tokboxSession:",e)
           }).right.toOption
+          trace("generating tokBox session in %s for: %s %s".format(name,sessionName,newSession))
           tokSessionCol += ((sessionName,newSession))
           newSession
         })
+        }
       } yield {
         val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
           JField("sessionId",JString(session.sessionId)),
@@ -1354,8 +1363,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         } yield {
           tokSess
         }
-        println("shutting down tokSessions: %s".format(sessionsToClose))
-        partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(sessionsToClose.map(tokSess => JString(tokSess.sessionId)))))
+        sessionsToClose.map(tokSess => JString(tokSess.sessionId)) match {
+          case Nil => {}
+          case toClose => {
+            trace("shutting down tokSessions: %s".format(toClose))
+            partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(toClose)))
+          }
+        }
         tokSlideSpecificSessions.clear()
         tokSlideSpecificSessions ++= (for {
           slide <- cc.slides
@@ -1363,7 +1377,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           groupSet <- slide.groupSet
           group <- groupSet.groups
           if (group.members.contains(username) || shouldModifyConversation(cc))
-        } yield {
+            } yield {
           (group.id,None)
         })
       }

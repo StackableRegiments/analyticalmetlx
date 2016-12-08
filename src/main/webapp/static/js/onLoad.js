@@ -659,30 +659,6 @@ $(function(){
         blit();
     });
     setLoadProgress(3);
-    /*
-     $.each({
-     red:"#FF0000",
-     green:"#00FF00",
-     blue:"#0000FF"
-     },function(id,code){
-     $("#"+id).click(bounceAnd(function(){
-     Modes.draw.drawingAttributes.color = code;
-     }));
-     });
-     $.each({
-     thin:0.3,
-     medium:1,
-     fat:3,
-     xfat:30
-     },function(id,width){
-     $("#"+id).attr("title",width).click(bounceAnd(function(){
-     Modes.draw.drawingAttributes.width = width;
-     }));
-     });
-     $("#toggleHighlighter").click(function(){
-     Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
-     });
-     */
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
     });
@@ -691,7 +667,6 @@ $(function(){
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
-            //Submissions.requestServerSideSubmission();
             Submissions.sendSubmission();
         }
     });

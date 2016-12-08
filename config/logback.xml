@@ -32,6 +32,7 @@
       <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
   -->
   <logger name="com.metl.comet.MeTLActor" level="DEBUG"/>
+  <logger name="com.metl.comet.MeTLJsonConversationChooserActor" level="DEBUG"/>
   <logger name="com.metl.h2.SqlInterface" level="WARN"/>
   <logger name="com.metl.data.Conversation" level="WARN"/>
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>

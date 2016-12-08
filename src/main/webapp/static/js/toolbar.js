@@ -809,7 +809,7 @@ var Modes = (function(){
             Modes.canvasInteractables[category] = [];
         }
         Modes.canvasInteractables[category].push(interaction);
-        console.log("Pushing",category);
+        //console.log("Pushing",category);
     }
     $(function(){
         var attrs = {opacity:1};
@@ -1503,10 +1503,10 @@ var Modes = (function(){
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
-			    Progress.beforeLeavingSlide[t.identity] = function(){
-				onChange.flush();
-				delete Progress.beforeLeavingSlide[t.identity];
-			    };
+                            Progress.beforeLeavingSlide[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeLeavingSlide[t.identity];
+                            };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
@@ -1793,7 +1793,8 @@ var Modes = (function(){
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
-                                y:currentVideo.y
+                                y:currentVideo.y,
+                                audiences:Conversations.getCurrentGroup().map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -1847,6 +1848,15 @@ var Modes = (function(){
                     resetVideoUpload();
                 }
             });
+						Progress.beforeLeavingSlide["videos"] = function(){
+							if ("videos" in boardContent){
+								_.forEach(boardContent.videos,function(video){
+									if (video != null && video != undefined && "destroy" in video){
+										video.destroy();
+									}
+								});
+							}
+						};
             return {
                 activate:function(){
                     Modes.currentMode.deactivate();
@@ -2044,8 +2054,8 @@ var Modes = (function(){
                                 bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
                                 width:imageDef.width,
                                 height:imageDef.height,
-				x:imageDef.x,
-				y:imageDef.y,
+                                x:imageDef.x,
+                                y:imageDef.y,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
                                 audiences:Conversations.getCurrentGroup().map(audienceToStanza)
@@ -2422,7 +2432,7 @@ var Modes = (function(){
                         func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
-			console.log("DOWN",worldPos);
+                        console.log("DOWN",worldPos);
                         Modes.select.resizing = false;
                         Modes.select.dragging = false;
                         originPoint = {x:x,y:y};
@@ -2763,6 +2773,8 @@ var Modes = (function(){
             var up = function(){};
             var down = function(){};
             var move = function(){};
+
+            var mousePressure = 256;
             $(function(){
                 $(".activeBrush").removeClass("activeBrush");
                 var drawTools = function(){
@@ -2889,7 +2901,6 @@ var Modes = (function(){
                 var currentStroke = [];
                 var isDown = false;
                 var resumeWork;
-                var mousePressure = 256;
                 down = function(x,y,z,worldPos,modifiers){
                     deleted = [];
                     isDown = true;
@@ -2900,13 +2911,18 @@ var Modes = (function(){
                         } else {
                             boardContext.globalAlpha = 1.0;
                         }
-                        currentStroke = [x, y, mousePressure * z];
+                        currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
+                        trail.x = x;
+                        trail.y = y;
                     } else {
                     }
                 };
                 var raySpan = 10;
                 var deleted = [];
+                var trail = {};
                 move = function(x,y,z,worldPos,modifiers){
+		    x = Math.round(x);
+		    y = Math.round(y);
                     if(erasing || modifiers.eraser){
                         var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                         var markAsDeleted = function(bounds){
@@ -2930,17 +2946,18 @@ var Modes = (function(){
                         boardContext.globalAlpha = 1.0;
                     }
                     else{
-                        var oldWidth = boardContext.lineWidth;
                         var newWidth = Modes.draw.drawingAttributes.width * z;
                         boardContext.beginPath();
                         boardContext.lineCap = "round";
                         boardContext.lineWidth = newWidth;
                         var lastPoint = _.takeRight(currentStroke,3);
-                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.moveTo(trail.x,trail.y);
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
-                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
                     }
+                    trail.x = x;
+                    trail.y = y;
                 };
                 up = function(x,y,z,worldPos,modifiers){
                     isDown = false;
@@ -2955,11 +2972,10 @@ var Modes = (function(){
                         boardContext.beginPath();
                         boardContext.lineWidth = newWidth;
                         boardContext.lineCap = "round";
-                        var lastPoint = _.takeRight(currentStroke,3);
-                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.moveTo(trail.x,trail.y);
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
-                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
                         strokeCollected(currentStroke);
                     }
                     boardContext.globalAlpha = 1.0;
@@ -2968,6 +2984,7 @@ var Modes = (function(){
             return {
                 name:"draw",
                 brushes:brushes,
+                mousePressure:mousePressure,
                 activate:function(){
                     boardContext.setLineDash([]);
                     if(Modes.currentMode == Modes.draw){

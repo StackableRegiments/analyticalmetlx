@@ -75,7 +75,7 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should highlight a word and enlarge it",function(){
         teacherT.doubleClickWorld(100,100);
-        teacher.waitUntil(function(){/*Paragraph*/
+        teacher.waitUntil(function(){
             var r = teacherT.selectedRanges[0];
             return r.start == 10 && r.end == 19;
         });
@@ -87,7 +87,7 @@ describe('When a teacher presents,', function() {
         });
 
         teacherT.doubleClickWorld(100,300);
-        teacher.waitUntil(function(){/*Programatically*/
+        teacher.waitUntil(function(){
             var r = teacherT.selectedRanges[0];
             return r.start == 49 && r.end == 65;
         });
@@ -99,7 +99,7 @@ describe('When a teacher presents,', function() {
         });
 
         teacherT.doubleClickWorld(100,400);
-        teacher.waitUntil(function(){/*multiple*/
+        teacher.waitUntil(function(){
             var r = teacherT.selectedRanges[0];
             return r.start == 80 && r.end == 88;
         });
@@ -119,6 +119,7 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should drag their new textbox",function(){
         var active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
+        active = teacherT.textStanzas[_.keys(teacherT.texts)[1]];
         assert(within(active.x,505,1));
         assert(within(active.y,505,1));
         assert.equal(teacherT.interactables.manualMove.length,1);
@@ -140,10 +141,10 @@ describe('When a teacher presents,', function() {
         console.log(active);
         assert(within(active.x,106,1));
         assert(within(active.width,520,1));
-        assert(within(active.words[0].size, 65,1));
+        assert(within(active.words[0].size,65,1));
     });
-    if("the teacher should be able to reselect their box",function(){
-        teacherT.clickWorld(500,400);
+    it("the teacher should be able to reselect their box",function(){
+        teacherT.clickWorld(50,300);
         assert.equal(_.keys(teacherT.selection.multiWordTexts).length,1);
         assert.equal(teacherT.interactables.resizeFree.length,1);
     });
@@ -157,6 +158,9 @@ describe('When a teacher presents,', function() {
         assert(active.words.length > 0);
         assert(within(active.width,736,1));
         assert(within(active.words[0].size, 65,1));
+    });
+    it("the teacher should be able to pan their view by swiping up",function(){
+        teacherT.swipeUp();
     });
     it("the teacher should be able to draw ink", function(){
         teacherT.inkMode.click();
@@ -200,7 +204,7 @@ describe('When a teacher presents,', function() {
     });
     it("the teacher should clear their selection by clicking on an empty spot on the canvas",function(){
         teacherT.selectMode.click();
-        teacherT.clickScreen(1,1);
+        teacherT.clickScreen(20,670);
         var sel = teacherT.selection;
         assert.equal(_.keys(sel.inks).length,0);
         assert.equal(_.keys(sel.texts).length,0);
@@ -209,7 +213,7 @@ describe('When a teacher presents,', function() {
         assert.equal(_.keys(sel.images).length,0);
     });
     it("the teacher should select all the items that are under their mouse when they click the board",function(){
-        teacherT.clickWorld(166,834);
+        teacherT.clickScreen(140,117);
         var sel = teacherT.selection;
         assert.equal(_.keys(sel.inks).length, 1);
         assert.equal(_.keys(sel.texts).length, 0);

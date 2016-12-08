@@ -198,7 +198,7 @@ describe('When the class breaks into groups,', function() {
         teacher.click("label=Org Unit A");
         teacher.click(".joinConversation");
         teacher.waitForExist("#board");
-	teacher.waitForExist("#nextSlideButton");
+        teacher.waitForExist("#nextSlideButton");
         tT.nextSlide.click();
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
@@ -261,14 +261,13 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(sE.plainTexts,"Phrase 3"));
     });
     it("all content types should be group restricted",function(){
-        console.log("Groups",tT.currentSlide.groupSet.groups);
         _.each(users,function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
                 user.menuButton.click();
             }
-	    user.driver.waitUntil(function(){
-		return user.driver.isVisible("#drawMode")
-	    });
+            user.driver.waitUntil(function(){
+                return user.driver.isVisible("#drawMode")
+            });
             user.inkMode.click();
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
@@ -418,9 +417,10 @@ describe('When the class breaks into groups,', function() {
     it("the teacher should be able to modify groups manually",function(){
         tT.learning.click();
         browser.waitUntil(function(){return browser.isVisible("#menuGroups");});
-	tT.groupBuilder.click();
+        tT.groupBuilder.click();
         browser.waitUntil(function(){return browser.isVisible("#groupsPopup");});
-	assert.equal(tT.allocatedMembers.length,5);
-	assert.equal(tT.unallocatedMembers.length,5);
+	browser.debug();
+        assert.equal(tT.allocatedMembers.length,5);
+        assert.equal(tT.unallocatedMembers.length,5);
     });
 });

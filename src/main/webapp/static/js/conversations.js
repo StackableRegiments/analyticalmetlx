@@ -82,30 +82,31 @@ var Conversations = (function(){
             });
         }
         var SENSOR_INTERVAL = 500;
-        var DISPLAY_INTERVAL = 2500;
+        var DISPLAY_INTERVAL = 1000;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(function(){
-            _.each(currentConversation.slides,function(slide){
-                if(slide.groupSet){
-                    if(! _.every(slide.groupSet.groups,function(group){
+            WorkQueue.enqueue(function(){
+                _.each(currentConversation.slides,function(slide){
+                    var gs = Conversations.getGroupsFor(slide);
+                    if(! _.every(gs,function(group){
                         return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
                     })){
                         var scrollContainer = $("#thumbScrollContainer");
                         var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
                         paintGroups(slide,slideContainer);
                     }
-                    _.each(slide.groupSet.groups,function(group){
+                    _.each(gs,function(group){
                         var trace = groupTraces[group.id];
                         trace.update(groupActivity[group.id].line);
                     });
-                }
-                var conversationActivity = $("#conversationActivity");
-                ensureTracking("anyone");
-                groupTraces.anyone = groupTraces.anyone || {};
-                if(conversationActivity.find("svg").length == 0){
-                    groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
-                }
-                groupTraces.anyone.update(groupActivity.anyone.line);
+                    var conversationActivity = $("#conversationActivity");
+                    ensureTracking("anyone");
+                    groupTraces.anyone = groupTraces.anyone || {};
+                    if(conversationActivity.find("svg").length == 0){
+                        groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                    }
+                    groupTraces.anyone.update(groupActivity.anyone.line);
+                });
             });
         },DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
@@ -116,7 +117,7 @@ var Conversations = (function(){
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
         var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
-            if(slide.groupSet){
+            if(slide.groupSets.length){
             }
             else{
                 var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
@@ -125,7 +126,9 @@ var Conversations = (function(){
                         data:data,
                         when:Date.now()
                     };
-                    slideImage.attr("src",data);
+                    WorkQueue.enqueue(function(){
+                        slideImage.attr("src",data);
+                    });
                 };
                 $.ajax({
                     url:thumbUrl,
@@ -137,7 +140,6 @@ var Conversations = (function(){
             }
         };
         var paintGroups = function(slide,slideContainer){
-            console.log("Paint groups");
             var groupsContainer = slideContainer.find(".groupSlideContainer")
             if(groupsContainer.length == 0){
                 groupsContainer = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
@@ -146,7 +148,7 @@ var Conversations = (function(){
                     .find("img")
                     .attr("src",blank4to3Canvas);
             }
-            _.each(slide.groupSet.groups,function(group){
+            _.each(Conversations.getCurrentGroups(),function(group){
                 ensureTracking(group.id);
                 var label = sprintf("group_%s",group.id);
                 var groupContainer = groupsContainer.find("#"+label);
@@ -185,15 +187,11 @@ var Conversations = (function(){
                 if(slide){
                     scrollContainer = scrollContainer || $("#thumbScrollContainer");
                     var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                    if(slide.groupSet){
+                    if(slide.groupSets.length){
                     }
                     else{
                         var slideImage = slideContainer.find("img");
-                        if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                            slideImage.attr("src",cache[slide.id].data);
-                        } else {
-                            fetchAndPaintThumb(slide,slideContainer,slideImage);
-                        }
+                        fetchAndPaintThumb(slide,slideContainer,slideImage);
                     }
                 }
             },
@@ -215,15 +213,24 @@ var Conversations = (function(){
             }
         }));
     }
+    var isVisible = function(slide,thumbScroller){
+        var slidesTop = 0;
+        var slidesBottom = thumbScroller.height();
+        var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
+        var slideImage = slideContainer.find("img");
+        var slideTop = slideContainer.position().top;
+        var slideBottom = slideTop + slideContainer.height();
+        return (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+    }
     var refreshSlideDisplay = function(){
         console.log("Refreshing slide display");
         var slideContainer = $("#slideContainer")
+        var scrollContainer = $("#thumbScrollContainer");
         //Add the new slides
         _.each(_.filter(currentConversation.slides,function(slide){
             return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
         }),function(slide){
             slideContainer.append(constructSlide(slide)[0]);
-            updateThumbnailFor(slide.id);
         });
         //Remove the deleted slides
         _.each(_.filter(currentConversation.slides,function(slide){
@@ -242,6 +249,11 @@ var Conversations = (function(){
             var ib = $(jb).attr("id");
             return positions[ia] - positions[ib];
         }).detach().appendTo(slideContainer);
+        _.each(currentConversation.slides,function(slide){
+            if(isVisible(slide,scrollContainer)){
+                updateThumbnailFor(slide.id);
+            }
+        });
         //Build the UI
         var slideControls = $("#slideControls");
         slideControls.empty();
@@ -250,6 +262,10 @@ var Conversations = (function(){
         constructAddSlideButton(slideControls)
         constructAddGroupSlideButton(slideControls)
         indicateActiveSlide(currentSlide);
+        $(".thumbnail:not(.groupSlide)").map(function(){
+            var t = $(this);
+            t.height(t.width() * 0.75);
+        });
         Progress.call("onLayoutUpdated");
     }
 
@@ -329,19 +345,16 @@ var Conversations = (function(){
         });
         if(currentSlideDetails){
             currentGroup = [];
-            var groupSet = currentSlideDetails.groupSet;
-            if(groupSet){
-                _.each(groupSet.groups,function(group){
-                    if(_.includes(group.members,UserSettings.getUsername())){
-                        currentGroup.push(group.id);
-                    }
-                });
-            }
+            _.each(Conversations.getCurrentGroups(),function(group){
+                if(_.includes(group.members,UserSettings.getUsername())){
+                    currentGroup.push(group.id);
+                }
+            });
         }
     }
     var actOnConversationDetails = function(details){
         try{
-					console.log("received conversation:",details);
+            console.log("received conversation:",details);
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
@@ -461,15 +474,16 @@ var Conversations = (function(){
         }
     };
     var actOnCurrentConversationJidReceived = function(jid){
-				console.log("currentConversationJid received:",jid);
+        console.log("currentConversationJid received:",jid);
         targetConversationJid = jid;
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
-				console.log("currentSlideJid received:",jid);
+        console.log("currentSlideJid received:",jid);
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
+        refreshSlideDisplay();
     };
     var updateLinks = function(){
         var serviceUrlRoot = window.location.origin;
@@ -670,6 +684,11 @@ var Conversations = (function(){
             })));
         }
     }
+    var overrideAllocationFunction = function(slide){
+        if(shouldModifyConversationFunction()){
+            overrideAllocation(Conversations.getCurrentConversationJid(),slide);
+        }
+    };
     var addGroupSlideFunction = function(){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
@@ -722,7 +741,7 @@ var Conversations = (function(){
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
-			console.log("updating queryparams:",currentConversation,currentSlide,window.location);
+        console.log("updating queryparams:",currentConversation,currentSlide,window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
@@ -756,20 +775,25 @@ var Conversations = (function(){
         }
         if(move){
             if(slideId != currentSlide){
-                Progress.call("beforeLeavingSlide",[slideId]);
-                currentSlide = slideId;
-                indicateActiveSlide(slideId);
-                delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-                loadSlide(slideId);
-                updateQueryParams();
-                loadCurrentGroup(currentConversation);
-                Progress.call("afterJoiningSlide",[slideId]);
+                try{
+                    Progress.call("beforeLeavingSlide",[slideId]);
+                    currentSlide = slideId;
+                    indicateActiveSlide(slideId);
+                    delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                    loadSlide(slideId);
+                    updateQueryParams();
+                    loadCurrentGroup(currentConversation);
+                    Progress.call("afterJoiningSlide",[slideId]);
+                }
+                catch(e){
+                    console.log(e);
+                }
             }
         }
         else{
             alert("You must remain on the current page");
         }
-    };
+    }
     var indicateActiveSlide = function(slideId){
         $(".slideButtonContainer").removeClass("activeSlide");
         var activeSlide = $(sprintf("#slideContainer_%s",slideId));
@@ -854,6 +878,7 @@ var Conversations = (function(){
             .on("click","#nextSlideButton",goToNextSlideFunction)
             .on("click","#addGroupSlideButton",addGroupSlideFunction)
             .on("click","#addSlideButton",addSlideFunction);
+        $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
         });
@@ -903,6 +928,12 @@ var Conversations = (function(){
             return UserSettings.getUsername() == Conversations.getCurrentConversation().author;
         },
         getCurrentGroup : getCurrentGroupFunction,
+        getGroupsFor : function(slide){
+            return _.flatMap(slide.groupSets,function(gs){return gs.groups});
+        },
+        getCurrentGroups : function(){
+            return Conversations.getGroupsFor(getCurrentSlideFunc());
+        },
         getCurrentTeacherSlide : function(){return currentTeacherSlide;},
         getCurrentSlideJid : function(){return currentSlide;},
         getCurrentSlide : getCurrentSlideFunc,
@@ -925,6 +956,7 @@ var Conversations = (function(){
         shouldDisplayConversation : shouldDisplayConversationFunction,
         shouldPublishInConversation : shouldPublishInConversationFunction,
         shouldModifyConversation : shouldModifyConversationFunction,
+        overrideAllocation : overrideAllocationFunction,
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
         updateThumbnail :updateThumbnailFor,

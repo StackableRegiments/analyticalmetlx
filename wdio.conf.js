@@ -14,7 +14,7 @@ var config = {
     reporters: ['spec'],
     mochaOpts: {
         ui: 'bdd',
-        timeout:999999
+        timeout:99999999
     }
 }
 

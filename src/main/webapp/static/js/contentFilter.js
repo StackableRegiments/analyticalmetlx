@@ -86,8 +86,8 @@ var ContentFilter = (function(){
         var labelText = root.find(".contentFilterCheckboxLabelText");
         var id = sprintf("contentFilter_%s",filter.id);
         var currentSlide = Conversations.getCurrentSlide();
-        if(currentSlide && currentSlide.groupSet){
-            var referencedGroup = _.find(currentSlide.groupSet.groups,function(group){
+        if(currentSlide){
+            var referencedGroup = _.find(Conversations.getCurrentGroups(),function(group){
                 return group.id == filter.id;
             });
             if(referencedGroup){
@@ -133,8 +133,8 @@ var ContentFilter = (function(){
     var conversationJoined = function(){
         var cs = Conversations.getCurrentSlide();
 	console.log("Setting up filters for",cs);
-        if (cs != undefined && "groupSet" in cs){
-            setFiltersFromGroups(cs.groupSet.groups);
+        if (cs != undefined){
+            setFiltersFromGroups(Conversations.getCurrentGroups());
         } else {
             setDefaultFilters();
         }

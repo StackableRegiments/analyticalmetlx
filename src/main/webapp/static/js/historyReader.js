@@ -352,7 +352,7 @@ function determineScaling(inX,inY){
         width:outputX,
         height:outputY,
         scaleX:outputScaleX,
-        scaleY:outputScaleY,
+        scaleY:outputScaleY
     };
 }
 function prerenderInk(ink){
@@ -370,7 +370,7 @@ function prerenderInk(ink){
     var canvas = $("<canvas />")[0];
     ink.canvas = canvas;
     var context = canvas.getContext("2d");
-    var privacyOffset = 0;
+    var privacyOffset = 3;
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
     if(isPrivate){
         privacyOffset = 3;
@@ -394,12 +394,12 @@ function prerenderInk(ink){
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleY;
-    var x,y,pr,newPr,p;
+    var x,y,w,pr,newPr,p;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
         pr = points[2];
-        context.lineWidth = ink.thickness + privacyOffset;
+        context.lineWidth = w = ink.thickness + privacyOffset;
         context.strokeStyle = ink.color[0];
         context.fillStyle = ink.color[0];
         context.moveTo(x,y);
@@ -426,15 +426,16 @@ function prerenderInk(ink){
 
     context.moveTo(x,y);
     context.beginPath();
-    var x = points[0] + contentOffsetX;
-    var y = points[1] + contentOffsetY;
+    x = points[0] + contentOffsetX;
+    y = points[1] + contentOffsetY;
     _.each(_.chunk(points,3),function(point){
         context.beginPath();
         context.moveTo(x,y);
+        w = ink.thickness * (point[2] / Modes.draw.mousePressure);
         x = point[0] + contentOffsetX;
         y = point[1] + contentOffsetY;
         context.lineTo(x,y);
-        context.lineWidth = ink.thickness * (point[2] / 256);
+        context.lineWidth = w;
         context.lineCap = "round";
         context.stroke();
     });
@@ -567,6 +568,10 @@ function prerenderVideo(video){
                 video.video.play();
             }
         };
+				video.destroy = function(){
+					video.video.removeAttribute("src");
+					video.video.load();
+				};
         video.pause = function(){
             if (!video.video.paused){
                 video.video.pause();
