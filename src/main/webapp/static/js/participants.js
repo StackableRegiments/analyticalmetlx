@@ -12,7 +12,9 @@ var Participants = (function(){
         following:true
     };
     var reRenderParticipants = function(){
+			WorkQueue.enqueue(function(){
         updateParticipantsListing();
+			});
     };
     var onHistoryReceived = function(history){
         var newParticipants = {};
