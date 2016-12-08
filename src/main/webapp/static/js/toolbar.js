@@ -2889,12 +2889,17 @@ var Modes = (function(){
                     isDown = true;
                     if(!erasing && !modifiers.eraser){
                         boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
+                        boardContext.fillStyle = Modes.draw.drawingAttributes.color;
                         if (Modes.draw.drawingAttributes.isHighlighter){
                             boardContext.globalAlpha = 0.4;
                         } else {
                             boardContext.globalAlpha = 1.0;
                         }
                         currentStroke = [x, y, mousePressure * z];
+			boardContext.beginPath();
+                        var newWidth = Modes.draw.drawingAttributes.width * z;
+			boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
+			boardContext.fill();
                     } else {
                     }
                 };

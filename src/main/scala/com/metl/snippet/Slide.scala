@@ -70,10 +70,10 @@ class SlideSnippet {
   }
 
   private def renderPrevious(previousId:String) =
-    "#slideNavigationPrevious *" #> <a href={"/slide?conversation=%s&slide=%s".format(conversationId.is,previousId)}><span>Previous slide</span></a>
+    "#slideNavigationPrevious *" #> <a href={"/slide?conversation=%s&slide=%s".format(conversationId.is,previousId)}><span>Previous page</span></a>
 
   private def renderNext(nextId:String) =
-    "#slideNavigationNext *" #> <a href={"/slide?conversation=%s&slide=%s".format(conversationId.is,nextId)}><span>Next slide</span></a>
+    "#slideNavigationNext *" #> <a href={"/slide?conversation=%s&slide=%s".format(conversationId.is,nextId)}><span>Next page</span></a>
 
   private def getNearbySlideId(offset:Int):Box[String] = (conversationId.is,slideId.is) match {
     case (cid,sid) if (cid.length>0 && sid.length>0) => {

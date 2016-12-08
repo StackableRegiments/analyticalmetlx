@@ -8,7 +8,7 @@ var requestedViewboxHeight = 240;
 function loadSlide(jid){
     console.log("loadSlide",jid);
     startMark = Date.now();
-    $("#targetSlide").text(sprintf("Loading slide %s",jid));
+    $("#targetSlide").text(sprintf("Loading page %s",jid));
     showBackstage("loadingSlide");
     moveToSlide(jid.toString());
 }
