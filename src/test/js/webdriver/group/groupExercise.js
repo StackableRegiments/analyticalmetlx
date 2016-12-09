@@ -112,7 +112,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(teacher.execute("return $('.activeSlide.groupSlide').length").value,1);
     });
     it("the students should all be split into groups",function(){
-        var groupSet = tT.currentSlide.groupSet;
+        var groupSet = tT.currentSlide.groupSets[0];
         assert.equal(groupSet.groups.length,2);
         var groupsByUser = _.reduce(groupSet.groups,function(acc,item){
             _.each(item.members,function(member){
@@ -128,7 +128,7 @@ describe('When the class breaks into groups,', function() {
         }));
     });
     it("while the teacher does not join any group",function(){
-        assert(_.every(tT.currentSlide.groupSet.groups,function(group){
+        assert(_.every(tT.currentSlide.groupSets[0].groups,function(group){
             return !(_.some(group.members,teacherName));
         }));
     });
@@ -137,7 +137,7 @@ describe('When the class breaks into groups,', function() {
             client.textMode.click();
             client.keyboard(50,100 + i * 100,"Phrase "+(i+1));
         });
-        browser.pause(1500);//Let everything synchronize
+        browser.pause(2500);//Let everything synchronize
 
         assert(_.includes(sA.plainTexts,"Phrase 1"));
         assert(_.includes(sB.plainTexts,"Phrase 1"));
@@ -168,7 +168,7 @@ describe('When the class breaks into groups,', function() {
         sA.contentFilter.click();
         sB.contentFilter.click();
 
-        var groups = tT.currentSlide.groupSet.groups;
+        var groups = tT.currentSlide.groupSets[0].groups;
         assert(teacher.isExisting("#contentFilter_"+groups[0].id));
         assert(teacher.isExisting("#contentFilter_"+groups[1].id));
 
@@ -216,7 +216,7 @@ describe('When the class breaks into groups,', function() {
         studentC.waitUntil(function(){
             return sC.currentSlide.index == 1;
         });
-        var groups = sC.currentSlide.groupSet.groups;
+        var groups = sC.currentSlide.groupSets[0].groups;
         assert.equal(groups.length,3);
         sC.menuButton.click();
         studentC.waitUntil(function(){return studentC.isVisible("#roomToolbar");});
@@ -253,7 +253,7 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(sD.plainTexts,"Phrase 4"));
         join(studentE,'studentE');
         studentE.waitForExist("#board");
-        studentE.waitUntil(function(){
+        browser.waitUntil(function(){
             return sE.currentSlide.index == 1;
         });
         assert(_.includes(sE.plainTexts,"Phrase 1"));
@@ -345,7 +345,7 @@ describe('When the class breaks into groups,', function() {
             return tT.currentSlide.index == 2;
         });
         assert.equal(tT.currentSlide.index,2);
-        assert(!tT.currentSlide.groupSet);
+        assert.equal(tT.currentSlide.groupSets.length,0);
         _.each(users,function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
                 user.menuButton.click();
@@ -373,7 +373,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sD.imageStanzas).length,6);
         assert.equal(_.keys(sE.imageStanzas).length,6);
     });
-    it("the teacher should not have group filters on the non group slide",function(){
+    it("the teacher should not have group filters on the non group slide and does not have peers",function(){
         tT.menuButton.click();
         sA.menuButton.click();
         sB.menuButton.click();
@@ -388,7 +388,7 @@ describe('When the class breaks into groups,', function() {
         sA.contentFilter.click();
         sB.contentFilter.click();
 
-        assert.equal(teacher.execute("return $('.contentFilterItem').length").value,3);
+        assert.equal(teacher.execute("return $('.contentFilterItem').length").value,2);
     });
     it("the teacher should regain their group filters on returning to the group slide",function(){
         tT.menuButton.click();
@@ -404,7 +404,7 @@ describe('When the class breaks into groups,', function() {
 
         tT.contentFilter.click();
 
-        var groups = tT.currentSlide.groupSet.groups;
+        var groups = tT.currentSlide.groupSets[0].groups;
         assert(teacher.isExisting("#contentFilter_"+groups[0].id));
         assert(teacher.isExisting("#contentFilter_"+groups[1].id));
 
@@ -419,8 +419,7 @@ describe('When the class breaks into groups,', function() {
         browser.waitUntil(function(){return browser.isVisible("#menuGroups");});
         tT.groupBuilder.click();
         browser.waitUntil(function(){return browser.isVisible("#groupsPopup");});
-	browser.debug();
         assert.equal(tT.allocatedMembers.length,5);
-        assert.equal(tT.unallocatedMembers.length,5);
+        assert.equal(tT.unallocatedMembers.length,1);
     });
 });

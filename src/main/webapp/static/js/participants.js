@@ -65,10 +65,12 @@ var Participants = (function(){
         },0);
     }
     var onStanzaReceived = function(stanza){
+        if(stanza.type == "theme") return;
         var act = false;
         if ("type" in stanza && "author" in stanza){
             var author = stanza.author;
             if(!(author in participants)){
+                console.log("Adding",author);
                 var np = _.clone(newParticipant);
                 np.name = author;
                 participants[author] = np;
@@ -112,7 +114,7 @@ var Participants = (function(){
         if(!themeCloud) themeCloud = d3.select("#lang")
             .style("margin-left","1em");
         fontSizes.domain(d3.extent(_.map(data,"value")));
-	$("#lang .word").remove();
+        $("#lang .word").remove();
         var words = themeCloud.selectAll(".word")
                 .data(data,function(d){
                     return d.key;
@@ -127,7 +129,6 @@ var Participants = (function(){
                 return d.key;
             })
             .style("font-size",function(d){
-		console.log(d,fontSizes(d.value));
                 return fontSizes(d.value)+"px";
             })
             .merge(words)
@@ -142,40 +143,40 @@ var Participants = (function(){
         handwriting:true,
         imageRecognition:true,
         imageTranscription:true,
-	conjugate:true
+        conjugate:true
     };
     var updateParticipantsListing = function(){
-			WorkQueue.enqueue(function(){
-        participantsDatagrid.jsGrid("loadData");
-        var sortObj = participantsDatagrid.jsGrid("getSorting");
-        if ("field" in sortObj){
-            participantsDatagrid.jsGrid("sort",sortObj);
-        }
-        Analytics.word.reset();
-        var contexts = {};
-        _.each(boardContent.themes,function(theme){
-            _.each(theme.text.split(" "),function(t){
-                if(t.length > 0){//It will come back with empty strings
-                    t = t.toLowerCase();
-		    if(contextFilters.conjugate){
-				t = nlp_compromise.text(t).root();
-		    }
-                    var context = theme.origin;
-                    if(contextFilters[context] == true){
-                        Analytics.word.incorporate(t);
-                        if(!(t in contexts)){
-                            contexts[t] = {};
+        WorkQueue.enqueue(function(){
+            participantsDatagrid.jsGrid("loadData");
+            var sortObj = participantsDatagrid.jsGrid("getSorting");
+            if ("field" in sortObj){
+                participantsDatagrid.jsGrid("sort",sortObj);
+            }
+            Analytics.word.reset();
+            var contexts = {};
+            _.each(boardContent.themes,function(theme){
+                _.each(theme.text.split(" "),function(t){
+                    if(t.length > 0){//It will come back with empty strings
+                        t = t.toLowerCase();
+                        if(contextFilters.conjugate){
+                            t = nlp_compromise.text(t).root();
                         }
-                        if(!(context in contexts[t])){
-                            contexts[t][context] = 0;
+                        var context = theme.origin;
+                        if(contextFilters[context] == true){
+                            Analytics.word.incorporate(t);
+                            if(!(t in contexts)){
+                                contexts[t] = {};
+                            }
+                            if(!(context in contexts[t])){
+                                contexts[t][context] = 0;
+                            }
+                            contexts[t][context]++;
                         }
-                        contexts[t][context]++;
                     }
-                }
+                });
             });
+            updateThemes(Analytics.word.cloudData());
         });
-        updateThemes(Analytics.word.cloudData());
-			});
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");

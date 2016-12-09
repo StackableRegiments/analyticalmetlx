@@ -12,6 +12,10 @@
     <link rel="icon" type="image/x-icon" href="{{ site.baseurl }}/images/favicon.ico">
 
     <title>MeTL</title>
+
+    {% if jekyll.environment == 'production' %}
+    {% include analytics.html %}
+    {% endif %}
 </head>
 
 <body>

@@ -56,7 +56,7 @@ var Blacklist = (function(){
                     var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
                     var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
                         var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-                        var title = sprintf("Ban record at %s on slide %s",new Date(submission.timestamp),submission.slide);
+                        var title = sprintf("Ban record at %s on page %s",new Date(submission.timestamp),submission.slide);
                         var rootElem = blacklistPopupTemplate.clone();
                         var authorContainer = rootElem.find(".blacklistLegend");
                         var authorTemplate = authorContainer.find(".blacklistAuthor").clone();
@@ -84,7 +84,7 @@ var Blacklist = (function(){
                     return img;
                 }
             },
-            {name:"slide",type:"number",title:"Slide",readOnly:true},
+            {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
 		return _.map(o.blacklist,"username").join(",");

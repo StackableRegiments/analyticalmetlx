@@ -3,13 +3,13 @@ var Submissions = (function(){
     var submissionsDatagrid = {};
     var insertButtonTemplate = {};
     var reRenderDatagrid = function(){
-			WorkQueue.enqueue(function(){
-        submissionsDatagrid.jsGrid("loadData");
-        var sortObj = submissionsDatagrid.jsGrid("getSorting");
-        if ("field" in sortObj){
-            submissionsDatagrid.jsGrid("sort",sortObj);
-        }
-			});
+        WorkQueue.enqueue(function(){
+            submissionsDatagrid.jsGrid("loadData");
+            var sortObj = submissionsDatagrid.jsGrid("getSorting");
+            if ("field" in sortObj){
+                submissionsDatagrid.jsGrid("sort",sortObj);
+            }
+        });
     };
     $(function(){
         submissionsDatagrid = $("#submissionsDatagrid");
@@ -43,7 +43,7 @@ var Submissions = (function(){
                     var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
                     var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
                         var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-                        var title = sprintf("Submission from %s at %s on slide %s",submission.author,new Date(submission.timestamp),submission.slide);
+                        var title = sprintf("Submission from %s at %s on page %s",submission.author,new Date(submission.timestamp),submission.slide);
                         $.jAlert({
                             title:title,
                             closeOnClick:true,
@@ -54,7 +54,7 @@ var Submissions = (function(){
                     return img;
                 }
             },
-            {name:"slide",type:"number",title:"Slide",readOnly:true},
+            {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"author",type:"text",title:"Who",readOnly:true},
             {

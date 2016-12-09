@@ -43,7 +43,7 @@ function renderSlide(slide){
     var root = ""
     return $("<img />",{
         src:sprintf("%s/thumbnail/standalone/%s",root,slide),
-        title:sprintf("Slide %s: %s",slide,handwriting)
+        title:sprintf("Page %s: %s",slide,handwriting)
     }).css("width",px($(".replContainer").width()));
 }
 function renderSearchTerms(matchId){

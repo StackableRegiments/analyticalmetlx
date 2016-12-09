@@ -2906,6 +2906,7 @@ var Modes = (function(){
                     isDown = true;
                     if(!erasing && !modifiers.eraser){
                         boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
+                        boardContext.fillStyle = Modes.draw.drawingAttributes.color;
                         if (Modes.draw.drawingAttributes.isHighlighter){
                             boardContext.globalAlpha = 0.4;
                         } else {
@@ -2914,6 +2915,10 @@ var Modes = (function(){
                         currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
                         trail.x = x;
                         trail.y = y;
+			boardContext.beginPath();
+                        var newWidth = Modes.draw.drawingAttributes.width * z;
+			boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
+			boardContext.fill();
                     } else {
                     }
                 };

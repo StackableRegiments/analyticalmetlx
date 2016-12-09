@@ -223,7 +223,6 @@ var Conversations = (function(){
         return (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
     }
     var refreshSlideDisplay = function(){
-        console.log("Refreshing slide display");
         var slideContainer = $("#slideContainer")
         var scrollContainer = $("#thumbScrollContainer");
         //Add the new slides
@@ -523,7 +522,7 @@ var Conversations = (function(){
             }));
             $("#slideDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&slideId=%s&unique=true",targetConversationJid,currentSlide),
-                text:"DeepLink this slide"
+                text:"DeepLink this page"
             }));
             $("#conversationDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&unique=true",targetConversationJid),
@@ -728,16 +727,16 @@ var Conversations = (function(){
     };
     var always = function(){return true;}
     var constructPrevSlideButton = function(container){
-        constructSlideButton("prevSlideButton","Prev Slide","fa-angle-left",always,container);
+        constructSlideButton("prevSlideButton","Prev Page","fa-angle-left",always,container);
     }
     var constructAddSlideButton = function(container){
-        constructSlideButton("addSlideButton","Add Slide","fa-plus",shouldModifyConversationFunction,container);
+        constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
     }
     var constructAddGroupSlideButton = function(container){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
     }
     var constructNextSlideButton = function(container){
-        constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",always,container);
+        constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
@@ -813,8 +812,8 @@ var Conversations = (function(){
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
             class:"thumbnail",
-            alt:sprintf("Slide %s",slideIndex),
-            title:sprintf("Slide %s (%s)",slideIndex,slide.id)
+            alt:sprintf("Page %s",slideIndex),
+            title:sprintf("Page %s (%s)",slideIndex,slide.id)
         }).on("click",function(e){
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());

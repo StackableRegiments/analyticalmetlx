@@ -17,6 +17,8 @@ var Conversations = (function(){
     var includeDeleted = false;
     var dataGridItems = [];
 
+    var searchPermitted = false;
+
     $(function(){
         var DateField = function(config){
             jsGrid.Field.call(this,config);
@@ -218,19 +220,17 @@ var Conversations = (function(){
         var searchBoxContainer = $("#conversationSearchBox");
         searchBox = $("<input/>",{
             type:"text",
-            val:currentQuery
+            val:getQueryFunc()
         });
         searchBoxContainer.append(searchBox);
-        var qFunc = function(){
-            var q = $(this).val();
-            searchFunc(q);
-        };
-        searchBox.on("keydown",function(e){
-            var q = $(this).val();
-            if (e.keyCode == 13){
-                searchFunc(q);
+        var searchBoxChangeFunc = function(e){
+            var q = $(this).val().toLowerCase().trim();
+            currentQuery = q;
+            if (e.keyCode == 13 && searchPermitted){
+                searchFunc(getQueryFunc());
             }
-        });
+        };
+        searchBox.on("keyup",searchBoxChangeFunc);
         var createConversationButton = $("#createConversationButton");
         createConversationButton.on("click",function(){
             var title = sprintf("%s at %s",username,new Date().toString());
@@ -239,12 +239,9 @@ var Conversations = (function(){
         permitOneSearch();
     });
     var permitOneSearch = function(){
-        console.log("Enabling search");
+        searchPermitted = true;
         $("#searchButton").off("click").attr("disabled",false).on("click",function(){
-            console.log("Disabling search");
-            $(this).off("click");
-            $("#searchButton").attr("disabled",true);
-            searchFunc(currentQuery);
+            searchFunc(getQueryFunc());
         });
     }
     var shouldModifyConversation = function(details){
@@ -258,7 +255,8 @@ var Conversations = (function(){
         var subject = details.subject.toLowerCase().trim();
         var title = details.title.toLowerCase().trim();
         var author = details.author;
-        return ((currentQuery == author || title.indexOf(currentQuery) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+        var q = getQueryFunc();
+        return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
             var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
             return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
@@ -274,7 +272,6 @@ var Conversations = (function(){
         tag.append($("<span/>",{
             html:title
         }));
-        console.log("newTag:",tag.html().toString());
         return tag;
     };
 
@@ -338,9 +335,11 @@ var Conversations = (function(){
         $("#conversationListing").find(".aggregateContainer").find(".count").text(convCount);
     };
     var searchFunc = function(query){
+        $("#searchButton").attr("disabled",true).off("click");
+        searchPermitted = false;
         currentQuery = query.toLowerCase().trim();
-        console.log("Search func",currentQuery);
-        getSearchResult(currentQuery); //injected from Lift
+        updateQueryParams();
+        getSearchResult(getQueryFunc()); //injected from Lift
     };
     var createFunc = function(title){
         createConversation(title); //injected from Lift
@@ -359,13 +358,13 @@ var Conversations = (function(){
     };
     var receiveConversationDetailsFunc = function(details){
         currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
-        console.log("currentSearchResults:",currentSearchResults,details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
 	console.log("receiveSearchResults",results);
         currentSearchResults = results;
         permitOneSearch();
+        updateQueryParams();
         reRender();
     };
     var receiveNewConversationDetailsFunc = function(details){
@@ -382,9 +381,26 @@ var Conversations = (function(){
         currentImports = importDescs;
         reRender();
     };
+    var updateQueryParams = function(){
+			console.log("updating queryparams:",getQueryFunc(),window.location);
+        if (window != undefined && "history" in window && "pushState" in window.history){
+            var l = window.location;
+            var q = getQueryFunc();
+            var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
+            if (q != undefined){
+                newUrl = sprintf("%s?query=%s",newUrl,q);
+            }
+            window.history.replaceState({
+                path:newUrl,
+                url:newUrl
+            },newUrl,newUrl);
+        }
+    };
+
     var receiveQueryFunc = function(q){
         currentQuery = q.toLowerCase().trim();
-        searchBox.val(currentQuery);
+        updateQueryParams();
+        searchBox.val(getQueryFunc());
         reRender();
     };
     var getConversationListingFunc = function(){

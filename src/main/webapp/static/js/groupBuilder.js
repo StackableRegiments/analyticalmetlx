@@ -2,9 +2,10 @@ var GroupBuilder = (function(){
     var render = function(){
         var container = $("#groupsPopup");
         var allocatedV = container.find(".allocatedMembers").empty();
-        var unallocatedV = container.find("unallocatedMembers").empty();
+        var unallocatedV = container.find(".unallocatedMembers").empty();
         var groupsV = container.find(".groups").empty();
         var unallocatedMembers = _.clone(Participants.getParticipants());
+	delete unallocatedMembers[Conversations.getCurrentConversation.author];
         var allocatedMembers = {};
         var slide = Conversations.getCurrentSlide();
         if(slide){
@@ -38,12 +39,14 @@ var GroupBuilder = (function(){
         }
         _.each(allocatedMembers,function(member,name){
             $("<div />",{
-                text:name
+                text:name,
+		class:"member"
             }).appendTo(allocatedV);
         });
         _.each(unallocatedMembers,function(member,name){
             $("<div />",{
-                text:name
+                text:name,
+		class:"member"
             }).appendTo(unallocatedV);
         });
     };
