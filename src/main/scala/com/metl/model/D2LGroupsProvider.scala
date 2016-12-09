@@ -68,6 +68,22 @@ case class D2LAssociatedTool(
   ToolItemId:Long
 )
 
+case class D2LGradeObjectCreator(
+  MaxPoints:Long,
+  CanExceedMaxPoints:Boolean,
+  IsBonus:Boolean,
+  ExcludeFromFinalGradeCalculation:Boolean,
+  GradeSchemeId:Long, // must not be null on input actions
+  Name:String, //max 128 chars, must be unique, cannot contain /"*<>+=|,%
+  ShortName:String, //max 128 chars
+  GradeType:String, //Numeric,PassFail,SelectBox,Text
+  //5 - 9 cannot be set from API
+  //Calculated, Formula, FinalCalculated, FinalAdjusted, Category
+  CategoryId:Option[Long],
+  Description:Option[D2LDescriptionInput], //RichText?
+  AssociatedTool: Option[D2LAssociatedTool]
+)
+
 case class D2LGradeObject(
   MaxPoints:Long,
   CanExceedMaxPoints:Boolean,
@@ -86,6 +102,15 @@ case class D2LGradeObject(
   Weight:Option[Long], // not when POSTing
   ActivityId: Option[String], // not when POSTing
   AssociatedTool: Option[D2LAssociatedTool]
+)
+case class D2LIncomingGradeValue(
+  Comments:Option[D2LDescriptionInput],
+  PrivateComments:Option[D2LDescriptionInput],
+  GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
+  PointsNumerator:Option[Double], // include this if GradeObjectType = 1
+  Pass:Option[Boolean], // include this if GradeObjectType = 2
+  Value:Option[String], // include this if GradeObjectType = 3
+  Text:Option[String] // include this if GradeObjectType = 4
 )
 case class D2LGradeValue(
   UserId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
@@ -273,6 +298,10 @@ case class D2LDescription(
   Text:Option[String],
   Html:Option[String]
 )
+case class D2LDescriptionInput(
+  Content:Option[String],
+  Type:Option[String]
+)
 
 class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
   protected val pageSize = 200
@@ -449,8 +478,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   def getGradeObject(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String):Option[D2LGradeObject] = {
     fetchFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,gradeObjectId),"GET"),true)
   }
-  def createGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
-    postToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"POST"),Extraction.decompose(grade),true)
+  def createGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObjectCreator):Option[D2LGradeObject] = {
+    val gradeJObj = Extraction.decompose(grade)
+    postToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"POST"),gradeJObj,true)
   }
   def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
     putToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,grade.Id),"PUT"),Extraction.decompose(grade),true)
@@ -461,7 +491,6 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
-      println("gotGradeValues: %s".format(first))
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
       var continuing = firstResp.Next
@@ -490,8 +519,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     }
   }
  
-  def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeValue:D2LGradeValue):Option[D2LGradeValue] = {
-    putToD2L[D2LGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeValue.GradeObjectIdentifier,gradeValue.UserId),"PUT"),Extraction.decompose(gradeValue),true)
+  def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
+    putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),Extraction.decompose(gradeValue),true)
   }
 
 
