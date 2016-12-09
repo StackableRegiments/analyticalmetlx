@@ -929,7 +929,7 @@ var Conversations = (function(){
         },
         getCurrentGroup : getCurrentGroupFunction,
         getGroupsFor : function(slide){
-            return _.flatMap(slide.groupSets,function(gs){return gs.groups});
+            return slide ? _.flatMap(slide.groupSets,function(gs){return gs.groups}) : [];
         },
         getCurrentGroups : function(){
             return Conversations.getGroupsFor(getCurrentSlideFunc());
