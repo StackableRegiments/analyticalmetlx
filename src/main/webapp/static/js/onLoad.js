@@ -59,9 +59,6 @@ var WorkQueue = (function(){
                 blit();
                 blitNeeded = false;
             }
-            if ("Conversations" in window){
-                Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
-            }
         }
     };
     var pauseFunction = function(){
@@ -662,30 +659,6 @@ $(function(){
         blit();
     });
     setLoadProgress(3);
-    /*
-     $.each({
-     red:"#FF0000",
-     green:"#00FF00",
-     blue:"#0000FF"
-     },function(id,code){
-     $("#"+id).click(bounceAnd(function(){
-     Modes.draw.drawingAttributes.color = code;
-     }));
-     });
-     $.each({
-     thin:0.3,
-     medium:1,
-     fat:3,
-     xfat:30
-     },function(id,width){
-     $("#"+id).attr("title",width).click(bounceAnd(function(){
-     Modes.draw.drawingAttributes.width = width;
-     }));
-     });
-     $("#toggleHighlighter").click(function(){
-     Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
-     });
-     */
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
     });
@@ -694,7 +667,6 @@ $(function(){
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
-            //Submissions.requestServerSideSubmission();
             Submissions.sendSubmission();
         }
     });
@@ -921,8 +893,6 @@ $(function(){
                         }
                     }
                 ];
-
-
                 $("#"+rootId).find(".dialogOptions").html(_.map(_.filter(availableTypes,function(type){
                     return _.some(acceptedTypes,function(acceptableType){
                         return acceptableType.key(type);
@@ -955,14 +925,6 @@ $(function(){
                         handled = true;
                     }
                 });
-                /*
-                 conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
-                 if (!handled){
-                 console.log("pasted html",type,html);
-                 handled = true;
-                 }
-                 });
-                 */
                 conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
                     if (!handled){
                         var htmlElem = $(html);
@@ -982,7 +944,6 @@ $(function(){
                         handled = true;
                     }
                 });
-
                 conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
                     if (!handled){
                         Modes.text.handleDrop(html,x,y);

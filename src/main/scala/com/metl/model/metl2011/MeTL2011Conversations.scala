@@ -228,6 +228,25 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     val local = Conversation(config,conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = {
+    val conv = detailsOf(jid.toInt)
+    val slides = conv.slides
+    val currentMaxJid = slides.map(s => s.id) match {
+      case l:List[Int] if (l.length > 0) => l.max
+      case _ => jid.toInt
+    }
+    val newSlides = slides.map(s => {
+      val newIndex = s.index match {
+        case i:Int if (i < index) => i
+        case i:Int => i + 1
+      }
+      Slide(config,s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType,List(grouping))
+    })
+    val newSlide = Slide(config,conv.author,currentMaxJid + 1, index)
+    val now = new java.util.Date()
+    val local = Conversation(config,conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
+    pushConversationToServer(local)
+  }
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = {
     val conv = detailsOf(jid.toInt)
     val now = new java.util.Date()

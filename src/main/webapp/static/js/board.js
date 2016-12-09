@@ -68,13 +68,13 @@ function strokeCollected(points){
         for(var p = 0; p < points.length; p += 3){
             x = points[p];
             y = points[p+1];
-            worldPos = screenToWorld(x,y);
-            scaledPoints = scaledPoints.concat([worldPos.x,worldPos.y,points[p+2]]);
+            scaledPoints = scaledPoints.concat([x,y,points[p+2]]);
         }
         ink.points = scaledPoints;
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
+        ink.audiences = Conversations.getCurrentGroup().map(audienceToStanza);
 
         calculateInkBounds(ink);
         prerenderInk(ink);
@@ -141,6 +141,14 @@ function hexToRgb(hex) {
         return Colors.getDefaultColorObj();
     }
 }
+function audienceToStanza(a){
+    return {
+        domain:"slide",
+        'type':"groupWork",
+        action:"whitelist",
+        name:a
+    };
+}
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
     var color = hexToRgb(p.color || defaults.color);
@@ -184,10 +192,11 @@ function richTextEditorToStanza(t){
         type:t.type,
         x:bounds[0],
         y:bounds[1],
-        requestedWidth:bounds[2]-bounds[0],
+        requestedWidth:t.doc.width(),
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
-        words:text.map(partToStanza)
+        words:text.map(partToStanza),
+        audiences:Conversations.getCurrentGroup().map(audienceToStanza)
     }
 }
 function sendRichText(t){
@@ -195,7 +204,6 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
-//sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -659,6 +667,7 @@ function transformReceived(transform){
             doc.position.y += transform.yTranslate;
             text.x = doc.position.x;
             text.y = doc.position.y;
+            text.doc.invalidateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
     }
@@ -920,78 +929,84 @@ function drawVideo(video,incCanvasContext){
     }
 }
 function videoReceived(video){
-    calculateVideoBounds(video);
-    incorporateBoardBounds(video.bounds);
-    boardContent.videos[video.identity] = video;
-    prerenderVideo(video);
-    WorkQueue.enqueue(function(){
-        if(isInClearSpace(video.bounds)){
-            try {
-                drawVideo(video);
-                Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-            } catch(e){
-                console.log("drawVideo exception",e);
-            }
-            return false;
-        }
-        else{
-            console.log("Rerendering video in contested space");
-            return true;
-        }
-    });
-}
-function imageReceived(image){
-    var dataImage = new Image();
-    image.imageData = dataImage;
-    dataImage.onload = function(){
-        if(image.width == 0){
-            image.width = dataImage.naturalWidth;
-        }
-        if(image.height == 0){
-            image.height = dataImage.naturalHeight;
-        }
-        image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
-        incorporateBoardBounds(image.bounds);
-        boardContent.images[image.identity]  = image;
-        updateTracking(image.identity);
-        prerenderImage(image);
+    if(isUsable(video)){
+        calculateVideoBounds(video);
+        incorporateBoardBounds(video.bounds);
+        boardContent.videos[video.identity] = video;
+        prerenderVideo(video);
         WorkQueue.enqueue(function(){
-            if(isInClearSpace(image.bounds)){
+            if(isInClearSpace(video.bounds)){
                 try {
-                    drawImage(image);
+                    drawVideo(video);
+                    Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
                 } catch(e){
-                    console.log("drawImage exception",e);
+                    console.log("drawVideo exception",e);
                 }
                 return false;
             }
             else{
-                console.log("Rerendering image in contested space");
+                console.log("Rerendering video in contested space");
                 return true;
             }
         });
     }
-    dataImage.src = calculateImageSource(image);
+}
+function imageReceived(image){
+    if(isUsable(image)){
+        var dataImage = new Image();
+        image.imageData = dataImage;
+        dataImage.onload = function(){
+            if(image.width == 0){
+                image.width = dataImage.naturalWidth;
+            }
+            if(image.height == 0){
+                image.height = dataImage.naturalHeight;
+            }
+            image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
+            incorporateBoardBounds(image.bounds);
+            boardContent.images[image.identity]  = image;
+            updateTracking(image.identity);
+            prerenderImage(image);
+            WorkQueue.enqueue(function(){
+                if(isInClearSpace(image.bounds)){
+                    try {
+                        drawImage(image);
+                    } catch(e){
+                        console.log("drawImage exception",e);
+                    }
+                    return false;
+                }
+                else{
+                    console.log("Rerendering image in contested space");
+                    return true;
+                }
+            });
+        }
+        dataImage.src = calculateImageSource(image);
+    }
 }
 function inkReceived(ink){
-    calculateInkBounds(ink);
-    updateStrokesPending(-1,ink.identity);
-    if(prerenderInk(ink)){
-        incorporateBoardBounds(ink.bounds);
-        if(ink.isHighlighter){
-            boardContent.highlighters[ink.identity] = ink;
-        }
-        else{
-            boardContent.inks[ink.identity] = ink;
-        }
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(ink.bounds)){
-                drawInk(ink);
-                return false;
+    if(isUsable(ink)){
+        calculateInkBounds(ink);
+        updateStrokesPending(-1,ink.identity);
+        if(prerenderInk(ink)){
+            incorporateBoardBounds(ink.bounds);
+            if(ink.isHighlighter){
+                boardContent.highlighters[ink.identity] = ink;
             }
             else{
-                return true;
+                boardContent.inks[ink.identity] = ink;
             }
-        });
+            WorkQueue.enqueue(function(){
+                if(isInClearSpace(ink.bounds)){
+                    drawInk(ink);
+                    return false;
+                }
+                else{
+                    return true;
+                }
+            });
+        }
     }
 }
 function takeControlOfViewbox(){

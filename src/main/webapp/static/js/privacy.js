@@ -31,6 +31,9 @@ var Privacy = (function(){
     var adjustPrivacyForConversation = function(){
         $("#currentConversationState").text(Conversations.getConversationModeDescriptor());
         $("#currentConversationTitle").text(Conversations.getCurrentConversation().title);
+	if(Conversations.getCurrentGroups().length){
+	    $("#currentGroup").text(sprintf("Group %s of ",Conversations.getCurrentGroup()));
+	}
         if (Conversations.shouldPublishInConversation()){
             $("#publicMode").removeClass("disabledButton");
         } else {

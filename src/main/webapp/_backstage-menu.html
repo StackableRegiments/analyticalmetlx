@@ -138,10 +138,18 @@
         </section>
         <section id="groupsPopup" class="backstage box-model-block">
           <h2 class="nmt">Group builder</h2>
-          <div class="ml flex-container-responsive">
-            <div class="flex-container">
-              <input type="radio" value="manual"><span class="icon-txt">Manual</span></input>
-              <input type="radio" value="assisted"><span class="icon-txt">Assisted</span></input>
+          <div class="flex-container-responsive ml">
+            <div>
+              <h3>Unallocated</h3>
+              <div class="unallocatedMembers"></div>
+            </div>
+            <div style="flex-grow:1;margin-left:1em;">
+              <h3>Groups</h3>
+              <div class="groups"></div>
+            </div>
+            <div>
+              <h3>Allocated</h3>
+              <div class="allocatedMembers"></div>
             </div>
           </div>
         </section>

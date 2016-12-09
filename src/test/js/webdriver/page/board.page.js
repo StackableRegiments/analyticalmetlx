@@ -40,10 +40,27 @@ var BoardPage = function(user) {
     var letters = function(ls){
         _.each(ls,letter);
     }
+    var textStanzas = function() {
+        return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value
+    };
     return Object.create(Page, {
+        driver:{ get:function(){ return user } },
         privacy: { get:function(){ return user.execute("return Privacy.getCurrentPrivacy()").value; } },
         privateMode: { get:function(){ return user.element("#privateMode") } },
         publicMode: { get:function(){ return user.element("#publicMode") } },
+
+        connectionHealth: { get:function(){ return user.execute("return $('#healthStatus').val()").value; } },
+        participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } },
+        participationHealthMax: { get:function(){ return user.execute("return $('#attendanceStatus').attr('max')").value; } },
+
+	thumbWidth: {get:function(){ return user.execute("return $('#thumbsColumn').width()").value; }},
+	resizeThumb: {get:function(delta){ return user.element("#thumbColumnWidth"); } },
+
+	pluginBar: {get:function(){return user.element("#pluginBar")}},
+
+        usableStanzas: { get:function(){
+            return user.execute("return usableStanzas()").value;
+        } },
 
         viewport: {get:function(){
             var v = user.execute("return {x:viewboxX,y:viewboxY,width:viewboxWidth,height:viewboxHeight}").value;
@@ -53,9 +70,15 @@ var BoardPage = function(user) {
         currentSlide:{ get:function(){
             return user.execute("return Conversations.getCurrentSlide()").value;
         }},
+        currentConversation:{ get:function(){
+            return user.execute("return Conversations.getCurrentConversation()").value;
+        }},
         newSlide:{get:function(){
             return user.element("#addSlideButton");
         } },
+        addGroupSlide:{get:function(){
+            return user.element("#addGroupSlideButton");
+        }},
         prevSlide:{get:function(){
             return user.element("#prevSlideButton");
         } },
@@ -108,6 +131,13 @@ var BoardPage = function(user) {
         applicationMenu: {get:function(){
             return user.element(".backstage-menu.active");
         }},
+        homeTab:{get:function(){return user.element("#metaToolbar");}},
+        conversationSearch:{get:function(){return user.element("#conversations");}},
+        participants:{get:function(){return user.element("#menuParticipants");}},
+        groupBuilder:{get:function(){return user.element("#menuGroups");}},
+	allocatedMembers:{get:function(){ return user.execute("return $('#allocatedMembers .member')").value;}},
+	unallocatedMembers:{get:function(){ return user.execute("return $('#unallocatedMembers .member')").value;}},
+        contentFilter:{get:function(){return user.element("#menuContentFilter");}},
         openParticipants:{value:function(){
             this.menuButton.click();
             user.waitUntil(function(){return user.isVisible("#roomToolbar");});
@@ -142,7 +172,12 @@ var BoardPage = function(user) {
 
         texts: { get: function () { return user.execute("return _.map(boardContent.multiWordTexts,function(w){var _w = _.cloneDeep(w);delete _w.doc;return _w;})").value } },
         textMode: { get: function() { return user.element("#insertText"); } },
-        textStanzas: { get: function() { return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value } },
+        textStanzas: { get: textStanzas },
+        plainTexts: { get: function() {
+            return textStanzas().map(function(stanza){
+                return _.join(_.map(stanza.words,"text"),"").trim();
+            });
+        }},
         keyboard: { value:function(x,y,text){
             user.moveToObject("#board",x,y);
             user.leftClick();
@@ -150,13 +185,13 @@ var BoardPage = function(user) {
         } },
 
         inkMode: { get: function() { return user.element("#drawMode"); } },
-        inkStanzas: { get: function() { return user.execute("return boardContent.inks").value; } },
+        inkStanzas: { get: function() { return user.execute("return _.map(boardContent.inks,function(ink){return _.pickBy(ink,function(v,k){return k != 'canvas'})})").value; } },
         handwrite: {value:handwrite},
         letter: {value:letter},
         letters:{value:letters},
 
         imageMode: { get: function() { return user.element("#imageMode"); } },
-        imageStanzas: {get: function(){ return user.execute("return boardContent.images").value } }
+        imageStanzas: {get: function(){ return user.execute("return _.map(boardContent.images,function(image){return _.pickBy(image,function(v,k){return k != 'canvas'})})").value } }
     });
 }
 module.exports = BoardPage

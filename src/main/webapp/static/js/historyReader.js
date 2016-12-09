@@ -18,10 +18,12 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     try{
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
-
-	console.log(json);
-	
         historyDownloadedMark = Date.now();
+
+        json.multiWordTexts = _.pickBy(json.multiWordTexts,isUsable);
+        json.images = _.pickBy(json.images,isUsable);
+        json.inks = _.pickBy(json.inks,isUsable);
+
         boardContent = json;
         boardContent.minX = 0;
         boardContent.minY = 0;
@@ -47,10 +49,15 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             prerenderVideo(video);
         });
         prerenderTextMark = Date.now();
-        _.each(boardContent.multiWordTexts,function(text,i){
-            var editor = Modes.text.editorFor(text).doc;
-            editor.load(text.words);
-            incorporateBoardBounds(text.bounds);
+        _.each(boardContent.multiWordTexts,function(text){
+            if(isUsable(text)){
+                var editor = Modes.text.editorFor(text).doc;
+                editor.load(text.words);
+                incorporateBoardBounds(text.bounds);
+            }
+            else{
+                console.log("Not usable",text);
+            }
         });
         renderMultiWordMark = Date.now();
 
@@ -181,7 +188,25 @@ function isUsable(element){
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    return boundsOk && sizeOk && textOk;
+    var myGroups = Conversations.getCurrentGroup();
+    var forMyGroup = _.isEmpty(element.audiences) ||
+            Conversations.isAuthor() ||
+            _.some(element.audiences,function(audience){
+                return audience.action == "whitelist" && _.includes(myGroups,audience.name);
+            });
+    var forMe = (element.author == UserSettings.getUsername() ||
+                 _.some(element.audiences,function(audience){
+                     return audience.action == "direct" && audience.name == UserSettings.getUsername();
+                 }));
+    return boundsOk && sizeOk && textOk && (forMyGroup || forMe);
+}
+function usableStanzas(){
+    return _.map(boardContent.multiWordTexts).map(function(v){
+        return {
+            identity:v.identity,
+            usable:isUsable(v)
+        }
+    });
 }
 var leftPoint = function(xDelta,yDelta,l,x2,y2,bulge){
     var px = yDelta * l * bulge;
@@ -327,7 +352,7 @@ function determineScaling(inX,inY){
         width:outputX,
         height:outputY,
         scaleX:outputScaleX,
-        scaleY:outputScaleY,
+        scaleY:outputScaleY
     };
 }
 function prerenderInk(ink){
@@ -345,7 +370,7 @@ function prerenderInk(ink){
     var canvas = $("<canvas />")[0];
     ink.canvas = canvas;
     var context = canvas.getContext("2d");
-    var privacyOffset = 0;
+    var privacyOffset = 3;
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
     if(isPrivate){
         privacyOffset = 3;
@@ -369,12 +394,12 @@ function prerenderInk(ink){
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2) - privacyOffset) * scaleMeasurements.scaleY;
-    var x,y,pr,newPr,p;
+    var x,y,w,pr,newPr,p;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
         pr = points[2];
-        context.lineWidth = ink.thickness + privacyOffset;
+        context.lineWidth = w = ink.thickness + privacyOffset;
         context.strokeStyle = ink.color[0];
         context.fillStyle = ink.color[0];
         context.moveTo(x,y);
@@ -401,15 +426,16 @@ function prerenderInk(ink){
 
     context.moveTo(x,y);
     context.beginPath();
-    var x = points[0] + contentOffsetX;
-    var y = points[1] + contentOffsetY;
+    x = points[0] + contentOffsetX;
+    y = points[1] + contentOffsetY;
     _.each(_.chunk(points,3),function(point){
         context.beginPath();
         context.moveTo(x,y);
+        w = ink.thickness * (point[2] / Modes.draw.mousePressure);
         x = point[0] + contentOffsetX;
         y = point[1] + contentOffsetY;
         context.lineTo(x,y);
-        context.lineWidth = ink.thickness * (point[2] / 256);
+        context.lineWidth = w;
         context.lineCap = "round";
         context.stroke();
     });
@@ -542,6 +568,10 @@ function prerenderVideo(video){
                 video.video.play();
             }
         };
+				video.destroy = function(){
+					video.video.removeAttribute("src");
+					video.video.load();
+				};
         video.pause = function(){
             if (!video.video.paused){
                 video.video.pause();

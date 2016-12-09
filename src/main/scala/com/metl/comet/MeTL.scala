@@ -71,7 +71,10 @@ trait ConversationFilter {
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is.toLowerCase.trim
     lazy val myGroups = Globals.casState.is.eligibleGroups.toList
-    in.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
+    in.groupBy(_.jid).flatMap{
+      case (jid,result :: _) => Some(result)
+      case _ => None
+    }.toList.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
   }
 }
 
@@ -84,7 +87,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
-      warn("localSetup for [%s]".format(name))
+      trace("localSetup for [%s]".format(name))
       com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
         currentConversation = Some(serverConfig.detailsOfConversation(convJid.toString))
       })
@@ -99,7 +102,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
         })
       })
     })
-    warn("setup slideDisplay: %s %s".format(currentConversation,currentSlide))
+    trace("setup slideDisplay: %s %s".format(currentConversation,currentSlide))
   }
   protected var username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
@@ -119,7 +122,7 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     "#addSlideButtonContainer" #> currentConversation.filter(cc => shouldModifyConversation(username,cc)).map(cc => {
       "#addSlideButtonContainer [onclick]" #> {
         ajaxCall(Jq("#this"),(j:String) => {
-          warn("add slide button clicked: %s".format(j))
+          trace("add slide button clicked: %s".format(j))
           val index = currentSlide.flatMap(cs => cc.slides.find(_.id == cs).map(_.index)).getOrElse(0)
           serverConfig.addSlideAtIndexOfConversation(cc.jid.toString,index)
           reRender
@@ -136,24 +139,24 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (currentConversation.exists(_.jid == newConv.jid)){
         if (!shouldDisplayConversation(newConv)){
-          warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+          trace("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
           currentConversation = Empty
           currentSlide = Empty
           reRender
           partialUpdate(RedirectTo(noBoard))
         } else {
           currentConversation = Some(newConv)
-          debug("updating conversation to: %s".format(newConv))
+          trace("updating conversation to: %s".format(newConv))
           reRender
         }
       }
     }
     case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
-      warn("incoming syncMove: %s".format(c))
+      trace("incoming syncMove: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       currentConversation.filter(cc => currentSlide.exists(_ != newJid)).map(cc => {
         cc.slides.find(_.id == newJid).foreach(slide => {
-          warn("moving to: %s".format(slide))
+          trace("moving to: %s".format(slide))
           currentSlide = Some(slide.id)
           reRender
           partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
@@ -258,13 +261,14 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       query = Some(q)
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
+      debug(listing.toString())
       trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))
       val newConv = serverConfig.createConversation(title,username)
-      listing = newConv :: listing
+      listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
   )
@@ -427,13 +431,12 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       }
     }
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
-      warn("receivedCommand: %s".format(c))
+      trace("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0).toInt
       val newConv = serverConfig.detailsOfConversation(newJid.toString)
       if (queryApplies(newConv) && shouldDisplayConversation(newConv)){
-        //listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-        listing = newConv :: listing.filterNot(_.jid == newConv.jid)//query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-          reRender
+        listing = newConv :: listing.filterNot(_.jid == newConv.jid)
+        reRender
       } else if (listing.exists(_.jid == newConv.jid)){
         listing = listing.filterNot(_.jid == newConv.jid)
         reRender
@@ -560,7 +563,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
       conversation.foreach(c => {
         val newConv = serverConfig.detailsOfConversation(c.jid.toString)
-        warn("receivedUpdatedConversation: %s => %s".format(c,newConv))
+        trace("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender
       })
@@ -636,105 +639,107 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-  /*
-   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
-   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
-   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
-   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
-   */
-  protected var tokSession:Option[TokBoxSession] = None
+  private lazy val RECEIVE_ATTENDANCE = "receiveAttendance"
+  private lazy val UPDATE_THUMB = "updateThumb"
+  private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
+  private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+  private lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
+  private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
+  private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+  protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
+  protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   override lazy val functionDefinitions = List(
-    /*
-     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
-     JArray(for {
-     tb <- Globals.tokBox.toList
-     s <- tokSession.toList
-     a <- tb.getArchives(s)
-     } yield {
-     JObject(
-     List(
-     JField("id",JString(a.id)),
-     JField("name",JString(a.name))
-     ) :::
-     a.url.toList.map(u => JField("url",JString(u))) :::
-     a.size.toList.map(s => JField("size",JInt(s))) :::
-     a.duration.toList.map(d => JField("size",JInt(d))) :::
-     a.createdAt.toList.map(c => JField("created",JInt(c)))
-     )
-     })
-     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-     ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
-     val id = getArgAsString(args(0))
-     JArray((for {
-     tb <- Globals.tokBox
-     s <- tokSession
-     a <- tb.getArchive(s,id)
-     } yield {
-     Extraction.decompose(a)
-     }).toList)
-     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-     ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
-     val id = getArgAsString(args(0))
-     JArray((for {
-     tb <- Globals.tokBox
-     s <- tokSession
-     } yield {
-     tb.removeArchive(s,id)
-     pretty(render(a))
-     }).toList)
-     Noop
-     }),
-     ClientSideFunction("startBroadcast",List("layout"),(args) => {
-     val layout = getArgAsString(args(0))
-     (for {
-     tb <- Globals.tokBox
-     if (shouldModifyConversation())
-     s <- tokSession
-     b = tb.startBroadcast(s,layout)
-     } yield {
-     Extraction.decompose(b)
-     }).getOrElse(JNull)
-     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-     ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
-     val id = getArgAsString(args(0))
-     val layout = getArgAsString(args(1))
-     (for {
-     tb <- Globals.tokBox
-     if (shouldModifyConversation())
-     s <- tokSession
-     a = tb.updateBroadcast(s,id,layout)
-     } yield {
-     Extraction.decompose(a)
-     }).getOrElse(JNull)
-     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-     ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
-     (for {
-     tb <- Globals.tokBox
-     if (shouldModifyConversation())
-     s <- tokSession
-     b <- tb.getBroadcast(s)
-     a = tb.stopBroadcast(s,b.id)
-     } yield {
-     Extraction.decompose(a)
-     }).getOrElse(JNull)
-     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-     ClientSideFunction("getBroadcast",List.empty[String],(args) => {
-     (for {
-     tb <- Globals.tokBox
-     s <- tokSession
-     a <- tb.getBroadcast(s)
-     } yield {
-     Extraction.decompose(a)
-     }).getOrElse(JNull)
-     },Full(RECEIVE_TOK_BOX_BROADCAST)),
-     */
+    ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
+      JArray(for {
+        tb <- Globals.tokBox.toList
+        s <- tokSessions.toList.flatMap(_._2)
+        a <- tb.getArchives(s)
+      } yield {
+        JObject(
+          List(
+            JField("id",JString(a.id)),
+            JField("name",JString(a.name))
+          ) :::
+            a.url.toList.map(u => JField("url",JString(u))) :::
+            a.size.toList.map(s => JField("size",JInt(s))) :::
+            a.duration.toList.map(d => JField("size",JInt(d))) :::
+            a.createdAt.toList.map(c => JField("created",JInt(c)))
+        )
+      })
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+    ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSessions.toList.flatMap(_._2).headOption
+        a <- tb.getArchive(s,id)
+      } yield {
+        Extraction.decompose(a)
+      }).toList)
+    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+    ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
+      val id = getArgAsString(args(0))
+      JArray((for {
+        tb <- Globals.tokBox
+        s <- tokSessions.toList.flatMap(_._2).headOption
+      } yield {
+        val a = tb.removeArchive(s,id)
+        JObject(List(
+          JField("session",Extraction.decompose(s)),
+          JField("success",JBool(a))
+        ))
+      }).toList)
+    },None),
+    ClientSideFunction("startBroadcast",List("layout"),(args) => {
+      val layout = getArgAsString(args(0))
+        (for {
+          tb <- Globals.tokBox
+          if (shouldModifyConversation())
+          s <- tokSessions.toList.flatMap(_._2).headOption
+          b = tb.startBroadcast(s,layout)
+        } yield {
+          Extraction.decompose(b)
+        }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
+      val id = getArgAsString(args(0))
+      val layout = getArgAsString(args(1))
+        (for {
+          tb <- Globals.tokBox
+          if (shouldModifyConversation())
+          s <- tokSessions.toList.flatMap(_._2).headOption
+          a = tb.updateBroadcast(s,id,layout)
+        } yield {
+          Extraction.decompose(a)
+        }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
+      (for {
+        tb <- Globals.tokBox
+        if (shouldModifyConversation())
+        s <- tokSessions.toList.flatMap(_._2).headOption
+        b <- tb.getBroadcast(s)
+        a = tb.stopBroadcast(s,b.id)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
+    ClientSideFunction("getBroadcast",List.empty[String],(args) => {
+      (for {
+        tb <- Globals.tokBox
+        s <- tokSessions.toList.flatMap(_._2).headOption
+        a <- tb.getBroadcast(s)
+      } yield {
+        Extraction.decompose(a)
+      }).getOrElse(JNull)
+    },Full(RECEIVE_TOK_BOX_BROADCAST)),
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
-      partialUpdate(refreshClientSideStateJs)
+      partialUpdate(refreshClientSideStateJs(true))
       JNull
     },Empty),
     ClientSideFunction("getHistory",List("slide"),(args)=> {
       val jid = getArgAsString(args(0))
-      debug("getHistory requested")
+      trace("getHistory requested")
       getSlideHistory(jid)
     },Full(RECEIVE_HISTORY)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
@@ -754,7 +759,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val where = getArgAsString(args(0))
       debug("moveToSlideRequested(%s)".format(where))
       moveToSlide(where)
-      partialUpdate(refreshClientSideStateJs)
+      partialUpdate(refreshClientSideStateJs(true))
       JNull
     },Empty),
     ClientSideFunction("joinRoom",List("where"),(args) => {
@@ -771,6 +776,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     },Empty),
     ClientSideFunction("sendStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
+      trace("sendStanza: %s".format(stanza.toString))
       sendStanzaToServer(stanza)
       JNull
     },Empty),
@@ -867,7 +873,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             val imageBytes = pubRoom.map(_.slideRenderer.render(mergedHistory,width,height)).getOrElse(Array.empty[Byte])
             val uri = serverConfig.postResource(conversationJid,title,imageBytes)
             val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
-            debug("banned with the following: %s".format(submission))
+            trace("banned with the following: %s".format(submission))
             rooms.get((server,conversationJid)).map(r =>{
               r() ! LocalToServerMeTLStanza(submission)
             });
@@ -885,6 +891,25 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
       JNull
     },Empty),
+    ClientSideFunction("overrideAllocation",List("conversationJid","slideObject"),(args) => {
+      debug("Override allocation: %s".format(args))
+      val newSlide = serializer.toSlide(getArgAsJValue(args(1)))
+      val c = serverConfig.detailsOfConversation(getArgAsString(args(0)))
+      debug("Parsed values: %s".format(newSlide,c))
+      serializer.fromConversation(serverConfig.updateConversation(c.jid.toString,c.copy(slides = newSlide :: c.slides.filterNot(_.id == newSlide.id))))
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
+    ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping"),(args) => {
+      val jid = getArgAsString(args(0))
+      val index = getArgAsInt(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      val grouping = getArgAsString(args(2)) match {
+        case _ => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByTotalGroups(3),Nil)
+      }
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.addGroupSlideAtIndexOfConversation(c.jid.toString,index,grouping)
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1074,10 +1099,16 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     res
   }
 
+  def emit(source:String,value:String,domain:String) = {
+    trace("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
+    currentConversation.map(cc => {
+      MeTLXConfiguration.getRoom(cc.jid.toString,server) ! LocalToServerMeTLStanza(MeTLTheme(serverConfig,username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
+    })
+  }
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
   private lazy val serverConfig = ServerConfiguration.default
   private lazy val server = serverConfig.name
-  debug("serverConfig: %s -> %s".format(server,serverConfig))
+  trace("serverConfig: %s -> %s".format(server,serverConfig))
   private def username = (for (
     nameString <- name;
     user <- com.metl.snippet.Metl.getUserFromName(nameString)
@@ -1088,16 +1119,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   def registerWith = MeTLActorManager
   val scriptContainerId = "scriptContainer_%s".format(nextFuncName)
   override def render = {
-    OnLoad(refreshClientSideStateJs)
+    OnLoad(refreshClientSideStateJs(true))
   }
   def hideLoader:JsCmd = Hide("loadingSpinner")
 
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
+    case UpdateThumb(slide) => {
+      trace("Updating thumb %s for actor: %s".format(slide,name))
+      partialUpdate(Call(UPDATE_THUMB,JString(slide)))
+    }
     case JoinThisSlide(slide) => {
       moveToSlide(slide)
-      partialUpdate(refreshClientSideStateJs)
+      partialUpdate(refreshClientSideStateJs(true))
     }
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
@@ -1137,12 +1172,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     MeTLXConfiguration.getRoom(jid,serverName) ! LeaveRoom(username,userUniqueId,this)
   })
   override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
-    debug("shutdown metlactor: %s".format(name))
+    trace("shutdown metlactor: %s".format(name))
     leaveAllRooms(true)
     super.localShutdown()
   })
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
-  private def refreshClientSideStateJs = {
+  private def refreshClientSideStateJs(refreshDetails:Boolean) = {
     currentConversation.map(cc => {
       if (!shouldDisplayConversation(cc)){
         warn("refreshClientSideState kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
@@ -1157,72 +1192,76 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         joinRoomByJid(cs+username)
       })
     })
-    debug("Refresh client side state: %s, %s".format(currentConversation,currentSlide))
     val receiveUsername:Box[JsCmd] = Full(Call(RECEIVE_USERNAME,JString(username)))
-    debug(receiveUsername)
+    trace(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
-    debug(receiveUserGroups)
-    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))/* match {
-                                                                                                                                           case Full(cc) => Full(cc)
-                                                                                                                                           case _ => Full(Call("showBackstage",JString("conversations")))
-                                                                                                                                           }*/
-    debug(receiveCurrentConversation)
-    val receiveConversationDetails:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc)))
-    debug(receiveConversationDetails)
+    trace(receiveUserGroups)
+    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))
+    trace(receiveCurrentConversation)
+    val receiveConversationDetails:Box[JsCmd] = if(refreshDetails) currentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc))) else Empty
+    trace(receiveConversationDetails)
     val receiveCurrentSlide:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_CURRENT_SLIDE, JString(cc)))
-    debug(receiveCurrentSlide)
+    trace(receiveCurrentSlide)
     val receiveLastSyncMove:Box[JsCmd] = currentConversation.map(cc => {
-      debug("receiveLastSyncMove attempting to get room %s, %s".format(cc,server))
+      trace("receiveLastSyncMove attempting to get room %s, %s".format(cc,server))
       val room = MeTLXConfiguration.getRoom(cc.jid.toString,server)
-      debug("receiveLastSyncMove: %s".format(room))
+      trace("receiveLastSyncMove: %s".format(room))
       val history = room.getHistory
-      debug("receiveLastSyncMove: %s".format(history))
+      trace("receiveLastSyncMove: %s".format(history))
       history.getLatestCommands.get("/SYNC_MOVE") match{
         case Some(lastSyncMove) =>{
-          debug("receiveLastSyncMove found move: %s".format(lastSyncMove))
+          trace("receiveLastSyncMove found move: %s".format(lastSyncMove))
           Call(RECEIVE_SYNC_MOVE,JString(lastSyncMove.commandParameters(0).toString))
         }
         case _ =>{
-          debug("receiveLastSyncMove no move found")
+          trace("receiveLastSyncMove no move found")
           Noop
         }
       }
     })
-    /*
-     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
-     val receiveTokBoxSession:Box[JsCmd] = (for {
-     cc <- currentConversation
-     tb <- Globals.tokBox
-     } yield {
-     val role = shouldModifyConversation() match {
-     case true => TokRole.Moderator
-     case false => TokRole.Publisher
-     }
-     val session = tokSession.getOrElse({
-     val newSession = tb.getSessionToken(cc.jid.toString(),role)
-     tokSession = Some(newSession)
-     newSession
-     })
-     val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
-     JField("sessionId",JString(session.sessionId)),
-     JField("token",JString(session.token)),
-     JField("apiKey",JInt(session.apiKey))
-     )))
-     j
-     })
-     val receiveTokBoxBroadcast:Box[JsCmd] = (for {
-     tb <- Globals.tokBox
-     s <- tokSession
-     a <- tb.getBroadcast(s)
-     } yield {
-     val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
-     j
-     })
-     */
-    debug(receiveLastSyncMove)
+    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
+    def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
+      val sessionName = tokSessionTup._1
+      val tokSession = tokSessionTup._2
+      (for {
+        cc <- currentConversation
+        tb <- Globals.tokBox
+        role = shouldModifyConversation() match {
+          case true => TokRole.Moderator
+          case false => TokRole.Publisher
+        }
+        session <- synchronized { tokSession.map(s => Some(s)).getOrElse({
+          val newSession = tb.getSessionToken(sessionName,role).left.map(e => {
+            error("exception initializing tokboxSession:",e)
+          }).right.toOption
+          trace("generating tokBox session in %s for: %s %s".format(name,sessionName,newSession))
+          tokSessionCol += ((sessionName,newSession))
+          newSession
+        })
+        }
+      } yield {
+        val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+          JField("sessionId",JString(session.sessionId)),
+          JField("token",JString(session.token)),
+          JField("apiKey",JInt(session.apiKey))
+        )))
+        j
+      })
+    })
+    val receiveTokBoxSessions:List[Box[JsCmd]] = receiveTokBoxSessionsFunc(tokSessions)
+    val receiveTokBoxSlideSpecificSessions:List[Box[JsCmd]] = receiveTokBoxSessionsFunc(tokSlideSpecificSessions)
+    val receiveTokBoxBroadcast:Box[JsCmd] = (for {
+      tb <- Globals.tokBox
+      s <- tokSessions.toList.flatMap(_._2).headOption
+      a <- tb.getBroadcast(s)
+    } yield {
+      val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
+      j
+    })
+    trace(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
-    debug(receiveInteractiveUser)
+    trace(receiveInteractiveUser)
 
     val loadComplete = for {
       h <- receiveHistory
@@ -1233,17 +1272,18 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     } yield {
       hideLoader
     }
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser/*,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast*/,loadComplete)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
     val details = serverConfig.detailsOfConversation(jid)
     leaveAllRooms()
-    debug("joinConversation: %s".format(details))
+    trace("joinConversation: %s".format(details))
     if (shouldDisplayConversation(details)){
-      debug("conversation available")
+      trace("conversation available")
       currentConversation = Full(details)
       val conversationJid = details.jid.toString
+      tokSessions += ((conversationJid,None))
       joinRoomByJid(conversationJid)
       /*
        if (shouldModifyConversation(username,details)){
@@ -1254,56 +1294,57 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       //joinRoomByJid(conversationJid,"loopback")
       currentConversation
     } else {
-      debug("conversation denied: %s, %s.".format(jid,details.subject))
+      trace("conversation denied: %s, %s.".format(jid,details.subject))
       warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
+      tokSessions -= details.jid.toString
       reRender
       partialUpdate(RedirectTo(noBoard))
       Empty
     }
   }
   private def getSlideHistory(jid:String):JValue = {
-    debug("GetSlideHistory %s".format(jid))
+    trace("GetSlideHistory %s".format(jid))
     val convHistory = currentConversation.map(cc => MeTLXConfiguration.getRoom(cc.jid.toString,server).getHistory).openOr(History.empty)
-    debug("conv %s".format(jid))
+    trace("conv %s".format(jid))
     val pubHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
-    debug("pub %s".format(jid))
+    trace("pub %s".format(jid))
     val privHistory = isInteractiveUser.map(iu => if (iu){
       MeTLXConfiguration.getRoom(jid+username,server).getHistory
     } else {
       History.empty
     }).openOr(History.empty)
-    debug("priv %s".format(jid))
+    trace("priv %s".format(jid))
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory)
-    debug("final %s".format(jid))
+    trace("final %s".format(jid))
     serializer.fromHistory(finalHistory)
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)
   private def moveToSlide(jid:String):Unit = {
-    debug("moveToSlide {0}".format(jid))
-    debug("CurrentConversation".format(currentConversation))
-    debug("CurrentSlide".format(currentSlide))
+    trace("moveToSlide {0}".format(jid))
+    trace("CurrentConversation".format(currentConversation))
+    trace("CurrentSlide".format(currentSlide))
     val slideId = jid.toInt
     currentSlide.filterNot(_ == jid).map(cs => {
       currentConversation.filter(cc => conversationContainsSlideId(cc,slideId)).map(cc => {
-        debug("Don't have to leave conversation, current slide is in it")
+        trace("Don't have to leave conversation, current slide is in it")
         //        rooms.get((server,cc.jid.toString)).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,cs,false,Nil)))
       }).getOrElse({
-        debug("Joining conversation for: %s".format(slideId))
+        trace("Joining conversation for: %s".format(slideId))
         joinConversation(serverConfig.getConversationForSlide(jid))
       })
       leaveRoomByJid(cs)
       leaveRoomByJid(cs+username)
     })
     currentConversation.getOrElse({
-      debug("Joining conversation for: %s".format(slideId))
+      trace("Joining conversation for: %s".format(slideId))
       joinConversation(serverConfig.getConversationForSlide(jid))
     })
     currentConversation.map(cc => {
-      debug("checking to see that current conv and current slide now line up")
+      trace("checking to see that current conv and current slide now line up")
       if (conversationContainsSlideId(cc,slideId)){
-        debug("conversation contains slide")
+        trace("conversation contains slide")
         currentSlide = Full(jid)
         if (cc.author.trim.toLowerCase == username.trim.toLowerCase && isInteractiveUser.map(iu => iu == true).getOrElse(true)){
           val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid))
@@ -1311,14 +1352,37 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
+        val sessionsToClose = for {
+          sessionTup <- tokSlideSpecificSessions.toList
+          tokSess <- sessionTup._2
+        } yield {
+          tokSess
+        }
+        sessionsToClose.map(tokSess => JString(tokSess.sessionId)) match {
+          case Nil => {}
+          case toClose => {
+            trace("shutting down tokSessions: %s".format(toClose))
+            partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(toClose)))
+          }
+        }
+        tokSlideSpecificSessions.clear()
+        tokSlideSpecificSessions ++= (for {
+          slide <- cc.slides
+          if slide.id == slideId
+          groupSet <- slide.groupSet
+          group <- groupSet.groups
+          if (group.members.contains(username) || shouldModifyConversation(cc))
+            } yield {
+          (group.id,None)
+        })
       }
     })
   }
   private def leaveAllRooms(shuttingDown:Boolean = false) = {
-    debug("leaving all rooms: %s".format(rooms))
+    trace("leaving all rooms: %s".format(rooms))
     rooms.foreach(r => {
       if (shuttingDown || (r._1._2 != username && r._1._2 != "global")){
-        debug("leaving room: %s".format(r))
+        trace("leaving room: %s".format(r))
         r._2() ! LeaveRoom(username,userUniqueId,this)
       }
     })
@@ -1326,18 +1390,18 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   override def lifespan = Full(2 minutes)
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
-    debug("roomInfo received: %s".format(roomInfo))
-    debug("updateRooms: %s".format(roomInfo))
+    trace("roomInfo received: %s".format(roomInfo))
+    trace("updateRooms: %s".format(roomInfo))
     roomInfo match {
       case RoomJoinAcknowledged(s,r) => {
-        debug("joining room: %s".format(r))
+        trace("joining room: %s".format(r))
         rooms = rooms.updated((s,r),() => MeTLXConfiguration.getRoom(r,s))
         try {
           val slideNum = r.toInt
           val conv = serverConfig.getConversationForSlide(r)
-          debug("trying to send truePresence to room: %s %s".format(conv,slideNum))
+          trace("trying to send truePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
+            val room = MeTLXConfiguration.getRoom(conv.toString,server,ConversationRoom(server,conv.toString))
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,true,Nil))
           } else {
             val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
@@ -1349,11 +1413,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
       case RoomLeaveAcknowledged(s,r) => {
-        debug("leaving room: %s".format(r))
+        trace("leaving room: %s".format(r))
         try {
           val slideNum = r.toInt
           val conv = serverConfig.getConversationForSlide(r)
-          debug("trying to send falsePresence to room: %s %s".format(conv,slideNum))
+          trace("trying to send falsePresence to room: %s %s".format(conv,slideNum))
           if (conv != r){
             val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
             room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,false,Nil))
@@ -1412,7 +1476,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           currentConversation.map(cc => {
             val roomId = cc.jid.toString
             rooms.get((serverName,roomId)).map(r =>{
-              debug("sendStanzaToServer sending submission: "+r)
+              trace("sendStanzaToServer sending submission: "+r)
               r() ! LocalToServerMeTLStanza(s)
             })
           })
@@ -1430,7 +1494,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         if (q.author == username) {
           currentConversation.map(cc => {
             if (shouldModifyConversation(cc)){
-              debug("sending quiz: %s".format(q))
+              trace("sending quiz: %s".format(q))
               val roomId = cc.jid.toString
               rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(q))
             } else {
@@ -1442,8 +1506,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCanvasContent => {
         if (c.author == username){
           currentConversation.map(cc => {
+            val t = c match {
+              case i:MeTLInk => "ink"
+              case i:MeTLImage => "img"
+              case i:MeTLMultiWordText => "txt"
+              case _ => "_"
+            }
+            val p = c.privacy match {
+              case Privacy.PRIVATE => "private"
+              case Privacy.PUBLIC => "public"
+              case _ => "_"
+            }
+            emit(p,c.identity,t)
             val (shouldSend,roomId,finalItem) = c.privacy match {
-              case Privacy.PRIVATE => (true,c.slide+username,c)
+              case Privacy.PRIVATE => {
+                (true,c.slide+username,c)
+              }
               case Privacy.PUBLIC => {
                 if (shouldPublishInConversation(cc)){
                   (true,c.slide,c)
@@ -1506,6 +1584,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     trace("IN -> %s".format(metlStanza))
     metlStanza match {
       case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
+        trace("comet.MeTL /UPDATE_CONVERSATION_DETAILS for %s".format(name))
         val newJid = c.commandParameters(0).toInt
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
         if (currentConversation.exists(_.jid == newConv.jid)){
@@ -1521,22 +1600,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                 newConv
               } else cc
             })
-            debug("updating conversation to: %s".format(newConv))
+            trace("updating conversation to: %s".format(newConv))
             partialUpdate(Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
           }
         }
       }
       case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
-        debug("incoming syncMove: %s".format(c))
+        trace("incoming syncMove: %s".format(c))
         val newJid = c.commandParameters(0).toInt
         partialUpdate(Call(RECEIVE_SYNC_MOVE,newJid))
       }
       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
         //not relaying teacherInConversation to page
       }
-      case a:Attendance => {
-        //not relaying to page yet, because we're not using them in the webmetl client yet
-      }
+      case a:Attendance => getAttendance.map(attendances => partialUpdate(Call(RECEIVE_ATTENDANCE,attendances)))
       case _ => {
         trace("receiving: %s".format(metlStanza))
         val response = serializer.fromMeTLData(metlStanza) match {
@@ -1547,6 +1624,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     }
   })
+  def getAttendance = {
+    val expectedAttendance = currentConversation.map(c => Globals.groupsProviders.flatMap(_.getMembersFor(c.subject)).distinct).getOrElse(Nil)
+    val actualAttendance = (for(
+      conversation <- currentConversation;
+      room <- rooms.get(server,conversation.jid.toString)) yield {
+      room().getAttendances
+        .filter(_.present)
+        .map(_.author)
+        .distinct
+        .map(JString(_))
+    }).getOrElse(Nil)
+    trace("actualAttendance: %s".format(actualAttendance.toString))
+    currentSlide.map(slideJid => JObject(List(
+      JField("val",JInt(actualAttendance.length)),
+      JField("max",JInt(expectedAttendance.length)))))
+  }
   private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
   private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
   private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)

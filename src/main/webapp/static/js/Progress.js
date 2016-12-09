@@ -12,6 +12,8 @@ var Progress = (function(){
             });
         },
         onPrivacyChanged:{},
+        beforeLeavingSlide:{},
+        afterJoiningSlide:{},
         onConversationJoin:{},
         onSelectionChanged:{},
         onBoardContentChanged:{},
@@ -19,6 +21,7 @@ var Progress = (function(){
         onLayoutUpdated:{},
         textBoundsChanged:{},
         postRender:{},
+        attendanceReceived:{},
         historyReceived:{},
         stanzaReceived:{},
         themeReceived:{},
@@ -31,8 +34,8 @@ var Progress = (function(){
         userGroupsReceived:{},
         usernameReceived:{},
         userOptionsReceived:{},
-				afterWorkQueuePause:{}, //these two are sensitive - don't put anything into these which itself would pause the workqueue, or you'll get deadlocks.
-				beforeWorkQueueResume:{},
+        afterWorkQueuePause:{}, //these two are sensitive - don't put anything into these which itself would pause the workqueue, or you'll get deadlocks.
+        beforeWorkQueueResume:{},
         onCanvasContentDeleted:{}
     }
 })();

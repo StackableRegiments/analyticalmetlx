@@ -6,6 +6,8 @@ var HealthChecker = (function(){
     var catLength = 50; //keep a rolling window of the last n items of each category
     var healthChecking = true;
 
+		var clockOffset = 0;
+
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
             store[category] = timedQueue(storeLifetime);
@@ -20,37 +22,49 @@ var HealthChecker = (function(){
     };
     var check = function(){
         var clientStart = new Date().getTime();
-				var reportableHealthObj = describeHealthFunction();
-				var url = "/reportLatency"
-				if ("latency" in reportableHealthObj){
-					var reportableHealth = reportableHealthObj.latency;
-					url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
-				}
-				$.ajax(url,{
-						method:"GET",
-						success:function(time){
-								var serverWorkTime = parseInt(time);
-								var totalTime = new Date().getTime() - clientStart;
-								var latency = (totalTime - serverWorkTime) / 2;
-								addMeasureFunc("serverResponse",true,serverWorkTime);
-								addMeasureFunc("latency",true,latency);
-								_.delay(check,serverStatusInterval);
-						},
-						dataType:"text",
-						error:function(){
-								addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
-								_.delay(check,serverStatusInterval);
-						}
-				});
+        var reportableHealthObj = describeHealthFunction();
+        var url = "/reportLatency"
+        if ("latency" in reportableHealthObj){
+            var reportableHealth = reportableHealthObj.latency;
+            url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
+        }
+        $.ajax(url,{
+            method:"GET",
+            success:function(jsonTime){
+							var nowTime = new Date();
+							var timeObj = JSON.parse(jsonTime);
+							var time = timeObj.serverWorkTime;
+                var serverWorkTime = parseInt(time);
+                var totalTime = new Date().getTime() - clientStart;
+                var latency = (totalTime - serverWorkTime) / 2;
+	
+							var serverSideTime = timeObj.serverTime;
+							var timeDiff = nowTime.getTime() - (serverSideTime + latency);
+							console.log("calculating time offset:",nowTime.getTime(),serverSideTime,latency);
+							clockOffset = timeDiff;
+                addMeasureFunc("serverResponse",true,serverWorkTime);
+                addMeasureFunc("latency",true,latency);
+                _.delay(check,serverStatusInterval);
+            },
+            dataType:"text",
+            error:function(){
+                addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
+                _.delay(check,serverStatusInterval);
+            }
+        });
     };
     var updateGraph = _.throttle(function(){
         var checkData = getAggregatedMeasuresFunc(1000);
         var describedData = describeHealthFunction();
         HealthCheckViewer.refreshDisplays(checkData,describedData);
     },500);
-    var resumeHealthCheckFunc = function(){
+    var resumeHealthCheckFunc = function(immediate){
         healthChecking = true;
-        _.delay(check,serverStatusInterval);
+				if (immediate){
+					check();
+				} else {
+					_.delay(check,serverStatusInterval);
+				}
     };
     var pauseHealthCheckFunc = function(){
         healthChecking = false;
@@ -93,7 +107,7 @@ var HealthChecker = (function(){
         });
     };
     var describeHealthFunction = function(){
-			return _.mapValues(store,function(catStore,k){
+        return _.mapValues(store,function(catStore,k){
             var v = catStore.items();
             var count = v.length;
             var durations = _.map(v,"duration");
@@ -111,9 +125,15 @@ var HealthChecker = (function(){
         });
     };
     $(function(){
-        resumeHealthCheckFunc();
+        resumeHealthCheckFunc(true);
     });
     return {
+				getTimeOffset:function(){
+					return clockOffset;
+				},
+				getServerTime:function(){
+					return new Date(new Date().getTime() + clockOffset);
+				},	
         check:check,
         resumeHealthCheck:resumeHealthCheckFunc,
         pauseHealthCheck:pauseHealthCheckFunc,
@@ -125,8 +145,8 @@ var HealthChecker = (function(){
 })();
 
 var augmentArguments = function(args){
-	args[_.size(args)] = new Date().getTime();
-	return args;
+    args[_.size(args)] = new Date().getTime();
+    return args;
 };
 
 var serverResponse = function(responseObj){
@@ -138,7 +158,8 @@ var serverResponse = function(responseObj){
         HealthChecker.addMeasure("latency",responseObj.success,latency);
     }
     if ("success" in responseObj && responseObj.success == false){
-        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "error encountered");
+	console.log(responseObj);
+        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
     }
 }
 

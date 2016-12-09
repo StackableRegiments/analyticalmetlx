@@ -4,7 +4,7 @@ import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "0.12.7"
+version := "0.13.6-future"
 
 val scalaVersionString = "2.11.5"
 
@@ -112,8 +112,8 @@ libraryDependencies ++= {
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
-//    "org.scalactic" %% "scalactic" % "3.0.0",
-//    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+    //    "org.scalactic" %% "scalactic" % "3.0.0",
+    //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1"
