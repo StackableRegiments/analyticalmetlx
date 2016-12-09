@@ -1,3 +1,6 @@
+0.13.4
+Bugfix: METL-291: Using button for conversation search does not update the search query.
+
 0.13.3
 Bugfix: METL-273: Conversation search now disables while search is processing.
 
