@@ -88,8 +88,8 @@ case class D2LGradeObject(
   AssociatedTool: Option[D2LAssociatedTool]
 )
 case class D2LGradeValue(
-  UserId: String,  // Added to LE unstable API contract as of LMS v10.6.3
-  OrgUnitId: String,  // Added to LE unstable API contract as of LMS v10.6.3
+  UserId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
+  OrgUnitId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
   DisplayedGrade: String,
   GradeObjectIdentifier: String,
   GradeObjectName: String,
@@ -101,8 +101,8 @@ case class D2LGradeValue(
   Value:Option[String], // include this if GradeObjectType = 3
   Text:Option[String], // include this if GradeObjectType = 4
   GradeObjectTypeName: Option[String],
-  Comments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
-  PrivateComments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
+  Comments: Option[List[D2LDescription]],  // Added with LE v1.13 API - provide when POSTing
+  PrivateComments: Option[List[D2LDescription]],  // Added with LE v1.13 API - provide when POSTing
   //PointsNumerator: Option[Long], //computable only
   PointsDenominator: Option[Long], //computable only
   WeightedDenominator: Option[Long], // computable only
@@ -110,10 +110,10 @@ case class D2LGradeValue(
 )
 case class D2LGradeValueResponse(
   Next:Option[String],
-  Objects:List[D2LGradeValue]
+  Objects:List[D2LUserGradeValue]
 )
 case class D2LUserGradeValue(
-  User:D2LUser,
+  User:D2LUserFlyWeight,
   GradeValue:Option[D2LGradeValue]
 )
 
@@ -205,8 +205,7 @@ case class D2LOrgUnitTypeInfo(
   Code:String,
   Name:String
 )
-/*
-case class D2LUser(
+case class D2LUserFlyWeight(
   Identifier:Option[String],
   DisplayName:Option[String],
   EmailAddress:Option[String],
@@ -214,7 +213,6 @@ case class D2LUser(
   ProfileBadgeUrl:Option[String],
   ProfileIdentifier:Option[String]
 )
-*/
 case class D2LOrgUnit(
   Identifier:String, //this is actually a number
   Type:D2LOrgUnitTypeInfo,
@@ -457,12 +455,13 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
     putToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,grade.Id),"PUT"),Extraction.decompose(grade),true)
   }
-  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObject:D2LGradeObject):List[D2LGradeValue] = {
-    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id),"GET")
-    var items:List[D2LGradeValue] = Nil
+  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObject:D2LGradeObject):List[D2LUserGradeValue] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id.head),"GET")
+    var items:List[D2LUserGradeValue] = Nil
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
+      println("gotGradeValues: %s".format(first))
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
       var continuing = firstResp.Next
@@ -486,7 +485,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     } catch {
       case e:Exception => {
         warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
-        List.empty[D2LGradeValue]
+        List.empty[D2LUserGradeValue]
       }
     }
   }
