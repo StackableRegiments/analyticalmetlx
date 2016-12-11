@@ -67,7 +67,7 @@ var Plugins = (function(){
                             if(Conversations.shouldModifyConversation()){
                                 var slide = Conversations.getCurrentSlide();
                                 if(slide){
-                                    var groups = Conversations.getCurrentGroups();
+                                    var groups = _.map(Conversations.getCurrentGroups(),"id");
                                     if(groups.length){
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"

@@ -127,6 +127,11 @@ var BoardPage = function(user) {
         worldToScreen: {value: worldToScreen },
         screenToWorld: {value: screenToWorld },
 
+	boardTitle:{
+	    get:function(){
+		return user.execute("return $('.headerRow1 .heading').text().replace(/\\s+/g,' ')").value;
+	    }
+	},
         menuButton: {get: function(){return user.element("#applicationMenuButton");}},
         applicationMenu: {get:function(){
             return user.element(".backstage-menu.active");

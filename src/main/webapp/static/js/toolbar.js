@@ -1794,7 +1794,7 @@ var Modes = (function(){
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
                                 y:currentVideo.y,
-                                audiences:Conversations.getCurrentGroup().map(audienceToStanza)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2058,7 +2058,7 @@ var Modes = (function(){
                                 y:imageDef.y,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                audiences:Conversations.getCurrentGroup().map(audienceToStanza)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();

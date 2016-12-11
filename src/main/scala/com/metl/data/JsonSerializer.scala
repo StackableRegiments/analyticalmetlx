@@ -918,8 +918,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val audiences = parseJObjForAudiences(input,config)
         val id = getStringByName(input,"id")
         val location = getStringByName(input,"location")
+        val timestamp = getLongByName(input,"timestamp")
         val members = getListOfStringsByName(input,"members")
-        Group(config,id,location,members,audiences)
+        Group(config,id,location,timestamp,members,audiences)
       }
       case _ => Group.empty
     }
@@ -928,6 +929,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     toJsObj("group",List(
       JField("id",JString(input.id)),
       JField("location",JString(input.location)),
+      JField("timestamp",JInt(input.timestamp)),
       JField("members",JArray(input.members.map(m => JString(m))))
     ) ::: parseAudiences(input))
   })

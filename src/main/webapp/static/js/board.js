@@ -74,7 +74,9 @@ function strokeCollected(points){
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
-        ink.audiences = Conversations.getCurrentGroup().map(audienceToStanza);
+        ink.audiences = Conversations.getCurrentGroup().map(function(group){
+	    return audienceToStanza(group.id)
+	});
 
         calculateInkBounds(ink);
         prerenderInk(ink);
@@ -196,7 +198,7 @@ function richTextEditorToStanza(t){
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza),
-        audiences:Conversations.getCurrentGroup().map(audienceToStanza)
+        audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
     }
 }
 function sendRichText(t){

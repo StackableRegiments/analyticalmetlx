@@ -346,7 +346,7 @@ var Conversations = (function(){
             currentGroup = [];
             _.each(Conversations.getCurrentGroups(),function(group){
                 if(_.includes(group.members,UserSettings.getUsername())){
-                    currentGroup.push(group.id);
+                    currentGroup.push(group);
                 }
             });
         }
@@ -928,7 +928,10 @@ var Conversations = (function(){
         },
         getCurrentGroup : getCurrentGroupFunction,
         getGroupsFor : function(slide){
-            return slide ? _.flatMap(slide.groupSets,function(gs){return gs.groups}) : [];
+            return slide ? _.map(_.sortBy(_.flatMap(slide.groupSets,function(gs){return gs.groups}),'timestamp'),function(v,k){
+		v.title = k + 1;
+		return v;
+	    }) : [];
         },
         getCurrentGroups : function(){
             return Conversations.getGroupsFor(getCurrentSlideFunc());

@@ -111,6 +111,10 @@ describe('When the class breaks into groups,', function() {
         });
         assert.equal(teacher.execute("return $('.activeSlide.groupSlide').length").value,1);
     });
+    it("a student show see their current group",function(){
+	console.log(sA.boardTitle);
+	assert(sA.boardTitle.startsWith(" studentA working in Group 1 of teacher at"));
+    });
     it("the students should all be split into groups",function(){
         var groupSet = tT.currentSlide.groupSets[0];
         assert.equal(groupSet.groups.length,2);

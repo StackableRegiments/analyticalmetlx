@@ -651,13 +651,15 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val m = parseMeTLContent(input,config)
     val id = getStringByName(input,"id")
     val location = getStringByName(input,"location")
+    val timestamp = getLongByName(input,"timestamp")
     val members = ((input \ "members") \ "member").map(_.text).toList
-    Group(config,id,location,members,m.audiences)
+    Group(config,id,location,timestamp,members,m.audiences)
   })
   override def fromGroup(input:Group):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGroup",{
     metlXmlToXml("group",List(
       <id>{input.id}</id>,
       <location>{input.location}</location>,
+      <timestamp>{input.timestamp}</timestamp>,
       <members>{input.members.map(m => {
         <member>{m}</member>
       })}</members>

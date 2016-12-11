@@ -32,6 +32,7 @@ var ContentFilter = (function(){
         enabled:true
     };
     var generateGroupFilter = function(group){
+	console.log("generateGroupFilter",group);
         return {
             id:group.id,
             name:group.name,

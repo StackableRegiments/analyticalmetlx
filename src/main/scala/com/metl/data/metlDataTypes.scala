@@ -116,7 +116,7 @@ case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
       }).map(fg => {
         fg.copy(members = person :: fg.members) :: oldGroups.filter(_.id != fg.id)
       }).getOrElse({
-        Group(g.server,nextFuncName,g.location,List(person)) :: oldGroups
+        Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: oldGroups
       })
     }
     g.copy(groups = newGroups)
@@ -135,7 +135,7 @@ case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
         oldGroups match {
           case l:List[Group] if l.length < numberOfGroups => {
             trace("Adding a group")
-            Group(g.server,nextFuncName,g.location,List(person)) :: l
+            Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: l
           }
           case l:List[Group] => {
             trace("Adding to an existing group")
@@ -164,18 +164,18 @@ case class ComplexGroupingStrategy(data:Map[String,String]) extends GroupingStra
 }
 case object OnePersonPerGroup extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    g.copy(groups = Group(g.server,nextFuncName,g.location,List(person)) :: g.groups)
+    g.copy(groups = Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: g.groups)
   }
 }
 case object EveryoneInOneGroup extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    g.copy(groups = List(Group(g.server,g.groups.headOption.map(_.id).getOrElse(nextFuncName),g.location,(person :: g.groups.flatMap(_.members)).distinct)))
+    g.copy(groups = List(Group(g.server,g.groups.headOption.map(_.id).getOrElse(nextFuncName),g.location,new Date().getTime,(person :: g.groups.flatMap(_.members)).distinct)))
   }
 }
 
-case class Group(override val server:ServerConfiguration,id:String,location:String,members:List[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
+case class Group(override val server:ServerConfiguration,id:String,location:String,timestamp:Long,members:List[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
 object Group {
-  def empty = Group(ServerConfiguration.empty,"","",Nil,Nil)
+  def empty = Group(ServerConfiguration.empty,"","",0,Nil,Nil)
 }
 
 case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences) with Logger{

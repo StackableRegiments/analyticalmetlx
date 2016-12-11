@@ -188,7 +188,7 @@ function isUsable(element){
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    var myGroups = Conversations.getCurrentGroup();
+    var myGroups = _.map(Conversations.getCurrentGroup(),"id");
     var forMyGroup = _.isEmpty(element.audiences) ||
             Conversations.isAuthor() ||
             _.some(element.audiences,function(audience){
@@ -904,6 +904,11 @@ function unpix(str){
 }
 function updateConversationHeader(){
     $("#heading").text(Conversations.getCurrentConversation().title);
+    var groupV = $("#currentGroupTitle").empty();
+    var group = Conversations.getCurrentGroup();
+    if(group.length){
+	groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
+    }
 }
 function clearBoard(incContext,rect){
     try {
