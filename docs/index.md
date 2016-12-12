@@ -1,48 +1,37 @@
 ---
 layout: default
-title: Overview
+title: Welcome to MeTL
 ---
 
 MeTL supports learning in a collaborative space for teachers and students, providing deep analysis of user interaction 
 and engagement.
 
-## Concepts
+# Get Started
 
-MeTL is at its heart a message hub with all messages being persisted for later retrieval.
-This makes it a system for virtualising rooms.
+<!--
+## Executive
 
-Messages are sent to a specific space, and only people who are in that room will hear the message.
+If you're in senior management and looking to take advantage of cloud and machine learning, or you're looking to 
+maximize utilization of smartboard and tablet fleets you've already established, 
+view our [executive](executive.html) proposition.
+-->
 
-Messages can be user level, and be visible to a human user, or system level and used to coordinate clients behaviour.
+## Academy
 
-All messages which have ever been through a room are retained, and can be replayed in order.
-Server side mechanisms optimize the results so that, for instance, a sentence which was published, moved and
-then later deleted does not show up in the client history at all.
+If you’re looking to teach in a way which enables your class to work together, 
+to spontaneously form working groups and to receive structured advice on the outcomes afterwards, 
+read our [academy](academy.html) guide.
 
-Conversations are structured as a collection of slides and some metadata.
-This is similar to the structure of a PowerPoint presentation, which enables some interoperability.
+## Architecture
 
-A slide is a room.
+If you’re considering adopting this system and want to ensure that it fits with your IT policy, 
+read our [architecture](architect.html).
 
-Each user has a private room on each slide.
+## Developers
 
-Each conversation has a conversation global room.
-Quizzes, submissions and attachments use this space, as they are not specific to a slide.
+If you’re a developer and you’re investigating integrating or extending the MeTL system, 
+check out our [source](https://github.com/StackableRegiments/analyticalmetlx).
 
-A server global room carries configuration data to all connected clients
-(when a conversation is shared differently, for instance, this is broadcast globally in case that
-conversation needs to be added or removed from a search result).
+## Support
 
-## Authors and Contributors
-
-Currently: Chris Hagan 
-(<a href="https://github.com/captainmisterhagan" class="user-mention">@captainmisterhagan</a>,
-<a href="https://github.com/ChrisHagan" class="user-mention">@ChrisHagan</a>),
-Dave Hagan 
-(<a href="https://github.com/davidhagan" class="user-mention">@davidhagan</a>,
-<a href="https://github.com/simplepens" class="user-mention">@simplepens</a>),
-and Doug Hagan 
-(<a href="https://github.com/dougecko" class="user-mention">@dougecko</a>).
-
-Redesigned in early 2016 by Jodi Goodin 
-(<a href="https://github.com/jmgoodin" class="user-mention">@jmgoodin</a>).
+If you're supporting MeTL, use our [support](support.html) manual.
