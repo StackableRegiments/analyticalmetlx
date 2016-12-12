@@ -53,10 +53,10 @@ var BoardPage = function(user) {
         participationHealth: { get:function(){ return user.execute("return $('#attendanceStatus').val()").value; } },
         participationHealthMax: { get:function(){ return user.execute("return $('#attendanceStatus').attr('max')").value; } },
 
-	thumbWidth: {get:function(){ return user.execute("return $('#thumbsColumn').width()").value; }},
-	resizeThumb: {get:function(delta){ return user.element("#thumbColumnWidth"); } },
+        thumbWidth: {get:function(){ return user.execute("return $('#thumbsColumn').width()").value; }},
+        resizeThumb: {get:function(delta){ return user.element("#thumbColumnWidth"); } },
 
-	pluginBar: {get:function(){return user.element("#pluginBar")}},
+        pluginBar: {get:function(){return user.element("#pluginBar")}},
 
         usableStanzas: { get:function(){
             return user.execute("return usableStanzas()").value;
@@ -127,11 +127,11 @@ var BoardPage = function(user) {
         worldToScreen: {value: worldToScreen },
         screenToWorld: {value: screenToWorld },
 
-	boardTitle:{
-	    get:function(){
-		return user.execute("return $('.headerRow1 .heading').text().replace(/\\s+/g,' ')").value;
-	    }
-	},
+        boardTitle:{
+            get:function(){
+                return user.execute("return $('.headerRow1 .heading').text().replace(/\\s+/g,' ')").value;
+            }
+        },
         menuButton: {get: function(){return user.element("#applicationMenuButton");}},
         applicationMenu: {get:function(){
             return user.element(".backstage-menu.active");
@@ -140,8 +140,13 @@ var BoardPage = function(user) {
         conversationSearch:{get:function(){return user.element("#conversations");}},
         participants:{get:function(){return user.element("#menuParticipants");}},
         groupBuilder:{get:function(){return user.element("#menuGroups");}},
-	allocatedMembers:{get:function(){ return user.execute("return $('.allocatedMembers .member')").value;}},
-	unallocatedMembers:{get:function(){ return user.execute("return $('.unallocatedMembers .member')").value;}},
+        chooseGroupStrategy:{value:function(strategy,index){
+	    var command = sprintf("return $('%s').eq(%s).click()",strategy,index);
+	    console.log(command);
+            return user.execute(command).value;
+        }},
+        allocatedMembers:{get:function(){ return user.execute("return $('.allocatedMembers .member')").value;}},
+        unallocatedMembers:{get:function(){ return user.execute("return $('.unallocatedMembers .member')").value;}},
         contentFilter:{get:function(){return user.element("#menuContentFilter");}},
         openParticipants:{value:function(){
             this.menuButton.click();

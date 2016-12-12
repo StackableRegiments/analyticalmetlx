@@ -32,7 +32,6 @@ var ContentFilter = (function(){
         enabled:true
     };
     var generateGroupFilter = function(group){
-	console.log("generateGroupFilter",group);
         return {
             id:group.id,
             name:group.name,
@@ -92,7 +91,7 @@ var ContentFilter = (function(){
                 return group.id == filter.id;
             });
             if(referencedGroup){
-                labelText.text(_.join(referencedGroup.members,","));
+                labelText.text(sprintf("Group %s: %s",referencedGroup.title,_.join(referencedGroup.members,",")));
             }
             else {
                 labelText.text(filter.name);

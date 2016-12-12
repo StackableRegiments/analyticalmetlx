@@ -688,12 +688,12 @@ var Conversations = (function(){
             overrideAllocation(Conversations.getCurrentConversationJid(),slide);
         }
     };
-    var addGroupSlideFunction = function(){
+    var addGroupSlideFunction = function(strategy,parameter){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
             var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
             var newIndex = currentSlideIndex + 1;
-            addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex);
+            addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex,strategy,parameter);
             Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
                 if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
                     if ("slides" in incomingDetails){
@@ -875,7 +875,9 @@ var Conversations = (function(){
     $(function(){
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
-            .on("click","#addGroupSlideButton",addGroupSlideFunction)
+            .on("click","#addGroupSlideButton",function(){
+                showBackstage('groups');
+            })
             .on("click","#addSlideButton",addSlideFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
@@ -929,13 +931,14 @@ var Conversations = (function(){
         getCurrentGroup : getCurrentGroupFunction,
         getGroupsFor : function(slide){
             return slide ? _.map(_.sortBy(_.flatMap(slide.groupSets,function(gs){return gs.groups}),'timestamp'),function(v,k){
-		v.title = k + 1;
-		return v;
-	    }) : [];
+                v.title = k + 1;
+                return v;
+            }) : [];
         },
         getCurrentGroups : function(){
             return Conversations.getGroupsFor(getCurrentSlideFunc());
         },
+        addGroupSlide : addGroupSlideFunction,
         getCurrentTeacherSlide : function(){return currentTeacherSlide;},
         getCurrentSlideJid : function(){return currentSlide;},
         getCurrentSlide : getCurrentSlideFunc,

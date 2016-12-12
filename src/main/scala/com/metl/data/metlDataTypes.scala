@@ -111,7 +111,7 @@ case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
     val oldGroups = g.groups
     val newGroups = {
-      g.groups.find(group => {
+      oldGroups.find(group => {
         group.members.length < groupSize
       }).map(fg => {
         fg.copy(members = person :: fg.members) :: oldGroups.filter(_.id != fg.id)
@@ -119,6 +119,7 @@ case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
         Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: oldGroups
       })
     }
+    warn("ByMaximumSize adding %s yields %s".format(person,newGroups))
     g.copy(groups = newGroups)
   }
 }

@@ -901,12 +901,16 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       debug("Parsed values: %s".format(newSlide,c))
       serializer.fromConversation(serverConfig.updateConversation(c.jid.toString,c.copy(slides = newSlide :: c.slides.filterNot(_.id == newSlide.id))))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping"),(args) => {
+    ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping","parameter"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val c = serverConfig.detailsOfConversation(jid)
+      warn("Requested group slide: %s".format(args))
       val grouping = getArgAsString(args(2)) match {
-        case _ => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByTotalGroups(3),Nil)
+        case "byTotalGroups" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByTotalGroups(getArgAsInt(args(3))),Nil)
+        case "byMaximumSize" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByMaximumSize(getArgAsInt(args(3))),Nil)
+        case "groupsOfOne" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,OnePersonPerGroup,Nil)
+        case _ => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByMaximumSize(4),Nil)
       }
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => serverConfig.addGroupSlideAtIndexOfConversation(c.jid.toString,index,grouping)

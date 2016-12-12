@@ -893,7 +893,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           case "byTotalGroups" => ByTotalGroups(getIntByName(input,"groupCount"))
           case "onePersonPerGroup" => OnePersonPerGroup
           case "everyoneInOneGroup" => EveryoneInOneGroup
-          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursiely into a Map.
+          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursively into a Map.
           case _ => EveryoneInOneGroup
         }
       }
