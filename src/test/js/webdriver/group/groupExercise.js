@@ -115,6 +115,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(teacher.execute("return $('.activeSlide.groupSlide').length").value,1);
     });
     it("a student show see their current group",function(){
+	console.log(sA.boardTitle);
         assert(sA.boardTitle.startsWith(" studentA working in Group 1 of teacher at"));
     });
     it("the students should all be split into groups",function(){
@@ -425,9 +426,8 @@ describe('When the class breaks into groups,', function() {
         browser.waitUntil(function(){return browser.isVisible("#menuGroups");});
         tT.groupBuilder.click();
         browser.waitUntil(function(){return browser.isVisible("#groupsPopup");});
+	browser.debug();
         assert.equal(tT.allocatedMembers.length,5);
         assert.equal(tT.unallocatedMembers.length,1);
-    });
-    it("the teacher should be able to change the grouping strategy and the groups should reallocate",function(){
     });
 });

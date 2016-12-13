@@ -14,8 +14,8 @@ var GroupBuilder = (function(){
                     .append($("<label />",{text:params[0]}));
             _.each(params[2],function(p){
                 var strategy = $("<div />",{
-		    class:sprintf("strategy%s",params[1])
-		}).appendTo(strategyContainer);
+                    class:sprintf("strategy%s",params[1])
+                }).appendTo(strategyContainer);
                 var id = _.uniqueId('strategy');
                 var input = $("<input />",{
                     type:'radio',
@@ -37,21 +37,13 @@ var GroupBuilder = (function(){
                         default: input.prop("checked",true);break;
                         }
                     }
+		    input.prop("disabled",true);
                 }
                 strategy.on('click',function(){
                     input.prop('checked',true);
-                    doAllocation.prop("disabled",false);
+                    doAllocation.prop("disabled",slide.groupSets.length != 0);
                     doAllocation.off("click").on("click",function(){
                         if(slide.groupSets.length){
-                            var replacement = {
-                                name:params[1]
-                            };
-                            switch(params[1]){
-                            case "byTotalGroups": replacement.groupCount = p; break;
-                            case "byMaximumSize": replacement.groupSize = p; break;
-                            }
-                            slide.groupSets[0].groupingStrategy = replacement;
-                            Conversations.overrideAllocation(slide);
                         }
                         else{
                             Conversations.addGroupSlide(params[1],p);
@@ -95,6 +87,10 @@ var GroupBuilder = (function(){
                             text:member
                         }).draggable().appendTo(g);
                     });
+		    $("<div />",{
+			class:"title",
+			text:sprintf("Group %s",group.title)
+		    }).prependTo(g);
                     g.appendTo(groupsV);
                 });
             });
