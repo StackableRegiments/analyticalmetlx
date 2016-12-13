@@ -1679,7 +1679,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       c <- currentConversation.toList;
       gp <- Globals.groupsProviders.filter(_.canQuery);
       ou <- gp.getOrgUnit(c.subject).toList) yield gp.getMembersFor(ou)).flatten
-    warn("expectedAttendance: %s".format(expectedAttendance))
     val actualAttendance = (for(
       conversation <- currentConversation;
       room <- rooms.get(server,conversation.jid.toString)) yield {

@@ -31,13 +31,17 @@ var GroupBuilder = (function(){
                 if(slide && slide.groupSets.length){
                     var currentStrategy = slide.groupSets[0].groupingStrategy;
                     if(currentStrategy.name == params[1]){
+                        strategyContainer.show();
                         switch(currentStrategy.name){
                         case "byTotalGroups": if(currentStrategy.groupCount == p) input.prop("checked",true); break;
                         case "byMaximumSize": if(currentStrategy.groupSize == p) input.prop("checked",true); break;
                         default: input.prop("checked",true);break;
                         }
                     }
-		    input.prop("disabled",true);
+                    else{
+                        strategyContainer.hide();
+                    }
+                    input.prop("disabled",true);
                 }
                 strategy.on('click',function(){
                     input.prop('checked',true);
@@ -64,7 +68,7 @@ var GroupBuilder = (function(){
             var strategy;
             var parameter;
             _.each(slide.groupSets,function(groupSet){
-                _.each(groupSet.groups,function(group){
+                _.each(_.sortBy(groupSet.groups,"title"),function(group){
                     var g = $("<div />",{
                         class:"groupBuilderGroup"
                     }).droppable({
@@ -87,10 +91,10 @@ var GroupBuilder = (function(){
                             text:member
                         }).draggable().appendTo(g);
                     });
-		    $("<div />",{
-			class:"title",
-			text:sprintf("Group %s",group.title)
-		    }).prependTo(g);
+                    $("<div />",{
+                        class:"title",
+                        text:sprintf("Group %s",group.title)
+                    }).prependTo(g);
                     g.appendTo(groupsV);
                 });
             });
