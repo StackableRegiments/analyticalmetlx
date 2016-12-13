@@ -824,6 +824,18 @@ function receiveNewConversationDetails(details){
 function receiveConversations(listOfConversations){
     Progress.call("conversationsReceived",[listOfConversations]);
 }
+function receiveGroupsProviders(providers){
+	console.log("receivedGroupProviders:",providers);
+}
+function receiveOrgUnitsFromGroupsProviders(orgUnits){
+	console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+}
+function receiveGroupSetsForOrgUnit(groupSets){
+	console.log("receiveGroupSetsForOrgUnit",groupSets);
+}
+function receiveGroupsForGroupSet(groups){
+	console.log("receiveGroupsForGropSet",groups);
+}
 // these will be injected by lift
 //function moveToSlide(jid)
 //function joinConversation(jid)
@@ -837,3 +849,7 @@ function receiveConversations(listOfConversations){
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)
+//function getGroupsProviders()
+//function getOrgUnitsFromGroupsProvider(storeId)
+//function getGroupSetsForOrgUnit(storeId,orgUnit)
+//function getGroupsForGroupSet(storeId,orgUnit,groupSet)

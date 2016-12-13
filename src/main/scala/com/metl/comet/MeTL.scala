@@ -1060,7 +1060,50 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val response = MeTLQuizResponse(serverConfig,username,new Date().getTime,chosenOptionName,username,quizId)
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       JNull
-    },Empty)
+    },Empty),
+    ClientSideFunction("getGroupsProviders",Nil,(args) => {
+      JObject(List(
+        JField("groupsProviders",JArray(Globals.getGroupsProviders.filter(_.canQuery).map(gp => JString(gp.storeId))))
+      ))
+    },Full("receiveGroupsProviders")),
+    ClientSideFunction("getOrgUnitsFromGroupProviders",List("storeId"),(args) => {
+      val sid = getArgAsString(args(0))
+      JObject(List(
+        JField("groupsProvider",JString(sid)),
+        JField("orgUnits",JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
+          gp.getGroupsFor(Globals.casState.is).map(g => Extraction.decompose(g))
+        }).toList))
+      ))
+    },Full("receiveOrgUnitsFromGroupsProviders")),
+    ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
+      val sid = getArgAsString(args(0))
+      val orgUnitJValue = getArgAsJValue(args(1))
+      val orgUnit = orgUnitJValue.extract[OrgUnit]
+      val groupSets = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
+        gp.getGroupSetsFor(orgUnit).map(gs => Extraction.decompose(gs))
+      }).toList)
+      JObject(List(
+        JField("groupsProvider",JString(sid)),
+        JField("orgUnit",orgUnitJValue),
+        JField("groupSets",groupSets)
+      ))
+    },Full("receiveGroupSetsForOrgUnit")),
+    ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
+      val sid = getArgAsString(args(0))
+      val orgUnitJValue = getArgAsJValue(args(1))
+      val orgUnit = orgUnitJValue.extract[OrgUnit]
+      val groupSetJValue = getArgAsJValue(args(2))
+      val groupSet = groupSetJValue.extract[com.metl.liftAuthenticator.GroupSet]
+      val groups = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
+        gp.getGroupSetsFor(orgUnit).map(gs => Extraction.decompose(gs))
+      }).toList)
+      JObject(List(
+        JField("groupsProvider",JString(sid)),
+        JField("orgUnit",orgUnitJValue),
+        JField("groupSets",groupSetJValue),
+        JField("groups",groups) 
+      ))
+    },Full("receiveGroupsForGroupSet"))
   )
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r().getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
