@@ -260,7 +260,7 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(sD.plainTexts,"Phrase 4"));
         join(studentE,'studentE');
         studentE.waitForExist("#board");
-        browser.waitUntil(function(){
+        studentE.waitUntil(function(){
             return sE.currentSlide.index == 1;
         });
         assert(_.includes(sE.plainTexts,"Phrase 1"));
@@ -426,7 +426,6 @@ describe('When the class breaks into groups,', function() {
         browser.waitUntil(function(){return browser.isVisible("#menuGroups");});
         tT.groupBuilder.click();
         browser.waitUntil(function(){return browser.isVisible("#groupsPopup");});
-	browser.debug();
         assert.equal(tT.allocatedMembers.length,5);
         assert.equal(tT.unallocatedMembers.length,1);
     });

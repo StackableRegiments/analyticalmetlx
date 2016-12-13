@@ -1130,7 +1130,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("groupsProvider",JString(sid)),
         JField("orgUnit",orgUnitJValue),
         JField("groupSet",groupSetJValue),
-        JField("groups",groups) 
+        JField("groups",groups)
       ))
     },Full("receiveGroupsForGroupSet"))
   )
@@ -1675,7 +1675,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
   })
   def getAttendance = {
-    val expectedAttendance = currentConversation.map(c => Globals.groupsProviders.flatMap(_.getMembersFor(c.subject)).distinct).getOrElse(Nil)
+    val expectedAttendance = (for(
+      c <- currentConversation.toList;
+      gp <- Globals.groupsProviders.filter(_.canQuery);
+      ou <- gp.getOrgUnit(c.subject).toList) yield gp.getMembersFor(ou)).flatten
+    warn("expectedAttendance: %s".format(expectedAttendance))
     val actualAttendance = (for(
       conversation <- currentConversation;
       room <- rooms.get(server,conversation.jid.toString)) yield {
