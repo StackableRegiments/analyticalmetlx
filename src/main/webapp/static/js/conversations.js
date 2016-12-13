@@ -829,9 +829,19 @@ function receiveGroupsProviders(providers){
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
 	console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+	/*
+	if ("orgUnits" in orgUnits){
+		getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnits.orgUnits[0]);
+	}
+	*/
 }
 function receiveGroupSetsForOrgUnit(groupSets){
 	console.log("receiveGroupSetsForOrgUnit",groupSets);
+	/*
+	if ("groupSets" in groupSets){
+		getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSets.groupSets[0]);
+	}
+	*/
 }
 function receiveGroupsForGroupSet(groups){
 	console.log("receiveGroupsForGropSet",groups);

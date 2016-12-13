@@ -1100,7 +1100,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       JObject(List(
         JField("groupsProvider",JString(sid)),
         JField("orgUnit",orgUnitJValue),
-        JField("groupSets",groupSetJValue),
+        JField("groupSet",groupSetJValue),
         JField("groups",groups) 
       ))
     },Full("receiveGroupsForGroupSet"))
