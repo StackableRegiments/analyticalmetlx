@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Credits
+title: Authors and Contributors
 ---
 
-MeTL is currently developed and maintained by:
+MeTL is currently developed and supported by:
 
 - Chris Hagan 
 (<a href="https://github.com/captainmisterhagan" class="user-mention">@captainmisterhagan</a>,
@@ -14,16 +14,13 @@ MeTL is currently developed and maintained by:
 - Doug Hagan 
 (<a href="https://github.com/dougecko" class="user-mention">@dougecko</a>)
 
-MeTL was redesigned in early 2016 by: 
-- Jodi Goodin (<a href="https://github.com/jmgoodin" class="user-mention">@jmgoodin</a>).
+MeTL was redesigned in early 2016 by Jodi Goodin (<a href="https://github.com/jmgoodin" class="user-mention">@jmgoodin</a>).
 
 MeTL owes a great deal to the many developers, testers, academics and directors of the eEducation Centre.  
 In no particular order, we want to mention the people who supported and grew this system:
 
 - Professor Adam Shoemaker
 - Professor Gordon Sanson
-- Chris Hagan
-- David Hagan
 - Doctor Wendy Mackenzie
 - Nathan Bailey
 - Doctor Murray Logan
