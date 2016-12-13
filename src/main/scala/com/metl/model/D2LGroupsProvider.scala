@@ -104,13 +104,14 @@ case class D2LGradeObject(
   AssociatedTool: Option[D2LAssociatedTool]
 )
 case class D2LIncomingGradeValue(
-  Comments:Option[D2LDescriptionInput],
-  PrivateComments:Option[D2LDescriptionInput],
+  Comments:D2LDescriptionInput,
+  PrivateComments:D2LDescriptionInput,
   GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
-  PointsNumerator:Option[Double], // include this if GradeObjectType = 1
+  PointsNumerator:Option[Double]/*, // include this if GradeObjectType = 1
   Pass:Option[Boolean], // include this if GradeObjectType = 2
   Value:Option[String], // include this if GradeObjectType = 3
   Text:Option[String] // include this if GradeObjectType = 4
+  */
 )
 case class D2LGradeValue(
   UserId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
@@ -331,10 +332,15 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
   protected def putToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
-      Some(parse(new String(client.putBytes(url.toString,compactRender(json).getBytes("UTF-8")),"UTF-8")).extract[T])
+      val jValueString = compactRender(json)
+      println("putting %s => %s".format(url.toString,jValueString))
+      val response = client.putString(url.toString,jValueString,List(("Content-Type","application/json")))
+      println("response from put: %s".format(response))
+      None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
-        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        trace("web exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        println("webException: %s => %s => %s".format(e.code,e.path,e.message))
         None
       }
       case e:Exception => {
@@ -489,7 +495,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id.head),"GET")
     var items:List[D2LUserGradeValue] = Nil
     try {
+      println("SENT GRADE VALUE REQUEST".format(url))
       val firstGet = client.get(url.toString)
+      println("GOT GRADE VALUES: %s".format(firstGet))
       var first = parse(firstGet)
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
@@ -520,11 +528,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
-    putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),Extraction.decompose(gradeValue),true)
+    val gv = Extraction.decompose(gradeValue)
+    putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
   }
-
-
-
 
   def getEnrollments(userContext:ID2LUserContext,userId:String):List[D2LEnrollment] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/?pagesize=%s".format(lpApiVersion,userId,pageSize),"GET")
