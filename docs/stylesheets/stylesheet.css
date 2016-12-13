@@ -349,35 +349,10 @@ Full-Width Styles
     margin: 0px 0px 0px 20px;
 }
 
-#nav-doc {
-    background: #373737;
-    margin: 0 0 0 200px;
+#nav-guide {
+    background: #4078c0;
+    margin: 0;
     padding: 2px 0 5px 25px;
-}
-
-#side-guide {
-    float: right;
-    position: relative;
-    z-index: 5;
-    width: 25%;
-    background: #373737;
-    margin: 0px 0px 0px 0px;
-    padding-left: 25px;
-}
-
-#side-guide ul {
-    width: 100%;
-}
-
-#side-guide li {
-    color: #eee;
-    font-size: 0.75em;
-    width: 100%;
-    text-align: left;
-}
-
-#side-guide li a {
-    padding-left: 10px;
 }
 
 .nav_link, .nav_sub_link {
@@ -385,7 +360,7 @@ Full-Width Styles
     padding: 0;
 }
 
-.nav_link a, #nav-doc a, #side-guide a {
+.nav_link a {
     color: #eee;
     font-size: 15px;
     font-weight: 200;
@@ -393,7 +368,7 @@ Full-Width Styles
     text-shadow: #111 0px 0px 10px;
 }
 
-.nav_link a, #nav-doc a {
+.nav_link a {
     margin-right: 25px;
     padding: 0;
 }
@@ -404,14 +379,20 @@ Full-Width Styles
     padding: 5px;
 }
 
+#nav-guide .nav_sub_link a {
+    background-color: #4078c0;
+}
+
 .pure-menu-active>.pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
     background-color: transparent;
-    /*background-color: #212121;*/
 }
 
 .pure-menu-active>.nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
-    /*background-color: transparent;*/
     background-color: #212121;
+}
+
+#nav-guide .pure-menu-active>.nav_sub_link .pure-menu-link, #nav-guide .nav_sub_link .pure-menu-link:hover, #nav-guide .nav_sub_link .pure-menu-link:focus {
+    background-color: #4078c0;
 }
 
 #main_content_wrap {
