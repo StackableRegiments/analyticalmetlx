@@ -266,6 +266,11 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     val userContext = getUserContext
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
     trace("courses found: %s".format(courses.length))
+
+    val intermediaryOrgUnits = new scala.collection.mutable.HashMap[String,OrgUnit]()
+    val intermediaryGroupSets = new scala.collection.mutable.HashMap[OrgUnit,List[GroupSet]]()
+    val intermediaryGroups = new scala.collection.mutable.HashMap[Tuple2[OrgUnit,GroupSet],List[Group]]()
+
     val compoundItems = parFlatMap[D2LOrgUnit,Tuple2[List[Tuple3[String,String,String]],List[OrgUnit]]](courses,orgUnit => { 
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       val memberDetails = (for (
@@ -297,7 +302,17 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
         List(GroupSet(GroupKeys.groupCategory,nameGroupCategory(orgUnit,groupCategory),groups.flatMap(_.members).distinct,groups))
       },4,"groupCategories")
       val children =  sectionGroupSets ::: groupCategories
+
       val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,(members.values.toList.flatten.flatMap(_.OrgDefinedId).map(mn => Member(mn,Nil,None)).toList ::: children.flatMap(_.members)).distinct,children))
+
+      orgUnits.foreach(newOrgUnit => {
+        intermediaryOrgUnits += ((newOrgUnit.name,newOrgUnit))
+        intermediaryGroupSets += ((newOrgUnit,newOrgUnit.groupSets))
+        newOrgUnit.groupSets.foreach(gs => {
+          intermediaryGroups += (((newOrgUnit,gs),gs.groups))
+        })
+      })
+
       List((memberDetails,orgUnits))
     },16,"ou")
     val personalInformation = compoundItems.map(_._1)
@@ -305,6 +320,11 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     val groupData = compoundItems.flatMap(_._2)
     val groupsByMember:Map[String,List[OrgUnit]] = Map(personalDetails.keys.toList.map(u => (u,groupData.filter(_.members.contains(u)))):_*)
     val membersByGroup:Map[String,List[Member]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
+
+    val orgUnitsByName:Map[String,OrgUnit] = intermediaryOrgUnits.toMap
+    val groupSetsByOrgUnit:Map[OrgUnit,List[GroupSet]] = intermediaryGroupSets.toMap
+    val groupsByGroupSet:Map[Tuple2[OrgUnit,GroupSet],List[Group]] = intermediaryGroups.toMap
+
     GroupStoreData(groupsByMember,membersByGroup,personalDetails)
   }
 }
