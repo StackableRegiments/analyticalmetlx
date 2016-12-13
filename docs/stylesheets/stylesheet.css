@@ -390,6 +390,11 @@ Full-Width Styles
 
 .nav_link a, #nav-doc a {
     margin-right: 25px;
+    padding: 0;
+}
+
+.pure-menu-active>.pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
+    background-color: transparent;
 }
 
 #main_content_wrap {
