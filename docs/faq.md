@@ -9,6 +9,9 @@ If your question is not answered below, try the [User Guide](guide.html).
 
 - [How do I select a text box?](#how-do-i-select-a-text-box)
 - [How do I make MeTL full screen?](#how-do-i-make-metl-full-screen)
+- [Which browser should I use?](#which-browser-should-i-use)
+- [Which device should I use?](#which-device-should-i-use)
+- [Why doesn't feature X work?](#why-doesnt-feature-x-work)
 - [How do I set up a classroom computer with MeTL?](#how-do-i-set-up-a-classroom-computer-with-metl-) ![Saint Leo University](images/slu-16.png)
 - [What is the URL for Whiteboard?](#what-is-the-url-for-whiteboard-) ![Saint Leo University](images/slu-16.png)
 - [Conversations](#conversations)
@@ -43,6 +46,26 @@ In most browsers, press the F11 key (on some laptops you may have to hold the Fu
  
 *Note: Microsoft has not implemented this feature in the Edge browser.*
 
+## Which browser should I use?
+
+Development and testing are primarily performed on Chrome, Edge and Safari. Firefox and IE are generally less 
+compatible with MeTL, so some features may not work as intended. Opera is untested.
+
+## Which device should I use?
+
+MeTL is designed with a responsive layout that works on both PCs and tablets. We test on large monitors, 
+iPads and iPad minis.
+ 
+## Why doesn't feature X work?
+ 
+This table contains some known issues with the commonly used browsers that MeTL is tested with.
+It is not an exhaustive list of features or browsers. 
+
+Feature | Chrome (Win10) | Edge (Win10) | Safari (OSX) | Safari (iOS) | Firefox (Win10) | IE 11 (Win10) 
+--- | :---: | :---: | :---: | :---: | :---: | :---:
+Copy and paste image from file browser (O/S dependent) | y | y | y | n | y | y  
+Copy and paste image from web browser (Google Images) | y | y | y | n | y | y
+ 
 ## How do I set up a classroom computer with MeTL? ![Saint Leo University](images/slu-32.png) 
  
 1. Find and join (or create) your conversation.
