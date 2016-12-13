@@ -20,12 +20,12 @@ view our [executive](executive.html) proposition.
 
 If you’re looking to teach in a way which enables your class to work together, 
 to spontaneously form working groups and to receive structured advice on the outcomes afterwards, 
-read our [academy](academy.html) guide.
+visit the [academy](academy.html).
 
 ## Architecture
 
 If you’re considering adopting this system and want to ensure that it fits with your IT policy, 
-read our [architecture](architect.html).
+explore our [architecture](architect.html).
 
 ## Developers
 
@@ -34,4 +34,4 @@ check out our [source](https://github.com/StackableRegiments/analyticalmetlx).
 
 ## Support
 
-If you're supporting MeTL, use our [support](support.html) manual.
+If you're providing first or second level support for MeTL, refer to our [support guide](support.html).
