@@ -221,7 +221,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
     ifConfigured(authorizationNodes,"selfGroups",(n:NodeSeq) => {
-      Globals.groupsProviders = new SelfGroupsProvider() :: Globals.groupsProviders
+      Globals.groupsProviders = new SelfGroupsProvider("selfGroups") :: Globals.groupsProviders
     },false)
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
       Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
