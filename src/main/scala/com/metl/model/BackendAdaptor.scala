@@ -226,6 +226,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
       Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
     },true)
+    println("groupsProviders: %s".format(Globals.getGroupsProviders.map(gp => "%s[%s](%s)".format(gp,gp.storeId,gp.canQuery))))
     info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
