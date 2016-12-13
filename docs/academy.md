@@ -3,7 +3,11 @@ layout: default
 title: Academy
 ---
 
-This section is to help teachers and student champions become expert in the use of MeTL. 
+## Content
+
+- [Why do I teach with MeTL?](#how-do-i-teach-with-metl) 
+- [How do I teach with MeTL](#why-do-i-teach-with-metl) 
+- [How do I know MeTL works?](#how-do-i-know-metl-works) 
 
 ## Why do I teach with MeTL?
 
@@ -11,9 +15,11 @@ This section is to help teachers and student champions become expert in the use 
 
 ## How do I teach with MeTL?
 
-If you'd like to know more about using MeTL, read the [documentation](guide.html). 
+- read the [User Guide](guide.html) 
+- check the [Frequently Asked Questions](faq.html) 
+- view the [Tutorials](tutorials.html) 
 
-## How do I know it works?
+## How do I know MeTL works?
 
 - Papers
 - Evidence

@@ -76,6 +76,11 @@ h2 {
     background: url('../images/bg_hr.png') repeat-x bottom;
 }
 
+h2 img {
+    margin: 0 0 -5px 0;
+    padding: 0;
+}
+
 h3 {
     font-size: 24px;
 }
@@ -157,6 +162,11 @@ p img {
     vertical-align: middle;
     text-align: center;
     border: none;
+}
+
+li img {
+    margin: 0 0 -2px 0;
+    padding: 0;
 }
 
 pre, code {
