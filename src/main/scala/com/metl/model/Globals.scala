@@ -133,6 +133,9 @@ object Globals extends PropertyReader with Logger {
   }
   var groupsProviders:List[GroupsProvider] = Nil
 
+  def getGroupsProvider(providerName:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerName)
+  def getGroupsProviders:List[GroupsProvider] = groupsProviders
+
   object casState {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
@@ -166,7 +169,7 @@ object Globals extends PropertyReader with Logger {
       S.containerSession.map(s => {
         val username = s.attribute("user").asInstanceOf[String]
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(username),Nil))
+        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(Member(username,Nil,None)),Nil))
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
         val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
         if (authenticated){

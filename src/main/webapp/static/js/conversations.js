@@ -1001,6 +1001,28 @@ function receiveConversations(listOfConversations){
 function receiveAttendance(attendances){
     Progress.call("attendanceReceived",[attendances])
 }
+function receiveGroupsProviders(providers){
+    console.log("receivedGroupProviders:",providers);
+}
+function receiveOrgUnitsFromGroupsProviders(orgUnits){
+    console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+    /*
+     if ("orgUnits" in orgUnits){
+     getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnits.orgUnits[0]);
+     }
+     */
+}
+function receiveGroupSetsForOrgUnit(groupSets){
+    console.log("receiveGroupSetsForOrgUnit",groupSets);
+    /*
+     if ("groupSets" in groupSets){
+     getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSets.groupSets[0]);
+     }
+     */
+}
+function receiveGroupsForGroupSet(groups){
+    console.log("receiveGroupsForGropSet",groups);
+}
 // these will be injected by lift
 //function moveToSlide(jid)
 //function joinConversation(jid)
@@ -1014,3 +1036,7 @@ function receiveAttendance(attendances){
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)
+//function getGroupsProviders()
+//function getOrgUnitsFromGroupsProvider(storeId)
+//function getGroupSetsForOrgUnit(storeId,orgUnit)
+//function getGroupsForGroupSet(storeId,orgUnit,groupSet)
