@@ -16,8 +16,8 @@ title: Academy
 ## How do I teach with MeTL?
 
 - read the [User Guide](guide.html) 
-- check the [Frequently Asked Questions](faq.html) 
-- view the [Tutorials](tutorials.html) 
+- check the [Frequently Asked Questions](academy-faq.html) 
+- view the [Tutorials](academy-tutorials.html) 
 
 ## How do I know MeTL works?
 

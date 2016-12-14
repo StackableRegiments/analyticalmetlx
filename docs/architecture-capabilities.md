@@ -10,5 +10,9 @@ title: Capabilities
 
 ## Gap Analysis
 
+...
+
 ## Opportunistic Architecture
+
+...
 
