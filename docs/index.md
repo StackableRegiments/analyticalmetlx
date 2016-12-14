@@ -6,8 +6,6 @@ title: Welcome to MeTL
 MeTL supports learning in a collaborative space for teachers and students, providing deep analysis of user interaction 
 and engagement.
 
-# Get Started
-
 <!--
 ## Executive
 
@@ -25,7 +23,7 @@ visit the [academy](academy.html).
 ## Architecture
 
 If you’re considering adopting this system and want to ensure that it fits with your IT policy, 
-explore our [architecture](architect.html).
+explore our [architecture](architecture.html).
 
 ## Developers
 

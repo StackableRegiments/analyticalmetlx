@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Architect
+title: Architecture
 ---
 
 ## Content
