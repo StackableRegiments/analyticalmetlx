@@ -75,7 +75,7 @@ They are all web authentication strategies, some form submission and some redire
 
 ### CAS 
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 ### ADFS 
 
@@ -117,19 +117,19 @@ A keystore must be built on the MeTL server to store certificates for establishm
     
 ### Simple
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 ### LDAP
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 ### OpenId
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 ### OpenAuth
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 # Entities
 
@@ -263,11 +263,11 @@ sequence of pressure aware Points.
 
 ### Text
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 ### Image
 
-<!-- TODO: complete -->
+... <!-- TODO: complete -->
 
 ## Submission
 

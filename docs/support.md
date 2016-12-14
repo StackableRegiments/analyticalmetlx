@@ -1,5 +1,5 @@
 ---
-layout: support
+layout: default
 title: Support
 ---
 

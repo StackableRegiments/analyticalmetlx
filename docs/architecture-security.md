@@ -108,7 +108,7 @@ An encrypted ZIP is specified at using AES 256 cyphers.
 Pre-shared keys for this encryption mechanism are handed over verbally and do not enter email or insecure digital 
 space save for entry on user systems.
 
-<!--
+<!-- TODO: confirm
 This control covers handover of class lists.
 -->
 
@@ -116,10 +116,12 @@ This control covers handover of class lists.
 
 ### FIPS
 
-This architecture achieves FIPS compliance.
-It does not achieve FIPS validation.
+This architecture achieves FIPS compliance. It does not achieve FIPS validation.
 
-To meet FIPS 140-2 validation, we would need to either:
+To meet FIPS 140-2 compliance, ELBs are configured with the appropriate cipher and protocol to meet current 
+FIPS 140-2 recommendations.
+
+To meet FIPS 140-2 validation, one of the following changes would be necessary:
 1. move to AWS govCloud, which would necessitate having the customer own the AWS instances and VPC 
 (AWS govCloud is validated for FIPS 140-2, but is only accessible to US persons and corporations).
 This would not change the architecture, but would change the instance ownership/management relationship, 
@@ -127,6 +129,3 @@ shifting the relationship from that of a SaaS provider to a support provider.
 2. move away from Amazon ELB in favour of a FIPS validated virtual load balancer running in the Stackable Regiments 
 AWS instance.  This would not significantly change either the relationship or the architecture.
 It would however, necessitate finding and testing an appropriate load balancer.
-
-To meet FIPS 140-2 compliance, ELBs are configured with the appropriate cipher and protocol to meet current 
-FIPS 140-2 recommendations.
