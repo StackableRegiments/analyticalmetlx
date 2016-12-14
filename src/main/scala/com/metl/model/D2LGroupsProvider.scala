@@ -333,9 +333,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   protected def putToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
       val jValueString = compactRender(json)
-      println("putting %s => %s".format(url.toString,jValueString))
-      val response = client.putString(url.toString,jValueString,List(("Content-Type","application/json")))
-      println("response from put: %s".format(response))
+      val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,List(("Content-Type","application/json")))
       None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -495,9 +493,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id.head),"GET")
     var items:List[D2LUserGradeValue] = Nil
     try {
-      println("SENT GRADE VALUE REQUEST".format(url))
       val firstGet = client.get(url.toString)
-      println("GOT GRADE VALUES: %s".format(firstGet))
       var first = parse(firstGet)
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects

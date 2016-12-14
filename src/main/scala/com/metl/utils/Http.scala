@@ -195,7 +195,7 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
     val stringPuttingPut = (conn:ManagedClientConnection,url:String,path:String) => {
       val correctlyFormedUrl = new URI(url)
       val putMethod = new BasicHttpEntityEnclosingRequest("PUT",path){override val expectContinue = false}
-      val putEntity = new StringEntity(data)
+      val putEntity = new StringEntity(data,"UTF-8")
       applyDefaultHeaders(putMethod,correctlyFormedUrl)
       addAdditionalHeaders(putMethod,additionalHeaders)
       putMethod.setEntity(putEntity)
