@@ -5,10 +5,9 @@ title: Architecture
 
 ## Content
 
-- [Concepts](#concepts) 
-- [Architecture](#architecture) 
-- [Security](#security) 
-- [Capabilities](#capabilities) 
+- [Design](architecture-design.html) 
+- [Security](architecture-security.html) 
+- [Capabilities](architecture-capabilities.html) 
 
 ## Concepts
 
@@ -37,9 +36,7 @@ A server global room carries configuration data to all connected clients
 (when a conversation is shared differently, for instance, this is broadcast globally in case that
 conversation needs to be added or removed from a search result).
 
-## Architecture
-
-## Security
+## Design
 
 ## Capabilities
 
