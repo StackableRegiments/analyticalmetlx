@@ -16,5 +16,5 @@ It will help you ...
   - [Integrations](guide-integrations.html) 
   - [Recycle Bin](guide-recycle-bin.html) 
   - [Copy and Paste](guide-copypaste.html) 
-  - [Editable Attributes](guide-editable-attributes.html)
+  - [Sharing](guide-sharing.html)
   - [Word Cloud](guide-word-cloud.html)
