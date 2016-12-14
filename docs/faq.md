@@ -1,39 +1,86 @@
 ---
-layout: doc
+layout: default
 title: Frequently Asked Questions
 ---
+
+If your question is not answered below, try the [User Guide](guide.html).
+
+## Content
+
+- [How do I select a text box?](#how-do-i-select-a-text-box)
+- [How do I make MeTL full screen?](#how-do-i-make-metl-full-screen)
+- [Which browser should I use?](#which-browser-should-i-use)
+- [Which device should I use?](#which-device-should-i-use)
+- [Why doesn't feature X work?](#why-doesnt-feature-x-work)
+- [How do I set up a classroom computer with MeTL?](#how-do-i-set-up-a-classroom-computer-with-metl-) ![Saint Leo University](images/slu-16.png)
+- [What is the URL for Whiteboard?](#what-is-the-url-for-whiteboard-) ![Saint Leo University](images/slu-16.png)
+- [Conversations](#conversations)
+  - [How do I find a conversation?](#how-do-i-find-a-conversation)
+  - [How do I join a conversation?](#how-do-i-join-a-conversation)
+  - [How do I rename a conversation?](#how-do-i-rename-a-conversation)
+  - [How do I restrict a conversation to my class?](#how-do-i-restrict-a-conversation-to-my-class)
+  - [How do I restrict a conversation so that only I can see it?](#how-do-i-restrict-a-conversation-so-that-only-i-can-see-it)
+  - [How do I import a PowerPoint presentation?](#how-do-i-import-a-powerpoint-presentation)
+- [Whiteboard](#whiteboard)
+  - [How do I return to Conversation Search?](#how-do-i-return-to-conversation-search) 
+  - [How do I select a single item?](#how-do-i-select-a-single-item) 
+  - [How do I undo an action?](#how-do-i-undo-an-action) 
+  - [How do I edit a text box?](#how-do-i-edit-a-text-box) 
+  - [How do I zoom to a particular part of the Whiteboard?](#how-do-i-zoom-to-a-particular-part-of-the-whiteboard)
+  - [How do I create a custom background on a page?](#how-do-i-create-a-custom-background-on-a-page)
+  - [How do I send students a link to a particular page?](#how-do-i-send-students-a-link-to-a-particular-page)
+  - [How do I delete inappropriate student content?](#how-do-i-delete-inappropriate-student-content)
+  - [How do I export a conversation to Microsoft OneNote?](#how-do-i-export-a-conversation-to-microsoft-onenote-) ![Saint Leo University](images/slu-16.png)
+  - [How do I print a conversation to PDF?](#how-do-i-print-a-conversation-to-pdf) 
 
 ## How do I select a text box?
 
 1. Click on **Select**.
-2. Touch the text box or draw a marquee around it. 
+2. Touch the text box or draw a marquee that intersects it. 
 
 [Learn More](tutorials.html)
 
-# Saint Leo University (SLU)
- 
-## How do I set up a classroom computer with MeTL?
-1. Find and join (or create) your conversation.
-2. Click **Options**.
-3. Click **Project this conversation**.
-4. Sign in with your other device (tablet / laptop etc).  You will not be able to control the conversation from this device.
-
-## What is the URL for Whiteboard?
-The URL is [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu).
-
-You can also access it through D2L under your courses. 
-![MeTL via D2L](images/faq-metl-via-d2l.png)
-
-# General
-
-## How can I make MeTL full screen?
+## How do I make MeTL full screen?
 
 In most browsers, press the F11 key (on some laptops you may have to hold the Function key while pressing F11).
  
 *Note: Microsoft has not implemented this feature in the Edge browser.*
 
-# MeTL Conversations
-From [Conversation Search](guide-conversations.html):
+## Which browser should I use?
+
+Development and testing are primarily performed on Chrome, Edge and Safari. Firefox and IE are generally less 
+compatible with MeTL, so some features may not work as intended. Opera is untested.
+
+## Which device should I use?
+
+MeTL is designed with a responsive layout that works on both PCs and tablets. We test on large monitors, 
+iPads and iPad minis.
+ 
+## Why doesn't feature X work?
+ 
+This table contains some known issues with the commonly used browsers that MeTL is tested with.
+It is not an exhaustive list of features or browsers. 
+
+Feature | Chrome (Win10) | Edge (Win10) | Safari (OSX) | Safari (iOS) | Firefox (Win10) | IE 11 (Win10) 
+--- | :---: | :---: | :---: | :---: | :---: | :---:
+Copy and paste image from file browser (O/S dependent) | y | y | y | n | y | y  
+Copy and paste image from web browser (Google Images) | y | y | y | n | y | y
+ 
+## How do I set up a classroom computer with MeTL? ![Saint Leo University](images/slu-32.png) 
+ 
+1. Find and join (or create) your conversation.
+2. Click **Options**.
+3. Click **Project this conversation**.
+4. Sign in with your other device (tablet / laptop etc).
+
+## What is the URL for Whiteboard? ![Saint Leo University](images/slu-32.png)
+
+The URL is [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu).
+
+You can also access it through D2L under your courses. 
+![MeTL via D2L](images/faq-metl-via-d2l.png)
+
+# Conversations
 
 ## How do I find a conversation?
 Type the name of the conversation in the Search box and press Enter or click the Search button. 
@@ -53,7 +100,7 @@ or “Join conversation” to join the conversation.
 
 The new name will appear in the banner of the Whiteboard screen.
 
-## How do I restrict a conversation to just my class?
+## How do I restrict a conversation to my class?
 By default when you create a conversation it is unrestricted. 
 
 1. Click **Options**.
@@ -81,18 +128,17 @@ This is useful if you want to prepare a conversation for a class but do not want
 Conversations can also be imported from PDFs and Word documents.
 
 # Whiteboard
-From [MeTL Interface](guide-metl.html):
 
 ## How do I return to [Conversation Search](guide-conversations.html)?
 1. Click **Options**.
 2. Click **Conversations**.
 
 ## How do I select a single item?
-When you click an item of content every piece of content that you own that intersects the point you touch will be selected. 
-This can be a trap if you only want to select one item. 
-To deselect unwanted items of content, click on that content in an area where only that content occurs. 
-You may have to do this several times to isolate a single piece of content from many pieces of content 
-that have been selected because they all overlap in the area that was selected. 
+When you click on the whiteboard, all content that you own and that intersects the point you clicked will be selected. 
+To deselect unwanted content, click on the unwanted content in an area where only that content occurs. 
+You may have to do this several times to isolate a single piece of content from other content 
+that has been selected because they overlapped the area that was selected. 
+
 This is a subtractive method of content selection and is designed for mobile devices. 
 It is the opposite of the additive method generally used in applications with a keyboard, such as PowerPoint.
 
@@ -117,19 +163,25 @@ This will display a selection marquee around the text, and place you into edit m
 
 Note: the aspect ratio of the device screen will control the aspect ratio of the zoom marquee.
 
-## How do I create a custom background on a page (such as graph paper)? 
-1. Create a sample graph paper in PowerPoint or a drawing application and save it as an image. 
+## How do I create a custom background on a page? 
+1. Create a background (eg graph paper) in PowerPoint or a drawing application and save it as an image. 
 2. Click on *Insert Image*.
 3. Browse for your saved image.
 4. Position and stretch it as desired. 
 
 Using this principle, a library of desired images can easily be generated and reused.
 
-## How do I send students a link to a particular page in a conversation?
+## How do I send students a link to a particular page?
+1. Click on **Options**.
+2. Right click on **Deeplink this page** and *Copy link address*.
+3. Paste the copied URL into your communication mechanism (eg email, Moodle).
+
+Alternatively:
 1. Click on **Options**.
 2. Click on **Deeplink this page**.
-
-This will ...
+3. The URL bar in the browser is modified to be suitable for linking.
+4. Select and copy the URL from the browser bar.
+5. Paste the copied URL into your communication mechanism (eg email, Moodle).
 
 ## How do I delete inappropriate student content?
 To ban any text, ink or image on a Page (and place the author into private mode):
@@ -139,10 +191,9 @@ To ban any text, ink or image on a Page (and place the author into private mode)
 4. Click on **Ban**.
 5. The selected content has now been removed from public view and the author banned from further public contribution.
 
-## How do I export a conversation to Microsoft OneNote?
+## How do I export a conversation to Microsoft OneNote? ![Saint Leo University](images/slu-32.png)
 
-### SLU
-Log into the SLU Microsoft 360 account. 
+Log into the SLU Microsoft 360 account.  
 Ensure that your OneNote Online account is synchronized with the 360 desktop account.
 
 1. Click **Options**.

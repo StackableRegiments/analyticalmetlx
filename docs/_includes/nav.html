@@ -1,5 +1,23 @@
-<span id="nav">
-    <span class="nav_link"><a href="{{ site.baseurl }}/index.html">Overview</a></span>
-    <span class="nav_link"><a href="{{ site.baseurl }}/guide.html">Documentation</a></span>
-    <span class="nav_link"><a href="{{ site.baseurl }}/support.html">Support</a></span>
+<span class="pure-menu pure-menu-horizontal pure-menu-scrollable" id="nav">
+    <ul class="pure-menu-list">
+        <li class="pure-menu-item nav_link"><a href="{{ site.baseurl }}/index.html" class="pure-menu-link">Home</a></li>
+        <!--<li class="pure-menu-item nav_link"><a href="{{ site.baseurl }}/executive.html" class="pure-menu-link">Executive</a></li>-->
+        <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover nav_link">
+            <a href="{{ site.baseurl }}/academy.html" class="pure-menu-link">Academy</a>
+            <ul class="pure-menu-children">
+                <li class="pure-menu-item nav_sub_link"><a href="{{ site.baseurl }}/guide.html" class="pure-menu-link">User Guide</a></li>
+                <li class="pure-menu-item nav_sub_link"><a href="{{ site.baseurl }}/faq.html" class="pure-menu-link">FAQ</a></li>
+                <li class="pure-menu-item nav_sub_link"><a href="{{ site.baseurl }}/tutorials.html" class="pure-menu-link">Tutorials</a></li>
+            </ul>
+        </li>
+        <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover nav_link">
+            <a href="{{ site.baseurl }}/architecture.html" class="pure-menu-link">Architecture</a>
+            <ul class="pure-menu-children">
+                <li class="pure-menu-item nav_sub_link"><a href="{{ site.baseurl }}/architecture-design.html" class="pure-menu-link">Design</a></li>
+                <li class="pure-menu-item nav_sub_link"><a href="{{ site.baseurl }}/architecture-security.html" class="pure-menu-link">Security</a></li>
+                <li class="pure-menu-item nav_sub_link"><a href="{{ site.baseurl }}/architecture-capabilities.html" class="pure-menu-link">Capabilities</a></li>
+            </ul>
+        </li>
+        <li class="pure-menu-item nav_link"><a href="{{ site.baseurl }}/support.html" class="pure-menu-link">Support</a></li>
+    </ul>
 </span>
