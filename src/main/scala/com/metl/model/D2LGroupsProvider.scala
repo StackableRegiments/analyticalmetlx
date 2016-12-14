@@ -142,6 +142,18 @@ case class D2LUserGradeValue(
   User:D2LUserFlyWeight,
   GradeValue:Option[D2LGradeValue]
 )
+case class D2LGradeScheme(
+  Id:Option[Long],
+  Name:String,
+  ShortName:String,
+  Ranges:List[D2LGradeSchemeRange]
+)
+case class D2LGradeSchemeRange(
+  PercentStart:Double,
+  Symbol:String,
+  AssignedValue:Option[Double],
+  Colour:String
+)
 
 case class D2LCompetencyObjectsPage(
   Objects:List[D2LCompetencyObject],
@@ -457,6 +469,12 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       }
     }
   }
+  def getUser(userContext:ID2LUserContext,userId:String):Option[D2LUser] = {
+    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,userId),"GET"),true)
+  }
+  def getOrgUnit(userContext:ID2LUserContext,orgUnit:String):Option[D2LOrgUnit] = {
+    fetchFromD2L[D2LOrgUnit](userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/%s".format(lpApiVersion,orgUnit),"GET"),true)
+  }
   def getClasslists(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LClassListUser] = {
     fetchListFromD2L[D2LClassListUser](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/classlist/".format(leApiVersion,orgUnit.Identifier),"GET"))
   }
@@ -481,6 +499,12 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
   def getGradeObject(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String):Option[D2LGradeObject] = {
     fetchFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,gradeObjectId),"GET"),true)
+  }
+  def getGradeSchemes(userContext:ID2LUserContext,orgUnitId:String):List[D2LGradeScheme] = {
+    fetchListFromD2L[D2LGradeScheme](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/schemes/".format(leApiVersion,orgUnitId),"GET"),true)
+  }
+  def getGradeScheme(userContext:ID2LUserContext,orgUnitId:String,gradeSchemeId:String):Option[D2LGradeScheme] = {
+    fetchFromD2L[D2LGradeScheme](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/schemes/%s".format(leApiVersion,orgUnitId,gradeSchemeId),"GET"),true)
   }
   def createGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObjectCreator):Option[D2LGradeObject] = {
     val gradeJObj = Extraction.decompose(grade)
