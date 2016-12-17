@@ -688,12 +688,13 @@ var Conversations = (function(){
             overrideAllocation(Conversations.getCurrentConversationJid(),slide);
         }
     };
-    var addGroupSlideFunction = function(strategy,parameter){
+    var addGroupSlideFunction = function(strategy,parameter,initialGroups){
         if(shouldModifyConversationFunction()){
+	    initialGroups = initialGroups || [];
             var currentJid = currentConversation.jid;
             var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
             var newIndex = currentSlideIndex + 1;
-            addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex,strategy,parameter);
+            addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex,strategy,initialGroups,parameter);
             Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
                 if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
                     if ("slides" in incomingDetails){
@@ -759,7 +760,6 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
-        console.log("doMoveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;
@@ -1002,26 +1002,20 @@ function receiveAttendance(attendances){
     Progress.call("attendanceReceived",[attendances])
 }
 function receiveGroupsProviders(providers){
-    console.log("receivedGroupProviders:",providers);
+    _.each(providers.groupsProviders, getOrgUnitsFromGroupProviders);
 }
-function receiveOrgUnitsFromGroupsProviders(orgUnits){
-    console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
-    /*
-     if ("orgUnits" in orgUnits){
-     getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnits.orgUnits[0]);
-     }
-     */
+function receiveOrgUnitsFromGroupsProviders(gp){
+    _.each(gp.orgUnits,function(ou){
+        getGroupSetsForOrgUnit(gp.groupsProvider,ou);
+    });
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-    console.log("receiveGroupSetsForOrgUnit",groupSets);
-    /*
-     if ("groupSets" in groupSets){
-     getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSets.groupSets[0]);
-     }
-     */
+    _.each(groupSets.groupSets,function(groupSet){
+        getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+    });
 }
 function receiveGroupsForGroupSet(groups){
-    console.log("receiveGroupsForGropSet",groups);
+    Progress.call("groupsReceived",[groups]);
 }
 // these will be injected by lift
 //function moveToSlide(jid)
@@ -1037,6 +1031,6 @@ function receiveGroupsForGroupSet(groups){
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)
 //function getGroupsProviders()
-//function getOrgUnitsFromGroupsProvider(storeId)
+//function getOrgUnitsFromGroupProviders(storeId)
 //function getGroupSetsForOrgUnit(storeId,orgUnit)
 //function getGroupsForGroupSet(storeId,orgUnit,groupSet)

@@ -140,23 +140,20 @@
           <h2 class="nmt">Group builder</h2>
           <div class="flex-container-responsive ml">
             <div>
-              <h3>Strategy</h3>
+              <h3>Fill groups until</h3>
               <div id="groupComposition"></div>
             </div>
-            <div id="allocationContainer">
-              <button class="btn-icon fa fa-users" id="doAllocation">Go</button>
+            <div id="importContainer">
+              <h3>Copy groups from</h3>
+              <div class="importGroups"></div>
+              <button class="findExisting btn-icon fa fa-refresh"></button>
             </div>
-            <div>
-              <h3>Unallocated</h3>
-              <div class="unallocatedMembers"></div>
+            <div id="allocationContainer">
+              <button class="btn-icon fa fa-users" id="doAllocation">Fill</button>
             </div>
             <div style="flex-grow:1;margin-left:1em;">
-              <h3>Groups</h3>
+              <h3>This page</h3>
               <div class="groups"></div>
-            </div>
-            <div>
-              <h3>Allocated</h3>
-              <div class="allocatedMembers"></div>
             </div>
           </div>
         </section>

@@ -94,8 +94,14 @@ describe('When the class breaks into groups,', function() {
         assert.equal(tT.currentSlide.index,0);
         tT.addGroupSlide.click();
         browser.waitUntil(function(){return teacher.isVisible("#groupsPopup");});
-	var allocation = tT.chooseGroupStrategy(".strategybyTotalGroups",0);
-	teacher.click("#doAllocation");
+        teacher.click(".findExisting");
+        browser.waitUntil(function(){
+            var visible = teacher.execute("return $('#structuralGroup_2').length > 0;").value;
+            return visible;
+        });
+        teacher.execute("return $('#structuralGroup_2').click();");
+        var allocation = tT.chooseGroupStrategy(".strategybyTotalGroups",0);
+        teacher.click("#doAllocation");
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
         });
@@ -115,8 +121,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(teacher.execute("return $('.activeSlide.groupSlide').length").value,1);
     });
     it("a student show see their current group",function(){
-	console.log(sA.boardTitle);
-        assert(sA.boardTitle.startsWith(" studentA working in Group 1 of teacher at"));
+        assert(sB.boardTitle.trim().startsWith("studentB working in Group 1 of teacher at"));
     });
     it("the students should all be split into groups",function(){
         var groupSet = tT.currentSlide.groupSets[0];
@@ -251,7 +256,7 @@ describe('When the class breaks into groups,', function() {
     it("further entrants should be allocated into existing groups",function(){
         join(studentD,'studentD');
         studentD.waitForExist("#board");
-        studentD.waitUntil(function(){
+        browser.waitUntil(function(){
             return sD.currentSlide.index == 1;
         });
         assert(_.includes(sD.plainTexts,"Phrase 1"));
@@ -260,7 +265,7 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(sD.plainTexts,"Phrase 4"));
         join(studentE,'studentE');
         studentE.waitForExist("#board");
-        studentE.waitUntil(function(){
+        browser.waitUntil(function(){
             return sE.currentSlide.index == 1;
         });
         assert(_.includes(sE.plainTexts,"Phrase 1"));

@@ -93,7 +93,7 @@ object Point{
 
 case class Presentation(override val server:ServerConfiguration,conversation:Conversation,stanzas:Map[Int,List[MeTLStanza]] = Map.empty[Int,List[MeTLStanza]],metaData:List[Tuple2[String,String]] = List.empty[Tuple2[String,String]],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
 object Presentation{
-  def emtpy = Presentation(ServerConfiguration.empty,Conversation.empty)
+  def empty = Presentation(ServerConfiguration.empty,Conversation.empty)
 }
 
 case class GroupSet(override val server:ServerConfiguration,id:String,location:String,groupingStrategy:GroupingStrategy,groups:List[Group],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
@@ -130,9 +130,8 @@ case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
       g
     }
     else{
-      trace("Adding %s to %s".format(person,g))
       val oldGroups = g.groups
-      g.copy(groups = {
+      val newGroups = g.copy(groups = {
         oldGroups match {
           case l:List[Group] if l.length < numberOfGroups => {
             trace("Adding a group")
@@ -150,6 +149,8 @@ case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
           }
         }
       })
+      trace("ByTotalGroups adding %s yields %s".format(person,newGroups))
+      newGroups
     }
   }
 }

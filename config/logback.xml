@@ -35,6 +35,7 @@
   <logger name="com.metl.comet.MeTLJsonConversationChooserActor" level="DEBUG"/>
   <logger name="com.metl.h2.SqlInterface" level="WARN"/>
   <logger name="com.metl.data.Conversation" level="WARN"/>
+  <logger name="com.metl.data.ByTotalGroups" level="TRACE"/>
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
   <logger name="com.metl.model.CanvasContentAnalysis" level="WARN"/>
   <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="WARN"/>
