@@ -90,7 +90,7 @@ describe('When the class breaks into groups,', function() {
             return _.keys(sB.textStanzas).length == 1;
         });
     });
-    it("given that the teacher adds a group slide",function(){
+    it("given that the teacher adds a group slide, importing an external group and specifying a strategy,",function(){
         assert.equal(tT.currentSlide.index,0);
         tT.addGroupSlide.click();
         browser.waitUntil(function(){return teacher.isVisible("#groupsPopup");});
@@ -100,7 +100,8 @@ describe('When the class breaks into groups,', function() {
             return visible;
         });
         teacher.execute("return $('#structuralGroup_2').click();");
-        var allocation = tT.chooseGroupStrategy(".strategybyTotalGroups",0);
+        teacher.selectByValue("#strategySelect","byTotalGroups");
+        teacher.selectByValue("#parameterSelect","3");
         teacher.click("#doAllocation");
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
@@ -229,7 +230,7 @@ describe('When the class breaks into groups,', function() {
             return sC.currentSlide.index == 1;
         });
         var groups = sC.currentSlide.groupSets[0].groups;
-        assert.equal(groups.length,3);
+        assert.equal(groups.length,2);
         sC.menuButton.click();
         studentC.waitUntil(function(){return studentC.isVisible("#roomToolbar");});
         sC.learning.click();
@@ -238,31 +239,32 @@ describe('When the class breaks into groups,', function() {
 
         assert(! studentC.isExisting("#contentFilter_"+groups[0].id));
         assert(! studentC.isExisting("#contentFilter_"+groups[1].id));
-        assert(! studentC.isExisting("#contentFilter_"+groups[2].id));
 
         assert(_.includes(sC.plainTexts,"Phrase 1"));
         assert(!(_.includes(sC.plainTexts,"Phrase 2")));
-        assert(!(_.includes(sC.plainTexts,"Phrase 3")));
+        assert(_.includes(sC.plainTexts,"Phrase 3"));
 
         sC.menuButton.click();
         sC.textMode.click();
         sC.keyboard(50,4,"Phrase 4");
         browser.pause(1500);//Let everything synchronize
         assert(!(_.includes(sA.plainTexts,"Phrase 4")));
-        assert(!(_.includes(sB.plainTexts,"Phrase 4")));
+        assert(_.includes(sB.plainTexts,"Phrase 4"));
         assert(_.includes(sC.plainTexts,"Phrase 4"));
         assert(_.includes(tT.plainTexts,"Phrase 4"));
     });
-    it("further entrants should be allocated into existing groups",function(){
+    it("further entrants should be allocated into groups",function(){
         join(studentD,'studentD');
         studentD.waitForExist("#board");
         browser.waitUntil(function(){
             return sD.currentSlide.index == 1;
         });
+        var groups = sD.currentSlide.groupSets[0].groups;
+        assert.equal(groups.length,3);
         assert(_.includes(sD.plainTexts,"Phrase 1"));
         assert(!(_.includes(sD.plainTexts,"Phrase 2")));
         assert(!(_.includes(sD.plainTexts,"Phrase 3")));
-        assert(_.includes(sD.plainTexts,"Phrase 4"));
+        assert(!(_.includes(sD.plainTexts,"Phrase 4")));
         join(studentE,'studentE');
         studentE.waitForExist("#board");
         browser.waitUntil(function(){
@@ -270,7 +272,7 @@ describe('When the class breaks into groups,', function() {
         });
         assert(_.includes(sE.plainTexts,"Phrase 1"));
         assert(!(_.includes(sE.plainTexts,"Phrase 2")));
-        assert(_.includes(sE.plainTexts,"Phrase 3"));
+        assert(!(_.includes(sE.plainTexts,"Phrase 3")));
     });
     it("all content types should be group restricted",function(){
         _.each(users,function(user,ui){//Close all backstages
@@ -305,7 +307,7 @@ describe('When the class breaks into groups,', function() {
     });
     it("group peers should see me move content",function(){
         var user = sB;
-        var peer = sE;
+        var peer = sC;
         var nonPeer = sA;
         user.inkMode.click();
         assert.equal(_.keys(user.selection.images).length,0);
@@ -425,13 +427,5 @@ describe('When the class breaks into groups,', function() {
 
         assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
         assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
-    });
-    it("the teacher should be able to modify groups manually",function(){
-        tT.learning.click();
-        browser.waitUntil(function(){return browser.isVisible("#menuGroups");});
-        tT.groupBuilder.click();
-        browser.waitUntil(function(){return browser.isVisible("#groupsPopup");});
-        assert.equal(tT.allocatedMembers.length,5);
-        assert.equal(tT.unallocatedMembers.length,1);
     });
 });

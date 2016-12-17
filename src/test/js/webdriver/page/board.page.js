@@ -140,11 +140,6 @@ var BoardPage = function(user) {
         conversationSearch:{get:function(){return user.element("#conversations");}},
         participants:{get:function(){return user.element("#menuParticipants");}},
         groupBuilder:{get:function(){return user.element("#menuGroups");}},
-        chooseGroupStrategy:{value:function(strategy,index){
-	    var command = sprintf("return $('%s').eq(%s).click()",strategy,index);
-	    console.log(command);
-            return user.execute(command).value;
-        }},
         allocatedMembers:{get:function(){ return user.execute("return $('.allocatedMembers .member')").value;}},
         unallocatedMembers:{get:function(){ return user.execute("return $('.unallocatedMembers .member')").value;}},
         contentFilter:{get:function(){return user.element("#menuContentFilter");}},

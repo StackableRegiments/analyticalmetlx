@@ -97,7 +97,9 @@ var Conversations = (function(){
                     }
                     _.each(gs,function(group){
                         var trace = groupTraces[group.id];
-                        trace.update(groupActivity[group.id].line);
+                        if(trace){//It won't exist if they haven't painted yet
+                            trace.update(groupActivity[group.id].line);
+                        }
                     });
                     var conversationActivity = $("#conversationActivity");
                     ensureTracking("anyone");
@@ -690,7 +692,7 @@ var Conversations = (function(){
     };
     var addGroupSlideFunction = function(strategy,parameter,initialGroups){
         if(shouldModifyConversationFunction()){
-	    initialGroups = initialGroups || [];
+            initialGroups = initialGroups || [];
             var currentJid = currentConversation.jid;
             var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
             var newIndex = currentSlideIndex + 1;

@@ -9,8 +9,8 @@ var GroupBuilder = (function(){
         });
     };
     var renderExternalGroups = function(args){
-        externalGroups = args;
         $(".findExisting").removeClass("fa-spin");
+        externalGroups[args.orgUnit] = args;
         var ou = args.orgUnit;
         var container = $("#groupsPopup");
         var importV = container.find(".importGroups").empty();
@@ -55,68 +55,65 @@ var GroupBuilder = (function(){
     var render = function(){
         var container = $("#groupsPopup");
         var composition = $("#groupComposition").empty();
-        var doAllocation = $("#doAllocation").prop("disabled",true);
         var importV = container.find(".importGroups").empty();
         var slide = Conversations.getCurrentSlide();
         var findExisting = $(".findExisting").off("click").on("click",function(){
             $(".findExisting").addClass("fa-spin");
             getGroupsProviders();
         });
-        _.each([
-            ["there are","byTotalGroups",[3,4,5]],
-            ["each has","byMaximumSize",[3,4,5]],
-            ["everyone has their own","groupsOfOne",["One group each"]]
-        ],function(params){
-            var strategyContainer = $("<div />")
-                    .append($("<label />",{text:params[0]}));
-            _.each(params[2],function(p){
-                var strategy = $("<div />",{
-                    class:sprintf("strategy strategy%s",params[1])
-                }).appendTo(strategyContainer);
-                var id = _.uniqueId('strategy');
-                var input = $("<input />",{
-                    type:'radio',
-                    name:'strategy',
-                    id:id
-                }).appendTo(strategy);
-                $("<label />",{
-                    for:"#"+id
-                }).append($("<span />",{
-                    text:p,
-                    class:"icon-txt"
-                })).appendTo(strategy);
-                if(slide && slide.groupSets.length){
-                    var currentStrategy = slide.groupSets[0].groupingStrategy;
-                    if(currentStrategy.name == params[1]){
-                        strategyContainer.show();
-                        switch(currentStrategy.name){
-                        case "byTotalGroups": if(currentStrategy.groupCount == p) input.prop("checked",true); break;
-                        case "byMaximumSize": if(currentStrategy.groupSize == p) input.prop("checked",true); break;
-                        default: input.prop("checked",true);break;
-                        }
-                    }
-                    else{
-                        strategyContainer.hide();
-                    }
-                    input.prop("disabled",true);
-                }
-                strategy.on('click',function(){
-                    input.prop('checked',true);
-                    doAllocation.prop("disabled",slide.groupSets.length != 0);
-                    doAllocation.off("click").on("click",function(){
-                        if(slide.groupSets.length){
-                        }
-                        else{
-                            Conversations.addGroupSlide(params[1],p,_.map(initialGroups,function(group){
-				return _.map(group.members,"name");
-                            }));
-                            initialGroups = [];
-                        }
-                    });
-                });
-            });
-            strategyContainer.appendTo(composition);
+        var strategySelect = $("<select />",{
+	    id:"strategySelect"
+	}).appendTo(composition);
+        var parameterSelect = $("<select />",{
+	    id:"parameterSelect"
+	}).appendTo(composition);
+        var doAllocation = $("#doAllocation").off("click").on("click",function(){
+            Conversations.addGroupSlide(
+                strategySelect.val(),
+                parseInt(parameterSelect.val()),
+                _.map(initialGroups,function(group){return _.map(group.members,"name")}));
+	    initialGroups = [];
         });
+        _.each([
+            ["there are","byTotalGroups"],
+            ["each has","byMaximumSize"],
+            ["everyone has their own","groupsOfOne"]],function(params){
+                $("<option />",{
+                    text:params[0],
+                    value:params[1]
+                }).appendTo(strategySelect);
+            });
+        strategySelect.on("change",function(){
+            var strategy = $(this).val();
+            parameterSelect.empty();
+            switch(strategy){
+            case "byTotalGroups":
+                _.each(_.range(1,10),function(i){
+                    $("<option />",{
+                        text:i,
+                        value:i
+                    }).appendTo(parameterSelect);
+                });
+                parameterSelect.val(5);
+                break;
+            case "byMaximumSize":
+                _.each(_.range(1,10),function(i){
+                    $("<option />",{
+                        text:i,
+                        value:i
+                    }).appendTo(parameterSelect);
+                });
+                parameterSelect.val(4);
+                break;
+            case "groupsOfOne":
+                parameterSelect.append($("<option />",{
+                    text:"-",
+                    value:"-"
+                }));
+                break;
+            }
+        });
+        strategySelect.val("byMaximumSize").change();
         var allocatedV = container.find(".allocatedMembers").empty();
         var unallocatedV = container.find(".unallocatedMembers").empty();
         var groupsV = container.find(".groups").empty();
@@ -124,6 +121,11 @@ var GroupBuilder = (function(){
         delete unallocatedMembers[Conversations.getCurrentConversation.author];
         var allocatedMembers = {};
         if(slide){
+	    if(slide.groupSets.length){
+		parameterSelect.prop("disabled",true);
+		strategySelect.prop("disabled",true);
+		doAllocation.prop("disabled",true);
+	    }
             var strategy;
             var parameter;
             _.each(initialGroups,function(group){
@@ -181,7 +183,7 @@ var GroupBuilder = (function(){
                 class:"member"
             }).appendTo(unallocatedV);
         });
-        renderExternalGroups(externalGroups);
+	_.each(externalGroups,renderExternalGroups);
     };
     Progress.groupsReceived["GroupBuilder"] = renderExternalGroups;
     Progress.currentSlideJidReceived["GroupBuilder"] = render;
