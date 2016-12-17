@@ -131,7 +131,7 @@ object Globals extends PropertyReader with Logger {
   def getUserGroups:List[OrgUnit] = {
     casState.is.eligibleGroups.toList
   }
-  var userProfileProvider:Option[UserProfileProvider] = None
+  var userProfileProvider:Option[UserProfileProvider] = Some(new CachedInMemoryProfileProvider())
 
   var groupsProviders:List[GroupsProvider] = Nil
 

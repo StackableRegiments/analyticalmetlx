@@ -269,6 +269,29 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
   }
+  def setupUserProfileProvidersFromFile(filePath:String) = {
+    ifConfiguredFromGroup((XML.load(filePath) \\ "userProfileProvider").headOption.getOrElse(NodeSeq.Empty),Map(
+      "inMemoryUserProfileProvider" -> {
+        (n:NodeSeq) => Globals.userProfileProvider = Some(new CachedInMemoryProfileProvider())
+      },
+      "diskCachedProfileProvider" -> {
+        (n:NodeSeq) => Globals.userProfileProvider = for {
+          path <- (n \ "@path").headOption.map(_.text)
+        } yield {
+          new DiskCachedProfileProvider(path)
+        }
+      },
+      "dbProfileProvider" -> {
+        (n:NodeSeq) => Globals.userProfileProvider = for {
+          o <- Some(true)
+        } yield {
+          net.liftweb.mapper.Schemifier.schemify(true,net.liftweb.mapper.Schemifier.infoF _,MappedUserProfile)
+          new DBBackedProfileProvider()
+        }
+      }
+    ))
+  }
+
   def setupServersFromFile(filePath:String) = {
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
@@ -344,6 +367,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     LiftRules.unloadHooks.append(() => {
       SecurityListener.cleanupAllSessions
     })
+    setupUserProfileProvidersFromFile(Globals.configurationFileLocation)
     LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
     info(configs)
