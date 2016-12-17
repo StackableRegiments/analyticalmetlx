@@ -1,10 +1,17 @@
 package com.metl.model
 
 import scala.xml._
+import net.liftweb.common._
+import com.metl.liftAuthenticator._
 
 case class UserProfile(username:String,foreignRelationships:Map[String,String],firstName:Option[String] = None,surname:Option[String] = None,emailAddress:Option[String] = None)
 
-trait UserProfileProvider {
+trait UserProfileProvider extends Logger {
+  protected val firstNameKey = "firstName"
+  protected val surnameKey = "surname"
+  protected val emailKey = "emailAddress"
+  protected val frKeys = List("sluId","d2lId","emailAddress","logonName","upn")
+
   def onProfileUpdated(profile:UserProfile):Unit = {}
   def getProfiles(usernames:String*):Either[Exception,List[UserProfile]]
   def updateProfile(profile:UserProfile):Either[Exception,Boolean] = {
@@ -14,6 +21,21 @@ trait UserProfileProvider {
       }
       r
     })
+  }
+  def updateUserProfile(authState:LiftAuthStateData):Either[Exception,Boolean] = {
+    getProfiles(authState.username) match {
+      case Left(e) => Left(e)
+      case Right(p :: _) => {
+        var newP = p
+        authState.informationGroups.find(_._1 == firstNameKey).foreach(fn => newP = newP.copy(firstName = Some(fn._2)))
+        authState.informationGroups.find(_._1 == surnameKey).foreach(fn => newP = newP.copy(surname = Some(fn._2)))
+        authState.informationGroups.find(_._1 == emailKey).foreach(fn => newP = newP.copy(emailAddress = Some(fn._2)))
+        frKeys.foreach(frk => {
+          authState.informationGroups.find(_._1 == frk).foreach(fn => newP = newP.copy(foreignRelationships = p.foreignRelationships.updated(frk,fn._2)))
+        })
+        updateProfile(newP)
+      }
+    }
   }
   protected def internalUpdateProfile(profile:UserProfile):Either[Exception,Boolean]
 }
@@ -36,9 +58,102 @@ class CachedInMemoryProfileProvider extends UserProfileProvider {
 }
 
 class DiskCachedProfileProvider(diskCachePath:String) extends CachedInMemoryProfileProvider with UserProfileSerializers {
-  override protected def loadStore:scala.collection.mutable.HashMap[String,UserProfile] = new scala.collection.mutable.HashMap[String,UserProfile]()
+  import java.io._
+  override protected def loadStore:scala.collection.mutable.HashMap[String,UserProfile] = {
+    try {
+      var newStore = new scala.collection.mutable.HashMap[String,UserProfile]()
+      fromXml(scala.xml.XML.load(diskCachePath)).foreach(up => {
+        newStore += ((up.username,up))
+      })
+      newStore
+    } catch {
+      case e:Exception => {
+        new scala.collection.mutable.HashMap[String,UserProfile]()
+
+      }
+    }
+  }
   override protected def updatedProfileForStore(p:UserProfile):Either[Exception,Boolean] = {
-    Right(true)
+    try {
+      new PrintWriter(diskCachePath){
+        write(toXml(profileStore.updated(p.username,p).values.toList).toString)
+        close
+      }
+      Right(true)
+    } catch {
+      case e:Exception => Left(e)
+    }
+  }
+}
+
+import net.liftweb.mapper._
+
+object MappedUserProfile extends MappedUserProfile with LongKeyedMetaMapper[MappedUserProfile] {
+  def fromUserProfile(up:UserProfile):MappedUserProfile = {
+    val record = find(By(MappedUserProfile.username,up.username)).getOrElse({
+      MappedUserProfile.create.username(up.username)
+    })
+    up.firstName.foreach(fn => record.firstName(fn))
+    up.surname.foreach(fn => record.surname(fn))
+    up.emailAddress.foreach(fn => record.emailAddress(fn))
+    record.foreignRelationships({
+      val xml = <frs>{
+        up.foreignRelationships.toList.map(fr => {
+          <fr sys={fr._1} key={fr._2}/>
+        })
+      }</frs>
+      xml.toString
+    })
+    record
+  }
+}
+trait SafeMapperExtractors {
+  def safeString(in:MappedField[String,_]):Option[String] = in.get match {
+    case null => None
+    case s:String => Some(s)
+  }
+}
+class MappedUserProfile extends LongKeyedMapper[MappedUserProfile] with SafeMapperExtractors {
+  def getSingleton = MappedUserProfile
+  def primaryKeyField = id
+  object id extends MappedLongIndex(this)
+  object username extends MappedString(this,64)
+  object firstName extends MappedString(this,128)
+  object surname extends MappedString(this,128)
+  object emailAddress extends MappedString(this,1024)
+  object foreignRelationships extends MappedText(this)
+  def toUserProfile:UserProfile = {
+    val frs = Map((for {
+       frn <- (scala.xml.XML.loadString(foreignRelationships.get) \\ "fr")
+       sys <- (frn \ "@sys").headOption.map(_.text)
+       key <- (frn \ "@key").headOption.map(_.text)
+    } yield {
+      (sys,key)
+    }).toList:_*)
+    UserProfile(username,frs,safeString(firstName),safeString(surname),safeString(emailAddress))
+  }
+}
+
+class DBBackedProfileProvider extends CachedInMemoryProfileProvider with UserProfileSerializers {
+  override protected def loadStore:scala.collection.mutable.HashMap[String,UserProfile] = {
+    try {
+      var newStore = new scala.collection.mutable.HashMap[String,UserProfile]()
+      MappedUserProfile.findAll.map(_.toUserProfile).foreach(up => {
+        newStore += ((up.username,up))
+      })
+      newStore
+    } catch {
+      case e:Exception => {
+        new scala.collection.mutable.HashMap[String,UserProfile]()
+      }
+    }
+  }
+  override protected def updatedProfileForStore(p:UserProfile):Either[Exception,Boolean] = {
+    try {
+      Right(MappedUserProfile.fromUserProfile(p).save)
+    } catch {
+      case e:Exception => Left(e)
+    }
   }
 }
 
@@ -73,4 +188,6 @@ trait UserProfileSerializers {
     }</userProfiles>
   }
 }
+
+
 

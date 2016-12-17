@@ -131,6 +131,8 @@ object Globals extends PropertyReader with Logger {
   def getUserGroups:List[OrgUnit] = {
     casState.is.eligibleGroups.toList
   }
+  var userProfileProvider:Option[UserProfileProvider] = None
+
   var groupsProviders:List[GroupsProvider] = Nil
 
   object casState {
@@ -151,7 +153,7 @@ object Globals extends PropertyReader with Logger {
     def authenticatedUsername:String = actualUsername.is
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
-        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,personalAttributes)
+        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)))) 
         val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
         val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
         val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
@@ -176,6 +178,9 @@ object Globals extends PropertyReader with Logger {
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
           val lasd = LiftAuthStateData(true,username,groups,personalDetails)
           validState(Some(lasd))
+          userProfileProvider.foreach(upp => {
+            upp.updateUserProfile(lasd)
+          })
           info("generated authState: %s".format(lasd))
           lasd
         } else {
