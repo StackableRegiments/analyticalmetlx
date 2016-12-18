@@ -264,7 +264,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("received stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s)
     })
-    case ls@ArchiveToServerMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.LocalToServerMeTLStanza",{
+    case ls@ArchiveToServerMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ArchiveToServerMeTLStanza",{
       trace("received archived stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s,false)
     })

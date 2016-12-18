@@ -367,6 +367,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   }
 
   def addGrade(t:MeTLGrade) = {
+    println("adding a grade: %s".format(t))
     grades += t
     outputHook(t)
     this

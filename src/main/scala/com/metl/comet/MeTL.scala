@@ -1278,7 +1278,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       History.empty
     }).openOr(History.empty)
     debug("priv %s".format(jid))
-    val finalHistory = pubHistory.merge(privHistory).merge(convHistory)
+    val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
+      case g:MeTLGrade if !shouldModifyConversation() => false
+      case gv:MeTLGradeValue if !shouldModifyConversation() => false
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation()) => false
+      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation()) => false
+      case _ => true
+    }
     debug("final %s".format(jid))
     serializer.fromHistory(finalHistory)
   }
@@ -1497,6 +1503,30 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               trace("sending MeTLFile to conversation room: %s <- %s".format(r,f))
               r() ! LocalToServerMeTLStanza(f)
             })
+          })
+        }
+      }
+      case g:MeTLGrade => {
+        if (g.author == username){
+          currentConversation.map(cc => {
+            if (cc.author == g.author){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverName,roomTarget)).map(r => {
+                r() ! LocalToServerMeTLStanza(g)
+              })
+            }
+          })
+        }
+      }
+      case g:MeTLGradeValue => {
+        if (g.author == username){
+          currentConversation.map(cc => {
+            if (cc.author == g.author){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverName,roomTarget)).map(r => {
+                r() ! LocalToServerMeTLStanza(g)
+              })
+            }
           })
         }
       }

@@ -388,15 +388,15 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     val c = decStanza(i)
     val frs = for {
       us <- Some(i.foreignRelationshipSystem.get)
-      if (us != null)
+      if (us != null && us != "")
       uk <- Some(i.foreignRelationshipKey.get)
-      if (uk != null)
+      if (uk != null && uk != "")
     } yield {
       (us,uk)
     }
     val gru = for {
       ugru <- Some(i.gradeReferenceUrl.get)
-      if (ugru != null)
+      if (ugru != null && ugru != "")
     } yield {
       ugru
     }
@@ -416,13 +416,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     val c = decStanza(i)
     val comment = for {
       comm <- Some(i.comments.get)
-      if (comm != null)
+      if (comm != null && comm != "")
     } yield {
       comm
     }
     val privateComment = for {
       pc <- Some(i.privateComments.get)
-      if (pc != null)
+      if (pc != null && pc != "")
     } yield {
       pc
     }
@@ -442,13 +442,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     val c = decStanza(i)
     val comment = for {
       comm <- Some(i.comments.get)
-      if (comm != null)
+      if (comm != null && comm != "")
     } yield {
       comm
     }
     val privateComment = for {
       pc <- Some(i.privateComments.get)
-      if (pc != null)
+      if (pc != null && pc != "")
     } yield {
       pc
     }
@@ -468,13 +468,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     val c = decStanza(i)
     val comment = for {
       comm <- Some(i.comments.get)
-      if (comm != null)
+      if (comm != null && comm != "")
     } yield {
       comm
     }
     val privateComment = for {
       pc <- Some(i.privateComments.get)
-      if (pc != null)
+      if (pc != null && pc != "")
     } yield {
       pc
     }

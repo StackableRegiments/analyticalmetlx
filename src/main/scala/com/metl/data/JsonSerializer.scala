@@ -285,7 +285,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"file")) => toMeTLFile(jo)
       case jo:JObject if (isOfType(jo,"videoStream")) => toMeTLVideoStream(jo)
       case jo:JObject if (isOfType(jo,"undeletedCanvasContent")) => toMeTLUndeletedCanvasContent(jo)
-      case jo:JObject if (isOfType(jo,"gradeValue")) => toGrade(jo)
+      case jo:JObject if (isOfType(jo,"grade")) => toGrade(jo)
       case jo:JObject if (isOfType(jo,"numericGradeValue")) => toNumericGradeValue(jo)
       case jo:JObject if (isOfType(jo,"textGradeValue")) => toTextGradeValue(jo)
       case jo:JObject if (isOfType(jo,"booleanGradeValue")) => toBooleanGradeValue(jo)
