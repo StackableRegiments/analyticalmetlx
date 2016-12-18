@@ -245,6 +245,9 @@ object MeTLStanza{
   def unapply(in:MeTLStanza) = Some((in.server,in.author,in.timestamp,in.audiences))
   def empty = MeTLStanza(ServerConfiguration.empty,"",0L)
 }
+object MeTLTheme {
+  def empty = MeTLTheme(ServerConfiguration.empty,"",0L,"",Theme("","",""),Nil)
+}
 case class MeTLTheme(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,theme:Theme,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
 }
@@ -956,7 +959,9 @@ case class MeTLFile(override val server:ServerConfiguration, override val author
 object MeTLFile{
   def empty = MeTLFile(ServerConfiguration.empty,"",0L,"","",None,None,false,Nil)
 }
-
+object MeTLGrade {
+  def empty = MeTLGrade(ServerConfiguration.empty,"",0L,"","","","")
+}
 case class MeTLGrade(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,id:String,location:String,name:String,description:String,foreignRelationship:Option[Tuple2[String,String]] = None,gradeReferenceUrl:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLGrade = Stopwatch.time("MeTLGrade.adjustTimestamp",{
     copy(timestamp = newTime)
@@ -971,6 +976,9 @@ trait MeTLGradeValue {
   def getGradedUser:String
   def getGradeId:String
 }
+object MeTLNumericGradeValue {
+  def empty = MeTLNumericGradeValue(ServerConfiguration.empty,"",0L,"","",0.0)
+}
 case class MeTLNumericGradeValue(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,gradeId:String,gradedUser:String,gradeValue:Double,gradeComment:Option[String] = None,gradePrivateComment:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences) with MeTLGradeValue {
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLNumericGradeValue = Stopwatch.time("MeTLNumericGradeValue.adjustTimestamp",{
     copy(timestamp = newTime)
@@ -982,6 +990,9 @@ case class MeTLNumericGradeValue(override val server:ServerConfiguration, overri
   override def getPrivateComment:Option[String] = gradePrivateComment
 }
 
+object MeTLBooleanGradeValue {
+  def empty = MeTLBooleanGradeValue(ServerConfiguration.empty,"",0L,"","",false)
+}
 case class MeTLBooleanGradeValue(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,gradeId:String,gradedUser:String,gradeValue:Boolean,gradeComment:Option[String] = None,gradePrivateComment:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences) with MeTLGradeValue {
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLBooleanGradeValue = Stopwatch.time("MeTLBooleanGradeValue.adjustTimestamp",{
     copy(timestamp = newTime)
@@ -993,6 +1004,9 @@ case class MeTLBooleanGradeValue(override val server:ServerConfiguration, overri
   override def getPrivateComment:Option[String] = gradePrivateComment
 }
 
+object MeTLTextGradeValue {
+  def empty = MeTLTextGradeValue(ServerConfiguration.empty,"",0L,"","","")
+}
 case class MeTLTextGradeValue(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,gradeId:String,gradedUser:String,gradeValue:String,gradeComment:Option[String] = None,gradePrivateComment:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences) with MeTLGradeValue {
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLTextGradeValue = Stopwatch.time("MeTLTextGradeValue.adjustTimestamp",{
     copy(timestamp = newTime)

@@ -268,6 +268,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var latestCommands:Map[String,MeTLCommand] = Map.empty[String,MeTLCommand]
   protected val undeletedCanvasContents:HistoryCollection[MeTLUndeletedCanvasContent] = emptyColl[MeTLUndeletedCanvasContent]
   protected val deletedCanvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
+  protected val grades:HistoryCollection[MeTLGrade] = emptyColl[MeTLGrade]
+  protected val gradeValues:HistoryCollection[MeTLGradeValue] = emptyColl[MeTLGradeValue]
 
   def getLatestCommands:Map[String,MeTLCommand] = latestCommands
 
@@ -291,6 +293,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getUnhandledStanzas = unhandledStanzas.toList
   def getUndeletedCanvasContents = undeletedCanvasContents.toList
   def getDeletedCanvasContents = deletedCanvasContents.toList
+  def getGrades = grades.toList
+  def getGradeValues = gradeValues.toList
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -351,6 +355,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:Attendance => addAttendance(s)
     case s:MeTLFile => addFile(s)
     case s:MeTLVideoStream => addVideoStream(s)
+    case s:MeTLGrade => addGrade(s)
+    case s:MeTLGradeValue => addGradeValue(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
     case s:MeTLUndeletedCanvasContent => addMeTLUndeletedCanvasContent(s)
@@ -358,6 +364,20 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       warn("makeHistory: I don't know what to do with a MeTLStanza: %s".format(s))
       this
     }
+  }
+
+  def addGrade(t:MeTLGrade) = {
+    grades += t
+    outputHook(t)
+    this
+  }
+  def addGradeValue(t:MeTLGradeValue) = {
+    gradeValues += t
+    t match {
+      case ms:MeTLStanza => outputHook(ms)
+      case _ => {}
+    }
+    this
   }
 
   def addTheme(t:MeTLTheme) = {

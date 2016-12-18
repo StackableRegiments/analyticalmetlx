@@ -81,6 +81,7 @@ trait JsonSerializerHelper {
   def getDoubleByName(input:JObject,name:String) = (input \ name).extract[Double]
   def getPrivacyByName(input:JObject,name:String) = (input \ name).extract[Privacy]
   def getObjectByName(input:JObject,name:String) = input.values(name).asInstanceOf[JObject]
+  def getOptionalStringByName(input:JObject,name:String) = (input \ name).extract[Option[String]]
   def getListOfDoublesByName(input:JObject,name:String) = (input \ name).extract[List[Double]]
   def getListOfStringsByName(input:JObject,name:String) = (input \ name).extract[List[String]]
   def getListOfObjectsByName(input:JObject,name:String) = {
@@ -97,6 +98,7 @@ trait JsonSerializerHelper {
     })
     //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
   }
+  def getOptionalObjectByName(input:JObject,name:String) = input.obj.find(_.name == name).toList.headOption 
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
@@ -188,6 +190,13 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("commands",JArray(input.getCommands.map(i => fromMeTLCommand(i)))),
       JField("files",JArray(input.getFiles.map(i => fromMeTLFile(i)))),
       JField("videoStreams",JArray(input.getVideoStreams.map(i => fromMeTLVideoStream(i)))),
+      JField("grades",JArray(input.getGrades.map(i => fromGrade(i)))),
+      JField("gradeValues",JArray(input.getGradeValues.flatMap{
+        case i:MeTLNumericGradeValue => Some(fromNumericGradeValue(i))
+        case i:MeTLBooleanGradeValue => Some(fromBooleanGradeValue(i))
+        case i:MeTLTextGradeValue => Some(fromTextGradeValue(i))
+        case _ => None
+      })),
       JField("deletedCanvasContents",JArray(input.getDeletedCanvasContents.map(i => fromMeTLData(i)))),
       JField("undeletedCanvasContents",JArray(input.getUndeletedCanvasContents.map(i => fromMeTLUndeletedCanvasContent(i)))),
       JField("unhandledCanvasContents",JArray(input.getUnhandledCanvasContents.map(i => fromMeTLUnhandledCanvasContent(i)))),
@@ -229,6 +238,14 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         case _ => {}
       }
     })
+    getFields(i,"grades").foreach(jf => history.addStanza(toGrade(jf.value)))
+    getFields(i,"gradeValues").foreach(jf => {
+      jf.value match {
+        case jo:JObject if (isOfType(jo,"numericGradeValue")) => history.addStanza(toNumericGradeValue(jo))
+        case jo:JObject if (isOfType(jo,"textGradeValue")) => history.addStanza(toTextGradeValue(jo))
+        case jo:JObject if (isOfType(jo,"booleanGradeValue")) => history.addStanza(toBooleanGradeValue(jo))
+      }
+    })
     getFields(i,"undeletedCanvasContent").foreach(jf => history.addStanza(toMeTLUndeletedCanvasContent(jf.value)))
     getFields(i,"unhandledCanvasContents").foreach(jf => history.addStanza(toMeTLUnhandledCanvasContent(jf.value)))
     getFields(i,"unhandledStanzas").foreach(jf => history.addStanza(toMeTLUnhandledStanza(jf.value)))
@@ -268,6 +285,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"file")) => toMeTLFile(jo)
       case jo:JObject if (isOfType(jo,"videoStream")) => toMeTLVideoStream(jo)
       case jo:JObject if (isOfType(jo,"undeletedCanvasContent")) => toMeTLUndeletedCanvasContent(jo)
+      case jo:JObject if (isOfType(jo,"gradeValue")) => toGrade(jo)
+      case jo:JObject if (isOfType(jo,"numericGradeValue")) => toNumericGradeValue(jo)
+      case jo:JObject if (isOfType(jo,"textGradeValue")) => toTextGradeValue(jo)
+      case jo:JObject if (isOfType(jo,"booleanGradeValue")) => toBooleanGradeValue(jo)
       case other:JObject if hasFields(other,List("target","privacy","slide","identity")) => toMeTLUnhandledCanvasContent(other)
       case other:JObject if hasFields(other,List("author","timestamp")) => toMeTLUnhandledStanza(other)
       case other:JObject => toMeTLUnhandledData(other)
@@ -327,6 +348,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val location = getStringByName(input,"location")
         MeTLTheme(config,mc.author,mc.timestamp,location,Theme(mc.author,text,origin),mc.audiences)
       }
+      case _ => MeTLTheme.empty
     }
   })
 
@@ -983,5 +1005,122 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JDouble(input.y),
       JDouble(input.thickness)
     )
+  })
+  override def toGrade(input:JValue):MeTLGrade = Stopwatch.time("JsonSerializer.toGrade",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val id = getStringByName(j,"id")
+        val name = getStringByName(j,"name")
+        val description = getStringByName(j,"description")
+        val location = getStringByName(j,"location")
+        val foreignRelationship = getOptionalObjectByName(j,"foreignRelationship").flatMap(n => {
+          n.value match {
+            case jo:JObject => {
+              for {
+                sys <- getOptionalStringByName(jo,"sys")
+                key <- getOptionalStringByName(jo,"key")
+              } yield {
+                (sys,key)
+              }
+            }
+            case _ => None
+          }
+        })
+        val gradeReferenceUrl = getOptionalStringByName(j,"gradeReferenceUrl")
+        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,foreignRelationship,gradeReferenceUrl,m.audiences)
+      }
+      case _ => MeTLGrade.empty
+    }
+  })
+  override def fromGrade(input:MeTLGrade):JValue = Stopwatch.time("JsonSerializer.fromGrade",{
+    toJsObj("grade",List(
+      JField("id",JString(input.id)),
+      JField("name",JString(input.name)),
+      JField("description",JString(input.description)),
+      JField("location",JString(input.location))
+    ) ::: input.gradeReferenceUrl.toList.map(gru => {
+      JField("gradeReferenceUrl",JString(gru))
+    }) ::: input.foreignRelationship.toList.map(frs => {
+      JField("foreignRelationship",JObject(List(
+        JField("sys",JString(frs._1)),
+        JField("key",JString(frs._2))
+      )))
+    }) ::: parseMeTLContent(input))
+  })
+  override def toNumericGradeValue(input:JValue):MeTLNumericGradeValue = Stopwatch.time("JsonSerializer.toNumericGradeValue",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val gradeId = getStringByName(j,"gradeId")
+        val gradedUser = getStringByName(j,"gradedUser")
+        val gradeValue = getDoubleByName(j,"gradeValue")
+        val gradeComment = getOptionalStringByName(j,"gradeComment")
+        val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
+        MeTLNumericGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+      }
+      case _ => MeTLNumericGradeValue.empty
+    }
+  })
+  override def fromNumericGradeValue(input:MeTLNumericGradeValue):JValue = Stopwatch.time("JsonSerializer.fromNumericGradeValue",{
+    toJsObj("numericGradeValue",List(
+      JField("gradeId",JString(input.gradeId)),
+      JField("gradedUser",JString(input.gradedUser)),
+      JField("gradeValue",JDouble(input.gradeValue))
+    ) ::: input.gradeComment.toList.map(s => {
+      JField("gradeComment",JString(s))
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      JField("gradePrivateComment",JString(s))
+    }) ::: parseMeTLContent(input))
+  })
+  override def toBooleanGradeValue(input:JValue):MeTLBooleanGradeValue = Stopwatch.time("JsonSerializer.toBooleanGradeValue",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val gradeId = getStringByName(j,"gradeId")
+        val gradedUser = getStringByName(j,"gradedUser")
+        val gradeValue = getBooleanByName(j,"gradeValue")
+        val gradeComment = getOptionalStringByName(j,"gradeComment")
+        val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
+        MeTLBooleanGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+      }
+      case _ => MeTLBooleanGradeValue.empty
+    }
+  })
+  override def fromBooleanGradeValue(input:MeTLBooleanGradeValue):JValue = Stopwatch.time("JsonSerializer.fromBooleanGradeValue",{
+    toJsObj("booleanGradeValue",List(
+      JField("gradeId",JString(input.gradeId)),
+      JField("gradedUser",JString(input.gradedUser)),
+      JField("gradeValue",JBool(input.gradeValue))
+    ) ::: input.gradeComment.toList.map(s => {
+      JField("gradeComment",JString(s))
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      JField("gradePrivateComment",JString(s))
+    }) ::: parseMeTLContent(input))
+  })
+  override def toTextGradeValue(input:JValue):MeTLTextGradeValue = Stopwatch.time("JsonSerializer.toTextGradeValue",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val gradeId = getStringByName(j,"gradeId")
+        val gradedUser = getStringByName(j,"gradedUser")
+        val gradeValue = getStringByName(j,"gradeValue")
+        val gradeComment = getOptionalStringByName(j,"gradeComment")
+        val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
+        MeTLTextGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+      }
+      case _ => MeTLTextGradeValue.empty
+    }
+  })
+  override def fromTextGradeValue(input:MeTLTextGradeValue):JValue = Stopwatch.time("JsonSerializer.fromTextGradeValue",{
+    toJsObj("textGradeValue",List(
+      JField("gradeId",JString(input.gradeId)),
+      JField("gradedUser",JString(input.gradedUser)),
+      JField("gradeValue",JString(input.gradeValue))
+    ) ::: input.gradeComment.toList.map(s => {
+      JField("gradeComment",JString(s))
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      JField("gradePrivateComment",JString(s))
+    }) ::: parseMeTLContent(input))
   })
 }
