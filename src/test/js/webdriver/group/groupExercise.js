@@ -9,10 +9,24 @@ var ConversationPage = require("../page/conversation.page");
 
 var assertSameContent = function(a,b){
     _.each(a.inkStanzas,function(aStanza,k,i){
-        assert.equal(JSON.stringify(aStanza),JSON.stringify(b.inkStanzas[k]));
+        var comparison = JSON.stringify(aStanza);
+        var comparatee = JSON.stringify(b.inkStanzas[k]);
+        if(!(comparison == comparatee)){
+            console.log(comparison);
+            console.log("!!!!!!!!!!!==============");
+            console.log(comparatee);
+        }
+        assert.equal(comparison,comparatee);
     });
     _.each(a.imageStanzas,function(aStanza,k){
-        assert.equal(JSON.stringify(aStanza),JSON.stringify(b.imageStanzas[k]));
+        var comparison = JSON.stringify(aStanza);
+        var comparatee = JSON.stringify(b.imageStanzas[k]);
+        if(!(comparison == comparatee)){
+            console.log(comparison);
+            console.log("!!!!!!!!!!!==============");
+            console.log(comparatee);
+        }
+        assert.equal(comparison,comparatee);
     });
     _.each(a.textStanzas,function(aStanza){
         var bStanza = _.find(b.textStanzas,function(stanza){
@@ -270,6 +284,7 @@ describe('When the class breaks into groups,', function() {
         browser.waitUntil(function(){
             return sE.currentSlide.index == 1;
         });
+        teacher.execute("window.focus()");
         assert(_.includes(sE.plainTexts,"Phrase 1"));
         assert(!(_.includes(sE.plainTexts,"Phrase 2")));
         assert(!(_.includes(sE.plainTexts,"Phrase 3")));
@@ -353,6 +368,26 @@ describe('When the class breaks into groups,', function() {
         assertSameContent(user,peer);
         assertNotSameContent(user,nonPeer);
     });
+    it("the Groups plugin should enable the teacher to isolate publication to a particular group",function(){
+        tT.driver.execute("$('#isolateGroup_1').click()");
+        tT.textMode.click();
+        tT.keyboard(130,130,"RESPONSE TO GROUP 1 ONLY");
+        tT.inkMode.click();
+        tT.handwrite(_.map(_.range(200,400,15), function(i){
+            return {x:50,y:i};
+        }));
+        tT.imageMode.click();
+        tT.driver.click("#board");
+        tT.driver.chooseFile("#imageFileChoice","testMaterials/stormtrooper.jpg");
+        var peer = sA;
+        var nonPeer = sC;
+        assert.equal(_.keys(sB.inkStanzas).length,4);
+        assert.equal(_.keys(sA.inkStanzas).length,2);
+        assert.equal(_.keys(sB.textStanzas).length,3);
+        assert.equal(_.keys(sA.textStanzas).length,2);
+        assert.equal(_.keys(sB.imageStanzas).length,4);
+        assert.equal(_.keys(sA.imageStanzas).length,2);
+    });
     it("groups should not persist beyond the slide",function(){
         tT.newSlide.click();
         browser.waitUntil(function(){
@@ -387,7 +422,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sD.imageStanzas).length,6);
         assert.equal(_.keys(sE.imageStanzas).length,6);
     });
-    it("the teacher should not have group filters on the non group slide and does not have peers",function(){
+    it("the teacher should not have group filters on the non group slide",function(){
         tT.menuButton.click();
         sA.menuButton.click();
         sB.menuButton.click();
@@ -402,7 +437,7 @@ describe('When the class breaks into groups,', function() {
         sA.contentFilter.click();
         sB.contentFilter.click();
 
-        assert.equal(teacher.execute("return $('.contentFilterItem').length").value,2);
+        assert.equal(teacher.execute("return $('.contentFilterItem').length").value,3);
     });
     it("the teacher should regain their group filters on returning to the group slide",function(){
         tT.menuButton.click();

@@ -190,13 +190,13 @@ var BoardPage = function(user) {
         } },
 
         inkMode: { get: function() { return user.element("#drawMode"); } },
-        inkStanzas: { get: function() { return user.execute("return _.map(boardContent.inks,function(ink){return _.pickBy(ink,function(v,k){return k != 'canvas'})})").value; } },
+        inkStanzas: { get: function() { return user.execute("return _.map(boardContent.inks,function(ink){return _.pickBy(ink,function(v,k){return k != 'canvas' && k != 'mipMap'})})").value; } },
         handwrite: {value:handwrite},
         letter: {value:letter},
         letters:{value:letters},
 
         imageMode: { get: function() { return user.element("#imageMode"); } },
-        imageStanzas: {get: function(){ return user.execute("return _.map(boardContent.images,function(image){return _.pickBy(image,function(v,k){return k != 'canvas'})})").value } }
+        imageStanzas: {get: function(){ return user.execute("return _.map(boardContent.images,function(image){return _.pickBy(image,function(v,k){return k != 'canvas' && k != 'mipMap'})})").value } }
     });
 }
 module.exports = BoardPage

@@ -116,7 +116,7 @@ var Plugins = (function(){
                                                 console.log("Isolating and screenshotting",isolate);
                                                 _.defer(Submissions.sendSubmission);
                                             }).appendTo(controls);
-                                            var id = _.uniqueId("l");
+                                            var id = sprintf("isolateGroup_%s",group.title);
                                             var isolate = $("<div />",{
                                                 class:"isolateGroup"
                                             }).append($("<input />",{
@@ -124,11 +124,11 @@ var Plugins = (function(){
                                                 name:"groupView",
                                                 id:id
                                             }).change(function(){
-                                                console.log("Isolate changed",group.id);
                                                 _.each(groups,function(g){
                                                     ContentFilter.setFilter(g.id,false);
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
+						ContentFilter.setAudience(group.id);
                                             })).append($("<label />",{
                                                 for:id
                                             }).append($("<span />",{

@@ -860,6 +860,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
             HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
         }
     } catch(e){
+	console.log(e);
         if ("HealthChecker" in window){
             HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
         }
@@ -907,7 +908,7 @@ function updateConversationHeader(){
     var groupV = $("#currentGroupTitle").empty();
     var group = Conversations.getCurrentGroup();
     if(group.length){
-	groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
+        groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
     }
 }
 function clearBoard(incContext,rect){

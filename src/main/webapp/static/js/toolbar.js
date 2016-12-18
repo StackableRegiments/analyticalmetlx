@@ -1848,15 +1848,15 @@ var Modes = (function(){
                     resetVideoUpload();
                 }
             });
-						Progress.beforeLeavingSlide["videos"] = function(){
-							if ("videos" in boardContent){
-								_.forEach(boardContent.videos,function(video){
-									if (video != null && video != undefined && "destroy" in video){
-										video.destroy();
-									}
-								});
-							}
-						};
+            Progress.beforeLeavingSlide["videos"] = function(){
+                if ("videos" in boardContent){
+                    _.forEach(boardContent.videos,function(video){
+                        if (video != null && video != undefined && "destroy" in video){
+                            video.destroy();
+                        }
+                    });
+                }
+            };
             return {
                 activate:function(){
                     Modes.currentMode.deactivate();
@@ -2058,7 +2058,7 @@ var Modes = (function(){
                                 y:imageDef.y,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences()).map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2915,10 +2915,10 @@ var Modes = (function(){
                         currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
                         trail.x = x;
                         trail.y = y;
-			boardContext.beginPath();
+                        boardContext.beginPath();
                         var newWidth = Modes.draw.drawingAttributes.width * z;
-			boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
-			boardContext.fill();
+                        boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
+                        boardContext.fill();
                     } else {
                     }
                 };
@@ -2926,8 +2926,8 @@ var Modes = (function(){
                 var deleted = [];
                 var trail = {};
                 move = function(x,y,z,worldPos,modifiers){
-		    x = Math.round(x);
-		    y = Math.round(y);
+                    x = Math.round(x);
+                    y = Math.round(y);
                     if(erasing || modifiers.eraser){
                         var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                         var markAsDeleted = function(bounds){

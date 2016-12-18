@@ -1,4 +1,5 @@
 var ContentFilter = (function(){
+    var audiences = [];
     var owner = {
         id:"owner",
         name:"owner",
@@ -116,29 +117,24 @@ var ContentFilter = (function(){
     var getFiltersFunction = function(){
         return filters;
     };
-    var setFiltersFromGroups = function(groups){
-        if (Conversations.isAuthor()){
-            filters = _.concat([myPrivate,myPublic],_.map(groups,generateGroupFilter));
-            blit();
-        }
+    var getFiltersFromGroups = function(groups){
+        return Conversations.isAuthor() ? _.map(groups,generateGroupFilter) : [];
     };
-    var setDefaultFilters = function(){
-        if (Conversations.isAuthor()){
-            filters = [myPrivate,myPublic,myPeers];
-        } else {
-            filters = [owner,myPrivate,myPublic,myPeers];
+    var getDefaultFilters = function(){
+	var fs = [myPrivate,myPublic];
+	if(! Conversations.isAuthor()){
+	    fs = fs.concat(owner);
+	}
+        if(! Conversations.getCurrentGroups().length){
+	    fs = fs.concat(myPeers);
         }
-        blit();
+	return fs;
     };
-    var conversationJoined = function(){
+    var generateFilters = function(){
         var cs = Conversations.getCurrentSlide();
-	console.log("Setting up filters for",cs);
-        if (cs != undefined){
-            setFiltersFromGroups(Conversations.getCurrentGroups());
-        } else {
-            setDefaultFilters();
-        }
+        filters = getDefaultFilters().concat(cs ? getFiltersFromGroups(Conversations.getCurrentGroups()) : []);
         renderContentFilters();
+        blit();
     };
     var setFilterFunction = function(id,enabled){
         _.each(getFiltersFunction(),function(fil){
@@ -149,12 +145,26 @@ var ContentFilter = (function(){
         renderContentFilters();
         blit();
     };
-    Progress.currentSlideJidReceived["ContentFilter"] = conversationJoined;
-    Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
-    Progress.onConversationJoin["ContentFilter"] = conversationJoined;
-    Progress.afterJoiningSlide["ContentFilter"] = conversationJoined;
+    var getAudiencesFunction = function(){
+        return audiences;
+    };
+    var setAudienceFunction = function(audience){
+        audiences.push(audience);
+    };
+    Progress.currentSlideJidReceived["ContentFilter"] = function(){
+        audiences = [];
+        generateFilters();
+    }
+    Progress.onConversationJoin["ContentFilter"] = function(){
+        audiences = [];
+        generateFilters();
+    };
+    Progress.conversationDetailsReceived["ContentFilter"] = generateFilters;
+    Progress.afterJoiningSlide["ContentFilter"] = generateFilters;
     return {
         getFilters:getFiltersFunction,
-        setFilter:setFilterFunction
+        setFilter:setFilterFunction,
+        getAudiences:getAudiencesFunction,
+        setAudience:setAudienceFunction
     };
 })();

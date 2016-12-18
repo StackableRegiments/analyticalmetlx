@@ -254,6 +254,11 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   protected implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
+    /*
+    ClientSideFunction("getPresentUsers",List.empty[String],(args) => {
+      rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
+    },Full(RECEIVE_PRESENT_USERS)),
+     */
     ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
