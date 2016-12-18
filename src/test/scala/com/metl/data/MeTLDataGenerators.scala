@@ -36,6 +36,7 @@ trait MeTLDataGenerators {
     i <- Gen.sequence(Range(0,count).map(i => genString(32)))
   } yield i.toArray.toList.map(_.asInstanceOf[String])
 
+  def genSlideString = Gen.choose(0,99999999)
   def validTimestamp = new java.util.Date().getTime()
 
   def genColor = for {
@@ -86,7 +87,7 @@ trait MeTLDataGenerators {
     timestamp <- validTimestamp
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(64)//arbitrary[String]//genString(32)
     points <- genPointList(scala.util.Random.nextInt(300) + 1)
     checksum <- arbitrary[Double]
@@ -95,14 +96,14 @@ trait MeTLDataGenerators {
     thickness <- arbitrary[Double]
     isHighlighter <- arbitrary[Boolean]
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLInk(ServerConfiguration.empty, author, timestamp, checksum, startingSum, points, color, thickness, isHighlighter, target, privacy, slide, identity, audiences)
+  } yield MeTLInk(ServerConfiguration.empty, author, timestamp, checksum, startingSum, points, color, thickness, isHighlighter, target, privacy, slide.toString, identity, audiences)
 
   def genMoveDelta = for {
     author <- genString(32)
     timestamp <- validTimestamp
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     inkIds <- genIdList(scala.util.Random.nextInt(30))
     textIds <- genIdList(scala.util.Random.nextInt(30))
@@ -118,14 +119,14 @@ trait MeTLDataGenerators {
     newPrivacy <- genPrivacy
     isDeleted <- arbitrary[Boolean]
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLMoveDelta(ServerConfiguration.empty, author, timestamp, target, privacy, slide, identity, xOrigin, yOrigin, inkIds, textIds, richTextIds, imageIds, videoIds, xTrans, yTrans, xScale, yScale, newPrivacy, isDeleted, audiences)
+  } yield MeTLMoveDelta(ServerConfiguration.empty, author, timestamp, target, privacy, slide.toString, identity, xOrigin, yOrigin, inkIds, textIds, richTextIds, imageIds, videoIds, xTrans, yTrans, xScale, yScale, newPrivacy, isDeleted, audiences)
 
   def genImage = for {
     author <- genString(32)
     target <- genString(32)
     timestamp <- validTimestamp
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     tag <- genString(32)
     x <- arbitrary[Double]
@@ -134,14 +135,14 @@ trait MeTLDataGenerators {
     height <- arbitrary[Double]
     source <- genString(32) map { s => if (!s.isEmpty) Full(s) else Full("unknown") }
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLImage(ServerConfiguration.empty, author, timestamp, tag, source, Empty, Empty, width, height, x, y, target, privacy, slide, identity,audiences)
+  } yield MeTLImage(ServerConfiguration.empty, author, timestamp, tag, source, Empty, Empty, width, height, x, y, target, privacy, slide.toString, identity,audiences)
   // WrappedArray.make[Byte]
 
   def genText = for {
     author <- genString(32)
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     timestamp <- validTimestamp
     tag <- genString(32)
@@ -158,7 +159,7 @@ trait MeTLDataGenerators {
     width <- arbitrary[Double]
     height <- arbitrary[Double]
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLText(ServerConfiguration.empty, author, timestamp, text, height, width, caret, x, y, tag, style, family, weight, size, decoration, identity, target, privacy, slide, color, audiences)
+  } yield MeTLText(ServerConfiguration.empty, author, timestamp, text, height, width, caret, x, y, tag, style, family, weight, size, decoration, identity, target, privacy, slide.toString, color, audiences)
 
   def genTextWord = for {
     text <- genString(32)
@@ -179,7 +180,7 @@ trait MeTLDataGenerators {
     author <- genString(32)
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     timestamp <- validTimestamp
     tag <- genString(32)
@@ -190,7 +191,7 @@ trait MeTLDataGenerators {
     requestedWidth <- arbitrary[Double]
     audiences <- genAudiences(scala.util.Random.nextInt(3))
     runs <- genTextWords(scala.util.Random.nextInt(10) + 2)
-  } yield MeTLMultiWordText(ServerConfiguration.empty, author, timestamp, height, width, requestedWidth, x, y, tag, identity, target, privacy, slide, runs, audiences)
+  } yield MeTLMultiWordText(ServerConfiguration.empty, author, timestamp, height, width, requestedWidth, x, y, tag, identity, target, privacy, slide.toString, runs, audiences)
 
 
   def genDirtyInk = for {
@@ -198,30 +199,30 @@ trait MeTLDataGenerators {
     timestamp <- validTimestamp
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLDirtyInk(ServerConfiguration.empty, author, timestamp, target, privacy, slide, identity, audiences)
+  } yield MeTLDirtyInk(ServerConfiguration.empty, author, timestamp, target, privacy, slide.toString, identity, audiences)
 
   def genDirtyText = for {
     author <- genString(32)
     timestamp <- validTimestamp
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLDirtyText(ServerConfiguration.empty, author, timestamp, target, privacy, slide, identity, audiences)
+  } yield MeTLDirtyText(ServerConfiguration.empty, author, timestamp, target, privacy, slide.toString, identity, audiences)
 
   def genDirtyImage = for {
     author <- genString(32)
     timestamp <- validTimestamp
     target <- genString(32)
     privacy <- genPrivacy
-    slide <- Gen.numStr
+    slide <- genSlideString//Gen.numStr
     identity <- genString(32)
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLDirtyImage(ServerConfiguration.empty, author, timestamp, target, privacy, slide, identity, audiences)
+  } yield MeTLDirtyImage(ServerConfiguration.empty, author, timestamp, target, privacy, slide.toString, identity, audiences)
 
   def genCommand = for {
     author <- genString(32)
@@ -248,12 +249,12 @@ trait MeTLDataGenerators {
     timestamp <- validTimestamp
     created <- arbitrary[Long]
     question <- genString(32)
-    id <- Gen.numStr
+    id <- genSlideString//Gen.numStr
     isDeleted <- arbitrary[Boolean]
     url <- genString(32)
     options <- Gen.containerOfN[List, QuizOption](1,genQuizOption)
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLQuiz(ServerConfiguration.empty, author, timestamp, created, question, id, Full(url), Empty, isDeleted, options, audiences)
+  } yield MeTLQuiz(ServerConfiguration.empty, author, timestamp, created, question, id.toString, Full(url), Empty, isDeleted, options, audiences)
 
   def genQuizOption = for {
     name <- genString(32)
