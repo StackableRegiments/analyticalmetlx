@@ -16,7 +16,7 @@ import com.metl.data._
 import com.metl.model._
 import Privacy._
 
-class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with Matchers with QueryXml with MeTLStanzaMatchers with MeTLCanvasContentMatchers {
+class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with Matchers with QueryXml with MeTLStanzaMatchers with MeTLCanvasContentMatchers with MeTLDataGenerators {
   var xmlSerializer: GenericXmlSerializer = _
   object XmlUtils extends XmlUtils
 
@@ -455,5 +455,39 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
 
     assert(xmlSerializer.configName === "empty")
   }
-
+  test("parse ink to xml and back") {
+    forAll (genInk) { (gennedStanza:MeTLInk) => {
+      val xml = xmlSerializer.fromMeTLInk(gennedStanza)
+      val stanza = xmlSerializer.toMeTLInk(xml)
+      stanza should equal(gennedStanza)
+    }}
+  }
+  test("parse grade to xml and back") {
+    forAll (genGrade) { (gennedStanza:MeTLGrade) => {
+      val xml = xmlSerializer.fromGrade(gennedStanza)
+      val stanza = xmlSerializer.toGrade(xml)
+      stanza should equal(gennedStanza)
+    }}
+  }
+  test("parse numericGradeValue to xml and back") {
+    forAll (genNumericGradeValue) { (gennedStanza:MeTLNumericGradeValue) => {
+      val xml = xmlSerializer.fromNumericGradeValue(gennedStanza)
+      val stanza = xmlSerializer.toNumericGradeValue(xml)
+      stanza should equal(gennedStanza)
+    }}
+  }
+  test("parse booleanGradeValue to xml and back") {
+    forAll (genBooleanGradeValue) { (gennedStanza:MeTLBooleanGradeValue) => {
+      val xml = xmlSerializer.fromBooleanGradeValue(gennedStanza)
+      val stanza = xmlSerializer.toBooleanGradeValue(xml)
+      stanza should equal(gennedStanza)
+    }}
+  }
+  test("parse textGradeValue to xml and back") {
+    forAll (genTextGradeValue) { (gennedStanza:MeTLTextGradeValue) => {
+      val xml = xmlSerializer.fromTextGradeValue(gennedStanza)
+      val stanza = xmlSerializer.toTextGradeValue(xml)
+      stanza should equal(gennedStanza)
+    }}
+  }
 }

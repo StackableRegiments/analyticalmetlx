@@ -908,6 +908,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     getAllWithMdsAtEnd().foreach(i => newHistory.addStanza(i))
     newHistory
   })
+  /*
   def getUserSpecificHistory(user:String, isTeacher:Boolean = false) = Stopwatch.time("History.getUserSpecificHistory(%s)".format(user),{
     val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
     getAllWithMdsAtEnd().foreach(i => i match {
@@ -921,6 +922,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     })
     newHistory
   })
+  */
   protected def shouldAdjust:Boolean = (xScale != 1.0 || yScale != 1.0 || xOffset != 0 || yOffset != 0)
   def shouldRender:Boolean = ((getLeft < 0 || getRight > 0 || getTop < 0 || getBottom > 0) && getCanvasContents.length > 0)
 }
