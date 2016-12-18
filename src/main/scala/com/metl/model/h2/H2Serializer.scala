@@ -400,10 +400,10 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     } yield {
       ugru
     }
-    MeTLGrade(config,c.author,c.timestamp,i.gradeId.get,i.location.get,i.name.get,i.description.get,frs,gru,c.audiences)
+    MeTLGrade(config,c.author,c.timestamp,i.gradeId.get,i.location.get,i.name.get,i.description.get,i.visible.get,frs,gru,c.audiences)
   })
   override def fromGrade(i:MeTLGrade):H2Grade = Stopwatch.time("H2Serializer.fromGrade",{
-    val g = incStanza(H2Grade.create,i,"grade").gradeId(i.id).name(i.name).description(i.description).location(i.location)
+    val g = incStanza(H2Grade.create,i,"grade").gradeId(i.id).name(i.name).description(i.description).location(i.location).visible(i.visible)
     i.foreignRelationship.foreach(fr => {
       g.foreignRelationshipSystem(fr._1).foreignRelationshipKey(fr._2)
     })

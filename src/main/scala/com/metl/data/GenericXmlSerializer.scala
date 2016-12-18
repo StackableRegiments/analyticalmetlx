@@ -714,6 +714,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val name = getStringByName(input,"name")
     val description = getStringByName(input,"description")
     val location = getStringByName(input,"location")
+    val visible = getBooleanByName(input,"visible")
     val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
       for {
         sys <- (n \ "@sys").headOption.map(_.text)
@@ -723,13 +724,14 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       }
     })
     val gradeReferenceUrl = (input \\ "gradeReferenceUrl").headOption.map(_.text)   
-    MeTLGrade(config,m.author,m.timestamp,id,location,name,description,foreignRelationship,gradeReferenceUrl,m.audiences)
+    MeTLGrade(config,m.author,m.timestamp,id,location,name,description,visible,foreignRelationship,gradeReferenceUrl,m.audiences)
   })
   override def fromGrade(input:MeTLGrade):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGrade",{
     metlContentToXml("grade",input,List(
       <id>{input.id}</id>,
       <name>{input.name}</name>,
       <location>{input.location}</location>,
+      <visible>{input.visible.toString}</visible>,
       <description>{input.description}</description>
     ) ::: input.foreignRelationship.toList.map(t => {
       <foreignRelationship sys={t._1} key={t._2} />

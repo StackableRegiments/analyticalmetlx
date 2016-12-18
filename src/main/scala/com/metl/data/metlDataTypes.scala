@@ -964,7 +964,7 @@ object MeTLFile{
 object MeTLGrade {
   def empty = MeTLGrade(ServerConfiguration.empty,"",0L,"","","","")
 }
-case class MeTLGrade(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,id:String,location:String,name:String,description:String,foreignRelationship:Option[Tuple2[String,String]] = None,gradeReferenceUrl:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
+case class MeTLGrade(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,id:String,location:String,name:String,description:String,visible:Boolean = false,foreignRelationship:Option[Tuple2[String,String]] = None,gradeReferenceUrl:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLGrade = Stopwatch.time("MeTLGrade.adjustTimestamp",{
     copy(timestamp = newTime)
   })

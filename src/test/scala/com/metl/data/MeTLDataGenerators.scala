@@ -321,10 +321,11 @@ trait MeTLDataGenerators {
     location <- genString(32)
     name <- genString(32)
     description <- genString(32)
+    visible <- arbitrary[Boolean]
     foreignRelationship <- genForeignRelationship
     gradeReferenceUrl <- genOpt(genString(32))
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLGrade(ServerConfiguration.empty,author,timestamp,id,location,name,description,foreignRelationship,gradeReferenceUrl,audiences)
+  } yield MeTLGrade(ServerConfiguration.empty,author,timestamp,id,location,name,description,visible,foreignRelationship,gradeReferenceUrl,audiences)
 
   def genNumericGradeValue = for {
     author <- genString(32)
