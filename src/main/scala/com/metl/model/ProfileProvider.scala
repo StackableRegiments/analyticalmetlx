@@ -2,6 +2,8 @@ package com.metl.model
 
 import scala.xml._
 import net.liftweb.common._
+import net.liftweb.util._
+import net.liftweb.util.Helpers._
 import com.metl.liftAuthenticator._
 
 case class UserProfile(username:String,foreignRelationships:Map[String,String],firstName:Option[String] = None,surname:Option[String] = None,emailAddress:Option[String] = None)
@@ -190,4 +192,47 @@ trait UserProfileSerializers {
 }
 
 
+trait UserProfileSeed {
+  def getValues:List[UserProfile] = Nil
+}
 
+class CsvUserProfileSeed(path:String) extends UserProfileSeed {
+  import com.github.tototoshi.csv._
+  import java.io._
+
+  protected val usernameKey = "USERNAME"
+  protected val firstNameKey = "FIRSTNAME"
+  protected val surnameKey = "SURNAME"
+  protected val emailKey = "EMAILADDRESS"
+  protected val foreignRelationshipsKey = "FOREIGNRELATIONSHIPS" 
+
+  override def getValues = {
+    val reader = CSVReader.open(new File(path))
+    val results = reader.allWithHeaders
+    reader.close
+    results.flatMap(r => {
+      for {
+        username <- r.get(usernameKey)
+        firstName = r.get(firstNameKey)
+        surname = r.get(surnameKey)
+        emailAddress = r.get(emailKey)
+        foreignRelationships <- r.get(foreignRelationshipsKey)
+      } yield {
+        val frs = Map(foreignRelationships.split("&").flatMap(pairString => {
+          pairString.split("=").toList match {
+            case List(k,v) => Some((urlDecode(k),urlDecode(v)))
+            case _ => None
+          } 
+        }).toList:_*)
+        UserProfile(username,frs,firstName,surname,emailAddress)
+      }
+    }).toList
+  }
+}
+
+class XmlUserProfileSeed(path:String) extends UserProfileSerializers with UserProfileSeed {
+  override def getValues = {
+    val xml = XML.load(path)
+    fromXml(xml)
+  }
+}

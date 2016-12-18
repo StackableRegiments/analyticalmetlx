@@ -270,7 +270,8 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     }
   }
   def setupUserProfileProvidersFromFile(filePath:String) = {
-    ifConfiguredFromGroup((XML.load(filePath) \\ "userProfileProvider").headOption.getOrElse(NodeSeq.Empty),Map(
+    val fileXml = XML.load(filePath)
+    ifConfiguredFromGroup((fileXml \\ "userProfileProvider").headOption.getOrElse(NodeSeq.Empty),Map(
       "inMemoryUserProfileProvider" -> {
         (n:NodeSeq) => Globals.userProfileProvider = Some(new CachedInMemoryProfileProvider())
       },
@@ -290,6 +291,30 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         }
       }
     ))
+    ifConfigured((fileXml \\ "userProfileSeeds").headOption.getOrElse(NodeSeq.Empty),"userProfileSeed",(n:NodeSeq) => {
+      for {
+        path <- (n \\ "@filename").headOption.map(_.text)
+        format <- (n \\ "@format").headOption.map(_.text)
+      } yield {
+        Globals.userProfileProvider.map(upp => {
+          format match {
+            case "xml" => {
+              val seed = new XmlUserProfileSeed(path)
+              seed.getValues.foreach(p => {
+                upp.updateProfile(p)
+              })
+            }
+            case "csv" => {
+              val seed = new CsvUserProfileSeed(path)
+              seed.getValues.foreach(p => {
+                upp.updateProfile(p)
+              })
+            }
+            case _ => {}
+          }
+        })
+      }
+    },true)
   }
 
   def setupServersFromFile(filePath:String) = {
