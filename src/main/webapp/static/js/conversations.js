@@ -1004,7 +1004,7 @@ function receiveAttendance(attendances){
     Progress.call("attendanceReceived",[attendances])
 }
 function receiveGroupsProviders(providers){
-    _.each(providers.groupsProviders, getOrgUnitsFromGroupProviders);
+    Progress.call("groupProvidersReceived",[providers]);
 }
 function receiveOrgUnitsFromGroupsProviders(gp){
     _.each(gp.orgUnits,function(ou){

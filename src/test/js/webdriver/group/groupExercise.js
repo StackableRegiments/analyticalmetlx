@@ -107,8 +107,8 @@ describe('When the class breaks into groups,', function() {
     it("given that the teacher adds a group slide, importing an external group and specifying a strategy,",function(){
         assert.equal(tT.currentSlide.index,0);
         tT.addGroupSlide.click();
-        browser.waitUntil(function(){return teacher.isVisible("#groupsPopup");});
-        teacher.click(".findExisting");
+        browser.waitUntil(function(){return teacher.isVisible("#ouSelector");});
+        teacher.selectByValue("#ouSelector","xmlUserOverrides_from_testMaterials/orgData.xml");
         browser.waitUntil(function(){
             var visible = teacher.execute("return $('#structuralGroup_2').length > 0;").value;
             return visible;
