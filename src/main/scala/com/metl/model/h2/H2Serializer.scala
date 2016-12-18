@@ -83,6 +83,10 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
           case "file" => toMeTLFile(i.asInstanceOf[H2File])
           case "videoStream" => toMeTLVideoStream(i.asInstanceOf[H2VideoStream])
           case "quizResponse" => toMeTLQuizResponse(i.asInstanceOf[H2QuizResponse])
+          case "grade" => toGrade(i.asInstanceOf[H2Grade])
+          case "numericGradeValue" => toNumericGradeValue(i.asInstanceOf[H2NumericGradeValue])
+          case "booleanGradeValue" => toBooleanGradeValue(i.asInstanceOf[H2BooleanGradeValue])
+          case "textGradeValue" => toTextGradeValue(i.asInstanceOf[H2TextGradeValue])
           case "undeletedCanvasContent" => toMeTLUndeletedCanvasContent(i.asInstanceOf[H2UndeletedCanvasContent])
           case "unhandledCanvasContent" => toMeTLUnhandledCanvasContent(i.asInstanceOf[H2UnhandledCanvasContent])
           case "unhandledStanza" => toMeTLUnhandledStanza(i.asInstanceOf[H2UnhandledStanza])
@@ -379,4 +383,112 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromPointList(input:List[Point]):AnyRef = Stopwatch.time("H2Serializer.fromPointList",PointConverter.toText(input))
   override def toColor(input:AnyRef):Color = ColorConverter.fromARGBHexString(input.toString)
   override def fromColor(input:Color):AnyRef = ColorConverter.toARGBHexString(input)
+
+  def toGrade(i:H2Grade):MeTLGrade = Stopwatch.time("H2Serializer.toGrade",{
+    val c = decStanza(i)
+    val frs = for {
+      us <- Some(i.foreignRelationshipSystem.get)
+      if (us != null)
+      uk <- Some(i.foreignRelationshipKey.get)
+      if (uk != null)
+    } yield {
+      (us,uk)
+    }
+    val gru = for {
+      ugru <- Some(i.gradeReferenceUrl.get)
+      if (ugru != null)
+    } yield {
+      ugru
+    }
+    MeTLGrade(config,c.author,c.timestamp,i.gradeId.get,i.location.get,i.name.get,i.description.get,frs,gru,c.audiences)
+  })
+  override def fromGrade(i:MeTLGrade):H2Grade = Stopwatch.time("H2Serializer.fromGrade",{
+    val g = incStanza(H2Grade.create,i,"grade").gradeId(i.id).name(i.name).description(i.description).location(i.location)
+    i.foreignRelationship.foreach(fr => {
+      g.foreignRelationshipSystem(fr._1).foreignRelationshipKey(fr._2)
+    })
+    i.gradeReferenceUrl.foreach(gru => {
+      g.gradeReferenceUrl(gru)
+    })
+    g
+  })
+  def toNumericGradeValue(i:H2NumericGradeValue):MeTLNumericGradeValue = Stopwatch.time("H2Serializer.toNumericGradeValue",{
+    val c = decStanza(i)
+    val comment = for {
+      comm <- Some(i.comments.get)
+      if (comm != null)
+    } yield {
+      comm
+    }
+    val privateComment = for {
+      pc <- Some(i.privateComments.get)
+      if (pc != null)
+    } yield {
+      pc
+    }
+    MeTLNumericGradeValue(config,c.author,c.timestamp,i.gradeId.get,i.gradedUser.get,i.gradeValue.get,comment,privateComment,c.audiences)
+  })  
+  override def fromNumericGradeValue(i:MeTLNumericGradeValue):H2NumericGradeValue = Stopwatch.time("H2Serializer.fromNumericGradeValue",{
+    val g = incStanza(H2NumericGradeValue.create,i,"numericGradeValue").gradeId(i.gradeId).gradedUser(i.gradedUser).gradeValue(i.gradeValue)
+    i.gradeComment.foreach(c => {
+      g.comments(c)
+    })
+    i.gradePrivateComment.foreach(c => {
+      g.privateComments(c)
+    })
+    g
+  })
+  def toBooleanGradeValue(i:H2BooleanGradeValue):MeTLBooleanGradeValue = Stopwatch.time("H2Serializer.toBooleanGradeValue",{
+    val c = decStanza(i)
+    val comment = for {
+      comm <- Some(i.comments.get)
+      if (comm != null)
+    } yield {
+      comm
+    }
+    val privateComment = for {
+      pc <- Some(i.privateComments.get)
+      if (pc != null)
+    } yield {
+      pc
+    }
+    MeTLBooleanGradeValue(config,c.author,c.timestamp,i.gradeId.get,i.gradedUser.get,i.gradeValue.get,comment,privateComment,c.audiences)
+  })  
+  override def fromBooleanGradeValue(i:MeTLBooleanGradeValue):H2BooleanGradeValue = Stopwatch.time("H2Serializer.fromBooleanGradeValue",{
+    val g = incStanza(H2BooleanGradeValue.create,i,"booleanGradeValue").gradeId(i.gradeId).gradedUser(i.gradedUser).gradeValue(i.gradeValue)
+    i.gradeComment.foreach(c => {
+      g.comments(c)
+    })
+    i.gradePrivateComment.foreach(c => {
+      g.privateComments(c)
+    })
+    g
+  })
+  def toTextGradeValue(i:H2TextGradeValue):MeTLTextGradeValue = Stopwatch.time("H2Serializer.toTextGradeValue",{
+    val c = decStanza(i)
+    val comment = for {
+      comm <- Some(i.comments.get)
+      if (comm != null)
+    } yield {
+      comm
+    }
+    val privateComment = for {
+      pc <- Some(i.privateComments.get)
+      if (pc != null)
+    } yield {
+      pc
+    }
+    MeTLTextGradeValue(config,c.author,c.timestamp,i.gradeId.get,i.gradedUser.get,i.gradeValue.get,comment,privateComment,c.audiences)
+  })  
+  override def fromTextGradeValue(i:MeTLTextGradeValue):H2TextGradeValue = Stopwatch.time("H2Serializer.fromTextGradeValue",{
+    val g = incStanza(H2TextGradeValue.create,i,"textGradeValue").gradeId(i.gradeId).gradedUser(i.gradedUser).gradeValue(i.gradeValue)
+    i.gradeComment.foreach(c => {
+      g.comments(c)
+    })
+    i.gradePrivateComment.foreach(c => {
+      g.privateComments(c)
+    })
+    g
+  })
+
 }

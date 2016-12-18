@@ -60,7 +60,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         DatabaseVersion,
         ThemeExtraction,
         H2Theme,
-        H2UndeletedCanvasContent
+        H2UndeletedCanvasContent,
+        H2Grade,
+        H2NumericGradeValue,
+        H2BooleanGradeValue,
+        H2TextGradeValue
       ):_*
     )
     //database migration script actions go here.  No try/catch, because I want to break if I can't bring it up to an appropriate version.
@@ -201,6 +205,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case s:MeTLMoveDelta => Some(serializer.fromMeTLMoveDelta(s).room(jid))
       case s:MeTLFile => Some(serializer.fromMeTLFile(s).room(jid))
       case s:MeTLVideoStream => Some(serializer.fromMeTLVideoStream(s).room(jid))
+      case s:MeTLGrade => Some(serializer.fromGrade(s).room(jid))
+      case s:MeTLNumericGradeValue => Some(serializer.fromNumericGradeValue(s).room(jid))
+      case s:MeTLBooleanGradeValue => Some(serializer.fromBooleanGradeValue(s).room(jid))
+      case s:MeTLTextGradeValue => Some(serializer.fromTextGradeValue(s).room(jid))
       case s:MeTLUndeletedCanvasContent => Some(serializer.fromMeTLUndeletedCanvasContent(s).room(jid))
       case s:MeTLUnhandledStanza => Some(serializer.fromMeTLUnhandledStanza(s).room(jid))
       case s:MeTLUnhandledCanvasContent => Some(serializer.fromMeTLUnhandledCanvasContent(s).room(jid))
@@ -249,6 +257,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     val quizResponses = Stopwatch.time("h2.fetch.quizzes",H2QuizResponse.findAll(By(H2QuizResponse.room,jid)))
     val videoStreams = Stopwatch.time("h2.fetch.vidoeStreams",H2VideoStream.findAll(By(H2VideoStream.room,jid)))
     val attendances = Stopwatch.time("h2.fetch.attendances",H2Attendance.findAll(By(H2Attendance.location,jid)))
+    val grades = Stopwatch.time("h2.fetch.grades",H2Grade.findAll(By(H2Grade.room,jid)))
+    val numericGradeValues = Stopwatch.time("h2.fetch.numericGradeValues",H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)))
+    val booleanGradeValues = Stopwatch.time("h2.fetch.booleanGradeValues",H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)))
+    val textGradeValues = Stopwatch.time("h2.fetch.textGradeValues",H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)))
     val comms = Stopwatch.time("h2.fetch.commands",H2Command.findAll(By(H2Command.room,jid)))
     val ccs = Stopwatch.time("h2.fetch.ccs",H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)))
     val unhandled = Stopwatch.time("h2.fetch.stanzas",H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)))
@@ -274,6 +286,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     comms.foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s)))
     ccs.foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s)))
     unhandled.foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+
+    grades.foreach(s => newHistory.addStanza(serializer.toGrade(s)))
+    numericGradeValues.foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s)))
+    booleanGradeValues.foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s)))
+    textGradeValues.foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
 
     newHistory
   })
@@ -340,7 +357,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
-      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s))),
+      () => H2Grade.findAll(By(H2Grade.room,jid)).foreach(s => newHistory.addStanza(serializer.toGrade(s))),
+      () => H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s))),
+      () => H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s))),
+      () => H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
     ).par
     parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
     parO.map(f => f()).toList
@@ -383,7 +404,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
-      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s))),
+      () => H2Grade.findAll(By(H2Grade.room,jid)).foreach(s => newHistory.addStanza(serializer.toGrade(s))),
+      () => H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s))),
+      () => H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s))),
+      () => H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
     ).par.map(f => f()).toList
   //.toList.foreach(group => group.foreach(gf => gf()))
                               //val unhandledContent = H2UnhandledContent.findAll(By(H2UnhandledContent.room,jid)).map(s => serializer.toMeTLUnhandledData(s))

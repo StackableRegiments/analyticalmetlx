@@ -329,7 +329,7 @@ class ThemeExtraction extends LongKeyedMapper[ThemeExtraction] with IdPK{
 }
 object H2Grade extends H2Grade with LongKeyedMetaMapper[H2Grade] {
 }
-class H2Grade extends H2MeTLContent[H2Grade] {
+class H2Grade extends H2MeTLStanza[H2Grade] {
   def getSingleton = H2Grade
   object gradeId extends MappedString(this,H2Constants.identity)
   object location extends MappedString(this,H2Constants.room)
@@ -339,7 +339,7 @@ class H2Grade extends H2MeTLContent[H2Grade] {
   object foreignRelationshipKey extends MappedString(this,H2Constants.url)
   object gradeReferenceUrl extends MappedString(this,H2Constants.url)
 }
-trait H2GradeValue[C <:H2MeTLContent[C]] extends H2MeTLContent[C]{
+trait H2GradeValue[C <:H2MeTLStanza[C]] extends H2MeTLStanza[C]{
   self: C =>
   object privateComments extends MappedString[C](this,4096)
   object comments extends MappedString[C](this,4096)

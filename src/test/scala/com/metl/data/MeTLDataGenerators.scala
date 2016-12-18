@@ -287,4 +287,36 @@ trait MeTLDataGenerators {
     studentsCanPublish <- arbitrary[Boolean]
     usersAreCompulsorilySynced <- arbitrary[Boolean]
   } yield Permissions(ServerConfiguration.empty, studentsCanOptionFriends, studentsCanPublish, usersAreCompulsorilySynced)
+  def genForeignRelationship = for {
+    sys <- Gen.alphaStr
+    key <- Gen.alphaStr
+    opt = scala.util.Random.nextBoolean
+  } yield {
+    if (opt){
+      Some((sys,key))
+    } else {
+      None
+    }
+  }
+  def genOpt[A](in:Gen[A]):Gen[Option[A]] = for {
+    v <- in
+    opt = scala.util.Random.nextBoolean
+  } yield {
+    if (opt){
+      Some(v)
+    } else {
+      None
+    }
+  }
+  def genGrade = for {
+    author <- Gen.alphaStr
+    timestamp <- validTimestamp
+    id <- Gen.alphaStr
+    location <- Gen.alphaStr
+    name <- Gen.alphaStr
+    description <- Gen.alphaStr
+    foreignRelationship <- genForeignRelationship
+    gradeReferenceUrl <- genOpt(Gen.alphaStr)
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
+  } yield MeTLGrade(ServerConfiguration.empty,author,timestamp,id,location,name,description,foreignRelationship,gradeReferenceUrl,audiences)
 }

@@ -273,4 +273,11 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
       submission should equal(gennedSubmission)
     }
   }
+  test("parse grade to json and back") {
+    forAll (genGrade) { (gennedGrade: MeTLGrade) => {
+      val json = jsonSerializer.fromGrade(gennedGrade)
+      val grade = jsonSerializer.toGrade(json)
+      grade should equal(gennedGrade)
+    }}
+  }
 }
