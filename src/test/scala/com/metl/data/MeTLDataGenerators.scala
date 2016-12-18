@@ -319,4 +319,36 @@ trait MeTLDataGenerators {
     gradeReferenceUrl <- genOpt(Gen.alphaStr)
     audiences <- genAudiences(scala.util.Random.nextInt(3))
   } yield MeTLGrade(ServerConfiguration.empty,author,timestamp,id,location,name,description,foreignRelationship,gradeReferenceUrl,audiences)
+
+  def genNumericGradeValue = for {
+    author <- Gen.alphaStr
+    timestamp <- validTimestamp
+    gradeId <- Gen.alphaStr
+    gradedUser <- Gen.alphaStr
+    gradeValue <- arbitrary[Double]
+    gradeComment <- genOpt(Gen.alphaStr)
+    gradePrivateComment <- genOpt(Gen.alphaStr)
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
+  } yield MeTLNumericGradeValue(ServerConfiguration.empty,author,timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,audiences)
+  def genBooleanGradeValue = for {
+    author <- Gen.alphaStr
+    timestamp <- validTimestamp
+    gradeId <- Gen.alphaStr
+    gradedUser <- Gen.alphaStr
+    gradeValue <- arbitrary[Boolean]
+    gradeComment <- genOpt(Gen.alphaStr)
+    gradePrivateComment <- genOpt(Gen.alphaStr)
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
+  } yield MeTLBooleanGradeValue(ServerConfiguration.empty,author,timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,audiences)
+  def genTextGradeValue = for {
+    author <- Gen.alphaStr
+    timestamp <- validTimestamp
+    gradeId <- Gen.alphaStr
+    gradedUser <- Gen.alphaStr
+    gradeValue <- Gen.alphaStr
+    gradeComment <- genOpt(Gen.alphaStr)
+    gradePrivateComment <- genOpt(Gen.alphaStr)
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
+  } yield MeTLTextGradeValue(ServerConfiguration.empty,author,timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,audiences)
+
 }

@@ -280,4 +280,28 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
       grade should equal(gennedGrade)
     }}
   }
+  test("parse numericGradeValue to json and back") {
+    forAll (genNumericGradeValue) { (gennedGradeValue: MeTLNumericGradeValue) => {
+      val json = jsonSerializer.fromNumericGradeValue(gennedGradeValue)
+      val gradeValue = jsonSerializer.toNumericGradeValue(json)
+      gradeValue should equal(gennedGradeValue)
+    }}
+  }
+  test("parse booleanGradeValue to json and back") {
+    forAll (genBooleanGradeValue) { (gennedGradeValue: MeTLBooleanGradeValue) => {
+      val json = jsonSerializer.fromBooleanGradeValue(gennedGradeValue)
+      val gradeValue = jsonSerializer.toBooleanGradeValue(json)
+      gradeValue should equal(gennedGradeValue)
+    }}
+  }
+  test("parse textGradeValue to json and back") {
+    forAll (genTextGradeValue) { (gennedGradeValue: MeTLTextGradeValue) => {
+      val json = jsonSerializer.fromTextGradeValue(gennedGradeValue)
+      val gradeValue = jsonSerializer.toTextGradeValue(json)
+      gradeValue should equal(gennedGradeValue)
+    }}
+  }
+
+
+
 }
