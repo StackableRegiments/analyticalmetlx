@@ -180,7 +180,7 @@ describe('When the class breaks into groups,', function() {
         assert(_.includes(tT.plainTexts,"Phrase 2"));
         assert(_.includes(tT.plainTexts,"Phrase 3"));
     });
-    it("the teacher can filter out groups but the students cannot",function(){
+    it("the teacher can filter out all groups but the students can only filter out their own",function(){
         tT.menuButton.click();
         sA.menuButton.click();
         sB.menuButton.click();
@@ -199,11 +199,11 @@ describe('When the class breaks into groups,', function() {
         assert(teacher.isExisting("#contentFilter_"+groups[0].id));
         assert(teacher.isExisting("#contentFilter_"+groups[1].id));
 
-        assert(! studentA.isExisting("#contentFilter_"+groups[0].id));
+        assert(studentA.isExisting("#contentFilter_"+groups[0].id));
         assert(! studentA.isExisting("#contentFilter_"+groups[1].id));
 
         assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
-        assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
+        assert(studentB.isExisting("#contentFilter_"+groups[1].id));
     });
     it("connection health should be a visible metric",function(){
         assert(browser.isExisting("#healthStatus"));
@@ -252,7 +252,7 @@ describe('When the class breaks into groups,', function() {
         sC.contentFilter.click();
 
         assert(! studentC.isExisting("#contentFilter_"+groups[0].id));
-        assert(! studentC.isExisting("#contentFilter_"+groups[1].id));
+        assert(studentC.isExisting("#contentFilter_"+groups[1].id));
 
         assert(_.includes(sC.plainTexts,"Phrase 1"));
         assert(!(_.includes(sC.plainTexts,"Phrase 2")));
@@ -261,7 +261,7 @@ describe('When the class breaks into groups,', function() {
         sC.menuButton.click();
         sC.textMode.click();
         sC.keyboard(50,4,"Phrase 4");
-        browser.pause(1500);//Let everything synchronize
+        browser.pause(2500);//Let everything synchronize
         assert(!(_.includes(sA.plainTexts,"Phrase 4")));
         assert(_.includes(sB.plainTexts,"Phrase 4"));
         assert(_.includes(sC.plainTexts,"Phrase 4"));
@@ -371,7 +371,8 @@ describe('When the class breaks into groups,', function() {
     it("the Groups plugin should enable the teacher to isolate publication to a particular group",function(){
         tT.driver.execute("$('#isolateGroup_1').click()");
         tT.textMode.click();
-        tT.keyboard(130,130,"RESPONSE TO GROUP 1 ONLY");
+        tT.keyboard(130,300,"RESPONSE TO GROUP 1 ONLY");
+	browser.pause(2500);//Let everything synchronize
         tT.inkMode.click();
         tT.handwrite(_.map(_.range(200,400,15), function(i){
             return {x:50,y:i};
@@ -381,9 +382,10 @@ describe('When the class breaks into groups,', function() {
         tT.driver.chooseFile("#imageFileChoice","testMaterials/stormtrooper.jpg");
         var peer = sA;
         var nonPeer = sC;
+	console.log(sB.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,4);
         assert.equal(_.keys(sA.inkStanzas).length,2);
-        assert.equal(_.keys(sB.textStanzas).length,3);
+        assert.equal(_.keys(sB.textStanzas).length,4);
         assert.equal(_.keys(sA.textStanzas).length,2);
         assert.equal(_.keys(sB.imageStanzas).length,4);
         assert.equal(_.keys(sA.imageStanzas).length,2);
@@ -457,10 +459,47 @@ describe('When the class breaks into groups,', function() {
         assert(teacher.isExisting("#contentFilter_"+groups[0].id));
         assert(teacher.isExisting("#contentFilter_"+groups[1].id));
 
-        assert(! studentA.isExisting("#contentFilter_"+groups[0].id));
-        assert(! studentA.isExisting("#contentFilter_"+groups[1].id));
+        assert(studentA.isExisting("#contentFilter_"+groups[1].id));
+        assert(! studentA.isExisting("#contentFilter_"+groups[2].id));
 
-        assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
         assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
+        assert(studentB.isExisting("#contentFilter_"+groups[2].id));
+    });
+    it("content sharing should be reestablished on return to the slide",function(){
+        _.each([sB,sC],function(user,ui){//Close all backstages
+            if(user.applicationMenu.value != null){
+                user.menuButton.click();
+            }
+            user.driver.waitUntil(function(){
+                return user.driver.isVisible("#drawMode")
+            });
+            user.inkMode.click();
+            user.driver.waitUntil(function(){
+                return user.driver.isVisible(sprintf("#pen%sButton",ui+1));
+            });
+            user.driver.click(sprintf("#pen%sButton",ui+1));
+            user.handwrite(_.map(_.range(200,400,15), function(i){
+                return {x:ui*10+i,y:i};
+            }));
+            user.imageMode.click();
+            user.driver.click("#board");
+            user.driver.chooseFile("#imageFileChoice","testMaterials/stormtrooper.jpg");
+            user.textMode.click();
+            user.keyboard(100,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
+        });
+        browser.pause(5000);//Let everything synchronize
+	console.log(sB.plainTexts);
+        assert.equal(_.keys(sB.inkStanzas).length,6);
+        assert.equal(_.keys(sB.textStanzas).length,6);
+        assert.equal(_.keys(sB.imageStanzas).length,6);
+
+        assert.equal(_.keys(sC.inkStanzas).length,6);
+        assert.equal(_.keys(sC.textStanzas).length,6);
+        assert.equal(_.keys(sC.imageStanzas).length,6);
+
+        assert.equal(_.keys(sA.inkStanzas).length,2);
+        assert.equal(_.keys(sA.textStanzas).length,2);
+        assert.equal(_.keys(sA.imageStanzas).length,2);
+
     });
 });

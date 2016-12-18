@@ -79,6 +79,7 @@ var Plugins = (function(){
                                             _.each(groups,function(g){
                                                 ContentFilter.setFilter(g.id,true);
                                             });
+					    ContentFilter.clearAudiences();
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({

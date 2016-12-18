@@ -118,21 +118,21 @@ var ContentFilter = (function(){
         return filters;
     };
     var getFiltersFromGroups = function(groups){
-        return Conversations.isAuthor() ? _.map(groups,generateGroupFilter) : [];
+	return _.map(Conversations.isAuthor() ? Conversations.getCurrentGroups() : Conversations.getCurrentGroup(),generateGroupFilter);
     };
     var getDefaultFilters = function(){
-	var fs = [myPrivate,myPublic];
-	if(! Conversations.isAuthor()){
-	    fs = fs.concat(owner);
-	}
-        if(! Conversations.getCurrentGroups().length){
-	    fs = fs.concat(myPeers);
+        var fs = [myPrivate,myPublic];
+        if(! Conversations.isAuthor()){
+            fs = fs.concat(owner);
         }
-	return fs;
+        if(! Conversations.getCurrentGroups().length){
+            fs = fs.concat(myPeers);
+        }
+        return fs;
     };
     var generateFilters = function(){
         var cs = Conversations.getCurrentSlide();
-        filters = getDefaultFilters().concat(cs ? getFiltersFromGroups(Conversations.getCurrentGroups()) : []);
+        filters = getDefaultFilters().concat(cs ? getFiltersFromGroups() : []);
         renderContentFilters();
         blit();
     };
@@ -151,6 +151,9 @@ var ContentFilter = (function(){
     var setAudienceFunction = function(audience){
         audiences.push(audience);
     };
+    var clearAudiencesFunction = function(){
+        audiences = [];
+    }
     Progress.currentSlideJidReceived["ContentFilter"] = function(){
         audiences = [];
         generateFilters();
@@ -159,12 +162,16 @@ var ContentFilter = (function(){
         audiences = [];
         generateFilters();
     };
+    Progress.afterJoiningSlide["ContentFilter"] = function(){
+        audiences = [];
+        generateFilters();
+    };
     Progress.conversationDetailsReceived["ContentFilter"] = generateFilters;
-    Progress.afterJoiningSlide["ContentFilter"] = generateFilters;
     return {
         getFilters:getFiltersFunction,
         setFilter:setFilterFunction,
         getAudiences:getAudiencesFunction,
-        setAudience:setAudienceFunction
+        setAudience:setAudienceFunction,
+        clearAudiences:clearAudiencesFunction
     };
 })();
