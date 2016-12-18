@@ -341,6 +341,34 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   <blue>{input.color.blue}</blue>
   </color>
   </word>
+  override def toMeTLWord(input:NodeSeq) = (for {
+    text <- (input \\ "text").headOption.map(_.text)
+    bold <- (input \\ "bold").headOption.map(_.text.toBoolean)
+    underline <- (input \\ "underline").headOption.map(_.text.toBoolean)
+    italic <- (input \\ "italic").headOption.map(_.text.toBoolean)
+    justify <- (input \\ "justify").headOption.map(_.text)
+    font <- (input \\ "font").headOption.map(_.text)
+    size <- (input \\ "size").headOption.map(_.text.toDouble)
+    colorNode <- (input \\ "color").headOption
+    a <- (colorNode \\ "alpha").headOption.map(_.text.toInt)
+    r <- (colorNode \\ "red").headOption.map(_.text.toInt)
+    g <- (colorNode \\ "green").headOption.map(_.text.toInt)
+    b <- (colorNode \\ "blue").headOption.map(_.text.toInt)
+  } yield {
+    MeTLTextWord(text,bold,underline,italic,justify,Color(a,r,g,b),font,size)
+  }).getOrElse(MeTLTextWord.empty)
+  override def toMeTLMultiWordText(input:NodeSeq):MeTLMultiWordText = Stopwatch.time("GenericXmlSerializer.toMeTLMultiWordText",{
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val width = getDoubleByName(input,"width")
+    val requestedWidth = getDoubleByName(input,"requestedWidth")
+    val height = getDoubleByName(input,"height")
+    val x = getDoubleByName(input,"x")
+    val y = getDoubleByName(input,"y")
+    val words = (input \\ "words" \\ "word").toList.map(toMeTLWord _)
+    val tag = getStringByName(input,"tag")
+    MeTLMultiWordText(config,m.author,m.timestamp,height,width,requestedWidth,x,y,tag,c.identity,c.target,c.privacy,c.slide,words,m.audiences)
+  })
   override def fromMeTLMultiWordText(input:MeTLMultiWordText) = Stopwatch.time("GenericXmlSerializer.fromMeTLMultiWordText", canvasContentToXml("multiWordText",input,List(
     <x>{input.x}</x>,
     <y>{input.y}</y>,

@@ -455,13 +455,105 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
 
     assert(xmlSerializer.configName === "empty")
   }
-  test("parse ink to xml and back") {
-    forAll (genInk) { (gennedStanza:MeTLInk) => {
-      val xml = xmlSerializer.fromMeTLInk(gennedStanza)
-      val stanza = xmlSerializer.toMeTLInk(xml)
-      stanza should equal(gennedStanza)
-    }}
+  test("parse metl move delta to xml and back") {
+    forAll (genMoveDelta) { (gennedMoveDelta: MeTLMoveDelta) =>
+
+      val xml = xmlSerializer.fromMeTLMoveDelta(gennedMoveDelta)
+      val md = xmlSerializer.toMeTLMoveDelta(xml)
+
+      md should equal(gennedMoveDelta)
+    }
   }
+
+  test("parse metl ink to xml and back") {
+    forAll (genInk) { (gennedInk: MeTLInk) =>
+
+      val xml = xmlSerializer.fromMeTLInk(gennedInk)
+      val ink = xmlSerializer.toMeTLInk(xml)
+
+      ink should equal(gennedInk)
+    }
+  }
+
+  test("parse metl image to xml and back") {
+    forAll (genImage) { (gennedImage: MeTLImage) =>
+
+      val xml = xmlSerializer.fromMeTLImage(gennedImage)
+      val image = xmlSerializer.toMeTLImage(xml)
+      //info("toMeTLImage: Creates Full(Array.empty[Byte]) instead of Empty, and Array instead of WrappedArray")
+
+      image should equal(gennedImage)
+    }
+  }
+
+  test("parse metl text to xml and back") {
+    forAll (genText) { (gennedText: MeTLText) =>
+
+      val xml = xmlSerializer.fromMeTLText(gennedText)
+      val text = xmlSerializer.toMeTLText(xml)
+
+      text should equal(gennedText)
+    }
+  }
+
+  test("parse metl multi-word text to xml and back") {
+    forAll (genMultiWordText) { (gennedText: MeTLMultiWordText) =>
+
+      val xml = xmlSerializer.fromMeTLMultiWordText(gennedText)
+      val text = xmlSerializer.toMeTLMultiWordText(xml)
+
+      text should equal(gennedText)
+    }
+  }
+
+  test("parse metl dirty ink to xml and back") {
+    forAll (genDirtyInk) { (gennedDirtyInk: MeTLDirtyInk) =>
+
+      val xml = xmlSerializer.fromMeTLDirtyInk(gennedDirtyInk)
+      val dirtyInk = xmlSerializer.toMeTLDirtyInk(xml)
+
+      dirtyInk should equal(gennedDirtyInk)
+    }
+  }
+
+  test("parse metl dirty image to xml and back") {
+    forAll (genDirtyImage) { (gennedDirtyImage: MeTLDirtyImage) =>
+
+      val xml = xmlSerializer.fromMeTLDirtyImage(gennedDirtyImage)
+      val dirtyImage = xmlSerializer.toMeTLDirtyImage(xml)
+
+      dirtyImage should equal(gennedDirtyImage)
+    }
+  }
+
+  test("parse metl dirty text to xml and back") {
+    forAll (genDirtyText) { (gennedDirtyText: MeTLDirtyText) =>
+
+      val xml = xmlSerializer.fromMeTLDirtyText(gennedDirtyText)
+      val dirtyText = xmlSerializer.toMeTLDirtyText(xml)
+
+      dirtyText should equal(gennedDirtyText)
+    }
+  }
+
+  test("parse metl command to xml and back") {
+    forAll (genCommand) { (gennedCommand: MeTLCommand) =>
+
+      val xml = xmlSerializer.fromMeTLCommand(gennedCommand)
+      val command = xmlSerializer.toMeTLCommand(xml)
+
+      command should equal(gennedCommand)
+    }
+  }
+
+  test("parse submission to xml and back") {
+    forAll (genSubmission) { (gennedSubmission: MeTLSubmission) =>
+      val xml = xmlSerializer.fromSubmission(gennedSubmission)
+      val submission = xmlSerializer.toSubmission(xml)
+      submission should equal(gennedSubmission)
+    }
+  }
+
   test("parse grade to xml and back") {
     forAll (genGrade) { (gennedStanza:MeTLGrade) => {
       val xml = xmlSerializer.fromGrade(gennedStanza)

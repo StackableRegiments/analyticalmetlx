@@ -289,7 +289,9 @@ object MeTLCanvasContent{
   def unapply(in:MeTLCanvasContent) = Some((in.server,in.author,in.timestamp,in.target,in.privacy,in.slide,in.identity,in.audiences,in.scaleFactorX,in.scaleFactorY))
   def empty = MeTLCanvasContent(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","")
 }
-
+object MeTLTextWord {
+  def empty = MeTLTextWord("",false,false,false,"",Color.empty,"",0.0)
+}
 case class MeTLTextWord(text:String,bold:Boolean,underline:Boolean,italic:Boolean,justify:String,color:Color,font:String,size:Double){
   def scale(factor:Double):MeTLTextWord = copy(size=size * factor)
 }
