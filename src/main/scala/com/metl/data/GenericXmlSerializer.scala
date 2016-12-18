@@ -96,6 +96,10 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       case i:NodeSeq if hasChild(i,"fileResource") => toMeTLFile(i)
       case i:NodeSeq if hasChild(i,"videoStream") => toMeTLVideoStream(i)
       case i:NodeSeq if hasChild(i,"theme") => toTheme(i)
+      case i:NodeSeq if hasChild(i,"grade") => toGrade(i)
+      case i:NodeSeq if hasChild(i,"numericGradeValue") => toNumericGradeValue(i)
+      case i:NodeSeq if hasChild(i,"booleanGradeValue") => toBooleanGradeValue(i)
+      case i:NodeSeq if hasChild(i,"textGradeValue") => toTextGradeValue(i)
       case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
@@ -675,5 +679,95 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   override def toPoint(input:AnyRef):Point = {
     Point.empty
   }
-  override def fromPoint(input:Point):AnyRef = "%s %s %s".format(input.x,input.y,input.thickness)
+  override def fromPoint(input:Point):String = "%s %s %s".format(input.x,input.y,input.thickness)
+  override def toGrade(input:NodeSeq):MeTLGrade = Stopwatch.time("GenericXmlSerializer.toGrade",{
+    val m = parseMeTLContent(input,config)
+    val id = getStringByName(input,"id")
+    val name = getStringByName(input,"name")
+    val description = getStringByName(input,"description")
+    val location = getStringByName(input,"location")
+    val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
+      for {
+        sys <- (n \ "@sys").headOption.map(_.text)
+        key <- (n \ "@key").headOption.map(_.text)
+      } yield {
+        (sys,key)
+      }
+    })
+    val gradeReferenceUrl = (input \\ "gradeReferenceUrl").headOption.map(_.text)   
+    MeTLGrade(config,m.author,m.timestamp,id,location,name,description,foreignRelationship,gradeReferenceUrl,m.audiences)
+  })
+  override def fromGrade(input:MeTLGrade):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGrade",{
+    metlContentToXml("grade",input,List(
+      <id>{input.id}</id>,
+      <name>{input.name}</name>,
+      <location>{input.location}</location>,
+      <description>{input.description}</description>
+    ) ::: input.foreignRelationship.toList.map(t => {
+      <foreignRelationship sys={t._1} key={t._2} />
+    }) ::: input.gradeReferenceUrl.toList.map(s => {
+      <gradeReferenceUrl>{s}</gradeReferenceUrl>
+    }))
+  })
+
+  override def toNumericGradeValue(input:NodeSeq):MeTLNumericGradeValue = Stopwatch.time("GenericXmlSerializer.toNumericGradeValue",{
+    val m = parseMeTLContent(input,config)
+    val gradeId = getStringByName(input,"gradeId")
+    val gradedUser = getStringByName(input,"gradedUser")
+    val gradeValue = getDoubleByName(input,"gradeValue")
+    val gradeComment = (input \\ "gradeComment").headOption.map(_.text)
+    val gradePrivateComment = (input \\ "gradePrivateComment").headOption.map(_.text)
+    MeTLNumericGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+  })
+  override def fromNumericGradeValue(input:MeTLNumericGradeValue):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromNumericGradeValue",{
+    metlContentToXml("numericGradeValue",input,List(
+      <gradeId>{input.gradeId}</gradeId>,
+      <gradedUser>{input.gradedUser}</gradedUser>,
+      <gradeValue>{input.gradeValue.toString}</gradeValue>
+    ) ::: input.gradeComment.toList.map(s => {
+      <gradeComment>{s}</gradeComment>
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      <gradePrivateComment>{s}</gradePrivateComment>
+    }))
+  })
+  override def toBooleanGradeValue(input:NodeSeq):MeTLBooleanGradeValue = Stopwatch.time("GenericXmlSerializer.toBooleanGradeValue",{
+    val m = parseMeTLContent(input,config)
+    val gradeId = getStringByName(input,"gradeId")
+    val gradedUser = getStringByName(input,"gradedUser")
+    val gradeValue = getBooleanByName(input,"gradeValue")
+    val gradeComment = (input \\ "gradeComment").headOption.map(_.text)
+    val gradePrivateComment = (input \\ "gradePrivateComment").headOption.map(_.text)
+    MeTLBooleanGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+  })
+  override def fromBooleanGradeValue(input:MeTLBooleanGradeValue):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromBooleanGradeValue",{
+    metlContentToXml("booleanGradeValue",input,List(
+      <gradeId>{input.gradeId}</gradeId>,
+      <gradedUser>{input.gradedUser}</gradedUser>,
+      <gradeValue>{input.gradeValue.toString}</gradeValue>
+    ) ::: input.gradeComment.toList.map(s => {
+      <gradeComment>{s}</gradeComment>
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      <gradePrivateComment>{s}</gradePrivateComment>
+    }))
+  })
+  override def toTextGradeValue(input:NodeSeq):MeTLTextGradeValue = Stopwatch.time("GenericXmlSerializer.toTextGradeValue",{
+    val m = parseMeTLContent(input,config)
+    val gradeId = getStringByName(input,"gradeId")
+    val gradedUser = getStringByName(input,"gradedUser")
+    val gradeValue = getStringByName(input,"gradeValue")
+    val gradeComment = (input \\ "gradeComment").headOption.map(_.text)
+    val gradePrivateComment = (input \\ "gradePrivateComment").headOption.map(_.text)
+    MeTLTextGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+  })
+  override def fromTextGradeValue(input:MeTLTextGradeValue):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromTextGradeValue",{
+    metlContentToXml("textGradeValue",input,List(
+      <gradeId>{input.gradeId}</gradeId>,
+      <gradedUser>{input.gradedUser}</gradedUser>,
+      <gradeValue>{input.gradeValue.toString}</gradeValue>
+    ) ::: input.gradeComment.toList.map(s => {
+      <gradeComment>{s}</gradeComment>
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      <gradePrivateComment>{s}</gradePrivateComment>
+    }))
+  })
 }

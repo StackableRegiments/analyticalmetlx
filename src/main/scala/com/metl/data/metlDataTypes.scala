@@ -956,3 +956,51 @@ case class MeTLFile(override val server:ServerConfiguration, override val author
 object MeTLFile{
   def empty = MeTLFile(ServerConfiguration.empty,"",0L,"","",None,None,false,Nil)
 }
+
+case class MeTLGrade(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,id:String,location:String,name:String,description:String,foreignRelationship:Option[Tuple2[String,String]] = None,gradeReferenceUrl:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLGrade = Stopwatch.time("MeTLGrade.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+}
+trait MeTLGradeValue {
+  def getNumericGrade:Option[Double] = None
+  def getTextGrade:Option[String] = None
+  def getBooleanGrade:Option[Boolean] = None
+  def getComment:Option[String] = None
+  def getPrivateComment:Option[String] = None
+  def getGradedUser:String
+  def getGradeId:String
+}
+case class MeTLNumericGradeValue(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,gradeId:String,gradedUser:String,gradeValue:Double,gradeComment:Option[String] = None,gradePrivateComment:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences) with MeTLGradeValue {
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLNumericGradeValue = Stopwatch.time("MeTLNumericGradeValue.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+  override def getNumericGrade:Option[Double] = Some(gradeValue)
+  override def getGradeId:String = gradeId
+  override def getGradedUser:String = gradedUser
+  override def getComment:Option[String] = gradeComment
+  override def getPrivateComment:Option[String] = gradePrivateComment
+}
+
+case class MeTLBooleanGradeValue(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,gradeId:String,gradedUser:String,gradeValue:Boolean,gradeComment:Option[String] = None,gradePrivateComment:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences) with MeTLGradeValue {
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLBooleanGradeValue = Stopwatch.time("MeTLBooleanGradeValue.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+  override def getBooleanGrade:Option[Boolean] = Some(gradeValue)
+  override def getGradeId:String = gradeId
+  override def getGradedUser:String = gradedUser
+  override def getComment:Option[String] = gradeComment
+  override def getPrivateComment:Option[String] = gradePrivateComment
+}
+
+case class MeTLTextGradeValue(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,gradeId:String,gradedUser:String,gradeValue:String,gradeComment:Option[String] = None,gradePrivateComment:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences) with MeTLGradeValue {
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLTextGradeValue = Stopwatch.time("MeTLTextGradeValue.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+  override def getTextGrade:Option[String] = Some(gradeValue)
+  override def getGradeId:String = gradeId
+  override def getGradedUser:String = gradedUser
+  override def getComment:Option[String] = gradeComment
+  override def getPrivateComment:Option[String] = gradePrivateComment
+}
+
