@@ -974,6 +974,9 @@ object MeTLGradeValueType extends Enumeration {
   val Numeric,Boolean,Text = Value
   def parse(input:String):MeTLGradeValueType = {
     input.toLowerCase.trim match {
+      case "numeric" => MeTLGradeValueType.Numeric
+      case "boolean" => MeTLGradeValueType.Boolean
+      case "text" => MeTLGradeValueType.Text
       case _ => MeTLGradeValueType.Numeric
     }
   }

@@ -3,7 +3,9 @@ var Grades = (function(){
 	var grades = {};
 	var gradeValues = {};
 	var gradeCreateButton = {};
-	var gradeEditButtonTemplate = {};
+	var gradeActionButtonsTemplate = {};
+	var gradeEditTemplate = {};
+	var gradeAssessTemplate = {};
 	var reRenderFunc = function(){
 		WorkQueue.enqueue(function(){
 			gradesDatagrid.jsGrid("loadData");
@@ -27,6 +29,7 @@ var Grades = (function(){
 							author:user,
 							location:loc,
 							id:sprintf("%s_%s_%s",loc,user,new Date().getTime().toString()),
+							gradeType:"numeric",
 							visible:false,
 							timestamp:0						
 						};
@@ -102,7 +105,9 @@ var Grades = (function(){
 	Progress.stanzaReceived["Grades"] = stanzaReceived;
 	$(function(){
 		gradesDatagrid = $("#gradesDatagrid");
-		gradeEditButtonTemplate = gradesDatagrid.find(".editGradeButtonContainer").clone();
+		gradeActionButtonsTemplate = gradesDatagrid.find(".gradeActionsContainer").clone();
+		gradeEditTemplate = gradesDatagrid.find(".gradeEditContainer").clone();
+		gradeAssessTemplate = gradesDatagrid.find(".gradeAssessContainer").clone();
 		gradesDatagrid.empty();
 		gradeCreateButton = $("#createGradeButton")
 		var DateField = function(config){
@@ -141,11 +146,69 @@ var Grades = (function(){
 				title:"actions",
 				readOnly:true,
 				sorting:false,
-				itemTemplate:function(identity,submission){
-					if (submission.author == UserSettings.getUsername()){
-						var rootElem = gradeEditButtonTemplate.clone();
+				itemTemplate:function(identity,grade){
+					if (grade.author == UserSettings.getUsername()){
+						var rootElem = gradeActionButtonsTemplate.clone();
 						rootElem.find(".editGradeButton").on("click",function(){
-							console.log("tried to edit the grade");
+							var newGrade = _.cloneDeep(grade);
+							var uniqId = _.uniqueId();
+							var outer = $("<div/>",{
+								id:uniqId
+							});
+							var jAlert = $.jAlert({
+								title:"edit grade",
+								width:"auto",
+								content:outer[0].outerHTML
+							});
+							var innerRoot = gradeEditTemplate.clone();
+							var nameId = sprintf("gradeName_%s",uniqId);
+							var nameInputBox = innerRoot.find(".gradeNameInputBox");
+							var changeNameFunc = function(ev){
+								newGrade.name = nameInputBox.val();
+							};
+							nameInputBox.attr("id",nameId).on("blur",changeNameFunc).val(grade.name);
+							innerRoot.find(".gradeNameLabel").attr("for",nameId);
+							var descId = sprintf("gradeDesc_%s",uniqId);
+							var changeDescFunc = function(ev){
+								newGrade.description = descInputBox.val();
+							};
+							var descInputBox = innerRoot.find(".gradeDescriptionInputBox");
+							descInputBox.attr("id",descId).on("blur",changeDescFunc).val(grade.description);
+							innerRoot.find(".gradeDescriptionLabel").attr("for",descId);
+							var selectId = sprintf("gradeType_%s",uniqId);
+							var typeSelect = innerRoot.find(".gradeTypeSelect");
+							console.log("starting value:",grade.gradeType);
+							typeSelect.attr("id",selectId).on("change",function(){
+								newGrade.gradeType = typeSelect.val();
+							}).val(grade.gradeType);
+							innerRoot.find(".gradeTypeLabel").attr("for",selectId);
+							var visibleId = sprintf("gradeVisible_%s",uniqId);
+							innerRoot.find(".gradeVisibleLabel").attr("for",visibleId);
+							var visibleCheckbox = innerRoot.find(".gradeVisibleCheckbox");
+							visibleCheckbox.attr("id",visibleId).prop("checked",grade.visible).on("change",function(ev){
+								newGrade.visible = visibleCheckbox.prop("checked");
+							});
+							innerRoot.find(".cancelGradeEdit").on("click",function(){
+								jAlert.closeAlert();
+							});
+							innerRoot.find(".submitGradeEdit").on("click",function(){
+								sendStanza(newGrade);
+								jAlert.closeAlert();
+							});
+							$("#"+uniqId).append(innerRoot);
+						});
+						rootElem.find(".assessGradeButton").on("click",function(){
+							var uniqId = _.uniqueId();
+							var outer = $("<div/>",{
+								id:uniqId
+							});
+							var jAlert = $.jAlert({
+								title:"assess grade",
+								width:"auto",
+								content:outer[0].outerHTML
+							});
+							var innerRoot = gradeAssessTemplate.clone();
+							$("#"+uniqId).append(innerRoot);
 						});
 						return rootElem;
 					} else {
