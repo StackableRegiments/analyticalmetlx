@@ -1,3 +1,6 @@
+0.14.2
+Improvement: METL-298: Fix Chrome's pointerEvent issues.
+
 0.14.1
 Improvement: METL-287: Move DataGrids and WordClouds to the workQueue.
 
