@@ -155,6 +155,35 @@ function registerPositionHandlers(contexts,down,move,up){
         context.css({"touch-action":"none"});
         var isGesture = false;
         var trackedTouches = {};
+				var checkIsGesture = function(){
+					var penTouches = [];
+					var fingerTouches = [];
+					var mouseTouches = [];
+					_.forEach(trackedTouches,function(touch){
+						switch (touch.pointerType){
+							case "pen":
+								penTouches.push(touch);
+								break;
+							case "mouse":
+								mouseTouches.push(touch);
+								break;
+							case "touch":
+								fingerTouches.push(touch);
+								break;
+							default:
+								break;
+						}
+					});
+					if (penTouches.length == 1){
+						return false;
+					} else if (mouseTouches.length == 1){
+						return false;
+					} else if (fingerTouches.length > 1){
+						return true;
+					} else {
+						return false;
+					}
+				}
         var updatePoint = function(pointerEvent){
             var pointId = pointerEvent.originalEvent.pointerId;
             var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
@@ -179,7 +208,7 @@ function registerPositionHandlers(contexts,down,move,up){
             pointItem.points.push(newPoint);
             pointItem.eraser = pointItem.eraser || isEraser;
             trackedTouches[pointId] = pointItem;
-            if (_.size(trackedTouches) > 1){
+            if (checkIsGesture()){
                 if (isGesture == false){
                     _.each(trackedTouches,function(series){
                         series.points = [_.last(series.points)];
@@ -220,7 +249,7 @@ function registerPositionHandlers(contexts,down,move,up){
         }
         if (detectPointerEvents()){
             var performGesture = _.throttle(function(){
-                if (_.size(trackedTouches) > 1){
+                if (checkIsGesture()){
                     takeControlOfViewbox();
 
                     var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
@@ -254,10 +283,13 @@ function registerPositionHandlers(contexts,down,move,up){
                 }
             },25);
             context.bind("pointerdown",function(e){
+                if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture()){
+									isGesture = true;
+								}
                 var point = updatePoint(e);
                 e.preventDefault();
                 WorkQueue.pause();
-                if (_.size(trackedTouches) == 1 && !isGesture){
+                if (!checkIsGesture() && !isGesture){
                     isDown = true;
                     if(noInteractableConsumed(point.worldPos,"down")){
                         down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
@@ -267,10 +299,9 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("pointermove",function(e){
                 var point = updatePoint(e);
                 e.preventDefault();
-                if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+                if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && (checkIsGesture() || isGesture)){
                     performGesture();
-                }
-                if (_.size(trackedTouches) == 1 && !isGesture){
+                } else {
                     if(noInteractableConsumed(point.worldPos,"move")){
                         if(isDown){
                             move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
