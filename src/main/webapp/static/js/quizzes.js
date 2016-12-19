@@ -20,11 +20,13 @@ var Quizzes = (function(){
     var reRenderActiveGraphFunction = undefined;
 
     var reRenderQuizzes = function(){
+			WorkQueue.enqueue(function(){
         quizDatagrid.jsGrid("loadData");
         var sortObj = quizDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
             quizDatagrid.jsGrid("sort",sortObj);
         }
+			});
     };
 
     var urlForQuizImage = function(quizId){

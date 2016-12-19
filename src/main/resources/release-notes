@@ -1,3 +1,6 @@
+0.14.1
+Improvement: METL-287: Move DataGrids and WordClouds to the workQueue.
+
 0.13.4
 Bugfix: METL-291: Using button for conversation search does not update the search query.
 
