@@ -397,6 +397,7 @@ var HealthCheckViewer = (function(){
         });
     }
     var refreshFunc = function(checkData,descriptionData){
+			WorkQueue.enqueue(function(){
         var start = new Date().getTime();
         var overallLatencyData = descriptionData["latency"];
         if (overallLatencyData != undefined){
@@ -440,6 +441,7 @@ var HealthCheckViewer = (function(){
                 chart.update();
             }
         });
+			});
     };
     return {
         resume:resumeFunc,

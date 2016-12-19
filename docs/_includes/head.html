@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="description" content="MeTL : A real-time system to manage learning">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.0/build/pure-min.css">
 
     <link rel="stylesheet" type="text/css" media="screen" href="{{ site.baseurl }}/stylesheets/stylesheet.css"/>
     <link rel='stylesheet' type='text/css' href="{{ site.baseurl }}/stylesheets/googleFonts.css"/>
@@ -23,7 +26,7 @@
 <!-- HEADER -->
 <div id="header_wrap" class="outer">
     <header class="inner">
-        <a id="forkme_banner" href="https://github.com/StackableRegiments/analyticalmetlx">View on GitHub</a>
+        {% include search-box.html %}
 
         <a href="{{ site.baseurl }}/index.html">
             <img id="project_title" src="images/MeTL-logo.png" alt="MeTL" align="left" height="100px" border="0px"/>

@@ -106,7 +106,6 @@ var Attachments = (function(){
             attachmentFileChoice.unbind("change").on("change",function(eventArgs){
                 WorkQueue.pause();
                 var jid = Conversations.getCurrentConversationJid();
-                //var filename = $(this).val();
                 var filename = $(this).val().replace(/.*(\/|\\)/, '');
                 var reader = new FileReader();
                 var files = eventArgs.target.files || eventArgs.dataTransfer.files;
@@ -166,36 +165,14 @@ var Attachments = (function(){
         reRenderAttachments();
     };
     var reRenderAttachments = function(){
-			WorkQueue.enqueue(function(){
-        attachmentsDatagrid.jsGrid("loadData");
-        var sortObj = attachmentsDatagrid.jsGrid("getSorting");
-        if ("field" in sortObj){
-            attachmentsDatagrid.jsGrid("sort",sortObj);
-        }
-			});
+        WorkQueue.enqueue(function(){
+            attachmentsDatagrid.jsGrid("loadData");
+            var sortObj = attachmentsDatagrid.jsGrid("getSorting");
+            if ("field" in sortObj){
+                attachmentsDatagrid.jsGrid("sort",sortObj);
+            }
+        });
     };
-		/*
-    var renderAttachment = function(attachment,targetContainer,template){
-        var uniq = function(label){return sprintf("attachment_%s_%s",label,attachment.id);};
-        var rootElem = template.find(".attachmentItem");
-        rootElem.attr("id",uniq("container"));
-        var linkElem = template.find(".attachmentDownloadLink");
-        var href = sprintf("/attachmentProxy/%s/%s",Conversations.getCurrentConversationJid(),encodeURI(attachment.id));
-        linkElem.attr("href",href);
-        var linkNameElem = template.find(".attachmentDownloadLinkText");
-        linkNameElem.text(attachment.name);
-        var deleteButton = template.find(".deleteButton");
-        if ("Conversations" in window && Conversations.shouldModifyConversation()){
-            deleteButton.on("click",function(){
-                attachment.deleted = true;
-                sendStanza(attachment);
-            });
-        } else {
-            deleteButton.remove();
-        }
-        targetContainer.append(template);
-    };
-		*/
     var actOnAttachment = function(newAttachment){
         var partitioned = _.partition(attachments,function(attachment){
             return attachment.id == newAttachment.id;
@@ -216,7 +193,6 @@ var Attachments = (function(){
     };
     var stanzaReceivedFunction = function(input){
         doStanzaReceivedFunction(input);
-        reRenderAttachments();
     };
     var doStanzaReceivedFunction = function(possibleAttachment){
         try {

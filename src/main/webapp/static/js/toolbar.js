@@ -155,6 +155,13 @@ function registerPositionHandlers(contexts,down,move,up){
         context.css({"touch-action":"none"});
         var isGesture = false;
         var trackedTouches = {};
+				var checkIsGesture = function(pointerEvent){
+					if (pointerEvent !== undefined && pointerEvent.originalEvent.pointerType == "touch"){
+						return (_.size(trackedTouches) > 1);
+					} else {
+						return false;
+					}
+				}
         var updatePoint = function(pointerEvent){
             var pointId = pointerEvent.originalEvent.pointerId;
             var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
@@ -178,8 +185,10 @@ function registerPositionHandlers(contexts,down,move,up){
             };
             pointItem.points.push(newPoint);
             pointItem.eraser = pointItem.eraser || isEraser;
-            trackedTouches[pointId] = pointItem;
-            if (_.size(trackedTouches) > 1){
+						if (pointerEvent.originalEvent.pointerType == "touch"){
+							trackedTouches[pointId] = pointItem;
+						}
+            if (checkIsGesture(pointerEvent)){
                 if (isGesture == false){
                     _.each(trackedTouches,function(series){
                         series.points = [_.last(series.points)];
@@ -204,7 +213,9 @@ function registerPositionHandlers(contexts,down,move,up){
             var y = pointerEvent.pageY - o.top;
             var z = pointerEvent.originalEvent.pressure || 0.5;
             var worldPos = screenToWorld(x,y);
-            delete trackedTouches[pointId];
+						if (pointerEvent.originalEvent.pointerType == "touch"){
+							delete trackedTouches[pointId];
+						}
             if (isGesture && _.size(trackedTouches) == 0){
                 isGesture = false;
                 isDown = false;
@@ -220,44 +231,45 @@ function registerPositionHandlers(contexts,down,move,up){
         }
         if (detectPointerEvents()){
             var performGesture = _.throttle(function(){
-                if (_.size(trackedTouches) > 1){
-                    takeControlOfViewbox();
+								takeControlOfViewbox();
 
-                    var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
-                        var first = _.first(item.points);
-                        var last = _.last(item.points);
-                        return [first,last];
-                    });
-                    trackedTouches = {};
-                    var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
-                    var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+								var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+										var first = _.first(item.points);
+										var last = _.last(item.points);
+										return [first,last];
+								});
+								trackedTouches = {};
+								var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+								var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-                    Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+								Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
 
-                    var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
-                    var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
-                    var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
-                    var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
-                    var prevYScale = prevNorthMost - prevSouthMost;
-                    var prevXScale = prevWestMost - prevEastMost;
+								var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
+								var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
+								var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
+								var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
+								var prevYScale = prevNorthMost - prevSouthMost;
+								var prevXScale = prevWestMost - prevEastMost;
 
-                    var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
-                    var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
-                    var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
-                    var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
-                    var yScale = northMost - southMost;
-                    var xScale = westMost - eastMost;
+								var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
+								var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
+								var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
+								var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
+								var yScale = northMost - southMost;
+								var xScale = westMost - eastMost;
 
-                    var previousScale = (prevXScale + prevYScale)       / 2;
-                    var currentScale = (xScale + yScale)        / 2;
-                    Zoom.scale(previousScale / currentScale);
-                }
+								var previousScale = (prevXScale + prevYScale)       / 2;
+								var currentScale = (xScale + yScale)        / 2;
+								Zoom.scale(previousScale / currentScale);
             },25);
             context.bind("pointerdown",function(e){
+                if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
+									isGesture = true;
+								}
                 var point = updatePoint(e);
                 e.preventDefault();
                 WorkQueue.pause();
-                if (_.size(trackedTouches) == 1 && !isGesture){
+                if (!checkIsGesture(e) && !isGesture){
                     isDown = true;
                     if(noInteractableConsumed(point.worldPos,"down")){
                         down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
@@ -267,10 +279,9 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("pointermove",function(e){
                 var point = updatePoint(e);
                 e.preventDefault();
-                if (e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch" && _.size(trackedTouches) > 1){
+                if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && (checkIsGesture(e) || isGesture)){
                     performGesture();
-                }
-                if (_.size(trackedTouches) == 1 && !isGesture){
+                } else {
                     if(noInteractableConsumed(point.worldPos,"move")){
                         if(isDown){
                             move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
