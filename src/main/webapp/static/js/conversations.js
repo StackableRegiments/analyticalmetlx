@@ -98,7 +98,7 @@ var Conversations = (function(){
                     _.each(gs,function(group){
                         var trace = groupTraces[group.id];
                         if(trace){//It won't exist if they haven't painted yet
-                            trace.update(groupActivity[group.id].line);
+                            trace.update([groupActivity[group.id].line]);
                         }
                     });
                     var conversationActivity = $("#conversationActivity");

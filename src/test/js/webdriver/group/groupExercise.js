@@ -95,7 +95,6 @@ describe('When the class breaks into groups,', function() {
     it("given that the teacher gives public instructions on the first slide",function(){
         tT.textMode.click();
         tT.keyboard(50,50,"Break into groups and discuss without sharing with other groups.  What is the best thing in life?");
-	browser.debug();
     });
     it("the students should all see the instructions",function(){
         studentA.waitUntil(function(){
@@ -285,7 +284,6 @@ describe('When the class breaks into groups,', function() {
         browser.waitUntil(function(){
             return sE.currentSlide.index == 1;
         });
-        teacher.execute("window.focus()");
         assert(_.includes(sE.plainTexts,"Phrase 1"));
         assert(!(_.includes(sE.plainTexts,"Phrase 2")));
         assert(!(_.includes(sE.plainTexts,"Phrase 3")));
@@ -302,9 +300,7 @@ describe('When the class breaks into groups,', function() {
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
             }));
-            user.imageMode.click();
-            user.driver.click("#board");
-            user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+	    user.addImage("testMaterials/mapleLeaf.jpg");
         });
         browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
@@ -373,17 +369,15 @@ describe('When the class breaks into groups,', function() {
         tT.driver.execute("$('#isolateGroup_1').click()");
         tT.textMode.click();
         tT.keyboard(130,300,"RESPONSE TO GROUP 1 ONLY");
-	browser.pause(2500);//Let everything synchronize
+        browser.pause(2500);//Let everything synchronize
         tT.inkMode.click();
         tT.handwrite(_.map(_.range(200,400,15), function(i){
             return {x:50,y:i};
         }));
-        tT.imageMode.click();
-        tT.driver.click("#board");
-        tT.driver.chooseFile("#imageFileChoice","testMaterials/stormtrooper.jpg");
+	tT.addImage("testMaterials/stormtrooper.jpg");
         var peer = sA;
         var nonPeer = sC;
-	console.log(sB.plainTexts);
+        console.log(sB.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,4);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.textStanzas).length,4);
@@ -406,9 +400,7 @@ describe('When the class breaks into groups,', function() {
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
             }));
-            user.imageMode.click();
-            user.driver.click("#board");
-            user.driver.chooseFile("#imageFileChoice","testMaterials/mapleLeaf.jpg");
+	    user.addImage("testMaterials/mapleLeaf.jpg");
         });
         browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
@@ -482,15 +474,13 @@ describe('When the class breaks into groups,', function() {
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
             }));
-            user.imageMode.click();
-            user.driver.click("#board");
-            user.driver.chooseFile("#imageFileChoice","testMaterials/stormtrooper.jpg");
-	    browser.pause(500);
+            user.addImage("testMaterials/stormtrooper.jpg");
+            browser.pause(500);
             user.textMode.click();
-            user.keyboard(100,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
+            user.keyboard(200,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
         });
-        browser.pause(5000);//Let everything synchronize
-	console.log(sB.plainTexts);
+        browser.pause(2500);//Let everything synchronize
+        console.log(sB.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,6);
         assert.equal(_.keys(sB.textStanzas).length,6);
         assert.equal(_.keys(sB.imageStanzas).length,6);
@@ -502,6 +492,5 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sA.textStanzas).length,2);
         assert.equal(_.keys(sA.imageStanzas).length,2);
-
     });
 });

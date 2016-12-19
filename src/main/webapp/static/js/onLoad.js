@@ -546,17 +546,15 @@ $(function(){
             Modes.text.activate();
         }
     });
-    /*
-     $("#insertMode").click(function(){
-     if(Modes.currentMode != Modes.insert){
-     Modes.insert.activate();
-     }
-
-     });
-     */
     $("#panMode").click(function(){
         if(Modes.currentMode != Modes.pan){
             Modes.pan.activate();
+        }
+    });
+    $("#insertMode").click(function(){
+        if(Modes.currentMode != Modes.image){
+            Modes.currentMode.deactivate();
+            Modes.image.activate();
         }
     });
     $("#imageMode").click(function(){

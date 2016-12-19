@@ -1861,7 +1861,13 @@ var Modes = (function(){
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.video;
-                    setActiveMode("#videoTools","#videoMode");
+                    setActiveMode("#insertTools","#videoMode");
+                    $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+                    $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
+                    $(".active").removeClass("active");
+                    $("#videoMode").addClass("active");
+                    $(".insetColumn").hide();
+                    $("#videoTools").show();
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);
@@ -2115,7 +2121,13 @@ var Modes = (function(){
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
-                    setActiveMode("#imageTools","#imageMode");
+                    setActiveMode("#insertTools","#imageMode");
+                    $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+                    $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
+                    $(".active").removeClass("active");
+                    $("#imageMode").addClass("active");
+                    $(".insetColumn").hide();
+                    $("#imageTools").show();
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);

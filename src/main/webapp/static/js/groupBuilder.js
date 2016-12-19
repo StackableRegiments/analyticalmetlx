@@ -119,6 +119,10 @@ var GroupBuilder = (function(){
                 parameterSelect.prop("disabled",true);
                 strategySelect.prop("disabled",true);
                 doAllocation.prop("disabled",true);
+                $("#importContainer").hide();
+            }
+            else{
+                $("#importContainer").show();
             }
             var strategy;
             var parameter;
@@ -184,7 +188,7 @@ var GroupBuilder = (function(){
         $("<option />",{
             text:"no starting groups",
             value:"NONE",
-	    selected:true
+            selected:true
         }).appendTo(select);
         _.each(args.groupsProviders,function(provider){
             $("<option />",{

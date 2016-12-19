@@ -195,6 +195,11 @@ var BoardPage = function(user) {
         letter: {value:letter},
         letters:{value:letters},
 
+        insertMode: { get: function() { return user.element("#insertMode"); } },
+        addImage: { value: function(path){
+            this.insertMode.click();
+            user.chooseFile("#imageFileChoice",path);
+        } },
         imageMode: { get: function() { return user.element("#imageMode"); } },
         imageStanzas: {get: function(){ return user.execute("return _.map(boardContent.images,function(image){return _.pickBy(image,function(v,k){return k != 'canvas' && k != 'mipMap'})})").value } }
     });
