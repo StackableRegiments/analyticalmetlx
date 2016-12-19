@@ -964,12 +964,31 @@ object MeTLFile{
 object MeTLGrade {
   def empty = MeTLGrade(ServerConfiguration.empty,"",0L,"","","","")
 }
-case class MeTLGrade(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,id:String,location:String,name:String,description:String,visible:Boolean = false,foreignRelationship:Option[Tuple2[String,String]] = None,gradeReferenceUrl:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
+case class MeTLGrade(override val server:ServerConfiguration, override val author:String, override val timestamp:Long,id:String,location:String,name:String,description:String,gradeType:MeTLGradeValueType.Value = MeTLGradeValueType.Numeric,visible:Boolean = false,foreignRelationship:Option[Tuple2[String,String]] = None,gradeReferenceUrl:Option[String] = None,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLGrade = Stopwatch.time("MeTLGrade.adjustTimestamp",{
     copy(timestamp = newTime)
   })
 }
+object MeTLGradeValueType extends Enumeration {
+  type MeTLGradeValueType = Value
+  val Numeric,Boolean,Text = Value
+  def parse(input:String):MeTLGradeValueType = {
+    input.toLowerCase.trim match {
+      case _ => MeTLGradeValueType.Numeric
+    }
+  }
+  def print(input:MeTLGradeValueType.Value):String = {
+    input match {
+      case MeTLGradeValueType.Numeric => "numeric"
+      case MeTLGradeValueType.Boolean => "boolean"
+      case MeTLGradeValueType.Text => "text"
+      case _ => "numeric"
+    }
+  }
+}
+
 trait MeTLGradeValue {
+  def getType:MeTLGradeValueType.Value
   def getNumericGrade:Option[Double] = None
   def getTextGrade:Option[String] = None
   def getBooleanGrade:Option[Boolean] = None
@@ -985,6 +1004,7 @@ case class MeTLNumericGradeValue(override val server:ServerConfiguration, overri
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLNumericGradeValue = Stopwatch.time("MeTLNumericGradeValue.adjustTimestamp",{
     copy(timestamp = newTime)
   })
+  override def getType:MeTLGradeValueType.Value = MeTLGradeValueType.Numeric
   override def getNumericGrade:Option[Double] = Some(gradeValue)
   override def getGradeId:String = gradeId
   override def getGradedUser:String = gradedUser
@@ -999,6 +1019,7 @@ case class MeTLBooleanGradeValue(override val server:ServerConfiguration, overri
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLBooleanGradeValue = Stopwatch.time("MeTLBooleanGradeValue.adjustTimestamp",{
     copy(timestamp = newTime)
   })
+  override def getType:MeTLGradeValueType.Value = MeTLGradeValueType.Boolean
   override def getBooleanGrade:Option[Boolean] = Some(gradeValue)
   override def getGradeId:String = gradeId
   override def getGradedUser:String = gradedUser
@@ -1013,6 +1034,7 @@ case class MeTLTextGradeValue(override val server:ServerConfiguration, override 
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLTextGradeValue = Stopwatch.time("MeTLTextGradeValue.adjustTimestamp",{
     copy(timestamp = newTime)
   })
+  override def getType:MeTLGradeValueType.Value = MeTLGradeValueType.Text
   override def getTextGrade:Option[String] = Some(gradeValue)
   override def getGradeId:String = gradeId
   override def getGradedUser:String = gradedUser

@@ -1015,6 +1015,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val description = getStringByName(j,"description")
         val location = getStringByName(j,"location")
         val visible = getBooleanByName(j,"visible")
+        val gradeType = MeTLGradeValueType.parse(getStringByName(j,"gradeType"))
         val foreignRelationship = getOptionalObjectByName(j,"foreignRelationship").flatMap(n => {
           n.value match {
             case jo:JObject => {
@@ -1029,7 +1030,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           }
         })
         val gradeReferenceUrl = getOptionalStringByName(j,"gradeReferenceUrl")
-        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,visible,foreignRelationship,gradeReferenceUrl,m.audiences)
+        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,m.audiences)
       }
       case _ => MeTLGrade.empty
     }
@@ -1040,7 +1041,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("name",JString(input.name)),
       JField("description",JString(input.description)),
       JField("visible",JBool(input.visible)),
-      JField("location",JString(input.location))
+      JField("location",JString(input.location)),
+      JField("gradeType",JString(MeTLGradeValueType.print(input.gradeType)))
     ) ::: input.gradeReferenceUrl.toList.map(gru => {
       JField("gradeReferenceUrl",JString(gru))
     }) ::: input.foreignRelationship.toList.map(frs => {

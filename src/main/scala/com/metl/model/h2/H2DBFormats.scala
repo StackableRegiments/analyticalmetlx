@@ -336,6 +336,7 @@ class H2Grade extends H2MeTLStanza[H2Grade] {
   object name extends MappedString(this,H2Constants.url)
   object description extends MappedText(this)
   object visible extends MappedBoolean(this)
+  object gradeType extends MappedEnum(this,MeTLGradeValueType)
   object foreignRelationshipSystem extends MappedString(this,1024)
   object foreignRelationshipKey extends MappedString(this,H2Constants.url)
   object gradeReferenceUrl extends MappedString(this,H2Constants.url)
