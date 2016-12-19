@@ -305,6 +305,9 @@ var Participants = (function(){
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
+				getPossibleParticipants:function(){
+					return Conversations.shouldModifyConversation() ? _.keys(participants) : [];
+				},
         getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
         reRender:function(){
             reRenderParticipants();

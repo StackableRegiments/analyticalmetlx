@@ -73,10 +73,26 @@ var Grades = (function(){
 						}
 					break;
 					case "numericGradeValue":
-						gradeValues.push(stanza);
+						var gradeColl = gradeValues[stanza.gradeId];
+						if (gradeColl == undefined){
+							gradeColl = {};
+							gradeValues[stanza.gradeId] = gradeColl;
+						}
+						var oldGrade = gradeColl[stanza.gradedUser];
+						if (oldGrade == undefined || oldGrade.timestamp < stanza.timestamp){
+							gradeColl[stanza.gradedUser] = stanza;
+						}
 					break;
 					case "booleanGradeValue":
-						gradeValues.push(stanza);
+						var gradeColl = gradeValues[stanza.gradeId];
+						if (gradeColl == undefined){
+							gradeColl = {};
+							gradeValues[stanza.gradeId] = gradeColl;
+						}
+						var oldGrade = gradeColl[stanza.gradedUser];
+						if (oldGrade == undefined || oldGrade.timestamp < stanza.timestamp){
+							gradeColl[stanza.gradedUser] = stanza;
+						}
 					break;
 					case "textGradeValue":
 						var gradeColl = gradeValues[stanza.gradeId];
@@ -208,7 +224,119 @@ var Grades = (function(){
 								content:outer[0].outerHTML
 							});
 							var innerRoot = gradeAssessTemplate.clone();
+							var gradebookDatagrid	= innerRoot.find(".gradebookDatagrid");
+							var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
+							gradebookDatagrid.empty();
+							var data = gradeValues[grade.id];
+							if (data == undefined){
+								gradeValues[grade.id] = {};
+								data = {};
+							};
+							_.forEach(Participants.getPossibleParticipants(),function(name){
+								var oldValue = data[name];
+								if (oldValue == undefined){
+									data[name] = {
+										type:sprintf("%sGradeValue",grade.gradeType),
+										gradeId:grade.id,
+										gradedUser:name,
+										author:grade.author,
+										timestamp:0,
+										audiences:[]
+									};
+								}
+							});
+							data = _.values(data);
+							console.log("data:",data);
+							var gradebookFields = [
+								{name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
+								{name:"timestamp",type:"dateField",title:"When",readOnly:true},
+								{
+									name:"gradeValue",
+									type:"text",
+									title:"Score",
+									readOnly:true,
+									sorting:true,
+									itemTemplate:function(score,gradeValue){
+										var scoringRoot = assessUserTemplate.clone();
+										var numericScore = scoringRoot.find(".numericScore");
+										var booleanScore = scoringRoot.find(".booleanScore");
+										var booleanScoreLabel = scoringRoot.find(".booleanScoreLabel");
+										var textScore = scoringRoot.find(".textScore");
+										switch (grade.gradeType){
+											case "numeric":
+												var changeScoreFunc = function(ev){
+													gradeValue.gradeValue = parseFloat(numericScore.val());
+													sendStanza(gradeValue);			
+												};
+												numericScore.val(gradeValue.gradeValue).on("blur",changeScoreFunc);
+												booleanScore.remove();
+												booleanScoreLabel.remove();
+												textScore.remove();
+											break;
+											case "text":
+												numericScore.remove();
+												var changeScoreFunc = function(ev){
+													gradeValue.gradeValue = textScore.val();
+													sendStanza(gradeValue);
+												};	
+												textScore.val(gradeValue.gradeValue).on("blur",changeScoreFunc);
+												booleanScoreLabel.remove();
+												booleanScore.remove();
+											break;
+											case "boolean":
+												numericScore.remove();
+												var booleanScoreId = sprintf("booleanScoreId_%s",_.uniqueId());
+												var changeScoreFunc = function(ev){
+													gradeValue.gradeValue = booleanScore.prop("checked");
+													sendStanza(gradeValue);			
+												};
+												booleanScore.on("change",changeScoreFunc).prop("checked",gradeValue.gradeValue).attr("id",booleanScoreId);
+												booleanScoreLabel.attr("for",booleanScoreId);
+												textScore.remove();
+											break;
+											default:
+												numericScore.remove();
+												booleanScore.remove();
+												booleanScoreLabel.remove();
+												textScore.remove();
+											break;
+										}
+										return scoringRoot;	
+									}
+								}
+							];
 							$("#"+uniqId).append(innerRoot);
+							gradebookDatagrid.jsGrid({
+								width:"100%",
+								height:"auto",
+								inserting:false,
+								editing:false,
+								sorting:true,
+								paging:true,
+								noDataContent: "No gradeable users",
+								controller: {
+									loadData: function(filter){
+										if ("sortField" in filter){
+											var sorted = _.sortBy(data,function(gv){
+												return gv[filter.sortField];
+											});
+											if ("sortOrder" in filter && filter.sortOrder == "desc"){
+												sorted = _.reverse(sorted);
+											}
+											return sorted
+										} else {
+											return data;
+										}
+									}
+								},
+								pageLoading:false,
+								fields:gradebookFields
+							});
+							gradebookDatagrid.jsGrid("loadData");
+							gradebookDatagrid.jsGrid("sort",{
+								field:"gradedUser",
+								order:"desc"
+							});	
 						});
 						return rootElem;
 					} else {
@@ -250,6 +378,8 @@ var Grades = (function(){
 		reRenderFunc();
 	});
 	return {
+		getGrades:function(){return grades;},
+		getGradeValues:function(){return gradeValues;},	
 		reRender:reRenderFunc
 	};
 })();
