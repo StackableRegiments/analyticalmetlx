@@ -9,7 +9,6 @@ import net.liftweb.common.Logger
 import scala.xml._
 import collection._
 import net.liftweb.util.SecurityHelpers._
-import com.metl.h2.dbformats.ThemeExtraction
 import com.metl.renderer._
 
 case class Theme(author:String,text:String,origin:String)
@@ -177,28 +176,18 @@ object CanvasContentAnalysis extends Logger {
   }
 
   def ocrOne(image:MeTLImage):Either[Throwable,JValue] = {
-    ThemeExtraction.get(image.identity) match {
-      case Some(t) => {
-        debug("Cache hit for OCR image: %s".format(image.identity))
-        Right(t.extraction.get)
+    image.imageBytes.map(bytes => {
+      val response = for {
+        s <- ocrBytes(bytes).right
+      } yield {
+        s
       }
-      case _ => {
-        debug("Cache miss for OCR image: %s".format(image.identity))
-        image.imageBytes.map(bytes => {
-          val response = for {
-            s <- ocrBytes(bytes).right
-          } yield {
-            ThemeExtraction.put(image.identity,compact(render(s)))
-            s
-          }
-          val resp:Either[Throwable,JValue] = response()
-          resp
-        }).openOr({
-          val resp:Either[Throwable,JValue] = Right(JArray(Nil))
-          resp
-        })
-      }
-    }
+      val resp:Either[Throwable,JValue] = response()
+      resp
+    }).openOr({
+      val resp:Either[Throwable,JValue] = Right(JArray(Nil))
+      resp
+    })
   }
 
   protected val slideRenderer = new SlideRenderer()
