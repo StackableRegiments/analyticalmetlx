@@ -21,6 +21,211 @@ import net.liftweb.json.JsonDSL._
 import net.liftweb.json.Printer._
 import net.liftweb.json._
 
+/*
+async:
+current process
+then
+(http://docs.valence.desire2learn.com/res/user.html#roles)
+GET /d2l/api/lp/(version)/roles/
+returns:
+[{
+    "Identifier": <string>,
+    "DisplayName": <string>,
+    "Code": <string>,
+    "Description": <string>,  // Appears in LP's unstable contract as of LP v10.4.12
+    "RoleAlias": <string>,  // Appears in LP's unstable contract as of LP v10.4.12
+    "IsCascading": <boolean>,  // Appears in LP's unstable contract as of LP v10.4.12
+    "AccessFutureCourses": <boolean>,  // Appears in LP's unstable contract as of LP v10.4.12
+    "AccessInactiveCourses": <boolean>,  // Appears in LP's unstable contract as of LP v10.4.12
+    "AccessPastCourses": <boolean>,  // Appears in LP's unstable contract as of LP v10.4.12
+    "ShowInGrades": <boolean>  // Appears in LP's unstable contract as of LP v10.6.7
+}]
+
+this'll be used to correlate the roles fetched from the other part.
+
+sync on logon:
+(http://docs.valence.desire2learn.com/res/enroll.html)
+GET /d2l/api/lp/(version)/enrollments/users/(userId)/orgUnits/
+
+returns pagedSet:
+[{
+    "OrgUnitInfo": { <composite:Enrollment.OrgUnitInfo> },  //D2LOrgUnit
+    "RoleInfo": { <composite:Enrollment.RoleInfo> }   //see below
+},...,bookmark]
+
+where:
+Enrollment.RoleInfo
+{
+    "Id": <number:D2LID>,
+    "Code": <string>|null,
+    "Name": <string>
+}
+
+*/
+
+case class D2LAssociatedTool(
+  ToolId:Long,
+  ToolItemId:Long
+)
+
+case class D2LGradeObjectCreator(
+  MaxPoints:Long,
+  CanExceedMaxPoints:Boolean,
+  IsBonus:Boolean,
+  ExcludeFromFinalGradeCalculation:Boolean,
+  GradeSchemeId:Long, // must not be null on input actions
+  Name:String, //max 128 chars, must be unique, cannot contain /"*<>+=|,%
+  ShortName:String, //max 128 chars
+  GradeType:String, //Numeric,PassFail,SelectBox,Text
+  //5 - 9 cannot be set from API
+  //Calculated, Formula, FinalCalculated, FinalAdjusted, Category
+  CategoryId:Option[Long],
+  Description:Option[D2LDescriptionInput], //RichText?
+  AssociatedTool: Option[D2LAssociatedTool]
+)
+
+case class D2LGradeObject(
+  MaxPoints:Long,
+  CanExceedMaxPoints:Boolean,
+  IsBonus:Boolean,
+  ExcludeFromFinalGradeCalculation:Boolean,
+  GradeSchemeId:Option[Long], // must not be null on input actions
+  Id:Option[Long], // don't pass this in when POSTing
+  Name:String, //max 128 chars, must be unique, cannot contain /"*<>+=|,%
+  ShortName:String, //max 128 chars
+  GradeType:String, //Numeric,PassFail,SelectBox,Text
+  //5 - 9 cannot be set from API
+  //Calculated, Formula, FinalCalculated, FinalAdjusted, Category
+  CategoryId:Option[Long],
+  Description:Option[D2LDescription], //RichText?
+  GradeSchemeUrl:Option[String], // API URL - not when POSTing
+  Weight:Option[Long], // not when POSTing
+  ActivityId: Option[String], // not when POSTing
+  AssociatedTool: Option[D2LAssociatedTool]
+)
+case class D2LIncomingGradeValue(
+  Comments:D2LDescriptionInput,
+  PrivateComments:D2LDescriptionInput,
+  GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
+  PointsNumerator:Option[Double]/*, // include this if GradeObjectType = 1
+  Pass:Option[Boolean], // include this if GradeObjectType = 2
+  Value:Option[String], // include this if GradeObjectType = 3
+  Text:Option[String] // include this if GradeObjectType = 4
+  */
+)
+case class D2LGradeValue(
+  UserId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
+  OrgUnitId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
+  DisplayedGrade: String,
+  GradeObjectIdentifier: String,
+  GradeObjectName: String,
+  GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
+//5 - 9 cannot be set from API
+//5 = Calculated, 6 = Formula, 7 = FinalCalculated, 8 = FinalAdjusted, 9 = Category
+  PointsNumerator:Option[Double], // include this if GradeObjectType = 1
+  Pass:Option[Boolean], // include this if GradeObjectType = 2
+  Value:Option[String], // include this if GradeObjectType = 3
+  Text:Option[String], // include this if GradeObjectType = 4
+  GradeObjectTypeName: Option[String],
+  Comments: Option[List[D2LDescription]],  // Added with LE v1.13 API - provide when POSTing
+  PrivateComments: Option[List[D2LDescription]],  // Added with LE v1.13 API - provide when POSTing
+  //PointsNumerator: Option[Long], //computable only
+  PointsDenominator: Option[Long], //computable only
+  WeightedDenominator: Option[Long], // computable only
+  WeightedNumerator: Option[Double] // computable only
+)
+case class D2LGradeValueResponse(
+  Next:Option[String],
+  Objects:List[D2LUserGradeValue]
+)
+case class D2LUserGradeValue(
+  User:D2LUserFlyWeight,
+  GradeValue:Option[D2LGradeValue]
+)
+case class D2LGradeScheme(
+  Id:Option[Long],
+  Name:String,
+  ShortName:String,
+  Ranges:List[D2LGradeSchemeRange]
+)
+case class D2LGradeSchemeRange(
+  PercentStart:Double,
+  Symbol:String,
+  AssignedValue:Option[Double],
+  Colour:String
+)
+
+case class D2LCompetencyObjectsPage(
+  Objects:List[D2LCompetencyObject],
+  Next:Option[String] // API URL for next page
+)
+case class D2LCompetencyObject(
+  Id:Long,
+  ObjectTypeId:Long, //1 = Competency, 2 = Objective
+  Name:String,
+  Description:String,
+  ChildrenPage:Option[D2LCompetencyObjectsPage],
+  MoreChildren:Option[String] // API URL for next page
+)
+
+case class D2LActivation(
+  IsActive:Boolean
+)
+
+case class D2LUserResponse(
+  PagingInfo:D2LPagingInfo,
+  Items:List[D2LUser]
+)
+case class D2LUser(
+  OrgId:Long,
+  UserId:Long,
+  FirstName:Option[String],
+  MiddleName:Option[String],
+  LastName:Option[String],
+  UserName:Option[String],
+  ExternalEmail:Option[String],
+  OrgDefinedId:String,
+  UniqueIdentifier:String,
+  Activation:D2LActivation
+)
+
+case class D2LEnrollment(
+  OrgUnit:D2LOrgUnitInfo,
+  Role:D2LRoleInfo
+)
+
+case class D2LOrgUnitInfo(
+  Id:Long, //this is actually a number
+  Type:D2LOrgUnitTypeInfo,
+  Name:String, // this is being filled with unitCode (EDU300)
+  Code:Option[String], //this is being used like the class group identifier (EDU300-CA01)
+  HomeUrl:Option[String],
+  ImageUrl:Option[String]
+)
+
+case class D2LRoleInfo(
+  Id:Long,
+  Code:String,
+  Name:String
+)
+
+case class D2LRole(
+  Identifier:Option[String],
+  DisplayName:String,
+  Code:String,
+  Description:Option[String],
+  RoleAlias:Option[String],
+  IsCascading:Option[Boolean],
+  AccessFutureCourses:Option[Boolean],
+  AccessInactiveCourses:Option[Boolean],
+  AccessPastCourses:Option[Boolean],
+  ShowInGrades:Option[Boolean]
+)
+
+case class D2LEnrollmentResponse(
+  PagingInfo:D2LPagingInfo,
+  Items:List[D2LEnrollment]
+)
 case class D2LPagingInfo(
   Bookmark:Option[String],
   HasMoreItems:Boolean
@@ -38,7 +243,7 @@ case class D2LOrgUnitTypeInfo(
   Code:String,
   Name:String
 )
-case class D2LUser(
+case class D2LUserFlyWeight(
   Identifier:Option[String],
   DisplayName:Option[String],
   EmailAddress:Option[String],
@@ -106,8 +311,13 @@ case class D2LDescription(
   Text:Option[String],
   Html:Option[String]
 )
+case class D2LDescriptionInput(
+  Content:Option[String],
+  Type:Option[String]
+)
 
 class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
+  protected val pageSize = 200
   protected val httpConnectionTimeout = 10 // 10 seconds
   protected val httpReadTimeout = 60 * 1000 // 60 seconds
   protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
@@ -118,7 +328,53 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   protected implicit def formats = net.liftweb.json.DefaultFormats
 
   protected val bookMarkTag = "bookmark"
+  protected def postToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
+    try {
+      Some(parse(new String(client.postBytes(url.toString,compactRender(json).getBytes("UTF-8")),"UTF-8")).extract[T])
+    } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        None
+      }
+      case e:Exception => {
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        None
+      }
+    }
+  }
+  protected def putToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
+    try {
+      val jValueString = compactRender(json)
+      val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,List(("Content-Type","application/json")))
+      None//Some(parse(response).extract[T])
+    } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("web exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        println("webException: %s => %s => %s".format(e.code,e.path,e.message))
+        None
+      }
+      case e:Exception => {
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        None
+      }
+    }
+  }
 
+
+  protected def fetchFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
+    try {
+      Some(parse(client.get(url.toString)).extract[T])
+    } catch {
+      case e:WebException if expectHttpFailure => {
+        trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
+        None
+      }
+      case e:Exception => {
+        error("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        None
+      }
+    }
+  }
   protected def fetchListFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     try {
       parse(client.get(url.toString)).extract[List[T]]
@@ -176,27 +432,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,d2lBaseUrl)
     appContext.createUserContext(userId,userKey)
   }
-}
-/*
-class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupsProvider {
-  val myContext = getUserContext
-  protected def getMyUser(userContext:ID2LUserContext,username:String):List[D2LUser] = {
-    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,username),"GET"))
-  }
-  protected def getMyEnrollments(userContext:ID2LUserContext,user:D2LUser):List[D2LMyOrgUnit] = {
-    fetchPagedListFromD2L[D2LMyOrgUnit]("/d2l/api/lp/%s/myenrollments/users/%s/orgUnits/".format(lpApiVersion,user.OrgDefinedId.getOrElse("")),userContext) 
-  }
-  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
-    (en.OrgUnit.Name :: en.OrgUnit.Code.toList).map(v => (GroupKeys.ou,v))
-  }))
-  override def getMembersFor(groupName:String):List[String] = Nil
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
-}
-*/
 
-class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
-
-  protected def getOrgUnits(userContext:ID2LUserContext):List[D2LOrgUnit] = {
+  def getOrgUnits(userContext:ID2LUserContext):List[D2LOrgUnit] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/".format(lpApiVersion),"GET")
     try {
       val firstGet = client.get(url.toString)
@@ -232,18 +469,186 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       }
     }
   }
-  protected def getClasslists(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LClassListUser] = {
+  def getUser(userContext:ID2LUserContext,userId:String):Option[D2LUser] = {
+    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,userId),"GET"),true)
+  }
+  def getOrgUnit(userContext:ID2LUserContext,orgUnit:String):Option[D2LOrgUnit] = {
+    fetchFromD2L[D2LOrgUnit](userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/%s".format(lpApiVersion,orgUnit),"GET"),true)
+  }
+  def getClasslists(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LClassListUser] = {
     fetchListFromD2L[D2LClassListUser](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/classlist/".format(leApiVersion,orgUnit.Identifier),"GET"))
   }
-  protected def getSections(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LSection] = {
+  def getSections(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LSection] = {
     fetchListFromD2L[D2LSection](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/sections/".format(lpApiVersion,orgUnit.Identifier),"GET"),true)
   }
-  protected def getGroupCategories(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LGroupCategory] = {
+  def getGroupCategories(userContext:ID2LUserContext,orgUnit:D2LOrgUnit):List[D2LGroupCategory] = {
     fetchListFromD2L[D2LGroupCategory](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/groupcategories/".format(lpApiVersion,orgUnit.Identifier),"GET"))
   }
-  protected def getGroups(userContext:ID2LUserContext,orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):List[D2LGroup] = {
+  def getGroups(userContext:ID2LUserContext,orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):List[D2LGroup] = {
     fetchListFromD2L[D2LGroup](userContext.createAuthenticatedUri("/d2l/api/lp/%s/%s/groupcategories/%s/groups/".format(lpApiVersion,orgUnit.Identifier,groupCategory.GroupCategoryId),"GET"))
   }
+
+  def getRoles(userContext:ID2LUserContext):List[D2LRole] = {
+    fetchListFromD2L[D2LRole](userContext.createAuthenticatedUri("/d2l/api/lp/%s/roles/".format(lpApiVersion),"GET"))
+  }
+  def getObjectives(userContext:ID2LUserContext,orgUnitId:String):Option[D2LCompetencyObjectsPage] = {
+    fetchFromD2L[D2LCompetencyObjectsPage](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/competencies/structure/".format(leApiVersion,orgUnitId),"GET"),true)
+  }
+  def getGradeObjects(userContext:ID2LUserContext,orgUnitId:String):List[D2LGradeObject] = {
+    fetchListFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"GET"),true)
+  }
+  def getGradeObject(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String):Option[D2LGradeObject] = {
+    fetchFromD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,gradeObjectId),"GET"),true)
+  }
+  def getGradeSchemes(userContext:ID2LUserContext,orgUnitId:String):List[D2LGradeScheme] = {
+    fetchListFromD2L[D2LGradeScheme](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/schemes/".format(leApiVersion,orgUnitId),"GET"),true)
+  }
+  def getGradeScheme(userContext:ID2LUserContext,orgUnitId:String,gradeSchemeId:String):Option[D2LGradeScheme] = {
+    fetchFromD2L[D2LGradeScheme](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/schemes/%s".format(leApiVersion,orgUnitId,gradeSchemeId),"GET"),true)
+  }
+  def createGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObjectCreator):Option[D2LGradeObject] = {
+    val gradeJObj = Extraction.decompose(grade)
+    postToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/".format(leApiVersion,orgUnitId),"POST"),gradeJObj,true)
+  }
+  def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
+    putToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,grade.Id),"PUT"),Extraction.decompose(grade),true)
+  }
+  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObject:D2LGradeObject):List[D2LUserGradeValue] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id.head),"GET")
+    var items:List[D2LUserGradeValue] = Nil
+    try {
+      val firstGet = client.get(url.toString)
+      var first = parse(firstGet)
+      val firstResp = first.extract[D2LGradeValueResponse]
+      items = items ::: firstResp.Objects
+      var continuing = firstResp.Next
+      while (continuing.isDefined){
+        try {
+          continuing.foreach(apiUrl => {
+            val u = userContext.createAuthenticatedUri(apiUrl,"GET")
+            val respObj = parse(client.get(u.toString))
+            val resp = respObj.extract[D2LGradeValueResponse]
+            items = items ::: resp.Objects
+            continuing = resp.Next
+          })
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(continuing,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+            continuing = None
+          }
+        }
+      }
+      items
+    } catch {
+      case e:Exception => {
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        List.empty[D2LUserGradeValue]
+      }
+    }
+  }
+ 
+  def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
+    val gv = Extraction.decompose(gradeValue)
+    putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
+  }
+
+  def getEnrollments(userContext:ID2LUserContext,userId:String):List[D2LEnrollment] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/?pagesize=%s".format(lpApiVersion,userId,pageSize),"GET")
+    try {
+      val firstGet = client.get(url.toString)
+      var first = parse(firstGet)
+      val firstResp = first.extract[D2LEnrollmentResponse]
+      var items = firstResp.Items
+      var continuing = firstResp.PagingInfo.HasMoreItems
+      var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
+      trace("bookmark: %s, items: %s".format(bookmark,items.length))
+      while (continuing){
+        try {
+          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/%s".format(lpApiVersion,userId,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
+          val url = u.toString
+          val respObj = parse(client.get(url))
+          val resp = respObj.extract[D2LEnrollmentResponse]
+          items = items ::: resp.Items
+          continuing = resp.PagingInfo.HasMoreItems
+          bookmark = resp.PagingInfo.Bookmark
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+            continuing = false
+            bookmark = None
+          }
+        }
+      }
+      items
+    } catch {
+      case e:Exception => {
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        List.empty[D2LEnrollment]
+      }
+    }
+  }
+  def getUserByOrgDefinedId(userContext:ID2LUserContext,orgDefinedId:String):List[D2LUser] = {
+    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,orgDefinedId),"GET"))
+  }
+  def getUserByUsername(userContext:ID2LUserContext,username:String):Option[D2LUser] = {
+    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?userName=%s".format(lpApiVersion,username),"GET"))
+  }
+  def getUsers(userContext:ID2LUserContext):List[D2LUser] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?pagesize=%s".format(lpApiVersion,pageSize),"GET")
+    try {
+      val firstGet = client.get(url.toString)
+      var first = parse(firstGet)
+      val firstResp = first.extract[D2LUserResponse]
+      var items = firstResp.Items
+      var continuing = firstResp.PagingInfo.HasMoreItems
+      var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
+      trace("bookmark: %s, items: %s".format(bookmark,items.length))
+      while (continuing){
+        try {
+          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
+          val url = u.toString
+          val respObj = parse(client.get(url))
+          val resp = respObj.extract[D2LUserResponse]
+          items = items ::: resp.Items
+          continuing = resp.PagingInfo.HasMoreItems
+          bookmark = resp.PagingInfo.Bookmark
+          trace("bookmark: %s, items: %s".format(bookmark,items.length))
+        } catch {
+          case e:Exception => {
+            warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+            continuing = false
+            bookmark = None
+          }
+        }
+      }
+      items
+    } catch {
+      case e:Exception => {
+        warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
+        List.empty[D2LUser]
+      }
+    }
+  }
+}
+/*
+class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupsProvider {
+  val myContext = getUserContext
+  protected def getMyUser(userContext:ID2LUserContext,username:String):List[D2LUser] = {
+    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,username),"GET"))
+  }
+  protected def getMyEnrollments(userContext:ID2LUserContext,user:D2LUser):List[D2LMyOrgUnit] = {
+    fetchPagedListFromD2L[D2LMyOrgUnit]("/d2l/api/lp/%s/myenrollments/users/%s/orgUnits/".format(lpApiVersion,user.OrgDefinedId.getOrElse("")),userContext) 
+  }
+  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = getMyUser(myContext,userData.username).flatMap(id => getMyEnrollments(myContext,id).filter(_.OrgUnit.Type.Id == 3).flatMap(en => {
+    (en.OrgUnit.Name :: en.OrgUnit.Code.toList).map(v => (GroupKeys.ou,v))
+  }))
+  override def getMembersFor(groupName:String):List[String] = Nil
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = Nil
+}
+*/
+
+class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
 
   def parFlatMap[A,B](coll:List[A],func:A => List[B],threadCount:Int = 1,forkJoinPoolName:String = "default"):List[B] = {
     if (threadCount > 1){
@@ -262,6 +667,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
   protected val d2lSectionPlaceholder = D2LSection(-1,"D2LProvidedSections",D2LDescription(None,None),Nil)
   override def getData:GroupStoreData = {
     val userContext = getUserContext
+    val roles = getRoles(userContext)
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
     trace("courses found: %s".format(courses.length))
     val compoundItems = parFlatMap[D2LOrgUnit,Tuple2[List[Tuple3[String,String,String]],List[OrgUnit]]](courses,orgUnit => { 
@@ -300,6 +706,11 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     },16,"ou")
     val personalInformation = compoundItems.map(_._1)
     val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => (m._3,m._2)).distinct))
+    val personalRoles:Map[String,List[D2LEnrollment]] = Map(personalDetails.toList.flatMap(tup => {
+      tup._2.find(_._1 == "D2L_Identifier").map(d2lId => {
+        (tup._1,getEnrollments(userContext,d2lId._2))
+      })
+    }):_*)
     val groupData = compoundItems.flatMap(_._2)
     val groupsByMember:Map[String,List[OrgUnit]] = Map(personalDetails.keys.toList.map(u => (u,groupData.filter(_.members.contains(u)))):_*)
     val membersByGroup:Map[String,List[String]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
