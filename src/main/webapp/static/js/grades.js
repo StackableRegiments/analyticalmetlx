@@ -155,6 +155,7 @@ var Grades = (function(){
 			{name:"description",type:"text",title:"Description",readOnly:true,sorting:true},
 			{name:"location",type:"text",title:"Location",readOnly:true,sorting:true},
 			{name:"timestamp",type:"dateField",title:"When",readOnly:true},
+			{name:"gradeType",type:"text",title:"Type",readOnly:true,sorting:true},
 			{name:"author",type:"text",title:"Who",readOnly:true,sorting:true},
 			{
 				name:"identity",
@@ -221,7 +222,10 @@ var Grades = (function(){
 							var jAlert = $.jAlert({
 								title:"assess grade",
 								width:"auto",
-								content:outer[0].outerHTML
+								content:outer[0].outerHTML,
+								onClose:function(){
+									reRenderFunc();
+								}
 							});
 							var innerRoot = gradeAssessTemplate.clone();
 							var gradebookDatagrid	= innerRoot.find(".gradebookDatagrid");
@@ -232,11 +236,12 @@ var Grades = (function(){
 								gradeValues[grade.id] = {};
 								data = {};
 							};
+							var gradeType = sprintf("%sGradeValue",grade.gradeType);
 							_.forEach(Participants.getPossibleParticipants(),function(name){
 								var oldValue = data[name];
 								if (oldValue == undefined){
 									data[name] = {
-										type:sprintf("%sGradeValue",grade.gradeType),
+										type:gradeType,
 										gradeId:grade.id,
 										gradedUser:name,
 										author:grade.author,
@@ -245,8 +250,11 @@ var Grades = (function(){
 									};
 								}
 							});
-							data = _.values(data);
 							console.log("data:",data);
+							data = _.values(data);
+							data = _.filter(data,function(d){
+								return d.type == gradeType;
+							});
 							var gradebookFields = [
 								{name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
 								{name:"timestamp",type:"dateField",title:"When",readOnly:true},
