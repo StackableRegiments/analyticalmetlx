@@ -58,7 +58,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2UnhandledStanza,
         H2UnhandledContent,
         DatabaseVersion,
-        ThemeExtraction,
         H2Theme,
         H2UndeletedCanvasContent,
         H2Grade,
