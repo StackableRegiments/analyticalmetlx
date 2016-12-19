@@ -6,7 +6,7 @@ var HealthChecker = (function(){
     var catLength = 50; //keep a rolling window of the last n items of each category
     var healthChecking = true;
 
-		var clockOffset = 0;
+    var clockOffset = 0;
 
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
@@ -31,17 +31,17 @@ var HealthChecker = (function(){
         $.ajax(url,{
             method:"GET",
             success:function(jsonTime){
-							var nowTime = new Date();
-							var timeObj = JSON.parse(jsonTime);
-							var time = timeObj.serverWorkTime;
+                var nowTime = new Date();
+                var timeObj = JSON.parse(jsonTime);
+                var time = timeObj.serverWorkTime;
                 var serverWorkTime = parseInt(time);
                 var totalTime = new Date().getTime() - clientStart;
                 var latency = (totalTime - serverWorkTime) / 2;
-	
-							var serverSideTime = timeObj.serverTime;
-							var timeDiff = nowTime.getTime() - (serverSideTime + latency);
-							console.log("calculating time offset:",nowTime.getTime(),serverSideTime,latency);
-							clockOffset = timeDiff;
+
+                var serverSideTime = timeObj.serverTime;
+                var timeDiff = nowTime.getTime() - (serverSideTime + latency);
+                console.log("calculating time offset:",nowTime.getTime(),serverSideTime,latency);
+                clockOffset = timeDiff;
                 addMeasureFunc("serverResponse",true,serverWorkTime);
                 addMeasureFunc("latency",true,latency);
                 _.delay(check,serverStatusInterval);
@@ -60,11 +60,11 @@ var HealthChecker = (function(){
     },500);
     var resumeHealthCheckFunc = function(immediate){
         healthChecking = true;
-				if (immediate){
-					check();
-				} else {
-					_.delay(check,serverStatusInterval);
-				}
+        if (immediate){
+            check();
+        } else {
+            _.delay(check,serverStatusInterval);
+        }
     };
     var pauseHealthCheckFunc = function(){
         healthChecking = false;
@@ -128,12 +128,12 @@ var HealthChecker = (function(){
         resumeHealthCheckFunc(true);
     });
     return {
-				getTimeOffset:function(){
-					return clockOffset;
-				},
-				getServerTime:function(){
-					return new Date(new Date().getTime() + clockOffset);
-				},	
+        getTimeOffset:function(){
+            return clockOffset;
+        },
+        getServerTime:function(){
+            return new Date(new Date().getTime() + clockOffset);
+        },
         check:check,
         resumeHealthCheck:resumeHealthCheckFunc,
         pauseHealthCheck:pauseHealthCheckFunc,
@@ -158,7 +158,7 @@ var serverResponse = function(responseObj){
         HealthChecker.addMeasure("latency",responseObj.success,latency);
     }
     if ("success" in responseObj && responseObj.success == false){
-	console.log(responseObj);
+        console.log(responseObj);
         errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
     }
 }

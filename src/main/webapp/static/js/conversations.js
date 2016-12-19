@@ -102,18 +102,33 @@ var Conversations = (function(){
                         }
                     });
                     var conversationActivity = $("#conversationActivity");
-                    ensureTracking("anyone");
-                    groupTraces.anyone = groupTraces.anyone || {};
+                    ensureTracking("anyPrivate");
+                    ensureTracking("anyPublic");
+                    groupTraces.anyPrivate = groupTraces.anyPrivate || {};
+                    groupTraces.anyPublic = groupTraces.anyPublic || {};
                     if(conversationActivity.find("svg").length == 0){
-                        groupTraces.anyone.update = SparkLine.svg(conversationActivity,groupActivity.anyone.line,100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                        groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
+                                                                     [groupActivity.anyPublic.line,
+                                                                      groupActivity.anyPrivate.line],100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                     }
-                    groupTraces.anyone.update(groupActivity.anyone.line);
+                    groupTraces.anyPublic.update([
+                        groupActivity.anyPublic.line,
+                        groupActivity.anyPrivate.line
+                    ]);
                 });
             });
         },DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
+            if(stanza.type == "theme"){
+                switch(stanza.author){
+                case "private":audienceAction({name:"anyPrivate"});
+                    break;
+                case "public":audienceAction({name:"anyPublic"});
+                    break;
+                }
+                audienceAction({name:stanza.author});
+            }
             _.each(stanza.audiences,audienceAction);
-            audienceAction({name:"anyone"});
         }
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
@@ -165,7 +180,7 @@ var Conversations = (function(){
                     if(!(group.id in groupTraces)){
                         groupTraces[group.id] = {};
                     }
-                    groupTraces[group.id].update = SparkLine.svg(groupContainer,groupActivity[group.id].line,80,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                    groupTraces[group.id].update = SparkLine.svg(groupContainer,[groupActivity[group.id].line],80,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
                 groupTraces[group.id].group = group;
                 groupContainer.find('.count').text(group.members.length);

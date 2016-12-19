@@ -95,6 +95,7 @@ describe('When the class breaks into groups,', function() {
     it("given that the teacher gives public instructions on the first slide",function(){
         tT.textMode.click();
         tT.keyboard(50,50,"Break into groups and discuss without sharing with other groups.  What is the best thing in life?");
+	browser.debug();
     });
     it("the students should all see the instructions",function(){
         studentA.waitUntil(function(){
@@ -484,6 +485,7 @@ describe('When the class breaks into groups,', function() {
             user.imageMode.click();
             user.driver.click("#board");
             user.driver.chooseFile("#imageFileChoice","testMaterials/stormtrooper.jpg");
+	    browser.pause(500);
             user.textMode.click();
             user.keyboard(100,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
         });
