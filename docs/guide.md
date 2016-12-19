@@ -5,7 +5,7 @@ title: User Guide
 
 This is information for teachers, teaching assistants, student champions and all other MeTL users.
 
-It will help you ...
+It will help you navigate the user interface of MeTL as well as piece together the best ways to support your teaching activities.
 
 ## Content
 
@@ -18,3 +18,4 @@ It will help you ...
   - [Copy and Paste](guide-copypaste.html) 
   - [Sharing](guide-sharing.html)
   - [Word Cloud](guide-word-cloud.html)
+- [Groups](guide-groups.html)
