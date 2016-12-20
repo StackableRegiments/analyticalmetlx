@@ -275,7 +275,7 @@ case class D2LClassListUser(
   Identifier:String, //this is actually a number, and is the number used in enrollments elsewhere
   ProfileIdentifier:String,
   DisplayName:String,
-  UserName:Option[String],
+  Username:Option[String],
   OrgDefinedId:Option[String], // this is the SLU Id number or username, I believe
   Email:Option[String],
   FirstName:Option[String],
@@ -362,7 +362,10 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
 
   protected def fetchFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
-      Some(parse(client.get(url.toString)).extract[T])
+      val response = client.get(url.toString)
+      val parsedResponse = parse(response)
+      println("FETCHED FROM D2L: %s => %s".format(url,response))
+      Some(parsedResponse.extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
@@ -376,7 +379,10 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
   protected def fetchListFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     try {
-      parse(client.get(url.toString)).extract[List[T]]
+      val response = client.get(url.toString)
+      val parsedResponse = parse(response)
+      println("FETCHED LIST FROM D2L: %s => %s".format(url,response))
+      parsedResponse.extract[List[T]]
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
@@ -684,7 +690,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
         (memberName,member.ProfileIdentifier,"D2L_Profile_Identifier") :: 
         (memberName,member.Identifier,"D2L_Identifier") :: 
         (memberName,member.DisplayName,PersonalInformation.displayName) :: 
-        member.UserName.toList.map(fn => (memberName,fn,"D2L_UserName")) ::: 
+        member.Username.toList.map(fn => (memberName,fn,"D2L_UserName")) ::: 
         member.FirstName.toList.map(fn => (memberName,fn,PersonalInformation.firstName)) ::: 
         member.LastName.toList.map(fn => (memberName,fn,PersonalInformation.surname)) ::: 
         member.Email.toList.map(fn => (memberName,fn,PersonalInformation.email))

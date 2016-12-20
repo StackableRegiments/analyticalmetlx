@@ -183,7 +183,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
             "ProfileIdentifier" -> cm.ProfileIdentifier,
             "DisplayName" -> cm.DisplayName
           ) ::: 
-          cm.UserName.toList.map(un => "UserName" -> un) :::
+          cm.Username.toList.map(un => "UserName" -> un) :::
           cm.OrgDefinedId.toList.map(un => "OrgDefinedId" -> un) :::
           cm.Email.toList.map(un => "Email" -> un) :::
           cm.FirstName.toList.map(un => "FirstName" -> un) :::
@@ -242,7 +242,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
           cgv = gv.copy(UserId = ufw.Identifier)
         } yield {
           cgv
-        }).map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2))))
+        }).map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))
       })
     })
   }
@@ -251,7 +251,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = interface.getUserContext
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
       if (grades.length > 1){
-        val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2))))) 
+        val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))) 
         grades.filter(gv => originalGrades.exists(og => {
           og.getType == gv.getType &&
           og.getGradedUser == gv.getGradedUser && (
@@ -262,14 +262,14 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
             og.getComment != gv.getComment
           )
         })).flatMap(gv => { //only update the ones which have a changed value
-          interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.UserName.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
+          interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       } else {
         grades.flatMap(gv => {
-          interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.UserName.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
+          interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       }
-      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2)))))
+      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2)))))
     })
   }
 }
