@@ -558,15 +558,18 @@ var Grades = (function(){
 									innerRoot.find(".sendGradesToRemote").on("click",function(){
 										var gradesToSend = gradeValues[grade.id];
 										$.post(sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),gradesToSend,function(remoteGrades){
-											data = generateData(withData);
-											_.forEach(data,function(datum){
-												var thisRemoteGrade = _.find(remoteGrades,function(rg){
-													return rg.gradedUser == datum.gradedUser;
+											generateData(function(data){
+												var modifiedData = data;
+												_.forEach(modifiedData,function(datum){
+													var thisRemoteGrade = _.find(remoteGrades,function(rg){
+														return rg.gradedUser == datum.gradedUser;
+													});
+													if (thisRemoteGrade !== undefined){
+														datum.remoteGrade = thisRemoteGrade.gradeValue;
+													}
 												});
-												if (thisRemoteGrade !== undefined){
-													datum.remoteGrade = thisRemoteGrade.gradeValue;
-												}
-											});
+												return withData(modifiedData);
+											})
 										},'json').fail(function(jqxhr,textStatus,error){
 											console.log("error",textStatus,error);
 										});
