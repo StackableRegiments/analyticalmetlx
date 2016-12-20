@@ -266,9 +266,9 @@ var Grades = (function(){
 									var parts = grade.foreignRelationship.key.split("_");
 									var orgUnit = parts[0];
 									var gradeId = parts[1];
-									aNodes.find(".associationSystem").text = system;
-									aNodes.find(".associationOrgUnit").text = orgUnit;
-									aNodes.find(".associationGradeId").text = gradeId;
+									aNodes.find(".associationSystem").text(system);
+									aNodes.find(".associationOrgUnit").text(orgUnit);
+									aNodes.find(".associationGradeId").text(gradeId);
 									aNodes.find(".requestRefreshAssociation").unbind("click").on("click",function(){
 										$.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(newGrade){
 											aNodes.find(".association").text = JSON.stringify(newGrade);
@@ -329,14 +329,21 @@ var Grades = (function(){
 
 										aNodes.find(".requestAssocPhase4").show();
 										aNodes.find(".createGrade").unbind("click").on("click",function(){
-											$.getJSON(sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),function(data){
-												console.log("createdGrades:",data);
-												grade.foreignRelationship = {
-													sys:data.foreignRelationship.system,
-													key:data.foreignRelationship.key
-												}
-												sendStanza(grade);
-												reRenderAssociations();
+											$.ajax({
+												type:"POST",
+												url:sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),
+												data:JSON.stringify(newGrade),
+												success:function(data){
+													console.log("createdGrades:",newGrade,data);
+													newGrade.foreignRelationship = {
+														sys:data.foreignRelationship.sys,
+														key:data.foreignRelationship.key
+													}
+													sendStanza(newGrade);
+													reRenderAssociations();
+												},
+												contentType:"application/json",
+												dataType:'json'
 											}).fail(function(jqxhr,textStatus,error){
 												alert(sprintf("error: %s \r\n %s",textStatus,error));
 											});

@@ -25,6 +25,7 @@ trait Stemmer {
 
 object SystemRestHelper extends RestHelper with Stemmer with Logger {
   warn("SystemRestHelper inline")
+  val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   serve {
     case r@Req("getRemoteUser" :: Nil,_,_) => () => Full(PlainTextResponse(S.containerRequest.map(r => (r.asInstanceOf[net.liftweb.http.provider.servlet.HTTPRequestServlet]).req.getRemoteUser).getOrElse("unknown")))
@@ -238,6 +239,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   import java.io._
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
+  val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
     case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
       S.session.foreach(_.destroySession())
@@ -346,7 +348,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       } yield {
         gbp.getGradeInContext(orgUnitId,gradeId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
-          case Right(gc) => JsonResponse(Extraction.decompose(gc),200)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc),200)
         }
       }
     }
@@ -356,31 +358,31 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       } yield {
         gbp.getGradesFromContext(orgUnitId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
-          case Right(gc) => JsonResponse(JArray(gc.map(Extraction.decompose _)),200)
+          case Right(gc) => JsonResponse(JArray(gc.map(go => jsonSerializer.fromGrade(go))),200)
         }
       }
     }
     case r@Req("createExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookName)
-        bodyBytes <- r.body
+        json <- r.json
       } yield {
-        val grade = parse(new String(bodyBytes,"UTF-8")).extract[MeTLGrade]
+        val grade = jsonSerializer.toGrade(json)
         gbp.createGradeInContext(orgUnitId,grade) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
-          case Right(gc) => JsonResponse(Extraction.decompose(gc),200)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc),200)
         }
       }
   }
     case r@Req("updateExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookName)
-        bodyBytes <- r.body
+        json <- r.json
       } yield {
-        val grade = parse(new String(bodyBytes,"UTF-8")).extract[MeTLGrade]
+        val grade = jsonSerializer.toGrade(json)
         gbp.updateGradeInContext(orgUnitId,grade) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
-          case Right(gc) => JsonResponse(Extraction.decompose(gc),200)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc),200)
         }
       }
   }
@@ -397,9 +399,16 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case r@Req("updateExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookName)
-        bodyBytes <- r.body
+        json <- r.json
       } yield {
-        val grades = parse(new String(bodyBytes,"UTF-8")).extract[List[MeTLGradeValue]]
+        val grades:List[MeTLGradeValue] = json match {
+          case ja:JArray => json.children.map(jo => jsonSerializer.toMeTLData(jo)).filter(_.isInstanceOf[MeTLGradeValue]).map(_.asInstanceOf[MeTLGradeValue]).toList
+          case jo:JObject => jsonSerializer.toMeTLData(jo) match {
+            case gv:MeTLGradeValue => List(gv)
+            case _ => Nil
+          }
+          case _ => Nil
+        }
         gbp.updateGradeValuesForGrade(orgUnit,gradeId,grades) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
           case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)

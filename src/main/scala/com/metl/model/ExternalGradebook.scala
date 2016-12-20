@@ -96,10 +96,10 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       IsBonus = true,
       ExcludeFromFinalGradeCalculation = true,
       GradeSchemeId = 0L, // this is that nastiness of gradeSchemes, but there's always a default 0-100 on id0
-      Name = grade.description,
+      Name = grade.name,
       ShortName = shortName(grade.name),
       GradeType = gradeType,
-      CategoryId = None,
+      CategoryId = Some(0),
       Description = Some(D2LDescriptionInput(Content = Some(grade.description), Type = Some("text"))),
       AssociatedTool = None
     )
@@ -114,7 +114,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       case "passfail" => MeTLGradeValueType.Boolean
       case _ => MeTLGradeValueType.Text
     }
-    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.ShortName,d2lGos.Name,gradeType,visible,Some((name,"%s_%s".format(ctx,d2lGos.Id))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
+    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.ShortName,d2lGos.Name,gradeType,visible,d2lGos.Id.map(foreignId => (name,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
   }
   protected def fromGradeValue(uc:ID2LUserContext,in:MeTLGradeValue):D2LIncomingGradeValue = {
     val gradeObjectType = in.getType match {
@@ -208,6 +208,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
    trye({
       val uc = interface.getUserContext
       val newGrade = fromGrade(uc,grade)
+      println("CREATING GRADE IN CONTEXT %s:\r\n%s\r\n%s".format(ctx,grade,newGrade))
       interface.createGradeObject(uc,ctx,fromGrade(uc,grade)).map(g => toGrade(uc,ctx,g)).head
     })
   }
