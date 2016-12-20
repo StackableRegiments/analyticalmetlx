@@ -30,6 +30,8 @@ var Grades = (function(){
 							location:loc,
 							id:sprintf("%s_%s_%s",loc,user,new Date().getTime().toString()),
 							gradeType:"numeric",
+							numericMinimum:0,
+							numericMaximum:100,
 							visible:false,
 							timestamp:0						
 						};
