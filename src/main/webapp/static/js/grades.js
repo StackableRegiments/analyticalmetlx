@@ -6,6 +6,7 @@ var Grades = (function(){
 	var gradeActionButtonsTemplate = {};
 	var gradeEditTemplate = {};
 	var gradeAssessTemplate = {};
+	var gradebooks = [];
 	var reRenderFunc = function(){
 		WorkQueue.enqueue(function(){
 			gradesDatagrid.jsGrid("loadData");
@@ -122,6 +123,9 @@ var Grades = (function(){
 	Progress.historyReceived["Grades"] = historyReceivedFunc;
 	Progress.stanzaReceived["Grades"] = stanzaReceived;
 	$(function(){
+		$.getJSON("/getExternalGradebooks",function(data){
+			gradebooks = data;
+		});
 		gradesDatagrid = $("#gradesDatagrid");
 		gradeActionButtonsTemplate = gradesDatagrid.find(".gradeActionsContainer").clone();
 		gradeEditTemplate = gradesDatagrid.find(".gradeEditContainer").clone();
@@ -176,7 +180,7 @@ var Grades = (function(){
 							});
 							var jAlert = $.jAlert({
 								title:"edit grade",
-								width:"auto",
+								width:"50%",
 								content:outer[0].outerHTML
 							});
 							var innerRoot = gradeEditTemplate.clone();
@@ -249,6 +253,103 @@ var Grades = (function(){
 							visibleCheckbox.attr("id",visibleId).prop("checked",grade.visible).on("change",function(ev){
 								newGrade.visible = visibleCheckbox.prop("checked");
 							});
+							/*
+							$.getJSON("/getExternalGradebooks",function(data){
+								gradebooks = data;
+							});
+							*/
+							var wantsToAssociate = undefined;
+							var chosenGradebook = undefined;
+							var orgUnits = [];
+							var chosenOrgUnit = undefined;
+							var associatedGrade = undefined;
+							var reRenderAssociations = function(){
+								var aNodes = innerRoot.find(".associateController");
+								if ("foreignRelationship" in grade){
+									aNodes.find(".createAssociation").hide();
+									var system = grade.foreignRelationship.system;
+									var parts = grade.foreignRelationship.id.split("_");
+									var orgUnit = parts[0];
+									var gradeId = parts[1];
+									aNodes.find(".associationSystem").text = system;
+									aNodes.find(".associationOrgUnit").text = orgUnit;
+									aNodes.find(".associationGradeId").text = gradeId;
+									aNodes.find(".requestRefreshAssociation").unbind("click").on("click",function(){
+										$.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(newGrade){
+											aNodes.find(".association").text = JSON.stringify(newGrade);
+										}).fail(function(jqxhr,textStatus,error){
+											alert(sprintf("error: %s \r\n %s",textStatus,error));
+										});
+									});
+									aNodes.find(".refreshAssociation").show();
+								} else {
+									aNodes.find(".refreshAssociation").hide();
+									aNodes.find(".createAssociation").show();
+									aNodes.find(".associationPhase").hide();
+									if (wantsToAssociate === undefined){
+										aNodes.find(".requestAssocPhase1").show();
+										aNodes.find(".requestAssociation").unbind("click").on("click",function(){
+											wantsToAssociate = true;
+											if (gradebooks.length == 1){
+												chosenGradebook = gradebooks[0];
+											}
+											reRenderAssociations();
+										});
+									} else if (chosenGradebook == undefined){
+										chosenGradebook = gradebooks[0];
+										aNodes.find(".chooseGradebook").html(_.map(gradebooks,function(gb){
+
+											return $("<option/>",{
+												value:gb,
+												text:gb
+											});
+										})).unbind("change").on("change",function(ev){
+											chosenGradebook = $(this).val();
+										});
+										aNodes.find(".commitGradebook").unbind("click").on("click",function(){
+											reRenderAssociations();
+										});
+										aNodes.find(".requestAssocPhase2").show();
+									} else if (chosenOrgUnit === undefined){
+										$.getJSON(sprintf("/getExternalGradebookOrgUnits/%s",chosenGradebook),function(data){
+											console.log("requestedOrgUnits:",data);
+											chosenOrgUnit = data[0].foreignRelationship["_2"];
+											aNodes.find(".chooseOrgUnit").html(_.map(data,function(ou){
+												var ouId = ou.foreignRelationship["_2"];
+												return $("<option/>",{
+													value:ouId,
+													text:ou.name 		 
+												});
+											})).unbind("change").on("change",function(ev){
+												chosenOrgUnit = $(this).val();
+											});	
+											aNodes.find(".commitOrgUnit").unbind("click").on("click",function(){
+												reRenderAssociations();
+											});
+											aNodes.find(".requestAssocPhase3").show();
+										}).fail(function(jqxhr,textStatus,error){
+											alert(sprintf("error: %s \r\n %s",textStatus,error));
+										});
+									} else {
+
+										aNodes.find(".requestAssocPhase4").show();
+										aNodes.find(".createGrade").unbind("click").on("click",function(){
+											$.getJSON(sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),function(data){
+												console.log("createdGrades:",data);
+												grade.foreignRelationship = {
+													system:data.foreignRelationship.system,
+													key:data.foreignRelationship.key
+												}
+												sendStanza(grade);
+												reRenderAssociations();
+											}).fail(function(jqxhr,textStatus,error){
+												alert(sprintf("error: %s \r\n %s",textStatus,error));
+											});
+										});
+									}
+								}
+							};
+							reRenderAssociations();
 							innerRoot.find(".cancelGradeEdit").on("click",function(){
 								jAlert.closeAlert();
 							});

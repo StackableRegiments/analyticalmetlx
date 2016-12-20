@@ -59,10 +59,14 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
   protected val acceptableRoles = List("teacher","instructor")
 
   protected def lookupD2LUserId(uc:ID2LUserContext,username:String):String = {
-    interface.getUserByUsername(uc,username).map(_.UserId.toString).getOrElse("")
+    val rawUser = interface.getUserByUsername(uc,username)
+    println("lookedUp: %s => %s".format(username,rawUser))
+    rawUser.map(_.UserId.toString).getOrElse("")
   }
   protected def lookupUsername(uc:ID2LUserContext,d2lId:String):String = {
-    interface.getUser(uc,d2lId).flatMap(_.UserName).getOrElse("")
+    val rawUser = interface.getUser(uc,d2lId)
+    println("lookedUp: %s => %s".format(d2lId,rawUser))
+    rawUser.flatMap(_.UserName).getOrElse("")
   }
   protected val illegalChars = Map(
     '/' -> "slash",
@@ -159,7 +163,10 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     Left(notImplemented)
     trye({
       val uc = interface.getUserContext
-      interface.getEnrollments(uc,username).filter(en => acceptableRoles.contains(en.Role.Code)).map(en => {
+      val d2lUser = lookupD2LUserId(uc,username)
+      val enrollments = interface.getEnrollments(uc,d2lUser)
+      println("found enrollments: %s => %s".format(d2lUser,enrollments))
+      enrollments.filter(en => acceptableRoles.contains(en.Role.Name)).map(en => {
         OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some((name,en.OrgUnit.Id.toString)))
       }).toList
     })

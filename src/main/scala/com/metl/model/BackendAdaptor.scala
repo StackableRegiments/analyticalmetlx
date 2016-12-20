@@ -219,7 +219,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   }
   def setupExternalGradebooksFromFile(filePath:String) = {
     val nodes = XML.load(filePath) \\ "externalGradebooks"
-    ExternalGradebooks.configureFromXml(nodes)
+    Globals.gradebookProviders = ExternalGradebooks.configureFromXml(nodes)
   }
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)

@@ -184,6 +184,33 @@
 									<input type="checkbox" class="gradeVisibleCheckbox"></input>
 									<label class="gradeVisibleLabel">Visible to students</label>
 								</div>
+								<div class="associateController">
+									<span class="refreshAssociation">
+										<span class="associationSystem"></span> :
+										<span class="associationOrgUnit"></span> :
+										<span class="associationGradeId"></span>
+										<span class="association"></span>
+										<input type="button" class="requestRefreshAssociation"></input>
+									</span>
+									<span class="createAssociation">
+										<span class="requestAssocPhase1 associationPhase">
+											<input type="button" class="requestAssociation">Create association</input>
+										</span>
+										<span class="requestAssocPhase2 associationPhase">
+											<select id="chooseGradebookForGradeSelectBox" class="chooseGradebook"></select>
+											<label for="chooseGradebookForGradeSelectBox">Gradebooks</label>
+											<input type="button" class="commitGradebook">Select</input>
+										</span>
+										<span class="requestAssocPhase3 associationPhase">
+											<select id="chooseOrgUnitForGradeSelectBox" class="chooseOrgUnit"></select>
+											<label for="chooseOrgUnitForGradeSelectBox">Courses</label>
+											<input type="button" class="commitOrgUnit">Select</input>
+										</span>
+										<span class="requestAssocPhase4 associationPhase">
+											<input type="button" class="createGrade">Create grade</input>
+										</span>
+									</span>
+								</div>
 								<input type="button" class="cancelGradeEdit" value="cancel"></input>
 								<input type="button" class="submitGradeEdit" value="submit"></input>
 							</fieldSet>
