@@ -135,11 +135,11 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       Text = textScore
     )    
   }
-  protected def toGradeValue(uc:ID2LUserContext,gradeObjId:String,in:D2LGradeValue):MeTLGradeValue = {
+  protected def toGradeValue(uc:ID2LUserContext,gradeObjId:String,in:D2LGradeValue,lookupUsernameFunc:Tuple2[ID2LUserContext,String] => String = t => lookupUsername(t._1,t._2)):MeTLGradeValue = {
     val timestamp = new Date().getTime()
     val author = "D2L"
     val gradeId = gradeObjId
-    val gradedUser = in.UserId.map(d2lId => lookupUsername(uc,d2lId)).getOrElse("")
+    val gradedUser = in.UserId.map(d2lId => lookupUsernameFunc((uc,d2lId))).getOrElse("")
     val comments = in.Comments.map(_.map(_.Text).mkString)
     val privateComments = in.PrivateComments.map(_.map(_.Text).mkString)
     in.GradeObjectType match {
@@ -213,16 +213,20 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
   override def getGradeValuesForGrade(ctx:String,gradeId:String):Either[Exception,List[MeTLGradeValue]] = {
     trye({
       val uc = interface.getUserContext
+      val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
       interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
     })
   }
   override def updateGradeValuesForGrade(ctx:String,gradeId:String,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = {
     trye({
       val uc = interface.getUserContext
+      val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
+      //val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2))))) // should we check for changes, I wonder?
+
       grades.flatMap(gv => {
-        interface.updateGradeValue(uc,ctx,gradeId,lookupD2LUserId(uc,gv.getGradedUser),fromGradeValue(uc,gv))
+        interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.UserName.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
       })
-      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
+      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2)))))
     })
   }
 }
