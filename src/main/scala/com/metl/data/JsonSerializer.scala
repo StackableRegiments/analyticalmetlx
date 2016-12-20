@@ -1016,6 +1016,16 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val location = getStringByName(j,"location")
         val visible = getBooleanByName(j,"visible")
         val gradeType = MeTLGradeValueType.parse(getStringByName(j,"gradeType"))
+        val numericMaximum = if (gradeType == MeTLGradeValueType.Numeric){
+          Some(getDoubleByName(j,"numericMaximum"))
+        } else {
+          None
+        }
+        val numericMinimum = if (gradeType == MeTLGradeValueType.Numeric){
+          Some(getDoubleByName(j,"numericMinimum"))
+        } else {
+          None
+        }
         val foreignRelationship = getOptionalObjectByName(j,"foreignRelationship").flatMap(n => {
           n.value match {
             case jo:JObject => {
@@ -1030,7 +1040,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           }
         })
         val gradeReferenceUrl = getOptionalStringByName(j,"gradeReferenceUrl")
-        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,m.audiences)
+        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
       }
       case _ => MeTLGrade.empty
     }
@@ -1050,7 +1060,11 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         JField("sys",JString(frs._1)),
         JField("key",JString(frs._2))
       )))
-    }) ::: parseMeTLContent(input))
+    }) ::: input.numericMaximum.toList.map(nm => {
+      JField("numericMaximum",JDouble(nm))
+    }) ::: input.numericMinimum.toList.map(nm => {
+      JField("numericMinimum",JDouble(nm))
+    }) :::parseMeTLContent(input))
   })
   override def toNumericGradeValue(input:JValue):MeTLNumericGradeValue = Stopwatch.time("JsonSerializer.toNumericGradeValue",{
     input match {

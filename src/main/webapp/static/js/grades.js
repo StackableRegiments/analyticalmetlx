@@ -30,6 +30,8 @@ var Grades = (function(){
 							location:loc,
 							id:sprintf("%s_%s_%s",loc,user,new Date().getTime().toString()),
 							gradeType:"numeric",
+							numericMinimum:0,
+							numericMaximum:100,
 							visible:false,
 							timestamp:0						
 						};
@@ -194,10 +196,52 @@ var Grades = (function(){
 							innerRoot.find(".gradeDescriptionLabel").attr("for",descId);
 							var selectId = sprintf("gradeType_%s",uniqId);
 							var typeSelect = innerRoot.find(".gradeTypeSelect");
+							var minTextbox = innerRoot.find(".numericMinTextbox");
+							var maxTextbox = innerRoot.find(".numericMaxTextbox");
+							var changeMinFunction = function(ev){
+								if (newGrade.gradeType == "numeric"){
+									newGrade.numericMinimum = parseFloat(maxTextbox.val());
+								} else {
+									delete newGrade.numericMinimum;
+								}
+							};
+							var changeMaxFunction = function(ev){
+								if (newGrade.gradeType == "numeric"){
+									newGrade.numericMaximum = parseFloat(maxTextbox.val());
+								} else {
+									delete newGrade.numericMaximum;
+								}
+							};
+							var minId = sprintf("numericMin_%s",uniqId);
+							var maxId = sprintf("numericMax_%s",uniqId);
+							innerRoot.find(".numericMinLabel").attr("for",minId);
+							innerRoot.find(".numericMaxLabel").attr("for",maxId);
+							minTextbox.on("blur",changeMinFunction).attr("id",minId);
+							maxTextbox.on("blur",changeMaxFunction).attr("id",maxId);
+							var reRenderGradeTypeOptions = function(){
+								switch (newGrade.gradeType){
+									case "numeric":
+										innerRoot.find(".numericOptions").show();
+										if (grade.numericMinimum === undefined){
+											newGrade.numericMinimum = 0;
+										};
+										if (grade.numericMaximum === undefined){
+											newGrade.numericMaximum = 100;
+										};
+										minTextbox.val(newGrade.numericMinimum);
+										maxTextbox.val(newGrade.numericMaximum);
+										break;
+									default:
+										innerRoot.find(".numericOptions").hide();
+										break;
+								}
+							};
 							console.log("starting value:",grade.gradeType);
 							typeSelect.attr("id",selectId).on("change",function(){
 								newGrade.gradeType = typeSelect.val();
+								reRenderGradeTypeOptions();
 							}).val(grade.gradeType);
+							reRenderGradeTypeOptions();
 							innerRoot.find(".gradeTypeLabel").attr("for",selectId);
 							var visibleId = sprintf("gradeVisible_%s",uniqId);
 							innerRoot.find(".gradeVisibleLabel").attr("for",visibleId);
@@ -276,7 +320,7 @@ var Grades = (function(){
 													gradeValue.gradeValue = parseFloat(numericScore.val());
 													sendStanza(gradeValue);			
 												};
-												numericScore.val(gradeValue.gradeValue).on("blur",changeScoreFunc);
+												numericScore.val(gradeValue.gradeValue).attr("min",grade.numericMinimum).attr("max",grade.numericMaximum).on("blur",changeScoreFunc);
 												booleanScore.remove();
 												booleanScoreLabel.remove();
 												textScore.remove();
