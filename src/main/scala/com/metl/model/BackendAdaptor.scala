@@ -217,6 +217,10 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     })
   }
+  def setupExternalGradebooksFromFile(filePath:String) = {
+    val nodes = XML.load(filePath) \\ "externalGradebooks"
+    ExternalGradebooks.configureFromXml(nodes)
+  }
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
@@ -339,6 +343,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     //setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
 
+    setupExternalGradebooksFromFile(Globals.configurationFileLocation)
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })

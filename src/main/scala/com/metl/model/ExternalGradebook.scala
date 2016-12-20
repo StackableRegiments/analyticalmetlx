@@ -6,6 +6,29 @@ import com.metl.data._
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.util.Date
+import scala.xml._
+
+object ExternalGradebooks {
+  def configureFromXml(in:NodeSeq):List[ExternalGradebook] = {
+    (in \\ "d2lGradebook").toList.flatMap(n => {
+      for {
+        name <- (n \ "@name").headOption.map(_.text)
+        d2lBaseUrl <- (n \ "@host").headOption.map(_.text)
+        appId <- (n \ "@appId").headOption.map(_.text)
+        appKey <- (n \ "@appKey").headOption.map(_.text)
+        userId <- (n \ "@userId").headOption.map(_.text)
+        userKey <- (n \ "@userKey").headOption.map(_.text)
+        leApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
+        lpApiVersion <- (n \ "@leApiVersion").headOption.map(_.text)
+        acceptableRoleList = (n \ "acceptableRole").toList.map(_.text)
+      } yield {
+        new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+          override protected val acceptableRoles = acceptableRoleList
+        }
+      }
+    }) ::: Nil
+  }
+}
 
 abstract class ExternalGradebook(val name:String) extends TryE with Logger {
   def getGradeContexts(username:String = Globals.currentUser.is):Either[Exception,List[OrgUnit]] = Left(notImplemented)
