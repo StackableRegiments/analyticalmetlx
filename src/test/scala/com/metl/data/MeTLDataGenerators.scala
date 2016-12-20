@@ -335,8 +335,13 @@ trait MeTLDataGenerators {
     } else {
       Gen.oneOf(None,None)
     }
+    numericMinimum <- if (gradeType == MeTLGradeValueType.Numeric){
+      genSome(arbitrary[Double])
+    } else {
+      Gen.oneOf(None,None)
+    }
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLGrade(ServerConfiguration.empty,author,timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,audiences)
+  } yield MeTLGrade(ServerConfiguration.empty,author,timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,audiences)
 
   def genNumericGradeValue = for {
     author <- genString(32)

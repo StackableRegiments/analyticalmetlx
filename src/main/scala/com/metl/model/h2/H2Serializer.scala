@@ -400,13 +400,19 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     } yield {
       ugru
     }
-    val nm = for {
+    val nmax = for {
       nMax <- Some(i.numericMaximum.get)
       if (i.gradeType.get == MeTLGradeValueType.Numeric)
     } yield {
       nMax
     }
-    MeTLGrade(config,c.author,c.timestamp,i.gradeId.get,i.location.get,i.name.get,i.description.get,i.gradeType.get,i.visible.get,frs,gru,nm,c.audiences)
+    val nmin = for {
+      nMin <- Some(i.numericMinimum.get)
+      if (i.gradeType.get == MeTLGradeValueType.Numeric)
+    } yield {
+      nMin
+    }
+    MeTLGrade(config,c.author,c.timestamp,i.gradeId.get,i.location.get,i.name.get,i.description.get,i.gradeType.get,i.visible.get,frs,gru,nmax,nmin,c.audiences)
   })
   override def fromGrade(i:MeTLGrade):H2Grade = Stopwatch.time("H2Serializer.fromGrade",{
     val g = incStanza(H2Grade.create,i,"grade").gradeId(i.id).name(i.name).description(i.description).location(i.location).visible(i.visible).gradeType(i.gradeType)
@@ -418,6 +424,9 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     })
     i.numericMaximum.foreach(nm => {
       g.numericMaximum(nm)
+    })
+    i.numericMinimum.foreach(nm => {
+      g.numericMinimum(nm)
     })
     g
   })

@@ -721,6 +721,11 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     } else {
       None
     }
+    val numericMinimum = if (gradeType == MeTLGradeValueType.Numeric){
+      Some(getDoubleByName(input,"numericMinimum"))
+    } else {
+      None
+    }
     val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
       for {
         sys <- (n \ "@sys").headOption.map(_.text)
@@ -730,7 +735,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       }
     })
     val gradeReferenceUrl = (input \\ "gradeReferenceUrl").headOption.map(_.text)   
-    MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,m.audiences)
+    MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
   })
   override def fromGrade(input:MeTLGrade):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGrade",{
     metlContentToXml("grade",input,List(
@@ -746,6 +751,8 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <gradeReferenceUrl>{s}</gradeReferenceUrl>
     }) ::: input.numericMaximum.toList.map(nm => {
       <numericMaximum>{nm.toString}</numericMaximum>
+    }) ::: input.numericMinimum.toList.map(nm => {
+      <numericMinimum>{nm.toString}</numericMinimum>
     }))
   })
 

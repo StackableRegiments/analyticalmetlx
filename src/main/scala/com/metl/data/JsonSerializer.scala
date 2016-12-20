@@ -1021,6 +1021,11 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         } else {
           None
         }
+        val numericMinimum = if (gradeType == MeTLGradeValueType.Numeric){
+          Some(getDoubleByName(j,"numericMinimum"))
+        } else {
+          None
+        }
         val foreignRelationship = getOptionalObjectByName(j,"foreignRelationship").flatMap(n => {
           n.value match {
             case jo:JObject => {
@@ -1035,7 +1040,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           }
         })
         val gradeReferenceUrl = getOptionalStringByName(j,"gradeReferenceUrl")
-        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,m.audiences)
+        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
       }
       case _ => MeTLGrade.empty
     }
@@ -1057,7 +1062,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       )))
     }) ::: input.numericMaximum.toList.map(nm => {
       JField("numericMaximum",JDouble(nm))
-    }) ::: parseMeTLContent(input))
+    }) ::: input.numericMinimum.toList.map(nm => {
+      JField("numericMinimum",JDouble(nm))
+    }) :::parseMeTLContent(input))
   })
   override def toNumericGradeValue(input:JValue):MeTLNumericGradeValue = Stopwatch.time("JsonSerializer.toNumericGradeValue",{
     input match {

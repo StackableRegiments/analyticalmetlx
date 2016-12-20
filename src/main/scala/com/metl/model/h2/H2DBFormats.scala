@@ -321,6 +321,7 @@ class H2Grade extends H2MeTLStanza[H2Grade] {
   object foreignRelationshipSystem extends MappedString(this,1024)
   object foreignRelationshipKey extends MappedString(this,H2Constants.url)
   object numericMaximum extends MappedDouble(this)
+  object numericMinimum extends MappedDouble(this)
   object gradeReferenceUrl extends MappedString(this,H2Constants.url)
 }
 trait H2GradeValue[C <:H2MeTLStanza[C]] extends H2MeTLStanza[C]{
