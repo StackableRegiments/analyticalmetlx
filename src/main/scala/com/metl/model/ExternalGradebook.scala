@@ -222,11 +222,25 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     trye({
       val uc = interface.getUserContext
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
-      //val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2))))) // should we check for changes, I wonder?
-
-      grades.flatMap(gv => {
-        interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.UserName.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
-      })
+      if (grades.length > 1){
+        val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2))))) 
+        grades.filter(gv => originalGrades.exists(og => {
+          og.getType == gv.getType &&
+          og.getGradedUser == gv.getGradedUser && (
+            og.getNumericGrade != gv.getNumericGrade ||
+            og.getTextGrade != gv.getTextGrade ||
+            og.getBooleanGrade != gv.getBooleanGrade ||
+            og.getPrivateComment != gv.getPrivateComment ||
+            og.getComment != gv.getComment
+          )
+        })).flatMap(gv => { //only update the ones which have a changed value
+          interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.UserName.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
+        })
+      } else {
+        grades.flatMap(gv => {
+          interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.UserName.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
+        })
+      }
       interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2)))))
     })
   }
