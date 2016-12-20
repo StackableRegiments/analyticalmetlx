@@ -214,7 +214,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     trye({
       val uc = interface.getUserContext
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
-      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
+      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.UserName).getOrElse(lookupUsername(t._1,t._2)))))
+      //interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
     })
   }
   override def updateGradeValuesForGrade(ctx:String,gradeId:String,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = {
