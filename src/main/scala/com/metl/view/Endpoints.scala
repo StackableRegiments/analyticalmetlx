@@ -318,6 +318,84 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         RedirectResponse(referer)
       }
     })
+    //gradebook integration
+    case Req("getExternalGradebooks" :: Nil,_,_) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JString(gb.name))),200))
+    case Req("getExternalGradebookOrgUnits" :: externalGradebookName :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeContexts() match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+        }
+      }
+    }
+    case Req("getExternalGrade" :: externalGradebookName :: orgUnitId :: gradeId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeInContext(orgUnitId,gradeId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(Extraction.decompose(gc),200)
+        }
+      }
+    }
+    case Req("getExternalGrades" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradesFromContext(orgUnitId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(JArray(gc.map(Extraction.decompose _)),200)
+        }
+      }
+    }
+    case r@Req("createExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        bodyBytes <- r.body
+      } yield {
+        val grade = parse(new String(bodyBytes,"UTF-8")).extract[MeTLGrade]
+        gbp.createGradeInContext(orgUnitId,grade) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(Extraction.decompose(gc),200)
+        }
+      }
+  }
+    case r@Req("updateExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        bodyBytes <- r.body
+      } yield {
+        val grade = parse(new String(bodyBytes,"UTF-8")).extract[MeTLGrade]
+        gbp.updateGradeInContext(orgUnitId,grade) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(Extraction.decompose(gc),200)
+        }
+      }
+  }
+    case Req("getExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => { 
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeValuesForGrade(orgUnit,gradeId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+        }
+      }
+  }
+    case r@Req("updateExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        bodyBytes <- r.body
+      } yield {
+        val grades = parse(new String(bodyBytes,"UTF-8")).extract[List[MeTLGradeValue]]
+        gbp.updateGradeValuesForGrade(orgUnit,gradeId,grades) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+        }
+      }
+    }
     case r@Req(List("listGroups",username),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups",StatelessHtml.listGroups(username,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
     case Req(List("listRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listUsersInRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listUsersInRooms)

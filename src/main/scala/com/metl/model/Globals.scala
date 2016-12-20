@@ -133,6 +133,10 @@ object Globals extends PropertyReader with Logger {
   }
   var groupsProviders:List[GroupsProvider] = Nil
 
+  var gradebookProviders:List[ExternalGradebook] = Nil
+  def getGradebookProvider(providerName:String):Option[ExternalGradebook] = gradebookProviders.find(_.name == providerName)
+  def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
+
   def getGroupsProvider(providerName:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerName)
   def getGroupsProviders:List[GroupsProvider] = groupsProviders
 

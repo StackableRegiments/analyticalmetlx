@@ -511,8 +511,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
     putToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,grade.Id),"PUT"),Extraction.decompose(grade),true)
   }
-  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObject:D2LGradeObject):List[D2LUserGradeValue] = {
-    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id.head),"GET")
+  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String):List[D2LUserGradeValue] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObjectId),"GET")
     var items:List[D2LUserGradeValue] = Nil
     try {
       val firstGet = client.get(url.toString)

@@ -9,12 +9,12 @@ import java.util.Date
 
 abstract class ExternalGradebook(val name:String) extends TryE with Logger {
   def getGradeContexts(username:String = Globals.currentUser.is):Either[Exception,List[OrgUnit]] = Left(notImplemented)
-  def getGradesFromContext(context:OrgUnit):Either[Exception,List[MeTLGrade]] = Left(notImplemented)
-  def getGradeInContext(context:OrgUnit,gradeId:String):Either[Exception,MeTLGrade] = Left(notImplemented)
-  def createGradeInContext(context:OrgUnit,grade:MeTLGrade):Either[Exception,MeTLGrade] = Left(notImplemented)
-  def updateGradeInContext(context:OrgUnit,grade:MeTLGrade):Either[Exception,MeTLGrade] = Left(notImplemented)
-  def getGradeValuesForGrade(context:OrgUnit,grade:MeTLGrade):Either[Exception,List[MeTLGradeValue]] = Left(notImplemented)
-  def updateGradeValuesForGrade(context:OrgUnit,grade:MeTLGrade,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = Left(notImplemented)
+  def getGradesFromContext(context:String):Either[Exception,List[MeTLGrade]] = Left(notImplemented)
+  def getGradeInContext(context:String,gradeId:String):Either[Exception,MeTLGrade] = Left(notImplemented)
+  def createGradeInContext(context:String,grade:MeTLGrade):Either[Exception,MeTLGrade] = Left(notImplemented)
+  def updateGradeInContext(context:String,grade:MeTLGrade):Either[Exception,MeTLGrade] = Left(notImplemented)
+  def getGradeValuesForGrade(context:String,gradeId:String):Either[Exception,List[MeTLGradeValue]] = Left(notImplemented)
+  def updateGradeValuesForGrade(context:String,gradeId:String,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = Left(notImplemented)
 }
 
 trait TryE {
@@ -141,32 +141,27 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       }).toList
     })
   }
-  override def getGradesFromContext(context:OrgUnit):Either[Exception,List[MeTLGrade]] = {
+  override def getGradesFromContext(context:String):Either[Exception,List[MeTLGrade]] = {
     trye({
-      context.foreignRelationship.filter(_._1 == name).toList.flatMap(ctx => {
-        val uc = interface.getUserContext
-        interface.getGradeObjects(uc,ctx._2).map(g => toGrade(uc,ctx._2,g))
-      })
+      val uc = interface.getUserContext
+      interface.getGradeObjects(uc,context).map(g => toGrade(uc,context,g))
     })
   }
-  override def getGradeInContext(context:OrgUnit,gradeId:String):Either[Exception,MeTLGrade] = {
+  override def getGradeInContext(ctx:String,gradeId:String):Either[Exception,MeTLGrade] = {
     trye({
-      val ctx = context.foreignRelationship.filter(_._1 == name).head._2
       val uc = interface.getUserContext
       interface.getGradeObject(uc,ctx,gradeId).map(g => toGrade(uc,ctx,g)).head
     })
   }
-  override def createGradeInContext(context:OrgUnit,grade:MeTLGrade):Either[Exception,MeTLGrade] = {
+  override def createGradeInContext(ctx:String,grade:MeTLGrade):Either[Exception,MeTLGrade] = {
    trye({
-      val ctx = context.foreignRelationship.filter(_._1 == name).head._2
       val uc = interface.getUserContext
       val newGrade = fromGrade(uc,grade)
       interface.createGradeObject(uc,ctx,fromGrade(uc,grade)).map(g => toGrade(uc,ctx,g)).head
     })
   }
-  override def updateGradeInContext(context:OrgUnit,grade:MeTLGrade):Either[Exception,MeTLGrade] = {
+  override def updateGradeInContext(ctx:String,grade:MeTLGrade):Either[Exception,MeTLGrade] = {
     trye({
-      val ctx = context.foreignRelationship.filter(_._1 == name).head._2
       val uc = interface.getUserContext
       val (orgUnitId:String,gradeId:String) = {
         val gradeObj = grade.foreignRelationship.filter(_._1 == name).head
@@ -185,35 +180,19 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       }).head
     })
   }
-  override def getGradeValuesForGrade(context:OrgUnit,grade:MeTLGrade):Either[Exception,List[MeTLGradeValue]] = {
+  override def getGradeValuesForGrade(ctx:String,gradeId:String):Either[Exception,List[MeTLGradeValue]] = {
     trye({
-      val ctx = context.foreignRelationship.filter(_._1 == name).head._2
       val uc = interface.getUserContext
-       val (orgUnitId:String,gradeId:String) = {
-        val gradeObj = grade.foreignRelationship.filter(_._1 == name).head
-        val parts = gradeObj._2.split("_").toList
-        (parts.head,parts.drop(1).head)
-      }
-      interface.getGradeObject(uc,ctx,gradeId).toList.flatMap(oldGrade => {
-        interface.getGradeValues(uc,ctx,oldGrade).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
-      })
+      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
     })
   }
-  override def updateGradeValuesForGrade(context:OrgUnit,grade:MeTLGrade,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = {
+  override def updateGradeValuesForGrade(ctx:String,gradeId:String,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = {
     trye({
-      val ctx = context.foreignRelationship.filter(_._1 == name).head._2
       val uc = interface.getUserContext
-       val (orgUnitId:String,gradeId:String) = {
-        val gradeObj = grade.foreignRelationship.filter(_._1 == name).head
-        val parts = gradeObj._2.split("_").toList
-        (parts.head,parts.drop(1).head)
-      }
-      interface.getGradeObject(uc,ctx,gradeId).toList.flatMap(oldGrade => {
-        grades.flatMap(gv => {
-          interface.updateGradeValue(uc,ctx,gradeId,lookupD2LUserId(uc,gv.getGradedUser),fromGradeValue(uc,gv))
-        })
-        interface.getGradeValues(uc,ctx,oldGrade).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
+      grades.flatMap(gv => {
+        interface.updateGradeValue(uc,ctx,gradeId,lookupD2LUserId(uc,gv.getGradedUser),fromGradeValue(uc,gv))
       })
+      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv)))
     })
   }
 }
