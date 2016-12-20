@@ -253,11 +253,6 @@ var Grades = (function(){
 							visibleCheckbox.attr("id",visibleId).prop("checked",grade.visible).on("change",function(ev){
 								newGrade.visible = visibleCheckbox.prop("checked");
 							});
-							/*
-							$.getJSON("/getExternalGradebooks",function(data){
-								gradebooks = data;
-							});
-							*/
 							var wantsToAssociate = undefined;
 							var chosenGradebook = undefined;
 							var orgUnits = [];
@@ -267,8 +262,8 @@ var Grades = (function(){
 								var aNodes = innerRoot.find(".associateController");
 								if ("foreignRelationship" in grade){
 									aNodes.find(".createAssociation").hide();
-									var system = grade.foreignRelationship.system;
-									var parts = grade.foreignRelationship.id.split("_");
+									var system = grade.foreignRelationship.sys;
+									var parts = grade.foreignRelationship.key.split("_");
 									var orgUnit = parts[0];
 									var gradeId = parts[1];
 									aNodes.find(".associationSystem").text = system;
@@ -337,7 +332,7 @@ var Grades = (function(){
 											$.getJSON(sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),function(data){
 												console.log("createdGrades:",data);
 												grade.foreignRelationship = {
-													system:data.foreignRelationship.system,
+													sys:data.foreignRelationship.system,
 													key:data.foreignRelationship.key
 												}
 												sendStanza(grade);
@@ -376,120 +371,207 @@ var Grades = (function(){
 							var gradebookDatagrid	= innerRoot.find(".gradebookDatagrid");
 							var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
 							gradebookDatagrid.empty();
-							var data = gradeValues[grade.id];
-							if (data == undefined){
-								gradeValues[grade.id] = {};
-								data = {};
-							};
-							var gradeType = sprintf("%sGradeValue",grade.gradeType);
-							_.forEach(Participants.getPossibleParticipants(),function(name){
-								var oldValue = data[name];
-								if (oldValue == undefined){
-									data[name] = {
-										type:gradeType,
-										gradeId:grade.id,
-										gradedUser:name,
-										author:grade.author,
-										timestamp:0,
-										audiences:[]
-									};
-								}
-							});
-							console.log("data:",data);
-							data = _.values(data);
-							data = _.filter(data,function(d){
-								return d.type == gradeType;
-							});
-							var gradebookFields = [
-								{name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
-								{name:"timestamp",type:"dateField",title:"When",readOnly:true},
-								{
-									name:"gradeValue",
-									type:"text",
-									title:"Score",
-									readOnly:true,
-									sorting:true,
-									itemTemplate:function(score,gradeValue){
-										var scoringRoot = assessUserTemplate.clone();
-										var numericScore = scoringRoot.find(".numericScore");
-										var booleanScore = scoringRoot.find(".booleanScore");
-										var booleanScoreLabel = scoringRoot.find(".booleanScoreLabel");
-										var textScore = scoringRoot.find(".textScore");
-										switch (grade.gradeType){
-											case "numeric":
-												var changeScoreFunc = function(ev){
-													gradeValue.gradeValue = parseFloat(numericScore.val());
-													sendStanza(gradeValue);			
-												};
-												numericScore.val(gradeValue.gradeValue).attr("min",grade.numericMinimum).attr("max",grade.numericMaximum).on("blur",changeScoreFunc);
-												booleanScore.remove();
-												booleanScoreLabel.remove();
-												textScore.remove();
-											break;
-											case "text":
-												numericScore.remove();
-												var changeScoreFunc = function(ev){
-													gradeValue.gradeValue = textScore.val();
-													sendStanza(gradeValue);
-												};	
-												textScore.val(gradeValue.gradeValue).on("blur",changeScoreFunc);
-												booleanScoreLabel.remove();
-												booleanScore.remove();
-											break;
-											case "boolean":
-												numericScore.remove();
-												var booleanScoreId = sprintf("booleanScoreId_%s",_.uniqueId());
-												var changeScoreFunc = function(ev){
-													gradeValue.gradeValue = booleanScore.prop("checked");
-													sendStanza(gradeValue);			
-												};
-												booleanScore.on("change",changeScoreFunc).prop("checked",gradeValue.gradeValue).attr("id",booleanScoreId);
-												booleanScoreLabel.attr("for",booleanScoreId);
-												textScore.remove();
-											break;
-											default:
-												numericScore.remove();
-												booleanScore.remove();
-												booleanScoreLabel.remove();
-												textScore.remove();
-											break;
-										}
-										return scoringRoot;	
-									}
-								}
-							];
-							$("#"+uniqId).append(innerRoot);
-							gradebookDatagrid.jsGrid({
-								width:"100%",
-								height:"auto",
-								inserting:false,
-								editing:false,
-								sorting:true,
-								paging:true,
-								noDataContent: "No gradeable users",
-								controller: {
-									loadData: function(filter){
-										if ("sortField" in filter){
-											var sorted = _.sortBy(data,function(gv){
-												return gv[filter.sortField];
-											});
-											if ("sortOrder" in filter && filter.sortOrder == "desc"){
-												sorted = _.reverse(sorted);
+							var generateData = function(andThen){
+								var data = gradeValues[grade.id];
+								if (data == undefined){
+									gradeValues[grade.id] = {};
+									data = {};
+								};
+								var gradeType = sprintf("%sGradeValue",grade.gradeType);
+								var possibleParticipants = Participants.getPossibleParticipants();
+								if ("foreignRelationship" in grade){
+									var system = grade.foreignRelationship["sys"];
+									var parts = grade.foreignRelationship["key"].split("_");
+									var orgUnit = parts[0];
+									var gradeId = parts[1];
+									$.getJSON(sprintf("/getExternalGradebookOrgUnitClasslist/%s/%s",system,orgUnit),function(members){
+										_.forEach(members,function(m){
+											var username = m["UserName"];
+											if (username !== undefined){
+												possibleParticipants.push();
 											}
-											return sorted
-										} else {
-											return data;
+										});
+										possibleParticipants = _.uniq(possibleParticipants);
+										_.forEach(possibleParticipants,function(name){
+											var oldValue = data[name];
+											if (oldValue == undefined){
+												data[name] = {
+													type:gradeType,
+													gradeId:grade.id,
+													gradedUser:name,
+													author:grade.author,
+													timestamp:0,
+													audiences:[]
+												};
+											}
+										});
+										data = _.values(data);
+										data = _.filter(data,function(d){
+											return d.type == gradeType;
+										});
+										andThen(data);
+									}).fail(function(jqxhr,textStatus,error){
+										console.log("error",textStatus,error);
+									});
+								} else {
+									_.forEach(possibleParticipants,function(name){
+										var oldValue = data[name];
+										if (oldValue == undefined){
+											data[name] = {
+												type:gradeType,
+												gradeId:grade.id,
+												gradedUser:name,
+												author:grade.author,
+												timestamp:0,
+												audiences:[]
+											};
+										}
+									});
+									data = _.values(data);
+									data = _.filter(data,function(d){
+										return d.type == gradeType;
+									});
+									andThen(data);
+								}
+							};
+							var withData = function(data){
+								var gradebookFields = [
+									{name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
+									{name:"timestamp",type:"dateField",title:"When",readOnly:true},
+									{
+										name:"gradeValue",
+										type:"text",
+										title:"Score",
+										readOnly:true,
+										sorting:true,
+										itemTemplate:function(score,gradeValue){
+											var scoringRoot = assessUserTemplate.clone();
+											var numericScore = scoringRoot.find(".numericScore");
+											var booleanScore = scoringRoot.find(".booleanScore");
+											var booleanScoreLabel = scoringRoot.find(".booleanScoreLabel");
+											var textScore = scoringRoot.find(".textScore");
+											switch (grade.gradeType){
+												case "numeric":
+													var changeScoreFunc = function(ev){
+														gradeValue.gradeValue = parseFloat(numericScore.val());
+														sendStanza(gradeValue);			
+													};
+													numericScore.val(gradeValue.gradeValue).attr("min",grade.numericMinimum).attr("max",grade.numericMaximum).on("blur",changeScoreFunc);
+													booleanScore.remove();
+													booleanScoreLabel.remove();
+													textScore.remove();
+												break;
+												case "text":
+													numericScore.remove();
+													var changeScoreFunc = function(ev){
+														gradeValue.gradeValue = textScore.val();
+														sendStanza(gradeValue);
+													};	
+													textScore.val(gradeValue.gradeValue).on("blur",changeScoreFunc);
+													booleanScoreLabel.remove();
+													booleanScore.remove();
+												break;
+												case "boolean":
+													numericScore.remove();
+													var booleanScoreId = sprintf("booleanScoreId_%s",_.uniqueId());
+													var changeScoreFunc = function(ev){
+														gradeValue.gradeValue = booleanScore.prop("checked");
+														sendStanza(gradeValue);			
+													};
+													booleanScore.on("change",changeScoreFunc).prop("checked",gradeValue.gradeValue).attr("id",booleanScoreId);
+													booleanScoreLabel.attr("for",booleanScoreId);
+													textScore.remove();
+												break;
+												default:
+													numericScore.remove();
+													booleanScore.remove();
+													booleanScoreLabel.remove();
+													textScore.remove();
+												break;
+											}
+											return scoringRoot;	
 										}
 									}
-								},
-								pageLoading:false,
-								fields:gradebookFields
-							});
-							gradebookDatagrid.jsGrid("loadData");
-							gradebookDatagrid.jsGrid("sort",{
-								field:"gradedUser",
-								order:"desc"
-							});	
+								];
+
+								if ("foreignRelationship" in grade){
+									gradebookFields.push(
+										{name:"remoteGrade",type:"text",title:"Remote score",readOnly:true,sorting:true}
+									);
+								}
+								$("#"+uniqId).append(innerRoot);
+								gradebookDatagrid.jsGrid({
+									width:"100%",
+									height:"auto",
+									inserting:false,
+									editing:false,
+									sorting:true,
+									paging:true,
+									noDataContent: "No gradeable users",
+									controller: {
+										loadData: function(filter){
+											if ("sortField" in filter){
+												var sorted = _.sortBy(data,function(gv){
+													return gv[filter.sortField];
+												});
+												if ("sortOrder" in filter && filter.sortOrder == "desc"){
+													sorted = _.reverse(sorted);
+												}
+												return sorted
+											} else {
+												return data;
+											}
+										}
+									},
+									pageLoading:false,
+									fields:gradebookFields
+								});
+								gradebookDatagrid.jsGrid("loadData");
+								gradebookDatagrid.jsGrid("sort",{
+									field:"gradedUser",
+									order:"desc"
+								});	
+								if ("foreignRelationship" in grade){
+									var system = grade.foreignRelationship["sys"];
+									var parts = grade.foreignRelationship["key"].split("_");
+									var orgUnit = parts[0];
+									var gradeId = parts[1];
+									innerRoot.find(".getRemoteData").on("click",function(){
+										$.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
+											data = generateData(withData);
+											_.forEach(data,function(datum){
+												var thisRemoteGrade = _.find(remoteGrades,function(rg){
+													return rg.gradedUser == datum.gradedUser;
+												});
+												if (thisRemoteGrade !== undefined){
+													datum.remoteGrade = thisRemoteGrade.gradeValue;
+												}
+											});
+										}).fail(function(jqxhr,textStatus,error){
+											console.log("error",textStatus,error);
+										});
+									});
+									innerRoot.find(".sendGradesToRemote").on("click",function(){
+										var gradesToSend = gradeValues[grade.id];
+										$.post(sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),gradesToSend,function(remoteGrades){
+											data = generateData(withData);
+											_.forEach(data,function(datum){
+												var thisRemoteGrade = _.find(remoteGrades,function(rg){
+													return rg.gradedUser == datum.gradedUser;
+												});
+												if (thisRemoteGrade !== undefined){
+													datum.remoteGrade = thisRemoteGrade.gradeValue;
+												}
+											});
+										},'json').fail(function(jqxhr,textStatus,error){
+											console.log("error",textStatus,error);
+										});
+									});
+								} else {
+									innerRoot.find(".gradeSyncActions").remove();
+								}
+							};
+							generateData(withData);
 						});
 						return rootElem;
 					} else {

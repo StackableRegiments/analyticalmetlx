@@ -330,6 +330,16 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         }
       }
     }
+    case Req("getExternalGradebookOrgUnitClasslist" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeContextClasslist(orgUnitId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(cls) => JsonResponse(Extraction.decompose(cls),200)
+        }
+      }
+    }
     case Req("getExternalGrade" :: externalGradebookName :: orgUnitId :: gradeId :: Nil,_,_) => {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookName)
