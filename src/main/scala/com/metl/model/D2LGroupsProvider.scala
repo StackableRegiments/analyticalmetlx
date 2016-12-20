@@ -107,11 +107,10 @@ case class D2LIncomingGradeValue(
   Comments:D2LDescriptionInput,
   PrivateComments:D2LDescriptionInput,
   GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
-  PointsNumerator:Option[Double]/*, // include this if GradeObjectType = 1
+  PointsNumerator:Option[Double], // include this if GradeObjectType = 1
   Pass:Option[Boolean], // include this if GradeObjectType = 2
   Value:Option[String], // include this if GradeObjectType = 3
   Text:Option[String] // include this if GradeObjectType = 4
-  */
 )
 case class D2LGradeValue(
   UserId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
@@ -432,8 +431,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     val appContext:ID2LAppContext = AuthenticationSecurityFactory.createSecurityContext(appId,appKey,d2lBaseUrl)
     appContext.createUserContext(userId,userKey)
   }
-
-  def getOrgUnits(userContext:ID2LUserContext):List[D2LOrgUnit] = {
+  protected def getOrgUnits(userContext:ID2LUserContext):List[D2LOrgUnit] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/".format(lpApiVersion),"GET")
     try {
       val firstGet = client.get(url.toString)
@@ -649,7 +647,7 @@ class D2LGroupsProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:Stri
 */
 
 class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
-
+  override val canQuery = true
   def parFlatMap[A,B](coll:List[A],func:A => List[B],threadCount:Int = 1,forkJoinPoolName:String = "default"):List[B] = {
     if (threadCount > 1){
       val pc = coll.par
@@ -670,6 +668,11 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     val roles = getRoles(userContext)
     val courses = getOrgUnits(userContext).filter(_.Type.Id == 3) // 3 is the typeId of courses
     trace("courses found: %s".format(courses.length))
+
+    val intermediaryOrgUnits = new scala.collection.mutable.HashMap[String,OrgUnit]()
+    val intermediaryGroupSets = new scala.collection.mutable.HashMap[OrgUnit,List[GroupSet]]()
+    val intermediaryGroups = new scala.collection.mutable.HashMap[Tuple2[OrgUnit,GroupSet],List[Group]]()
+
     val compoundItems = parFlatMap[D2LOrgUnit,Tuple2[List[Tuple3[String,String,String]],List[OrgUnit]]](courses,orgUnit => { 
       val members = getClasslists(userContext,orgUnit).groupBy(_.Identifier.toLong)
       val memberDetails = (for (
@@ -688,7 +691,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       }).flatten.toList
 
       val sections = getSections(userContext,orgUnit).map(section => {
-        Group(GroupKeys.section,section.Name,section.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "")))
+        Group(GroupKeys.section,section.Name,section.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "").map(mn => Member(mn,Nil,None))))
       })
       val sectionGroupSets = sections match {
         case Nil => Nil
@@ -696,12 +699,22 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       }
       val groupCategories = parFlatMap[D2LGroupCategory,GroupSet](getGroupCategories(userContext,orgUnit),groupCategory => {
         val groups = getGroups(userContext,orgUnit,groupCategory).map(group => {
-          Group(GroupKeys.group,nameGroup(orgUnit,groupCategory,group),group.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "")))
+          Group(GroupKeys.group,nameGroup(orgUnit,groupCategory,group),group.Enrollments.flatMap(mId => members.get(mId).toList.flatten.flatMap(_.OrgDefinedId).filterNot(_ == "").map(mn => Member(mn,Nil,None))))
         })
         List(GroupSet(GroupKeys.groupCategory,nameGroupCategory(orgUnit,groupCategory),groups.flatMap(_.members).distinct,groups))
       },4,"groupCategories")
       val children =  sectionGroupSets ::: groupCategories
-      val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,(members.values.toList.flatten.flatMap(_.OrgDefinedId).toList ::: children.flatMap(_.members)).distinct,children))
+
+      val orgUnits = (orgUnit.Name :: orgUnit.Code.toList).map(ou => OrgUnit(GroupKeys.course,ou,(members.values.toList.flatten.flatMap(_.OrgDefinedId).map(mn => Member(mn,Nil,None)).toList ::: children.flatMap(_.members)).distinct,children))
+
+      orgUnits.foreach(newOrgUnit => {
+        intermediaryOrgUnits += ((newOrgUnit.name,newOrgUnit))
+        intermediaryGroupSets += ((newOrgUnit,newOrgUnit.groupSets))
+        newOrgUnit.groupSets.foreach(gs => {
+          intermediaryGroups += (((newOrgUnit,gs),gs.groups))
+        })
+      })
+
       List((memberDetails,orgUnits))
     },16,"ou")
     val personalInformation = compoundItems.map(_._1)
@@ -713,7 +726,12 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     }):_*)
     val groupData = compoundItems.flatMap(_._2)
     val groupsByMember:Map[String,List[OrgUnit]] = Map(personalDetails.keys.toList.map(u => (u,groupData.filter(_.members.contains(u)))):_*)
-    val membersByGroup:Map[String,List[String]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
+    val membersByGroup:Map[String,List[Member]] = groupData.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
+
+    val orgUnitsByName:Map[String,OrgUnit] = intermediaryOrgUnits.toMap
+    val groupSetsByOrgUnit:Map[OrgUnit,List[GroupSet]] = intermediaryGroupSets.toMap
+    val groupsByGroupSet:Map[Tuple2[OrgUnit,GroupSet],List[Group]] = intermediaryGroups.toMap
+
     GroupStoreData(groupsByMember,membersByGroup,personalDetails)
   }
 }
