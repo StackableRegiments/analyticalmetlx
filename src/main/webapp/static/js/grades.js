@@ -539,14 +539,17 @@ var Grades = (function(){
 									var gradeId = parts[1];
 									innerRoot.find(".getRemoteData").on("click",function(){
 										$.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
-											data = generateData(withData);
-											_.forEach(data,function(datum){
-												var thisRemoteGrade = _.find(remoteGrades,function(rg){
-													return rg.gradedUser == datum.gradedUser;
+											generateData(function(data){
+												var modifiedData = data;
+												_.forEach(modifiedData,function(datum){
+													var thisRemoteGrade = _.find(remoteGrades,function(rg){
+														return rg.gradedUser == datum.gradedUser;
+													});
+													if (thisRemoteGrade !== undefined){
+														datum.remoteGrade = thisRemoteGrade.gradeValue;
+													}
 												});
-												if (thisRemoteGrade !== undefined){
-													datum.remoteGrade = thisRemoteGrade.gradeValue;
-												}
+												return withData(modifiedData);
 											});
 										}).fail(function(jqxhr,textStatus,error){
 											console.log("error",textStatus,error);
