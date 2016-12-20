@@ -386,9 +386,9 @@ var Grades = (function(){
 									var gradeId = parts[1];
 									$.getJSON(sprintf("/getExternalGradebookOrgUnitClasslist/%s/%s",system,orgUnit),function(members){
 										_.forEach(members,function(m){
-											var username = m["UserName"];
-											if (username !== undefined){
-												possibleParticipants.push();
+											var u = m["UserName"];
+											if (u !== undefined){
+												possibleParticipants.push(u);
 											}
 										});
 										possibleParticipants = _.uniq(possibleParticipants);
@@ -405,6 +405,7 @@ var Grades = (function(){
 												};
 											}
 										});
+										console.log("possibleParticipants:",possibleParticipants,data);
 										data = _.values(data);
 										data = _.filter(data,function(d){
 											return d.type == gradeType;
