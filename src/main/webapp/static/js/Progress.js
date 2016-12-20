@@ -1,5 +1,13 @@
 var Progress = (function(){
     return {
+	manifest:function(){
+	    var funcs = _.map(Progress,function(v,k){
+		return [k,_.keys(v).length];
+	    });
+	    _.each(_.sortBy(funcs,"1").reverse(),function(func){
+		console.log(func);
+	    });
+	},
         call:function(key,args){
             args = args || [];
             $.each(Progress[key],function(k,f){

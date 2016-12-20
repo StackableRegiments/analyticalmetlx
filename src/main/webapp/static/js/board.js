@@ -166,6 +166,7 @@ function partToStanza(p){
 
 function richTextEditorToStanza(t){
     if(!t.bounds) t.doc.invalidateBounds();
+    t.audiences = _.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences());
     var bounds = t.bounds;
     var text = t.doc.save();
     if (t.slide == undefined){
@@ -196,8 +197,8 @@ function richTextEditorToStanza(t){
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza),
-        audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences()).map(audienceToStanza)
-    }
+        audiences:t.audiences.map(audienceToStanza)
+    };
 }
 function sendRichText(t){
     Modes.text.echoesToDisregard[t.identity] = true;

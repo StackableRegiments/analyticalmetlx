@@ -367,6 +367,7 @@ var HealthCheckViewer = (function(){
                 options: options
             };
             var chart = new Chart(canvas[0].getContext("2d"),chartDesc);
+            console.log("New chart",categoryName);
             charts[categoryName] = chart;
         }
     };
@@ -396,52 +397,59 @@ var HealthCheckViewer = (function(){
             high:6
         });
     }
+    var cells = {};
+    var c = function(selector){
+        if(selector in cells){
+            return cells[selector];
+        }
+        return cells[selector] = $(selector);
+    }
     var refreshFunc = function(checkData,descriptionData){
-			WorkQueue.enqueue(function(){
-        var start = new Date().getTime();
-        var overallLatencyData = descriptionData["latency"];
-        if (overallLatencyData != undefined){
+        WorkQueue.enqueue(function(){
             summarizeHealth(descriptionData);
-            $(".healthCheckSummaryLatencyContainer").show();
-            $(".latencyAverage").text(overallLatencyData.average);
-            $(".worstLatency").text(overallLatencyData.min);
-            $(".bestLatency").text(overallLatencyData.max);
-            $(".successRate").text(overallLatencyData.successRate * 100);
-            if (overallLatencyData.average > 200){
-                $(".latencyHumanReadable").text("poor");
-            } else if (overallLatencyData.average > 50){
-                $(".latencyHumanReadable").text("moderate");
-            } else if (overallLatencyData.average > 20){
-                $(".latencyHumanReadable").text("good");
+        });
+        if(viewing){
+            var start = new Date().getTime();
+            var overallLatencyData = descriptionData["latency"];
+            if (overallLatencyData != undefined){
+                c(".healthCheckSummaryLatencyContainer").show();
+                c(".latencyAverage").text(overallLatencyData.average);
+                c(".worstLatency").text(overallLatencyData.min);
+                c(".bestLatency").text(overallLatencyData.max);
+                c(".successRate").text(overallLatencyData.successRate * 100);
+                if (overallLatencyData.average > 200){
+                    c(".latencyHumanReadable").text("poor");
+                } else if (overallLatencyData.average > 50){
+                    c(".latencyHumanReadable").text("moderate");
+                } else if (overallLatencyData.average > 20){
+                    c(".latencyHumanReadable").text("good");
+                }
+            } else {
+                c(".healthCheckSummaryLatencyContainer").hide();
             }
-        } else {
-            $(".healthCheckSummaryLatencyContainer").hide();
-        }
-        var overallServerResponseData = descriptionData["serverResponse"];
-        if (overallServerResponseData != undefined){
-            $(".heathCheckSummaryServerResponseContainer").show();
-            var serverHealthData = overallServerResponseData.average;
-            $(".serverResponseAverage").text(serverHealthData);
-            var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
-            $(".serverResponseHumanReadable").text(humanReadableServerHealthData);
-        } else {
-            $(".heathCheckSummaryServerResponseContainer").hide();
-        }
-        _.forEach(checkData,function(rawCategory,categoryName){
-            var category = adjustTimeFunc(rawCategory);
-            if (!(categoryName in charts)){
-                generateGraphFromCategory(categoryName,rawCategory);
+            var overallServerResponseData = descriptionData["serverResponse"];
+            if (overallServerResponseData != undefined){
+                c(".heathCheckSummaryServerResponseContainer").show();
+                var serverHealthData = overallServerResponseData.average;
+                c(".serverResponseAverage").text(serverHealthData);
+                var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
+                c(".serverResponseHumanReadable").text(humanReadableServerHealthData);
+            } else {
+                c(".heathCheckSummaryServerResponseContainer").hide();
             }
-            if (viewing == true){
+            _.forEach(checkData,function(rawCategory,categoryName){
+                var category = adjustTimeFunc(rawCategory);
+                if (!(categoryName in charts)){
+                    generateGraphFromCategory(categoryName,rawCategory);
+                }
                 var chart = charts[categoryName];
                 chart.data.datasets[0].data = errorDataFunc(category);
                 chart.data.datasets[1].data = minDataFunc(category);
                 chart.data.datasets[2].data = averageDataFunc(category);
                 chart.data.datasets[3].data = maxDataFunc(category);
                 chart.update();
-            }
-        });
-			});
+            });
+        }
     };
     return {
         resume:resumeFunc,

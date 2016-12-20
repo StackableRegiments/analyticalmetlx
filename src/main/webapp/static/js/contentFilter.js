@@ -40,14 +40,23 @@ var ContentFilter = (function(){
                 var members = "members" in group ? group.members : [];
                 return "author" in stanza && _.includes(members,stanza.author);
             },
+            type:"group",
             enabled:true
         };
     };
     var applyFilters = function(stanza){
         var observed = Participants.getParticipants()[stanza.author];
         if(observed && !observed.following) return false;
+        var isolated = audiences.length &&
+                stanza.audiences &&
+                stanza.audiences.length && !(_.some(stanza.audiences,function(audience){
+                    return _.includes(audiences,audience.name);
+                }));
+        if(isolated){
+            return false;
+        }
         return _.some(filters,function(filter){
-            return ("enabled" in filter && filter.enabled == true) ? filter.filterStanza(stanza) : false ;
+            return filter.enabled && filter.filterStanza(stanza);
         });
     };
     var filtered = function(func){
@@ -118,11 +127,13 @@ var ContentFilter = (function(){
         return filters;
     };
     var getFiltersFromGroups = function(groups){
-	return _.map(Conversations.isAuthor() ? Conversations.getCurrentGroups() : Conversations.getCurrentGroup(),generateGroupFilter);
+        return _.map(Conversations.isAuthor() ? Conversations.getCurrentGroups() : Conversations.getCurrentGroup(),generateGroupFilter);
     };
     var getDefaultFilters = function(){
         var fs = [myPrivate,myPublic];
-        if(! Conversations.isAuthor()){
+        if(Conversations.isAuthor()){
+        }
+        else{
             fs = fs.concat(owner);
         }
         if(! Conversations.getCurrentGroups().length){
@@ -149,7 +160,7 @@ var ContentFilter = (function(){
         return audiences;
     };
     var setAudienceFunction = function(audience){
-        audiences.push(audience);
+        audiences = [audience];
     };
     var clearAudiencesFunction = function(){
         audiences = [];

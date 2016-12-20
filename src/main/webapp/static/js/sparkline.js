@@ -2,7 +2,7 @@
 /* thanks to 'barrym' for examples of transform: https://gist.github.com/1137131 */
 var SparkLine = (function(){
     function invert(i){
-	return 0 - i;
+        return 0 - i;
     }
     function svgLine(container, data, width, height, updateDelay, transitionDelay) {
         var graph = d3.select(container[0]).append("svg:svg").attr("class","sparkline").attr("width", width).attr("height", height);
@@ -14,30 +14,39 @@ var SparkLine = (function(){
                     return x(i);
                 })
                 .y(function(d) {
-                    return height - y(d);
+                    return height / 2 - y(d);
                 })
                 .curve(d3.curveBasis);
 
-        graph.selectAll("path").data(data).enter().append("svg:path").attr("d", line);
+        var underLine = d3.line()
+                .x(function(d,i) {
+                    return x(i);
+                })
+                .y(function(d) {
+                    return y(d) + height / 2;
+                })
+                .curve(d3.curveBasis);
 
-        function redraw(data) {
-	    data[0] = _.clone(data[0]);
-	    data[1] = _.map(data[1],invert);
+        graph.selectAll("path").data(data).enter().append("svg:path");
+
+        return function(data) {
+            data = _.clone(data);
             var extents = _.map(data,function(datum){
                 datum.unshift(0);
                 datum.push(0);
-		return d3.extent(datum);
+                return d3.extent(datum);
             });
             y.domain([Math.min(extents[0][0],extents[1][0]),
-		      Math.max(extents[0][1],extents[1][1])]);
+                      Math.max(extents[0][1],extents[1][1])]);
             graph.selectAll("path")
                 .data(data)
-                .attr("d", line)
-		.attr("fill",function(d,i){
-		    return ["green","red"][i];
-		})
-        }
-        return redraw;
+                .attr("d", function(d,i){
+                    return (i == 0 ? line : underLine)(d);
+                })
+                .attr("fill",function(d,i){
+                    return ["green","red"][i];
+                })
+        };
     };
     return {
         svg:svgLine

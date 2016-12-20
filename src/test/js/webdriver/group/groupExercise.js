@@ -300,7 +300,7 @@ describe('When the class breaks into groups,', function() {
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
             }));
-	    user.addImage("testMaterials/mapleLeaf.jpg");
+            user.addImage("testMaterials/mapleLeaf.jpg");
         });
         browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
@@ -374,7 +374,7 @@ describe('When the class breaks into groups,', function() {
         tT.handwrite(_.map(_.range(200,400,15), function(i){
             return {x:50,y:i};
         }));
-	tT.addImage("testMaterials/stormtrooper.jpg");
+        tT.addImage("testMaterials/stormtrooper.jpg");
         var peer = sA;
         var nonPeer = sC;
         console.log(sB.plainTexts);
@@ -384,6 +384,10 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sA.textStanzas).length,2);
         assert.equal(_.keys(sB.imageStanzas).length,4);
         assert.equal(_.keys(sA.imageStanzas).length,2);
+        tT.driver.execute("$('#isolateGroup_2').click()");
+        tT.textMode.click();
+        tT.keyboard(330,500,"RESPONSE TO GROUP 2 ONLY");
+        browser.pause(2500);//Let everything synchronize
     });
     it("groups should not persist beyond the slide",function(){
         tT.newSlide.click();
@@ -400,7 +404,7 @@ describe('When the class breaks into groups,', function() {
             user.handwrite(_.map(_.range(200,400,15), function(i){
                 return {x:ui*10+i,y:i};
             }));
-	    user.addImage("testMaterials/mapleLeaf.jpg");
+            user.addImage("testMaterials/mapleLeaf.jpg");
         });
         browser.pause(2500);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
@@ -481,6 +485,7 @@ describe('When the class breaks into groups,', function() {
         });
         browser.pause(2500);//Let everything synchronize
         console.log(sB.plainTexts);
+        console.log(sC.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,6);
         assert.equal(_.keys(sB.textStanzas).length,6);
         assert.equal(_.keys(sB.imageStanzas).length,6);

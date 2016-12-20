@@ -79,7 +79,8 @@ var Plugins = (function(){
                                             _.each(groups,function(g){
                                                 ContentFilter.setFilter(g.id,true);
                                             });
-					    ContentFilter.clearAudiences();
+                                            ContentFilter.clearAudiences();
+					    blit();
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({
@@ -107,7 +108,7 @@ var Plugins = (function(){
                                             var right = $("<div />").appendTo(gc);
                                             $("<span />",{
                                                 text:sprintf("Group %s",group.title),
-						class:"ml"
+                                                class:"ml"
                                             }).appendTo(right);
                                             var controls = $("<div />",{
                                                 class:"groupsPluginGroupControls"
@@ -129,7 +130,8 @@ var Plugins = (function(){
                                                     ContentFilter.setFilter(g.id,false);
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
-						ContentFilter.setAudience(group.id);
+                                                ContentFilter.setAudience(group.id);
+						blit();
                                             })).append($("<label />",{
                                                 for:id
                                             }).append($("<span />",{

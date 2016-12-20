@@ -74,50 +74,59 @@ var Conversations = (function(){
             ensureTracking(audience);
             groupActivity[audience].bucket += 1;
         }
+        var rollAudience = function(meter){
+            meter.line.pop();
+            meter.line.unshift(meter.bucket);
+            meter.bucket = 0;
+        };
         var rollAudiences = function(){
-            _.each(groupActivity,function(meter){
-                meter.line.pop();
-                meter.line.unshift(meter.bucket);
-                meter.bucket = 0;
+            _.each(groupActivity,rollAudience);
+        }
+        var displayAudiences = function(){
+            ensureTracking("anyPrivate");
+            ensureTracking("anyPublic");
+            groupTraces.anyPrivate = groupTraces.anyPrivate || {};
+            groupTraces.anyPublic = groupTraces.anyPublic || {};
+            conversationActivity = conversationActivity || $("#conversationActivity");
+            WorkQueue.enqueue(function(){
+                _.each(currentConversation.slides,updateSlide);
+                if(!svgInitialized){
+                    svgInitialized = true;
+                    console.log("Initializing conversation trace");
+                    groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
+                                                                 [groupActivity.anyPublic.line,
+                                                                  groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                }
+                groupTraces.anyPublic.update([
+                    groupActivity.anyPublic.line,
+                    groupActivity.anyPrivate.line
+                ]);
+            });
+        }
+        var groupTraceIsAccurate = function(group){
+            return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
+        }
+        var scrollContainer;
+        var conversationActivity;
+        var updateSlide = function(slide){
+            var gs = Conversations.getGroupsFor(slide);
+            if(! _.every(gs,groupTraceIsAccurate)){
+                scrollContainer = scrollContainer || $("#thumbScrollContainer");
+                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                paintGroups(slide,slideContainer);
+            }
+            _.each(gs,function(group){
+                var trace = groupTraces[group.id];
+                if(trace){//It won't exist if they haven't painted yet
+                    trace.update([groupActivity[group.id].line]);
+                }
             });
         }
         var SENSOR_INTERVAL = 500;
         var DISPLAY_INTERVAL = 1000;
+        var svgInitialized = false;
         setInterval(rollAudiences,SENSOR_INTERVAL);
-        setInterval(function(){
-            WorkQueue.enqueue(function(){
-                _.each(currentConversation.slides,function(slide){
-                    var gs = Conversations.getGroupsFor(slide);
-                    if(! _.every(gs,function(group){
-                        return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
-                    })){
-                        var scrollContainer = $("#thumbScrollContainer");
-                        var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                        paintGroups(slide,slideContainer);
-                    }
-                    _.each(gs,function(group){
-                        var trace = groupTraces[group.id];
-                        if(trace){//It won't exist if they haven't painted yet
-                            trace.update([groupActivity[group.id].line]);
-                        }
-                    });
-                    var conversationActivity = $("#conversationActivity");
-                    ensureTracking("anyPrivate");
-                    ensureTracking("anyPublic");
-                    groupTraces.anyPrivate = groupTraces.anyPrivate || {};
-                    groupTraces.anyPublic = groupTraces.anyPublic || {};
-                    if(conversationActivity.find("svg").length == 0){
-                        groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
-                                                                     [groupActivity.anyPublic.line,
-                                                                      groupActivity.anyPrivate.line],100,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
-                    }
-                    groupTraces.anyPublic.update([
-                        groupActivity.anyPublic.line,
-                        groupActivity.anyPrivate.line
-                    ]);
-                });
-            });
-        },DISPLAY_INTERVAL);
+        setInterval(displayAudiences,DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
             if(stanza.type == "theme"){
                 switch(stanza.author){
@@ -420,35 +429,6 @@ var Conversations = (function(){
                 });
             }
         }
-        /*
-         if ((!shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
-         if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
-         var syncMoveDelay = 3000;
-         onSyncMoveTimerElapsed = function(){
-         onSyncMoveTimerElapsed = undefined;
-         console.log("syncMove moving to",jid,new Date());
-         performSyncMoveTo(jid);
-         };
-         var whenAble = function(){
-         console.log("syncMove polling for",jid,new Date());
-         if (onSyncMoveTimerElapsed){
-         if (WorkQueue.isAbleToWork){
-         onSyncMoveTimerElapsed();
-         } else {
-         WorkQueue.enqueue(function(){
-         console.log("syncMove re-establishing for",jid,new Date());
-         setTimeout(whenAble,syncMoveDelay);
-         });
-         }
-         }
-         };
-         WorkQueue.enqueue(function(){
-         console.log("syncMove establishing for",jid,new Date());
-         setTimeout(whenAble,syncMoveDelay);
-         });
-         }
-         }
-         */
     }
     var performSyncMoveTo = function(jid){
         if ((!shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){

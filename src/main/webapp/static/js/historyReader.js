@@ -194,11 +194,12 @@ function isUsable(element){
             _.some(element.audiences,function(audience){
                 return audience.action == "whitelist" && _.includes(myGroups,audience.name);
             });
-    var forMe = (element.author == UserSettings.getUsername() ||
-                 _.some(element.audiences,function(audience){
-                     return audience.action == "direct" && audience.name == UserSettings.getUsername();
-                 }));
-    return boundsOk && sizeOk && textOk && (forMyGroup || forMe);
+    var isMine = element.author == UserSettings.getUsername();
+    var isDirectedToMe = _.some(element.audiences,function(audience){
+        return audience.action == "direct" && audience.name == UserSettings.getUsername();
+    });
+    var availableToMe = isMine || isDirectedToMe || forMyGroup;
+    return boundsOk && sizeOk && textOk && availableToMe;
 }
 function usableStanzas(){
     return _.map(boardContent.multiWordTexts).map(function(v){
@@ -860,7 +861,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
             HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
         }
     } catch(e){
-	console.log(e);
+        console.log(e);
         if ("HealthChecker" in window){
             HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
         }

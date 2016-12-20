@@ -801,8 +801,6 @@ $(function(){
     $("#conversations").click(function(){
         window.location.href = "/conversationSearch";
     });
-    //$(document).attr("contenteditable",true);
-    //$("#board").attr("contenteditable",true);
     var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
     $("#pasteDialogTemplate").remove();
     var func = function(ev){
