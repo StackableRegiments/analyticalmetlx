@@ -361,6 +361,7 @@ var Conversations = (function(){
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
+	console.log("receiveSearchResults",results);
         currentSearchResults = results;
         permitOneSearch();
         updateQueryParams();
@@ -445,6 +446,7 @@ function receiveUsername(username){ //invoked by Lift
 function receiveUserGroups(userGroups){ //invoked by Lift
     Conversations.receiveUserGroups(userGroups);
 }
+
 function receiveConversationDetails(details){ //invoked by Lift
     Conversations.receiveConversationDetails(details);
 }

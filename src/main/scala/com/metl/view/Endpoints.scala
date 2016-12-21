@@ -25,6 +25,7 @@ trait Stemmer {
 
 object SystemRestHelper extends RestHelper with Stemmer with Logger {
   warn("SystemRestHelper inline")
+  val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   serve {
     case r@Req("getRemoteUser" :: Nil,_,_) => () => Full(PlainTextResponse(S.containerRequest.map(r => (r.asInstanceOf[net.liftweb.http.provider.servlet.HTTPRequestServlet]).req.getRemoteUser).getOrElse("unknown")))
@@ -63,6 +64,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
   val host = Globals.host
   val scheme = Globals.scheme
   val port = Globals.port
+  val slideRenderer = new SlideRenderer()
   val crossDomainPolicy = {
     <cross-domain-policy>
     <allow-access-from domain="*" />
@@ -216,8 +218,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       } yield {
         val config = ServerConfiguration.default
         val history = config.getMockHistory
-        debug("history.getAll: %s".format(history.getAll.length))
-        val slideRenderer = new SlideRenderer()
         val image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(Math.min(width.toInt,640),Math.min(height.toInt,480)),"presentationSpace")
         InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200)
       }
@@ -238,6 +238,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
   import java.io._
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
+  val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
     case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
       S.session.foreach(_.destroySession())
@@ -267,12 +268,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
             ("Connection" -> "close"),
             ("Transfer-Encoding" -> "chunked"),
             ("Content-Type" -> "video/mp4"),
-            ("Content-Range" -> "bytes %s-%s/%s".format(start,end,bytes.length.toString))
+            ("Content-Range" -> "bytes %d-%d/%d".format(start,end,bytes.length))
           )
           StreamingResponse(
             data = fis,
             onEnd = fis.close,
-            size = size,
+            size = initialSize,
             headers = headers,
             cookies = Nil,
             code = 206
@@ -283,15 +284,27 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case r@Req("reportLatency" :: Nil,_,_) => {
       val start = new java.util.Date().getTime
         () => Stopwatch.time("MeTLRestHelper.reportLatency", {
-          for {
+          val latencyMetrics = for {
             min <- r.param("minLatency")
             max <- r.param("maxLatency")
             mean <- r.param("meanLatency")
             samples <- r.param("sampleCount")
           } yield {
             info("[%s] miliseconds clientReportedLatency".format(mean))
+            (min,max,mean,samples)
           }
-          Full(PlainTextResponse((new java.util.Date().getTime - start).toString, List.empty[Tuple2[String,String]], 200))
+          val now = new java.util.Date().getTime
+          Full(JsonResponse(JObject(List(
+            JField("serverWorkTime",JInt(now - start)),
+            JField("serverTime",JInt(now))
+          ) ::: latencyMetrics.map(lm => {
+            List(
+              JField("minLatency",JDouble(lm._1.toDouble)),
+              JField("maxLatency",JDouble(lm._2.toDouble)),
+              JField("meanLatency",JDouble(lm._3.toDouble)),
+              JField("sampleCount",JDouble(lm._4.toInt))
+            )
+          }).getOrElse(Nil)),200))
         })
     }
     case Req("printableImageWithPrivateFor" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnail",  {
@@ -318,6 +331,101 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         RedirectResponse(referer)
       }
     })
+    //gradebook integration
+    case Req("getExternalGradebooks" :: Nil,_,_) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JString(gb.name))),200))
+    case Req("getExternalGradebookOrgUnits" :: externalGradebookName :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeContexts() match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+        }
+      }
+    }
+    case Req("getExternalGradebookOrgUnitClasslist" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeContextClasslist(orgUnitId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(cls) => JsonResponse(Extraction.decompose(cls),200)
+        }
+      }
+    }
+    case Req("getExternalGrade" :: externalGradebookName :: orgUnitId :: gradeId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeInContext(orgUnitId,gradeId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc),200)
+        }
+      }
+    }
+    case Req("getExternalGrades" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradesFromContext(orgUnitId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(JArray(gc.map(go => jsonSerializer.fromGrade(go))),200)
+        }
+      }
+    }
+    case r@Req("createExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        json <- r.json
+      } yield {
+        val grade = jsonSerializer.toGrade(json)
+        gbp.createGradeInContext(orgUnitId,grade) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc),200)
+        }
+      }
+  }
+    case r@Req("updateExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        json <- r.json
+      } yield {
+        val grade = jsonSerializer.toGrade(json)
+        gbp.updateGradeInContext(orgUnitId,grade) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc),200)
+        }
+      }
+  }
+    case Req("getExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => { 
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+      } yield {
+        gbp.getGradeValuesForGrade(orgUnit,gradeId) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+        }
+      }
+  }
+    case r@Req("updateExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => {
+      for {
+        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        json <- r.json
+      } yield {
+        val grades:List[MeTLGradeValue] = json match {
+          case ja:JArray => json.children.map(jo => jsonSerializer.toMeTLData(jo)).filter(_.isInstanceOf[MeTLGradeValue]).map(_.asInstanceOf[MeTLGradeValue]).toList
+          case jo:JObject => jsonSerializer.toMeTLData(jo) match {
+            case gv:MeTLGradeValue => List(gv)
+            case _ => Nil
+          }
+          case _ => Nil
+        }
+        gbp.updateGradeValuesForGrade(orgUnit,gradeId,grades) match {
+          case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
+          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+        }
+      }
+    }
     case r@Req(List("listGroups",username),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups",StatelessHtml.listGroups(username,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
     case Req(List("listRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listRooms)
     case Req(List("listUsersInRooms"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms",StatelessHtml.listUsersInRooms)

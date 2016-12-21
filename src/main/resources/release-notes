@@ -1,3 +1,26 @@
+1.0.1
+Feature: METL-153: Slider under Settings to control Thumbnail column width.
+Feature: METL-208: Author can add group slide.
+Feature: METL-209: Show liveness meters on the main board page.
+Feature: METL-277: More sophisticated group builder with manual controls.
+Feature: METL-243: Video conferencing via TokBox.
+Feature: METL-254: Create grade in MeTL.
+Feature: METL-255: Synchronize grades with D2L.
+Feature: METL-304: Groups create a grade for themselves.
+Improvement: METL-252: Plugin framework.
+Improvement: METL-271: Enhance D2L API.
+Improvement: METL-292: Explicit groupProvider fetch mechanism.
+Improvement: METL-297: Schemify indices automatically.
+
+0.14.4
+Bugfix: METL-299: Mipmapped ink renders in a visually incorrect place.
+
+0.14.2
+Improvement: METL-298: Fix Chrome's pointerEvent issues.
+
+0.14.1
+Improvement: METL-287: Move DataGrids and WordClouds to the workQueue.
+
 0.13.4
 Bugfix: METL-291: Using button for conversation search does not update the search query.
 
@@ -15,6 +38,13 @@ Bugfix: METL-214: Rename Poll "Display on canvas" to "Display on current page".
 0.12.7
 Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
 Bugfix: METL-266: Rooms not being garbage collected.
+0.13
+Pre-release-feature: METL-243: Video conferencing.
+Pre-release-feature: METL-208: Group-activity slides.
+Pre-release-feature: METL-209: Liveness meters.
+Pre-release-feature: UNKNOWN: Thumbnail render immediacy and responsiveness.
+Pre-release-improvement: METL-116: Thumbnail rendering time.
+Pre-release-improvement: METL-116: History memory consumption.
 
 0.12.6
 Feature: METL-251: Diagnostic endpoint to monitor server performance.
@@ -28,7 +58,10 @@ Bugfix: METL-245: MeTL actor fails during construction.
 Bugfix: METL-247: Attendances are not using their index.
 Bugfix: METL-248: Superuser powers don't let a user search for and/or enter any conversation.
 
-0.12.1
+0.12.2
+Bugfix: METL-230: Paste image from clipboard fails in Firefox.
+
+0.12
 Feature: METL-95: Added yellow text capability.
 
 0.11

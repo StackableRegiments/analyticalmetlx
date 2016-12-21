@@ -136,6 +136,116 @@
             </span>
           </div>
         </section>
+        <section id="groupsPopup" class="backstage box-model-block">
+          <h2 class="nmt">Group builder</h2>
+          <div class="flex-container-responsive ml">
+            <div>
+              <h3>Fill groups until</h3>
+              <div id="groupComposition"></div>
+              <div id="importContainer">
+                <h3>Starting with groups from
+                  <select id="ouSelector"></select>
+                </h3>
+                <div class="importGroups"></div>
+              </div>
+            </div>
+            <div id="allocationContainer">
+              <button class="btn-icon fa fa-users" id="doAllocation">Fill</button>
+            </div>
+            <div style="flex-grow:1;margin-left:1em;">
+              <div class="groups"></div>
+            </div>
+          </div>
+        </section>
+        <section id="gradesPopup" class="backstage box-model-block">
+          <h2 class="align-left mrh nmt">Grades</h2>
+          <div id="createGradeButtonContainer" class="align-left">
+            <button id="createGradeButton" class="gradeCreationButton button-transparent-border mth">
+              <span>Create grade</span>
+            </button>
+          </div>
+          <div id="gradesDatagrid">
+            <span class="gradeAssessContainer">
+              <div class="gradeSyncActions">
+                <button class="getRemoteData button-transparent-border mth"><span>Refresh remote data</span></button>
+                <button class="sendGradesToRemote button-transparent-border mth"><span>Send grades</span></button>
+              </div>
+              <div class="gradebookDatagrid">
+                <span class="gradeUserContainer">
+                  <input class="numericScore" type="number"></input>
+                  <input class="textScore" type="text"></input>
+                  <div class="permission-states">
+                    <input class="booleanScore" type="checkbox"></input>
+                    <label class="booleanScoreLabel">Pass?</label>
+                  </div>
+                </span>
+              </div>
+            </span>
+            <span class="gradeEditContainer">
+              <fieldSet>
+                <div>
+                  <label class="gradeNameLabel">Name<label>
+                      <input type="text" name="gradeName" class="gradeNameInputBox"></input>
+                </div>
+                <div>
+                  <label class="gradeDescriptionLabel">Description<label>
+                      <input type="text" name="gradeDescription" class="gradeDescriptionInputBox"></input>
+                </div>
+                <div>
+                  <label class="gradeTypeLabel">Type<label>
+                      <select name="gradeType" class="gradeTypeSelect">
+                        <option value="numeric">Numeric</option>
+                        <option value="boolean">Boolean</option>
+                        <option value="text">Text</option>
+                      </select>
+                </div>
+                <div class="numericOptions">
+                  <label class="numericMinLabel">Minimum</label>
+                  <input type="number" class="numericMinTextbox"></input>
+                  <label class="numericMaxLabel">Maximum</label>
+                  <input type="number" class="numericMaxTextbox"></input>
+                </div>
+                <div class="permission-states">
+                  <input type="checkbox" class="gradeVisibleCheckbox"></input>
+                  <label class="gradeVisibleLabel">Visible to students</label>
+                </div>
+                <div class="associateController">
+                  <span class="refreshAssociation">
+                    <span class="associationSystem"></span> :
+                    <span class="associationOrgUnit"></span> :
+                    <span class="associationGradeId"></span>
+                    <span class="association"></span>
+                    <button class="requestRefreshAssociation button-transparent-border mth"><span>Refresh from remote</span></button>
+                  </span>
+                  <span class="createAssociation">
+                    <span class="requestAssocPhase1 associationPhase">
+                      <button class="requestAssociation button-transparent-border mth"><span>Create association</span></button>
+                    </span>
+                    <span class="requestAssocPhase2 associationPhase">
+                      <select id="chooseGradebookForGradeSelectBox" class="chooseGradebook"></select>
+                      <label for="chooseGradebookForGradeSelectBox">Gradebooks</label>
+                      <button class="commitGradebook button-transparent-border mth"><span>Select Gradebook</span></button>
+                    </span>
+                    <span class="requestAssocPhase3 associationPhase">
+                      <select id="chooseOrgUnitForGradeSelectBox" class="chooseOrgUnit"></select>
+                      <label for="chooseOrgUnitForGradeSelectBox">Courses</label>
+                      <button class="commitOrgUnit button-transparent-border mth"><span>Select Course</span></button>
+                    </span>
+                    <span class="requestAssocPhase4 associationPhase">
+                      <button class="createGrade button-transparent-border mth"><span>Create grade</span></button>
+                    </span>
+                  </span>
+                </div>
+                <button class="cancelGradeEdit button-transparent-border mth"><span>Cancel</span></button>
+                <button class="submitGradeEdit button-transparent-border mth"><span>Submit</span></button>
+              </fieldSet>
+            </span>
+            <span class="gradeActionsContainer">
+              <button class="editGradeButton toolbar fa fa-edit nm btn-icon" type="button"><span class="hidden">Edit</span></button>
+              <button class="assessGradeButton toolbar fa fa-bar-chart nm btn-icon" type="button"><span class="hidden">Assess</span></button>
+            </span>
+          </div>
+        </section>
         <section id="participantsPopup" class="backstage box-model-block">
           <div class="flex-container-responsive">
             <h2 class="nmt">Participants</h2>

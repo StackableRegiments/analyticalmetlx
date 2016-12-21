@@ -189,12 +189,14 @@ abstract class GroupsProvider(val storeId:String) extends Logger {
   def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = groupSet.groups
   def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
   
+  def getOrgUnit(name:String):Option[OrgUnit]
   def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
 }
 
 class ADFSGroupsExtractor(override val storeId:String) extends GroupsProvider(storeId) {
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = userData.eligibleGroups.toList
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
 class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) extends GroupsProvider(storeId) {
@@ -206,6 +208,7 @@ class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) e
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gp.getGroupsFor(orgUnit,groupSet)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group)
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData)
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
 class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean,membersFilter:Member=>Boolean,personalDetailsFilter:Detail=>Boolean) extends PassThroughGroupsProvider(storeId,gp) {
@@ -217,6 +220,7 @@ class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,grou
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gp.getGroupsFor(orgUnit,groupSet)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group).filter(membersFilter)
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData).filter(personalDetailsFilter)
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
 class StoreBackedGroupsProvider(override val storeId:String,gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider(storeId) {
@@ -229,6 +233,8 @@ class StoreBackedGroupsProvider(override val storeId:String,gs:GroupStoreProvide
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gs.getMembersFor(orgUnit,groupSet)
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gs.getGroupsFor(orgUnit,groupSet)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gs.getMembersFor(orgUnit,groupSet,group)
+
+  override def getOrgUnit(name:String):Option[OrgUnit] = gs.getOrgUnit(name)
   
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gs.getPersonalDetails.get(resolveUser(userData)).getOrElse(Nil)
 }
@@ -568,6 +574,7 @@ class XmlGroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializ
 class SelfGroupsProvider(override val storeId:String) extends GroupsProvider(storeId) {
   override val canQuery:Boolean = false
   override def getGroupsFor(userData:LiftAuthStateData) = List(OrgUnit("special",userData.username))
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
 
@@ -606,6 +613,7 @@ class GlobalOverridesGroupsProvider(override val storeId:String,path:String,refr
   info("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override protected def startingValue = Nil
   override def parseStore(username:String,store:List[Tuple2[String,String]]) = store.map(sv => OrgUnit(sv._1,sv._2,List(Member(username,Nil,Some(ForeignRelationship(storeId,username))))))
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
   override def actuallyFetchGroups:List[Tuple2[String,String]] = {
     var rawData = List.empty[Tuple2[String,String]]
     Source.fromFile(path).getLines.foreach(line => {
@@ -623,6 +631,7 @@ class GlobalOverridesGroupsProvider(override val storeId:String,path:String,refr
 class StLeoFlatFileGroupsProvider(override val storeId:String,path:String,refreshPeriod:TimeSpan, facultyWhoWantSubgroups:List[String] = List.empty[String]) extends PerUserFlatFileGroupsProvider(storeId,path,refreshPeriod) with Logger {
   info("created new stLeoFlatFileGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override val canQuery:Boolean = false
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
   override def actuallyFetchGroups:Map[String,List[OrgUnit]] = {
     var rawData = Map.empty[String,List[OrgUnit]]
     Source.fromFile(path).getLines.foreach(line => {

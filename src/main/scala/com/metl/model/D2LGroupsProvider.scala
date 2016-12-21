@@ -107,11 +107,10 @@ case class D2LIncomingGradeValue(
   Comments:D2LDescriptionInput,
   PrivateComments:D2LDescriptionInput,
   GradeObjectType: Int, // 1 = Numeric,2 = PassFail,3 = SelectBox,4 = Text
-  PointsNumerator:Option[Double]/*, // include this if GradeObjectType = 1
+  PointsNumerator:Option[Double], // include this if GradeObjectType = 1
   Pass:Option[Boolean], // include this if GradeObjectType = 2
   Value:Option[String], // include this if GradeObjectType = 3
   Text:Option[String] // include this if GradeObjectType = 4
-  */
 )
 case class D2LGradeValue(
   UserId: Option[String],  // Added to LE unstable API contract as of LMS v10.6.3
@@ -350,7 +349,6 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("web exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
-        println("webException: %s => %s => %s".format(e.code,e.path,e.message))
         None
       }
       case e:Exception => {
@@ -363,7 +361,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
 
   protected def fetchFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
-      Some(parse(client.get(url.toString)).extract[T])
+      val response = client.get(url.toString)
+      val parsedResponse = parse(response)
+      Some(parsedResponse.extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
@@ -377,7 +377,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
   protected def fetchListFromD2L[T](url:java.net.URI,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):List[T] = {
     try {
-      parse(client.get(url.toString)).extract[List[T]]
+      val response = client.get(url.toString)
+      val parsedResponse = parse(response)
+      parsedResponse.extract[List[T]]
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
@@ -518,8 +520,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   def updateGradeObject(userContext:ID2LUserContext,orgUnitId:String,grade:D2LGradeObject):Option[D2LGradeObject] = {
     putToD2L[D2LGradeObject](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s".format(leApiVersion,orgUnitId,grade.Id),"PUT"),Extraction.decompose(grade),true)
   }
-  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObject:D2LGradeObject):List[D2LUserGradeValue] = {
-    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObject.Id.head),"GET")
+  def getGradeValues(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String):List[D2LUserGradeValue] = {
+    val url = userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/".format(leApiVersion,orgUnitId,gradeObjectId),"GET")
     var items:List[D2LUserGradeValue] = Nil
     try {
       val firstGet = client.get(url.toString)
@@ -649,6 +651,16 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
         OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
       })
     })
+  }
+  override def getOrgUnit(orgUnitName:String):Option[OrgUnit] = {
+    val uc = interface.getUserContext
+    interface.getUserByUsername(uc,Globals.currentUser.is).flatMap(user => {
+      val enrollments = interface.getEnrollments(uc,user.UserId.toString)  
+      enrollments.map(en => {
+        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
+      }).find(_.name == orgUnitName)
+    })
+
   }
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = {
     orgUnit.foreignRelationship.filter(_.system == storeId).toList.flatMap(fr => {
@@ -782,7 +794,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
 }
 
 class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
-
+  override val canQuery = true
   def parFlatMap[A,B](coll:List[A],func:A => List[B],threadCount:Int = 1,forkJoinPoolName:String = "default"):List[B] = {
     if (threadCount > 1){
       val pc = coll.par

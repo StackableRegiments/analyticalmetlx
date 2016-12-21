@@ -217,6 +217,10 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     })
   }
+  def setupExternalGradebooksFromFile(filePath:String) = {
+    val nodes = XML.load(filePath) \\ "externalGradebooks"
+    Globals.gradebookProviders = ExternalGradebooks.configureFromXml(nodes)
+  }
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
@@ -334,6 +338,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     //setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
 
+    setupExternalGradebooksFromFile(Globals.configurationFileLocation)
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
@@ -366,6 +371,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = Conversation.empty
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
   override def getImage(jid:String,identity:String) = MeTLImage.empty

@@ -8,18 +8,19 @@ import java.util.Date
 import net.liftweb.mapper._
 import net.liftweb.common._
 
+import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, StandardDBVendor}
 import _root_.java.sql.{Connection, DriverManager}
 
 class H2Interface(config:ServerConfiguration,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends SqlInterface(config,new StandardDBVendor("org.h2.Driver", filename.map(f => "jdbc:h2:%s;AUTO_SERVER=TRUE".format(f)).getOrElse("jdbc:h2:mem:%s".format(config.name)),Empty,Empty){
   //adding extra db connections - it defaults to 4, with 20 being the maximum
-  override def allowTemporaryPoolExpansion = true
-  override def maxPoolSize = 1000
-  override def doNotExpandBeyond = 2000
-},onConversationDetailsUpdated) {
+  override def allowTemporaryPoolExpansion = false
+  override def maxPoolSize = 500
+  override def doNotExpandBeyond = 500
+},onConversationDetailsUpdated,500) {
 }
 
-class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit) extends PersistenceInterface(config) with Logger{
+class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit,startingPool:Int = 0,maxPoolSize:Int = 0) extends PersistenceInterface(config) with Logger{
   val configName = config.name
   val serializer = new H2Serializer(config)
 
@@ -58,11 +59,23 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2UnhandledStanza,
         H2UnhandledContent,
         DatabaseVersion,
-        ThemeExtraction,
         H2Theme,
-        H2UndeletedCanvasContent
+        H2UndeletedCanvasContent,
+        H2Grade,
+        H2NumericGradeValue,
+        H2BooleanGradeValue,
+        H2TextGradeValue
       ):_*
     )
+    // this starts our pool in advance
+    Range(0,Math.min(Math.max(startingPool,0),maxPoolSize)).toList.flatMap(ci => {
+      val c = vendor.newConnection(DefaultConnectionIdentifier)
+      println("starting connection: %s => %s".format(ci,c))
+      c
+    }).foreach(c => {
+      vendor.releaseConnection(c)
+    })
+
     //database migration script actions go here.  No try/catch, because I want to break if I can't bring it up to an appropriate version.
     DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).getOrElse({
       DatabaseVersion.create.key("version").scope("db").intValue(-1).save
@@ -201,6 +214,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case s:MeTLMoveDelta => Some(serializer.fromMeTLMoveDelta(s).room(jid))
       case s:MeTLFile => Some(serializer.fromMeTLFile(s).room(jid))
       case s:MeTLVideoStream => Some(serializer.fromMeTLVideoStream(s).room(jid))
+      case s:MeTLGrade => Some(serializer.fromGrade(s).room(jid))
+      case s:MeTLNumericGradeValue => Some(serializer.fromNumericGradeValue(s).room(jid))
+      case s:MeTLBooleanGradeValue => Some(serializer.fromBooleanGradeValue(s).room(jid))
+      case s:MeTLTextGradeValue => Some(serializer.fromTextGradeValue(s).room(jid))
       case s:MeTLUndeletedCanvasContent => Some(serializer.fromMeTLUndeletedCanvasContent(s).room(jid))
       case s:MeTLUnhandledStanza => Some(serializer.fromMeTLUnhandledStanza(s).room(jid))
       case s:MeTLUnhandledCanvasContent => Some(serializer.fromMeTLUnhandledCanvasContent(s).room(jid))
@@ -249,6 +266,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     val quizResponses = Stopwatch.time("h2.fetch.quizzes",H2QuizResponse.findAll(By(H2QuizResponse.room,jid)))
     val videoStreams = Stopwatch.time("h2.fetch.vidoeStreams",H2VideoStream.findAll(By(H2VideoStream.room,jid)))
     val attendances = Stopwatch.time("h2.fetch.attendances",H2Attendance.findAll(By(H2Attendance.location,jid)))
+    val grades = Stopwatch.time("h2.fetch.grades",H2Grade.findAll(By(H2Grade.room,jid)))
+    val numericGradeValues = Stopwatch.time("h2.fetch.numericGradeValues",H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)))
+    val booleanGradeValues = Stopwatch.time("h2.fetch.booleanGradeValues",H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)))
+    val textGradeValues = Stopwatch.time("h2.fetch.textGradeValues",H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)))
     val comms = Stopwatch.time("h2.fetch.commands",H2Command.findAll(By(H2Command.room,jid)))
     val ccs = Stopwatch.time("h2.fetch.ccs",H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)))
     val unhandled = Stopwatch.time("h2.fetch.stanzas",H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)))
@@ -274,6 +295,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     comms.foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s)))
     ccs.foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s)))
     unhandled.foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+
+    grades.foreach(s => newHistory.addStanza(serializer.toGrade(s)))
+    numericGradeValues.foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s)))
+    booleanGradeValues.foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s)))
+    textGradeValues.foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
 
     newHistory
   })
@@ -340,12 +366,15 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
-      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s))),
+      () => H2Grade.findAll(By(H2Grade.room,jid)).foreach(s => newHistory.addStanza(serializer.toGrade(s))),
+      () => H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s))),
+      () => H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s))),
+      () => H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
     ).par
     parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
     parO.map(f => f()).toList
     moveDeltas.foreach(s => newHistory.addStanza(s))
-    println("gotHistory: %s".format(newHistory.getAll.length))                        
     newHistory
   })
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
@@ -383,7 +412,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
-      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))
+      () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s))),
+      () => H2Grade.findAll(By(H2Grade.room,jid)).foreach(s => newHistory.addStanza(serializer.toGrade(s))),
+      () => H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s))),
+      () => H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s))),
+      () => H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
     ).par.map(f => f()).toList
   //.toList.foreach(group => group.foreach(gf => gf()))
                               //val unhandledContent = H2UnhandledContent.findAll(By(H2UnhandledContent.room,jid)).map(s => serializer.toMeTLUnhandledData(s))
@@ -401,7 +434,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       conversationCache.update(c.jid,c)
       updateMaxJid
       serializer.fromConversation(c).save
-      conversationMessageBus.sendStanzaToRoom(MeTLCommand(config,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+      onConversationDetailsUpdated(c)
       true
     } catch {
       case e:Throwable => {
@@ -476,6 +509,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation = findAndModifyConversation(jid,c => c.replacePermissions(newPermissions))
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = findAndModifyConversation(jid,c => c.replaceSubject(newSubject))
   def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = findAndModifyConversation(jid,c => c.addSlideAtIndex(index))
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = findAndModifyConversation(jid,c => c.addGroupSlideAtIndex(index,grouping))
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = findAndModifyConversation(jid,c => c.replaceSlides(newSlides))
   def updateConversation(jid:String,conversation:Conversation):Conversation = {
     if (jid == conversation.jid.toString){
@@ -489,8 +523,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   //resources table
   def getResource(identity:String):Array[Byte] = Stopwatch.time("H2Interface.getResource",{
     H2Resource.find(By(H2Resource.partialIdentity,identity.take(H2Constants.identity)),By(H2Resource.identity,identity)).map(r => {
-      val b = r.bytes.get
-      b
+      r.bytes.get
     }).openOr({
       Array.empty[Byte]
     })
@@ -507,7 +540,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       }
       case _ => {
         H2Resource.create.partialIdentity(possibleNewIdentity.take(H2Constants.identity)).identity(possibleNewIdentity).bytes(data).room(jid).save
-        debug("postResource: saved %s bytes in %s at %s".format(data.length,jid,possibleNewIdentity))
+        trace("postResource: saved %s bytes in %s at %s".format(data.length,jid,possibleNewIdentity))
         possibleNewIdentity
       }
     }
@@ -517,8 +550,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       By(H2ContextualizedResource.context,jid),
       By(H2ContextualizedResource.identity,identity)
     ).map(r => {
-      val b = r.bytes.get
-      b
+      r.bytes.get
     }).openOr({
       Array.empty[Byte]
     })

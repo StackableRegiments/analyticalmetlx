@@ -59,15 +59,12 @@ var WorkQueue = (function(){
                 blit();
                 blitNeeded = false;
             }
-            if ("Conversations" in window){
-                Conversations.updateThumbnail(Conversations.getCurrentSlideJid());
-            }
         }
     };
     var pauseFunction = function(){
         stopResume();
         canWorkFunction(false);
-				Progress.call("afterWorkQueuePause");
+        Progress.call("afterWorkQueuePause");
     };
     var canWorkFunction = function(state){
         isAbleToWork = state;
@@ -86,7 +83,7 @@ var WorkQueue = (function(){
     var gracefullyResumeFunction = function(){
         stopResume();
         gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
-				Progress.call("beforeWorkQueueResume");
+        Progress.call("beforeWorkQueueResume");
     };
     return {
         pause:pauseFunction,
@@ -425,7 +422,7 @@ var subcategoryMapping = {
 var categoryMapping = _.fromPairs(_.flatMap({
     metaToolbar:"integrations print recycleBin",
     optsToolbar:"settings healthCheck",
-    roomToolbar:"blacklist submissions attachments participants quizzes contentFilter"
+    roomToolbar:"grades blacklist submissions attachments participants groups quizzes contentFilter"
 },function(v,k){
     return _.map(v.split(" "),function(backstage){
         return [backstage,k];
@@ -549,17 +546,15 @@ $(function(){
             Modes.text.activate();
         }
     });
-    /*
-     $("#insertMode").click(function(){
-     if(Modes.currentMode != Modes.insert){
-     Modes.insert.activate();
-     }
-
-     });
-     */
     $("#panMode").click(function(){
         if(Modes.currentMode != Modes.pan){
             Modes.pan.activate();
+        }
+    });
+    $("#insertMode").click(function(){
+        if(Modes.currentMode != Modes.image){
+            Modes.currentMode.deactivate();
+            Modes.image.activate();
         }
     });
     $("#imageMode").click(function(){
@@ -662,30 +657,6 @@ $(function(){
         blit();
     });
     setLoadProgress(3);
-    /*
-     $.each({
-     red:"#FF0000",
-     green:"#00FF00",
-     blue:"#0000FF"
-     },function(id,code){
-     $("#"+id).click(bounceAnd(function(){
-     Modes.draw.drawingAttributes.color = code;
-     }));
-     });
-     $.each({
-     thin:0.3,
-     medium:1,
-     fat:3,
-     xfat:30
-     },function(id,width){
-     $("#"+id).attr("title",width).click(bounceAnd(function(){
-     Modes.draw.drawingAttributes.width = width;
-     }));
-     });
-     $("#toggleHighlighter").click(function(){
-     Modes.draw.drawingAttributes.isHighlighter = !Modes.draw.drawingAttributes.isHighlighter;
-     });
-     */
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
     });
@@ -694,7 +665,6 @@ $(function(){
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
-            //Submissions.requestServerSideSubmission();
             Submissions.sendSubmission();
         }
     });
@@ -794,6 +764,15 @@ $(function(){
             updatePrintState();
         });
     });
+    $('#menuGroups').click(function(){
+        showBackstage("groups");
+        updateActiveMenu(this);
+    });
+    $('#menuGrades').click(function(){
+        showBackstage("grades");
+        updateActiveMenu(this);
+        Grades.reRender();
+    });
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");
         updateActiveMenu(this);
@@ -827,201 +806,188 @@ $(function(){
     $("#conversations").click(function(){
         window.location.href = "/conversationSearch";
     });
-		//$(document).attr("contenteditable",true);
-		//$("#board").attr("contenteditable",true);
-		var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
-		$("#pasteDialogTemplate").remove();
-		var func = function(ev){
-			var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
-			if ("types" in df){
-				var x = ev.offsetX || 10;
-				var y = ev.offsetY || 10;
-				var availableTypes = df.types;
-				var items = df.items;
-				var files = df.files;
-				var dataSets = _.map(availableTypes,function(type){
-					return {
-						key:type,
-						value:df.getData(type)
-					};
-				});
-				var conditionallyActOn = function(coll,itemPred,action){
-					var elem = _.find(coll,itemPred);
-					if (elem != undefined && elem != null){
-						action(elem,df.getData(elem));
-					};
-				};
-				if (_.size(availableTypes) > 1){
-					var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
-					var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
-					var optionContainer = rootElem.find(".dialogOptions");
-					var optionTemplate = optionContainer.find(".dialogOption").clone();
-					optionContainer.empty();
-					var modal = $.jAlert({
-						title:"Data to paste",
-						content:rootElem[0].outerHTML,
-						closeOnClick:true,
-						closeOnEsc:true,
-						blurBackground:true	
-					});	
-					var acceptedTypes = [
-						{
-							key:function(t){return t == "text/html";},
-							name:"rich text and images",
-							faClass:"fa-file-code-o",
-							onClick:function(type){	
-								var html = _.find(dataSets,function(ds){
-									return ds.key == type;
-								}).value;
-								var htmlElem = $(html);
-								var yOffset = 0;
-								html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
-								_.forEach(htmlElem.find("img"),function(imgNode){
-									try {
-										Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
-										yOffset += Math.max(imgNode.height,50);
-									} catch (e){
-										errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
-									}
-								});
-								if (htmlElem.text().trim().length > 1){
-									Modes.text.handleDrop(html,x,y + yOffset);
-								}
-							}
-						},
-						{
-							key:function(t){return t == "text/plain";},
-							name:"plain text",
-							faClass:"fa-file-text-o",
-							onClick:function(type){
-								var text = _.find(dataSets,function(ds){
-									return ds.key == type;
-								}).value;
-								Modes.text.handleDrop(text,x,y);
-							}
-						},
-						{
-							key:function(t){return t == "Files";},
-							name:"files or images",
-							faClass:"fa-file-o",
-							onClick:function(type){
-								Modes.image.handleDrop(df,x,y);
-							}
-						},
-						{
-							key:function(t){return t.indexOf("image/") == 0;},
-							name:"images",
-							faClass:"fa-file-image-o",
-							onClick:function(type){
-									Modes.image.handleDrop(df,x,y);
-							}
-						}
-					];	
-
-
-					$("#"+rootId).find(".dialogOptions").html(_.map(_.filter(availableTypes,function(type){
-						return _.some(acceptedTypes,function(acceptableType){
-							return acceptableType.key(type);
-						});
-					}),function(type){
-						var knownType = _.find(acceptedTypes,function(acceptableType){
-							return acceptableType.key(type);
-						});
-						var outerElem = optionTemplate.clone();
-						var button = outerElem.find("button");
-						button.addClass(knownType.faClass);
-						button.on("click",function(){
-							knownType.onClick(type);
-							modal.closeAlert();
-						});
-						button.find(".icon-txt").text(knownType.name);
-						return outerElem;
-					}));
-				} else {
-					var handled = false;
-					conditionallyActOn(availableTypes,function(label){return label == "Files";},function(type,file){
-						if (!handled){
-							Modes.image.handleDrop(df,x,y);
-							handled = true;
-						}
-					});
-					conditionallyActOn(availableTypes,function(label){return label.indexOf("image") == 0;},function(type,image){
-						if (!handled){
-							Modes.image.handleDrop(df,x,y);
-							handled = true;
-						}
-					});
-					/*
-					conditionallyActOn(availableTypes,"text/uri-list",function(type,html){
-						if (!handled){
-							console.log("pasted html",type,html);
-							handled = true;
-						}
-					});
-					*/
-					conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
-						if (!handled){
-							var htmlElem = $(html);
-							var yOffset = 0;
-							html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
-							_.forEach(htmlElem.find("img"),function(imgNode){
-								try {
-									Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);	
-									yOffset += Math.max(imgNode.height,50);
-								} catch (e){
-									errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
-								}
-							});
-							if (htmlElem.text().trim().length > 1){
-								Modes.text.handleDrop(html,x,y + yOffset);
-							}
-							handled = true;
-						}
-					});
-
-					conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
-						if (!handled){
-							Modes.text.handleDrop(html,x,y);
-							handled = true;
-						}
-					});
-					if (!handled){
-						console.log("unknown type",df);
-					}
-				}
-				ev.preventDefault();
-				return false;
-			} else {
-				return true;
-			}
-		};
-		window.addEventListener("paste",function(jEv){
-			if ("originalEvent" in jEv){
-				return func(jEv.originalEvent);
-			} else {
-				return func(jEv);
-			}
-		});
-		$("#board").on("drop",function(jEv){
-			if ("originalEvent" in jEv){
-				return func(jEv.originalEvent);
-			} else {
-				return false;
-			}
-		});
-		var deadFunc = function(deadEvent){
-			deadEvent.preventDefault();
-			return false;
-		};
-		var fakeFunc = function(deadEvent){
-			return true;
-		};
-		$(document).on("drop",deadFunc);
-		window.onbeforepaste = deadFunc;
-		_.forEach(["dragover","dragleave","dragenter"],function(label){
-			window["on"+label] = deadFunc;
-			$(window).on(label,deadFunc);
-			$("#board")[0]["on"+label] = deadFunc;
-			$("#board").on(label,deadFunc);
-		});
+    var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
+    $("#pasteDialogTemplate").remove();
+    var func = function(ev){
+        var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
+        if ("types" in df){
+            var x = ev.offsetX || 10;
+            var y = ev.offsetY || 10;
+            var availableTypes = df.types;
+            var items = df.items;
+            var files = df.files;
+            var dataSets = _.map(availableTypes,function(type){
+                return {
+                    key:type,
+                    value:df.getData(type)
+                };
+            });
+            var conditionallyActOn = function(coll,itemPred,action){
+                var elem = _.find(coll,itemPred);
+                if (elem != undefined && elem != null){
+                    action(elem,df.getData(elem));
+                };
+            };
+            if (_.size(availableTypes) > 1){
+                var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
+                var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
+                var optionContainer = rootElem.find(".dialogOptions");
+                var optionTemplate = optionContainer.find(".dialogOption").clone();
+                optionContainer.empty();
+                var modal = $.jAlert({
+                    title:"Data to paste",
+                    content:rootElem[0].outerHTML,
+                    closeOnClick:true,
+                    closeOnEsc:true,
+                    blurBackground:true
+                });
+                var acceptedTypes = [
+                    {
+                        key:function(t){return t == "text/html";},
+                        name:"rich text and images",
+                        faClass:"fa-file-code-o",
+                        onClick:function(type){
+                            var html = _.find(dataSets,function(ds){
+                                return ds.key == type;
+                            }).value;
+                            var htmlElem = $(html);
+                            var yOffset = 0;
+                            html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
+                            _.forEach(htmlElem.find("img"),function(imgNode){
+                                try {
+                                    Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
+                                    yOffset += Math.max(imgNode.height,50);
+                                } catch (e){
+                                    errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+                                }
+                            });
+                            if (htmlElem.text().trim().length > 1){
+                                Modes.text.handleDrop(html,x,y + yOffset);
+                            }
+                        }
+                    },
+                    {
+                        key:function(t){return t == "text/plain";},
+                        name:"plain text",
+                        faClass:"fa-file-text-o",
+                        onClick:function(type){
+                            var text = _.find(dataSets,function(ds){
+                                return ds.key == type;
+                            }).value;
+                            Modes.text.handleDrop(text,x,y);
+                        }
+                    },
+                    {
+                        key:function(t){return t == "Files";},
+                        name:"files or images",
+                        faClass:"fa-file-o",
+                        onClick:function(type){
+                            Modes.image.handleDrop(df,x,y);
+                        }
+                    },
+                    {
+                        key:function(t){return t.indexOf("image/") == 0;},
+                        name:"images",
+                        faClass:"fa-file-image-o",
+                        onClick:function(type){
+                            Modes.image.handleDrop(df,x,y);
+                        }
+                    }
+                ];
+                $("#"+rootId).find(".dialogOptions").html(_.map(_.filter(availableTypes,function(type){
+                    return _.some(acceptedTypes,function(acceptableType){
+                        return acceptableType.key(type);
+                    });
+                }),function(type){
+                    var knownType = _.find(acceptedTypes,function(acceptableType){
+                        return acceptableType.key(type);
+                    });
+                    var outerElem = optionTemplate.clone();
+                    var button = outerElem.find("button");
+                    button.addClass(knownType.faClass);
+                    button.on("click",function(){
+                        knownType.onClick(type);
+                        modal.closeAlert();
+                    });
+                    button.find(".icon-txt").text(knownType.name);
+                    return outerElem;
+                }));
+            } else {
+                var handled = false;
+                conditionallyActOn(availableTypes,function(label){return label == "Files";},function(type,file){
+                    if (!handled){
+                        Modes.image.handleDrop(df,x,y);
+                        handled = true;
+                    }
+                });
+                conditionallyActOn(availableTypes,function(label){return label.indexOf("image") == 0;},function(type,image){
+                    if (!handled){
+                        Modes.image.handleDrop(df,x,y);
+                        handled = true;
+                    }
+                });
+                conditionallyActOn(availableTypes,function(label){return label == "text/html";},function(type,html){
+                    if (!handled){
+                        var htmlElem = $(html);
+                        var yOffset = 0;
+                        html = _.join(_.map(htmlElem,function(he){return he.outerHTML;}),"");
+                        _.forEach(htmlElem.find("img"),function(imgNode){
+                            try {
+                                Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
+                                yOffset += Math.max(imgNode.height,50);
+                            } catch (e){
+                                errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+                            }
+                        });
+                        if (htmlElem.text().trim().length > 1){
+                            Modes.text.handleDrop(html,x,y + yOffset);
+                        }
+                        handled = true;
+                    }
+                });
+                conditionallyActOn(availableTypes,function(label){return label.indexOf("text") == 0;},function(type,html){
+                    if (!handled){
+                        Modes.text.handleDrop(html,x,y);
+                        handled = true;
+                    }
+                });
+                if (!handled){
+                    console.log("unknown type",df);
+                }
+            }
+            ev.preventDefault();
+            return false;
+        } else {
+            return true;
+        }
+    };
+    window.addEventListener("paste",function(jEv){
+        if ("originalEvent" in jEv){
+            return func(jEv.originalEvent);
+        } else {
+            return func(jEv);
+        }
+    });
+    $("#board").on("drop",function(jEv){
+        if ("originalEvent" in jEv){
+            return func(jEv.originalEvent);
+        } else {
+            return false;
+        }
+    });
+    var deadFunc = function(deadEvent){
+        deadEvent.preventDefault();
+        return false;
+    };
+    var fakeFunc = function(deadEvent){
+        return true;
+    };
+    $(document).on("drop",deadFunc);
+    window.onbeforepaste = deadFunc;
+    _.forEach(["dragover","dragleave","dragenter"],function(label){
+        window["on"+label] = deadFunc;
+        $(window).on(label,deadFunc);
+        $("#board")[0]["on"+label] = deadFunc;
+        $("#board").on(label,deadFunc);
+    });
 });

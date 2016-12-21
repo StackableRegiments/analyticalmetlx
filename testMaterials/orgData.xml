@@ -6,13 +6,22 @@
     <member>studentD</member>
     <member>studentE</member>
     <member>teacher</member>
-    <groupSet>
+    <groupSet name="groupSet1" type="assignment">
       <group name="group1" type="assignment">
         <member>studentA</member>
       </group>
       <group name="group2" type="assignment">
         <member>studentB</member>
         <member>studentC</member>
+      </group>
+    </groupSet>
+  </orgUnit>
+  <orgUnit name="Org Unit B" type="course">
+    <member>studentA</member>
+    <member>teacher</member>
+    <groupSet name="groupSet2" type="assignment">
+      <group name="group3" type="assignment">
+        <member>studentA</member>
       </group>
     </groupSet>
   </orgUnit>
@@ -44,7 +53,7 @@
     <detail key="firstName" value="Studenti"/>
     <detail key="surname" value="Dardvark"/>
   </personalDetails>
-<personalDetails username="studentE">
+  <personalDetails username="studentE">
     <detail key="D2L_Identifier" value="105"/>
     <detail key="D2L_Profile_Identifier" value="AbcDEFgHI5"/>
     <detail key="displayName" value="Eardvark, Studentu"/>
