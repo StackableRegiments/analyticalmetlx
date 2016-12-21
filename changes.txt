@@ -1,3 +1,7 @@
+1.0.2
+
+New config elements (holding credentials).
+
 0.11.1
 
 METL-229:
