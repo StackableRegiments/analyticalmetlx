@@ -1378,7 +1378,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     trace("priv %s".format(jid))
     val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
-      case g:MeTLGrade if !shouldModifyConversation() && !g.visible => false
+      case g:MeTLGrade => true//if !shouldModifyConversation() && !g.visible => false
       case gv:MeTLGradeValue if shouldModifyConversation() => true
       case gv:MeTLGradeValue if gv.getGradedUser != username => false
       case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == false) => false
@@ -1713,9 +1713,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case qr:MeTLQuizResponse if !shouldModifyConversation() && qr.author != username => {
         //not sending the quizResponse to the page, because you're not the author and it's not yours
       }
+      /*
       case g:MeTLGrade if !shouldModifyConversation() && !g.visible => {
         //not sending a grade to the page because you're not the author, and this one's not visible
       }
+      */
       case gv:MeTLGradeValue => {
         currentConversation.foreach(cc => {
           if (shouldModifyConversation(cc)){
@@ -1725,8 +1727,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               val roomTarget = cc.jid.toString
               rooms.get((serverConfig.name,roomTarget)).map(r => {
                 val convHistory = r().getHistory
-                val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
-                if (allGrades.get(gv.getGradeId).exists(_.visible)){
+                val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+                val thisGrade = allGrades.get(gv.getGradeId)
+                if (thisGrade.exists(_.visible)){
                   partialUpdate(Call(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
                 }
               })

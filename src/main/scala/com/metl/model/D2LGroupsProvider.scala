@@ -349,7 +349,6 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     } catch {
       case e:WebException if expectHttpFailure => {
         trace("web exception when accessing: %s => %s\r\n".format(url.toString,e.getMessage,e.getStackTraceString))
-        println("webException: %s => %s => %s".format(e.code,e.path,e.message))
         None
       }
       case e:Exception => {
@@ -364,7 +363,6 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val response = client.get(url.toString)
       val parsedResponse = parse(response)
-      println("FETCHED FROM D2L: %s => %s".format(url,response))
       Some(parsedResponse.extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -381,7 +379,6 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val response = client.get(url.toString)
       val parsedResponse = parse(response)
-      println("FETCHED LIST FROM D2L: %s => %s".format(url,response))
       parsedResponse.extract[List[T]]
     } catch {
       case e:WebException if expectHttpFailure => {
