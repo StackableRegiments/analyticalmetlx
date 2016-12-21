@@ -61,12 +61,10 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
 
   protected def lookupD2LUserId(uc:ID2LUserContext,username:String):String = {
     val rawUser = interface.getUserByUsername(uc,username)
-    println("lookedUp: %s => %s".format(username,rawUser))
     rawUser.map(_.UserId.toString).getOrElse("")
   }
   protected def lookupUsername(uc:ID2LUserContext,d2lId:String):String = {
     val rawUser = interface.getUser(uc,d2lId)
-    println("lookedUp: %s => %s".format(d2lId,rawUser))
     rawUser.flatMap(_.UserName).getOrElse("")
   }
   protected val illegalChars = Map(
@@ -140,7 +138,6 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     val timestamp = new Date().getTime()
     val author = "D2L"
     val gradeId = gradeObjId
-    println("toGradeValue: %s".format(in))
     val gradedUser = in.UserId.map(d2lId => lookupUsernameFunc((uc,d2lId))).getOrElse("")
     val comments = in.Comments.map(_.map(_.Text).mkString)
     val privateComments = in.PrivateComments.map(_.map(_.Text).mkString)
@@ -166,7 +163,6 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = interface.getUserContext
       val d2lUser = lookupD2LUserId(uc,username)
       val enrollments = interface.getEnrollments(uc,d2lUser)
-      println("found enrollments: %s => %s".format(d2lUser,enrollments))
       enrollments.filter(en => acceptableRoles.contains(en.Role.Name)).map(en => {
         OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some((name,en.OrgUnit.Id.toString)))
       }).toList
@@ -226,7 +222,6 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = tup._1
       val d2lId = tup._2
       val newGrade = fromGrade(uc,grade)
-      println("CREATING GRADE IN CONTEXT %s:\r\n%s\r\n%s".format(ctx,grade,newGrade))
       interface.createGradeObject(uc,ctx,fromGrade(uc,grade)).map(g => toGrade(uc,ctx,g)).head
     })
   }
