@@ -829,19 +829,19 @@ function receiveGroupsProviders(providers){
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
 	console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
-	/*
-	if ("orgUnits" in orgUnits){
-		getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnits.orgUnits[0]);
+	if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+		_.forEach(orgUnits.orgUnits,function(orgUnit){
+			getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
+		});
 	}
-	*/
 }
 function receiveGroupSetsForOrgUnit(groupSets){
 	console.log("receiveGroupSetsForOrgUnit",groupSets);
-	/*
-	if ("groupSets" in groupSets){
-		getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSets.groupSets[0]);
+	if ("groupSets" in groupSets && groupSets.groupSets.length){
+		_.forEach(groupSets.groupSets,function(groupSet){
+			getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+		});
 	}
-	*/
 }
 function receiveGroupsForGroupSet(groups){
 	console.log("receiveGroupsForGropSet",groups);

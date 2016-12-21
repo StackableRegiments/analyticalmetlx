@@ -646,13 +646,13 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
     interface.getUserByUsername(uc,userData.username).toList.flatMap(user => {
       val enrollments = interface.getEnrollments(uc,user.UserId.toString)  
       enrollments.map(en => {
-        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some((storeId,en.OrgUnit.Id.toString)))
+        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
       })
     })
   }
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = {
-    orgUnit.foreignRelationship.filter(_._1 == storeId).toList.flatMap(fr => {
-      val orgUnitId = fr._2
+    orgUnit.foreignRelationship.filter(_.system == storeId).toList.flatMap(fr => {
+      val orgUnitId = fr.key
       withMembersFor(orgUnitId,t => {
         val members = t._3
         members
@@ -667,8 +667,8 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
     val members = classlists.flatMap(cm => {
       cm.Username.map(username => {
         Member(
-          username,
-          List(
+          name = username,
+          details = (List(
             "Identifier" -> cm.Identifier,
             "ProfileIdentifier" -> cm.ProfileIdentifier,
             "DisplayName" -> cm.DisplayName
@@ -677,16 +677,16 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
           cm.OrgDefinedId.toList.map(un => "OrgDefinedId" -> un) :::
           cm.Email.toList.map(un => "Email" -> un) :::
           cm.FirstName.toList.map(un => "FirstName" -> un) :::
-          cm.LastName.toList.map(un => "LastName" -> un),
-          Some((storeId,"%s_%s".format(orgUnitId,cm.Identifier)))
+          cm.LastName.toList.map(un => "LastName" -> un)).map(t => Detail(t._1,t._2)),
+          foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,cm.Identifier)))
         )
       })
     })
     action((uc,fakeOrgUnit,members))    //does the orgUnit need to be a real one at this stage, I wonder?
   }
   override def getGroupSetsFor(orgUnit:OrgUnit):List[GroupSet] = {
-    orgUnit.foreignRelationship.filter(_._1 == storeId).toList.flatMap(fr => {
-      val orgUnitId = fr._2
+    orgUnit.foreignRelationship.filter(_.system == storeId).toList.flatMap(fr => {
+      val orgUnitId = fr.key
       withMembersFor(orgUnitId,t => {
         val uc = t._1
         val d2lOrgUnit = t._2
@@ -698,15 +698,15 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
             name = gs.Name,
             members = members, //I think groupSets always have all the members available in them.  It's groups which have a subset, I think, from D2L.
             groups = Nil,
-            foreignRelationship = Some((storeId,"%s_%s".format(orgUnitId,gs.GroupCategoryId.toString)))
+            foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,gs.GroupCategoryId.toString)))
           )
         })
       })
     })
   }
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = {
-    groupSet.foreignRelationship.filter(_._1 == storeId).toList.flatMap(gsId => {
-      val parts = gsId._2.split("_").toList 
+    groupSet.foreignRelationship.filter(_.system == storeId).toList.flatMap(gsId => {
+      val parts = gsId.key.split("_").toList 
       val orgUnitId = parts.head
       val groupSetCategoryId = parts.drop(1).head
       withMembersFor(orgUnitId,t => {
@@ -717,15 +717,15 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
         val groups = interface.getGroups(uc,d2lOrgUnit,fakeGroupCategory)
         groups.flatMap(g => {
           g.Enrollments.flatMap(en => {
-            members.find(_.foreignRelationship.exists(fr => fr._1 == storeId && fr._2 == "%s_%s".format(orgUnitId,en.toString)))
+            members.find(_.foreignRelationship.exists(fr => fr.system == storeId && fr.key == "%s_%s".format(orgUnitId,en.toString)))
           })
         })
       })
     })
   }
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = {
-    groupSet.foreignRelationship.filter(_._1 == storeId).toList.flatMap(gsId => {
-      val parts = gsId._2.split("_").toList 
+    groupSet.foreignRelationship.filter(_.system == storeId).toList.flatMap(gsId => {
+      val parts = gsId.key.split("_").toList 
       val orgUnitId = parts.head
       val groupSetCategoryId = parts.drop(1).head
       withMembersFor(orgUnitId,t => {
@@ -737,15 +737,15 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
         val groups = interface.getGroups(uc,d2lOrgUnit,fakeGroupCategory)
         groups.map(g => {
           Group("D2L_Group",g.Name,g.Enrollments.flatMap(en => {
-            members.find(_.foreignRelationship.exists(fr => fr._1 == storeId && fr._2 == "%s_%s".format(orgUnitId,en.toString)))
-          }),Some((storeId,"%s_%s_%s".format(orgUnitId,groupSetCategoryId,g.GroupId))))
+            members.find(_.foreignRelationship.exists(fr => fr.system == storeId && fr.key == "%s_%s".format(orgUnitId,en.toString)))
+          }),Some(ForeignRelationship(storeId,"%s_%s_%s".format(orgUnitId,groupSetCategoryId,g.GroupId))))
         })
       })
     })
   }
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = {
-    group.foreignRelationship.filter(_._1 == storeId).toList.flatMap(gId => {
-      val parts = gId._2.split("_").toList 
+    group.foreignRelationship.filter(_.system == storeId).toList.flatMap(gId => {
+      val parts = gId.key.split("_").toList 
       val orgUnitId = parts.head
       val groupSetCategoryId = parts.drop(1).head
       val groupId = parts.drop(2).head
@@ -757,14 +757,14 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
         val fakeGroupCategory = D2LGroupCategory(groupSetCategoryId.toLong,"",D2LDescription(None,None),None,None,None,false,false,Nil,None,None)
         interface.getGroup(uc,d2lOrgUnit,fakeGroupCategory,groupId).toList.flatMap(group => {
           group.Enrollments.flatMap(en => {
-            members.find(_.foreignRelationship.exists(fr => fr._1 == storeId && fr._2 == "%s_%s".format(orgUnitId,en.toString)))
+            members.find(_.foreignRelationship.exists(fr => fr.system == storeId && fr.key == "%s_%s".format(orgUnitId,en.toString)))
           })
         })
       })
     })
   }
   
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = {
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = {
     val uc = interface.getUserContext
     interface.getUserByUsername(uc,userData.username).toList.flatMap(cm => {
       List(
@@ -777,7 +777,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
       cm.FirstName.toList.map(un => "FirstName" -> un) :::
       cm.MiddleName.toList.map(un => "MiddleName" -> un) :::
       cm.LastName.toList.map(un => "LastName" -> un)
-    })
+    }).map(t => Detail(t._1,t._2))
   } 
 }
 
@@ -853,10 +853,10 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       List((memberDetails,orgUnits))
     },16,"ou")
     val personalInformation = compoundItems.map(_._1)
-    val personalDetails:Map[String,List[Tuple2[String,String]]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => (m._3,m._2)).distinct))
+    val personalDetails:Map[String,List[Detail]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => Detail(m._3,m._2)).distinct))
     val personalRoles:Map[String,List[D2LEnrollment]] = Map(personalDetails.toList.flatMap(tup => {
-      tup._2.find(_._1 == "D2L_Identifier").map(d2lId => {
-        (tup._1,getEnrollments(userContext,d2lId._2))
+      tup._2.find(_.key == "D2L_Identifier").map(d2lId => {
+        (tup._1,getEnrollments(userContext,d2lId.value))
       })
     }):_*)
     val groupData = compoundItems.flatMap(_._2)

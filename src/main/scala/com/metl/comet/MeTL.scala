@@ -1095,7 +1095,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val groupSetJValue = getArgAsJValue(args(2))
       val groupSet = groupSetJValue.extract[com.metl.liftAuthenticator.GroupSet]
       val groups = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-        gp.getGroupSetsFor(orgUnit).map(gs => Extraction.decompose(gs))
+        gp.getGroupsFor(orgUnit,groupSet).map(gs => Extraction.decompose(gs))
       }).toList)
       JObject(List(
         JField("groupsProvider",JString(sid)),
