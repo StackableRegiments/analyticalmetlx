@@ -270,7 +270,6 @@ var Grades = (function(){
 									aNodes.find(".associationGradeId").text(gradeId);
 									aNodes.find(".requestRefreshAssociation").unbind("click").on("click",function(){
 										$.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrade){
-											//aNodes.find(".association").text(JSON.stringify(newGrade));
 											newGrade.description = remoteGrade.description;
 											newGrade.name = remoteGrade.name;
 											newGrade.gradeType = remoteGrade.gradeType;
@@ -610,6 +609,19 @@ var Grades = (function(){
 				}
 			}
 		];
+		var studentFields = [
+			{
+				name:"myGradeValue",
+				type:"text",
+				title:"Score",
+				readOnly:true,
+				sorting:true
+			},
+		];
+		if (Conversations.shouldModifyConversation()){
+		} else {
+			gridFields = _.concat(gridFields,studentFields);
+		};
 		gradesDatagrid.jsGrid({
 			width:"100%",
 			height:"auto",
@@ -620,8 +632,21 @@ var Grades = (function(){
 			noDataContent: "No grades",
 			controller: {
 				loadData: function(filter){
+					var shouldModifyConversation = Conversations.shouldModifyConversation();
+					var filteredGrades = _.map(_.filter(grades,function(grade){
+						return shouldModifyConversation || grade.visible;
+					}),function(grade){
+						var thisGrade = gradeValues[grade.id];
+							if (thisGrade !== undefined){
+							var myGradeValue = thisGrade[UserSettings.getUsername()];
+							if (myGradeValue !== undefined){
+								grade.myGradeValue = myGradeValue.gradeValue;
+							}
+						}
+						return grade;
+					});
 					if ("sortField" in filter){
-						var sorted = _.sortBy(grades,function(sub){
+						var sorted = _.sortBy(filteredGrades,function(sub){
 							return sub[filter.sortField];
 						});
 						if ("sortOrder" in filter && filter.sortOrder == "desc"){
@@ -629,7 +654,7 @@ var Grades = (function(){
 						}
 						return sorted;
 					} else {
-						return grades;
+						return filteredGrades;
 					}
 				}
 			},

@@ -336,6 +336,7 @@ describe('When the class breaks into groups,', function() {
         var textStartX = _.find(user.selection.multiWordTexts,function(text){
             return text.author == "studentB";
         }).x;
+	browser.debug();
         assert(_.every(peer.imageStanzas,function(image){
             return image.x == imageStartX;
         }));
