@@ -140,7 +140,9 @@ describe('When the class breaks into groups,', function() {
         assert(sB.boardTitle.trim().startsWith("studentB working in Group 1 of teacher at"));
     });
     it("the students should all be split into groups",function(){
+	browser.pause(TEXT_DELAY);
         var groupSet = tT.currentSlide.groupSets[0];
+	console.log(groupSet.groups);
         assert.equal(groupSet.groups.length,2);
         var groupsByUser = _.reduce(groupSet.groups,function(acc,item){
             _.each(item.members,function(member){
@@ -162,6 +164,7 @@ describe('When the class breaks into groups,', function() {
     });
     it("students see the teacher work but not other groups",function(){
         _.each([tT,sA,sB],function(client,i){
+	    client.driver.pause(500);
             client.textMode.click();
             client.keyboard(50,100 + i * 100,"Phrase "+(i+1));
         });
@@ -304,7 +307,7 @@ describe('When the class breaks into groups,', function() {
             }));
             user.addImage("testMaterials/mapleLeaf.jpg");
         });
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.inkStanzas).length,3);
@@ -371,7 +374,7 @@ describe('When the class breaks into groups,', function() {
         tT.driver.execute("$('#isolateGroup_1').click()");
         tT.textMode.click();
         tT.keyboard(130,300,"RESPONSE TO GROUP 1 ONLY");
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
         tT.inkMode.click();
         tT.handwrite(_.map(_.range(200,400,15), function(i){
             return {x:50,y:i};
@@ -389,7 +392,7 @@ describe('When the class breaks into groups,', function() {
         tT.driver.execute("$('#isolateGroup_2').click()");
         tT.textMode.click();
         tT.keyboard(330,500,"RESPONSE TO GROUP 2 ONLY");
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
     });
     it("groups should not persist beyond the slide",function(){
         tT.newSlide.click();
@@ -408,7 +411,7 @@ describe('When the class breaks into groups,', function() {
             }));
             user.addImage("testMaterials/mapleLeaf.jpg");
         });
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
         assert.equal(_.keys(tT.inkStanzas).length,6);
         assert.equal(_.keys(sA.inkStanzas).length,6);
         assert.equal(_.keys(sB.inkStanzas).length,6);
