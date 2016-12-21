@@ -698,6 +698,21 @@ var Conversations = (function(){
                         var newSlide = _.find(incomingDetails.slides,function(s){
                             return s.index == newIndex && s.id != currentSlide;
                         });
+												var linkedGradeLoc = sprintf("groupWork_%s",newSlide.id);
+												var user = UserSettings.getUsername();
+												var newLinkedGrade = {
+													type:"grade",
+													name:sprintf("GroupSlide %s",newSlide.id),
+													description:"Auto generated grade for group work on group slide.",
+													audiences:[],
+													author:user,
+													location:linkedGradeLoc,
+													id:sprintf("%s_%s_%s",linkedGradeLoc,user,new Date().getTime().toString()),
+													gradeType:"text",
+													visible:false,
+													timestamp:0						
+												};
+												sendStanza(newLinkedGrade);
                         setStudentsMustFollowTeacherFunction(true);
                         doMoveToSlide(newSlide.id.toString());
                     }
