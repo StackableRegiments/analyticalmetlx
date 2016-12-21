@@ -36,8 +36,13 @@ var SparkLine = (function(){
                 datum.push(0);
                 return d3.extent(datum);
             });
-            y.domain([Math.min(extents[0][0],extents[1][0]),
-                      Math.max(extents[0][1],extents[1][1])]);
+            switch(extents.length){
+            case 2: y.domain([Math.min(extents[0][0],extents[1][0]),
+                              Math.max(extents[0][1],extents[1][1])]);
+                break;
+            case 1: y.domain(extents[0]);
+                break;
+            }
             graph.selectAll("path")
                 .data(data)
                 .attr("d", function(d,i){

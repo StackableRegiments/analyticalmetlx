@@ -7,6 +7,7 @@ var LoginPage = require("../page/login.page");
 var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
+var TEXT_DELAY = 5000;
 var assertSameContent = function(a,b){
     _.each(a.inkStanzas,function(aStanza,k,i){
         var comparison = JSON.stringify(aStanza);
@@ -164,8 +165,9 @@ describe('When the class breaks into groups,', function() {
             client.textMode.click();
             client.keyboard(50,100 + i * 100,"Phrase "+(i+1));
         });
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
 
+	console.log(sB.plainTexts);
         assert(_.includes(sA.plainTexts,"Phrase 1"));
         assert(_.includes(sB.plainTexts,"Phrase 1"));
 
@@ -261,7 +263,7 @@ describe('When the class breaks into groups,', function() {
         sC.menuButton.click();
         sC.textMode.click();
         sC.keyboard(50,4,"Phrase 4");
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
         assert(!(_.includes(sA.plainTexts,"Phrase 4")));
         assert(_.includes(sB.plainTexts,"Phrase 4"));
         assert(_.includes(sC.plainTexts,"Phrase 4"));
@@ -483,9 +485,10 @@ describe('When the class breaks into groups,', function() {
             user.textMode.click();
             user.keyboard(200,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
         });
-        browser.pause(2500);//Let everything synchronize
+        browser.pause(TEXT_DELAY);//Let everything synchronize
         console.log(sB.plainTexts);
         console.log(sC.plainTexts);
+        console.log(sA.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,6);
         assert.equal(_.keys(sB.textStanzas).length,6);
         assert.equal(_.keys(sB.imageStanzas).length,6);
@@ -495,7 +498,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(_.keys(sC.imageStanzas).length,6);
 
         assert.equal(_.keys(sA.inkStanzas).length,2);
-        assert.equal(_.keys(sA.textStanzas).length,2);
+        assert.equal(_.keys(sA.textStanzas).length,3);
         assert.equal(_.keys(sA.imageStanzas).length,2);
     });
 });
