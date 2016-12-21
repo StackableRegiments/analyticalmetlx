@@ -1,3 +1,17 @@
+1.0.1
+Feature: METL-153: Slider under Settings to control Thumbnail column width.
+Feature: METL-208: Author can add group slide.
+Feature: METL-209: Show liveness meters on the main board page.
+Feature: METL-277: More sophisticated group builder with manual controls.
+Feature: METL-243: Video conferencing via TokBox.
+Feature: METL-254: Create grade in MeTL.
+Feature: METL-255: Synchronize grades with D2L.
+Feature: METL-304: Groups create a grade for themselves.
+Improvement: METL-252: Plugin framework.
+Improvement: METL-271: Enhance D2L API.
+Improvement: METL-292: Explicit groupProvider fetch mechanism.
+Improvement: METL-297: Schemify indices automatically.
+
 0.14.4
 Bugfix: METL-299: Mipmapped ink renders in a visually incorrect place.
 
