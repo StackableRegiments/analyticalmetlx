@@ -48,7 +48,8 @@ var overrides = {
                 name:'studentE'
             }
         }
-    }
+    },
+    bail:1
 }
 
 // Send the merged config to wdio
