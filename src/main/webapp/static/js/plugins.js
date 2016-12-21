@@ -69,6 +69,10 @@ var Plugins = (function(){
                                 if(slide){
                                     var groups = Conversations.getCurrentGroups();
                                     if(groups.length){
+																				var linkedGradeLoc = sprintf("groupWork_%s",slide.id);
+																				var linkedGrade = _.find(Grades.getGrades(),function(grade){
+																					return grade.location == linkedGradeLoc;
+																				});
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
                                         }).append($("<input />",{
@@ -98,11 +102,26 @@ var Plugins = (function(){
                                             var grades = $("<div />",{
                                                 class:"groupsPluginGroup"
                                             }).appendTo(gc);
-                                            _.each("A B C D".split(" "),function(grade){
+                                            _.each("A B C D".split(" "),function(gradeLetter){
                                                 $("<div />",{
-                                                    text:grade,
+                                                    text:gradeLetter,
                                                     class:"groupsPluginGroupGrade btn-icon"
-                                                }).appendTo(grades);
+                                                }).appendTo(grades).on("click",function(){
+																									if (linkedGrade != undefined){
+																										_.each(group.members,function(member){
+																											var groupMemberGrade = {
+																												type:"textGradeValue",
+																												gradeId:linkedGrade.id,
+																												gradeValue:gradeLetter,
+																												gradedUser:member,
+																												author:UserSettings.getUsername(),
+																												timestamp:0,
+																												audiences:[]
+																											};
+																											sendStanza(groupMemberGrade);
+																										});
+																									}
+																								});
                                             });
 
                                             var right = $("<div />").appendTo(gc);
@@ -163,7 +182,8 @@ var Plugins = (function(){
                     bus.conversationDetailsReceived["Groups plugin"] = render;
                     return overContainer;
                 },
-                initialize:function(){}
+                initialize:function(){
+								}
             };
         })()
     };
