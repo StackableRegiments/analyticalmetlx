@@ -172,8 +172,8 @@ var Grades = (function(){
 				itemTemplate:function(identity,grade){
 					if (grade.author == UserSettings.getUsername()){
 						var rootElem = gradeActionButtonsTemplate.clone();
-						rootElem.find(".editGradeButton").on("click",function(){
-							var newGrade = _.cloneDeep(grade);
+						var newGrade = _.cloneDeep(grade);
+						var renderEditGradeAlert = function(){
 							var uniqId = _.uniqueId();
 							var outer = $("<div/>",{
 								id:uniqId
@@ -189,14 +189,14 @@ var Grades = (function(){
 							var changeNameFunc = function(ev){
 								newGrade.name = nameInputBox.val();
 							};
-							nameInputBox.attr("id",nameId).on("blur",changeNameFunc).val(grade.name);
+							nameInputBox.attr("id",nameId).on("blur",changeNameFunc).val(newGrade.name);
 							innerRoot.find(".gradeNameLabel").attr("for",nameId);
 							var descId = sprintf("gradeDesc_%s",uniqId);
 							var changeDescFunc = function(ev){
 								newGrade.description = descInputBox.val();
 							};
 							var descInputBox = innerRoot.find(".gradeDescriptionInputBox");
-							descInputBox.attr("id",descId).on("blur",changeDescFunc).val(grade.description);
+							descInputBox.attr("id",descId).on("blur",changeDescFunc).val(newGrade.description);
 							innerRoot.find(".gradeDescriptionLabel").attr("for",descId);
 							var selectId = sprintf("gradeType_%s",uniqId);
 							var typeSelect = innerRoot.find(".gradeTypeSelect");
@@ -226,10 +226,10 @@ var Grades = (function(){
 								switch (newGrade.gradeType){
 									case "numeric":
 										innerRoot.find(".numericOptions").show();
-										if (grade.numericMinimum === undefined){
+										if (newGrade.numericMinimum === undefined){
 											newGrade.numericMinimum = 0;
 										};
-										if (grade.numericMaximum === undefined){
+										if (newGrade.numericMaximum === undefined){
 											newGrade.numericMaximum = 100;
 										};
 										minTextbox.val(newGrade.numericMinimum);
@@ -240,17 +240,16 @@ var Grades = (function(){
 										break;
 								}
 							};
-							console.log("starting value:",grade.gradeType);
 							typeSelect.attr("id",selectId).on("change",function(){
 								newGrade.gradeType = typeSelect.val();
 								reRenderGradeTypeOptions();
-							}).val(grade.gradeType);
+							}).val(newGrade.gradeType);
 							reRenderGradeTypeOptions();
 							innerRoot.find(".gradeTypeLabel").attr("for",selectId);
 							var visibleId = sprintf("gradeVisible_%s",uniqId);
 							innerRoot.find(".gradeVisibleLabel").attr("for",visibleId);
 							var visibleCheckbox = innerRoot.find(".gradeVisibleCheckbox");
-							visibleCheckbox.attr("id",visibleId).prop("checked",grade.visible).on("change",function(ev){
+							visibleCheckbox.attr("id",visibleId).prop("checked",newGrade.visible).on("change",function(ev){
 								newGrade.visible = visibleCheckbox.prop("checked");
 							});
 							var wantsToAssociate = undefined;
@@ -260,18 +259,25 @@ var Grades = (function(){
 							var associatedGrade = undefined;
 							var reRenderAssociations = function(){
 								var aNodes = innerRoot.find(".associateController");
-								if ("foreignRelationship" in grade){
+								if ("foreignRelationship" in newGrade){
 									aNodes.find(".createAssociation").hide();
-									var system = grade.foreignRelationship.sys;
-									var parts = grade.foreignRelationship.key.split("_");
+									var system = newGrade.foreignRelationship.sys;
+									var parts = newGrade.foreignRelationship.key.split("_");
 									var orgUnit = parts[0];
 									var gradeId = parts[1];
 									aNodes.find(".associationSystem").text(system);
 									aNodes.find(".associationOrgUnit").text(orgUnit);
 									aNodes.find(".associationGradeId").text(gradeId);
 									aNodes.find(".requestRefreshAssociation").unbind("click").on("click",function(){
-										$.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(newGrade){
-											aNodes.find(".association").text = JSON.stringify(newGrade);
+										$.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrade){
+											//aNodes.find(".association").text(JSON.stringify(newGrade));
+											newGrade.description = remoteGrade.description;
+											newGrade.name = remoteGrade.name;
+											newGrade.gradeType = remoteGrade.gradeType;
+											newGrade.numericMinimum = remoteGrade.numericMinimum;
+											newGrade.numericMaximum = remoteGrade.numericMaximum;
+											jAlert.closeAlert();
+											renderEditGradeAlert();
 										}).fail(function(jqxhr,textStatus,error){
 											alert(sprintf("error: %s \r\n %s",textStatus,error));
 										});
@@ -360,7 +366,8 @@ var Grades = (function(){
 								jAlert.closeAlert();
 							});
 							$("#"+uniqId).append(innerRoot);
-						});
+						}
+						rootElem.find(".editGradeButton").on("click",renderEditGradeAlert);
 						rootElem.find(".assessGradeButton").on("click",function(){
 							var uniqId = _.uniqueId();
 							var outer = $("<div/>",{
@@ -563,21 +570,30 @@ var Grades = (function(){
 										});
 									});
 									innerRoot.find(".sendGradesToRemote").on("click",function(){
-										var gradesToSend = gradeValues[grade.id];
-										$.post(sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),gradesToSend,function(remoteGrades){
-											generateData(function(data){
-												var modifiedData = data;
-												_.forEach(modifiedData,function(datum){
-													var thisRemoteGrade = _.find(remoteGrades,function(rg){
-														return rg.gradedUser == datum.gradedUser;
+										var gradesToSend = _.filter(gradeValues[grade.id],function(g){
+											return g.gradeValue != undefined;
+										});
+										$.ajax({
+											type:"POST",
+											data:JSON.stringify(gradesToSend),
+											dataType:"json",
+											success:function(remoteGrades){
+												generateData(function(data){
+													var modifiedData = data;
+													_.forEach(modifiedData,function(datum){
+														var thisRemoteGrade = _.find(remoteGrades,function(rg){
+															return rg.gradedUser == datum.gradedUser;
+														});
+														if (thisRemoteGrade !== undefined){
+															datum.remoteGrade = thisRemoteGrade.gradeValue;
+														}
 													});
-													if (thisRemoteGrade !== undefined){
-														datum.remoteGrade = thisRemoteGrade.gradeValue;
-													}
-												});
-												return withData(modifiedData);
-											})
-										},'json').fail(function(jqxhr,textStatus,error){
+													return withData(modifiedData);
+												})
+											},
+											url:sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),
+											contentType:"application/json"
+										}).fail(function(jqxhr,textStatus,error){
 											console.log("error",textStatus,error);
 										});
 									});
