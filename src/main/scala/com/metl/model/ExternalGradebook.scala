@@ -172,9 +172,24 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       }).toList
     })
   }
-  override def getGradeContextClasslist(orgUnitId:String):Either[Exception,List[Map[String,String]]] = {
-    trye({
+  protected def tryeInAuth[A](orgUnitId:String,action:Tuple2[ID2LUserContext,String] => A,username:String = Globals.currentUser.is):Either[Exception,A] = {
+    try {
       val uc = interface.getUserContext
+      val d2lId = lookupD2LUserId(uc,username)
+      val enrollments = interface.getEnrollments(uc,d2lId)
+      if (enrollments.exists(en => en.OrgUnit.Id.toString == orgUnitId && acceptableRoles.contains(en.Role.Name))){
+        trye(action((uc,d2lId)))
+      } else {
+        Left(new Exception("not authorized to assess orgUnit: %s".format(orgUnitId)))
+      }
+    } catch {
+      case e:Exception => Left(e)
+    }
+  }
+  override def getGradeContextClasslist(orgUnitId:String):Either[Exception,List[Map[String,String]]] = {
+    tryeInAuth(orgUnitId,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       val classlist = interface.getClasslists(uc,D2LOrgUnit(orgUnitId,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
       classlist.map(cm => {
         Map(
@@ -193,28 +208,32 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     })
   }
   override def getGradesFromContext(context:String):Either[Exception,List[MeTLGrade]] = {
-    trye({
-      val uc = interface.getUserContext
+    tryeInAuth(context,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       interface.getGradeObjects(uc,context).map(g => toGrade(uc,context,g))
     })
   }
   override def getGradeInContext(ctx:String,gradeId:String):Either[Exception,MeTLGrade] = {
-    trye({
-      val uc = interface.getUserContext
+    tryeInAuth(ctx,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       interface.getGradeObject(uc,ctx,gradeId).map(g => toGrade(uc,ctx,g)).head
     })
   }
   override def createGradeInContext(ctx:String,grade:MeTLGrade):Either[Exception,MeTLGrade] = {
-   trye({
-      val uc = interface.getUserContext
+    tryeInAuth(ctx,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       val newGrade = fromGrade(uc,grade)
       println("CREATING GRADE IN CONTEXT %s:\r\n%s\r\n%s".format(ctx,grade,newGrade))
       interface.createGradeObject(uc,ctx,fromGrade(uc,grade)).map(g => toGrade(uc,ctx,g)).head
     })
   }
   override def updateGradeInContext(ctx:String,grade:MeTLGrade):Either[Exception,MeTLGrade] = {
-    trye({
-      val uc = interface.getUserContext
+    tryeInAuth(ctx,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       val (orgUnitId:String,gradeId:String) = {
         val gradeObj = grade.foreignRelationship.filter(_._1 == name).head
         val parts = gradeObj._2.split("_").toList
@@ -233,8 +252,9 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     })
   }
   override def getGradeValuesForGrade(ctx:String,gradeId:String):Either[Exception,List[MeTLGradeValue]] = {
-    trye({
-      val uc = interface.getUserContext
+    tryeInAuth(ctx,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
       interface.getGradeValues(uc,ctx,gradeId).flatMap(ugv => {
         (for {
@@ -248,20 +268,21 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     })
   }
   override def updateGradeValuesForGrade(ctx:String,gradeId:String,grades:List[MeTLGradeValue]):Either[Exception,List[MeTLGradeValue]] = {
-    trye({
-      val uc = interface.getUserContext
+    tryeInAuth(ctx,tup => {
+      val uc = tup._1
+      val d2lId = tup._2
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
       if (grades.length > 1){
         val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))) 
-        grades.filter(gv => originalGrades.exists(og => {
+        grades.filterNot(gv => originalGrades.exists(og => {
           og.getType == gv.getType &&
           og.getGradedUser == gv.getGradedUser && (
-            og.getNumericGrade != gv.getNumericGrade ||
-            og.getTextGrade != gv.getTextGrade ||
-            og.getBooleanGrade != gv.getBooleanGrade ||
-            og.getPrivateComment != gv.getPrivateComment ||
-            og.getComment != gv.getComment
-          )
+            og.getNumericGrade == gv.getNumericGrade ||
+            og.getTextGrade == gv.getTextGrade ||
+            og.getBooleanGrade == gv.getBooleanGrade 
+          ) &&
+          og.getPrivateComment == gv.getPrivateComment &&
+          og.getComment == gv.getComment
         })).flatMap(gv => { //only update the ones which have a changed value
           interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
@@ -270,7 +291,15 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
           interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       }
-      interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2)))))
+      interface.getGradeValues(uc,ctx,gradeId).flatMap(ugv => {
+        (for {
+          gv <- ugv.GradeValue
+          ufw = ugv.User
+          cgv = gv.copy(UserId = ufw.Identifier)
+        } yield {
+          cgv
+        }).map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))
+      })
     })
   }
 }
