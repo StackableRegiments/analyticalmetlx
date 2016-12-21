@@ -255,9 +255,9 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
     /*
-    ClientSideFunction("getPresentUsers",List.empty[String],(args) => {
-      rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
-    },Full(RECEIVE_PRESENT_USERS)),
+     ClientSideFunction("getPresentUsers",List.empty[String],(args) => {
+     rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
+     },Full(RECEIVE_PRESENT_USERS)),
      */
     ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
@@ -1376,8 +1376,17 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       History.empty
     }).openOr(History.empty)
     trace("priv %s".format(jid))
-    val finalHistory = pubHistory.merge(privHistory).merge(convHistory)
-    trace("final %s".format(jid))
+    val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+    val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
+      case g:MeTLGrade if !shouldModifyConversation() && !g.visible => false
+      case gv:MeTLGradeValue if shouldModifyConversation() => true
+      case gv:MeTLGradeValue if gv.getGradedUser != username => false
+      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == false) => false
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation()) => false
+      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation()) => false
+      case _ => true
+    }
+    debug("final %s".format(jid))
     serializer.fromHistory(finalHistory)
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)
@@ -1635,6 +1644,30 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           })
         }
       }
+      case g:MeTLGrade => {
+        if (g.author == username){
+          currentConversation.map(cc => {
+            if (cc.author == g.author){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverName,roomTarget)).map(r => {
+                r() ! LocalToServerMeTLStanza(g)
+              })
+            }
+          })
+        }
+      }
+      case g:MeTLGradeValue => {
+        if (g.author == username){
+          currentConversation.map(cc => {
+            if (cc.author == g.author){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverName,roomTarget)).map(r => {
+                r() ! LocalToServerMeTLStanza(g)
+              })
+            }
+          })
+        }
+      }
       case other => {
         warn("sendStanzaToServer's toMeTLStanza returned unknown type when deserializing: %s".format(other))
       }
@@ -1674,6 +1707,33 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         //not relaying teacherInConversation to page
       }
       case a:Attendance => getAttendance.map(attendances => partialUpdate(Call(RECEIVE_ATTENDANCE,attendances)))
+      case s:MeTLSubmission if !shouldModifyConversation() && s.author != username => {
+        //not sending the submission to the page, because you're not the author and it's not yours
+      }
+      case qr:MeTLQuizResponse if !shouldModifyConversation() && qr.author != username => {
+        //not sending the quizResponse to the page, because you're not the author and it's not yours
+      }
+      case g:MeTLGrade if !shouldModifyConversation() && !g.visible => {
+        //not sending a grade to the page because you're not the author, and this one's not visible
+      }
+      case gv:MeTLGradeValue => {
+        currentConversation.foreach(cc => {
+          if (shouldModifyConversation(cc)){
+            partialUpdate(Call(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
+          } else {
+            if (gv.getGradedUser == username){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverConfig.name,roomTarget)).map(r => {
+                val convHistory = r().getHistory
+                val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+                if (allGrades.get(gv.getGradeId).exists(_.visible)){
+                  partialUpdate(Call(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
+                }
+              })
+            }
+          }
+        })
+      }
       case _ => {
         trace("receiving: %s".format(metlStanza))
         val response = serializer.fromMeTLData(metlStanza) match {

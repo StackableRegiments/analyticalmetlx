@@ -422,7 +422,7 @@ var subcategoryMapping = {
 var categoryMapping = _.fromPairs(_.flatMap({
     metaToolbar:"integrations print recycleBin",
     optsToolbar:"settings healthCheck",
-    roomToolbar:"blacklist submissions attachments participants groups quizzes contentFilter"
+    roomToolbar:"grades blacklist submissions attachments participants groups quizzes contentFilter"
 },function(v,k){
     return _.map(v.split(" "),function(backstage){
         return [backstage,k];
@@ -767,6 +767,11 @@ $(function(){
     $('#menuGroups').click(function(){
         showBackstage("groups");
         updateActiveMenu(this);
+    });
+    $('#menuGrades').click(function(){
+        showBackstage("grades");
+        updateActiveMenu(this);
+        Grades.reRender();
     });
     $('#menuSubmissions').click(function(){
         showBackstage("submissions");

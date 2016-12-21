@@ -23,7 +23,7 @@ object H2Constants{
 abstract class MappedMeTLString[A <: Mapper[A]](owner:A,length:Int) extends MappedPoliteString(owner,length){
 }
 
-abstract class H2MeTLIndexedString[A <: Mapper[A]](owner:A,length:Int) extends MappedMeTLString[A](owner,length){
+abstract class H2MeTLIndexedString[A <: Mapper[A]](owner:A,length:Int) extends MappedMeTLString(owner,length) {
   override def dbIndexed_? = true
 }
 
@@ -308,18 +308,41 @@ class DatabaseVersion extends LongKeyedMapper[DatabaseVersion] with IdPK {
     override def defaultValue = -1
   }
 }
-
-object ThemeExtraction extends ThemeExtraction with LongKeyedMetaMapper[ThemeExtraction]{
-  def put(identity:String,extraction:String) = {
-    ThemeExtraction.create.identity(identity).extraction(extraction).save
-    extraction
-  }
-  def get(identity:String):Option[ThemeExtraction] = {
-    ThemeExtraction.find(By(ThemeExtraction.identity,identity))
-  }
+object H2Grade extends H2Grade with LongKeyedMetaMapper[H2Grade] {
 }
-class ThemeExtraction extends LongKeyedMapper[ThemeExtraction] with IdPK{
-  def getSingleton = ThemeExtraction
-  object identity extends MappedText(this)
-  object extraction extends MappedText(this)
+class H2Grade extends H2MeTLStanza[H2Grade] {
+  def getSingleton = H2Grade
+  object gradeId extends MappedString(this,H2Constants.identity)
+  object location extends MappedString(this,H2Constants.room)
+  object name extends MappedString(this,H2Constants.url)
+  object description extends MappedText(this)
+  object visible extends MappedBoolean(this)
+  object gradeType extends MappedEnum(this,MeTLGradeValueType)
+  object foreignRelationshipSystem extends MappedString(this,1024)
+  object foreignRelationshipKey extends MappedString(this,H2Constants.url)
+  object numericMaximum extends MappedDouble(this)
+  object numericMinimum extends MappedDouble(this)
+  object gradeReferenceUrl extends MappedString(this,H2Constants.url)
+}
+trait H2GradeValue[C <:H2MeTLStanza[C]] extends H2MeTLStanza[C]{
+  self: C =>
+  object privateComments extends MappedString[C](this,4096)
+  object comments extends MappedString[C](this,4096)
+  object gradedUser extends MappedString[C](this,H2Constants.author)
+  object gradeId extends MappedString[C](this,H2Constants.identity)
+}
+object H2NumericGradeValue extends H2NumericGradeValue with LongKeyedMetaMapper[H2NumericGradeValue]{}
+class H2NumericGradeValue extends H2GradeValue[H2NumericGradeValue] {
+  def getSingleton = H2NumericGradeValue
+  object gradeValue extends MappedDouble(this)
+}
+object H2BooleanGradeValue extends H2BooleanGradeValue with LongKeyedMetaMapper[H2BooleanGradeValue]{}
+class H2BooleanGradeValue extends H2GradeValue[H2BooleanGradeValue] {
+  def getSingleton = H2BooleanGradeValue
+  object gradeValue extends MappedBoolean(this)
+}
+object H2TextGradeValue extends H2TextGradeValue with LongKeyedMetaMapper[H2TextGradeValue]{}
+class H2TextGradeValue extends H2GradeValue[H2TextGradeValue] {
+  def getSingleton = H2TextGradeValue
+  object gradeValue extends MappedString(this,64)
 }

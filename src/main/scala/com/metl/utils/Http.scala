@@ -41,9 +41,13 @@ trait IMeTLHttpClient {
   def getAsBytes(uri:String):Array[Byte] = getAsBytes(uri, List.empty[(String,String)])
   def getAsBytes(uri:String,additionalHeaders:List[(String,String)]):Array[Byte]
 
-  def putBytes(uri:String,bytes:Array[Byte]): Array[Byte] = postBytes(uri, bytes, List.empty[(String,String)])
+  def putBytes(uri:String,bytes:Array[Byte]): Array[Byte] = putBytes(uri, bytes, List.empty[(String,String)])
   def putBytes(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)]): Array[Byte]
   def putBytesExpectingHTTPResponse(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)]):HTTPResponse
+
+  def putString(uri:String,data:String): String = putString(uri, data, List.empty[(String,String)])
+  def putString(uri:String,data:String,additionalHeaders:List[(String,String)]): String
+  def putStringExpectingHTTPResponse(uri:String,data:String,additionalHeaders:List[(String,String)]):HTTPResponse
 
   def postBytes(uri:String,bytes:Array[Byte]): Array[Byte] = postBytes(uri, bytes, List.empty[(String,String)])
   def postBytes(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)]):Array[Byte]
@@ -183,10 +187,29 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
 
     debug("rec'd:     %s (%s bytes)".format(m.getResponseCount,m.getReceivedBytesCount))
   }
-  override def putBytes(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)] = List.empty[(String,String)]):Array[Byte] = Stopwatch.time("Http.postBytes", {
+
+  override def putString(uri:String,data:String,additionalHeaders:List[(String,String)]): String = {
+    respondToResponse(putStringExpectingHTTPResponse(uri,data,additionalHeaders),additionalHeaders).responseAsString
+  }
+  override def putStringExpectingHTTPResponse(uri:String,data:String,additionalHeaders:List[(String,String)]):HTTPResponse = {
+    val stringPuttingPut = (conn:ManagedClientConnection,url:String,path:String) => {
+      val correctlyFormedUrl = new URI(url)
+      val putMethod = new BasicHttpEntityEnclosingRequest("PUT",path){override val expectContinue = false}
+      val putEntity = new StringEntity(data,"UTF-8")
+      applyDefaultHeaders(putMethod,correctlyFormedUrl)
+      addAdditionalHeaders(putMethod,additionalHeaders)
+      putMethod.setEntity(putEntity)
+      putMethod.addHeader(new BasicHeader("Content-Length",putEntity.getContentLength.toString))
+      conn.sendRequestHeader(putMethod)
+      conn.sendRequestEntity(putMethod)
+      conn.flush
+    }
+    executeHttpConnAction(uri,stringPuttingPut)
+  }
+  override def putBytes(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)] = List.empty[(String,String)]):Array[Byte] = Stopwatch.time("Http.putBytes", {
     respondToResponse(putBytesExpectingHTTPResponse(uri,bytes,additionalHeaders),additionalHeaders).bytes
   })
-  override def putBytesExpectingHTTPResponse(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)] = List.empty[(String,String)]):HTTPResponse = Stopwatch.time("Http.postBytesExpectingHTTPResponse", {
+  override def putBytesExpectingHTTPResponse(uri:String,bytes:Array[Byte],additionalHeaders:List[(String,String)] = List.empty[(String,String)]):HTTPResponse = Stopwatch.time("Http.putBytesExpectingHTTPResponse", {
     val bytePostingPut = (conn:ManagedClientConnection,url:String,path:String) => {
       val correctlyFormedUrl = new URI(url)
       val putMethod = new BasicHttpEntityEnclosingRequest("PUT",path){override val expectContinue = false}
