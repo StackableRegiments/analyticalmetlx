@@ -1,4 +1,22 @@
-0.12.5
+0.13.4
+Bugfix: METL-291: Using button for conversation search does not update the search query.
+
+0.13.3
+Bugfix: METL-273: Conversation search now disables while search is processing.
+
+0.13.2
+Feature: METL-162: Restyle private handwriting.
+
+0.13.1
+Bugfix: METL-267: Ink shrinks after completion of stroke.
+Bugfix: METL-206: Rename Slide to Page throughout.
+Bugfix: METL-214: Rename Poll "Display on canvas" to "Display on current page".
+
+0.12.7
+Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
+Bugfix: METL-266: Rooms not being garbage collected.
+
+0.12.6
 Feature: METL-251: Diagnostic endpoint to monitor server performance.
 Improvement: METL-116: Performance optimisations.
 

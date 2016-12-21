@@ -165,7 +165,7 @@ var Conversations = (function(){
         updateQueryParams();
     }
     var refreshSlideDisplay = function(){
-        updateStatus("Refreshing slide display");
+        updateStatus("Refreshing page display");
         var slideContainer = $("#slideContainer")
         slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
         var slideControls = $("#slideControls");
@@ -424,7 +424,7 @@ var Conversations = (function(){
             }));
             $("#slideDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&slideId=%s&unique=true",targetConversationJid,currentSlide),
-                text:"DeepLink this slide"
+                text:"DeepLink this page"
             }));
             $("#conversationDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&unique=true",targetConversationJid),
@@ -605,13 +605,13 @@ var Conversations = (function(){
     };
     var always = function(){return true;}
     var constructPrevSlideButton = function(container){
-        constructSlideButton("prevSlideButton","Prev Slide","fa-angle-left",always,container);
+        constructSlideButton("prevSlideButton","Prev Page","fa-angle-left",always,container);
     }
     var constructAddSlideButton = function(container){
-        constructSlideButton("addSlideButton","Add Slide","fa-plus",shouldModifyConversationFunction,container);
+        constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
     }
     var constructNextSlideButton = function(container){
-        constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",always,container);
+        constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
@@ -658,8 +658,8 @@ var Conversations = (function(){
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
             class:"thumbnail",
-            alt:sprintf("Slide %s",slideIndex),
-            title:sprintf("Slide %s (%s)",slideIndex,slide.id)
+            alt:sprintf("Page %s",slideIndex),
+            title:sprintf("Page %s (%s)",slideIndex,slide.id)
         }).on("click",function(e){
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());
@@ -824,6 +824,28 @@ function receiveNewConversationDetails(details){
 function receiveConversations(listOfConversations){
     Progress.call("conversationsReceived",[listOfConversations]);
 }
+function receiveGroupsProviders(providers){
+	console.log("receivedGroupProviders:",providers);
+}
+function receiveOrgUnitsFromGroupsProviders(orgUnits){
+	console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+	/*
+	if ("orgUnits" in orgUnits){
+		getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnits.orgUnits[0]);
+	}
+	*/
+}
+function receiveGroupSetsForOrgUnit(groupSets){
+	console.log("receiveGroupSetsForOrgUnit",groupSets);
+	/*
+	if ("groupSets" in groupSets){
+		getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSets.groupSets[0]);
+	}
+	*/
+}
+function receiveGroupsForGroupSet(groups){
+	console.log("receiveGroupsForGropSet",groups);
+}
 // these will be injected by lift
 //function moveToSlide(jid)
 //function joinConversation(jid)
@@ -837,3 +859,7 @@ function receiveConversations(listOfConversations){
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)
+//function getGroupsProviders()
+//function getOrgUnitsFromGroupsProvider(storeId)
+//function getGroupSetsForOrgUnit(storeId,orgUnit)
+//function getGroupsForGroupSet(storeId,orgUnit,groupSet)

@@ -275,14 +275,14 @@ describe('When a teacher presents,', function() {
         teacherT.menuButton.click();
         assert.ok(!teacherT.applicationMenu.value);
     });
-    it("the teacher should be able to add a new slide",function(){
+    it("the teacher should be able to add a new page",function(){
         assert.equal(teacherT.currentSlide.index,0);
         teacherT.newSlide.click();
         browser.waitUntil(function(){
             return teacherT.currentSlide.index == 1;
         });
     });
-    it("the teacher should be able to go back to the first slide",function(){
+    it("the teacher should be able to go back to the first page",function(){
         teacherT.prevSlide.click();
         browser.waitUntil(function(){
             return teacherT.currentSlide.index == 0;

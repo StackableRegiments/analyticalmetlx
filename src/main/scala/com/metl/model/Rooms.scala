@@ -136,19 +136,19 @@ case object CheckChunks
 abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
   lazy val slideRenderer = new SlideRenderer
   lazy val config = ServerConfiguration.configForName(configName)
-  private var shouldBacklog = false
-  private var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
-  private def onConnectionLost:Unit = {
+  protected var shouldBacklog = false
+  protected var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
+  protected def onConnectionLost:Unit = {
     debug("MeTLRoom(%s):onConnectionLost".format(location))
     shouldBacklog = true
   }
-  private def onConnectionRegained:Unit = {
+  protected def onConnectionRegained:Unit = {
     debug("MeTLRoom(%s):onConnectionRegained".format(location))
     initialize
     processBacklog
     shouldBacklog = false
   }
-  private def processBacklog:Unit = {
+  protected def processBacklog:Unit = {
     debug("MeTLRoom(%s):sendToServer.processingBacklog".format(location))
     while (!backlog.isEmpty){
       val (item,shouldUpdateTimestamp) = backlog.dequeue
@@ -220,8 +220,14 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected var joinedUsers = List.empty[Tuple3[String,String,LiftActor]]
   def createUpdate = HealthyWelcomeFromRoom
   protected var lastInterest:Long = new Date().getTime
-  protected def heartbeat = ActorPing.schedule(this,Ping,pollInterval)
-  protected def checkChunkExpiry = ActorPing.schedule(this,CheckChunks,chunkExpiry)
+  protected def scheduleMessageForMe[T](message: => T,delay:TimeSpan) = {
+    if (possiblyCloseRoom){
+    } else {
+      Schedule.schedule(this,message,delay)
+    }
+  }
+  protected def heartbeat = scheduleMessageForMe(Ping,pollInterval)
+  protected def checkChunkExpiry = scheduleMessageForMe(CheckChunks,chunkExpiry)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))
     heartbeat
@@ -243,7 +249,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     case sl@ServerToLocalMeTLStanza(s) => Stopwatch.time("MeTLRoom.lowPriority.ServerToLocalMeTLStanza",sendToChildren(s))
     case CheckChunks => {
       chunker.check(this)
-      checkChunkExpiry
+      if (possiblyCloseRoom){
+      } else {
+        checkChunkExpiry
+      }
     }
     case Ping => Stopwatch.time("MeTLRoom.ping",{
       if (possiblyCloseRoom){
@@ -312,17 +321,17 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
   })
-  private def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
-  private def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
+  protected def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
+  protected def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
     joinedUsers = ((j.username,j.cometId,j.actor) :: joinedUsers).distinct
     j.actor ! RoomJoinAcknowledged(configName,location)
     showInterest
   })
-  private def removeConnection(l:LeaveRoom):Unit = Stopwatch.time("MeTLRoom.removeConnection(%s)".format(l),{
+  protected def removeConnection(l:LeaveRoom):Unit = Stopwatch.time("MeTLRoom.removeConnection(%s)".format(l),{
     joinedUsers = joinedUsers.filterNot(i => i._1 == l.username && i._2 == l.cometId)
     l.actor ! RoomLeaveAcknowledged(configName,location)
   })
-  private def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom",{
+  protected def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom",{
     if (location != "global" && joinedUsers.length == 0 && !recentInterest) {
       debug("MeTLRoom(%s):heartbeat.closingRoom".format(location))
       chunker.close(this)
@@ -334,7 +343,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     }
   })
   protected def showInterest:Unit = lastInterest = new Date().getTime
-  private def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest",{
+  protected def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest",{
     idleTimeout.map(it => (new Date().getTime - lastInterest) < it).getOrElse(true) // if no interest timeout is specified, then don't expire the room
   })
   override def toString = "MeTLRoom(%s,%s,%s)".format(configName,location,creator)
@@ -380,7 +389,7 @@ class NoCacheRoom(configName:String,override val location:String,creator:RoomPro
 case object ThumbnailRenderRequest
 
 class StartupInformation {
-  private var isFirstTime = true
+  protected var isFirstTime = true
   def setHasStarted(value:Boolean):Unit = {
     isFirstTime = value
   }
@@ -392,11 +401,11 @@ class StartupInformation {
 }
 
 class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(configName,location,creator,roomMetaData,idleTimeout) {
-  private var history:History = History.empty
-  private val isPublic = tryo(location.toInt).map(l => true).openOr(false)
-  private var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
-  private lazy val starting = new StartupInformation
-  private def firstTime = initialize
+  protected var history:History = History.empty
+  protected val isPublic = tryo(location.toInt).map(l => true).openOr(false)
+  protected var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
+  protected lazy val starting = new StartupInformation
+  protected def firstTime = initialize
   override def initialize = Stopwatch.time("HistoryCachingRoom.initialize",{
     if (starting.getHasStarted) {
       debug("initialize: %s (first time)".format(roomMetaData))
@@ -412,19 +421,19 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     }
   })
   firstTime
-  private var lastRender = 0L
-  private val acceptableRenderStaleness = 10000L
+  protected var lastRender = 0L
+  protected val acceptableRenderStaleness = 10000L
   override def getHistory:History = {
     showInterest
     history
   }
-  private def updateSnapshots = Stopwatch.time("HistoryCachingRoom.updateSnapshots",{
+  protected def updateSnapshots = Stopwatch.time("HistoryCachingRoom.updateSnapshots",{
     if (history.lastVisuallyModified > lastRender){
       snapshots = makeSnapshots
       lastRender = history.lastVisuallyModified
     }
   })
-  private def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName),{
+  protected def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName),{
     roomMetaData match {
       case s:SlideRoom => {
         val thisHistory = isPublic match {
@@ -457,15 +466,18 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   override def getThumbnail = {
     getSnapshot(Globals.ThumbnailSize)
   }
-  private var renderInProgress = false;
+  protected var renderInProgress = false;
   override def overrideableLowPriority = {
     case ThumbnailRenderRequest => {
-      if ((new Date().getTime - lastRender) > acceptableRenderStaleness){
-        renderInProgress = false
-        updateSnapshots
-      } else if (!renderInProgress){
-        renderInProgress = true
-        ActorPing.schedule(this,ThumbnailRenderRequest,acceptableRenderStaleness)
+      if (possiblyCloseRoom){
+      } else {
+        if ((new Date().getTime - lastRender) > acceptableRenderStaleness){
+          renderInProgress = false
+          updateSnapshots
+        } else if (!renderInProgress){
+          renderInProgress = true
+          scheduleMessageForMe(ThumbnailRenderRequest,acceptableRenderStaleness)
+        }
       }
     }
   }
