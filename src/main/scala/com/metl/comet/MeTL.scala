@@ -1634,15 +1634,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             partialUpdate(Call(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
           } else {
             if (gv.getGradedUser == username){
-              println("receiving a grade for me!: %s => %s".format(gv,username))
               val roomTarget = cc.jid.toString
               rooms.get((serverConfig.name,roomTarget)).map(r => {
                 val convHistory = r().getHistory
                 val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
-                println("calculating grades: %s".format(allGrades))
                 val thisGrade = allGrades.get(gv.getGradeId)
                 if (thisGrade.exists(_.visible)){
-                  println("receiving a grade for me which is visible!: %s @ %s => %s".format(thisGrade,username,gv))
                   partialUpdate(Call(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
                 }
               })
