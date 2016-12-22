@@ -6,6 +6,7 @@ import com.metl.model._
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
+import com.metl.liftAuthenticator.ForeignRelationship
 import Privacy._
 
 trait XmlUtils {
@@ -595,7 +596,15 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       case "" => config
       case other => ServerConfiguration.configForName(other)
     }
-    Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist.toList,m.audiences)
+    val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
+      for {
+        sys <- (n \ "@system").headOption.map(_.text)
+        key <- (n \ "@key").headOption.map(_.text)
+      } yield {
+        ForeignRelationship(sys,key)
+      }
+    })
+    Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist.toList,m.audiences,foreignRelationship)
   })
   override def fromConversation(input:Conversation):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversation",{
     metlXmlToXml("conversation",List(
@@ -613,7 +622,9 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       }</blacklist>,
       //                        <configName>{input.server.name}</configName>,
       fromPermissions(input.permissions)
-    ))
+    ) ::: input.foreignRelationship.toList.map(t => {
+      <foreignRelationship system={t.system} key={t.key} />
+    }))
   })
   override def fromConversationList(input:List[Conversation]):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversationList",{
     <conversations>{input.map(c => fromConversation(c))}</conversations>

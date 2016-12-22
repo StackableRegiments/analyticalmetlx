@@ -8,6 +8,7 @@ import net.liftweb.util.Helpers._
 import Privacy._
 import net.liftweb.json.{Serialization, NoTypeHints, TypeInfo, Formats, MappingException}
 import net.liftweb.json.JsonAST._
+import com.metl.liftAuthenticator.ForeignRelationship
 
 object ConversionHelper extends Logger {
   def toDouble(a:Any):Double = a match{
@@ -832,11 +833,25 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         }
         val permissions = toPermissions(getObjectByName(input,"permissions"))
         val blacklist = getListOfStringsByName(input,"blacklist")
+        val audiences = parseJObjForAudiences(input,config)
         val thisConfig = getStringByName(input,"configName") match {
           case "" => config
           case other => ServerConfiguration.configForName(other)
         }
-        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist)
+        val foreignRelationship = getOptionalObjectByName(input,"foreignRelationship").flatMap(n => {
+          n.value match {
+            case jo:JObject => {
+              for {
+                sys <- getOptionalStringByName(jo,"system")
+                key <- getOptionalStringByName(jo,"key")
+              } yield {
+                ForeignRelationship(sys,key)
+              }
+            }
+            case _ => None
+          }
+        })
+        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist,audiences,foreignRelationship)
       }
       case _ => Conversation.empty
     }
@@ -856,7 +871,12 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("permissions",fromPermissions(input.permissions)),
       JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList)),
       JField("configName",JString(input.server.name))
-    ))
+    ) ::: input.foreignRelationship.toList.map(fr => {
+      JField("foreignRelationship",JObject(List(
+        JField("system",JString(fr.system)),
+        JField("key",JString(fr.key))
+      )))
+    }) ::: parseAudiences(input))
   })
   override def toSlide(i:JValue):Slide = Stopwatch.time("JsonSerializer.toSlide",{
     i match {

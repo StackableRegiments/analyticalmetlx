@@ -10,7 +10,7 @@ import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 
 import Privacy._
-
+import com.metl.liftAuthenticator.ForeignRelationship
 
 class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogger {
   implicit val formats = net.liftweb.json.DefaultFormats
@@ -329,13 +329,24 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromMeTLQuizResponse(i:MeTLQuizResponse):H2QuizResponse = {
     incStanza(H2QuizResponse.create,i,"quizResponse").answer(i.answer).answerer(i.answerer).quizId(i.id)
   }
-  def toConversation(i:H2Conversation):Conversation = Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList)
+  def toConversation(i:H2Conversation):Conversation = {
+    val fr = for {
+      sys <- Some(i.foreignRelationshipSystem.get)
+      if (sys != null && sys != "")
+      key <- Some(i.foreignRelationshipKey.get)
+      if (key != null && key != "")
+    } yield {
+      ForeignRelationship(sys,key)
+    }
+    val audiences = parseAudiences(i.audiences.get)
+    Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList,parseAudiences(i.audiences.get),fr)
+  }
   override def fromConversation(i:Conversation):H2Conversation = {
     val rec = H2Conversation.find(By(H2Conversation.jid,i.jid)) match {
       case Full(c) => c
       case _ => H2Conversation.create
     }
-    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides))
+    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides)).foreignRelationshipSystem(i.foreignRelationship.map(_.system).getOrElse("")).foreignRelationshipKey(i.foreignRelationship.map(_.key).getOrElse("")).audiences(incAudiences(i.audiences).toString)
   }
   def optionsToString(ls:List[QuizOption]):String = {
     val xml = <options>{ls.map(o => xmlSerializer.fromQuizOption(o))}</options>

@@ -117,7 +117,7 @@ var Conversation = (function(){
         $("#conversationTitleInput").val(conversation.title);
         $(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
-	console.log("usergroups",userGroups);
+				console.log("usergroups",userGroups);
         sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"ouType":"special","name":conversation.subject}]),"name"),function(item){return item.ouType;}),function(categoryGroups){
             var rootElem = sharingCategoryTemplate.clone();
 

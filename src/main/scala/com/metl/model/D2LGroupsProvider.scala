@@ -654,13 +654,19 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
   }
   override def getOrgUnit(orgUnitName:String):Option[OrgUnit] = {
     val uc = interface.getUserContext
+    interface.getOrgUnit(uc,orgUnitName).map(en => {
+      OrgUnit(en.Type.Name,en.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.Identifier.toString)))
+    })
+
+    // this bit is CURRENTLY wrong
+    /*
     interface.getUserByUsername(uc,Globals.currentUser.is).flatMap(user => {
       val enrollments = interface.getEnrollments(uc,user.UserId.toString)  
       enrollments.map(en => {
         OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
       }).find(_.name == orgUnitName)
     })
-
+    */
   }
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = {
     orgUnit.foreignRelationship.filter(_.system == storeId).toList.flatMap(fr => {

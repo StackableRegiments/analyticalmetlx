@@ -355,7 +355,15 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
 
-  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(
+    JField("type",JString(eg.ouType)),
+    JField("value",JString(eg.name))
+  ) ::: eg.foreignRelationship.toList.map(fr => {
+    JField("foreignRelationship",JObject(List(
+      JField("system",JString(fr.system)),
+      JField("key",JString(fr.key))
+    )))
+  }))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
@@ -465,10 +473,8 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
-  //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   implicit val formats = net.liftweb.json.DefaultFormats
-  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
-                                                                                                                //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
+  private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))
   override lazy val functionDefinitions = List(
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
@@ -511,13 +517,25 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunction("changeSubjectOfConversation",List("conversationJid","newSubject"),(args) => {
+    ClientSideFunction("changeSubjectOfConversation",List("conversationJid","newSubject","newRelationshipSystem","newRelationshipKey"),(args) => {
       val jid = getArgAsString(args(0))
       val newSubject = getArgAsString(args(1))
-      val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation((shouldModifyConversation(c) && Globals.getUserGroups.exists(_.name == newSubject)) match {
-        case true => serverConfig.updateSubjectOfConversation(c.jid.toString.toLowerCase,newSubject)
-        case _ => c
+      val newRelationshipSystem = tryo(getArgAsString(args(2)))
+      val newRelationshipKey = tryo(getArgAsString(args(3)))
+      var c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(if (shouldModifyConversation(c) && (newSubject.toLowerCase == "unrestricted" || newSubject.toLowerCase == username || Globals.getUserGroups.exists(_.name == newSubject))){
+        var newRelationship = for {
+          sys <- newRelationshipSystem
+          key <- newRelationshipKey
+          if (sys != null && sys != "")
+          if (key != null && key != "")
+        } yield {
+          com.metl.liftAuthenticator.ForeignRelationship(sys,key)
+        }
+        var newC = c.replaceSubject(newSubject).setForeignRelationship(newRelationship)
+        serverConfig.updateConversation(c.jid.toString,newC)
+      } else {
+        c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
@@ -1195,6 +1213,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       partialUpdate(refreshClientSideStateJs(true))
     }
     case HealthyWelcomeFromRoom => {}
+    case cp@ConversationParticipation(jid,currentMembers,possibleMembers) if shouldModifyConversation() => {
+      println("CONVERSATION PARTICIPATION: %s".format(cp))
+      partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
+        JField("location",JString(jid)),
+        JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
+        JField("possibleMembers",JArray(possibleMembers.map(pm => JString(pm))))
+      ))))
+    }
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
   override def autoIncludeJsonCode = true
@@ -1706,7 +1732,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
         //not relaying teacherInConversation to page
       }
-      case a:Attendance if (shouldModifyConversation()) => getAttendance.map(attendances => partialUpdate(Call(RECEIVE_ATTENDANCE,attendances)))
+      //case a:Attendance if (shouldModifyConversation()) => getAttendance.map(attendances => partialUpdate(Call(RECEIVE_ATTENDANCE,attendances)))
       case s:MeTLSubmission if !shouldModifyConversation() && s.author != username => {
         //not sending the submission to the page, because you're not the author and it's not yours
       }
@@ -1747,6 +1773,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     }
   })
+  /*
   protected var expectedAttendanceCache:Option[List[Member]] = None
   def getAttendance = {
     val expectedAttendance = expectedAttendanceCache.getOrElse({
@@ -1771,6 +1798,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       JField("val",JInt(actualAttendance.length)),
       JField("max",JInt(expectedAttendance.length)))))
   }
+  */
   private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
   private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
   private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)

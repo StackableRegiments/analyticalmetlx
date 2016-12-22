@@ -6,6 +6,7 @@ import com.metl.model._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import java.util.Date
+import com.metl.liftAuthenticator.ForeignRelationship
 
 object PointConverter {
   def fromText(t:String):List[Point] = parsePoints(t.split(" ").toList)
@@ -180,7 +181,7 @@ object Group {
   def empty = Group(ServerConfiguration.empty,"","",0,Nil,Nil)
 }
 
-case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences) with Logger{
+case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil,foreignRelationship:Option[ForeignRelationship] = None) extends MeTLData(server,audiences) with Logger{
   def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(server,author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
   def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)
   def replacePermissions(newPermissions:Permissions) = copy(permissions = newPermissions, lastAccessed = new Date().getTime)
@@ -214,6 +215,7 @@ case class Conversation(override val server:ServerConfiguration,author:String,la
     replaceSlides(newSlides)
   }
   def replaceSlides(newSlides:List[Slide]) = copy(slides=newSlides,lastAccessed = new Date().getTime)
+  def setForeignRelationship(fr:Option[ForeignRelationship]) = copy(foreignRelationship = fr,lastAccessed=new Date().getTime)
 }
 object Conversation{
   def empty = Conversation(ServerConfiguration.empty,"",0L,List.empty[Slide],"","",0,"",0L,Permissions.default(ServerConfiguration.empty),Nil,Nil)
