@@ -90,9 +90,7 @@ var Conversations = (function(){
             conversationActivity = conversationActivity || $("#conversationActivity");
             WorkQueue.enqueue(function(){
                 _.each(currentConversation.slides,updateSlide);
-                if(!svgInitialized){
-                    svgInitialized = true;
-                    console.log("Initializing conversation trace");
+                if(!groupTraces.anyPublic.update){
                     groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
                                                                  [groupActivity.anyPublic.line,
                                                                   groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
@@ -127,7 +125,6 @@ var Conversations = (function(){
         }
         var SENSOR_INTERVAL = 500;
         var DISPLAY_INTERVAL = 1000;
-        var svgInitialized = false;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(displayAudiences,DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){

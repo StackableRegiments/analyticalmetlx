@@ -7,16 +7,17 @@ var Plugins = (function(){
                     " .videoConfStartButton, .videoConfSubscribeButton {background:white;margin:1px;}"+
                     " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer{display:flex;}"+
                     " .videoConfStartButtonContainer{flex-direction:row;}"+
+                    " .videoConfStartButton{padding:0 1em;font-size:1rem;}"+
                     " #videoConfSessionsContainer{display:flex;}"+
 		    " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
-		    " .context{margin-left:1em;}"+
+		    " .context{font-size:1rem;}"+
                     " .broadcastContainer{display:none;}",
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
                                      '<div class="videoConfSessionContainer">'+
                                      '<div class="videoConfStartButtonContainer">'+
-                                     '<button class="floatingToolbar btn-menu fa fa-video-camera btn-icon videoConfStartButton">'+
-                                     '<div class="icon-txt">Start sending</div>'+
+                                     '<button class="videoConfStartButton">'+
+                                     '<div>Start sending</div>'+
                                      '</button>'+
 				     '<span class="context"></span>'+
                                      '</div>'+

@@ -121,7 +121,7 @@ var TokBoxSession = function(desc,sessionContainer){
         if(session.connection){
             var context = session.connection.data.match(/description=(.+)$/)[1];
             var label = context;
-            if(context == Conversations.getCurrentConversationJid()){label = "Conversation"}
+            if(context == Conversations.getCurrentConversationJid()){label = "everyone"}
             else{
                 var groupContext = _.flatMap(Conversations.getCurrentSlide().groupSets,function(groupSet){
                     return _.find(groupSet.groups,function(group){
@@ -129,15 +129,15 @@ var TokBoxSession = function(desc,sessionContainer){
                     });
                 });
                 if(groupContext.length){
-                    label = sprintf("Group %s",groupContext[0].title);
+                    label = sprintf("group %s",groupContext[0].title);
                 }
             }
             sessionContainer.find(".context").text(label);
         }
         if (thisPublisher != undefined){
-            streamButton.addClass("publishedStream").find(".icon-txt").text("Stop sending");
+            streamButton.addClass("publishedStream").find("div").text("Hide from");
         } else {
-            streamButton.removeClass("publishedStream").find(".icon-txt").text("Start sending");
+            streamButton.removeClass("publishedStream").find("div").text("Stream to");
         }
         _.forEach(streams,function(s){
             if ("refreshVisual" in s){
