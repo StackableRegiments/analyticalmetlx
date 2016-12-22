@@ -9,8 +9,8 @@ var Plugins = (function(){
                     " .videoConfStartButtonContainer{flex-direction:row;}"+
                     " .videoConfStartButton{padding:0 1em;font-size:1rem;}"+
                     " #videoConfSessionsContainer{display:flex;}"+
-		    " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
-		    " .context{font-size:1rem;}"+
+                    " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
+                    " .context{font-size:1rem;}"+
                     " .broadcastContainer{display:none;}",
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
@@ -19,9 +19,9 @@ var Plugins = (function(){
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
                                      '</button>'+
-				     '<span class="context"></span>'+
+                                     '<span class="context"></span>'+
                                      '</div>'+
-				     '<div class="viewscreen"></div>'+
+                                     '<div class="viewscreen"></div>'+
                                      '<div class="broadcastContainer">'+
                                      '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
                                      '<div class="icon-txt">Watch class</div>'+
@@ -64,6 +64,7 @@ var Plugins = (function(){
                     " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;color:white;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
                     " .isolateGroup{margin-top:0.8em;}"+
+		    " .memberCurrentGrade{color:black;background-color:white;margin-right:0.5em;padding:0 .5em;}"+
                     " .groupsPluginGroupControls{display:flex;}"+
                     " .groupsPluginGroupGrade{background-color:white;color:black;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
                     " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
@@ -80,6 +81,7 @@ var Plugins = (function(){
                                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
                                             return grade.location == linkedGradeLoc;
                                         });
+                                        var linkedGrades = Grades.getGradeValues()[linkedGrade.id];
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
                                         }).append($("<input />",{
@@ -99,6 +101,8 @@ var Plugins = (function(){
                                                 }).append($("<span />",{
                                                     class:"icon-txt",
                                                     text:"Show all"
+                                                }).css({
+                                                    "margin-top":"3px"
                                                 }))).appendTo(overContainer);
                                         var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                         _.each(groups,function(group){
@@ -170,12 +174,18 @@ var Plugins = (function(){
                                                 class:"groupsPluginGroup"
                                             }).prependTo(gc);
                                             _.each(group.members,function(member){
-                                                $("<div />",{
+                                                var mV = $("<div />",{
                                                     text:member,
                                                     class:"groupsPluginMember"
                                                 }).appendTo(members);
+                                                if(linkedGrades && member in linkedGrades){
+                                                    $("<span />",{
+                                                        class:"memberCurrentGrade",
+                                                        text:linkedGrades[member].gradeValue
+                                                    }).prependTo(mV);
+                                                }
                                             });
-					    grades.appendTo(right);
+                                            grades.appendTo(right);
                                         });
                                     }
                                 }
@@ -186,6 +196,15 @@ var Plugins = (function(){
                         }
                     }
 
+                    bus.gradeValueReceived["Groups plugin"] = function(gv){
+                        var linkedGradeLoc = sprintf("groupWork_%s",Conversations.getCurrentSlideJid());
+                        var linkedGrade = _.find(Grades.getGrades(),function(grade){
+                            return grade.location == linkedGradeLoc;
+                        });
+                        if(linkedGrade && gv.gradeId == linkedGrade.id){
+                            render();
+                        }
+                    }
                     bus.currentSlideJidReceived["Groups plugin"] = render;
                     bus.conversationDetailsReceived["Groups plugin"] = render;
                     return overContainer;

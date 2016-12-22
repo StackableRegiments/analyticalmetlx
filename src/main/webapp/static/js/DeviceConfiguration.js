@@ -250,7 +250,7 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		masterFooter.width(width);
+		masterFooter.width(width - thumbsColumn.width());
                 board.width(bwidth);
                 board.height(bheight);
                 toolsColumn.height(bheight);
