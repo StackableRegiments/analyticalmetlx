@@ -2,6 +2,7 @@ var Participants = (function(){
     var participantsDatagrid = {};
     var participantFollowControl = {};
     var participants = {};
+		var possibleParticipants = [];
     var newParticipant = {
         inks:0,
         highlighters:0,
@@ -210,11 +211,15 @@ var Participants = (function(){
     }
     $(function(){
         Progress.attendanceReceived["participationHealth"] = function(attendances){
-            $("#attendanceStatus").prop({
-                value:attendances.val,
-                max:attendances.max,
-                min:0
-            });
+					var loc = attendances.location;
+					var currentMembers = attendances.currentMembers;
+					var possibleMembers = attendances.possibleMembers;
+					possibleParticipants = _.uniq(_.concat(possibleMembers,possibleParticipants));
+					$("#attendanceStatus").prop({
+							value:currentMembers.length,
+							max:possibleMembers.length,
+							min:0
+					});
         };
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
@@ -319,7 +324,7 @@ var Participants = (function(){
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
 				getPossibleParticipants:function(){
-					return Conversations.shouldModifyConversation() ? _.keys(participants) : [];
+					return Conversations.shouldModifyConversation() ? possibleParticipants : [];
 				},
         getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
         reRender:function(){

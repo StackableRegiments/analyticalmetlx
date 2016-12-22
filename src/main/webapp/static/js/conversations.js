@@ -1019,15 +1019,21 @@ function receiveAttendance(attendances){
 function receiveGroupsProviders(providers){
     Progress.call("groupProvidersReceived",[providers]);
 }
-function receiveOrgUnitsFromGroupsProviders(gp){
-    _.each(gp.orgUnits,function(ou){
-        getGroupSetsForOrgUnit(gp.groupsProvider,ou);
-    });
+function receiveOrgUnitsFromGroupsProviders(orgUnits){
+	console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+	if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+		_.forEach(orgUnits.orgUnits,function(orgUnit){
+			getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
+		});
+	}
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-    _.each(groupSets.groupSets,function(groupSet){
-        getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
-    });
+	console.log("receiveGroupSetsForOrgUnit",groupSets);
+	if ("groupSets" in groupSets && groupSets.groupSets.length){
+		_.forEach(groupSets.groupSets,function(groupSet){
+			getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+		});
+	}
 }
 function receiveGroupsForGroupSet(groups){
     Progress.call("groupsReceived",[groups]);

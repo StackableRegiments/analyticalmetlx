@@ -25,7 +25,7 @@ class AuthenticationSnippet {
           <authGroup type={eg.ouType} name={eg.name} />
         }) }</eligibleGroups>
         <informationGroups>{authData.informationGroups.map(ig => {
-          <infoGroup type={ig._1} name={ig._2} />
+          <infoGroup type={ig.key} name={ig.value} />
         })}</informationGroups> ++ 
         (for(
           cp <- MeTLXConfiguration.configurationProvider;

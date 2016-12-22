@@ -17,7 +17,7 @@ import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 import net.liftweb.json._
-import com.metl.liftAuthenticator.LiftAuthStateData
+import com.metl.liftAuthenticator.{LiftAuthStateData,Detail}
 import java.util.zip._
 
 import com.metl.model._
@@ -76,7 +76,7 @@ object StatelessHtml extends Stemmer with Logger {
   })
 
   def listGroups(username:String,informationGroups:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listGroups",{
-    val prelimAuthStateData = LiftAuthStateData(false,username,Nil,informationGroups)
+    val prelimAuthStateData = LiftAuthStateData(false,username,Nil,informationGroups.map(t => Detail(t._1,t._2)))
     val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
     val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
     val lasd = LiftAuthStateData(false,username,groups,personalDetails)

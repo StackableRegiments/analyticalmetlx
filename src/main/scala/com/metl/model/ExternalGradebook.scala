@@ -164,7 +164,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val d2lUser = lookupD2LUserId(uc,username)
       val enrollments = interface.getEnrollments(uc,d2lUser)
       enrollments.filter(en => acceptableRoles.contains(en.Role.Name)).map(en => {
-        OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some((name,en.OrgUnit.Id.toString)))
+        OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(name,en.OrgUnit.Id.toString)))
       }).toList
     })
   }

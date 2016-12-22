@@ -313,9 +313,9 @@ var Grades = (function(){
 									} else if (chosenOrgUnit === undefined){
 										$.getJSON(sprintf("/getExternalGradebookOrgUnits/%s",chosenGradebook),function(data){
 											console.log("requestedOrgUnits:",data);
-											chosenOrgUnit = data[0].foreignRelationship["_2"];
+											chosenOrgUnit = data[0].foreignRelationship.key;
 											aNodes.find(".chooseOrgUnit").html(_.map(data,function(ou){
-												var ouId = ou.foreignRelationship["_2"];
+												var ouId = ou.foreignRelationship.key;
 												return $("<option/>",{
 													value:ouId,
 													text:ou.name 		 

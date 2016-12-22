@@ -117,7 +117,7 @@ var Conversation = (function(){
         $("#conversationTitleInput").val(conversation.title);
         $(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
-	console.log("usergroups",userGroups);
+				console.log("usergroups",userGroups);
         sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"ouType":"special","name":conversation.subject}]),"name"),function(item){return item.ouType;}),function(categoryGroups){
             var rootElem = sharingCategoryTemplate.clone();
 
@@ -131,8 +131,12 @@ var Conversation = (function(){
                 var inputElem = choiceRoot.find(".conversationSharingChoiceInputElement")
 
                 inputElem.attr("id",choiceId).attr("type","radio").on("click",function(){
+									if ("foreignRelationship" in categoryGroup){
+                    changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name,categoryGroup.foreignRelationship.system,categoryGroup.foreignRelationship.key);
+									} else {
                     changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name);
-                    reRender();
+									}
+									reRender();
                 }).prop("checked",conversation.subject == categoryGroup.name);
                 choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.name);
                 return choiceRoot;

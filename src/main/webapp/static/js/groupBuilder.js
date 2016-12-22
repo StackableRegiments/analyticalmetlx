@@ -11,50 +11,56 @@ var GroupBuilder = (function(){
     var renderExternalGroups = function(){
         var container = $("#groupsPopup");
         var importV = container.find(".importGroups").empty();
-        _.each(externalGroups,function(payload){
-            var ou = payload.orgUnit;
-            if(ou){
-                if(displayCache[ou.name]){
-                    displayCache[ou.name].remove();
-                }
-                var ouV = displayCache[ou.name] = $("<div />",{
-                    text:ou.name
-                }).appendTo(importV);
-                var groupId = 0;
-                _.each(ou.groupSets,function(groupSet){
-                    var groupSetV = $("<div />",{
-                    }).appendTo(ouV);
-                    _.each(groupSet.groups,function(group){
-                        groupId++;
-                        var groupV = $("<div />",{
-                            class:"groupBuilderGroup"
-                        }).appendTo(groupSetV);
-                        var inputId = sprintf("structuralGroup_%s",groupId);
-                        var inputV = $("<input />",{
-                            type:"checkbox",
-                            id:inputId
-                        }).on("click",function(){
-                            if(_.includes(initialGroups,group)){
-                                initialGroups = _.without(initialGroups,group);
-                            }
-                            else{
-                                initialGroups.push(group);
-                            }
-                            render();
-                        }).appendTo(groupV);
-                        inputV.prop("checked",_.includes(initialGroups,group));
-                        $("<label />",{
-                            for:inputId
-                        }).append($("<span />",{
-                            class:"icon-txt",
-                            text:"Copy"
-                        })).appendTo(groupV);
-                        _.each(group.members,function(member){
-                            renderMember(member.name).appendTo(groupV);
-                        });
-                    });
-                });
-            }
+        _.each(externalGroups,function(orgUnit){
+					_.each(orgUnit,function(groupCat){
+							var ou = groupCat.orgUnit;
+							if(ou){
+									if(displayCache[ou.name]){
+											displayCache[ou.name].remove();
+									}
+									var ouV = displayCache[ou.name] = $("<div />",{
+											text:ou.name
+									}).appendTo(importV);
+									var groupId = 0;
+									var groupSet = groupCat.groupSet;
+									var groupSetV = $("<div />",{
+									}).appendTo(ouV);
+									groupSetV.append("<div />",{
+										class:"groupCatName",
+										text:groupSet.name
+									});
+									_.each(groupCat.groups,function(group){
+											groupId++;
+											var groupV = $("<div />",{
+													class:"groupBuilderGroup",
+													text:group.name
+											}).appendTo(groupSetV);
+											var inputId = sprintf("structuralGroup_%s",groupId);
+											var inputV = $("<input />",{
+													type:"checkbox",
+													id:inputId
+											}).on("click",function(){
+													if(_.includes(initialGroups,group)){
+															initialGroups = _.without(initialGroups,group);
+													}
+													else{
+															initialGroups.push(group);
+													}
+													render();
+											}).appendTo(groupV);
+											inputV.prop("checked",_.includes(initialGroups,group));
+											$("<label />",{
+													for:inputId
+											}).append($("<span />",{
+													class:"icon-txt",
+													text:"Copy"
+											})).appendTo(groupV);
+											_.each(group.members,function(member){
+													renderMember(member.name).appendTo(groupV);
+											});
+									});
+							}
+					});
         });
     }
     var render = function(){
@@ -204,8 +210,13 @@ var GroupBuilder = (function(){
         });
     };
     Progress.groupsReceived["GroupBuilder"] = function(args){
-        externalGroups[args.orgUnit.name] = args;
-        renderExternalGroups();
+			var byOrgUnit = externalGroups[args.orgUnit.name];
+			if (byOrgUnit === undefined){
+				byOrgUnit = {};
+				externalGroups[args.orgUnit.name] = byOrgUnit;
+			}
+			byOrgUnit[args.groupSet.name] = args;
+      renderExternalGroups();
     };
     Progress.currentSlideJidReceived["GroupBuilder"] = render;
     Progress.conversationDetailsReceived["GroupBuilder"] = function(){

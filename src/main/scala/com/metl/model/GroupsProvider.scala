@@ -44,11 +44,11 @@ object GroupsProvider {
         !bg._3.exists(vp => !g.name.startsWith(vp)) &&
         !bg._4.exists(vs => !g.name.endsWith(vs))
       })
-      val personalDetailsFilter = (g:Tuple2[String,String]) => blacklistedInfos.exists(bg => {
-        !bg._1.exists(kp => !g._1.startsWith(kp)) &&
-        !bg._2.exists(ks => !g._1.endsWith(ks)) &&
-        !bg._3.exists(vp => !g._2.startsWith(vp)) &&
-        !bg._4.exists(vs => !g._2.endsWith(vs))
+      val personalDetailsFilter = (g:Detail) => blacklistedInfos.exists(bg => {
+        !bg._1.exists(kp => !g.key.startsWith(kp)) &&
+        !bg._2.exists(ks => !g.key.endsWith(ks)) &&
+        !bg._3.exists(vp => !g.value.startsWith(vp)) &&
+        !bg._4.exists(vs => !g.value.endsWith(vs))
       })
       val membersFilter = (g:Member) => blacklistedMembers.exists(bg => {
         !bg._1.exists(kp => !g.name.startsWith(kp)) &&
@@ -57,83 +57,105 @@ object GroupsProvider {
       new FilteringGroupsProvider(gp.storeId,gp,groupsFilter,membersFilter,personalDetailsFilter)
     }).getOrElse(gp)
   }
-  def createFlatFileGroups(in:NodeSeq):List[GroupsProvider] = {
-    val name = (in \\ "@name").headOption.map(_.text)
-    (in \\ "@format").headOption.toList.flatMap(ho => ho.text match {
-      case "stLeo" => {
-        (in \\ "@location").headOption.map(_.text).map(loc => {
-          new StLeoFlatFileGroupsProvider(name.getOrElse("SLU_from_%s".format(loc)),loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
-        }).toList
-      }
-      case "globalOverrides" => {
-        (in \\ "@location").headOption.map(_.text).map(loc => {
-          new GlobalOverridesGroupsProvider(name.getOrElse("Globals_from_%s".format(loc)),loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
-        }).toList
-      }
-      case "adfsGroups" => {
-        List(new ADFSGroupsExtractor(name.getOrElse("ADFS groups")))
-      }
-      case "xmlSpecificOverrides" => {
-        (for {
-          path <- (in \\ "@location").headOption.map(_.text)
-          period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
-        } yield {
-          val n = name.getOrElse("xmlUserOverrides_from_%s".format(path))
-          new StoreBackedGroupsProvider(n,
-            new PeriodicallyRefreshingGroupStoreProvider(
-              new FileWatchingCachingGroupStoreProvider(
-                new XmlSpecificOverridesGroupStoreProvider(path),
-              path),
-              period
-            )
-          )
-        }).toList
-      }
-      case "specificOverrides" => {
-        (for {
-          path <- (in \\ "@location").headOption.map(_.text)
-          period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
-        } yield {
-          val n = name.getOrElse("csvUserOverrides_from_%s".format(path))
-          new StoreBackedGroupsProvider(n,
-            new PeriodicallyRefreshingGroupStoreProvider(
-              new FileWatchingCachingGroupStoreProvider(
-                new SpecificOverridesGroupStoreProvider(path),
-              path),
-              period
-            )
-          )
-        }).toList
-      }
-      case "d2l" => (for {
-        host <- (in \\ "@host").headOption.map(_.text)
-        leApiVersion <- (in \\ "@leApiVersion").headOption.map(_.text)
-        lpApiVersion <- (in \\ "@lpApiVersion").headOption.map(_.text)
-        appId <- (in \\ "@appId").headOption.map(_.text)
-        appKey <- (in \\ "@appKey").headOption.map(_.text)
-        userId <- (in \\ "@userId").headOption.map(_.text)
-        userKey <- (in \\ "@userKey").headOption.map(_.text)
-        diskStore <- (in \\ "@diskStore").headOption.map(_.text)
-        overrideUsername = (in \\ "@overrideUsername").headOption.map(_.text)
-        refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
+  def constructFromXml(outerNodes:NodeSeq):List[GroupsProvider] = {
+    val name = (outerNodes \\ "@name").headOption.map(_.text)
+    (for {
+      in <- (outerNodes \\ "selfGroups")
+    } yield {
+      new SelfGroupsProvider(name.getOrElse("selfGroups"))
+    }).toList ::: 
+    (for {
+      dNodes <- (outerNodes \\ "d2lGroupsProvider")
+      host <- (dNodes \ "@host").headOption.map(_.text)
+      leApiVersion <- (dNodes \ "@leApiVersion").headOption.map(_.text)
+      lpApiVersion <- (dNodes \ "@lpApiVersion").headOption.map(_.text)
+      appId <- (dNodes \ "@appId").headOption.map(_.text)
+      appKey <- (dNodes \ "@appKey").headOption.map(_.text)
+      userId <- (dNodes \ "@userId").headOption.map(_.text)
+      userKey <- (dNodes \ "@userKey").headOption.map(_.text)
+    } yield {
+      val n = name.getOrElse("d2lInteface_to_%s".format(host))
+      possiblyFilter(outerNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion))
+    }).toList ::: 
+    (for {
+      in <- (outerNodes \\ "flatFileGroups")
       } yield {
-        val n = name.getOrElse("d2lGroups_from_%s".format(host))
-        val diskCache = new XmlGroupStoreDataFile(diskStore)
-        new StoreBackedGroupsProvider(n,
-          new PeriodicallyRefreshingGroupStoreProvider(
-            new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
-            refreshPeriod,
-            diskCache.read,
-            Some(g => {
-              if (sanityCheck(g)){ // don't trash the entire file if the fetch from D2L is empty
-                diskCache.write(g)
-              }
-            })
-          )
-        ,overrideUsername)
-      }).toList
-      case _ => Nil
-    }).toList.map(gp => possiblyFilter(in,gp))
+      (in \\ "@format").headOption.toList.flatMap(ho => ho.text match {
+        case "stLeo" => {
+          (in \\ "@location").headOption.map(_.text).map(loc => {
+            new StLeoFlatFileGroupsProvider(name.getOrElse("SLU_from_%s".format(loc)),loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
+          }).toList
+        }
+        case "globalOverrides" => {
+          (in \\ "@location").headOption.map(_.text).map(loc => {
+            new GlobalOverridesGroupsProvider(name.getOrElse("Globals_from_%s".format(loc)),loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
+          }).toList
+        }
+        case "adfsGroups" => {
+          List(new ADFSGroupsExtractor(name.getOrElse("ADFS groups")))
+        }
+        case "xmlSpecificOverrides" => {
+          (for {
+            path <- (in \\ "@location").headOption.map(_.text)
+            period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
+          } yield {
+            val n = name.getOrElse("xmlUserOverrides_from_%s".format(path))
+            new StoreBackedGroupsProvider(n,
+              new PeriodicallyRefreshingGroupStoreProvider(
+                new FileWatchingCachingGroupStoreProvider(
+                  new XmlSpecificOverridesGroupStoreProvider(path),
+                path),
+                period
+              )
+            )
+          }).toList
+        }
+        case "specificOverrides" => {
+          (for {
+            path <- (in \\ "@location").headOption.map(_.text)
+            period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
+          } yield {
+            val n = name.getOrElse("csvUserOverrides_from_%s".format(path))
+            new StoreBackedGroupsProvider(n,
+              new PeriodicallyRefreshingGroupStoreProvider(
+                new FileWatchingCachingGroupStoreProvider(
+                  new SpecificOverridesGroupStoreProvider(path),
+                path),
+                period
+              )
+            )
+          }).toList
+        }
+        case "d2l" => (for {
+          host <- (in \\ "@host").headOption.map(_.text)
+          leApiVersion <- (in \\ "@leApiVersion").headOption.map(_.text)
+          lpApiVersion <- (in \\ "@lpApiVersion").headOption.map(_.text)
+          appId <- (in \\ "@appId").headOption.map(_.text)
+          appKey <- (in \\ "@appKey").headOption.map(_.text)
+          userId <- (in \\ "@userId").headOption.map(_.text)
+          userKey <- (in \\ "@userKey").headOption.map(_.text)
+          diskStore <- (in \\ "@diskStore").headOption.map(_.text)
+          overrideUsername = (in \\ "@overrideUsername").headOption.map(_.text)
+          refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
+        } yield {
+          val n = name.getOrElse("d2lGroups_from_%s".format(host))
+          val diskCache = new XmlGroupStoreDataFile(diskStore)
+          new StoreBackedGroupsProvider(n,
+            new PeriodicallyRefreshingGroupStoreProvider(
+              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
+              refreshPeriod,
+              diskCache.read,
+              Some(g => {
+                if (sanityCheck(g)){ // don't trash the entire file if the fetch from D2L is empty
+                  diskCache.write(g)
+                }
+              })
+            )
+          ,overrideUsername)
+        }).toList
+        case _ => Nil
+      }).toList.map(gp => possiblyFilter(in,gp))
+    }).toList.flatten
   }
 }
 
@@ -168,12 +190,12 @@ abstract class GroupsProvider(val storeId:String) extends Logger {
   def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
   
   def getOrgUnit(name:String):Option[OrgUnit]
-  def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = userData.informationGroups.toList
+  def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
 }
 
 class ADFSGroupsExtractor(override val storeId:String) extends GroupsProvider(storeId) {
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = userData.eligibleGroups.toList
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = userData.informationGroups.toList
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
@@ -185,11 +207,11 @@ class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) e
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gp.getMembersFor(orgUnit,groupSet)
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gp.getGroupsFor(orgUnit,groupSet)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group)
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gp.getPersonalDetailsFor(userData)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData)
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
-class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean,membersFilter:Member=>Boolean,personalDetailsFilter:Tuple2[String,String]=>Boolean) extends PassThroughGroupsProvider(storeId,gp) {
+class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean,membersFilter:Member=>Boolean,personalDetailsFilter:Detail=>Boolean) extends PassThroughGroupsProvider(storeId,gp) {
   override val canQuery:Boolean = gp.canQuery
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData).filter(groupsFilter)
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit).filter(membersFilter)
@@ -197,13 +219,13 @@ class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,grou
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gp.getMembersFor(orgUnit,groupSet).filter(membersFilter)
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gp.getGroupsFor(orgUnit,groupSet)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group).filter(membersFilter)
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gp.getPersonalDetailsFor(userData).filter(personalDetailsFilter)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData).filter(personalDetailsFilter)
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
 class StoreBackedGroupsProvider(override val storeId:String,gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider(storeId) {
   override val canQuery:Boolean = gs.canQuery
-  protected def resolveUser(userData:LiftAuthStateData):String = usernameOverride.flatMap(uo => userData.informationGroups.find(_._1 == uo).map(_._2)).getOrElse(userData.username)
+  protected def resolveUser(userData:LiftAuthStateData):String = usernameOverride.flatMap(uo => userData.informationGroups.find(_.key == uo).map(_.value)).getOrElse(userData.username)
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)
   
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gs.getMembersFor(orgUnit)
@@ -214,13 +236,13 @@ class StoreBackedGroupsProvider(override val storeId:String,gs:GroupStoreProvide
 
   override def getOrgUnit(name:String):Option[OrgUnit] = gs.getOrgUnit(name)
   
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Tuple2[String,String]] = gs.getPersonalDetails.get(resolveUser(userData)).getOrElse(Nil)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gs.getPersonalDetails.get(resolveUser(userData)).getOrElse(Nil)
 }
 
 case class GroupStoreData(
   groupsForMembers:Map[String,List[OrgUnit]] = Map.empty[String,List[OrgUnit]],
   membersForGroups:Map[String,List[Member]] = Map.empty[String,List[Member]],
-  detailsForMembers:Map[String,List[Tuple2[String,String]]] = Map.empty[String,List[Tuple2[String,String]]],
+  detailsForMembers:Map[String,List[Detail]] = Map.empty[String,List[Detail]],
   orgUnitsByName:Map[String,OrgUnit] = Map.empty[String,OrgUnit],
   groupSetsByOrgUnit:Map[OrgUnit,List[GroupSet]] = Map.empty[OrgUnit,List[GroupSet]],
   groupsByGroupSet:Map[Tuple2[OrgUnit,GroupSet],List[Group]] = Map.empty[Tuple2[OrgUnit,GroupSet],List[Group]]
@@ -231,7 +253,7 @@ trait GroupStoreProvider extends Logger {
   def getData:GroupStoreData = GroupStoreData()
   def getGroups:Map[String,List[OrgUnit]] = getData.groupsForMembers
   def getMembers:Map[String,List[Member]] = getData.membersForGroups
-  def getPersonalDetails:Map[String,List[Tuple2[String,String]]] = getData.detailsForMembers
+  def getPersonalDetails:Map[String,List[Detail]] = getData.detailsForMembers
 
   def getOrgUnit(name:String):Option[OrgUnit] = getData.orgUnitsByName.get(name)
   def getGroupSet(orgUnit:OrgUnit,name:String):Option[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil).find(_.name == name)
@@ -317,7 +339,7 @@ trait GroupStoreDataSerializers {
     writer.writeAll(
       List(memberName,attributeValue,groupTypeName,groupName) :: 
       c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => g.members.map(m => (m,m,g.ouType,g.name)))) :::
-      c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g._2,PersonalInformation.personalInformation,g._1)))
+      c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g.value,PersonalInformation.personalInformation,g.key)))
     )
     writer.close
     baos.toString("UTF-8")
@@ -339,7 +361,7 @@ trait GroupStoreDataSerializers {
       
     val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1.name,t._2.map(i => OrgUnit(i._3,i._4,List(i._1)))))
     val membersForGroups = groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
-    val infoForMembers = information.groupBy(_._1).map(t => (t._1.name,t._2.map(i => (i._4,i._2))))
+    val infoForMembers = information.groupBy(_._1).map(t => (t._1.name,t._2.map(i => Detail(i._4,i._2))))
     GroupStoreData(groupsForMembers,membersForGroups,infoForMembers)
   }
   def toXml(g:GroupStoreData):NodeSeq = {
@@ -370,7 +392,7 @@ trait GroupStoreDataSerializers {
     {g.detailsForMembers.toList.map(m => {
       <personalDetails username={m._1}>{
         m._2.map(d => {
-          <detail key={d._1} value={d._2} />
+          <detail key={d.key} value={d.value} />
         })
       }</personalDetails>
     })
@@ -386,7 +408,7 @@ trait GroupStoreDataSerializers {
             key <- (detailNode \ "@key").headOption.map(_.text)
             value <- (detailNode \ "@value").headOption.map(_.text)
           } yield {
-            (key,value)
+            Detail(key,value)
           }
         })
         (username,details.toList)
@@ -590,7 +612,7 @@ class GlobalOverridesGroupsProvider(override val storeId:String,path:String,refr
   override val canQuery:Boolean = false
   info("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override protected def startingValue = Nil
-  override def parseStore(username:String,store:List[Tuple2[String,String]]) = store.map(sv => OrgUnit(sv._1,sv._2,List(Member(username,Nil,Some((storeId,username))))))
+  override def parseStore(username:String,store:List[Tuple2[String,String]]) = store.map(sv => OrgUnit(sv._1,sv._2,List(Member(username,Nil,Some(ForeignRelationship(storeId,username))))))
   override def getOrgUnit(name:String):Option[OrgUnit] = None
   override def actuallyFetchGroups:List[Tuple2[String,String]] = {
     var rawData = List.empty[Tuple2[String,String]]
@@ -619,12 +641,12 @@ class StLeoFlatFileGroupsProvider(override val storeId:String,path:String,refres
           val subgroups:List[OrgUnit] = facultyWhoWantSubgroups.find(f => f == facUsername).map(f => OrgUnit("ou","%s and %s".format(f,studentUsername))).toList
           studentStatus match {
             case "ACTIVE" => {
-              val stuMember = Member(studentUsername,List("firstName" -> studentFirstName,"surname" -> studentSurname),Some((storeId,studentId)))
+              val stuMember = Member(studentUsername,List("firstName" -> studentFirstName,"surname" -> studentSurname).map(t => Detail(t._1,t._2)),Some(ForeignRelationship(storeId,studentId)))
               rawData = rawData.updated(studentUsername,(List(OrgUnit("course",course,List(stuMember),List(GroupSet("section",section,List(stuMember)),GroupSet("ou","%s_%s".format(course,section),List(stuMember))))) ::: subgroups ::: rawData.get(studentUsername).toList.flatten).distinct)
             }
             case _ =>  {}
           }
-          val facMember = Member(facUsername,List("firstName" -> _facFirstName,"surname" -> _facSurname),Some((storeId,facId)))
+          val facMember = Member(facUsername,List("firstName" -> _facFirstName,"surname" -> _facSurname).map(t => Detail(t._1,t._2)),Some(ForeignRelationship(storeId,facId)))
           rawData = rawData.updated(facUsername,(List(OrgUnit("course",course,List(facMember),List(GroupSet("section",section,List(facMember)),GroupSet("ou","%s_%s".format(course,section),List(facMember))))) ::: subgroups ::: rawData.get(facUsername).toList.flatten).distinct)
         }
         case _ => {}
