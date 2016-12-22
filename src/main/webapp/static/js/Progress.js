@@ -19,6 +19,8 @@ var Progress = (function(){
                 }
             });
         },
+        onBackstageShow:{},
+        onBackstageHide:{},
         onPrivacyChanged:{},
         beforeLeavingSlide:{},
         afterJoiningSlide:{},

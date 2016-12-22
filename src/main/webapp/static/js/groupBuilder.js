@@ -2,6 +2,11 @@ var GroupBuilder = (function(){
     var displayCache = {};
     var initialGroups = [];
     var externalGroups = {};
+    var _strategy = "byMaximumSize";
+    var _parameters = {
+	byTotalGroups:5,
+	byMaximumSize:4
+    };
     var renderMember = function(member){
         return $("<div />",{
             class:"groupBuilderMember",
@@ -64,10 +69,21 @@ var GroupBuilder = (function(){
         });
     }
     var simulate = function(strategy,parameter){
-        var attendees = _.without(Participants.getPossibleParticipants(),Conversations.getCurrentConversation().author);
+        console.log("simulate initial groups",initialGroups);
         var groups = _.map(initialGroups,function(g){
-	    return g.members;
-	});
+            var r = {};
+            _.each(g.members,function(m){
+                r[m.name] = true;
+            });
+            return r;
+        });
+        var attendees = _.without(Participants.getPossibleParticipants(),Conversations.getCurrentConversation().author);
+        attendees = _.omitBy(attendees,function(k){
+            return _.some(groups,function(g){
+                return k in g;
+            });
+        });
+        console.log("seeded groups",groups);
         var filler;
         switch(strategy){
         case "byTotalGroups":
@@ -137,11 +153,13 @@ var GroupBuilder = (function(){
             });
         };
         parameterSelect.on("change",function(){
-            doSimulation()
+	    _parameters[_strategy] = $(this).val();
+            doSimulation();
         });
 
         strategySelect.on("change",function(){
             var strategy = $(this).val();
+	    _strategy = strategy;
             parameterSelect.empty();
             switch(strategy){
             case "byTotalGroups":
@@ -151,7 +169,7 @@ var GroupBuilder = (function(){
                         value:i
                     }).appendTo(parameterSelect);
                 });
-                parameterSelect.val(5).change();
+                parameterSelect.val(_parameters[strategy]).change();
                 break;
             case "byMaximumSize":
                 _.each(_.range(1,10),function(i){
@@ -160,11 +178,11 @@ var GroupBuilder = (function(){
                         value:i
                     }).appendTo(parameterSelect);
                 });
-                parameterSelect.val(4).change();
+                parameterSelect.val(_parameters[strategy]).change();
                 break;
             }
         });
-        strategySelect.val("byMaximumSize").change();
+        strategySelect.val(_strategy).change();
         var allocatedV = container.find(".allocatedMembers").empty();
         var unallocatedV = container.find(".unallocatedMembers").empty();
         var unallocatedMembers = _.clone(Participants.getParticipants());
@@ -250,6 +268,11 @@ var GroupBuilder = (function(){
             }
         });
     };
+    Progress.onBackstageShow["GroupBuilder"] = function(backstage){
+	if(backstage == "groups"){
+	    render();
+	}
+    }
     Progress.groupsReceived["GroupBuilder"] = function(args){
         var byOrgUnit = externalGroups[args.orgUnit.name];
         if (byOrgUnit === undefined){

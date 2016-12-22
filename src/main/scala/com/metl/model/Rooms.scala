@@ -199,7 +199,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     println("UPDATED POSSIBLE ATTENDANCE!; %s => %s".format(startingAttendanceCache,attendanceCache))
   }
   def getPossibleAttendance:List[String] = attendanceCache.toList
-  def getAttendance:List[String] = joinedUsers.map(_._1)
+  def getAttendance:List[String] = joinedUsers.map(_._1).distinct
   def getAttendances:List[Attendance] = {
     getHistory.getAttendances
   }
@@ -379,9 +379,6 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
           updatePossibleAttendance
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
-        }
-        else{
-          warn("Not notifying of %s".format(j.username))
         }
         j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance)
       }

@@ -472,6 +472,7 @@ function showBackstage(id){
     }
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
+    Progress.call("onBackstageShow",[id]);
 }
 function hideBackstage(){
     $("html").css("overflow-y","hidden");
@@ -492,6 +493,7 @@ function hideBackstage(){
     if ("HealthCheckViewer" in window){
         HealthCheckViewer.pause();
     }
+    Progress.call("onBackstageHide");
 };
 function showSpinner() {
     $("#loadingSlidePopup").show();
