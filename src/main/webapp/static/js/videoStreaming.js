@@ -20,7 +20,6 @@ var TokBox = (function(){
                 sessionsContainer.append(container);
                 var session = TokBoxSession(desc,container);
                 sessions[session.id] = session;
-                console.log("received session:",session.id,session.getSession().connection);
                 session.refreshVisualState();
             }
         }

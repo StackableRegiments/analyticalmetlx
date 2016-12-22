@@ -480,6 +480,7 @@ var Conversations = (function(){
         indicateActiveSlide(jid);
         updateLinks();
         refreshSlideDisplay();
+	loadCurrentGroup(currentConversation);
     };
     var updateLinks = function(){
         var serviceUrlRoot = window.location.origin;
@@ -1020,20 +1021,20 @@ function receiveGroupsProviders(providers){
     Progress.call("groupProvidersReceived",[providers]);
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
-	console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
-	if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
-		_.forEach(orgUnits.orgUnits,function(orgUnit){
-			getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
-		});
-	}
+    console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+    if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+        _.forEach(orgUnits.orgUnits,function(orgUnit){
+            getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
+        });
+    }
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-	console.log("receiveGroupSetsForOrgUnit",groupSets);
-	if ("groupSets" in groupSets && groupSets.groupSets.length){
-		_.forEach(groupSets.groupSets,function(groupSet){
-			getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
-		});
-	}
+    console.log("receiveGroupSetsForOrgUnit",groupSets);
+    if ("groupSets" in groupSets && groupSets.groupSets.length){
+        _.forEach(groupSets.groupSets,function(groupSet){
+            getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+        });
+    }
 }
 function receiveGroupsForGroupSet(groups){
     Progress.call("groupsReceived",[groups]);

@@ -64,7 +64,7 @@ var Plugins = (function(){
                     " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;color:white;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
                     " .isolateGroup{margin-top:0.8em;}"+
-		    " .memberCurrentGrade{color:black;background-color:white;margin-right:0.5em;padding:0 .5em;}"+
+                    " .memberCurrentGrade{color:black;background-color:white;margin-right:0.5em;padding:0 .5em;}"+
                     " .groupsPluginGroupControls{display:flex;}"+
                     " .groupsPluginGroupGrade{background-color:white;color:black;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
                     " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
@@ -72,10 +72,10 @@ var Plugins = (function(){
                     var render = function(){
                         try {
                             overContainer.empty();
+                            var groups = Conversations.getCurrentGroups();
                             if(Conversations.shouldModifyConversation()){
                                 var slide = Conversations.getCurrentSlide();
                                 if(slide){
-                                    var groups = Conversations.getCurrentGroups();
                                     if(groups.length){
                                         var linkedGradeLoc = sprintf("groupWork_%s",slide.id);
                                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
@@ -190,12 +190,44 @@ var Plugins = (function(){
                                     }
                                 }
                             }
+                            else {
+                                var studentContainer = $("<div />").css({display:"flex"}).appendTo(overContainer);
+				console.log("Rendering student");
+                                _.each(groups,function(group){
+                                    console.log(group,Conversations.getCurrentGroup());
+                                    if(_.find(Conversations.getCurrentGroup(),group)){
+                                        var gc = $("<div />",{
+                                            class:"groupsPluginGroupContainer"
+                                        }).appendTo(studentContainer);
+                                        var right = $("<div />").appendTo(gc);
+                                        $("<span />",{
+                                            text:sprintf("Group %s",group.title),
+                                            class:"ml"
+                                        }).appendTo(right);
+                                        var controls = $("<div />",{
+                                            class:"groupsPluginGroupControls"
+                                        }).appendTo(right);
+                                        button("fa-share-square","",function(){
+                                            _.defer(Submissions.sendSubmission);
+                                        }).appendTo(controls);
+                                        var id = sprintf("isolateGroup_%s",group.title);
+                                        var members = $("<div />",{
+                                            class:"groupsPluginGroup"
+                                        }).prependTo(gc);
+                                        _.each(group.members,function(member){
+                                            var mV = $("<div />",{
+                                                text:member,
+                                                class:"groupsPluginMember"
+                                            }).appendTo(members);
+                                        });
+                                    }
+                                });
+                            }
                         }
                         catch(e){
                             console.log("Groups plugin render e",e);
                         }
                     }
-
                     bus.gradeValueReceived["Groups plugin"] = function(gv){
                         var linkedGradeLoc = sprintf("groupWork_%s",Conversations.getCurrentSlideJid());
                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
