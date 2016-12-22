@@ -131,8 +131,12 @@ var Conversation = (function(){
                 var inputElem = choiceRoot.find(".conversationSharingChoiceInputElement")
 
                 inputElem.attr("id",choiceId).attr("type","radio").on("click",function(){
+									if ("foreignRelationship" in categoryGroup){
+                    changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name,categoryGroup.foreignRelationship.system,categoryGroup.foreignRelationship.key);
+									} else {
                     changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name);
-                    reRender();
+									}
+									reRender();
                 }).prop("checked",conversation.subject == categoryGroup.name);
                 choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.name);
                 return choiceRoot;
