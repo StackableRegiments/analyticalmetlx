@@ -191,10 +191,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             }).flatten
           })
         }).getOrElse({
-          getAttendances.map(_.author).distinct
+          (getAttendances.map(_.author) ::: getAttendance).distinct
         })
       }
-      case _ => getAttendances.map(_.author).distinct
+      case _ => (getAttendances.map(_.author) ::: getAttendance).distinct
     }
     println("UPDATED POSSIBLE ATTENDANCE!; %s => %s".format(startingAttendanceCache,attendanceCache))
   }
@@ -380,6 +380,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
         }
+        else{
+          warn("Not notifying of %s".format(j.username))
+        }
+        j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance)
       }
       case _ => {}
     }

@@ -12,61 +12,95 @@ var GroupBuilder = (function(){
         var container = $("#groupsPopup");
         var importV = container.find(".importGroups").empty();
         _.each(externalGroups,function(orgUnit){
-					_.each(orgUnit,function(groupCat){
-							var ou = groupCat.orgUnit;
-							if(ou){
-									if(displayCache[ou.name]){
-											displayCache[ou.name].remove();
-									}
-									var ouV = displayCache[ou.name] = $("<div />",{
-											text:ou.name
-									}).appendTo(importV);
-									var groupId = 0;
-									var groupSet = groupCat.groupSet;
-									var groupSetV = $("<div />",{
-									}).appendTo(ouV);
-									groupSetV.append("<div />",{
-										class:"groupCatName",
-										text:groupSet.name
-									});
-									_.each(groupCat.groups,function(group){
-											groupId++;
-											var groupV = $("<div />",{
-													class:"groupBuilderGroup",
-													text:group.name
-											}).appendTo(groupSetV);
-											var inputId = sprintf("structuralGroup_%s",groupId);
-											var inputV = $("<input />",{
-													type:"checkbox",
-													id:inputId
-											}).on("click",function(){
-													if(_.includes(initialGroups,group)){
-															initialGroups = _.without(initialGroups,group);
-													}
-													else{
-															initialGroups.push(group);
-													}
-													render();
-											}).appendTo(groupV);
-											inputV.prop("checked",_.includes(initialGroups,group));
-											$("<label />",{
-													for:inputId
-											}).append($("<span />",{
-													class:"icon-txt",
-													text:"Copy"
-											})).appendTo(groupV);
-											_.each(group.members,function(member){
-													renderMember(member.name).appendTo(groupV);
-											});
-									});
-							}
-					});
+            _.each(orgUnit,function(groupCat){
+                var ou = groupCat.orgUnit;
+                if(ou){
+                    if(displayCache[ou.name]){
+                        displayCache[ou.name].remove();
+                    }
+                    var ouV = displayCache[ou.name] = $("<div />",{
+                        text:ou.name
+                    }).appendTo(importV);
+                    var groupId = 0;
+                    var groupSet = groupCat.groupSet;
+                    var groupSetV = $("<div />",{
+                    }).appendTo(ouV);
+                    groupSetV.append("<div />",{
+                        class:"groupCatName",
+                        text:groupSet.name
+                    });
+                    _.each(groupCat.groups,function(group){
+                        groupId++;
+                        var groupV = $("<div />",{
+                            class:"groupBuilderGroup",
+                            text:group.name
+                        }).appendTo(groupSetV);
+                        var inputId = sprintf("structuralGroup_%s",groupId);
+                        var inputV = $("<input />",{
+                            type:"checkbox",
+                            id:inputId
+                        }).on("click",function(){
+                            if(_.includes(initialGroups,group)){
+                                initialGroups = _.without(initialGroups,group);
+                            }
+                            else{
+                                initialGroups.push(group);
+                            }
+                            render();
+                        }).appendTo(groupV);
+                        inputV.prop("checked",_.includes(initialGroups,group));
+                        $("<label />",{
+                            for:inputId
+                        }).append($("<span />",{
+                            class:"icon-txt",
+                            text:"Copy"
+                        })).appendTo(groupV);
+                        _.each(group.members,function(member){
+                            renderMember(member.name).appendTo(groupV);
+                        });
+                    });
+                }
+            });
         });
+    }
+    var simulate = function(strategy,parameter){
+        var attendees = _.without(Participants.getPossibleParticipants(),Conversations.getCurrentConversation().author);
+        var groups = _.map(initialGroups,function(g){
+	    return g.members;
+	});
+        var filler;
+        switch(strategy){
+        case "byTotalGroups":
+            for(var i = groups.length; i < parseInt(parameter);i++){
+                groups.push({});
+            }
+            filler = function(p){
+                var targetG = _.sortBy(groups,function(g){return _.keys(g).length})
+                targetG[0][p] = true;
+            }
+            break;
+        case "byMaximumSize":
+            filler = function(p){
+                var targetG = _.find(groups,function(g){
+                    return _.keys(g).length < parseInt(parameter);
+                });
+                if(!targetG){
+                    targetG = {};
+                    groups.push(targetG);
+                }
+                targetG[p] = true;
+            }
+            break;
+        }
+        _.each(attendees,filler);
+        console.log(groups);
+        return _.map(groups,_.keys);
     }
     var render = function(){
         var container = $("#groupsPopup");
         var composition = $("#groupComposition").empty();
         var importV = container.find(".importGroups").empty();
+        var groupsV = container.find(".groups").empty();
         var slide = Conversations.getCurrentSlide();
         var strategySelect = $("<select />",{
             id:"strategySelect"
@@ -89,6 +123,23 @@ var GroupBuilder = (function(){
                     value:params[1]
                 }).appendTo(strategySelect);
             });
+        var doSimulation = function(){
+            var simulated = simulate(strategySelect.val(),parameterSelect.val());
+            groupsV.empty();
+            _.each(simulated,function(group){
+                var g = $("<div />",{
+                    class:"groupBuilderGroup ghost"
+                });
+                _.each(group,function(member){
+                    renderMember(member).appendTo(g);
+                });
+                g.appendTo(groupsV);
+            });
+        };
+        parameterSelect.on("change",function(){
+            doSimulation()
+        });
+
         strategySelect.on("change",function(){
             var strategy = $(this).val();
             parameterSelect.empty();
@@ -100,7 +151,7 @@ var GroupBuilder = (function(){
                         value:i
                     }).appendTo(parameterSelect);
                 });
-                parameterSelect.val(5);
+                parameterSelect.val(5).change();
                 break;
             case "byMaximumSize":
                 _.each(_.range(1,10),function(i){
@@ -109,14 +160,13 @@ var GroupBuilder = (function(){
                         value:i
                     }).appendTo(parameterSelect);
                 });
-                parameterSelect.val(4);
+                parameterSelect.val(4).change();
                 break;
             }
         });
         strategySelect.val("byMaximumSize").change();
         var allocatedV = container.find(".allocatedMembers").empty();
         var unallocatedV = container.find(".unallocatedMembers").empty();
-        var groupsV = container.find(".groups").empty();
         var unallocatedMembers = _.clone(Participants.getParticipants());
         delete unallocatedMembers[Conversations.getCurrentConversation.author];
         var allocatedMembers = {};
@@ -132,15 +182,6 @@ var GroupBuilder = (function(){
             }
             var strategy;
             var parameter;
-            _.each(initialGroups,function(group){
-                var g = $("<div />",{
-                    class:"groupBuilderGroup ghost"
-                });
-                _.each(group.members,function(member){
-                    renderMember(member.name).appendTo(g);
-                });
-                g.appendTo(groupsV);
-            });
             _.each(slide.groupSets,function(groupSet){
                 _.each(_.sortBy(groupSet.groups,"title"),function(group){
                     var g = $("<div />",{
@@ -210,13 +251,13 @@ var GroupBuilder = (function(){
         });
     };
     Progress.groupsReceived["GroupBuilder"] = function(args){
-			var byOrgUnit = externalGroups[args.orgUnit.name];
-			if (byOrgUnit === undefined){
-				byOrgUnit = {};
-				externalGroups[args.orgUnit.name] = byOrgUnit;
-			}
-			byOrgUnit[args.groupSet.name] = args;
-      renderExternalGroups();
+        var byOrgUnit = externalGroups[args.orgUnit.name];
+        if (byOrgUnit === undefined){
+            byOrgUnit = {};
+            externalGroups[args.orgUnit.name] = byOrgUnit;
+        }
+        byOrgUnit[args.groupSet.name] = args;
+        renderExternalGroups();
     };
     Progress.currentSlideJidReceived["GroupBuilder"] = render;
     Progress.conversationDetailsReceived["GroupBuilder"] = function(){

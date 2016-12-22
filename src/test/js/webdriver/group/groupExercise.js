@@ -468,6 +468,7 @@ describe('When the class breaks into groups,', function() {
         assert(studentB.isExisting("#contentFilter_"+groups[2].id));
     });
     it("content sharing should be reestablished on return to the slide",function(){
+	browser.debug();
         _.each([sB,sC],function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
                 user.menuButton.click();

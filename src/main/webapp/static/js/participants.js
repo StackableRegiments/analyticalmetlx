@@ -2,7 +2,8 @@ var Participants = (function(){
     var participantsDatagrid = {};
     var participantFollowControl = {};
     var participants = {};
-		var possibleParticipants = [];
+    var currentParticipants = [];
+    var possibleParticipants = [];
     var newParticipant = {
         inks:0,
         highlighters:0,
@@ -13,9 +14,9 @@ var Participants = (function(){
         following:true
     };
     var reRenderParticipants = function(){
-			WorkQueue.enqueue(function(){
-        updateParticipantsListing();
-			});
+        WorkQueue.enqueue(function(){
+            updateParticipantsListing();
+        });
     };
     var onHistoryReceived = function(history){
         var newParticipants = {};
@@ -211,15 +212,16 @@ var Participants = (function(){
     }
     $(function(){
         Progress.attendanceReceived["participationHealth"] = function(attendances){
-					var loc = attendances.location;
-					var currentMembers = attendances.currentMembers;
-					var possibleMembers = attendances.possibleMembers;
-					possibleParticipants = _.uniq(_.concat(possibleMembers,possibleParticipants));
-					$("#attendanceStatus").prop({
-							value:currentMembers.length,
-							max:possibleMembers.length,
-							min:0
-					});
+            var loc = attendances.location;
+            var currentMembers = attendances.currentMembers;
+            var possibleMembers = attendances.possibleMembers;
+            currentParticipants = currentMembers;
+            possibleParticipants = _.uniq(_.concat(possibleMembers,possibleParticipants));
+            $("#attendanceStatus").prop({
+                value:currentMembers.length,
+                max:possibleMembers.length,
+                min:0
+            });
         };
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
@@ -323,9 +325,12 @@ var Participants = (function(){
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
     return {
-				getPossibleParticipants:function(){
-					return Conversations.shouldModifyConversation() ? possibleParticipants : [];
-				},
+        getCurrentParticipants:function(){
+            return Conversations.shouldModifyConversation() ? currentParticipants : [];
+        },
+        getPossibleParticipants:function(){
+            return Conversations.shouldModifyConversation() ? possibleParticipants : [];
+        },
         getParticipants:function(){return Conversations.shouldModifyConversation() ? participants : {};},
         reRender:function(){
             reRenderParticipants();

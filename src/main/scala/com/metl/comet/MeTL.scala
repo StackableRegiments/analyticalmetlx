@@ -1221,7 +1221,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("possibleMembers",JArray(possibleMembers.map(pm => JString(pm))))
       ))))
     }
-    case other => warn("MeTLActor received unknown message: %s".format(other))
+    case ConversationParticipation(jid,currentMembers,possibleMembers) => {}
+    case other => warn("MeTLActor %s received unknown message: %s".format(name,other))
   }
   override def autoIncludeJsonCode = true
   protected var currentConversation:Box[Conversation] = Empty
