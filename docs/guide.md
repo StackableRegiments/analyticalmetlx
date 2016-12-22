@@ -9,7 +9,7 @@ It will help you navigate the user interface of MeTL as well as piece together t
 
 ## Content
 
-- [Conversations](guide-conversations.html)
+- [Conversation Search](guide-conversations.html)
   - [Edit Conversation](guide-edit-conversation.html)
 - [Whiteboard](guide-whiteboard.html)
   - [Controls](guide-controls.html) 
@@ -18,4 +18,4 @@ It will help you navigate the user interface of MeTL as well as piece together t
   - [Copy and Paste](guide-copypaste.html) 
   - [Sharing](guide-sharing.html)
   - [Word Cloud](guide-word-cloud.html)
-- [Groups](guide-groups.html)
+  - [Groups](guide-groups.html)
