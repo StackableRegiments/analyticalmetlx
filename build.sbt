@@ -116,7 +116,9 @@ libraryDependencies ++= {
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
-    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1"
+    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
+    //for AWS authentication
+    "com.amazonaws" % "aws-java-sdk" % "1.11.69"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
