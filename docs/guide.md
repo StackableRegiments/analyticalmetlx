@@ -18,4 +18,4 @@ It will help you navigate the user interface of MeTL as well as piece together t
   - [Copy and Paste](guide-copypaste.html) 
   - [Sharing](guide-sharing.html)
   - [Word Cloud](guide-word-cloud.html)
-- [Groups](guide-groups.html)
+  - [Groups](guide-groups.html)
