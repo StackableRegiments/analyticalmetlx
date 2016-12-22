@@ -109,10 +109,13 @@ var Conversations = (function(){
         var scrollContainer;
         var conversationActivity;
         var updateSlide = function(slide){
+            scrollContainer = scrollContainer || $("#thumbScrollContainer");
+            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+            if(slideContainer){
+                slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
+            }
             var gs = Conversations.getGroupsFor(slide);
             if(! _.every(gs,groupTraceIsAccurate)){
-                scrollContainer = scrollContainer || $("#thumbScrollContainer");
-                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
                 paintGroups(slide,slideContainer);
             }
             _.each(gs,function(group){
@@ -698,21 +701,21 @@ var Conversations = (function(){
                         var newSlide = _.find(incomingDetails.slides,function(s){
                             return s.index == newIndex && s.id != currentSlide;
                         });
-												var linkedGradeLoc = sprintf("groupWork_%s",newSlide.id);
-												var user = UserSettings.getUsername();
-												var newLinkedGrade = {
-													type:"grade",
-													name:sprintf("GroupSlide %s",newSlide.id),
-													description:"Auto generated grade for group work on group slide.",
-													audiences:[],
-													author:user,
-													location:linkedGradeLoc,
-													id:sprintf("%s_%s_%s",linkedGradeLoc,user,new Date().getTime().toString()),
-													gradeType:"text",
-													visible:false,
-													timestamp:0						
-												};
-												sendStanza(newLinkedGrade);
+                        var linkedGradeLoc = sprintf("groupWork_%s",newSlide.id);
+                        var user = UserSettings.getUsername();
+                        var newLinkedGrade = {
+                            type:"grade",
+                            name:sprintf("GroupSlide %s",newSlide.id),
+                            description:"Auto generated grade for group work on group slide.",
+                            audiences:[],
+                            author:user,
+                            location:linkedGradeLoc,
+                            id:sprintf("%s_%s_%s",linkedGradeLoc,user,new Date().getTime().toString()),
+                            gradeType:"text",
+                            visible:false,
+                            timestamp:0
+                        };
+                        sendStanza(newLinkedGrade);
                         setStudentsMustFollowTeacherFunction(true);
                         doMoveToSlide(newSlide.id.toString());
                     }
@@ -815,6 +818,9 @@ var Conversations = (function(){
     var constructSlideId = function(slide){
         return sprintf("slideContainer_%s",slide.id);
     }
+    var slideLabel = function(slide){
+        return sprintf("%s/%s",slide.index+1,currentConversation.slides.length);
+    }
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
         var newSlide = $("<div/>",{
@@ -831,7 +837,7 @@ var Conversations = (function(){
             doMoveToSlide(slide.id.toString());
         }).appendTo(newSlide);
         $("<span/>",{
-            text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
+            text: slideLabel(slide),
             class: "slideThumbnailNumber"
         }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
