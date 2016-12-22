@@ -77,7 +77,87 @@ class MeTLingPotInterfac(/*region:String,invokeHost:String,*/iamAccessKey:String
   }
   def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] = {
     try {
-      Right(Nil)
+      val req = new SearchItemsPutRequest()
+      req.setBefore(new java.math.BigDecimal(before))
+      req.setAfter(new java.math.BigDecimal(after))
+      req.setQuery({
+        val q = new SearchItemsPutRequestQuery()
+        queries.get("source").foreach(s => {
+          q.setSource(s.asJava)
+        })
+        queries.get("actortype").foreach(s => {
+          q.setActortype(s.asJava)
+        })
+       queries.get("actorname").foreach(s => {
+          q.setActorname(s.asJava)
+        })
+       queries.get("actiontype").foreach(s => {
+          q.setActiontype(s.asJava)
+        })
+       queries.get("actionname").foreach(s => {
+          q.setActionname(s.asJava)
+        })
+       queries.get("targettype").foreach(s => {
+          q.setTargettype(s.asJava)
+        })
+       queries.get("targetname").foreach(s => {
+          q.setTargetname(s.asJava)
+        })
+       queries.get("contexttype").foreach(s => {
+          q.setContexttype(s.asJava)
+        })
+       queries.get("contextname").foreach(s => {
+          q.setContextname(s.asJava)
+        })
+        q
+      })
+
+      val response = client.searchPut(req)
+      Right(response.asScala.flatMap(r => {
+        r.getItems.asScala.flatMap(i => {
+          for {
+            source <- Some(i.getSource)
+            timestamp = i.getTimestamp.longValue
+            action <- {
+              for {
+                t <- Some(i.getActiontype)
+                n <- Some(i.getActionname)
+              } yield {
+                KVP(t,n)
+              }
+            }
+            actor <- {
+              for {
+                t <- Some(i.getActortype)
+                n <- Some(i.getActorname)
+              } yield {
+                KVP(t,n)
+              }
+            }
+            context = {
+              for {
+                t <- Some(i.getContexttype)
+                n <- Some(i.getContextname)
+                if (t != null && n != null)
+              } yield {
+                KVP(t,n)
+              }
+            }
+            target = {
+              for {
+                t <- Some(i.getTargettype)
+                n <- Some(i.getTargetname)
+                if (t != null && n != null)
+              } yield {
+                KVP(t,n)
+              }
+            }
+            value = Some(i.getValue)
+          } yield {
+            MeTLingPotItem(source,timestamp,actor,action,context,target,value)
+          }
+        })
+     }).toList)
     } catch {
       case e:Exception => Left(e)
     }
