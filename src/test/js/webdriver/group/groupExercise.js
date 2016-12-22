@@ -274,6 +274,7 @@ describe('When the class breaks into groups,', function() {
     });
     it("further entrants should be allocated into groups",function(){
         join(studentD,'studentD');
+	browser.debug();
         studentD.waitForExist("#board");
         browser.waitUntil(function(){
             return sD.currentSlide.index == 1;

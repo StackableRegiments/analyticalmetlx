@@ -4,23 +4,28 @@ var Plugins = (function(){
             var container = $("<div />");
             return {
                 style:".publishedStream {background:green;} .subscribedStream {background:red;}"+
-                    " .publisherVideoElem, .subscriberVideoElem {display:flex;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton {background:white;}"+
+                    " .videoConfStartButton, .videoConfSubscribeButton {background:white;margin:1px;}"+
                     " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer{display:flex;}"+
+                    " .videoConfStartButtonContainer{flex-direction:row;}"+
+                    " #videoConfSessionsContainer{display:flex;}"+
+		    " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
+		    " .context{margin-left:1em;}"+
                     " .broadcastContainer{display:none;}",
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
                                      '<div class="videoConfSessionContainer">'+
-                                     '<span class="videoConfStartButtonContainer">'+
+                                     '<div class="videoConfStartButtonContainer">'+
                                      '<button class="floatingToolbar btn-menu fa fa-video-camera btn-icon videoConfStartButton">'+
-                                     '<div class="icon-txt">Send video</div>'+
+                                     '<div class="icon-txt">Start sending</div>'+
                                      '</button>'+
-                                     '</span>'+
-                                     '<span class="broadcastContainer">'+
+				     '<span class="context"></span>'+
+                                     '</div>'+
+				     '<div class="viewscreen"></div>'+
+                                     '<div class="broadcastContainer">'+
                                      '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
                                      '<div class="icon-txt">Watch class</div>'+
                                      '</a>'+
-                                     '</span>'+
+                                     '</div>'+
                                      '<div class="videoSubscriptionsContainer"></div>'+
                                      '<div class="videoConfContainer">'+
                                      '<span class="videoContainer">'+
@@ -69,10 +74,10 @@ var Plugins = (function(){
                                 if(slide){
                                     var groups = Conversations.getCurrentGroups();
                                     if(groups.length){
-																				var linkedGradeLoc = sprintf("groupWork_%s",slide.id);
-																				var linkedGrade = _.find(Grades.getGrades(),function(grade){
-																					return grade.location == linkedGradeLoc;
-																				});
+                                        var linkedGradeLoc = sprintf("groupWork_%s",slide.id);
+                                        var linkedGrade = _.find(Grades.getGrades(),function(grade){
+                                            return grade.location == linkedGradeLoc;
+                                        });
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
                                         }).append($("<input />",{
@@ -84,7 +89,7 @@ var Plugins = (function(){
                                                 ContentFilter.setFilter(g.id,true);
                                             });
                                             ContentFilter.clearAudiences();
-					    blit();
+                                            blit();
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({
@@ -107,21 +112,21 @@ var Plugins = (function(){
                                                     text:gradeLetter,
                                                     class:"groupsPluginGroupGrade btn-icon"
                                                 }).appendTo(grades).on("click",function(){
-																									if (linkedGrade != undefined){
-																										_.each(group.members,function(member){
-																											var groupMemberGrade = {
-																												type:"textGradeValue",
-																												gradeId:linkedGrade.id,
-																												gradeValue:gradeLetter,
-																												gradedUser:member,
-																												author:UserSettings.getUsername(),
-																												timestamp:0,
-																												audiences:[]
-																											};
-																											sendStanza(groupMemberGrade);
-																										});
-																									}
-																								});
+                                                    if (linkedGrade != undefined){
+                                                        _.each(group.members,function(member){
+                                                            var groupMemberGrade = {
+                                                                type:"textGradeValue",
+                                                                gradeId:linkedGrade.id,
+                                                                gradeValue:gradeLetter,
+                                                                gradedUser:member,
+                                                                author:UserSettings.getUsername(),
+                                                                timestamp:0,
+                                                                audiences:[]
+                                                            };
+                                                            sendStanza(groupMemberGrade);
+                                                        });
+                                                    }
+                                                });
                                             });
 
                                             var right = $("<div />").appendTo(gc);
@@ -150,7 +155,7 @@ var Plugins = (function(){
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
-						blit();
+                                                blit();
                                             })).append($("<label />",{
                                                 for:id
                                             }).append($("<span />",{
@@ -183,7 +188,7 @@ var Plugins = (function(){
                     return overContainer;
                 },
                 initialize:function(){
-								}
+                }
             };
         })()
     };
@@ -195,10 +200,6 @@ $(function(){
         var container = $("<div />",{
             class:"plugin"
         });
-        $("<div />",{
-            text:" ",
-            class:"pluginName"
-        }).prependTo(container);
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);
         container.appendTo(pluginBar);

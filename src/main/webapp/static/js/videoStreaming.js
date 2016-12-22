@@ -1,5 +1,5 @@
 var TokBox = (function(){
-	var shownError = false;
+    var shownError = false;
     var enabled = false;
     var setTokBoxEnabledStateFunc = function(isEnabled){
         enabled = isEnabled;
@@ -11,16 +11,16 @@ var TokBox = (function(){
         if (initialized){
             var support = OT.checkSystemRequirements();
             if (support == 0){
-							if (!shownError){
-                errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome, Firefox or Internet Explorer.");
-								shownError = true;
-							}
+                if (!shownError){
+                    errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome, Firefox or Internet Explorer.");
+                    shownError = true;
+                }
             } else if (enabled && !(desc.sessionId in sessions)){
                 var container = sessionContainer.clone();
                 sessionsContainer.append(container);
                 var session = TokBoxSession(desc,container);
                 sessions[session.id] = session;
-                console.log("received session:",session.id,container);
+                console.log("received session:",session.id,session.getSession().connection);
                 session.refreshVisualState();
             }
         }
@@ -44,7 +44,6 @@ var TokBox = (function(){
             sessionContainer = sessionsContainer.find(".videoConfSessionContainer").clone();
             sessionsContainer.empty();
             initialized = true;
-            console.log("tokBox initialized",sessionsContainer,sessionContainer);
         },
         receiveTokBoxSession:receiveTokBoxSessionFunc,
         setTokBoxEnabledState:setTokBoxEnabledStateFunc,
@@ -119,40 +118,51 @@ var TokBoxSession = function(desc,sessionContainer){
             streamContainer.hide();
         }
         sessionContainer.find(".subscribedStream").removeClass("subscribedStream");
+        if(session.connection){
+            var context = session.connection.data.match(/description=(.+)$/)[1];
+            var label = context;
+            if(context == Conversations.getCurrentConversationJid()){label = "Conversation"}
+            else{
+                var groupContext = _.flatMap(Conversations.getCurrentSlide().groupSets,function(groupSet){
+                    return _.find(groupSet.groups,function(group){
+                        return group.id == context;
+                    });
+                });
+                if(groupContext.length){
+                    label = sprintf("Group %s",groupContext[0].title);
+                }
+            }
+            sessionContainer.find(".context").text(label);
+        }
         if (thisPublisher != undefined){
-            streamButton.addClass("publishedStream");
+            streamButton.addClass("publishedStream").find(".icon-txt").text("Stop sending");
         } else {
-            streamButton.removeClass("publishedStream");
+            streamButton.removeClass("publishedStream").find(".icon-txt").text("Start sending");
         }
         _.forEach(streams,function(s){
-            console.log("refreshing s:",s);
             if ("refreshVisual" in s){
                 s.refreshVisual();
             }
         });
-	DeviceConfiguration.applyFit();
+        DeviceConfiguration.applyFit();
     };
     var togglePublishFunc = function(s){
         if (isConnected()){
             if (thisPublisher == undefined){
-                console.log("attempting to start send:",isConnected(),session);
                 startPublishFunc();
             } else {
-                console.log("attempting to stop send:",isConnected(),session);
                 stopPublishFunc();
             }
         }
     };
     var startPublishFunc = function(){
         refreshVisualState();
-        console.log("attempting to start send:",isConnected(),session);
         if (isConnected()){
             if (thisPublisher == undefined){
                 var publisherUniqueId = sprintf("tokBoxVideoElemPublisher_%s",_.uniqueId());
                 var tokBoxVideoElemPublisher = $("<span />",{id:publisherUniqueId,"class":"publisherVideoElem"});
-                sessionContainer.find(".videoConfStartButtonContainer").append(tokBoxVideoElemPublisher);
+                sessionContainer.find(".viewscreen").append(tokBoxVideoElemPublisher);
                 var targetResolution = sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight));
-                console.log("target resolution:",targetResolution)
                 var publisher = OT.initPublisher(publisherUniqueId, {
                     name:UserSettings.getUsername(),
                     width:videoWidth,
@@ -168,7 +178,6 @@ var TokBoxSession = function(desc,sessionContainer){
                 thisPublisher = publisher;
                 publisher.element.style.width = videoWidth;
                 publisher.element.style.height = videoHeight;
-                console.log("publishing",publisher,session);
                 session.publish(publisher);
                 sessionContainer.find(".videoConfStartButton").addClass("publishedStream");
             }
@@ -186,7 +195,6 @@ var TokBoxSession = function(desc,sessionContainer){
         refreshVisualState();
     };
     var receiveBroadcastFunc = function(broadcast){
-        console.log("broadcast:",broadcast);
         if (broadcast != null && "broadcastUrls" in broadcast && "hls" in broadcast.broadcastUrls){
             var rootElem = broadcastButton.clone();
             rootElem.attr("href",broadcast.broadcastUrls.hls);
@@ -213,7 +221,6 @@ var TokBoxSession = function(desc,sessionContainer){
     Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
 
     var shutdownFunc = function(){
-        console.log("removing this session:",session);
         session.disconnect();
         sessionContainer.remove();
     };
@@ -225,13 +232,11 @@ var TokBoxSession = function(desc,sessionContainer){
                 var elem = streams[ev.stream.id];
                 elem.elem.remove();
                 delete streams[ev.stream.id];
-                console.log("streamDestroyed",ev,elem);
                 refreshVisualState();
             }
         },
         "streamCreated":function(ev){
             if ("capabilities" in session && "subscribe" in session.capabilities && session.capabilities.subscribe == 1){
-                console.log("streamCreated",ev,streams);
                 var stream = ev.stream;
                 var oldStream = streams[stream.id];
                 if (oldStream == undefined){
