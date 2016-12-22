@@ -62,8 +62,9 @@ var Plugins = (function(){
                     " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;color:white;margin-top:0;}"+
                     " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;color:white;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
+                    " .isolateGroup{margin-top:0.8em;}"+
                     " .groupsPluginGroupControls{display:flex;}"+
-                    " .groupsPluginGroupGrade{border:0.5px solid white;background-color:white;color:black;margin-bottom:1px;}"+
+                    " .groupsPluginGroupGrade{background-color:white;color:black;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
                     " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
                 load:function(bus,params) {
                     var render = function(){
@@ -106,11 +107,11 @@ var Plugins = (function(){
 
                                             var grades = $("<div />",{
                                                 class:"groupsPluginGroup"
-                                            }).appendTo(gc);
-                                            _.each("A B C D".split(" "),function(gradeLetter){
+                                            }).css({display:"block"});
+                                            _.each("A B C D F".split(" "),function(gradeLetter){
                                                 $("<div />",{
                                                     text:gradeLetter,
-                                                    class:"groupsPluginGroupGrade btn-icon"
+                                                    class:"groupsPluginGroupGrade"
                                                 }).appendTo(grades).on("click",function(){
                                                     if (linkedGrade != undefined){
                                                         _.each(group.members,function(member){
@@ -137,7 +138,7 @@ var Plugins = (function(){
                                             var controls = $("<div />",{
                                                 class:"groupsPluginGroupControls"
                                             }).appendTo(right);
-                                            button("fa-share-square","Submit screen",function(){
+                                            button("fa-share-square","",function(){
                                                 isolate.find("input").prop("checked",true).change();
                                                 console.log("Isolating and screenshotting",isolate);
                                                 _.defer(Submissions.sendSubmission);
@@ -166,13 +167,14 @@ var Plugins = (function(){
                                             }))).appendTo(controls);
                                             var members = $("<div />",{
                                                 class:"groupsPluginGroup"
-                                            }).appendTo(right);
+                                            }).prependTo(gc);
                                             _.each(group.members,function(member){
                                                 $("<div />",{
                                                     text:member,
                                                     class:"groupsPluginMember"
                                                 }).appendTo(members);
                                             });
+					    grades.appendTo(right);
                                         });
                                     }
                                 }
