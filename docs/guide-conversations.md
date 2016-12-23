@@ -3,18 +3,34 @@ layout: guide
 title: Conversation Search
 ---
 
-After logging into MeTL, users are directed to the Conversation Search page.
-
-The search box will be populated with the current username as a default, 
-and a list of the conversations created by the current user will be displayed below. 
-
 ![Conversation Search](images/guide-conversation-search.png)
 
+After logging into MeTL, users are directed to the Conversation Search page.
+
+To find a conversation, enter a query into the search box and click `Search` or press `Enter`. 
+Search results are displayed in the table below. 
+
+Initially the search box will be populated with the current username, 
+resulting in a list of the conversations created by the current user.
+ 
 ## Join a Conversation
  
 Search for and click on the conversation you want to join and you will be taken to the 
 [Whiteboard]({{site.baseurl}}/guide-whiteboard.html) for that conversation.
 
+### Only my conversations
+
+Check this box to only include conversations created by the current user in search results.
+
+### Include my archived conversations
+
+Check this box to include archived conversations created by the current user in search results.
+
+## Edit a Conversation
+
+Search for and click on the [Edit]({{site.baseurl}}/guide-edit-conversation.html) link on the conversation 
+you want to edit.
+ 
 ## Start a Conversation
 
 There are two ways to start a new conversation. 
