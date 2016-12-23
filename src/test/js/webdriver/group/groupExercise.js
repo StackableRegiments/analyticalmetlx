@@ -108,16 +108,18 @@ describe('When the class breaks into groups,', function() {
     it("given that the teacher adds a group slide, importing an external group and specifying a strategy,",function(){
         assert.equal(tT.currentSlide.index,0);
         tT.addGroupSlide.click();
-        browser.waitUntil(function(){return teacher.isVisible("#ouSelector");});
-        teacher.selectByValue("#ouSelector","xmlUserOverrides_from_testMaterials/orgData.xml");
+	teacher.pause(1000);
+        teacher.execute("$('.jAlert .ouSelector').val('xmlUserOverrides_from_testMaterials/orgData.xml').change()");
         browser.waitUntil(function(){
-            var visible = teacher.execute("return $('#structuralGroup_2').length > 0;").value;
+            var visible = teacher.execute("return $('.jAlert #structuralGroup_2').length > 0;").value;
             return visible;
         });
-        teacher.execute("return $('#structuralGroup_2').click();");
-        teacher.selectByValue("#strategySelect","byTotalGroups");
-        teacher.selectByValue("#parameterSelect","3");
-        teacher.click("#doAllocation");
+        teacher.execute("$('.jAlert #structuralGroup_2').click()");
+        teacher.execute("$('.jAlert .strategySelect').val('byTotalGroups').change()");
+	teacher.pause(500);
+        teacher.execute("$('.jAlert .parameterSelect').val('3').change()");
+	browser.debug();
+        teacher.execute("$(\"a:contains('Add page')\").click()");
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
         });
