@@ -9,6 +9,12 @@ import scala.reflect._
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 
+import net.liftweb.actor._
+import net.liftweb.common._
+import net.liftweb.util._
+import net.liftweb.util.Helpers._
+import java.util.Date
+
 class AWSStaticCredentialsProvider(creds:AWSCredentials) extends AWSCredentialsProvider {
   override def getCredentials:AWSCredentials = creds
   override def refresh:Unit = {}
@@ -32,6 +38,49 @@ class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecr
 trait MeTLingPotAdaptor {
   def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] 
   def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] 
+  def init:Unit = {}
+  def shutdown:Unit = {}
+}
+
+class PassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor) extends MeTLingPotAdaptor {
+  override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = a.postItems(items)
+  override def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] = a.search(after,before,queries)
+  override def init:Unit = a.init
+  override def shutdown:Unit = a.shutdown
+}
+
+class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 20,delay:TimeSpan = new TimeSpan(0L)) extends PassThroughMeTLingPotAdaptor(a) with LiftActor with Logger {
+  case object RequestSend
+  protected val buffer = new scala.collection.mutable.ListBuffer[MeTLingPotItem]()
+  override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
+    buffer ++= items
+    this ! RequestSend
+    Right(true)
+  }
+  protected var sending:Boolean = false
+  protected var lastSend:Long = new Date().getTime()
+  override def messageHandler = {
+    case RequestSend if sending => {
+      Schedule.schedule(this,RequestSend,delay)
+    }
+    case RequestSend if ((lastSend + delay.millis) < new Date().getTime) => {
+      sending = true
+      val items:List[MeTLingPotItem] = buffer.take(burstSize).toList
+      buffer --= items
+      a.postItems(items).left.toOption.foreach(e => {
+        items ++=: buffer //put the items back on the queue, at the front, so that they'll be retried later.
+        error("failed to send items",e)
+      })
+      sending = false
+      if (buffer.length > 0){
+        Schedule.schedule(this,RequestSend,delay)
+      }
+    }
+    case RequestSend => {
+      Schedule.schedule(this,RequestSend,delay)
+    }
+    case _ => {}
+  }
 }
 
 class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) extends MeTLingPotAdaptor {
@@ -185,6 +234,38 @@ class MockMeTLingPotAdaptor extends MeTLingPotAdaptor {
       case ("contexttype",sourceFilters) => !sourceFilters.contains(i.actor.`type`)
       case ("contextname",sourceFilters) => !sourceFilters.contains(i.actor.name)
       case _ => false
+    }).toList)
+  }
+}
+
+object MeTLingPot {
+  import scala.xml._
+  protected def wrapWith(in:NodeSeq,mpa:MeTLingPotAdaptor):MeTLingPotAdaptor = {
+    List((n:NodeSeq,a:MeTLingPotAdaptor) => {
+      (for {
+        size <- (n \ "@burstSize").headOption.map(_.text.toInt)
+      } yield {
+        new BurstingPassThroughMeTLingPotAdaptor(a,size)
+      }).getOrElse(a)
+    }).foldLeft(mpa)((acc,item) => {
+      item(in,acc)
+    })
+  }
+  def configureFromXml(in:NodeSeq):List[MeTLingPotAdaptor] = {
+    ((for {
+      x <- (in \\ "mockMetlingPot")
+    } yield {
+      wrapWith(x,new MockMeTLingPotAdaptor())
+    }).toList :::
+    (for {
+      x <- (in \\ "ApiGatewayMetlingPotAdaptor")
+      endpoint <- (x \ "@endpoint").headOption.map(_.text)
+      region <- (x \ "@region").headOption.map(_.text)
+      iamAccessKey <- (x \ "@accessKey").headOption.map(_.text)
+      iamSecretAccessKey <- (x \ "@secretAccessKey").headOption.map(_.text)
+      apiKey = (x \ "@apiKey").headOption.map(_.text)
+    } yield {
+      wrapWith(x,new ApiGatewayMeTLingPotInterface(endpoint,region,iamAccessKey,iamSecretAccessKey,apiKey))
     }).toList)
   }
 }

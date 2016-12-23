@@ -243,6 +243,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       exs
     })
   }
+  def setupMetlingPotsFromFile(filePath:String) = {
+    Globals.metlingPots = MeTLingPot.configureFromXml(XML.load(filePath) \\ "metlingPotAdaptors")
+  }
   def setupCachesFromFile(filePath:String) = {
     import net.sf.ehcache.config.{MemoryUnit}
     import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
@@ -342,11 +345,14 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
+    setupMetlingPotsFromFile(Globals.configurationFileLocation)
     LiftRules.unloadHooks.append(() => {
+      Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions
     })
     LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
+    Globals.metlingPots.foreach(_.init)
     info(configs)
   }
   def listRooms(configName:String):List[MeTLRoom] = configs(configName)._2.list

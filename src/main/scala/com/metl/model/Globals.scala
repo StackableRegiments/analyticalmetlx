@@ -110,6 +110,7 @@ object Globals extends PropertyReader with Logger {
   })
 
   val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
+  var metlingPots:List[MeTLingPotAdaptor] = Nil
   val brightSpaceValenceIntegrations = {
     val bsvin = readNode(propFile,"brightSpaceValence")
     (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
