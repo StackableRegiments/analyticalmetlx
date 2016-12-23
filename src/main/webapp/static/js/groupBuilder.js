@@ -170,8 +170,11 @@ var GroupBuilder = (function(){
         };
         parameterSelect.on("change",function(){
             _parameters[_strategy] = $(this).val();
-            if(!Conversations.getCurrentSlide().groupSets.length){
-                doSimulation();
+            var slide = Conversations.getCurrentSlide();
+            if(slide){
+                if(!slide.groupSets.length){
+                    doSimulation();
+                }
             }
         });
 
@@ -208,15 +211,21 @@ var GroupBuilder = (function(){
         var allocatedMembers = {};
         if(slide){
             if(slide.groupSets.length){
-                parameterSelect.prop("disabled",true);
-                strategySelect.prop("disabled",true);
-                doAllocation.prop("disabled",true);
+                var groupingStrategy = slide.groupSets[0].groupingStrategy;
+                _strategy = groupingStrategy.name;
+                switch(_strategy){
+                case "byTotalGroups":_parameters[_strategy] = groupingStrategy.groupCount;break;
+                case "byMaximumSize":_parameters[_strategy] = groupingStrategy.groupSize;break;
+                }
+                parameterSelect.val(_parameters[_strategy]).prop("disabled",true);
+                strategySelect.val(_strategy).prop("disabled",true);
+                doAllocation.prop("disabled",true).hide();
                 $("#importContainer").hide();
             }
             else{
                 parameterSelect.prop("disabled",false);
                 strategySelect.prop("disabled",false);
-                doAllocation.prop("disabled",false);
+                doAllocation.prop("disabled",false).show();
                 $("#importContainer").show();
             }
             var strategy;
@@ -227,9 +236,11 @@ var GroupBuilder = (function(){
                         class:"groupBuilderGroup"
                     }).droppable({
                         drop:function(e,ui){
-                            var members = $(ui.draggable).find(".groupBuilderMember");
+                            var members = $(ui.draggable).find(".groupBuilderMember").addBack(".groupBuilderMember");
+			    console.log("Dropped",$(ui.draggable),members);
                             _.each(members,function(memberV){
                                 var member = $(memberV).text();
+				console.log("Drop member",member);
                                 if(! _.includes(group.members,member)){
                                     _.each(groupSet.groups,function(g){
                                         g.members = _.without(g.members,member);
