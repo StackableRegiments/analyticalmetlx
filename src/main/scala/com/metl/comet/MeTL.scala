@@ -1573,6 +1573,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             rooms.get((serverName,roomId)).map(r =>{
               trace("sendStanzaToServer sending submission: "+r)
               r() ! LocalToServerMeTLStanza(s)
+              Globals.metlingPots.foreach(mp => {
+                mp.postItems(List(
+                  MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",s.author),KVP("informalAcademic","submission"),Some(KVP("room",s.slideJid.toString)),None,None)
+                ))
+              })
             })
           })
         }
@@ -1582,6 +1587,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           currentConversation.map(cc => {
             val roomId = cc.jid.toString
             rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(qr))
+            Globals.metlingPots.foreach(mp => {
+              mp.postItems(List(
+                MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",qr.author),KVP("informalAcademic","quizResponse"),Some(KVP("room",cc.jid.toString)),Some(KVP("quiz",qr.id)),None)
+              ))
+            })
           })
         }
       }
@@ -1689,6 +1699,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               val roomTarget = cc.jid.toString
               rooms.get((serverName,roomTarget)).map(r => {
                 r() ! LocalToServerMeTLStanza(g)
+                Globals.metlingPots.foreach(mp => {
+                  mp.postItems(List(
+                    MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",g.author),KVP("formalAcademic","graded"),Some(KVP("grade",g.getGradeId)),Some(KVP("metlUser",g.getGradedUser)),None)
+                  ))
+                })
               })
             }
           })

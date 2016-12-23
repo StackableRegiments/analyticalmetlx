@@ -35,6 +35,11 @@ class ChunkAnalyzer extends Logger with Chunker{
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
   def emit(t:Theme,room:MeTLRoom) = {
     debug("Emitting: %s".format(t))
+    Globals.metlingPots.foreach(mp => {
+      mp.postItems(List(
+        MeTLingPotItem("canvasContentChunkAnalyzer",new java.util.Date().getTime(),KVP("metlUser",t.author),KVP("informalAcademic",t.origin),Some(KVP("room",room.location)),None,Some(t.text))
+      ))
+    })
     room.addTheme(t)
   }
   def close(room:MeTLRoom) = partialChunks.foreach{

@@ -53,6 +53,7 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
   case object RequestSend
   protected val buffer = new scala.collection.mutable.ListBuffer[MeTLingPotItem]()
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
+    println("adding items to the queue: %s".format(items.length))
     buffer ++= items
     this ! RequestSend
     Right(true)
@@ -61,25 +62,36 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
   protected var lastSend:Long = new Date().getTime()
   override def messageHandler = {
     case RequestSend if sending => {
+      println("delaying queue")
       Schedule.schedule(this,RequestSend,delay)
     }
     case RequestSend if ((lastSend + delay.millis) < new Date().getTime) => {
       sending = true
       val items:List[MeTLingPotItem] = buffer.take(burstSize).toList
       buffer --= items
+      println("processing items: %s".format(items.length))
       a.postItems(items).left.toOption.foreach(e => {
+        println("repeating items: %s".format(items.length))
         items ++=: buffer //put the items back on the queue, at the front, so that they'll be retried later.
         error("failed to send items",e)
       })
       sending = false
       if (buffer.length > 0){
+        println("continuingToProcess items from %s".format(buffer.length))
         Schedule.schedule(this,RequestSend,delay)
       }
     }
     case RequestSend => {
+      println("delaying queue")
       Schedule.schedule(this,RequestSend,delay)
     }
     case _ => {}
+  }
+  override def shutdown:Unit = {
+    while (sending && buffer.length > 0){
+      Thread.sleep(100) // wait for the buffer to clear before shutting down
+    }
+    super.shutdown
   }
 }
 
@@ -245,7 +257,9 @@ object MeTLingPot {
       (for {
         size <- (n \ "@burstSize").headOption.map(_.text.toInt)
       } yield {
-        new BurstingPassThroughMeTLingPotAdaptor(a,size)
+        val bptmpa = new BurstingPassThroughMeTLingPotAdaptor(a,size)
+        println("creating burstingMetlingPotAdaptor: %s".format(bptmpa))
+        bptmpa
       }).getOrElse(a)
     }).foldLeft(mpa)((acc,item) => {
       item(in,acc)
@@ -265,7 +279,9 @@ object MeTLingPot {
       iamSecretAccessKey <- (x \ "@secretAccessKey").headOption.map(_.text)
       apiKey = (x \ "@apiKey").headOption.map(_.text)
     } yield {
-      wrapWith(x,new ApiGatewayMeTLingPotInterface(endpoint,region,iamAccessKey,iamSecretAccessKey,apiKey))
+      val agmpi = new ApiGatewayMeTLingPotInterface(endpoint,region,iamAccessKey,iamSecretAccessKey,apiKey)
+      println("creating apiGatewayMetlingPotInterface: %s".format(agmpi))
+      wrapWith(x,agmpi)
     }).toList)
   }
 }
