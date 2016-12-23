@@ -142,7 +142,7 @@
             <div style="flex-grow:1;margin-left:1em;margin-top:-1em;">
               <h3>Groups on this page</h3>
               <div>You may move students by dragging them between groups</div>
-	      <div>Please be aware of the impact on students if an already formed group is modified</div>
+              <div>Please be aware of the impact on students if an already formed group is modified</div>
               <div class="groups"></div>
             </div>
           </div>
@@ -369,15 +369,15 @@
                 <span class="quizResultsGraph"></span>
                 <h3 class="quizQuestion"></h3>
                 <img class="quizImagePreview"></img>
-                <div class="quizOptionContainer flex-container-column">
+                <div class="quizOptionContainer" style="display:table;">
                   <!-- many ".quizOption"s are cloned from JS -->
-                  <div class="quizOption flex-container-row space-between">
-                    <span class="quizOptionName mrh"></span>
-                    <span class="quizOptionText"></span>
-                    <span class="quizOptionCountContainer">
+                  <div class="quizOption" style="display:table-row;">
+                    <span class="quizOptionName" style="display:table-cell;"></span>
+                    <span class="quizOptionText" style="display:table-cell;padding-left:1em;"></span>
+                    <span class="quizOptionCountContainer" style="display:table-cell;padding-left:1em;">
                       <span class="quizOptionAnswerCount"></span>
                     </span>
-                    <meter class="quizOptionMeter"></meter>
+                    <meter class="quizOptionMeter" style="display:table-cell;padding-left:1em;"></meter>
                   </div>
                 </div>
               </div>
