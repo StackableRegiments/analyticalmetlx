@@ -81,7 +81,9 @@ var Plugins = (function(){
                                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
                                             return grade.location == linkedGradeLoc;
                                         });
-                                        var linkedGrades = Grades.getGradeValues()[linkedGrade.id];
+                                        if(linkedGrade){
+                                            var linkedGrades = Grades.getGradeValues()[linkedGrade.id];
+                                        }
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
                                         }).append($("<input />",{
@@ -192,7 +194,7 @@ var Plugins = (function(){
                             }
                             else {
                                 var studentContainer = $("<div />").css({display:"flex"}).appendTo(overContainer);
-				console.log("Rendering student");
+                                console.log("Rendering student");
                                 _.each(groups,function(group){
                                     console.log(group,Conversations.getCurrentGroup());
                                     if(_.find(Conversations.getCurrentGroup(),group)){

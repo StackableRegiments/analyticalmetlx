@@ -1,11 +1,12 @@
 var GroupBuilder = (function(){
     var displayCache = {};
     var initialGroups = [];
+    var iteratedGroups = [];
     var externalGroups = {};
     var _strategy = "byMaximumSize";
     var _parameters = {
-	byTotalGroups:5,
-	byMaximumSize:4
+        byTotalGroups:5,
+        byMaximumSize:4
     };
     var renderMember = function(member){
         return $("<div />",{
@@ -83,7 +84,6 @@ var GroupBuilder = (function(){
                 return k in g;
             });
         });
-        console.log("seeded groups",groups);
         var filler;
         switch(strategy){
         case "byTotalGroups":
@@ -125,10 +125,9 @@ var GroupBuilder = (function(){
             id:"parameterSelect"
         }).appendTo(composition);
         var doAllocation = $("#doAllocation").off("click").on("click",function(){
-            Conversations.addGroupSlide(
-                strategySelect.val(),
-                parseInt(parameterSelect.val()),
-                _.map(initialGroups,function(group){return _.map(group.members,"name")}));
+            var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(initialGroups,function(group){return _.map(group.members,"name")});
+            Conversations.addGroupSlide(_strategy, parseInt(_parameters[_strategy]), seed);
+            iteratedGroups = [];
             initialGroups = [];
         });
         _.each([
@@ -139,27 +138,46 @@ var GroupBuilder = (function(){
                     value:params[1]
                 }).appendTo(strategySelect);
             });
-        var doSimulation = function(){
-            var simulated = simulate(strategySelect.val(),parameterSelect.val());
+        var doSimulation = function(simulated){
+            console.log("pre",simulated);
+            simulated = simulated || simulate(strategySelect.val(),parameterSelect.val());
+            console.log("post",simulated);
             groupsV.empty();
             _.each(simulated,function(group){
                 var g = $("<div />",{
                     class:"groupBuilderGroup ghost"
                 });
                 _.each(group,function(member){
-                    renderMember(member).appendTo(g);
+                    renderMember(member).draggable().appendTo(g);
+                });
+                g.droppable({
+                    drop:function(e,ui){
+                        var member = $(ui.draggable).text();
+                        _.each(simulated,function(gr){
+                            if(_.includes(gr,member)){
+                                gr.splice(gr.indexOf(member),1);
+                            }
+                        });
+                        group.push(member);
+                        console.log(member,group,simulated);
+                        iteratedGroups = simulated;
+                        doSimulation(simulated);
+                        e.preventDefault();
+                    }
                 });
                 g.appendTo(groupsV);
             });
         };
         parameterSelect.on("change",function(){
-	    _parameters[_strategy] = $(this).val();
-            doSimulation();
+            _parameters[_strategy] = $(this).val();
+            if(!Conversations.getCurrentSlide().groupSets.length){
+                doSimulation();
+            }
         });
 
         strategySelect.on("change",function(){
             var strategy = $(this).val();
-	    _strategy = strategy;
+            _strategy = strategy;
             parameterSelect.empty();
             switch(strategy){
             case "byTotalGroups":
@@ -196,6 +214,9 @@ var GroupBuilder = (function(){
                 $("#importContainer").hide();
             }
             else{
+                parameterSelect.prop("disabled",false);
+                strategySelect.prop("disabled",false);
+                doAllocation.prop("disabled",false);
                 $("#importContainer").show();
             }
             var strategy;
@@ -269,9 +290,9 @@ var GroupBuilder = (function(){
         });
     };
     Progress.onBackstageShow["GroupBuilder"] = function(backstage){
-	if(backstage == "groups"){
-	    render();
-	}
+        if(backstage == "groups"){
+            render();
+        }
     }
     Progress.groupsReceived["GroupBuilder"] = function(args){
         var byOrgUnit = externalGroups[args.orgUnit.name];
