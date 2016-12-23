@@ -209,9 +209,6 @@ var Plugins = (function(){
                                         var controls = $("<div />",{
                                             class:"groupsPluginGroupControls"
                                         }).appendTo(right);
-                                        button("fa-share-square","",function(){
-                                            _.defer(Submissions.sendSubmission);
-                                        }).appendTo(controls);
                                         var id = sprintf("isolateGroup_%s",group.title);
                                         var members = $("<div />",{
                                             class:"groupsPluginGroup"

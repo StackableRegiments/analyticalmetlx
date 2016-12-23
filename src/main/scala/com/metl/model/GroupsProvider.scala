@@ -103,7 +103,7 @@ object GroupsProvider {
             new StoreBackedGroupsProvider(n,
               new PeriodicallyRefreshingGroupStoreProvider(
                 new FileWatchingCachingGroupStoreProvider(
-                  new XmlSpecificOverridesGroupStoreProvider(path),
+                  new XmlSpecificOverridesGroupStoreProvider(n,path),
                 path),
                 period
               )
@@ -139,7 +139,7 @@ object GroupsProvider {
           refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
         } yield {
           val n = name.getOrElse("d2lGroups_from_%s".format(host))
-          val diskCache = new XmlGroupStoreDataFile(diskStore)
+          val diskCache = new XmlGroupStoreDataFile(n,diskStore)
           new StoreBackedGroupsProvider(n,
             new PeriodicallyRefreshingGroupStoreProvider(
               new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
@@ -398,7 +398,7 @@ trait GroupStoreDataSerializers {
     })
     }</groupStoreData>
   }
-  def fromXml(xml:NodeSeq):GroupStoreData = {
+  def fromXml(storeId:String,xml:NodeSeq):GroupStoreData = {
     val userDetails = Map((xml \\ "personalDetails").flatMap(personalDetailsNode => {
       for {
         username <- (personalDetailsNode \ "@username").headOption.map(_.text)
@@ -425,26 +425,26 @@ trait GroupStoreDataSerializers {
         ouName <- (orgUnitNode \ "@name").headOption.map(_.text) 
         ouType <- (orgUnitNode \ "@type").headOption.map(_.text)
       } yield {
-        val ouMembers = (orgUnitNode \ "member").map(_.text).map(gm => Member(gm,Nil,None)).toList
+        val ouMembers = (orgUnitNode \ "member").map(_.text).map(gm => Member(gm,Nil,Some(ForeignRelationship(storeId,gm)))).toList
         val groupSets = (orgUnitNode \\ "groupSet").flatMap(groupSetNode => {
           for {
             gsName <- (groupSetNode \ "@name").headOption.map(_.text)
             gsType <- (groupSetNode \ "@type").headOption.map(_.text)
           } yield {
-            val gsMembers = (groupSetNode \ "member").map(_.text).map(gm => Member(gm,Nil,None)).toList
+            val gsMembers = (groupSetNode \ "member").map(_.text).map(gm => Member(gm,Nil,Some(ForeignRelationship(storeId,gm)))).toList
             val groups = (groupSetNode \\ "group").flatMap(groupNode => {
               for {
                 gName <- (groupNode \ "@name").headOption.map(_.text)
                 gType <- (groupNode \ "@type").headOption.map(_.text)
               } yield {
                 val gMembers = (groupNode \ "member").map(_.text).toList
-                Group(gType,gName,gMembers.map(gm => Member(gm,Nil,None)))
+                Group(gType,gName,gMembers.map(gm => Member(gm,Nil,Some(ForeignRelationship(storeId,gm)))),Some(ForeignRelationship(storeId,gName)))
               }
             }).toList
-            GroupSet(gsType,gsName,(gsMembers ::: groups.flatMap(_.members)).distinct,groups)
+            GroupSet(gsType,gsName,(gsMembers ::: groups.flatMap(_.members)).distinct,groups,Some(ForeignRelationship(storeId,gsName)))
           }
         }).toList
-        val ou = OrgUnit(ouType,ouName,(ouMembers ::: groupSets.flatMap(_.members)).distinct,groupSets)
+        val ou = OrgUnit(ouType,ouName,(ouMembers ::: groupSets.flatMap(_.members)).distinct,groupSets,Some(ForeignRelationship(storeId,ouName)))
         intermediaryOrgUnits += ((ouName,ou))
         intermediaryGroupSets += ((ou,ou.groupSets))
         ou.groupSets.foreach(gs => {
@@ -481,12 +481,12 @@ trait GroupStoreDataSerializers {
     GroupStoreData(groupsForMembers,membersForGroups,personalDetails,orgUnitsByName,groupSetsByOrgUnit,groupsByGroupSet)
   }
 }
-class XmlSpecificOverridesGroupStoreProvider(path:String) extends GroupStoreProvider with GroupStoreDataSerializers {
+class XmlSpecificOverridesGroupStoreProvider(storeId:String,path:String) extends GroupStoreProvider with GroupStoreDataSerializers {
   import scala.xml._
   override val canQuery = true
   override def getData = {
     val xml = XML.load(path)
-    fromXml(xml)
+    fromXml(storeId,xml)
   }
 }
 
@@ -547,7 +547,7 @@ class GroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers
   }
 }
 
-class XmlGroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers {
+class XmlGroupStoreDataFile(storeId:String,diskStorePath:String) extends GroupStoreDataSerializers {
   import scala.xml._
   def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
@@ -559,7 +559,7 @@ class XmlGroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializ
   def read:Option[GroupStoreData] = {
     try {
       val xml = XML.load(diskStorePath)
-      Some(fromXml(xml))
+      Some(fromXml(storeId,xml))
     } catch {
       case e:Exception => {
         None
