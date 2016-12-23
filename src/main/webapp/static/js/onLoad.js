@@ -664,6 +664,7 @@ $(function(){
     });
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
+	Quizzes.reRender();
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
