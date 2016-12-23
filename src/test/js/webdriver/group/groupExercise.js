@@ -118,7 +118,6 @@ describe('When the class breaks into groups,', function() {
         teacher.execute("$('.jAlert .strategySelect').val('byTotalGroups').change()");
 	teacher.pause(500);
         teacher.execute("$('.jAlert .parameterSelect').val('3').change()");
-	browser.debug();
         teacher.execute("$(\"a:contains('Add page')\").click()");
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
@@ -219,7 +218,7 @@ describe('When the class breaks into groups,', function() {
     it("participant presence should not be an active metric when the class is not restricted",function(){
         assert(browser.isExisting("#participationStatus"));
         assert.equal(tT.currentConversation.subject,"unrestricted");
-        assert.equal(tT.participationHealth,0);
+        assert.equal(tT.participationHealth,1);
     });
     it("given that the teacher restricts the conversation",function(){
         tT.homeTab.click();
@@ -470,7 +469,6 @@ describe('When the class breaks into groups,', function() {
         assert(studentB.isExisting("#contentFilter_"+groups[2].id));
     });
     it("content sharing should be reestablished on return to the slide",function(){
-	browser.debug();
         _.each([sB,sC],function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
                 user.menuButton.click();
