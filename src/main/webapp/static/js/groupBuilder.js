@@ -1,8 +1,8 @@
 var GroupBuilder = (function(){
     var displayCache = {};
     var initialGroups = [];
-    var iteratedGroups = [];
     var externalGroups = {};
+    var iteratedGroups = [];
     var _strategy = "byMaximumSize";
     var _parameters = {
         byTotalGroups:5,
@@ -15,7 +15,7 @@ var GroupBuilder = (function(){
         });
     };
     var renderExternalGroups = function(){
-        var container = $("#groupsPopup");
+        var container = $(".jAlert .groupSlideDialog");
         var importV = container.find(".importGroups").empty();
         _.each(externalGroups,function(orgUnit){
             _.each(orgUnit,function(groupCat){
@@ -52,7 +52,7 @@ var GroupBuilder = (function(){
                             else{
                                 initialGroups.push(group);
                             }
-                            render();
+                            doSimulation();
                         }).appendTo(groupV);
                         inputV.prop("checked",_.includes(initialGroups,group));
                         $("<label />",{
@@ -70,7 +70,6 @@ var GroupBuilder = (function(){
         });
     }
     var simulate = function(strategy,parameter){
-        console.log("simulate initial groups",initialGroups);
         var groups = _.map(initialGroups,function(g){
             var r = {};
             _.each(g.members,function(m){
@@ -112,135 +111,34 @@ var GroupBuilder = (function(){
         console.log(groups);
         return _.map(groups,_.keys);
     }
-    var render = function(){
-        var container = $("#groupsPopup");
-        var composition = $("#groupComposition").empty();
-        var importV = container.find(".importGroups").empty();
-        var groupsV = container.find(".groups").empty();
-        var slide = Conversations.getCurrentSlide();
-        var strategySelect = $("<select />",{
-            id:"strategySelect"
-        }).appendTo(composition);
-        var parameterSelect = $("<select />",{
-            id:"parameterSelect"
-        }).appendTo(composition);
-        var doAllocation = $("#doAllocation").off("click").on("click",function(){
-            var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(initialGroups,function(group){return _.map(group.members,"name")});
-            Conversations.addGroupSlide(_strategy, parseInt(_parameters[_strategy]), seed);
-            iteratedGroups = [];
-            initialGroups = [];
-        });
+    var renderStrategies = function(container){
         _.each([
             ["there are","byTotalGroups"],
             ["each has","byMaximumSize"]],function(params){
                 $("<option />",{
                     text:params[0],
                     value:params[1]
-                }).appendTo(strategySelect);
+                }).appendTo(container);
             });
-        var doSimulation = function(simulated){
-            console.log("pre",simulated);
-            simulated = simulated || simulate(strategySelect.val(),parameterSelect.val());
-            console.log("post",simulated);
-            groupsV.empty();
-            _.each(simulated,function(group){
-                var g = $("<div />",{
-                    class:"groupBuilderGroup ghost"
-                });
-                _.each(group,function(member){
-                    renderMember(member).draggable().appendTo(g);
-                });
-                g.droppable({
-                    drop:function(e,ui){
-                        var member = $(ui.draggable).text();
-                        _.each(simulated,function(gr){
-                            if(_.includes(gr,member)){
-                                gr.splice(gr.indexOf(member),1);
-                            }
-                        });
-                        group.push(member);
-                        console.log(member,group,simulated);
-                        iteratedGroups = simulated;
-                        doSimulation(simulated);
-                        e.preventDefault();
-                    }
-                });
-                g.appendTo(groupsV);
-            });
-        };
-        parameterSelect.on("change",function(){
-            _parameters[_strategy] = $(this).val();
-            var slide = Conversations.getCurrentSlide();
-            if(slide){
-                if(!slide.groupSets.length){
-                    doSimulation();
-                }
-            }
-        });
-
-        strategySelect.on("change",function(){
-            var strategy = $(this).val();
-            _strategy = strategy;
-            parameterSelect.empty();
-            switch(strategy){
-            case "byTotalGroups":
-                _.each(_.range(2,10),function(i){
-                    $("<option />",{
-                        text:sprintf("%s groups in total",i),
-                        value:i
-                    }).appendTo(parameterSelect);
-                });
-                parameterSelect.val(_parameters[strategy]).change();
-                break;
-            case "byMaximumSize":
-                _.each(_.range(1,10),function(i){
-                    $("<option />",{
-                        text:i == 1 ? "only one member" : sprintf("at most %s members",i),
-                        value:i
-                    }).appendTo(parameterSelect);
-                });
-                parameterSelect.val(_parameters[strategy]).change();
-                break;
-            }
-        });
-        strategySelect.val(_strategy).change();
-        var allocatedV = container.find(".allocatedMembers").empty();
-        var unallocatedV = container.find(".unallocatedMembers").empty();
-        var unallocatedMembers = _.clone(Participants.getParticipants());
-        delete unallocatedMembers[Conversations.getCurrentConversation.author];
-        var allocatedMembers = {};
+    }
+    var render = function(){
+        var container = $("#groupsPopup");
+        var composition = $("#groupComposition");
+        var importV = container.find(".importGroups").empty();
+        var groupsV = container.find(".groups").empty();
+        var slide = Conversations.getCurrentSlide();
         if(slide){
-            if(slide.groupSets.length){
-                var groupingStrategy = slide.groupSets[0].groupingStrategy;
-                _strategy = groupingStrategy.name;
-                switch(_strategy){
-                case "byTotalGroups":_parameters[_strategy] = groupingStrategy.groupCount;break;
-                case "byMaximumSize":_parameters[_strategy] = groupingStrategy.groupSize;break;
-                }
-                parameterSelect.val(_parameters[_strategy]).prop("disabled",true);
-                strategySelect.val(_strategy).prop("disabled",true);
-                doAllocation.prop("disabled",true).hide();
-                $("#importContainer").hide();
-            }
-            else{
-                parameterSelect.prop("disabled",false);
-                strategySelect.prop("disabled",false);
-                doAllocation.prop("disabled",false).show();
-                $("#importContainer").show();
-            }
-            var strategy;
-            var parameter;
             _.each(slide.groupSets,function(groupSet){
                 _.each(_.sortBy(groupSet.groups,"title"),function(group){
                     var g = $("<div />",{
                         class:"groupBuilderGroup"
-                    }).droppable({
+                    }).appendTo(groupsV).droppable({
                         drop:function(e,ui){
                             var members = $(ui.draggable).find(".groupBuilderMember").addBack(".groupBuilderMember");
-			    console.log("Dropped",$(ui.draggable),members);
+                            console.log("Dropped",$(ui.draggable),members);
                             _.each(members,function(memberV){
                                 var member = $(memberV).text();
-				console.log("Drop member",member);
+                                console.log("Drop member",member);
                                 if(! _.includes(group.members,member)){
                                     _.each(groupSet.groups,function(g){
                                         g.members = _.without(g.members,member);
@@ -253,35 +151,107 @@ var GroupBuilder = (function(){
                             e.preventDefault();
                         }
                     });
-                    _.each(group.members,function(member){
-                        delete unallocatedMembers[member];
-                        allocatedMembers[member] = 1;
-                        renderMember(member).draggable().appendTo(g);
-                    });
                     $("<div />",{
                         class:"title",
                         text:sprintf("Group %s",group.title)
-                    }).prependTo(g);
-                    g.appendTo(groupsV);
+                    }).appendTo(g);
+                    _.each(group.members,function(member){
+                        renderMember(member).appendTo(g).draggable();
+                    });
                 });
             });
         }
-        _.each(allocatedMembers,function(member,name){
-            $("<div />",{
-                text:name,
-                class:"member"
-            }).appendTo(allocatedV);
+    };
+    var doSimulation = function(simulated){
+        var container = $(".jAlert .groupSlideDialog");
+        var strategySelect = container.find(".strategySelect");
+        var parameterSelect = container.find(".parameterSelect");
+        var groupsV = container.find(".groups");
+        simulated = simulated || simulate(strategySelect.val(),parameterSelect.val());
+        groupsV.empty();
+        _.each(simulated,function(group){
+            console.log(group);
+            var g = $("<div />",{
+                class:"groupBuilderGroup ghost"
+            });
+            _.each(group,function(member){
+                renderMember(member).draggable().appendTo(g);
+            });
+            g.droppable({
+                drop:function(e,ui){
+                    var member = $(ui.draggable).text();
+                    _.each(simulated,function(gr){
+                        if(_.includes(gr,member)){
+                            gr.splice(gr.indexOf(member),1);
+                        }
+                    });
+                    group.push(member);
+                    iteratedGroups = simulated;
+                    doSimulation(simulated);
+                    e.preventDefault();
+                }
+            });
+            g.appendTo(groupsV);
         });
-        _.each(unallocatedMembers,function(member,name){
-            $("<div />",{
-                text:name,
-                class:"member"
-            }).appendTo(unallocatedV);
+    };
+    var showAddGroupSlideDialogFunc = function(){
+        getGroupsProviders();
+        var container = $("#groupSlideDialog").clone().show();
+        var jAlert = $.jAlert({
+            title:"Add Group page",
+            width:"75%",
+            content:container[0].outerHTML,
+            btns:[{
+                text:"Add page",
+                theme:'green',
+                closeAlert:true,
+                onClick:function(){
+                    var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(initialGroups,function(group){return _.map(group.members,"name")});
+                    Conversations.addGroupSlide(_strategy, parseInt(_parameters[_strategy]), seed);
+                    iteratedGroups = [];
+                    externalGroups = {};
+                }
+            }]
         });
-        renderExternalGroups();
+        container = $(".jAlert .groupSlideDialog");
+        var strategySelect = container.find(".strategySelect");
+        var parameterSelect = container.find(".parameterSelect");
+        var groupsV = container.find(".groups");
+        renderStrategies(strategySelect);
+        container.on("change",".strategySelect",function(){
+            _strategy = $(this).val();
+            console.log("Strategy set:",_strategy);
+            parameterSelect.empty();
+            switch(_strategy){
+            case "byTotalGroups":
+                _.each(_.range(2,10),function(i){
+                    $("<option />",{
+                        text:sprintf("%s groups in total",i),
+                        value:i.toString()
+                    }).appendTo(parameterSelect);
+                });
+                parameterSelect.val(_parameters[_strategy]).change();
+                break;
+            case "byMaximumSize":
+                _.each(_.range(1,10),function(i){
+                    $("<option />",{
+                        text:i == 1 ? "only one member" : sprintf("at most %s members",i),
+                        value:i.toString()
+                    }).appendTo(parameterSelect);
+                });
+                parameterSelect.val(_parameters[_strategy]).change();
+                break;
+            }
+        });
+        container.on("change",".parameterSelect",function(){
+            console.log("change parameter",_parameters);
+            _parameters[_strategy] = $(this).val();
+            doSimulation();
+        });
+        strategySelect.val(_strategy).change();
     };
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
-        var select = $("#ouSelector").empty();
+        var select = $(".jAlert .ouSelector").empty();
         $("<option />",{
             text:"no starting groups",
             value:"NONE",
@@ -300,11 +270,6 @@ var GroupBuilder = (function(){
             }
         });
     };
-    Progress.onBackstageShow["GroupBuilder"] = function(backstage){
-        if(backstage == "groups"){
-            render();
-        }
-    }
     Progress.groupsReceived["GroupBuilder"] = function(args){
         var byOrgUnit = externalGroups[args.orgUnit.name];
         if (byOrgUnit === undefined){
@@ -314,10 +279,22 @@ var GroupBuilder = (function(){
         byOrgUnit[args.groupSet.name] = args;
         renderExternalGroups();
     };
-    Progress.currentSlideJidReceived["GroupBuilder"] = render;
+    Progress.onBackstageShow["GroupBuilder"] = function(backstage){
+        if(backstage == "groups"){
+            render();
+        }
+    };
+    Progress.currentSlideJidReceived["GroupBuilder"] = function(){
+        if(currentBackstage == "groups"){
+            render();
+        }
+    };
     Progress.conversationDetailsReceived["GroupBuilder"] = function(){
-        getGroupsProviders();
-        render();
-    }
-    return {};
+        if(currentBackstage == "groups"){
+            render();
+        }
+    };
+    return {
+        showAddGroupSlideDialog:showAddGroupSlideDialogFunc
+    };
 })();

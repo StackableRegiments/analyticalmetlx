@@ -137,22 +137,30 @@
           </div>
         </section>
         <section id="groupsPopup" class="backstage box-model-block">
-          <h2 class="nmt">Group builder</h2>
+          <h2>Group editor</h2>
           <div class="flex-container-responsive ml">
-            <div>
-              <h3>Fill groups until</h3>
-              <div id="groupComposition"></div>
-              <div id="importContainer">
-                <h3>Starting with groups from
-                  <select id="ouSelector"></select>
-                </h3>
-                <div class="importGroups"></div>
+            <div style="flex-grow:1;margin-left:1em;margin-top:-1em;">
+              <h3>Groups on this page</h3>
+              <div>You may move students by dragging them between groups</div>
+	      <div>Please be aware of the impact on students if an already formed group is modified</div>
+              <div class="groups"></div>
+            </div>
+          </div>
+          <div id="groupSlideDialog" style="display:none">
+            <div class="flex-container-responsive ml groupSlideDialog">
+              <div>
+                <h3>Fill groups until</h3>
+                <div class="flex-container-responsive">
+                  <select class="strategySelect"></select>
+                  <select class="parameterSelect"></select>
+                </div>
+                <div class="importContainer">
+                  <h3>Starting with groups from
+                    <select class="ouSelector"></select>
+                  </h3>
+                  <div class="importGroups"></div>
+                </div>
               </div>
-            </div>
-            <div id="allocationContainer">
-              <button class="btn-icon fa fa-users" id="doAllocation">Fill</button>
-            </div>
-            <div style="flex-grow:1;margin-left:1em;">
               <div class="groups"></div>
             </div>
           </div>

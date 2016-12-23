@@ -480,7 +480,7 @@ var Conversations = (function(){
         indicateActiveSlide(jid);
         updateLinks();
         refreshSlideDisplay();
-	loadCurrentGroup(currentConversation);
+        loadCurrentGroup(currentConversation);
     };
     var updateLinks = function(){
         var serviceUrlRoot = window.location.origin;
@@ -892,7 +892,7 @@ var Conversations = (function(){
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
             .on("click","#addGroupSlideButton",function(){
-                showBackstage('groups');
+                GroupBuilder.showAddGroupSlideDialog()
             })
             .on("click","#addSlideButton",addSlideFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
