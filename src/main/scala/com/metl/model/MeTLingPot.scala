@@ -52,25 +52,19 @@ class MeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamS
           a.setType(i.action.`type`)
           a
         })
-        i.target.foreach(t => {
-          item.setTarget({
-            val a = new InputItemsPutRequestItemsItemActor()
-            a.setName(t.name)
-            a.setType(t.`type`)
-            a
-          })
+        item.setTarget({
+          val a = new InputItemsPutRequestItemsItemActor()
+          a.setName(i.target.map(_.name).getOrElse(""))
+          a.setType(i.target.map(_.`type`).getOrElse(""))
+          a
         })
-        i.context.foreach(t => {
-          item.setContext({
-            val a = new InputItemsPutRequestItemsItemActor()
-            a.setName(t.name)
-            a.setType(t.`type`)
-            a
-          })
+        item.setContext({
+          val a = new InputItemsPutRequestItemsItemActor()
+          a.setName(i.context.map(_.name).getOrElse(""))
+          a.setType(i.context.map(_.`type`).getOrElse(""))
+          a
         })
-        i.value.foreach(t => {
-          item.setValue(t)
-        })
+        item.setValue(i.value.getOrElse(""))
         item
       }).toList.asJava)
       val response = client.inputItemPut(req)
