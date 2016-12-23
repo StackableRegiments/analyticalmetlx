@@ -5,8 +5,6 @@ title: Conversation Search
 
 ![Conversation Search](images/guide-conversation-search.png)
 
-After logging into MeTL, users are directed to the Conversation Search page.
-
 To find a conversation, enter a query into the search box and click `Search` or press `Enter`. 
 Search results are displayed in the table below. 
 
@@ -17,7 +15,23 @@ resulting in a list of the conversations created by the current user.
 
 ### Lifecycle
 
-This column shows the conversation status. Recently [created](#start-a-conversation) conversations show a `new` label, and [archived]({{site.baseurl}}/guide-edit-conversation.html#archive) conversations show an `archived` label. 
+The status of the conversation. Recently [created](#start-a-conversation) conversations show a `new` label, and [archived]({{site.baseurl}}/guide-edit-conversation.html#archive) conversations show an `archived` label. 
+ 
+### Title
+
+The title of the conversation, which is used when searching. 
+ 
+### Author
+
+The user who created the conversation, which is used when searching. 
+ 
+### Sharing
+
+The user or group who can see and join the conversation (see [sharing]({{site.baseurl}}/guide-edit-conversation.html#sharing)).
+
+### Edit
+
+[Edit]({{site.baseurl}}/guide-edit-conversation.html) the conversation to update details or settings.
  
 ## Join a Conversation
  

@@ -9,8 +9,9 @@ It covers navigation of the MeTL user interface as well as the best ways to supp
 
 ## Content
 
-- [Conversation Search](guide-conversations.html)
-  - [Edit Conversation](guide-edit-conversation.html)
+- [Conversation](guide-conversation.html)
+  - [Search](guide-conversation-search.html)
+  - [Edit](guide-edit-conversation.html)
 - [Whiteboard](guide-whiteboard.html)
   - [Controls](guide-controls.html) 
   - [Integrations](guide-integrations.html) 
