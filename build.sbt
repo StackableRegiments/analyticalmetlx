@@ -116,7 +116,10 @@ libraryDependencies ++= {
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
-    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1"
+    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
+    //for AWS API Gateway interaction
+    "com.amazonaws" % "aws-android-sdk-apigateway-core" % "2.3.1",
+    "com.google.code.gson" % "gson" % "2.2.4"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
