@@ -379,6 +379,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
           updatePossibleAttendance
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
+          Globals.metlingPots.foreach(mp => {
+            mp.postItems(List(
+              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",j.username),KVP("informalAcademic","joined"),Some(KVP("room",location)),None,None)
+            ))
+          })          
         }
         j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance)
       }
@@ -396,6 +401,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         if (oldMembers.contains(l.username) && !newMembers.contains(l.username)){
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
+          Globals.metlingPots.foreach(mp => {
+            mp.postItems(List(
+              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",l.username),KVP("informalAcademic","left"),Some(KVP("room",location)),None,None)
+            ))
+          })
         }
       }
       case _ => {}

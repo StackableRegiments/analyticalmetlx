@@ -108,16 +108,17 @@ describe('When the class breaks into groups,', function() {
     it("given that the teacher adds a group slide, importing an external group and specifying a strategy,",function(){
         assert.equal(tT.currentSlide.index,0);
         tT.addGroupSlide.click();
-        browser.waitUntil(function(){return teacher.isVisible("#ouSelector");});
-        teacher.selectByValue("#ouSelector","xmlUserOverrides_from_testMaterials/orgData.xml");
+	teacher.pause(1000);
+        teacher.execute("$('.jAlert .ouSelector').val('xmlUserOverrides_from_testMaterials/orgData.xml').change()");
         browser.waitUntil(function(){
-            var visible = teacher.execute("return $('#structuralGroup_2').length > 0;").value;
+            var visible = teacher.execute("return $('.jAlert #structuralGroup_2').length > 0;").value;
             return visible;
         });
-        teacher.execute("return $('#structuralGroup_2').click();");
-        teacher.selectByValue("#strategySelect","byTotalGroups");
-        teacher.selectByValue("#parameterSelect","3");
-        teacher.click("#doAllocation");
+        teacher.execute("$('.jAlert #structuralGroup_2').click()");
+        teacher.execute("$('.jAlert .strategySelect').val('byTotalGroups').change()");
+	teacher.pause(500);
+        teacher.execute("$('.jAlert .parameterSelect').val('3').change()");
+        teacher.execute("$(\"a:contains('Add page')\").click()");
         teacher.waitUntil(function(){
             return tT.currentSlide.index == 1;
         });
@@ -217,7 +218,7 @@ describe('When the class breaks into groups,', function() {
     it("participant presence should not be an active metric when the class is not restricted",function(){
         assert(browser.isExisting("#participationStatus"));
         assert.equal(tT.currentConversation.subject,"unrestricted");
-        assert.equal(tT.participationHealth,0);
+        assert.equal(tT.participationHealth,1);
     });
     it("given that the teacher restricts the conversation",function(){
         tT.homeTab.click();
@@ -468,7 +469,6 @@ describe('When the class breaks into groups,', function() {
         assert(studentB.isExisting("#contentFilter_"+groups[2].id));
     });
     it("content sharing should be reestablished on return to the slide",function(){
-	browser.debug();
         _.each([sB,sC],function(user,ui){//Close all backstages
             if(user.applicationMenu.value != null){
                 user.menuButton.click();
