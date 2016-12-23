@@ -5,7 +5,7 @@ title: User Guide
 
 This is information for teachers, teaching assistants, student champions and all other MeTL users.
 
-It will help you navigate the user interface of MeTL as well as piece together the best ways to support your teaching activities.
+It covers navigation of the MeTL user interface as well as the best ways to support teaching activities.
 
 ## Content
 
