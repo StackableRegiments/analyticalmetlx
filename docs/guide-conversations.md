@@ -12,6 +12,12 @@ Search results are displayed in the table below.
 
 Initially the search box will be populated with the current username, 
 resulting in a list of the conversations created by the current user.
+
+## Search Results
+
+### Lifecycle
+
+This column shows the conversation status. Recently [created](#start-a-conversation) conversations show a `new` label, and [archived]({{site.baseurl}}/guide-edit-conversation.html#archive) conversations show an `archived` label. 
  
 ## Join a Conversation
  
