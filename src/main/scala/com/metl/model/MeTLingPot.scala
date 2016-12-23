@@ -29,7 +29,12 @@ class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecr
   }
 }
 
-class MeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
+trait MeTLingPotAdaptor {
+  def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] 
+  def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] 
+}
+
+class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) extends MeTLingPotAdaptor {
   val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
   def client:MetlingPotInputItemClient = clientFactory.client[MetlingPotInputItemClient]
 
@@ -159,5 +164,27 @@ class MeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamS
     } catch {
       case e:Exception => Left(e)
     }
+  }
+}
+
+class MockMeTLingPotAdaptor extends MeTLingPotAdaptor {
+  protected val store:scala.collection.mutable.ListBuffer[MeTLingPotItem] = new scala.collection.mutable.ListBuffer[MeTLingPotItem]
+  def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
+    store ++= items
+    Right(true)
+  }
+  def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] = {
+    Right(store.filter(i => i.timestamp > after && i.timestamp < before && !queries.toList.exists{
+      case ("source",sourceFilters) => !sourceFilters.contains(i.source)
+      case ("actortype",sourceFilters) => !sourceFilters.contains(i.actor.`type`)
+      case ("actorname",sourceFilters) => !sourceFilters.contains(i.actor.name)
+      case ("actiontype",sourceFilters) => !sourceFilters.contains(i.actor.`type`)
+      case ("actionname",sourceFilters) => !sourceFilters.contains(i.actor.name)
+      case ("targettype",sourceFilters) => !sourceFilters.contains(i.actor.`type`)
+      case ("targetname",sourceFilters) => !sourceFilters.contains(i.actor.name)
+      case ("contexttype",sourceFilters) => !sourceFilters.contains(i.actor.`type`)
+      case ("contextname",sourceFilters) => !sourceFilters.contains(i.actor.name)
+      case _ => false
+    }).toList)
   }
 }
