@@ -1,3 +1,7 @@
+1.0.3
+Feature: METL-323: Simulate group allocation before committing.
+Feature: METL-321: Create interface to emit events to MeTLing Pot.
+
 1.0.2
 Bugfix: METL-312: Add Page makes page numbering incorrect.
 Improvement: METL-306: Improve D2L performance when logging in.
