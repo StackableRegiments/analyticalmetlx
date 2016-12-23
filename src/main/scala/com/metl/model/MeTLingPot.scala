@@ -17,18 +17,20 @@ class AWSStaticCredentialsProvider(creds:AWSCredentials) extends AWSCredentialsP
 case class KVP(`type`:String,name:String)
 case class MeTLingPotItem(source:String,timestamp:Long,actor:KVP,action:KVP,context:Option[KVP],target:Option[KVP],value:Option[String])
 
-class APIGatewayClient(/*region:String,invokeHost:String,*/iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
+class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
   def client[B: ClassTag]:B = {
-    var factory = new com.amazonaws.mobileconnectors.apigateway.ApiClientFactory().credentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey)))
-    apiGatewayApiKey.foreach(agak => {
-      factory = factory.apiKey(agak)
-    })
+    var factory = {
+      apiGatewayApiKey match {
+        case Some(agak) => new com.amazonaws.mobileconnectors.apigateway.ApiClientFactory().credentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey))).endpoint(endpoint).apiKey(agak)
+        case None => new com.amazonaws.mobileconnectors.apigateway.ApiClientFactory().credentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey))).endpoint(endpoint)
+      }
+    }
     factory.build(classTag[B].runtimeClass).asInstanceOf[B]
   }
 }
 
-class MeTLingPotInterfac(/*region:String,invokeHost:String,*/iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
-  val clientFactory = new APIGatewayClient(iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
+class MeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
+  val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
   def client:MetlingPotInputItemClient = clientFactory.client[MetlingPotInputItemClient]
 
   def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
@@ -50,7 +52,6 @@ class MeTLingPotInterfac(/*region:String,invokeHost:String,*/iamAccessKey:String
           a.setType(i.action.`type`)
           a
         })
-
         i.target.foreach(t => {
           item.setTarget({
             val a = new InputItemsPutRequestItemsItemActor()
@@ -67,8 +68,11 @@ class MeTLingPotInterfac(/*region:String,invokeHost:String,*/iamAccessKey:String
             a
           })
         })
+        i.value.foreach(t => {
+          item.setValue(t)
+        })
         item
-      }).asJava)
+      }).toList.asJava)
       val response = client.inputItemPut(req)
       Right(true)
     } catch {
