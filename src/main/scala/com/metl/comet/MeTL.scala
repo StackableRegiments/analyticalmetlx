@@ -1136,8 +1136,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val sid = getArgAsString(args(0))
       val orgUnitJValue = getArgAsJValue(args(1))
       val orgUnit = orgUnitJValue.extract[OrgUnit]
+      val members = for {
+        cc <- currentConversation.toList
+        r <- rooms.get((server,cc.jid.toString)).toList
+        a <- r().getPossibleAttendance
+      } yield {
+        Member(a,Nil,None)
+      }
       val groupSets = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-        gp.getGroupSetsFor(orgUnit).map(gs => Extraction.decompose(gs))
+        gp.getGroupSetsFor(orgUnit,members).map(gs => Extraction.decompose(gs))
       }).toList)
       JObject(List(
         JField("groupsProvider",JString(sid)),
@@ -1151,8 +1158,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val orgUnit = orgUnitJValue.extract[OrgUnit]
       val groupSetJValue = getArgAsJValue(args(2))
       val groupSet = groupSetJValue.extract[com.metl.liftAuthenticator.GroupSet]
+      val members = for {
+        cc <- currentConversation.toList
+        r <- rooms.get((server,cc.jid.toString)).toList
+        a <- r().getPossibleAttendance
+      } yield {
+        Member(a,Nil,None)
+      }
       val groups = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-        gp.getGroupsFor(orgUnit,groupSet).map(gs => Extraction.decompose(gs))
+        gp.getGroupsFor(orgUnit,groupSet,members).map(gs => Extraction.decompose(gs))
       }).toList)
       JObject(List(
         JField("groupsProvider",JString(sid)),

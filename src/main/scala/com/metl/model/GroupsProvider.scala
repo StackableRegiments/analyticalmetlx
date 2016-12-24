@@ -60,6 +60,18 @@ object GroupsProvider {
   def constructFromXml(outerNodes:NodeSeq):List[GroupsProvider] = {
     val name = (outerNodes \\ "@name").headOption.map(_.text)
     (for {
+      x <- (outerNodes \\ "smartGroups")
+      endpoint <- (x \ "@endpoint").headOption.map(_.text)
+      region <- (x \ "@region").headOption.map(_.text)
+      iamAccessKey <- (x \ "@accessKey").headOption.map(_.text)
+      iamSecretAccessKey <- (x \ "@secretAccessKey").headOption.map(_.text)
+      apiGatewayKey = (x \ "@apiKey").headOption.map(_.text)
+      groupSize <- (x \ "@groupSize").headOption.map(_.text.toInt)
+    } yield {
+      val n = name.getOrElse("smartGroups_from_%s".format(endpoint))
+      new SmartGroupsProvider(n,endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayKey,groupSize)
+    }).toList :::
+    (for {
       in <- (outerNodes \\ "selfGroups")
     } yield {
       new SelfGroupsProvider(name.getOrElse("selfGroups"))
@@ -184,9 +196,9 @@ abstract class GroupsProvider(val storeId:String) extends Logger {
   
   def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = userData.eligibleGroups.toList
   def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
-  def getGroupSetsFor(orgUnit:OrgUnit):List[GroupSet] = orgUnit.groupSets
+  def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = orgUnit.groupSets
   def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = groupSet.members
-  def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = groupSet.groups
+  def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = groupSet.groups
   def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
   
   def getOrgUnit(name:String):Option[OrgUnit]
@@ -203,9 +215,9 @@ class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) e
   override val canQuery:Boolean = gp.canQuery
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData)
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit)
-  override def getGroupSetsFor(orgUnit:OrgUnit):List[GroupSet] = gp.getGroupSetsFor(orgUnit)
+  override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gp.getGroupSetsFor(orgUnit,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gp.getMembersFor(orgUnit,groupSet)
-  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gp.getGroupsFor(orgUnit,groupSet)
+  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = gp.getGroupsFor(orgUnit,groupSet,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group)
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData)
   override def getOrgUnit(name:String):Option[OrgUnit] = None
@@ -215,9 +227,9 @@ class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,grou
   override val canQuery:Boolean = gp.canQuery
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData).filter(groupsFilter)
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit).filter(membersFilter)
-  override def getGroupSetsFor(orgUnit:OrgUnit):List[GroupSet] = gp.getGroupSetsFor(orgUnit)
+  override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gp.getGroupSetsFor(orgUnit,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gp.getMembersFor(orgUnit,groupSet).filter(membersFilter)
-  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gp.getGroupsFor(orgUnit,groupSet)
+  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = gp.getGroupsFor(orgUnit,groupSet,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group).filter(membersFilter)
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData).filter(personalDetailsFilter)
   override def getOrgUnit(name:String):Option[OrgUnit] = None
@@ -229,9 +241,9 @@ class StoreBackedGroupsProvider(override val storeId:String,gs:GroupStoreProvide
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)
   
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gs.getMembersFor(orgUnit)
-  override def getGroupSetsFor(orgUnit:OrgUnit):List[GroupSet] = gs.getGroupSetsFor(orgUnit)
+  override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gs.getGroupSetsFor(orgUnit,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gs.getMembersFor(orgUnit,groupSet)
-  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = gs.getGroupsFor(orgUnit,groupSet)
+  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = gs.getGroupsFor(orgUnit,groupSet,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gs.getMembersFor(orgUnit,groupSet,group)
 
   override def getOrgUnit(name:String):Option[OrgUnit] = gs.getOrgUnit(name)
@@ -260,9 +272,9 @@ trait GroupStoreProvider extends Logger {
   def getGroup(orgUnit:OrgUnit,groupSet:GroupSet,name:String):Option[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil).find(_.name == name)
 
   def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
-  def getGroupSetsFor(orgUnit:OrgUnit):List[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil)
+  def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil)
   def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = groupSet.members
-  def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil)
+  def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil)
   def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
 
 }
