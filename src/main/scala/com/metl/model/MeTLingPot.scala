@@ -285,3 +285,37 @@ object MeTLingPot {
     }).toList)
   }
 }
+
+class SmartGroupsProvider(override val storeId:String, endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String],groupSize:Int) extends GroupsProvider(storeId) {
+  import com.metl.liftAuthenticator._
+  override val canQuery:Boolean = true
+  protected val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
+  def client:MetlingPotInputItemClient = clientFactory.client[MetlingPotInputItemClient]
+
+  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = List(OrgUnit("smart","Smart Groups",Nil,Nil,None))
+  override def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
+  override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = getGroupCategoriesForMembers(members)
+  override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = groupSet.members
+  override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = groupSet.groups
+  override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
+  
+  override def getOrgUnit(name:String):Option[OrgUnit] = None
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
+
+  protected def getGroupCategoriesForMembers(members:List[Member]):List[GroupSet] = {
+    val req = new SmartGroupsRequest()
+    req.setGroupCount(new java.math.BigDecimal(Math.max(2,members.length / Math.max(1,groupSize))))
+    req.setMembers(members.map(_.name).asJava)
+    val resp = client.smartgroupsPut(req)
+    resp.getGroupSets.asScala.map(gs => {
+      val groups = gs.getGroups.asScala.map(g => {
+        val members = g.getMembers.asScala.map(m => {
+          Member(m,Nil,None)
+        }).toList
+        Group("smartGroup",g.getName,members,None)
+      }).toList
+      GroupSet("smartGroupSet",gs.getName,groups.flatMap(_.members),groups,None)
+    }).toList
+  }
+}
+

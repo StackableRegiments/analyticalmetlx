@@ -18,9 +18,12 @@ package com.metlingpot;
 import java.util.*;
 
 import com.metlingpot.model.InputItemsPutRequest;
+import com.metlingpot.model.Error;
 import com.metlingpot.model.InputItemsResponse;
 import com.metlingpot.model.SearchItemsResponse;
 import com.metlingpot.model.SearchItemsPutRequest;
+import com.metlingpot.model.SmartGroupsRequest;
+import com.metlingpot.model.SmartGroupsResponse;
 
 
 @com.amazonaws.mobileconnectors.apigateway.annotation.Service(endpoint = "https://jq6f5gsrq9.execute-api.us-east-1.amazonaws.com/future")
@@ -53,6 +56,16 @@ public interface MetlingPotInputItemClient {
     @com.amazonaws.mobileconnectors.apigateway.annotation.Operation(path = "/search", method = "PUT")
     SearchItemsResponse searchPut(
             SearchItemsPutRequest body);
+    
+    /**
+     * 
+     * 
+     * @param body 
+     * @return SmartGroupsResponse
+     */
+    @com.amazonaws.mobileconnectors.apigateway.annotation.Operation(path = "/smartgroups", method = "PUT")
+    SmartGroupsResponse smartgroupsPut(
+            SmartGroupsRequest body);
     
 }
 
