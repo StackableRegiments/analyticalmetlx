@@ -297,12 +297,13 @@ object StatelessHtml extends Stemmer with Logger {
     }
     lazy val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
     val finalHistory = history.filter{
-      case g:MeTLGrade => true
       case gv:MeTLGradeValue if isTeacher => true
-      case gv:MeTLGradeValue if gv.getGradedUser != username => false
-      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == false) => false
-      case qr:MeTLQuizResponse if (qr.author != username && !isTeacher) => false
-      case s:MeTLSubmission if (s.author != username && !isTeacher) => false
+      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
+      case gv:MeTLGradeValue => false
+      case qr:MeTLQuizResponse if isTeacher || qr.author == username => true
+      case s:MeTLSubmission if isTeacher || s.author == username => true
+      case qr:MeTLQuizResponse  => false
+      case s:MeTLSubmission => false
       case _ => true
     }
     finalHistory
