@@ -4,6 +4,7 @@ var GroupBuilder = (function(){
     var externalGroups = {};
     var iteratedGroups = [];
     var _strategy = "byMaximumSize";
+    var _presentStudentsOnly = false;
     var _parameters = {
         byTotalGroups:5,
         byMaximumSize:4
@@ -69,7 +70,8 @@ var GroupBuilder = (function(){
             });
         });
     }
-    var simulate = function(strategy,parameter){
+    var simulate = function(strategy,parameter,presentStudentsOnly){
+        console.log(strategy,parameter,presentStudentsOnly);
         var groups = _.map(initialGroups,function(g){
             var r = {};
             _.each(g.members,function(m){
@@ -77,7 +79,14 @@ var GroupBuilder = (function(){
             });
             return r;
         });
-        var attendees = _.without(Participants.getPossibleParticipants(),Conversations.getCurrentConversation().author);
+        var participants;
+        switch(presentStudentsOnly){
+        case "allPresent": participants = Participants.getParticipants();
+            break;
+        default: participants = Participants.getPossibleParticipants();
+            break;
+        }
+        var attendees = _.without(participants, Conversations.getCurrentConversation().author);
         attendees = _.omitBy(attendees,function(k){
             return _.some(groups,function(g){
                 return k in g;
@@ -110,6 +119,16 @@ var GroupBuilder = (function(){
         _.each(attendees,filler);
         console.log(groups);
         return _.map(groups,_.keys);
+    }
+    var renderGroupScopes = function(container){
+        _.each([
+            ["Show me all my enrolled students","allEnrolled"],
+            ["Only show me students who are here right now","allPresent"]],function(params){
+                $("<option />",{
+                    text:params[0],
+                    value:params[1]
+                }).appendTo(container);
+            });
     }
     var renderStrategies = function(container){
         _.each([
@@ -164,10 +183,8 @@ var GroupBuilder = (function(){
     };
     var doSimulation = function(simulated){
         var container = $(".jAlert .groupSlideDialog");
-        var strategySelect = container.find(".strategySelect");
-        var parameterSelect = container.find(".parameterSelect");
         var groupsV = container.find(".groups");
-        simulated = simulated || simulate(strategySelect.val(),parameterSelect.val());
+        simulated = simulated || simulate(_strategy,_parameters[_strategy],_presentStudentsOnly);
         groupsV.empty();
         _.each(simulated,function(group){
             console.log(group);
@@ -216,8 +233,16 @@ var GroupBuilder = (function(){
         container = $(".jAlert .groupSlideDialog");
         var strategySelect = container.find(".strategySelect");
         var parameterSelect = container.find(".parameterSelect");
+        var groupScope = container.find(".presentStudentsOnly");
         var groupsV = container.find(".groups");
         renderStrategies(strategySelect);
+        renderGroupScopes(groupScope);
+
+        container.on("change",".presentStudentsOnly",function(){
+            _presentStudentsOnly = $(this).val();
+            console.log(_presentStudentsOnly);
+            doSimulation();
+        });
         container.on("change",".strategySelect",function(){
             _strategy = $(this).val();
             console.log("Strategy set:",_strategy);
