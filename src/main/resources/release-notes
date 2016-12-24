@@ -1,3 +1,6 @@
+1.0.4
+Improvement: METL-83: Tweak layout of Answers page.
+
 1.0.3
 Feature: METL-323: Simulate group allocation before committing.
 Feature: METL-321: Create interface to emit events to MeTLing Pot.
