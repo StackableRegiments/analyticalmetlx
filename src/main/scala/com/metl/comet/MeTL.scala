@@ -1282,8 +1282,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
       case g:MeTLGrade if !shouldModifyConversation() && !g.visible => false
       case gv:MeTLGradeValue if shouldModifyConversation() => true
-      case gv:MeTLGradeValue if gv.getGradedUser != username => false
-      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == false) => false
+      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
+      case gv:MeTLGradeValue => false
       case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation()) => false
       case s:MeTLSubmission if (s.author != username && !shouldModifyConversation()) => false
       case _ => true
