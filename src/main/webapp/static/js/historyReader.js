@@ -679,6 +679,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 var renderSelectionOutlines = function(){
                     var size = Modes.select.resizeHandleSize;
                     canvasContext.save();
+                    canvasContext.strokeWidth = 1;
                     var multipleItems = [];
                     _.forEach(Modes.select.selected,function(category){
                         _.forEach(category,function(item){
