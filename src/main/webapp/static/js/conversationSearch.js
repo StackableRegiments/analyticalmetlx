@@ -72,7 +72,7 @@ var Conversations = (function(){
                 } else {
                     if (shouldModifyConversation(details)){
                         return $("<a/>",{
-                            href:sprintf("/editConversation?conversationJid=%s",details.jid),
+                            href:sprintf("/editConversation?conversationJid=%s&unique=true",details.jid),
                             text:"Edit"
                         });
                     } else {
