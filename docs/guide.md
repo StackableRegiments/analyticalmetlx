@@ -5,12 +5,13 @@ title: User Guide
 
 This is information for teachers, teaching assistants, student champions and all other MeTL users.
 
-It will help you navigate the user interface of MeTL as well as piece together the best ways to support your teaching activities.
+It covers navigation of the MeTL user interface as well as the best ways to support teaching activities.
 
 ## Content
 
-- [Conversation Search](guide-conversations.html)
-  - [Edit Conversation](guide-edit-conversation.html)
+- [Conversation](guide-conversation.html)
+  - [Search](guide-conversation-search.html)
+  - [Edit](guide-edit-conversation.html)
 - [Whiteboard](guide-whiteboard.html)
   - [Controls](guide-controls.html) 
   - [Integrations](guide-integrations.html) 

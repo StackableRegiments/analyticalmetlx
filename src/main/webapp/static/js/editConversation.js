@@ -75,6 +75,23 @@ var Conversation = (function(){
             var rootElem = slideTemplate.clone();
             rootElem.find(".slideId").text(slide.id);
             rootElem.find(".slideIndex").text(slide.index);
+            var slideExposedId = sprintf("exposeSlide_%s",slide.id);
+            rootElem.find(".slideExposedCheckbox").attr("id",slideExposedId).on("click",function(ev){
+                var isChecked = $(this).prop("checked");
+                slide.exposed = isChecked;
+                if (_.some(conversation.slides,function(s){return s.exposed;})){
+                    changeExposureOfSlide(conversation.jid.toString(),slide.id,isChecked);
+                } else {
+                    $.jAlert({
+                        type:"error",
+                        title:"Last slide hidden",
+                        content:"At least one slide must be visible.  Re-exposing this slide."
+                    });
+                    slide.exposed = true;
+                    reRender();
+                }
+            }).prop("checked",slide.exposed);
+            rootElem.find(".slideExposedCheckboxLabel").attr("for",slideExposedId).text(slide.exposed ? "Visible" : "Hidden");
             rootElem.find(".slideAnchor").attr("href",sprintf("board?conversationJid=%s&slideId=%s&unique=true",conversation.jid.toString(),slide.id.toString())).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
             rootElem.find(".addSlideBeforeButton").on("click",function(){
                 addSlideToConversationAtIndex(conversation.jid.toString(),slide.index);
@@ -117,7 +134,7 @@ var Conversation = (function(){
         $("#conversationTitleInput").val(conversation.title);
         $(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
-				console.log("usergroups",userGroups);
+        console.log("usergroups",userGroups);
         sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"ouType":"special","name":conversation.subject}]),"name"),function(item){return item.ouType;}),function(categoryGroups){
             var rootElem = sharingCategoryTemplate.clone();
 
@@ -131,12 +148,12 @@ var Conversation = (function(){
                 var inputElem = choiceRoot.find(".conversationSharingChoiceInputElement")
 
                 inputElem.attr("id",choiceId).attr("type","radio").on("click",function(){
-									if ("foreignRelationship" in categoryGroup){
-                    changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name,categoryGroup.foreignRelationship.system,categoryGroup.foreignRelationship.key);
-									} else {
-                    changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name);
-									}
-									reRender();
+                    if ("foreignRelationship" in categoryGroup){
+                        changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name,categoryGroup.foreignRelationship.system,categoryGroup.foreignRelationship.key);
+                    } else {
+                        changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name);
+                    }
+                    reRender();
                 }).prop("checked",conversation.subject == categoryGroup.name);
                 choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.name);
                 return choiceRoot;

@@ -563,7 +563,19 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         case true => StatelessHtml.duplicateConversationInternal(username,c.jid.toString).openOr(c)
         case _ => c
       })
-    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
+    },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
+    ClientSideFunction("changeExposureOfSlide",List("jid","slideId","exposed"),(args) => {
+      val jid = getArgAsString(args(0))
+      val slideId = getArgAsInt(args(1))
+      val exposed = getArgAsBool(args(2))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => {
+          serverConfig.updateConversation(c.jid.toString,c.copy(slides = c.slides.find(_.id == slideId).map(_.copy(exposed = exposed)).toList ::: c.slides.filterNot(_.id == slideId)))
+        }
+        case _ => c
+      })
+    },Full(RECEIVE_CONVERSATION_DETAILS))
   )
   override def registerWith = MeTLEditConversationActorManager
   override def lifespan = Full(5 minutes)

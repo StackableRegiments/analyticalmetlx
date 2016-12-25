@@ -251,15 +251,16 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
         var scrollContainer = $("#thumbScrollContainer");
+	var ss = _.filter(currentConversation.slides,"exposed");
         //Add the new slides
-        _.each(_.filter(currentConversation.slides,function(slide){
+        _.each(_.filter(ss,function(slide){
             return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
         }),function(slide){
             slideContainer.append(constructSlide(slide)[0]);
         });
         //Remove the deleted slides
-        _.each(_.filter(currentConversation.slides,function(slide){
-            var keep = _.map(currentConversation.slides,constructSlideId);
+        _.each(_.filter(ss,function(slide){
+            var keep = _.map(ss,constructSlideId);
             $(".slideButtonContainer").filter(function(i,el){
                 var id = $(el).attr("id");
                 return ! _.includes(keep,id);
@@ -274,7 +275,7 @@ var Conversations = (function(){
             var ib = $(jb).attr("id");
             return positions[ia] - positions[ib];
         }).detach().appendTo(slideContainer);
-        _.each(currentConversation.slides,function(slide){
+        _.each(ss,function(slide){
             if(isVisible(slide,scrollContainer)){
                 updateThumbnailFor(slide.id);
             }
@@ -585,6 +586,18 @@ var Conversations = (function(){
             updateConversationHeader();
             updateLinks();
             redrawSyncState();
+						var currentSlideNewState = _.find(details.slides,function(s){ return s.id == currentSlide; });
+						console.log("newSlideState:",currentSlideNewState);
+						if (!currentSlideNewState || (!currentSlideNewState.exposed)){
+							console.log("current slide hidden");
+							var firstAvailableSlide = _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
+							console.log("found new slide to move to",firstAvailableSlide);
+							if (firstAvailableSlide){
+								doMoveToSlide(firstAvailableSlide.id.toString());
+							} else {
+								window.location = sprintf("/conversationSearch?q=%s",encodeURIComponent(details.title)); // redirect to the conversation search
+							}
+						};
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }

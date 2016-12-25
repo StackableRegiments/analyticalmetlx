@@ -385,14 +385,17 @@ Full-Width Styles
 
 .pure-menu-active>.pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
     background-color: transparent;
+    text-decoration: none;
 }
 
 .pure-menu-active>.nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
     background-color: #212121;
+    text-decoration: none;
 }
 
 #nav-guide .pure-menu-active>.nav_sub_link .pure-menu-link, #nav-guide .nav_sub_link .pure-menu-link:hover, #nav-guide .nav_sub_link .pure-menu-link:focus {
     background-color: #4078c0;
+    text-decoration: none;
 }
 
 #main_content_wrap {

@@ -129,7 +129,7 @@ Conversations can also be imported from PDFs and Word documents.
 
 # Whiteboard
 
-## How do I return to [Conversation Search](guide-conversations.html)?
+## How do I return to [Conversation Search](guide-conversation-search.html)?
 1. Click **Options**.
 2. Click **Conversations**.
 
