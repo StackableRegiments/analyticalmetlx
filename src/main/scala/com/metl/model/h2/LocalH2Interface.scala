@@ -121,7 +121,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       info("upgraded db to use room to position themes, which is indexed, where location wasn't.")
       versionNumber
     }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
-    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get <= 6).map(versionNumber => {
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 6).map(versionNumber => {
       info("upgrading db to hold a copy of the mockdata")
       val mockRoom = "mock|data"
       H2Image.findAll(By(H2Image.room,mockRoom)).foreach(i => {
@@ -157,6 +157,15 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       }
       versionNumber.intValue(6).save
       info("upgraded db to hold a copy of the mockdata")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 7).map(versionNumber => {
+      info("upgrading db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
+      H2Conversation.findAll.foreach(conv => {
+        conv.slides(serializer.slidesToString(serializer.slidesFromString(conv.slides.get).map(_.copy(exposed = true)))).save
+      })
+      versionNumber.intValue(7).save
+      info("upgraded db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
       versionNumber
     }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
     true

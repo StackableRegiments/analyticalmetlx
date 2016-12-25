@@ -75,6 +75,23 @@ var Conversation = (function(){
 			var rootElem = slideTemplate.clone();
 			rootElem.find(".slideId").text(slide.id);
 			rootElem.find(".slideIndex").text(slide.index);
+			var slideExposedId = sprintf("exposeSlide_%s",slide.id);
+			rootElem.find(".slideExposedCheckbox").attr("id",slideExposedId).on("click",function(ev){
+				var isChecked = $(this).prop("checked");
+				slide.exposed = isChecked;
+				if (_.some(conversation.slides,function(s){return s.exposed;})){
+					changeExposureOfSlide(conversation.jid.toString(),slide.id,isChecked);
+				} else {
+					$.jAlert({
+						type:"error",
+						title:"Last slide hidden",
+						content:"At least one slide must be visible.  Re-exposing this slide."
+					});
+					slide.exposed = true;
+					reRender();
+				}
+			}).prop("checked",slide.exposed);
+			rootElem.find(".slideExposedCheckboxLabel").attr("for",slideExposedId);
 			rootElem.find(".slideAnchor").attr("href",sprintf("board?conversationJid=%s&slideId=%s&unique=true",conversation.jid.toString(),slide.id.toString())).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
 			rootElem.find(".addSlideBeforeButton").on("click",function(){
 				addSlideToConversationAtIndex(conversation.jid.toString(),slide.index);

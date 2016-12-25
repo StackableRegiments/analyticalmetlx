@@ -167,7 +167,7 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         updateStatus("Refreshing page display");
         var slideContainer = $("#slideContainer")
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
+        slideContainer.html(unwrap(_.filter(currentConversation.slides,function(slide){return slide.exposed;}).sort(function(a,b){return a.index - b.index;}).map(constructSlide)));
         var slideControls = $("#slideControls");
         slideControls.empty();
         constructPrevSlideButton(slideControls),
@@ -489,6 +489,18 @@ var Conversations = (function(){
             updateConversationHeader();
             updateLinks();
             redrawSyncState();
+						var currentSlideNewState = _.find(details.slides,function(s){ return s.id == currentSlide; });
+						console.log("newSlideState:",currentSlideNewState);
+						if (!currentSlideNewState || (!currentSlideNewState.exposed)){
+							console.log("current slide hidden");
+							var firstAvailableSlide = _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
+							console.log("found new slide to move to",firstAvailableSlide);
+							if (firstAvailableSlide){
+								doMoveToSlide(firstAvailableSlide.id.toString());
+							} else {
+								window.location = sprintf("/conversationSearch?q=%s",encodeURIComponent(details.title)); // redirect to the conversation search
+							}
+						};
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
