@@ -91,7 +91,7 @@ var Conversation = (function(){
 					reRender();
 				}
 			}).prop("checked",slide.exposed);
-			rootElem.find(".slideExposedCheckboxLabel").attr("for",slideExposedId);
+			rootElem.find(".slideExposedCheckboxLabel").attr("for",slideExposedId).text(slide.exposed ? "Visible" : "Hidden");
 			rootElem.find(".slideAnchor").attr("href",sprintf("board?conversationJid=%s&slideId=%s&unique=true",conversation.jid.toString(),slide.id.toString())).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
 			rootElem.find(".addSlideBeforeButton").on("click",function(){
 				addSlideToConversationAtIndex(conversation.jid.toString(),slide.index);
