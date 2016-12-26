@@ -235,6 +235,7 @@ var GroupBuilder = (function(){
             });
             g.appendTo(groupsV);
         });
+	iteratedGroups = simulated;
     };
     var showAddGroupSlideDialogFunc = function(){
         getGroupsProviders();
