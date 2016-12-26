@@ -1,3 +1,7 @@
+1.0.5
+
+New config elements <groupsProvider><smartGroups/></groupsProvider>.
+
 1.0.2
 
 New config elements (holding credentials).

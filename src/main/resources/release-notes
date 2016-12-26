@@ -1,3 +1,11 @@
+1.0.5
+Story: METL-325: Add option in Group simulation to only include present members in simulation.
+Story: METL-129: Conversation author deletes slide.
+Improvement: METL-315: Remove slide column from Recycle Bin as it only ever shows current slide content.
+Improvement: METL-322: smartGroups provider.
+Bugfix: METL-133: Selection line thickness follows most recently used ink thickness.
+Bugfix: METL-320: Health bar not visible on top left of Whiteboard (IE and iPad only).
+
 1.0.4
 Improvement: METL-83: Tweak layout of Answers page.
 
