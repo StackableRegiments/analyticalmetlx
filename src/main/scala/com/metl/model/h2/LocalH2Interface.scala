@@ -345,8 +345,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2QuizResponse.findAll(By(H2QuizResponse.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s))),
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
       () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
-      () => H2Theme.findAll(By(H2Theme.location,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
-      () => H2ChatMessage.findAll(By(H2ChatMessage.location,jid)).foreach(s => newHistory.addStanza(serializer.toChatMessage(s))),
+      () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
+      () => H2ChatMessage.findAll(By(H2ChatMessage.room,jid)).foreach(s => newHistory.addStanza(serializer.toChatMessage(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s)))

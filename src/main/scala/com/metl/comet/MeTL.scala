@@ -1421,6 +1421,18 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           })
         }
       }
+      case s:MeTLChatMessage => {
+        if (s.author == username) {
+          currentConversation.map(cc => {
+            val roomId = cc.jid.toString
+            rooms.get((serverName,roomId)).map(r =>{
+              debug("sendStanzaToServer sending chatMessage: "+r)
+              r() ! LocalToServerMeTLStanza(s)
+            })
+          })
+        }
+      }
+
       case qr:MeTLQuizResponse => {
         if (qr.author == username) {
           currentConversation.map(cc => {
