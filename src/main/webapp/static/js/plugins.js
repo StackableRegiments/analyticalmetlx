@@ -27,6 +27,7 @@ var Plugins = (function(){
 						if (stanza && "type" in stanza && stanza.type == "chatMessage"){
 							chatMessages.push(stanza);
 							cmHost.append(renderChatMessage(stanza));
+							cmHost.scrollTop(cmHost[0].scrollHeight);
 						}
 					};
 					var actOnHistoryReceived = function(history){
