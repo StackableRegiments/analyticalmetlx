@@ -179,6 +179,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("texts",JObject(latestTexts)),
       //JField("texts",JObject(texts.map(i => JField(i.identity,fromMeTLText(i))))),
       JField("themes",JArray(input.getThemes.map(fromTheme _))),
+      JField("chatMessages",JArray(input.getChatMessages.map(fromChatMessage _))),
       JField("multiWordTexts",JObject(latestMultiWords)),
       //JField("multiWordTexts",JObject(multiWordTexts.map(i => JField(i.identity,fromMeTLMultiWordText(i))))),
       JField("quizzes",JArray(input.getQuizzes.map(i => fromMeTLQuiz(i)))),
@@ -223,6 +224,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     getFields(i,"files").foreach(jf => history.addStanza(toMeTLFile(jf.value)))
     getFields(i,"videoStreams").foreach(jf => history.addStanza(toMeTLVideoStream(jf.value)))
     getFields(i,"themes").foreach(jf => history.addStanza(toTheme(jf.value)))
+    getFields(i,"chatMessages").foreach(jf => history.addStanza(toChatMessage(jf.value)))
     getFields(i,"deletedCanvasContents").foreach(jf => {
       toMeTLData(jf.value) match {
         case cc:MeTLCanvasContent => history.addDeletedCanvasContent(cc)
@@ -261,6 +263,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"dirtyVideo")) => toMeTLDirtyVideo(jo)
       case jo:JObject if (isOfType(jo,"submission")) => toSubmission(jo)
       case jo:JObject if (isOfType(jo,"quiz")) => toMeTLQuiz(jo)
+      case jo:JObject if (isOfType(jo,"theme")) => toTheme(jo)
+      case jo:JObject if (isOfType(jo,"chatMessage")) => toChatMessage(jo)
       case jo:JObject if (isOfType(jo,"quizResponse")) => toMeTLQuizResponse(jo)
       case jo:JObject if (isOfType(jo,"moveDelta")) => toMeTLMoveDelta(jo)
       case jo:JObject if (isOfType(jo,"command")) => toMeTLCommand(jo)
@@ -335,6 +339,27 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("text",JString(t.theme.text)),
       JField("origin",JString(t.theme.origin)),
       JField("location",JString(t.location))
+    ) ::: parseMeTLContent(t))
+  })
+  override def toChatMessage(i:JValue):MeTLChatMessage = Stopwatch.time("JsonSerializer.toChatMessage",{
+    i match {
+      case input:JObject => {
+        val mc = parseJObjForMeTLContent(input,config)
+        val content = getStringByName(input,"content")
+        val contentType = getStringByName(input,"contentType")
+        val context = getStringByName(input,"context")
+        val identity = getStringByName(input,"identity")
+        MeTLChatMessage(config,mc.author,mc.timestamp,identity,contentType,content,context,mc.audiences)
+      }
+    }
+  })
+
+  override def fromChatMessage(t:MeTLChatMessage):JValue = Stopwatch.time("JsonSerializer.fromChatMessage",{
+    toJsObj("chatMessage",List(
+      JField("identity",JString(t.identity)),
+      JField("contentType",JString(t.contentType)),
+      JField("content",JString(t.content)),
+      JField("context",JString(t.context))
     ) ::: parseMeTLContent(t))
   })
 

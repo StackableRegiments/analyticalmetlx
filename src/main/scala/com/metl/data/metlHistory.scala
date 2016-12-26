@@ -244,6 +244,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var outputHook:MeTLStanza => Unit = (s) => {}
   protected val stanzas:HistoryCollection[MeTLStanza] = emptyColl[MeTLStanza]
   protected val themes:HistoryCollection[MeTLTheme] = emptyColl[MeTLTheme]
+  protected val chatMessages:HistoryCollection[MeTLChatMessage] = emptyColl[MeTLChatMessage]
   protected val canvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
   protected val highlighters:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
   protected val inks:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
@@ -274,6 +275,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getAll = stanzas.toList
   def getCanvasContents = canvasContents.toList
   def getThemes = themes.toList
+  def getChatMessages = chatMessages.toList
   def getHighlighters = highlighters.toList
   def getInks = inks.toList
   def getImages = images.toList
@@ -343,6 +345,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLVideo => addVideo(s)
     case s:MeTLText => addText(s)
     case s:MeTLTheme => addTheme(s)
+    case s:MeTLChatMessage => addChatMessage(s)
     case s:MeTLMultiWordText => addMultiWordText(s)
     case s:MeTLQuiz => addQuiz(s)
     case s:MeTLQuizResponse => addQuizResponse(s)
@@ -363,6 +366,11 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def addTheme(t:MeTLTheme) = {
     themes += t
     trace("Theme count: %s".format(themes.length))
+    outputHook(t)
+    this
+  }
+  def addChatMessage(t:MeTLChatMessage) = {
+    chatMessages += t
     outputHook(t)
     this
   }
