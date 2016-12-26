@@ -250,7 +250,9 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		masterFooter.width(width - thumbsColumn.width());
+		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 6).css({
+		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 3)
+		});
                 board.width(bwidth);
                 board.height(bheight);
                 toolsColumn.height(bheight);
@@ -349,8 +351,11 @@ var DeviceConfiguration = (function(){
             .val(DeviceConfiguration.preferredSizes.thumbColumn.width)
             .on("input change",function(){
                 var newValue = comp("#thumbColumnWidth").val();
-		$(".thumbnail:not(.groupSlide)").height(newValue * 0.75);
+		$(".thumbnail:not(.groupSlide)")
+		    .width(newValue)
+		    .height(newValue * 0.75);
 		fitFunction();
+		Conversations.refreshSlideDisplay();
             });
     });
     var actOnCurrentDevice = function(){

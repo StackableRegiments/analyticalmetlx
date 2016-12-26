@@ -107,13 +107,13 @@ var Conversations = (function(){
         var scrollContainer;
         var conversationActivity;
         var updateSlide = function(slide){
-            scrollContainer = scrollContainer || $("#thumbScrollContainer");
-            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-            if(slideContainer){
-                slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
-            }
             var gs = Conversations.getGroupsFor(slide);
             if(! _.every(gs,groupTraceIsAccurate)){
+                scrollContainer = scrollContainer || $("#thumbScrollContainer");
+                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                if(slideContainer){
+                    slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
+                }
                 paintGroups(slide,slideContainer);
             }
             _.each(gs,function(group){
@@ -246,7 +246,14 @@ var Conversations = (function(){
         var slideImage = slideContainer.find("img");
         var slideTop = slideContainer.position().top;
         var slideBottom = slideTop + slideContainer.height();
-        return (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+        var visible =  (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+        if(slidesTop + slidesBottom + slideTop + slideBottom == 0){
+            _.defer(function(){
+                isVisible(slide,thumbScroller);
+            });
+            visible = false;
+        }
+        return visible;
     }
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
@@ -290,6 +297,10 @@ var Conversations = (function(){
         indicateActiveSlide(currentSlide);
         $(".thumbnail:not(.groupSlide)").map(function(){
             var t = $(this);
+            if(t.width() <= 0){
+                t.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
+                t.css({width:sprintf("%spx",t.width())});
+            }
             t.height(t.width() * 0.75);
         });
         Progress.call("onLayoutUpdated");
@@ -588,7 +599,7 @@ var Conversations = (function(){
             redrawSyncState();
             var myLocation = _.find(details.slides,function(s){ return s.id == currentSlide; });
             var teacherLocation = _.find(details.slides,function(s){ return sprintf("%s",s.id) == currentTeacherSlide; });
-	    console.log("Location",myLocation,currentTeacherSlide,teacherLocation);
+            console.log("Location",myLocation,currentTeacherSlide,teacherLocation);
             var relocate = false;
             if(myLocation){
                 relocate = !myLocation.exposed;
@@ -597,8 +608,8 @@ var Conversations = (function(){
                 relocate = true;
             }
             if(relocate){
-		var possibleLocation = teacherLocation || _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
-		console.log("Relocation",teacherLocation,possibleLocation);
+                var possibleLocation = teacherLocation || _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
+                console.log("Relocation",teacherLocation,possibleLocation);
                 if (possibleLocation){
                     doMoveToSlide(possibleLocation.id.toString());
                 } else {
@@ -793,7 +804,7 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
-	console.log("Requesting moveToSlide",slideId);
+        console.log("Requesting moveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;
@@ -1002,12 +1013,12 @@ var Conversations = (function(){
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
         updateThumbnail :updateThumbnailFor,
-        getIsBanned : getIsBannedFunction
+        getIsBanned : getIsBannedFunction,
+	refreshSlideDisplay : refreshSlideDisplay
     };
 })();
 
 function updateThumb(jid){
-    console.log(".updateThumb",jid)
     Conversations.updateThumbnail(jid);
 }
 
