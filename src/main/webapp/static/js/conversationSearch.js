@@ -357,7 +357,8 @@ var Conversations = (function(){
         return userGroups
     };
     var receiveConversationDetailsFunc = function(details){
-        currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
+        currentSearchResults = _.uniqBy(_.concat([details],currentSearchResults),"jid");
+	console.log(currentSearchResults,details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
