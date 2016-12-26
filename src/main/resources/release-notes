@@ -1,3 +1,6 @@
+1.0.6
+Improvement: METL-331: Slide display virtualisation.
+
 1.0.5
 Story: METL-325: Add option in Group simulation to only include present members in simulation.
 Story: METL-129: Conversation author deletes slide.
