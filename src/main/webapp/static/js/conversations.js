@@ -90,7 +90,7 @@ var Conversations = (function(){
             conversationActivity = conversationActivity || $("#conversationActivity");
             WorkQueue.enqueue(function(){
                 _.each(currentConversation.slides,updateSlide);
-                if(!groupTraces.anyPublic.update){
+                if(conversationActivity.find("svg").length == 0){
                     groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
                                                                  [groupActivity.anyPublic.line,
                                                                   groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);

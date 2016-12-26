@@ -62,8 +62,7 @@ describe('When the class breaks into groups,', function() {
     var sB = board(studentB);
     var sC = board(studentC);
     var sD = board(studentD);
-    var sE = board(studentE);
-    var users = [tT,sA,sB,sC,sD,sE];
+    var users = [tT,sA,sB,sC,sD];
 
     var join = function(user,label){
         var login = LoginPage(user);
@@ -112,7 +111,7 @@ describe('When the class breaks into groups,', function() {
     it("given that the teacher adds a group slide, importing an external group and specifying a strategy,",function(){
         assert.equal(tT.currentSlide.index,0);
         tT.addGroupSlide.click();
-	teacher.pause(1000);
+        teacher.pause(1000);
         teacher.execute("$('.jAlert .ouSelector').val('xmlUserOverrides_from_testMaterials/orgData.xml').change()");
         browser.waitUntil(function(){
             var visible = teacher.execute("return $('.jAlert #structuralGroup_2').length > 0;").value;
@@ -120,7 +119,7 @@ describe('When the class breaks into groups,', function() {
         });
         teacher.execute("$('.jAlert #structuralGroup_2').click()");
         teacher.execute("$('.jAlert .strategySelect').val('byTotalGroups').change()");
-	teacher.pause(500);
+        teacher.pause(500);
         teacher.execute("$('.jAlert .parameterSelect').val('3').change()");
         teacher.execute("$(\"a:contains('Add page')\").click()");
         teacher.waitUntil(function(){
@@ -131,7 +130,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(tT.currentSlide.index,1);
     });
     it("the students should all follow to it",function(){
-	browser.pause(TEXT_DELAY);
+        browser.pause(TEXT_DELAY);
         assert.equal(sA.currentSlide.index,1);
         assert.equal(sB.currentSlide.index,1);
     });
@@ -146,9 +145,9 @@ describe('When the class breaks into groups,', function() {
         assert(sB.boardTitle.trim().startsWith("studentB working in Group 1 of teacher at"));
     });
     it("the students should all be split into groups",function(){
-	browser.pause(TEXT_DELAY);
+        browser.pause(TEXT_DELAY);
         var groupSet = tT.currentSlide.groupSets[0];
-	console.log(groupSet.groups);
+        console.log(groupSet.groups);
         assert.equal(groupSet.groups.length,2);
         var groupsByUser = _.reduce(groupSet.groups,function(acc,item){
             _.each(item.members,function(member){
@@ -170,13 +169,13 @@ describe('When the class breaks into groups,', function() {
     });
     it("students see the teacher work but not other groups",function(){
         _.each([tT,sA,sB],function(client,i){
-	    client.driver.pause(500);
+            client.driver.pause(500);
             client.textMode.click();
             client.keyboard(50,100 + i * 100,"Phrase "+(i+1));
         });
         browser.pause(TEXT_DELAY);//Let everything synchronize
 
-	console.log(sB.plainTexts);
+        console.log("SB",sB.plainTexts);
         assert(_.includes(sA.plainTexts,"Phrase 1"));
         assert(_.includes(sB.plainTexts,"Phrase 1"));
 
@@ -210,11 +209,11 @@ describe('When the class breaks into groups,', function() {
         assert(teacher.isExisting("#contentFilter_"+groups[0].id));
         assert(teacher.isExisting("#contentFilter_"+groups[1].id));
 
-        assert(studentA.isExisting("#contentFilter_"+groups[0].id));
-        assert(! studentA.isExisting("#contentFilter_"+groups[1].id));
+        assert(!studentA.isExisting("#contentFilter_"+groups[0].id));
+        assert(studentA.isExisting("#contentFilter_"+groups[1].id));
 
-        assert(! studentB.isExisting("#contentFilter_"+groups[0].id));
-        assert(studentB.isExisting("#contentFilter_"+groups[1].id));
+        assert(studentB.isExisting("#contentFilter_"+groups[0].id));
+        assert(!studentB.isExisting("#contentFilter_"+groups[1].id));
     });
     it("connection health should be a visible metric",function(){
         assert(browser.isExisting("#healthStatus"));
@@ -262,8 +261,8 @@ describe('When the class breaks into groups,', function() {
         studentC.waitUntil(function(){return studentC.isVisible("#menuContentFilter");});
         sC.contentFilter.click();
 
-        assert(! studentC.isExisting("#contentFilter_"+groups[0].id));
-        assert(studentC.isExisting("#contentFilter_"+groups[1].id));
+        assert(studentC.isExisting("#contentFilter_"+groups[0].id));
+        assert(!studentC.isExisting("#contentFilter_"+groups[1].id));
 
         assert(_.includes(sC.plainTexts,"Phrase 1"));
         assert(!(_.includes(sC.plainTexts,"Phrase 2")));
@@ -280,24 +279,14 @@ describe('When the class breaks into groups,', function() {
     });
     it("further entrants should be allocated into groups",function(){
         join(studentD,'studentD');
-        studentD.waitForExist("#board");
+        browser.waitForExist("#board");
         browser.waitUntil(function(){
-            return sD.currentSlide.index == 1;
+            return sD.currentSlide.groupSets.length && sD.currentSlide.groupSets[0].groups.length == 3;
         });
-        var groups = sD.currentSlide.groupSets[0].groups;
-        assert.equal(groups.length,3);
         assert(_.includes(sD.plainTexts,"Phrase 1"));
         assert(!(_.includes(sD.plainTexts,"Phrase 2")));
         assert(!(_.includes(sD.plainTexts,"Phrase 3")));
         assert(!(_.includes(sD.plainTexts,"Phrase 4")));
-        join(studentE,'studentE');
-        studentE.waitForExist("#board");
-        browser.waitUntil(function(){
-            return sE.currentSlide.index == 1;
-        });
-        assert(_.includes(sE.plainTexts,"Phrase 1"));
-        assert(!(_.includes(sE.plainTexts,"Phrase 2")));
-        assert(!(_.includes(sE.plainTexts,"Phrase 3")));
     });
     it("all content types should be group restricted",function(){
         _.each(users,function(user,ui){//Close all backstages
@@ -314,19 +303,17 @@ describe('When the class breaks into groups,', function() {
             user.addImage("testMaterials/mapleLeaf.jpg");
         });
         browser.pause(TEXT_DELAY);//Let everything synchronize
-        assert.equal(_.keys(tT.inkStanzas).length,6);
+        assert.equal(_.keys(tT.inkStanzas).length,5);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.inkStanzas).length,3);
         assert.equal(_.keys(sC.inkStanzas).length,3);
-        assert.equal(_.keys(sD.inkStanzas).length,3);
-        assert.equal(_.keys(sE.inkStanzas).length,3);
+        assert.equal(_.keys(sD.inkStanzas).length,2);
 
-        assert.equal(_.keys(tT.imageStanzas).length,6);
+        assert.equal(_.keys(tT.imageStanzas).length,5);
         assert.equal(_.keys(sA.imageStanzas).length,2);
         assert.equal(_.keys(sB.imageStanzas).length,3);
         assert.equal(_.keys(sC.imageStanzas).length,3);
-        assert.equal(_.keys(sD.imageStanzas).length,3);
-        assert.equal(_.keys(sE.imageStanzas).length,3);
+        assert.equal(_.keys(sD.imageStanzas).length,2);
     });
     it("group peers should see me move content",function(){
         var user = sB;
@@ -388,7 +375,6 @@ describe('When the class breaks into groups,', function() {
         tT.addImage("testMaterials/stormtrooper.jpg");
         var peer = sA;
         var nonPeer = sC;
-        console.log(sB.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,4);
         assert.equal(_.keys(sA.inkStanzas).length,2);
         assert.equal(_.keys(sB.textStanzas).length,4);
@@ -418,19 +404,17 @@ describe('When the class breaks into groups,', function() {
             user.addImage("testMaterials/mapleLeaf.jpg");
         });
         browser.pause(TEXT_DELAY);//Let everything synchronize
-        assert.equal(_.keys(tT.inkStanzas).length,6);
-        assert.equal(_.keys(sA.inkStanzas).length,6);
-        assert.equal(_.keys(sB.inkStanzas).length,6);
-        assert.equal(_.keys(sC.inkStanzas).length,6);
-        assert.equal(_.keys(sD.inkStanzas).length,6);
-        assert.equal(_.keys(sE.inkStanzas).length,6);
+        assert.equal(_.keys(tT.inkStanzas).length,5);
+        assert.equal(_.keys(sA.inkStanzas).length,5);
+        assert.equal(_.keys(sB.inkStanzas).length,5);
+        assert.equal(_.keys(sC.inkStanzas).length,5);
+        assert.equal(_.keys(sD.inkStanzas).length,5);
 
-        assert.equal(_.keys(tT.imageStanzas).length,6);
-        assert.equal(_.keys(sA.imageStanzas).length,6);
-        assert.equal(_.keys(sB.imageStanzas).length,6);
-        assert.equal(_.keys(sC.imageStanzas).length,6);
-        assert.equal(_.keys(sD.imageStanzas).length,6);
-        assert.equal(_.keys(sE.imageStanzas).length,6);
+        assert.equal(_.keys(tT.imageStanzas).length,5);
+        assert.equal(_.keys(sA.imageStanzas).length,5);
+        assert.equal(_.keys(sB.imageStanzas).length,5);
+        assert.equal(_.keys(sC.imageStanzas).length,5);
+        assert.equal(_.keys(sD.imageStanzas).length,5);
     });
     it("the teacher should not have group filters on the non group slide",function(){
         tT.menuButton.click();
@@ -462,16 +446,6 @@ describe('When the class breaks into groups,', function() {
         teacher.waitUntil(function(){return teacher.isVisible("#menuContentFilter");});
 
         tT.contentFilter.click();
-
-        var groups = tT.currentSlide.groupSets[0].groups;
-        assert(teacher.isExisting("#contentFilter_"+groups[0].id));
-        assert(teacher.isExisting("#contentFilter_"+groups[1].id));
-
-        assert(studentA.isExisting("#contentFilter_"+groups[1].id));
-        assert(! studentA.isExisting("#contentFilter_"+groups[2].id));
-
-        assert(! studentB.isExisting("#contentFilter_"+groups[1].id));
-        assert(studentB.isExisting("#contentFilter_"+groups[2].id));
     });
     it("content sharing should be reestablished on return to the slide",function(){
         _.each([sB,sC],function(user,ui){//Close all backstages
@@ -495,9 +469,9 @@ describe('When the class breaks into groups,', function() {
             user.keyboard(200,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
         });
         browser.pause(TEXT_DELAY);//Let everything synchronize
-        console.log(sB.plainTexts);
-        console.log(sC.plainTexts);
-        console.log(sA.plainTexts);
+        console.log("SB",sB.plainTexts);
+        console.log("SC",sC.plainTexts);
+        console.log("SA",sA.plainTexts);
         assert.equal(_.keys(sB.inkStanzas).length,6);
         assert.equal(_.keys(sB.textStanzas).length,6);
         assert.equal(_.keys(sB.imageStanzas).length,6);
