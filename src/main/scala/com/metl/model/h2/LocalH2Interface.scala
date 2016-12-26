@@ -60,11 +60,12 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2UnhandledContent,
         DatabaseVersion,
         H2Theme,
-        H2UndeletedCanvasContent,
         H2Grade,
         H2NumericGradeValue,
         H2BooleanGradeValue,
         H2TextGradeValue
+        H2ChatMessage,
+        H2UndeletedCanvasContent
       ):_*
     )
     // this starts our pool in advance
@@ -207,6 +208,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make these match
       case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).room(jid))
       case s:MeTLTheme => Some(serializer.fromTheme(s).room(jid))
+      case s:MeTLChatMessage => Some(serializer.fromChatMessage(s).room(jid))
       case s:MeTLInk => Some(serializer.fromMeTLInk(s).room(jid))
       case s:MeTLMultiWordText => Some(serializer.fromMeTLMultiWordText(s).room(jid))
       case s:MeTLText => Some(serializer.fromMeTLText(s).room(jid))
@@ -266,6 +268,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     }):_*)
     val inks = Stopwatch.time("h2.fetch.inks",H2Ink.findAll(By(H2Ink.room,jid)))
     val texts = Stopwatch.time("h2.fetch.texts",H2Text.findAll(By(H2Text.room,jid)))
+    val themes = Stopwatch.time("h2.fetch.themes",H2Theme.findAll(By(H2Theme.room,jid)))
+    val chatMessages = Stopwatch.time("h2.fetch.chatMessages",H2ChatMessage.findAll(By(H2ChatMessage.room,jid)))
     val multiWords = Stopwatch.time("h2.fetch.multiWords",H2MultiWordText.findAll(By(H2MultiWordText.room,jid)))
     val dirtyInks = Stopwatch.time("h2.fetch.dirtyInks",H2DirtyInk.findAll(By(H2DirtyInk.room,jid)))
     val dirtyTexts = Stopwatch.time("h2.fetch.dirtyTexts",H2DirtyText.findAll(By(H2DirtyText.room,jid)))
@@ -292,7 +296,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     inks.foreach(s => newHistory.addStanza(serializer.toMeTLInk(s)))
     texts.foreach(s => newHistory.addStanza(serializer.toMeTLText(s)))
     multiWords.foreach(s => newHistory.addStanza(serializer.toMeTLMultiWordText(s)))
-    
+   
+    themes.foreach(s => newHistory.addStanza(serializer.toTheme(s)))
+    chatMessages.foreach(s => newHistory.addStanza(serializer.toChatMessage(s)))
+
     dirtyInks.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyInk(s)))
     dirtyTexts.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyText(s)))
     dirtyImgs.foreach(s => newHistory.addStanza(serializer.toMeTLDirtyImage(s)))
@@ -373,6 +380,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2QuizResponse.findAll(By(H2QuizResponse.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s))),
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
       () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
+      () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
+      () => H2ChatMessage.findAll(By(H2ChatMessage.room,jid)).foreach(s => newHistory.addStanza(serializer.toChatMessage(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s))),
@@ -418,6 +427,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2File.findAll(By(H2File.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLFile(s))).toList,
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
       () => H2Attendance.findAll(By(H2Attendance.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
+      () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
+      () => H2ChatMessage.findAll(By(H2ChatMessage.room,jid)).foreach(s => newHistory.addStanza(serializer.toChatMessage(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
       () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),

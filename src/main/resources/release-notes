@@ -35,6 +35,9 @@ Improvement: METL-271: Enhance D2L API.
 Improvement: METL-292: Explicit groupProvider fetch mechanism.
 Improvement: METL-297: Schemify indices automatically.
 
+0.15.1
+Improvement: METL-282: Upgraded jsGrid to 1.5.3 to fix bug.
+
 0.14.4
 Bugfix: METL-299: Mipmapped ink renders in a visually incorrect place.
 

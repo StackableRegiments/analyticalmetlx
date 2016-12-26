@@ -101,6 +101,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       case i:NodeSeq if hasChild(i,"numericGradeValue") => toNumericGradeValue(i)
       case i:NodeSeq if hasChild(i,"booleanGradeValue") => toBooleanGradeValue(i)
       case i:NodeSeq if hasChild(i,"textGradeValue") => toTextGradeValue(i)
+      case i:NodeSeq if hasChild(i,"chatMessage") => toChatMessage(i)
       case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
@@ -251,6 +252,22 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val location = getStringByName(x,"location")
     val origin = getStringByName(x,"origin")
     MeTLTheme(config,m.author,m.timestamp,location,Theme(m.author,text,origin),m.audiences)
+  })
+  override def fromChatMessage(t:MeTLChatMessage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromChatMessage",{
+    metlContentToXml("chatMessage",t,List(
+      <context>{t.context}</context>,
+      <content>{t.content}</content>,
+      <contentType>{t.contentType}</contentType>,
+      <identity>{t.identity}</identity>
+    ))
+  })
+  override def toChatMessage(x:NodeSeq):MeTLChatMessage = Stopwatch.time("GenericXmlSerializer.toChatMessage",{
+    val m = parseMeTLContent(x)
+    val context = getStringByName(x,"context")
+    val contentType = getStringByName(x,"contentType")
+    val content = getStringByName(x,"content")
+    val identity = getStringByName(x,"identity")
+    MeTLChatMessage(config,m.author,m.timestamp,identity,contentType,content,context,m.audiences)
   })
 
   override def toMeTLInk(input:NodeSeq):MeTLInk = Stopwatch.time("GenericXmlSerializer.toMeTLInk",{
