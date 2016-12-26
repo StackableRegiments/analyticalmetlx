@@ -8,6 +8,10 @@ var ConversationsPage = require("../page/conversations.page");
 var ConversationPage = require("../page/conversation.page");
 
 var TEXT_DELAY = 5000;
+var debug = function(msg){
+    console.log(msg);
+    browser.debug();
+}
 var assertSameContent = function(a,b){
     _.each(a.inkStanzas,function(aStanza,k,i){
         var comparison = JSON.stringify(aStanza);
@@ -127,6 +131,7 @@ describe('When the class breaks into groups,', function() {
         assert.equal(tT.currentSlide.index,1);
     });
     it("the students should all follow to it",function(){
+	browser.pause(TEXT_DELAY);
         assert.equal(sA.currentSlide.index,1);
         assert.equal(sB.currentSlide.index,1);
     });
@@ -218,7 +223,7 @@ describe('When the class breaks into groups,', function() {
     it("participant presence should not be an active metric when the class is not restricted",function(){
         assert(browser.isExisting("#participationStatus"));
         assert.equal(tT.currentConversation.subject,"unrestricted");
-        assert.equal(tT.participationHealth,1);
+        assert.equal(tT.participationHealth,3);
     });
     it("given that the teacher restricts the conversation",function(){
         tT.homeTab.click();
@@ -239,7 +244,7 @@ describe('When the class breaks into groups,', function() {
     });
     it("participant presence should be measured against potential participants",function(){
         assert.equal(tT.currentConversation.subject,"Org Unit A");
-        assert.equal(tT.participationHealthMax,6);
+        assert.equal(tT.participationHealthMax,26);
         assert.equal(tT.participationHealth,3);
         join(studentC,'studentC');
         studentC.waitForExist("#board");

@@ -251,7 +251,7 @@ var Conversations = (function(){
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
         var scrollContainer = $("#thumbScrollContainer");
-	var ss = _.filter(currentConversation.slides,"exposed");
+        var ss = _.filter(currentConversation.slides,"exposed");
         //Add the new slides
         _.each(_.filter(ss,function(slide){
             return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
@@ -586,18 +586,25 @@ var Conversations = (function(){
             updateConversationHeader();
             updateLinks();
             redrawSyncState();
-						var currentSlideNewState = _.find(details.slides,function(s){ return s.id == currentSlide; });
-						console.log("newSlideState:",currentSlideNewState);
-						if (!currentSlideNewState || (!currentSlideNewState.exposed)){
-							console.log("current slide hidden");
-							var firstAvailableSlide = _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
-							console.log("found new slide to move to",firstAvailableSlide);
-							if (firstAvailableSlide){
-								doMoveToSlide(firstAvailableSlide.id.toString());
-							} else {
-								window.location = sprintf("/conversationSearch?q=%s",encodeURIComponent(details.title)); // redirect to the conversation search
-							}
-						};
+            var myLocation = _.find(details.slides,function(s){ return s.id == currentSlide; });
+            var teacherLocation = _.find(details.slides,function(s){ return sprintf("%s",s.id) == currentTeacherSlide; });
+	    console.log("Location",myLocation,currentTeacherSlide,teacherLocation);
+            var relocate = false;
+            if(myLocation){
+                relocate = !myLocation.exposed;
+            }
+            else {
+                relocate = true;
+            }
+            if(relocate){
+		var possibleLocation = teacherLocation || _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
+		console.log("Relocation",teacherLocation,possibleLocation);
+                if (possibleLocation){
+                    doMoveToSlide(possibleLocation.id.toString());
+                } else {
+                    window.location = sprintf("/conversationSearch?q=%s",encodeURIComponent(details.title)); // redirect to the conversation search
+                }
+            }
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
@@ -786,6 +793,7 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
+	console.log("Requesting moveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;
