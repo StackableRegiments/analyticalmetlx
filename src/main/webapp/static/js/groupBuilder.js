@@ -320,6 +320,9 @@ var GroupBuilder = (function(){
         }
     };
     return {
-        showAddGroupSlideDialog:showAddGroupSlideDialogFunc
+        showAddGroupSlideDialog:showAddGroupSlideDialogFunc,
+	getExternalGroups:function(){
+	    return externalGroups;
+	}
     };
 })();
