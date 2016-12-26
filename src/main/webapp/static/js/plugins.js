@@ -8,26 +8,77 @@ var Plugins = (function(){
 					var container = $("<div />",{
 						id:containerId
 					});
-					var chatMessages = [];
-					var renderChatMessage = function(chatMessage){
+					var renderChatMessage = function(chatMessage,targetType,target,context){
 						var rootElem = cmTemplate.clone();
-						rootElem.find(".chatMessageAuthor").text(chatMessage.author);
+						var username = UserSettings.getUsername();
+						var authorElem = rootElem.find(".chatMessageAuthor");
+						authorElem.text(chatMessage.author);
 						rootElem.find(".chatMessageTimestamp").text(new Date(chatMessage.timestamp).toISOString());
+						var contentElem = rootElem.find(".chatMessageContent");
 						switch (chatMessage.contentType){
 							case "text":
-								rootElem.find(".chatMessageContent").text(chatMessage.content);
+								contentElem.text(chatMessage.content);
 								break;
 							case "html":
-								rootElem.find(".chatMessageContent").html(chatMessage.content);
+								contentElem.html(chatMessage.content);
 								break;
+						}
+						if (targetType && target){
+							switch (targetType){
+								case "whisperTo":
+									contentElem.addClass("whisper");
+									authorElem.text(sprintf("to %s",target));
+								break;
+								case "whisperFrom":
+									contentElem.addClass("whisper");
+									authorElem.text(sprintf("from %s",target));
+								break;
+								case "groupChatTo":
+									contentElem.addClass("groupChat");
+									authorElem.text(sprintf("to %s",target));
+								break;
+								case "groupChatFrom":
+									contentElem.addClass("groupChat");
+									authorElem.text(sprintf("from %s",target));
+								break;
+							}
 						}
 						return rootElem;
 					};
 					var actOnStanzaReceived = function(stanza){
 						if (stanza && "type" in stanza && stanza.type == "chatMessage"){
-							chatMessages.push(stanza);
-							cmHost.append(renderChatMessage(stanza));
-							cmHost.scrollTop(cmHost[0].scrollHeight);
+							var username = UserSettings.getUsername();
+							var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
+								return _.map(slide.groupSets,function(groupSet){
+									return groupSet.groups;
+								});
+							})));
+							boardContent.chatMessages.push(stanza);
+							if (!stanza.audiences.length){ //it's a public message
+								cmHost.append(renderChatMessage(stanza));
+								cmHost.scrollTop(cmHost[0].scrollHeight);
+							} else { // it's targetted
+								var relAud = _.find(stanza.audiences,function(aud){
+									return aud.type == "user" || aud.type == "group";
+								});
+								if (stanza.author == username){ //it's from me
+									if (relAud && relAud.type == "user"){
+										cmHost.append(renderChatMessage(stanza,"whisperTo",relAud.name));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									} else if (relAud && relAud.type == "group"){
+										cmHost.append(renderChatMessage(stanza,"groupChatTo",relAud.name));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									}
+								} else { // it's possibly targetted to me
+									if (relAud && relAud.type == "user" && relAud.name == username){
+										cmHost.append(renderChatMessage(stanza,"whisperFrom",stanza.author));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									} else if (relAud && relAud.type == "group" && _.some(convGroups,function(g){ return g.name == relAud.name && _.some(g.members,function(m){ return m.name == username; });})){
+										cmHost.append(renderChatMessage(stanza,"groupChatFrom",stanza.author,relAud.name));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									}
+								}
+							}
 						}
 					};
 					var actOnHistoryReceived = function(history){
@@ -48,7 +99,48 @@ var Plugins = (function(){
 							context:context || loc,
 							audiences:audiences || []
 						};
+						console.log("created chat message:",cm);
 						return cm;
+					};
+					var sendChatMessage = function(text){
+						if (text && text.length){
+							var audiences = [];
+							var context = "";
+							var message = "";
+							if (text.startsWith("/w")){
+								var parts = text.split(" ");
+								if (parts.length && parts.length >= 2){
+									audiences.push({
+										domain:"metl",
+										name:parts[1],
+										type:"user",
+										action:"read"
+									});
+									message = _.drop(parts,2).join(" ");
+								} else {
+									return text;
+								}
+							} else if (text.startsWith("/g")){
+								var parts = text.split(" ");
+								if (parts.length && parts.length >= 2){
+									audiences.push({
+										domain:"metl",
+										name:parts[1],
+										type:"group",
+										action:"read"
+									});
+									message = _.drop(parts,2).join(" ");
+								} else {
+									return text;
+								}
+							} else {
+								message = text;
+							}
+							sendStanza(createChatMessage(message,context,audiences));
+							return "";
+						} else {
+							return text;
+						}
 					};
 
 					return {
@@ -60,7 +152,9 @@ var Plugins = (function(){
 					".chatMessageContent {background:black}"+
 					".chatboxContainer {background:black}"+
 					".chatbox {background:white; color:black; display:inline-block; padding:0px; margin:0px;}"+
-					".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}",
+					".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
+					".groupChat {color:orange}"+
+					".whisper {color:pink}",
 						load:function(bus,params){
 							bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
 							bus.historyReceived["Chatbox"] = actOnHistoryReceived;
@@ -90,21 +184,13 @@ var Plugins = (function(){
 							cmHost.empty();
 							var chatbox = outer.find(".chatboxContainer .chatbox").on("keydown",function(ev){
 								if (ev.keyCode == 13){
-									var newText = $(this).val();
-									if (newText && newText.length){
-										sendStanza(createChatMessage(newText));
-										$(this).val("");
-									}
+									var cb = $(this);
+									cb.val(sendChatMessage(cb.val()));
 								}
 							});
 							var sendButton = outer.find(".chatboxContainer .chatboxSend").on("click",function(){
-								var newText = chatbox.val();
-								if (newText && newText.length){
-									sendStanza(createChatMessage(newText));
-									chatbox.val("");
-								}
+								chatbox.val(sendChatMessage(chatbox.val()));
 							});
-							console.log("chatInit:",outer,this,chatbox);
 						}
 					};
 				})(),

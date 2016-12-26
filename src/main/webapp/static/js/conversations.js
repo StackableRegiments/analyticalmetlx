@@ -95,10 +95,12 @@ var Conversations = (function(){
                                                                  [groupActivity.anyPublic.line,
                                                                   groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
-                groupTraces.anyPublic.update([
-                    groupActivity.anyPublic.line,
-                    groupActivity.anyPrivate.line
-                ]);
+								if ("anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
+									groupTraces.anyPublic.update([
+											groupActivity.anyPublic.line,
+											groupActivity.anyPrivate.line
+									]);
+								}
             });
         }
         var groupTraceIsAccurate = function(group){
