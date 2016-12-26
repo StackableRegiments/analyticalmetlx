@@ -28,6 +28,20 @@
     <member>teacher</member>
     <groupSet name="groupSet1" type="assignment">
       <group name="group1" type="assignment">
+        <member>studentW</member>
+        <member>studentX</member>
+        <member>studentY</member>
+        <member>studentZ</member>
+      </group>
+      <group name="group2" type="assignment">
+        <member>studentA</member>
+        <member>studentB</member>
+        <member>studentC</member>
+        <member>studentD</member>
+      </group>
+    </groupSet>
+    <groupSet name="groupSet2" type="assignment">
+      <group name="group1" type="assignment">
         <member>studentA</member>
       </group>
       <group name="group2" type="assignment">
@@ -39,7 +53,7 @@
   <orgUnit name="Org Unit B" type="course">
     <member>studentA</member>
     <member>teacher</member>
-    <groupSet name="groupSet2" type="assignment">
+    <groupSet name="groupSet3" type="assignment">
       <group name="group3" type="assignment">
         <member>studentA</member>
       </group>

@@ -1,6 +1,5 @@
 var GroupBuilder = (function(){
-    var displayCache = {};
-    var initialGroups = [];
+    var initialGroups = {};
     var externalGroups = {};
     var iteratedGroups = [];
     var _strategy = "byMaximumSize";
@@ -15,70 +14,96 @@ var GroupBuilder = (function(){
             text:member
         });
     };
+    var groupSetKey = function(groupSet){
+        var rel = groupSet.foreignRelationship;
+        if(rel){
+            return sprintf("%s@%s",rel.key,rel.system);
+        }
+        return groupSet.name;
+    }
+    var flatInitialGroups = function(){
+        return _.flatMap(initialGroups,function(groupSet){
+            return _.map(groupSet.groups,function(group){
+                var r = {};
+                _.each(group.members,function(m){
+                    r[m.name] = true;
+                });
+                return r;
+            });
+        });
+    };
     var renderExternalGroups = function(){
         var container = $(".jAlert .groupSlideDialog");
         var importV = container.find(".importGroups").empty();
+
+        $("<input />",{
+            type:"radio",
+            name:"groupSetSelector",
+            id:"clearGroups"
+        }).on("click",function(){
+            initialGroups = {};
+            doSimulation();
+        }).appendTo(importV).prop("checked",true);
+        $("<label />",{
+            for:"clearGroups"
+                }).append($("<span />",{
+                    class:"icon-txt",
+                    text:"No long-term groups"
+                })).appendTo(importV);
+
+        var groupId = 0;
+        console.log(externalGroups);
         _.each(externalGroups,function(orgUnit){
             _.each(orgUnit,function(groupCat){
                 var ou = groupCat.orgUnit;
                 if(ou){
-                    if(displayCache[ou.name]){
-                        displayCache[ou.name].remove();
-                    }
-                    var ouV = displayCache[ou.name] = $("<div />",{
-                        text:ou.name
+                    var ouV = $("<div />",{
                     }).appendTo(importV);
-                    var groupId = 0;
                     var groupSet = groupCat.groupSet;
                     var groupSetV = $("<div />",{
                     }).appendTo(ouV);
-                    groupSetV.append("<div />",{
-                        class:"groupCatName",
-                        text:groupSet.name
-                    });
+                    var groupSetHeader = $("<div />",{
+                        class:"flex-container-responsive"
+                    }).appendTo(groupSetV);
+                    var inputId = sprintf("structuralGroup_%s",groupId);
+                    var cacheKey = groupSetKey(groupSet);
+                    var inputV = $("<input />",{
+                        type:"radio",
+                        name:"groupSetSelector",
+                        id:inputId
+                    }).on("click",function(){
+                        if(cacheKey in initialGroups){
+                            delete initialGroups[cacheKey];
+                        }
+                        else{
+                            initialGroups = {cacheKey:groupSet};
+                        }
+                        doSimulation();
+                    }).appendTo(groupSetHeader);
+                    inputV.prop("checked",cacheKey in initialGroups);
+                    $("<label />",{
+                        for:inputId
+                    }).append($("<span />",{
+                        class:"icon-txt",
+                        text:sprintf("Copy %s from %s",groupSet.name,ou.name)
+                    })).appendTo(groupSetHeader);
+
                     _.each(groupCat.groups,function(group){
-                        groupId++;
                         var groupV = $("<div />",{
-                            class:"groupBuilderGroup",
-                            text:group.name
+                            class:"groupBuilderGroup"
                         }).appendTo(groupSetV);
-                        var inputId = sprintf("structuralGroup_%s",groupId);
-                        var inputV = $("<input />",{
-                            type:"checkbox",
-                            id:inputId
-                        }).on("click",function(){
-                            if(_.includes(initialGroups,group)){
-                                initialGroups = _.without(initialGroups,group);
-                            }
-                            else{
-                                initialGroups.push(group);
-                            }
-                            doSimulation();
-                        }).appendTo(groupV);
-                        inputV.prop("checked",_.includes(initialGroups,group));
-                        $("<label />",{
-                            for:inputId
-                        }).append($("<span />",{
-                            class:"icon-txt",
-                            text:"Copy"
-                        })).appendTo(groupV);
                         _.each(group.members,function(member){
                             renderMember(member.name).appendTo(groupV);
                         });
                     });
+                    groupId++;
                 }
             });
         });
     }
     var simulate = function(strategy,parameter,presentStudentsOnly){
         console.log(strategy,parameter,presentStudentsOnly);
-        var groups = _.map(initialGroups,function(g){
-            var r = {};
-            _.each(g.members,function(m){
-                r[m.name] = true;
-            });
-            return r;
-        });
+        var groups = flatInitialGroups();
         var participants;
         switch(presentStudentsOnly){
         case "allPresent": participants = Participants.getParticipants();
@@ -223,8 +248,9 @@ var GroupBuilder = (function(){
                 theme:'green',
                 closeAlert:true,
                 onClick:function(){
-                    var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(initialGroups,function(group){return _.map(group.members,"name")});
+                    var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(flatInitialGroups(),_.keys);
                     Conversations.addGroupSlide(_strategy, parseInt(_parameters[_strategy]), seed);
+                    initialGroups = {};
                     iteratedGroups = [];
                     externalGroups = {};
                 }
@@ -321,8 +347,8 @@ var GroupBuilder = (function(){
     };
     return {
         showAddGroupSlideDialog:showAddGroupSlideDialogFunc,
-	getExternalGroups:function(){
-	    return externalGroups;
-	}
+        getExternalGroups:function(){
+            return externalGroups;
+        }
     };
 })();
