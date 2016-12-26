@@ -1646,14 +1646,15 @@ var Modes = (function(){
 													sendStanza(deleteTransform);
 
 													carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-													var newEditor = createBlankText(worldPos,[{
-															text:oldEditor.text,
-															italic:carota.runs.nextInsertFormatting.italic == true,
-															bold:carota.runs.nextInsertFormatting.bold == true,
-															underline:carota.runs.nextInsertFormatting.underline == true,
-															color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-															size:carota.runs.defaultFormatting.size / scale()
+													var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
+															text: oldEditor.text,
+															italic: oldEditor.style == "italic",
+															bold: oldEditor.weight == "bold",
+															underline: oldEditor.decoration == "underline",
+															color: oldEditor.color,
+															size: oldEditor.size
 													}]);
+													console.log("found oldText, converting to newText:",oldEditor,newEditor);
 													var newDoc = newEditor.doc;
 													newDoc.select(0,1);
 													boardContent.multiWordTexts[newEditor.identity] = newEditor;
