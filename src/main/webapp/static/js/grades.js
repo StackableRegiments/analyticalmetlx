@@ -7,6 +7,24 @@ var Grades = (function(){
     var gradeEditTemplate = {};
     var gradeAssessTemplate = {};
     var gradebooks = [];
+    var spin = function(el,on,target){
+        if(on){
+	    $(el).prop("disabled",true).css({position:"relative"});
+	    if(target){
+		el = target(el);
+	    }
+            el.append(
+                $("<div />",{
+                    class:"spinner"
+                }).append($("<div />",{
+                    class:"fa fa-spin fa-cog"
+                })));
+        }
+        else{
+            $(el).prop("disabled",false).find(".spinner").remove();
+        }
+    }
+
     var reRenderFunc = function(){
         WorkQueue.enqueue(function(){
             gradesDatagrid.jsGrid("loadData");
@@ -235,6 +253,7 @@ var Grades = (function(){
                             var associatedGrade = undefined;
                             var reRenderAssociations = function(){
                                 var aNodes = innerRoot.find(".associateController");
+				spin(aNodes,false);
                                 if ("foreignRelationship" in newGrade){
                                     aNodes.find(".createAssociation").hide();
                                     var system = newGrade.foreignRelationship.sys;
@@ -245,6 +264,7 @@ var Grades = (function(){
                                     aNodes.find(".associationOrgUnit").text(orgUnit);
                                     aNodes.find(".associationGradeId").text(gradeId);
                                     aNodes.find(".requestRefreshAssociation").unbind("click").on("click",function(){
+                                        spin(aNodes,true);
                                         $.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrade){
                                             newGrade.description = remoteGrade.description;
                                             newGrade.name = remoteGrade.name;
@@ -253,7 +273,9 @@ var Grades = (function(){
                                             newGrade.numericMaximum = remoteGrade.numericMaximum;
                                             jAlert.closeAlert();
                                             renderEditGradeAlert();
+                                            spin(this,false);
                                         }).fail(function(jqxhr,textStatus,error){
+                                            spin(aNodes,false);
                                             alert(sprintf("error: %s \r\n %s",textStatus,error));
                                         });
                                     });
@@ -283,10 +305,12 @@ var Grades = (function(){
                                             chosenGradebook = $(this).val();
                                         });
                                         aNodes.find(".commitGradebook").unbind("click").on("click",function(){
+                                            spin(this,true);
                                             reRenderAssociations();
                                         });
                                         aNodes.find(".requestAssocPhase2").show();
                                     } else if (chosenOrgUnit === undefined){
+                                        spin(aNodes,true);
                                         $.getJSON(sprintf("/getExternalGradebookOrgUnits/%s",chosenGradebook),function(data){
                                             console.log("requestedOrgUnits:",data);
                                             chosenOrgUnit = data[0].foreignRelationship.key;
@@ -303,13 +327,16 @@ var Grades = (function(){
                                                 reRenderAssociations();
                                             });
                                             aNodes.find(".requestAssocPhase3").show();
+                                            spin(aNodes,false);
                                         }).fail(function(jqxhr,textStatus,error){
+                                            spin(aNodes,false);
                                             alert(sprintf("error: %s \r\n %s",textStatus,error));
                                         });
                                     } else {
 
                                         aNodes.find(".requestAssocPhase4").show();
                                         aNodes.find(".createGrade").unbind("click").on("click",function(){
+                                            spin(aNodes,true);
                                             $.ajax({
                                                 type:"POST",
                                                 url:sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),
@@ -322,10 +349,12 @@ var Grades = (function(){
                                                     }
                                                     sendStanza(newGrade);
                                                     reRenderAssociations();
+                                                    spin(this,false);
                                                 },
                                                 contentType:"application/json",
                                                 dataType:'json'
                                             }).fail(function(jqxhr,textStatus,error){
+                                                spin(aNodes,false);
                                                 alert(sprintf("error: %s \r\n %s",textStatus,error));
                                             });
                                         });
@@ -357,6 +386,8 @@ var Grades = (function(){
                                 }
                             });
                             var innerRoot = gradeAssessTemplate.clone();
+			    $("#"+uniqId).append(innerRoot);
+			    spin(innerRoot,true);
                             var gradebookDatagrid       = innerRoot.find(".gradebookDatagrid");
                             var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
                             gradebookDatagrid.empty();
@@ -401,6 +432,7 @@ var Grades = (function(){
                                         });
                                         andThen(data);
                                     }).fail(function(jqxhr,textStatus,error){
+					spin(innerRoot,false);
                                         console.log("error",textStatus,error);
                                     });
                                 } else {
@@ -489,7 +521,6 @@ var Grades = (function(){
                                         {name:"remoteGrade",type:"text",title:"Remote score",readOnly:true,sorting:true}
                                     );
                                 }
-                                $("#"+uniqId).append(innerRoot);
                                 gradebookDatagrid.jsGrid({
                                     width:"100%",
                                     height:"auto",
@@ -527,6 +558,8 @@ var Grades = (function(){
                                     var orgUnit = parts[0];
                                     var gradeId = parts[1];
                                     innerRoot.find(".getRemoteData").on("click",function(){
+                                        var b = this;
+                                        spin(b,true);
                                         $.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
                                             generateData(function(data){
                                                 var modifiedData = data;
@@ -537,14 +570,20 @@ var Grades = (function(){
                                                     if (thisRemoteGrade !== undefined){
                                                         datum.remoteGrade = thisRemoteGrade.gradeValue;
                                                     }
+						    spin(b,false);
                                                 });
                                                 return withData(modifiedData);
                                             });
                                         }).fail(function(jqxhr,textStatus,error){
+                                            spin(b,false);
                                             console.log("error",textStatus,error);
                                         });
                                     });
                                     innerRoot.find(".sendGradesToRemote").on("click",function(){
+                                        var b = this;
+                                        spin(b,true,function(e){
+					    return $(e).find("span");
+					});
                                         var gradesToSend = _.filter(gradeValues[grade.id],function(g){
                                             return g.gradeValue != undefined;
                                         });
@@ -563,18 +602,21 @@ var Grades = (function(){
                                                             datum.remoteGrade = thisRemoteGrade.gradeValue;
                                                         }
                                                     });
+						    spin(b,false);
                                                     return withData(modifiedData);
                                                 })
                                             },
                                             url:sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),
                                             contentType:"application/json"
                                         }).fail(function(jqxhr,textStatus,error){
+					    spin(b,false);
                                             console.log("error",textStatus,error);
                                         });
                                     });
                                 } else {
                                     innerRoot.find(".gradeSyncActions").remove();
                                 }
+				spin(innerRoot,false);
                             };
                             generateData(withData);
                         });
