@@ -1,5 +1,112 @@
 var Plugins = (function(){
     return {
+				"Chat":(function(){
+					var outer = {};
+					var cmHost = {};
+					var cmTemplate = {};
+					var containerId = sprintf("chatbox_%s",_.uniqueId());
+					var container = $("<div />",{
+						id:containerId
+					});
+					var chatMessages = [];
+					var renderChatMessage = function(chatMessage){
+						var rootElem = cmTemplate.clone();
+						rootElem.find(".chatMessageAuthor").text(chatMessage.author);
+						rootElem.find(".chatMessageTimestamp").text(new Date(chatMessage.timestamp).toISOString());
+						switch (chatMessage.contentType){
+							case "text":
+								rootElem.find(".chatMessageContent").text(chatMessage.content);
+								break;
+							case "html":
+								rootElem.find(".chatMessageContent").html(chatMessage.content);
+								break;
+						}
+						return rootElem;
+					};
+					var actOnStanzaReceived = function(stanza){
+						if (stanza && "type" in stanza && stanza.type == "chatMessage"){
+							chatMessages.push(stanza);
+							cmHost.append(renderChatMessage(stanza));
+						}
+					};
+					var actOnHistoryReceived = function(history){
+						_.forEach(history.chatMessages,actOnStanzaReceived);
+					};
+					var createChatMessage = function(text,context,audiences){
+						var author = UserSettings.getUsername();
+						var loc = Conversations.getCurrentSlideJid();
+						var now = new Date().getTime();
+						var id = sprintf("%s_%s_%s",author,loc,now);
+						var cm = {
+							type:"chatMessage",
+							author:author,
+							timestamp:now,
+							identity:id,
+							contentType:"text",
+							content:text,
+							context:context || loc,
+							audiences:audiences || []
+						};
+						return cm;
+					};
+
+					return {
+						style:".chatMessage {color:white}"+
+					".chatMessageContainer {background:black; overflow-y:auto; height:110px;}"+
+					".chatContainer {width:320px;height:140px;}"+
+					".chatMessageAuthor {color:gray; background:black}"+
+					".chatMessageTimestamp {color:red; background:black; font-size:small;}"+
+					".chatMessageContent {background:black}"+
+					".chatboxContainer {background:black}"+
+					".chatbox {background:white; color:black; display:inline-block; padding:0px; margin:0px;}"+
+					".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}",
+						load:function(bus,params){
+							bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
+							bus.historyReceived["Chatbox"] = actOnHistoryReceived;
+							container.append('<div class="chatContainer" >'+
+								'<div class="chatMessageContainer" >'+
+								'<div class="chatMessage" >'+
+								'<span class="chatMessageTimestamp" >'+
+								'</span>'+
+								'<span class="chatMessageAuthor" >'+
+								'</span>'+
+								'<span class="chatMessageContent">'+
+								'</span>'+
+								'</div>'+
+								'</div>'+
+								'<div class="chatboxContainer">'+
+								'<input type="text" class="chatbox">'+
+								'</input>'+
+								'<button class="chatboxSend">Send</button>'+
+								'</div>'+
+								'</div>');
+							return container;
+						},
+						initialize:function(){
+							outer = $("#"+containerId);
+							cmHost = outer.find(".chatMessageContainer");
+							cmTemplate = cmHost.find(".chatMessage").clone();
+							cmHost.empty();
+							var chatbox = outer.find(".chatboxContainer .chatbox").on("keydown",function(ev){
+								if (ev.keyCode == 13){
+									var newText = $(this).val();
+									if (newText && newText.length){
+										sendStanza(createChatMessage(newText));
+										$(this).val("");
+									}
+								}
+							});
+							var sendButton = outer.find(".chatboxContainer .chatboxSend").on("click",function(){
+								var newText = chatbox.val();
+								if (newText && newText.length){
+									sendStanza(createChatMessage(newText));
+									chatbox.val("");
+								}
+							});
+							console.log("chatInit:",outer,this,chatbox);
+						}
+					};
+				})(),
         "Face to face":(function(){
             var container = $("<div />");
             return {

@@ -63,7 +63,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2Grade,
         H2NumericGradeValue,
         H2BooleanGradeValue,
-        H2TextGradeValue
+        H2TextGradeValue,
         H2ChatMessage,
         H2UndeletedCanvasContent
       ):_*
