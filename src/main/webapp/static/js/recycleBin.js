@@ -4,11 +4,13 @@ var RecycleBin = (function(){
     var recycleBinDatagrid = {};
     var actionButtonsTemplate = {};
     var reRenderDatagrid = function(){
+			WorkQueue.enqueue(function(){
         recycleBinDatagrid.jsGrid("loadData");
         var sortObj = recycleBinDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
             recycleBinDatagrid.jsGrid("sort",sortObj);
         }
+			});
     };
     $(function(){
         recycleBinDatagrid = $("#recycleBinDatagrid");
@@ -41,7 +43,7 @@ var RecycleBin = (function(){
                 itemTemplate:function(thumbnailUrl,stanza){
                     var defaultElem = $("<span/>",{text:"no preview"});
                     if ("type" in stanza){
-                        var popupTitle = sprintf("Deleted %s from %s at %s on slide %s",stanza.type,stanza.author,new Date(stanza.timestamp),stanza.slide);
+                        var popupTitle = sprintf("Deleted %s from %s at %s on page %s",stanza.type,stanza.author,new Date(stanza.timestamp),stanza.slide);
                         if (stanza.type == "ink"){
                             if ("canvas" in stanza){
                                 var imgSrc = stanza.canvas.toDataURL("image/png");
@@ -94,7 +96,7 @@ var RecycleBin = (function(){
                     } else return defaultElem;
                 }
             },
-            {name:"slide",type:"number",title:"Slide",readOnly:true},
+            {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"author",type:"text",title:"Who",readOnly:true},
             {name:"privacy",type:"text",title:"Privacy",readOnly:true},

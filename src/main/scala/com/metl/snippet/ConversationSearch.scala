@@ -13,7 +13,7 @@ package com.metl.snippet
   import net.liftweb.common._
 
   object RestfulConversationSearchHelper {
-    val serializer = new GenericXmlSerializer("rest")
+    val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   }
 
   class ConversationSearch extends Logger {

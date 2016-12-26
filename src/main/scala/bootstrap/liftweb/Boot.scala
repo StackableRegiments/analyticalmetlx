@@ -69,7 +69,7 @@ class Boot extends Logger {
         debug("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
-      case _ => NotFoundAsResponse(RedirectResponse("/"))
+      case _ => NotFoundAsResponse(RedirectResponse("/conversationSearch"))
     }
 
     LiftRules.noCometSessionCmd.default.set(() => Reload:JsCmd)
@@ -83,7 +83,7 @@ class Boot extends Logger {
       Menu(Loc("Authentication",Link("authenticationState" :: Nil,true,"/authenticationState"),"Authentication",Hidden)),
       Menu.i("menu.saml") / "saml-callback" >> Hidden,
       //MeTLX
-      Menu(Loc("Home","index" :: Nil,"Home")),
+    //  Menu(Loc("Home","index" :: Nil,"Home")),
       Menu(Loc("MeTL Viewer","metlviewer" :: Nil,"MeTL Viewer")),
       Menu(Loc("Board","board" :: Nil,"MeTL X")),
       Menu(Loc("EditConversation","editConversation" :: Nil,"Edit Conversation")),
@@ -99,8 +99,8 @@ class Boot extends Logger {
       Menu(Loc("Import Powerpoint","importPowerpoint" :: Nil,"Import Powerpoint",Hidden)),
       Menu(Loc("WebMeTL Conversation search","conversations" :: Nil,"Conversations",Hidden)),
       Menu(Loc("Slide","slide" :: Nil,"Slide",Hidden)),
-      Menu(Loc("SlidePrev","slidePrev" :: Nil,"Previous Slide",Hidden)),
-      Menu(Loc("SlideNext","slideNext" :: Nil,"Next Slide",Hidden)),
+      Menu(Loc("SlidePrev","slidePrev" :: Nil,"Previous Page",Hidden)),
+      Menu(Loc("SlideNext","slideNext" :: Nil,"Next Page",Hidden)),
       Menu(Loc("SlideNavigation","slideNavigation" :: Nil,"Slide Navigation",Hidden)),
       Menu(Loc("SlideTitle","slideTitle" :: Nil,"Slide Title",Hidden)),
       Menu(Loc("Quiz","quiz" :: Nil,"Quiz",Hidden)),

@@ -188,14 +188,14 @@ var Quizzes = (function(){
             $("<input/>",{
                 type:"button",
                 class: "toolbar",
-                value:"Display Quiz on next slide"
+                value:"Display Poll on next page"
             }).on("click",function(){
                 addQuizViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
             }).appendTo(rootElem);
             $("<input/>",{
                 type:"button",
                 class: "toolbar",
-                value:"Display Quiz with results on next slide"
+                value:"Display Poll with results on next page"
             }).on("click",function(){
                 addQuizResultsViewSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,quiz.id);
             }).appendTo(rootElem);

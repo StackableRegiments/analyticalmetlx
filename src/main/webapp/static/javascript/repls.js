@@ -254,11 +254,11 @@ function repl(dataType,seed,label){
                 })();
                 var id = sprintf("legend_%s",slide)
                 items[id] = positionable(slide);
-                repl("slideVisualElements",[id],sprintf("Content breakdown for slide %s",slide));
+                repl("slideVisualElements",[id],sprintf("Content breakdown for page %s",slide));
             }
         },
         prev:{
-            narration:"Show the previous slide",
+            narration:"Show the previous page",
             applies:["slide"],
             limit:1,
             invoke:function(){
@@ -271,7 +271,7 @@ function repl(dataType,seed,label){
             }
         },
         next:{
-            narration:"Show the next slide",
+            narration:"Show the next page",
             applies:["slide"],
             limit:1,
             invoke:function(){

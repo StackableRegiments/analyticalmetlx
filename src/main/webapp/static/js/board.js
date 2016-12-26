@@ -903,10 +903,28 @@ function drawInk(ink,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
+    var c = ink.canvas;
+    var cWidth = c.width;
+    var cHeight = c.height;
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-        canvasContext.drawImage(multiStageRescale(ink.canvas,sBounds.screenWidth,sBounds.screenHeight,ink),
-                                sBounds.screenPos.x,sBounds.screenPos.y,
-                                sBounds.screenWidth,sBounds.screenHeight);
+        var img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
+        try{
+            var inset = ink.thickness / 2;
+	    var sW = img.width;
+	    var sH = img.height;
+	    var xFactor = img.width / cWidth;
+	    var yFactor = img.height / cHeight;
+	    var iX = inset * xFactor;
+	    var iY = inset * yFactor;
+            canvasContext.drawImage(img,
+                                    0, 0,
+                                    sW, sH,
+                                    sBounds.screenPos.x - iX,sBounds.screenPos.y - iY,
+                                    sBounds.screenWidth + 2 * iX,sBounds.screenHeight + 2 * iY);
+        }
+        catch(e){
+            console.log("Exception in drawInk",e);
+        }
     }
 }
 function drawVideo(video,incCanvasContext){

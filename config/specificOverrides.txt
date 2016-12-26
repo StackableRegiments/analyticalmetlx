@@ -19,3 +19,7 @@ dave,group,groupA
 dave,group,groupB
 dave,group,groupC
 bob,special,impersonator
+kermit,muppet,a
+scooter,muppet,a
+piggy,muppet,b
+gonzo,muppet,b

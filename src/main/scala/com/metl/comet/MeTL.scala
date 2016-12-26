@@ -30,17 +30,7 @@ import json.JsonAST._
 
 import com.metl.snippet.Metl._
 
-case class RoomJoinRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
-case class RoomLeaveRequest(jid:String,username:String,server:String,uniqueId:String,metlActor:LiftActor)
 case class JoinThisSlide(slide:String)
-
-object RoomJoiner extends LiftActor with Logger {
-  override def messageHandler = {
-    case RoomJoinRequest(j,u,s,i,a) => MeTLXConfiguration.getRoom(j,s) ! JoinRoom(u,i,a)
-    case RoomLeaveRequest(j,u,s,i,a) => MeTLXConfiguration.getRoom(j,s) ! LeaveRoom(u,i,a)
-    case other => warn("RoomJoiner received strange request: %s".format(other))
-  }
-}
 
 object MeTLActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
@@ -244,7 +234,7 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
 }
 
 class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
 
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
@@ -289,7 +279,10 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   protected lazy val serverConfig = ServerConfiguration.default
 
   override def localSetup = {
-    query = Some(username.toLowerCase.trim)
+    warn("localSetup for ConversationSearch [%s]".format(name))
+    query = Some(name.flatMap(nameString => {
+      com.metl.snippet.Metl.getQueryFromName(nameString)
+    }).getOrElse(username.toLowerCase.trim))
     listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
     super.localSetup
   }
@@ -302,7 +295,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
 
-  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q).getOrElse(false)
+  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q || in.jid.toString == q).getOrElse(false)
 
   override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
@@ -342,7 +335,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
       case n => "%s search results".format(n)
     })
   }
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
 
@@ -385,11 +378,6 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
         reRender
       })
     } &
-    "#conversationSearchBox *" #> ajaxText(query.getOrElse(""),(q:String) => {
-      query = Some(q)
-      listing = query.map(q => filterConversations(serverConfig.searchForConversation(q))).getOrElse(Nil)
-      reRender
-    }) &
     "#activeImportsListing *" #> imports.groupBy(_.id).values.flatMap(_.sortWith((a,b) => a.timestamp.getTime > b.timestamp.getTime).headOption).map(imp => {
       ".importContainer" #> {
         ".importId *" #> Text(imp.id) &
@@ -462,7 +450,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   import com.metl.view._
   import net.liftweb.json.Extraction
   import net.liftweb.json.DefaultFormats
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   override def autoIncludeJsonCode = true
   private lazy val RECEIVE_USERNAME = "receiveUsername"
@@ -472,7 +460,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
-  //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
+                                                                                                                //private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   override lazy val functionDefinitions = List(
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
@@ -651,98 +639,98 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-/*
-  private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
-  private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
-  private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
-  private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
-*/
+  /*
+   private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
+   private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
+   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+   */
   protected var tokSession:Option[TokBoxSession] = None
   override lazy val functionDefinitions = List(
     /*
-    ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
-      JArray(for {
-          tb <- Globals.tokBox.toList
-          s <- tokSession.toList
-          a <- tb.getArchives(s)
-        } yield {
-          JObject(
-            List(
-              JField("id",JString(a.id)),
-              JField("name",JString(a.name))
-            ) ::: 
-            a.url.toList.map(u => JField("url",JString(u))) :::
-            a.size.toList.map(s => JField("size",JInt(s))) :::
-            a.duration.toList.map(d => JField("size",JInt(d))) :::
-            a.createdAt.toList.map(c => JField("created",JInt(c)))
-          )
-        })
-    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-    ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
-        tb <- Globals.tokBox
-        s <- tokSession
-        a <- tb.getArchive(s,id)
-      } yield {
-        Extraction.decompose(a)
-      }).toList)
-    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-    ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
-        tb <- Globals.tokBox
-        s <- tokSession
-      } yield {
-        tb.removeArchive(s,id)
-        pretty(render(a))
-      }).toList)
-      Noop
-    }),
-    ClientSideFunction("startBroadcast",List("layout"),(args) => {
-      val layout = getArgAsString(args(0))
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSession
-        b = tb.startBroadcast(s,layout)
-      } yield {
-        Extraction.decompose(b)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
-      val id = getArgAsString(args(0))
-      val layout = getArgAsString(args(1))
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSession
-        a = tb.updateBroadcast(s,id,layout)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSession
-        b <- tb.getBroadcast(s)
-        a = tb.stopBroadcast(s,b.id)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("getBroadcast",List.empty[String],(args) => {
-      (for {
-        tb <- Globals.tokBox
-        s <- tokSession
-        a <- tb.getBroadcast(s)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-  */
+     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
+     JArray(for {
+     tb <- Globals.tokBox.toList
+     s <- tokSession.toList
+     a <- tb.getArchives(s)
+     } yield {
+     JObject(
+     List(
+     JField("id",JString(a.id)),
+     JField("name",JString(a.name))
+     ) :::
+     a.url.toList.map(u => JField("url",JString(u))) :::
+     a.size.toList.map(s => JField("size",JInt(s))) :::
+     a.duration.toList.map(d => JField("size",JInt(d))) :::
+     a.createdAt.toList.map(c => JField("created",JInt(c)))
+     )
+     })
+     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+     ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
+     val id = getArgAsString(args(0))
+     JArray((for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     a <- tb.getArchive(s,id)
+     } yield {
+     Extraction.decompose(a)
+     }).toList)
+     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
+     ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
+     val id = getArgAsString(args(0))
+     JArray((for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     } yield {
+     tb.removeArchive(s,id)
+     pretty(render(a))
+     }).toList)
+     Noop
+     }),
+     ClientSideFunction("startBroadcast",List("layout"),(args) => {
+     val layout = getArgAsString(args(0))
+     (for {
+     tb <- Globals.tokBox
+     if (shouldModifyConversation())
+     s <- tokSession
+     b = tb.startBroadcast(s,layout)
+     } yield {
+     Extraction.decompose(b)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
+     val id = getArgAsString(args(0))
+     val layout = getArgAsString(args(1))
+     (for {
+     tb <- Globals.tokBox
+     if (shouldModifyConversation())
+     s <- tokSession
+     a = tb.updateBroadcast(s,id,layout)
+     } yield {
+     Extraction.decompose(a)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
+     (for {
+     tb <- Globals.tokBox
+     if (shouldModifyConversation())
+     s <- tokSession
+     b <- tb.getBroadcast(s)
+     a = tb.stopBroadcast(s,b.id)
+     } yield {
+     Extraction.decompose(a)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     ClientSideFunction("getBroadcast",List.empty[String],(args) => {
+     (for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     a <- tb.getBroadcast(s)
+     } yield {
+     Extraction.decompose(a)
+     }).getOrElse(JNull)
+     },Full(RECEIVE_TOK_BOX_BROADCAST)),
+     */
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs)
       JNull
@@ -769,6 +757,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val where = getArgAsString(args(0))
       debug("moveToSlideRequested(%s)".format(where))
       moveToSlide(where)
+      partialUpdate(refreshClientSideStateJs)
       JNull
     },Empty),
     ClientSideFunction("joinRoom",List("where"),(args) => {
@@ -822,7 +811,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val imageIds = getArgAsListOfStrings(args(5))
       val videoIds = getArgAsListOfStrings(args(6))
       val now = new Date().getTime
-      val pubHistory = rooms.get((server,slideJid.toString)).map(r => r().getHistory).getOrElse(History.empty)
+      val pubRoom = rooms.get((server,slideJid.toString)).map(_())
+      val pubHistory = pubRoom.map(_.getHistory).getOrElse(History.empty)
 
       val title = "submission%s%s.jpg".format(username,now.toString)
 
@@ -877,7 +867,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           (width,height) match {
           case (a:Int,b:Int) if a > 0 && b > 0 => {
             val blacklistedPeople = coloredAuthors.values.toList
-            val imageBytes = SlideRenderer.render(mergedHistory,width,height)
+            val imageBytes = pubRoom.map(_.slideRenderer.render(mergedHistory,width,height)).getOrElse(Array.empty[Byte])
             val uri = serverConfig.postResource(conversationJid,title,imageBytes)
             val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
             debug("banned with the following: %s".format(submission))
@@ -921,7 +911,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             val now = new java.util.Date().getTime
             val identity = "%s%s".format(username,now.toString)
             val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-            val dimensions = SlideRenderer.measureImage(tempSubImage)
+            val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
             val subImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
             slideRoom ! LocalToServerMeTLStanza(subImage)
           })
@@ -945,7 +935,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               val now = new java.util.Date().getTime
               val identity = "%s%s".format(username,now.toString)
               val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-              val dimensions = SlideRenderer.measureImage(tempSubImage)
+              val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
               val subImage = MeTLImage(serverConfig,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
               slideRoom ! LocalToServerMeTLStanza(subImage)
             })
@@ -1097,15 +1087,21 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   ) yield {
     user
   }).getOrElse(Globals.currentUser.is)
-  private val serializer = new JsonSerializer("frontend")
+  private val serializer = new JsonSerializer(ServerConfiguration.default)
   def registerWith = MeTLActorManager
+  val scriptContainerId = "scriptContainer_%s".format(nextFuncName)
   override def render = {
     OnLoad(refreshClientSideStateJs)
   }
+  def hideLoader:JsCmd = Hide("loadingSpinner")
+
   override def lowPriority = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
-    case JoinThisSlide(slide) => moveToSlide(slide)
+    case JoinThisSlide(slide) => {
+      moveToSlide(slide)
+      partialUpdate(refreshClientSideStateJs)
+    }
     case HealthyWelcomeFromRoom => {}
     case other => warn("MeTLActor received unknown message: %s".format(other))
   }
@@ -1113,9 +1109,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
   protected var isInteractiveUser:Box[Boolean] = Empty
+
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
-    debug("created metlactor: %s".format(name))
+    debug("created metlactor: %s => %s".format(name,S.session))
     joinRoomByJid("global")
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
@@ -1134,18 +1131,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       })
       isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
     })
+    debug("completedWorker: %s".format(name))
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
-    rooms.get((serverName,jid)) match {
-      case None => RoomJoiner ! RoomJoinRequest(jid,username,serverName,userUniqueId,this)
-      case _ => {}
-    }
+    MeTLXConfiguration.getRoom(jid,serverName) ! JoinRoom(username,userUniqueId,this)
   })
   private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.leaveRoomByJid(%s)".format(jid),{
-    rooms.get((serverName,jid)) match {
-      case Some(s) => RoomJoiner ! RoomLeaveRequest(jid,username,serverName,userUniqueId,this)
-      case _ => {}
-    }
+    MeTLXConfiguration.getRoom(jid,serverName) ! LeaveRoom(username,userUniqueId,this)
   })
   override def localShutdown = Stopwatch.time("MeTLActor.localShutdown(%s,%s)".format(username,userUniqueId),{
     debug("shutdown metlactor: %s".format(name))
@@ -1173,10 +1165,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     debug(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
     debug(receiveUserGroups)
-    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString))) match {
-      case Full(cc) => Full(cc)
-      case _ => Full(Call("showBackstage",JString("conversations")))
-    }
+    val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))/* match {
+                                                                                                                                           case Full(cc) => Full(cc)
+                                                                                                                                           case _ => Full(Call("showBackstage",JString("conversations")))
+                                                                                                                                           }*/
     debug(receiveCurrentConversation)
     val receiveConversationDetails:Box[JsCmd] = currentConversation.map(cc => Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc)))
     debug(receiveConversationDetails)
@@ -1200,42 +1192,51 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     })
     /*
-    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
-    val receiveTokBoxSession:Box[JsCmd] = (for {
-      cc <- currentConversation
-      tb <- Globals.tokBox
-    } yield {
-      val role = shouldModifyConversation() match {
-        case true => TokRole.Moderator
-        case false => TokRole.Publisher
-      }
-      val session = tokSession.getOrElse({
-        val newSession = tb.getSessionToken(cc.jid.toString(),role)
-        tokSession = Some(newSession)
-        newSession
-      })
-      val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
-        JField("sessionId",JString(session.sessionId)),
-        JField("token",JString(session.token)),
-        JField("apiKey",JInt(session.apiKey))
-      )))
-      j
-    })
-    val receiveTokBoxBroadcast:Box[JsCmd] = (for {
-      tb <- Globals.tokBox
-      s <- tokSession
-      a <- tb.getBroadcast(s)
-    } yield {
-      val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
-      j
-    })
+     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
+     val receiveTokBoxSession:Box[JsCmd] = (for {
+     cc <- currentConversation
+     tb <- Globals.tokBox
+     } yield {
+     val role = shouldModifyConversation() match {
+     case true => TokRole.Moderator
+     case false => TokRole.Publisher
+     }
+     val session = tokSession.getOrElse({
+     val newSession = tb.getSessionToken(cc.jid.toString(),role)
+     tokSession = Some(newSession)
+     newSession
+     })
+     val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
+     JField("sessionId",JString(session.sessionId)),
+     JField("token",JString(session.token)),
+     JField("apiKey",JInt(session.apiKey))
+     )))
+     j
+     })
+     val receiveTokBoxBroadcast:Box[JsCmd] = (for {
+     tb <- Globals.tokBox
+     s <- tokSession
+     a <- tb.getBroadcast(s)
+     } yield {
+     val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
+     j
+     })
      */
     debug(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
     debug(receiveInteractiveUser)
 
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser/*,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast*/)
+    val loadComplete = for {
+      h <- receiveHistory
+      u <- receiveUsername
+      c <- receiveCurrentConversation
+      cd <- receiveConversationDetails
+      s <- receiveCurrentSlide
+    } yield {
+      hideLoader
+    }
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveConversationDetails,receiveCurrentSlide,receiveLastSyncMove,receiveHistory,receiveInteractiveUser/*,receiveTokBoxEnabled,receiveTokBoxSession,receiveTokBoxBroadcast*/,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
@@ -1247,6 +1248,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       currentConversation = Full(details)
       val conversationJid = details.jid.toString
       joinRoomByJid(conversationJid)
+      /*
+       if (shouldModifyConversation(username,details)){
+       MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
+       }
+       */
       //      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
       //joinRoomByJid(conversationJid,"loopback")
       currentConversation
@@ -1255,7 +1261,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
-      reRender// partialUpdate(RedirectTo(noBoard))
+      reRender
+      partialUpdate(RedirectTo(noBoard))
       Empty
     }
   }
@@ -1309,7 +1316,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         joinRoomByJid(jid+username)
       }
     })
-    partialUpdate(refreshClientSideStateJs)
   }
   private def leaveAllRooms(shuttingDown:Boolean = false) = {
     debug("leaving all rooms: %s".format(rooms))

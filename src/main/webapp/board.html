@@ -117,20 +117,26 @@
     display:inline-block;
     }
 
+
   </style>
   <div>
-		<div id="pasteDialogTemplate">
-			<span class="dialogContent">
-				Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
-			</span>
-			<span class="dialogOptions">
-				<span class="dialogOption">
-					<button class="fa btn-icon">
-						<div class="icon-txt"></div>
-					</button>
-				</span>
-			</span>
-		</div>
+    <div id="loadingSpinner" class="loading-spinner" style="display:none;">
+      <span class="icon-spinner">
+        <i class="fa fa-cog fa-spin fa-3x fa-fw"></i>
+      </span>
+    </div>
+    <div id="pasteDialogTemplate">
+      <span class="dialogContent">
+        Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
+      </span>
+      <span class="dialogOptions">
+        <span class="dialogOption">
+          <button class="fa btn-icon">
+            <div class="icon-txt"></div>
+          </button>
+        </span>
+      </span>
+    </div>
     <div id="masterHeader">
       <div id="masterHeaderFlexContainer">
         <span id="floatingToggleContainer" class="main-menu">

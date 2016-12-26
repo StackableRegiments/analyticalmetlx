@@ -3,12 +3,12 @@ var Hotkeys = (function(){
         {
             keyCode:34,
             func:Conversations.goToNextSlide,
-            desc:"Move to next slide"
+            desc:"Move to next page"
         },
         {
             keyCode:33,
             func:Conversations.goToPrevSlide,
-            desc:"Move to previous slide"
+            desc:"Move to previous page"
         }
     ];
     var getHotkeysFunction = function(){

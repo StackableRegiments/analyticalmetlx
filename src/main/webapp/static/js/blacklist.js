@@ -15,14 +15,6 @@ var Blacklist = (function(){
         blacklistDatagrid = $("#blacklistDatagrid");
         blacklistPopupTemplate = blacklistDatagrid.find(".blacklistRecord").clone();
         blacklistDatagrid.empty();
-        /*
-         blacklistSummaryListing = $("#blacklistListing");
-         blacklistSummaryTemplate = blacklistSummaryListing.find(".blacklistSummary").clone();
-         blacklistSummaryListing.empty();
-         currentBlacklistContainer = $("#currentBlacklist");
-         currentBlacklistTemplate = currentBlacklistContainer.find(".blacklistContainer").clone();
-         blacklistAuthorsContainer.empty();
-         */
         blacklistAuthorsContainer = $("#currentBlacklistAuthorList");
         blacklistAuthorTemplate = blacklistAuthorsContainer.find(".blacklistAuthorContainer").clone();
         blacklistAuthorsContainer.empty();
@@ -56,7 +48,7 @@ var Blacklist = (function(){
                     var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
                     var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
                         var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-                        var title = sprintf("Ban record at %s on slide %s",new Date(submission.timestamp),submission.slide);
+                        var title = sprintf("Ban record at %s on page %s",new Date(submission.timestamp),submission.slide);
                         var rootElem = blacklistPopupTemplate.clone();
                         var authorContainer = rootElem.find(".blacklistLegend");
                         var authorTemplate = authorContainer.find(".blacklistAuthor").clone();
@@ -84,7 +76,7 @@ var Blacklist = (function(){
                     return img;
                 }
             },
-            {name:"slide",type:"number",title:"Slide",readOnly:true},
+            {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
 		return _.map(o.blacklist,"username").join(",");
@@ -135,11 +127,12 @@ var Blacklist = (function(){
     var updateAuthorList = function(conversation){
         if ("blacklist" in conversation && "jid" in conversation && Conversations.getCurrentConversationJid() == conversation.jid){
             blacklistAuthors = conversation.blacklist;
-            renderBlacklistAuthorsInPlace();
-            refreshToolState(conversation);
+						renderBlacklistAuthorsInPlace();
+						refreshToolState(conversation);
         }
     };
     var renderBlacklistAuthorsInPlace = function(){
+			WorkQueue.enqueue(function(){
         blacklistAuthorsContainer.empty();
         var unbanAllButton = $("#unbanAll");
         if (blacklistAuthors.length > 0){
@@ -163,8 +156,10 @@ var Blacklist = (function(){
             });
             blacklistAuthorsContainer.append(rootElem);
         });
+			});
     };
     var refreshToolState = function(conversation){
+			WorkQueue.enqueue(function(){
         if (Conversations.shouldModifyConversation(conversation)){
             $("#ban").show();
             $("#administerContent").show();
@@ -175,6 +170,7 @@ var Blacklist = (function(){
             $("#menuBlacklist").hide();
             $("#blacklistPopup").hide();
         }
+			});
     };
     var clearState = function(conversation){
         refreshToolState(conversation);
@@ -182,66 +178,14 @@ var Blacklist = (function(){
         currentBlacklist = {};
     };
     var renderBlacklistsInPlace = function(){
+			WorkQueue.enqueue(function(){
         blacklistDatagrid.jsGrid("loadData");
         var sortObj = blacklistDatagrid.jsGrid("getSorting");
         if ("field" in sortObj){
             blacklistDatagrid.jsGrid("sort",sortObj);
         }
-        /*
-         blacklistSummaryListing.empty();
-         filteredBlacklists().map(function(blacklist){
-         renderBlacklistSummary(blacklist);
-         })
-         renderCurrentBlacklistInPlace();
-         */
+			});
     }
-    var renderCurrentBlacklistInPlace = function(){
-        currentBlacklistContainer.html(renderBlacklist(currentBlacklist));
-    };
-    var renderBlacklistSummary = function(blacklist){
-        if ("type" in blacklist && blacklist.type == "submission" && "target" in blacklist && blacklist.target == "bannedcontent"){
-            var rootElem = blacklistSummaryTemplate.clone();
-            blacklistSummaryListing.append(rootElem);
-            rootElem.find(".blacklistDescription").text(sprintf("submitted by %s at %s %s", blacklist.author, new Date(blacklist.timestamp).toDateString(),new Date(blacklist.timestamp).toLocaleTimeString()));
-            rootElem.find(".blacklistImageThumb").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),blacklist.author,blacklist.identity));
-            rootElem.find(".viewBlacklistButton").attr("id",sprintf("viewBlacklistButton_%s",blacklist.identity)).on("click",function(){
-                currentBlacklist = blacklist;
-                renderCurrentBlacklistInPlace();
-            });
-        }
-    };
-    var renderBlacklist = function(blacklist){
-        var rootElem = $("<div />");
-        if ("type" in blacklist && blacklist.type == "submission" && "target" in blacklist && blacklist.target == "bannedcontent"){
-            if (Conversations.shouldModifyConversation()){
-                rootElem = currentBlacklistTemplate.clone();
-                rootElem.attr("id",sprintf("blacklist_%s",blacklist.identity))
-                rootElem.find(".blacklistDescription").text(sprintf("submitted by %s at %s",blacklist.author, blacklist.timestamp));
-                rootElem.find(".blacklistImage").attr("src",sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),blacklist.author,blacklist.identity));
-                var authorContainer = rootElem.find(".blacklistAuthors");
-                var authorTemplate = authorContainer.find(".blacklistAuthor").clone();
-                authorContainer.empty();
-                if ("blacklist" in blacklist){
-                    _.each(blacklist.blacklist,function(ba){
-                        if ("username" in ba && "highlight" in ba){
-                            var authorElem = authorTemplate.clone();
-                            authorElem.find(".blacklistAuthorName").text(ba.username);
-                            var color = ba.highlight[0];
-                            var opacity = ba.highlight[1];
-                            authorElem.find(".blacklistAuthorColor").css({"background-color":color,"opacity":opacity});
-                            authorContainer.append(authorElem);
-                        }
-                    });
-                }
-                rootElem.find(".displaySubmissionOnNextSlide").on("click",function(){
-                    addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,blacklist.identity);
-                });
-            } else {
-                // do we need to do any hiding here?
-            }
-        }
-        return rootElem;
-    };
     var historyReceivedFunction = function(history){
         try {
             if ("type" in history && history.type == "history"){

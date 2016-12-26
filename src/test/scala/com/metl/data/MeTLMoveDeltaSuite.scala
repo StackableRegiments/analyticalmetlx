@@ -21,7 +21,7 @@ class MeTLMoveDeltaSuite extends FunSuite with GeneratorDrivenPropertyChecks wit
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract metl move delta from xml") {

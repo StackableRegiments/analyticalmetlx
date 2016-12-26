@@ -18,7 +18,7 @@ class MeTLImageSuite extends FunSuite with GeneratorDrivenPropertyChecks with Be
 	var xmlSerializer: GenericXmlSerializer = _
 
 	before {
-	  xmlSerializer = new GenericXmlSerializer("empty")
+	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract metl image from xml") {

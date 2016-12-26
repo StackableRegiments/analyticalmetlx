@@ -142,13 +142,13 @@ object Globals extends PropertyReader with Logger {
         assumeContainerSession
       })
     }
-    private var actualUsername:String = "forbidden"
-    private var actuallyIsImpersonator:Boolean = false
+    private object actualUsername extends SessionVar[String]("forbidden")
+    private object actuallyIsImpersonator extends SessionVar[Boolean](false)
     def isSuperUser:Boolean = {
       is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
     }
-    def isImpersonator:Boolean = actuallyIsImpersonator
-    def authenticatedUsername:String = actualUsername
+    def isImpersonator:Boolean = actuallyIsImpersonator.is
+    def authenticatedUsername:String = actualUsername.is
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
         val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,personalAttributes)
@@ -170,9 +170,9 @@ object Globals extends PropertyReader with Logger {
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
         val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
         if (authenticated){
-          actualUsername = username
+          actualUsername(username)
           val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
-          actuallyIsImpersonator = groups.exists(g => g.ouType == "special" && g.name == "impersonator")
+          actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
           val lasd = LiftAuthStateData(true,username,groups,personalDetails)
           validState(Some(lasd))
@@ -204,7 +204,7 @@ object Globals extends PropertyReader with Logger {
   val MediumSize = new RenderDescription(1024,768)
   val LargeSize = new RenderDescription(1920,1080)
   val PrintSize = new RenderDescription(21 * printDpi, 29 * printDpi)
-  val snapshotSizes = List(ThumbnailSize,SmallSize,MediumSize,LargeSize/*,PrintSize*/)
+  val snapshotSizes = List(ThumbnailSize/*,SmallSize,MediumSize,LargeSize*//*,PrintSize*/)
 }
 
 object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))

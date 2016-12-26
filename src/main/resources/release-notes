@@ -1,3 +1,51 @@
+0.14.4
+Bugfix: METL-299: Mipmapped ink renders in a visually incorrect place.
+
+0.14.2
+Improvement: METL-298: Fix Chrome's pointerEvent issues.
+
+0.14.1
+Improvement: METL-287: Move DataGrids and WordClouds to the workQueue.
+
+0.13.4
+Bugfix: METL-291: Using button for conversation search does not update the search query.
+
+0.13.3
+Bugfix: METL-273: Conversation search now disables while search is processing.
+
+0.13.2
+Feature: METL-162: Restyle private handwriting.
+
+0.13.1
+Bugfix: METL-267: Ink shrinks after completion of stroke.
+Bugfix: METL-206: Rename Slide to Page throughout.
+Bugfix: METL-214: Rename Poll "Display on canvas" to "Display on current page".
+
+0.12.7
+Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
+Bugfix: METL-266: Rooms not being garbage collected.
+
+0.12.6
+Feature: METL-251: Diagnostic endpoint to monitor server performance.
+Improvement: METL-116: Performance optimisations.
+
+0.12.4
+Bugfix: METL-250: Superusers get broken board and search screens when they enter blocked conversations.
+
+0.12.3
+Bugfix: METL-245: MeTL actor fails during construction.
+Bugfix: METL-247: Attendances are not using their index.
+Bugfix: METL-248: Superuser powers don't let a user search for and/or enter any conversation.
+
+0.12.1
+Feature: METL-95: Added yellow text capability.
+
+0.11
+Feature: METL-225, 226, 227: Reinstate and improve superuser powers.
+Improvement: METL-231: Removed index page (always redirect to /conversationSearch).
+Improvement: METL-232: Dropped session timeout from 60 min to 5 min to reduce server load.
+Improvement: METL-223: Move release notes behind link on /about page.
+
 0.10
 Feature: METL-199 Paste into canvas from clipboard.
 Feature: METL-205 3-tiered orgStructure and personalDetails provider.

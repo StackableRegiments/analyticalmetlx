@@ -26,9 +26,10 @@ import com.metl.model._
   * Use Lift's templating without a session and without state
   */
 object StatelessHtml extends Stemmer with Logger {
+  private val config = ServerConfiguration.default
   implicit val formats = DefaultFormats
-  val serializer = new GenericXmlSerializer("rest")
-  val metlClientSerializer = new GenericXmlSerializer("metlClient"){
+  val serializer = new GenericXmlSerializer(config)
+  val metlClientSerializer = new GenericXmlSerializer(config){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml",  {
       val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))
       val attrs = (additionalAttributes ::: (rootName match {
@@ -48,10 +49,9 @@ object StatelessHtml extends Stemmer with Logger {
       }
     })
   }
-  val exportSerializer = new ExportXmlSerializer("export"){
+  val exportSerializer = new ExportXmlSerializer(config){
   }
   private val fakeSession = new LiftSession("/", "fakeSession", Empty)
-  private val config = ServerConfiguration.default
 
   def summaries(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.summaries", {
     val xml: Box[NodeSeq] = S.init(req, fakeSession) {
@@ -559,7 +559,7 @@ object StatelessHtml extends Stemmer with Logger {
                 val now = new java.util.Date().getTime
                 val identity = nextFuncName
                 val tempSubImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-                val dimensions = com.metl.renderer.SlideRenderer.measureImage(tempSubImage)
+                val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
                 val subImage = MeTLImage(config,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top + y,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
                 y += dimensions.height
                 slideRoom ! LocalToServerMeTLStanza(subImage)

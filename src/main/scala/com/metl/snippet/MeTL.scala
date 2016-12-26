@@ -74,7 +74,7 @@ class Metl extends Logger {
     "/editConversation?conversationJid=%s".format(conversationJid.toString)
   }
   def conversationSearch():String = {
-    "/conversationSearch"
+    "/conversationSearch?unique=true"
   }
 
 
@@ -92,9 +92,6 @@ class Metl extends Logger {
         S.param("slideId").foreach(sid => {
           try {
             name += "_SLIDE:%s".format(sid.toInt)
-            if (shouldModifyConversation(Globals.currentUser.is,conversation)){
-              MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
-            }
           } catch {
             case e:Exception => {
               error("invalid argument passed in slideId: %s".format(sid),e)
@@ -135,6 +132,9 @@ class Metl extends Logger {
     S.param("ltiToken").foreach(ltiToken => {
       name += "_LTITOKEN:%s".format(ltiToken)
     })
+    S.param("query").foreach(query => {
+      name += "_QUERY:%s".format(query)
+    })
     name
   }
   def getLtiTokenFromName(in:String):Option[String] = {
@@ -151,6 +151,9 @@ class Metl extends Logger {
         }
       }
     })
+  }
+  def getQueryFromName(in:String):Option[String] = {
+    in.split("_").map(_.split(":")).find(_(0) == "QUERY").map(_.drop(1).mkString(":"))
   }
   def getConversationFromName(in:String):Option[Int] = {
     in.split("_").map(_.split(":")).find(_(0) == "CONVERSATION").map(_.drop(1).mkString(":")).flatMap(convString => {
@@ -209,10 +212,9 @@ class Metl extends Logger {
     output
   }
   def specificConversationSearch(in:NodeSeq):NodeSeq = {
-    val name = Globals.currentUser.is
+    val name = generateName()
     val clazz = "lift:comet?type=MeTLJsonConversationChooserActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
-    //warn("generating conversationSearch html: %s".format(output))
     output
   }
   def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
@@ -286,7 +288,7 @@ class Metl extends Logger {
       ".pagesContainer *" #> Text("conversation and/or pageRange not specified")
     })
   }
-  val serializer = new JsonSerializer("frontend")
+  val serializer = new JsonSerializer(ServerConfiguration.default)
   def clientSidePrintConversation = {
     (for (
       jid <- S.param("conversationJid");

@@ -165,7 +165,7 @@ var Conversations = (function(){
         updateQueryParams();
     }
     var refreshSlideDisplay = function(){
-        updateStatus("Refreshing slide display");
+        updateStatus("Refreshing page display");
         var slideContainer = $("#slideContainer")
         slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
         var slideControls = $("#slideControls");
@@ -251,6 +251,7 @@ var Conversations = (function(){
     };
     var actOnConversationDetails = function(details){
         try{
+					console.log("received conversation:",details);
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
@@ -375,10 +376,12 @@ var Conversations = (function(){
         }
     };
     var actOnCurrentConversationJidReceived = function(jid){
+				console.log("currentConversationJid received:",jid);
         targetConversationJid = jid;
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
+				console.log("currentSlideJid received:",jid);
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
@@ -421,7 +424,7 @@ var Conversations = (function(){
             }));
             $("#slideDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&slideId=%s&unique=true",targetConversationJid,currentSlide),
-                text:"DeepLink this slide"
+                text:"DeepLink this page"
             }));
             $("#conversationDeepLink").html($("<a/>",{
                 href:sprintf("/board?conversationJid=%s&unique=true",targetConversationJid),
@@ -513,7 +516,7 @@ var Conversations = (function(){
             return false;
         }
         if ("author" in conversation && conversation.author.toLowerCase() == UserSettings.getUsername().toLowerCase() || ("UserSettings" in window && _.some(UserSettings.getUserGroups(),function(g){
-            var key = g.key ? g.key : g.type;
+            var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
             return (key == "special" && name == "superuser");
         }))){
@@ -602,16 +605,17 @@ var Conversations = (function(){
     };
     var always = function(){return true;}
     var constructPrevSlideButton = function(container){
-        constructSlideButton("prevSlideButton","Prev Slide","fa-angle-left",always,container);
+        constructSlideButton("prevSlideButton","Prev Page","fa-angle-left",always,container);
     }
     var constructAddSlideButton = function(container){
-        constructSlideButton("addSlideButton","Add Slide","fa-plus",shouldModifyConversationFunction,container);
+        constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
     }
     var constructNextSlideButton = function(container){
-        constructSlideButton("nextSlideButton","Next Slide","fa-angle-right",always,container);
+        constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
+			console.log("updating queryparams:",currentConversation,currentSlide,window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
@@ -654,8 +658,8 @@ var Conversations = (function(){
         $("<img/>",{
             id: sprintf("slideButton_%s",slide.id),
             class:"thumbnail",
-            alt:sprintf("Slide %s",slideIndex),
-            title:sprintf("Slide %s (%s)",slideIndex,slide.id)
+            alt:sprintf("Page %s",slideIndex),
+            title:sprintf("Page %s (%s)",slideIndex,slide.id)
         }).on("click",function(e){
             disableSyncMoveFunction();
             doMoveToSlide(slide.id.toString());

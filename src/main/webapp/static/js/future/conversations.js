@@ -8,7 +8,7 @@ var Conversations = (function(){
     var isSyncedToTeacher = false;
 
     var refreshSlideDisplay = function(){
-        updateStatus("Refreshing slide display");
+        updateStatus("Refreshing page display");
         $("#slideContainer").html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide))).append(constructAddSlideButton());
     }
     var changeConvToLectureFunction = function(jid){
@@ -156,7 +156,7 @@ var Conversations = (function(){
         if (shouldModifyConversationFunction()){
             return $("<input/>",{
                 id: "addSlideButton",
-                value: "add slide",
+                value: "add page",
                 name: "addSlideButton",
                 type: "button"
             }).on("click",function(){
@@ -185,8 +185,8 @@ var Conversations = (function(){
             id: sprintf("slideButton_%s",slide.id),
             src:sprintf("/thumbnail/madam/%s",slide.id),
             class:"thumbnail",
-            alt:sprintf("Slide %s",slideIndex),
-            title:sprintf("Slide %s (%s)",slideIndex,slide.id),
+            alt:sprintf("Page %s",slideIndex),
+            title:sprintf("Page %s (%s)",slideIndex,slide.id),
             width:px(getUserPref("thumbnailSize")),
             height:px(0.75 * getUserPref("thumbnailSize"))
         }).on("click",function(){

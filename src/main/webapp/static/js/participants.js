@@ -12,7 +12,9 @@ var Participants = (function(){
         following:true
     };
     var reRenderParticipants = function(){
+			WorkQueue.enqueue(function(){
         updateParticipantsListing();
+			});
     };
     var onHistoryReceived = function(history){
         var newParticipants = {};
@@ -127,7 +129,6 @@ var Participants = (function(){
                 return d.key;
             })
             .style("font-size",function(d){
-		console.log(d,fontSizes(d.value));
                 return fontSizes(d.value)+"px";
             })
             .merge(words)

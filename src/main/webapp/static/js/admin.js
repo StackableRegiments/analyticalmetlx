@@ -120,7 +120,7 @@ var Admin = (function(){
 			var timesOnSlideContainer = graphContainer();
                         var updateTimesOnSlide = function(target){
                             MG.data_graphic({
-                                title: "Activity by slide",
+                                title: "Activity by page",
                                 data: timesOnSlide,
                                 width: 400,
                                 height: 200,
