@@ -15,7 +15,7 @@ A teacher can create polls, view responses and display the poll results in the c
 
 The conversation owner can attach files to the conversation that users can download to their own devices.
 
-> Tip
+> **Tip**
 > 
 > This can be used to pass content to students such that they can add it to the Whiteboard as themselves, 
 which gives the user control over the content location (and whether it is private or public).
@@ -38,12 +38,13 @@ The participants view of a page shows the conversation owner how active each use
 The content filter allows the conversation owner to hide their own private or public content or that of other users. 
 This action only hides content on the user screen, it does not delete it. 
 
-> Tip
+> **Tip**
 >
 > Using the content filter while projecting MeTL to the class can temporarily hide student content to focus on instructor content (or vice versa).
 
 ## Banned Content
 
-This is a record of any inappropriate content created by users. 
-The conversation owner can select individuals to `Unban` or `Unban All` banned students.
+Banned users can no longer create public content (or publish existing private content).
+The conversation owner can select users to `Unban`, or `Unban All` banned users.
 
+The banned content is also visible on this page. 

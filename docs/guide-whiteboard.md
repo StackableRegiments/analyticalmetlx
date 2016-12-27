@@ -44,7 +44,7 @@ Displays the current user, name of the conversation and `current page number / t
 Canvas content includes:
  
 - Ink: freehand pen strokes (using finger, stylus or mouse as supported by the device)
-- Text: rich text including colour, size and style (eg bold, underline, italic)  
+- Text: rich text including colour, size and style (e.g. bold, underline, italic)  
 - Image / Video: from camera or via upload (as supported by the device and browser)
 
 [More...]({{site.baseurl}}/guide-controls.html)

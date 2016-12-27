@@ -14,7 +14,7 @@ Most applications place a variety of content on the clipboard when something is 
 a file path, an HTML fragment, a reference to an image file, and other data or metadata.
  
 The operating system may restrict some of this content to avoid exposing restricted information 
-(eg system folder structure) in order to enforce security (ie sandboxing).
+(e.g. system folder structure) in order to enforce security (i.e. sandboxing).
   
 The web browser may choose to make only some of the remaining content available to web applications (such as MeTL).
 
