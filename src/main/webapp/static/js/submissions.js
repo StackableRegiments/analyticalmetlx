@@ -32,6 +32,7 @@ var Submissions = (function(){
         });
         jsGrid.fields.dateField = DateField;
 
+	var cellStyle = "max-height:100px;max-width:100%;cursor:zoom-in";
         var gridFields = [
             {
                 name:"url",
@@ -41,7 +42,7 @@ var Submissions = (function(){
                 sorting:false,
                 itemTemplate:function(thumbnailUrl,submission){
                     var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-                    var img = $("<img/>",{src:url,class:"submissionThumbnail",style:"width:100%;height:160px;cursor:zoom-in"}).on("click",function(){
+                    var img = $("<img/>",{src:url,class:"submissionThumbnail",style:cellStyle}).on("click",function(){
                         var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
                         var title = sprintf("Submission from %s at %s on page %s",submission.author,new Date(submission.timestamp),submission.slide);
                         $.jAlert({

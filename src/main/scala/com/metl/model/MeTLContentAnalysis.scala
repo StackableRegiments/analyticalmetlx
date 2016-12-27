@@ -32,6 +32,8 @@ trait Chunker{
 }
 class ChunkAnalyzer extends Logger with Chunker{
   var partialChunks = Map.empty[String,List[MeTLInk]]
+  val URL = """(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""".r
+  def urls(s:String) = URL.findAllIn(s)
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
   def emit(t:Theme,room:MeTLRoom) = {
     debug("Emitting: %s".format(t))

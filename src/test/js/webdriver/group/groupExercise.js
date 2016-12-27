@@ -148,7 +148,7 @@ describe('When the class breaks into groups,', function() {
         browser.pause(TEXT_DELAY);
         var groupSet = tT.currentSlide.groupSets[0];
         console.log(groupSet.groups);
-        assert.equal(groupSet.groups.length,2);
+        assert.equal(groupSet.groups.length,3);
         var groupsByUser = _.reduce(groupSet.groups,function(acc,item){
             _.each(item.members,function(member){
                 if(!(member in acc)){
@@ -254,7 +254,7 @@ describe('When the class breaks into groups,', function() {
             return sC.currentSlide.index == 1;
         });
         var groups = sC.currentSlide.groupSets[0].groups;
-        assert.equal(groups.length,2);
+        assert.equal(groups.length,3);
         sC.menuButton.click();
         studentC.waitUntil(function(){return studentC.isVisible("#roomToolbar");});
         sC.learning.click();
@@ -375,9 +375,9 @@ describe('When the class breaks into groups,', function() {
         tT.addImage("testMaterials/stormtrooper.jpg");
         var peer = sA;
         var nonPeer = sC;
-        assert.equal(_.keys(sB.inkStanzas).length,4);
+        assert.equal(_.keys(sB.inkStanzas).length,3);
         assert.equal(_.keys(sA.inkStanzas).length,2);
-        assert.equal(_.keys(sB.textStanzas).length,4);
+        assert.equal(_.keys(sB.textStanzas).length,3);
         assert.equal(_.keys(sA.textStanzas).length,2);
         assert.equal(_.keys(sB.imageStanzas).length,4);
         assert.equal(_.keys(sA.imageStanzas).length,2);
@@ -472,12 +472,12 @@ describe('When the class breaks into groups,', function() {
         console.log("SB",sB.plainTexts);
         console.log("SC",sC.plainTexts);
         console.log("SA",sA.plainTexts);
-        assert.equal(_.keys(sB.inkStanzas).length,6);
-        assert.equal(_.keys(sB.textStanzas).length,6);
+        assert.equal(_.keys(sB.inkStanzas).length,5);
+        assert.equal(_.keys(sB.textStanzas).length,5);
         assert.equal(_.keys(sB.imageStanzas).length,6);
 
-        assert.equal(_.keys(sC.inkStanzas).length,6);
-        assert.equal(_.keys(sC.textStanzas).length,6);
+        assert.equal(_.keys(sC.inkStanzas).length,5);
+        assert.equal(_.keys(sC.textStanzas).length,5);
         assert.equal(_.keys(sC.imageStanzas).length,6);
 
         assert.equal(_.keys(sA.inkStanzas).length,2);

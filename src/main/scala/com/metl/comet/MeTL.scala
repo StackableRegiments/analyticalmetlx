@@ -1621,7 +1621,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           })
         }
       }
-
       case qr:MeTLQuizResponse => {
         if (qr.author == username) {
           currentConversation.map(cc => {

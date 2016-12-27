@@ -33,6 +33,7 @@ var RecycleBin = (function(){
         });
         jsGrid.fields.dateField = DateField;
 
+	var cellStyle = "max-height:50px;max-width:100%;cursor:zoom-in";
         var gridFields = [
             {
                 name:"url",
@@ -47,7 +48,7 @@ var RecycleBin = (function(){
                         if (stanza.type == "ink"){
                             if ("canvas" in stanza){
                                 var imgSrc = stanza.canvas.toDataURL("image/png");
-                                var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+                                var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:cellStyle},function(){
                                     $.jAlert({
                                         title:popupTitle,
                                         closeOnClick:true,
@@ -61,7 +62,7 @@ var RecycleBin = (function(){
                             }
                         } else if (stanza.type == "image"){
                             var imgSrc = calculateImageSource(stanza);
-                            var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+                            var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:cellStyle}).on("click",function(){
                                 $.jAlert({
                                     title:popupTitle,
                                     closeOnClick:true,
