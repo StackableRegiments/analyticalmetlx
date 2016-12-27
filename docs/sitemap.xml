@@ -34,13 +34,16 @@
     <loc>http://stackableregiments.github.io/analyticalmetlx/guide-controls.html</loc>
   </url>
   <url>
-    <loc>http://stackableregiments.github.io/analyticalmetlx/guide-conversations.html</loc>
+    <loc>http://stackableregiments.github.io/analyticalmetlx/guide-conversation.html</loc>
   </url>
   <url>
-    <loc>http://stackableregiments.github.io/analyticalmetlx/guide-copypaste.html</loc>
+    <loc>http://stackableregiments.github.io/analyticalmetlx/guide-conversation-search.html</loc>
   </url>
   <url>
     <loc>http://stackableregiments.github.io/analyticalmetlx/guide-edit-conversation.html</loc>
+  </url>
+  <url>
+    <loc>http://stackableregiments.github.io/analyticalmetlx/guide-copypaste.html</loc>
   </url>
   <url>
     <loc>http://stackableregiments.github.io/analyticalmetlx/guide-integrations.html</loc>

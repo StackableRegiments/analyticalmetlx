@@ -5,11 +5,15 @@ title: Whiteboard
 
 ![Whiteboard](images/guide-canvas.png)
 
+The Whiteboard is a collection of pages where teachers and students share content. 
+
 ## Canvas
  
-The canvas is where instructors and students insert and share content in the form of ink 
-(freehand pen strokes with finger or stylus if the device has a touch screen, and/or with a mouse), 
-text and images (available on devices with and without touch screens).
+Canvas content includes:
+ 
+- Ink: freehand pen strokes (using finger, stylus or mouse as supported by the device)
+- Text: rich text including colour, size and style (eg bold, underline, italic)  
+- Image / Video: from camera or via upload (as supported by the device and browser) 
 
 ## Banner
 

@@ -904,19 +904,23 @@ function drawInk(ink,incCanvasContext){
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
+    var cWidth = c.width;
+    var cHeight = c.height;
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
         var img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
         try{
             var inset = ink.thickness / 2;
-	    var sX = inset;
-	    var sY = inset;
-	    var sW = c.width - sX;
-	    var sH = c.height - sY;
+	    var sW = img.width;
+	    var sH = img.height;
+	    var xFactor = img.width / cWidth;
+	    var yFactor = img.height / cHeight;
+	    var iX = inset * xFactor;
+	    var iY = inset * yFactor;
             canvasContext.drawImage(img,
-                                    sX, sY,
+                                    0, 0,
                                     sW, sH,
-                                    sBounds.screenPos.x,sBounds.screenPos.y,
-                                    sBounds.screenWidth,sBounds.screenHeight);
+                                    sBounds.screenPos.x - iX,sBounds.screenPos.y - iY,
+                                    sBounds.screenWidth + 2 * iX,sBounds.screenHeight + 2 * iY);
         }
         catch(e){
             console.log("Exception in drawInk",e);
