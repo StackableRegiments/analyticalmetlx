@@ -403,7 +403,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       } yield {
         gbp.getGradeValuesForGrade(orgUnit,gradeId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
-          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+          case Right(gcs) => JsonResponse(JArray(gcs.map{
+            case ngv:MeTLNumericGradeValue => jsonSerializer.fromNumericGradeValue(ngv)
+            case bgv:MeTLBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(bgv)
+            case tgv:MeTLTextGradeValue => jsonSerializer.fromTextGradeValue(tgv)
+          }),200)
         }
       }
   }
@@ -422,7 +426,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
         }
         gbp.updateGradeValuesForGrade(orgUnit,gradeId,grades) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
-          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)),200)
+          case Right(gcs) => JsonResponse(JArray(gcs.map{
+            case ngv:MeTLNumericGradeValue => jsonSerializer.fromNumericGradeValue(ngv)
+            case bgv:MeTLBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(bgv)
+            case tgv:MeTLTextGradeValue => jsonSerializer.fromTextGradeValue(tgv)
+          }),200)
         }
       }
     }

@@ -273,7 +273,7 @@ var Grades = (function(){
 												chosenGradebook = $(this).val();
 											});
 											aNodes.find(".commitGradebook").unbind("click").on("click",function(){
-                                            spin(this,true);
+												spin(this,true);
 												reRenderAssociations();
 											});
 											aNodes.find(".requestAssocPhase2").show();
@@ -281,10 +281,10 @@ var Grades = (function(){
                                         spin(aNodes,true);
 											$.getJSON(sprintf("/getExternalGradebookOrgUnits/%s",chosenGradebook),function(data){
 												console.log("requestedOrgUnits:",data);
-												if (data.length){
-													chosenOrgUnit = data[0].foreignRelationship["_2"];
+												if (data && data.length){
+													chosenOrgUnit = data[0].foreignRelationship["key"];
 													aNodes.find(".chooseOrgUnit").html(_.map(data,function(ou){
-                                                var ouId = ou.foreignRelationship.key;
+														var ouId = ou.foreignRelationship.key;
 														return $("<option/>",{
 															value:ouId,
 															text:ou.name 		 
@@ -296,14 +296,15 @@ var Grades = (function(){
 														reRenderAssociations();
 													});
 													aNodes.find(".requestAssocPhase3").show();
+												} else {
+													console.log("found no data:",data);
 												}
 												spin(aNodes,false);
 											}).fail(function(jqxhr,textStatus,error){
-                                            spin(aNodes,false);
+												spin(aNodes,false);
 												alert(sprintf("error: %s \r\n %s",textStatus,error));
 											});
 										} else {
-
 											aNodes.find(".requestAssocPhase4").show();
 											aNodes.find(".createGrade").unbind("click").on("click",function(){
                                             spin(aNodes,true);
@@ -570,8 +571,10 @@ var Grades = (function(){
 										var orgUnit = parts[0];
 										var gradeId = parts[1];
 										innerRoot.find(".getRemoteData").on("click",function(){
-                                        var b = this;
-                                        spin(b,true);
+											var b = this;
+											spin(b,true,function(e){
+												return $(e).find("span");
+											});
 											$.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
 												generateData(function(data){
 													var modifiedData = data;
@@ -584,20 +587,20 @@ var Grades = (function(){
 															datum.remoteComment = thisRemoteGrade.gradeComment;
 															datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
 														}
-						    spin(b,false);
+														spin(b,false);
 													});
 													return withData(modifiedData);
 												});
 											}).fail(function(jqxhr,textStatus,error){
-                                            spin(b,false);
+												spin(b,false);
 												console.log("error",textStatus,error);
 											});
 										});
 										innerRoot.find(".sendGradesToRemote").on("click",function(){
-                                        var b = this;
-                                        spin(b,true,function(e){
-					    return $(e).find("span");
-					});
+											var b = this;
+											spin(b,true,function(e){
+												return $(e).find("span");
+											});
 											var gradesToSend = _.filter(gradeValues[grade.id],function(g){
 												return g.gradeValue != undefined;
 											});

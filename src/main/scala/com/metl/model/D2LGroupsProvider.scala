@@ -126,8 +126,8 @@ case class D2LGradeValue(
   Value:Option[String], // include this if GradeObjectType = 3
   Text:Option[String], // include this if GradeObjectType = 4
   GradeObjectTypeName: Option[String],
-  Comments: Option[List[D2LDescription]],  // Added with LE v1.13 API - provide when POSTing
-  PrivateComments: Option[List[D2LDescription]],  // Added with LE v1.13 API - provide when POSTing
+  Comments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
+  PrivateComments: Option[D2LDescription],  // Added with LE v1.13 API - provide when POSTing
   //PointsNumerator: Option[Long], //computable only
   PointsDenominator: Option[Long], //computable only
   WeightedDenominator: Option[Long], // computable only
@@ -526,6 +526,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
+      println("found remote grades: %s".format(firstGet))
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
       var continuing = firstResp.Next
@@ -533,7 +534,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
         try {
           continuing.foreach(apiUrl => {
             val u = userContext.createAuthenticatedUri(apiUrl,"GET")
-            val respObj = parse(client.get(u.toString))
+            val respString = client.get(u.toString)
+            println("found remote grades: %s".format(respString))
+            val respObj = parse(respString)
             val resp = respObj.extract[D2LGradeValueResponse]
             items = items ::: resp.Objects
             continuing = resp.Next
@@ -556,6 +559,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
     val gv = Extraction.decompose(gradeValue)
+    println("sending new gradeValue: %s".format(gv))
     putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
   }
 
