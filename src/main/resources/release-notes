@@ -1,3 +1,11 @@
+1.0.7
+Story: METL-335: Chatbox.
+Story: METL-328: Show groupset name and checkbox.
+Story: METL-210: Text to richtext conversion.
+Improvement: METL-334: Loading spinners and disabled buttons (prototype).
+Bugfix: METL-332: Sometimes new conversation is displayed twice.
+Bugfix: METL-320: Health bar not visible on top left of Whiteboard (further tweaks).
+
 1.0.6
 Improvement: METL-331: Slide display virtualisation.
 
