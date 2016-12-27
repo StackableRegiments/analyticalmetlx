@@ -267,7 +267,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = tup._1
       val d2lId = tup._2
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
-      println("incoming grades: %s".format(grades))
+      //println("incoming grades: %s".format(grades))
       if (grades.length > 1){
         val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))) 
         grades.filterNot(gv => originalGrades.exists(og => {

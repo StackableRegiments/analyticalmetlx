@@ -682,6 +682,7 @@ var Grades = (function(){
 							return shouldModifyConversation || grade.visible;
 						}),function(grade){
 							var thisGrade = gradeValues[grade.id];
+							console.log("found my grade:",grade,thisGrade);
 								if (thisGrade !== undefined){
 								var myGradeValue = thisGrade[UserSettings.getUsername()];
 								if (myGradeValue !== undefined){
