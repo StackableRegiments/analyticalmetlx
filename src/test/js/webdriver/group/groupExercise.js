@@ -372,7 +372,7 @@ describe('When the class breaks into groups,', function() {
             return {x:50,y:i};
         }));
         tT.addImage("testMaterials/stormtrooper.jpg");
-        browser.pause(TEXT_DELAY);//Let everything synchronize
+        browser.pause(TEXT_DELAY * 2);//Let everything synchronize
         var peer = sA;
         var nonPeer = sC;
         assert.equal(_.keys(sB.inkStanzas).length,4);

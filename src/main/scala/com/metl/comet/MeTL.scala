@@ -1430,17 +1430,19 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       History.empty
     }).openOr(History.empty)
     trace("priv %s".format(jid))
-    val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+    val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+    println("conv found %s".format(convHistory.getGradeValues))
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
-      case g:MeTLGrade => true//if !shouldModifyConversation() && !g.visible => false
+      case g:MeTLGrade => true
       case gv:MeTLGradeValue if shouldModifyConversation() => true
-      case gv:MeTLGradeValue if gv.getGradedUser != username => false
-      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == false) => false
+      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
+      case gv:MeTLGradeValue => false
       case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation()) => false
       case s:MeTLSubmission if (s.author != username && !shouldModifyConversation()) => false
       case _ => true
     }
     debug("final %s".format(jid))
+    println("final found %s".format(finalHistory.getGradeValues))
     serializer.fromHistory(finalHistory)
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)

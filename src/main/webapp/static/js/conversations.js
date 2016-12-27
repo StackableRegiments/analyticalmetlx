@@ -95,12 +95,12 @@ var Conversations = (function(){
                                                                  [groupActivity.anyPublic.line,
                                                                   groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
-								if ("anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
-									groupTraces.anyPublic.update([
-											groupActivity.anyPublic.line,
-											groupActivity.anyPrivate.line
-									]);
-								}
+                if (groupTraces && "anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
+                    groupTraces.anyPublic.update([
+                        groupActivity.anyPublic.line,
+                        groupActivity.anyPrivate.line
+                    ]);
+                }
             });
         }
         var groupTraceIsAccurate = function(group){
@@ -1016,7 +1016,7 @@ var Conversations = (function(){
         goToPrevSlide : goToPrevSlideFunction,
         updateThumbnail :updateThumbnailFor,
         getIsBanned : getIsBannedFunction,
-	refreshSlideDisplay : refreshSlideDisplay
+        refreshSlideDisplay : refreshSlideDisplay
     };
 })();
 

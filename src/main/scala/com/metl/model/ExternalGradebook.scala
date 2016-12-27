@@ -18,8 +18,8 @@ object ExternalGradebooks {
         appKey <- (n \ "@appKey").headOption.map(_.text)
         userId <- (n \ "@userId").headOption.map(_.text)
         userKey <- (n \ "@userKey").headOption.map(_.text)
-        leApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
-        lpApiVersion <- (n \ "@leApiVersion").headOption.map(_.text)
+        leApiVersion <- (n \ "@leApiVersion").headOption.map(_.text)
+        lpApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
         acceptableRoleList = (n \ "acceptableRole").toList.map(_.text)
       } yield {
         new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
@@ -125,8 +125,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     val valueScore = None
     val textScore = in.getTextGrade
     D2LIncomingGradeValue(
-      Comments = D2LDescriptionInput(Content = Some(in.getComment.getOrElse("")),Type=Some("text")),
-      PrivateComments = D2LDescriptionInput(Content = Some(in.getPrivateComment.getOrElse("")),Type=Some("text")),
+      Comments = D2LDescriptionInput(Content = Some(in.getComment.getOrElse("")),Type=Some("Text")),
+      PrivateComments = D2LDescriptionInput(Content = Some(in.getPrivateComment.getOrElse("")),Type=Some("Text")),
       GradeObjectType = gradeObjectType,
       PointsNumerator = numericScore,
       Pass = passScore,
@@ -139,8 +139,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     val author = "D2L"
     val gradeId = gradeObjId
     val gradedUser = in.UserId.map(d2lId => lookupUsernameFunc((uc,d2lId))).getOrElse("")
-    val comments = in.Comments.map(_.map(_.Text).mkString)
-    val privateComments = in.PrivateComments.map(_.map(_.Text).mkString)
+    val comments = in.Comments.map(c => (c.Text.toList ::: c.Html.toList).filterNot(_ == "").mkString(", "))
+    val privateComments = in.PrivateComments.map(c => (c.Text.toList ::: c.Html.toList).filterNot(_ == "").mkString(", "))
     in.GradeObjectType match {
       case 1 => {
         val gradeValue = in.PointsNumerator.getOrElse(0.0)
@@ -267,6 +267,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = tup._1
       val d2lId = tup._2
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
+      //println("incoming grades: %s".format(grades))
       if (grades.length > 1){
         val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))) 
         grades.filterNot(gv => originalGrades.exists(og => {
