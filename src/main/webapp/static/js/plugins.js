@@ -1,6 +1,7 @@
 var Plugins = (function(){
     return {
         "Chat":(function(){
+						var chatMessages = {};
             var outer = {};
             var cmHost = {};
             var cmTemplate = {};
@@ -46,7 +47,11 @@ var Plugins = (function(){
                 return rootElem;
             };
             var actOnStanzaReceived = function(stanza){
-                if (stanza && "type" in stanza && stanza.type == "chatMessage"){
+                if (stanza && "type" in stanza && stanza.type == "chatMessage" && "identity" in stanza){
+									if (stanza.identity in chatMessages){
+										//ignore this one, I've already got it.
+									} else {
+										chatMessages[stanza.identity] = stanza;
                     var username = UserSettings.getUsername();
                     var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
                         return _.map(slide.groupSets,function(groupSet){
@@ -79,6 +84,7 @@ var Plugins = (function(){
                             }
                         }
                     }
+									}
                 }
             };
             var actOnHistoryReceived = function(history){
