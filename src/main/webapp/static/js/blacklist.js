@@ -79,8 +79,8 @@ var Blacklist = (function(){
             {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
-		return _.map(o.blacklist,"username").join(",");
-	    }}
+                return _.map(o.blacklist,"username").join(",");
+            }}
         ];
         blacklistDatagrid.jsGrid({
             width:"100%",
@@ -92,10 +92,10 @@ var Blacklist = (function(){
             noDataContent: "No ban records",
             controller: {
                 loadData: function(filter){
-		    var richLists = _.map(blacklists,function(bl){
-			bl.userCount = bl.blacklist.length;
-			return bl;
-		    });
+                    var richLists = _.map(blacklists,function(bl){
+                        bl.userCount = bl.blacklist.length;
+                        return bl;
+                    });
                     if ("sortField" in filter){
                         var sorted = _.sortBy(richLists,function(sub){
                             return sub[filter.sortField];
@@ -127,50 +127,50 @@ var Blacklist = (function(){
     var updateAuthorList = function(conversation){
         if ("blacklist" in conversation && "jid" in conversation && Conversations.getCurrentConversationJid() == conversation.jid){
             blacklistAuthors = conversation.blacklist;
-						renderBlacklistAuthorsInPlace();
-						refreshToolState(conversation);
+            renderBlacklistAuthorsInPlace();
+            refreshToolState(conversation);
         }
     };
     var renderBlacklistAuthorsInPlace = function(){
-			WorkQueue.enqueue(function(){
-        blacklistAuthorsContainer.empty();
-        var unbanAllButton = $("#unbanAll");
-        if (blacklistAuthors.length > 0){
-            unbanAllButton.show();
-            unbanAllButton.unbind("click");
-            unbanAllButton.on("click",function(){
-                console.log("unbanall click");
-                changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
+        WorkQueue.enqueue(function(){
+            blacklistAuthorsContainer.empty();
+            var unbanAllButton = $("#unbanAll");
+            if (blacklistAuthors.length > 0){
+                unbanAllButton.show();
+                unbanAllButton.unbind("click");
+                unbanAllButton.on("click",function(){
+                    console.log("unbanall click");
+                    changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
+                });
+            } else {
+                unbanAllButton.unbind("click");
+                unbanAllButton.hide();
+            }
+            blacklistAuthors.map(function(author){
+                var rootElem = blacklistAuthorTemplate.clone();
+                rootElem.find(".blacklistAuthorName").text(author);
+                rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
+                    console.log(sprintf("unban %s click",author));
+                    blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
+                    changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
+                });
+                blacklistAuthorsContainer.append(rootElem);
             });
-        } else {
-            unbanAllButton.unbind("click");
-            unbanAllButton.hide();
-        }
-        blacklistAuthors.map(function(author){
-            var rootElem = blacklistAuthorTemplate.clone();
-            rootElem.find(".blacklistAuthorName").text(author);
-            rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
-                console.log(sprintf("unban %s click",author));
-                blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
-                changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
-            });
-            blacklistAuthorsContainer.append(rootElem);
         });
-			});
     };
     var refreshToolState = function(conversation){
-			WorkQueue.enqueue(function(){
-        if (Conversations.shouldModifyConversation(conversation)){
-            $("#ban").show();
-            $("#administerContent").show();
-            $("#menuBlacklist").show();
-        } else {
-            $("#ban").hide();
-            $("#administerContent").hide();
-            $("#menuBlacklist").hide();
-            $("#blacklistPopup").hide();
-        }
-			});
+        WorkQueue.enqueue(function(){
+            if (Conversations.shouldModifyConversation(conversation)){
+                $("#ban").show();
+                $("#administerContent").show();
+                $("#menuBlacklist").show();
+            } else {
+                $("#ban").hide();
+                $("#administerContent").hide();
+                $("#menuBlacklist").hide();
+                $("#blacklistPopup").hide();
+            }
+        });
     };
     var clearState = function(conversation){
         refreshToolState(conversation);
@@ -178,13 +178,13 @@ var Blacklist = (function(){
         currentBlacklist = {};
     };
     var renderBlacklistsInPlace = function(){
-			WorkQueue.enqueue(function(){
-        blacklistDatagrid.jsGrid("loadData");
-        var sortObj = blacklistDatagrid.jsGrid("getSorting");
-        if ("field" in sortObj){
-            blacklistDatagrid.jsGrid("sort",sortObj);
-        }
-			});
+        WorkQueue.enqueue(function(){
+            blacklistDatagrid.jsGrid("loadData");
+            var sortObj = blacklistDatagrid.jsGrid("getSorting");
+            if ("field" in sortObj){
+                blacklistDatagrid.jsGrid("sort",sortObj);
+            }
+        });
     }
     var historyReceivedFunction = function(history){
         try {
@@ -266,17 +266,6 @@ var Blacklist = (function(){
             inkShadow.identity = tempIdentity;
             prerenderInk(inkShadow);
             drawInk(inkShadow,tempCtx);
-            //                          drawInk(ink,tempCtx);
-
-            /*
-             var sBounds = screenBounds(ink.bounds);
-             if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-             tempCtx.strokeStyle = _.find(colouredAuthors,{username:ink.author}).highlight;
-             var s = sBounds.screenPos;
-             tempCtx.rect(s.x,s.y,sBounds.screenWidth,sBounds.screenHeight);
-             tempCtx.stroke();
-             }
-             */
         });
         _.forEach(images,function(image){
             var sBounds = screenBounds(image.bounds);

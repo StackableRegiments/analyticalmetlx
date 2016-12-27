@@ -96,7 +96,7 @@ var RecycleBin = (function(){
                     } else return defaultElem;
                 }
             },
-            {name:"slide",type:"number",title:"Page",readOnly:true},
+            //{name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"author",type:"text",title:"Who",readOnly:true},
             {name:"privacy",type:"text",title:"Privacy",readOnly:true},

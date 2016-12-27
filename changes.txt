@@ -1,3 +1,16 @@
+1.0.5
+
+New config elements <groupsProvider><smartGroups/></groupsProvider>.
+
+1.0.3
+
+METL-321:
+Update config "metlingPotAdaptors", in "exclusions", to contain ApiGatewayMetlingPotAdaptor.
+
+1.0.2
+
+New config elements (holding credentials).
+
 0.11.1
 
 METL-229:

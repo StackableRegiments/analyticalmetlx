@@ -136,6 +136,40 @@
             </span>
           </div>
         </section>
+        <section id="groupsPopup" class="backstage box-model-block">
+          <h2>Group editor</h2>
+          <div class="flex-container-responsive ml">
+            <div style="flex-grow:1;margin-left:1em;margin-top:-1em;">
+              <h3>Groups on this page</h3>
+              <div>You may move students by dragging them between groups</div>
+              <div>Please be aware of the impact on students if an already formed group is modified</div>
+              <div class="groups"></div>
+            </div>
+          </div>
+          <div id="groupSlideDialog" style="display:none">
+            <div class="flex-container-responsive ml groupSlideDialog">
+              <div>
+                <h3>Fill groups until</h3>
+                <div class="flex-container-responsive">
+                  <select class="strategySelect"></select>
+                  <select class="parameterSelect"></select>
+                </div>
+                <div class="importContainer">
+                  <h3>Copying from
+                    <select class="ouSelector"></select>
+                  </h3>
+                  <div class="importGroups"></div>
+                </div>
+              </div>
+              <div style="width:100%">
+                <div class="mlr">
+                  <select class="presentStudentsOnly" style="width:100%"></select>
+                </div>
+                <div class="groups"></div>
+              </div>
+            </div>
+          </div>
+        </section>
 				<section id="gradesPopup" class="backstage box-model-block">
 					<h2 class="align-left mrh nmt">Grades</h2>
 					<div id="createGradeButtonContainer" class="align-left">
@@ -208,7 +242,7 @@
 									<input type="checkbox" class="gradeVisibleCheckbox"></input>
 									<label class="gradeVisibleLabel">Visible to students</label>
 								</div>
-								<div class="associateController">
+                <div class="associateController" style="position:relative">
 									<span class="refreshAssociation">
 										<span class="associationSystem"></span> :
 										<span class="associationOrgUnit"></span> :
@@ -360,15 +394,15 @@
                 <span class="quizResultsGraph"></span>
                 <h3 class="quizQuestion"></h3>
                 <img class="quizImagePreview"></img>
-                <div class="quizOptionContainer flex-container-column">
+                <div class="quizOptionContainer" style="display:table;">
                   <!-- many ".quizOption"s are cloned from JS -->
-                  <div class="quizOption flex-container-row space-between">
-                    <span class="quizOptionName mrh"></span>
-                    <span class="quizOptionText"></span>
-                    <span class="quizOptionCountContainer">
+                  <div class="quizOption" style="display:table-row;">
+                    <span class="quizOptionName" style="display:table-cell;"></span>
+                    <span class="quizOptionText" style="display:table-cell;padding-left:1em;"></span>
+                    <span class="quizOptionCountContainer" style="display:table-cell;padding-left:1em;">
                       <span class="quizOptionAnswerCount"></span>
                     </span>
-                    <meter class="quizOptionMeter"></meter>
+                    <meter class="quizOptionMeter" style="display:table-cell;padding-left:1em;"></meter>
                   </div>
                 </div>
               </div>

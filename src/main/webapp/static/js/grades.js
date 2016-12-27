@@ -8,7 +8,23 @@ var Grades = (function(){
 	var gradeAssessTemplate = {};
 	var gradebooks = [];
 	var reRenderFunc = function(){};
-
+    var spin = function(el,on,target){
+        if(on){
+	    $(el).prop("disabled",true).css({position:"relative"});
+	    if(target){
+		el = target(el);
+	    }
+            el.append(
+                $("<div />",{
+                    class:"spinner"
+                }).append($("<div />",{
+                    class:"fa fa-spin fa-cog"
+                })));
+        }
+        else{
+            $(el).prop("disabled",false).find(".spinner").remove();
+        }
+    }
 	var clearState = function(){
 		grades = {};
 		gradeValues = {};
@@ -41,39 +57,15 @@ var Grades = (function(){
 						}
 					break;
 					case "numericGradeValue":
-						var gradeColl = gradeValues[stanza.gradeId];
-						if (gradeColl == undefined){
-							gradeColl = {};
-							gradeValues[stanza.gradeId] = gradeColl;
-						}
-						var oldGrade = gradeColl[stanza.gradedUser];
-						if (oldGrade == undefined || oldGrade.timestamp < stanza.timestamp){
-							gradeColl[stanza.gradedUser] = stanza;
-						}
-					break;
 					case "booleanGradeValue":
-						var gradeColl = gradeValues[stanza.gradeId];
-						if (gradeColl == undefined){
-							gradeColl = {};
-							gradeValues[stanza.gradeId] = gradeColl;
-						}
-						var oldGrade = gradeColl[stanza.gradedUser];
-						if (oldGrade == undefined || oldGrade.timestamp < stanza.timestamp){
-							gradeColl[stanza.gradedUser] = stanza;
-						}
-					break;
 					case "textGradeValue":
-						var gradeColl = gradeValues[stanza.gradeId];
-						if (gradeColl == undefined){
-							gradeColl = {};
+                    var gradeColl = gradeValues[stanza.gradeId] || {};
 							gradeValues[stanza.gradeId] = gradeColl;
-						}
-						var oldGrade = gradeColl[stanza.gradedUser];
-						if (oldGrade == undefined || oldGrade.timestamp < stanza.timestamp){
+                    var oldGradeValue = gradeColl[stanza.gradedUser];
+                    if (!oldGradeValue || oldGradeValue.timestamp < stanza.timestamp){
 							gradeColl[stanza.gradedUser] = stanza;
+                        Progress.call("gradeValueReceived",[stanza]);
 						}
-					break;
-					default:
 					break;
 				}
 				if (!skipRender){
@@ -229,6 +221,7 @@ var Grades = (function(){
 								var associatedGrade = undefined;
 								var reRenderAssociations = function(){
 									var aNodes = innerRoot.find(".associateController");
+				spin(aNodes,false);
 									if ("foreignRelationship" in newGrade){
 										aNodes.find(".createAssociation").hide();
 										var system = newGrade.foreignRelationship.sys;
@@ -239,6 +232,7 @@ var Grades = (function(){
 										aNodes.find(".associationOrgUnit").text(orgUnit);
 										aNodes.find(".associationGradeId").text(gradeId);
 										aNodes.find(".requestRefreshAssociation").unbind("click").on("click",function(){
+                                        spin(aNodes,true);
 											$.getJSON(sprintf("/getExternalGrade/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrade){
 												newGrade.description = remoteGrade.description;
 												newGrade.name = remoteGrade.name;
@@ -247,7 +241,9 @@ var Grades = (function(){
 												newGrade.numericMaximum = remoteGrade.numericMaximum;
 												jAlert.closeAlert();
 												renderEditGradeAlert();
+                                            spin(this,false);
 											}).fail(function(jqxhr,textStatus,error){
+                                            spin(aNodes,false);
 												alert(sprintf("error: %s \r\n %s",textStatus,error));
 											});
 										});
@@ -277,16 +273,18 @@ var Grades = (function(){
 												chosenGradebook = $(this).val();
 											});
 											aNodes.find(".commitGradebook").unbind("click").on("click",function(){
+                                            spin(this,true);
 												reRenderAssociations();
 											});
 											aNodes.find(".requestAssocPhase2").show();
 										} else if (chosenOrgUnit === undefined){
+                                        spin(aNodes,true);
 											$.getJSON(sprintf("/getExternalGradebookOrgUnits/%s",chosenGradebook),function(data){
 												console.log("requestedOrgUnits:",data);
 												if (data.length){
 													chosenOrgUnit = data[0].foreignRelationship["_2"];
 													aNodes.find(".chooseOrgUnit").html(_.map(data,function(ou){
-														var ouId = ou.foreignRelationship["_2"];
+                                                var ouId = ou.foreignRelationship.key;
 														return $("<option/>",{
 															value:ouId,
 															text:ou.name 		 
@@ -299,13 +297,16 @@ var Grades = (function(){
 													});
 													aNodes.find(".requestAssocPhase3").show();
 												}
+												spin(aNodes,false);
 											}).fail(function(jqxhr,textStatus,error){
+                                            spin(aNodes,false);
 												alert(sprintf("error: %s \r\n %s",textStatus,error));
 											});
 										} else {
 
 											aNodes.find(".requestAssocPhase4").show();
 											aNodes.find(".createGrade").unbind("click").on("click",function(){
+                                            spin(aNodes,true);
 												$.ajax({
 													type:"POST",
 													url:sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),
@@ -318,10 +319,12 @@ var Grades = (function(){
 														}
 														sendStanza(newGrade);
 														reRenderAssociations();
+                                                    spin(this,false);
 													},
 													contentType:"application/json",
 													dataType:'json'
 												}).fail(function(jqxhr,textStatus,error){
+                                                spin(aNodes,false);
 													alert(sprintf("error: %s \r\n %s",textStatus,error));
 												});
 											});
@@ -354,6 +357,8 @@ var Grades = (function(){
 								});
 								var changeGvPopupTemplate = {};
 								var innerRoot = gradeAssessTemplate.clone();
+			    $("#"+uniqId).append(innerRoot);
+			    spin(innerRoot,true);
 								var gradebookDatagrid	= innerRoot.find(".gradebookDatagrid");
 								var changeGvPopupTemplate = innerRoot.find(".gradeValueEditPopup").clone();
 								var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
@@ -401,6 +406,7 @@ var Grades = (function(){
 											});
 											andThen(data);
 										}).fail(function(jqxhr,textStatus,error){
+					spin(innerRoot,false);
 											console.log("error",textStatus,error);
 										});
 									} else {
@@ -524,7 +530,6 @@ var Grades = (function(){
 											{name:"remotePrivateComment",type:"text",title:"Remote private comment",readOnly:true,sorting:true}
 										);
 									}
-									$("#"+uniqId).append(innerRoot);
 									gradebookDatagrid.jsGrid({
 										width:"100%",
 										height:"auto",
@@ -565,6 +570,8 @@ var Grades = (function(){
 										var orgUnit = parts[0];
 										var gradeId = parts[1];
 										innerRoot.find(".getRemoteData").on("click",function(){
+                                        var b = this;
+                                        spin(b,true);
 											$.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
 												generateData(function(data){
 													var modifiedData = data;
@@ -577,14 +584,20 @@ var Grades = (function(){
 															datum.remoteComment = thisRemoteGrade.gradeComment;
 															datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
 														}
+						    spin(b,false);
 													});
 													return withData(modifiedData);
 												});
 											}).fail(function(jqxhr,textStatus,error){
+                                            spin(b,false);
 												console.log("error",textStatus,error);
 											});
 										});
 										innerRoot.find(".sendGradesToRemote").on("click",function(){
+                                        var b = this;
+                                        spin(b,true,function(e){
+					    return $(e).find("span");
+					});
 											var gradesToSend = _.filter(gradeValues[grade.id],function(g){
 												return g.gradeValue != undefined;
 											});
@@ -605,18 +618,21 @@ var Grades = (function(){
 																datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
 															}
 														});
+						    spin(b,false);
 														return withData(modifiedData);
 													})
 												},
 												url:sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),
 												contentType:"application/json"
 											}).fail(function(jqxhr,textStatus,error){
+					    spin(b,false);
 												console.log("error",textStatus,error);
 											});
 										});
 									} else {
 										innerRoot.find(".gradeSyncActions").remove();
 									}
+				spin(innerRoot,false);
 								};
 								generateData(withData);
 							});

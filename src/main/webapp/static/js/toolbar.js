@@ -820,6 +820,7 @@ var Modes = (function(){
             Modes.canvasInteractables[category] = [];
         }
         Modes.canvasInteractables[category].push(interaction);
+        //console.log("Pushing",category);
     }
     $(function(){
         var attrs = {opacity:1};
@@ -1445,11 +1446,11 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
-			console.log("Textbox",t.identity,t.doc.width());
-			t.doc.layout();
+                        console.log("Textbox",t.identity,t.doc.width());
+                        t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
-			    return l.positionedWords.length;
-			});
+                            return l.positionedWords.length;
+                        });
                     });
                 },
                 mapSelected:mapSelected,
@@ -1513,6 +1514,10 @@ var Modes = (function(){
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+                            Progress.beforeLeavingSlide[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeLeavingSlide[t.identity];
+                            };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
@@ -1564,6 +1569,21 @@ var Modes = (function(){
                         carota.editor.paint(board[0],t.doc,true);
                     }
                 },
+                oldEditorAt : function(x,y,z,worldPos){
+                    var threshold = 10;
+                    var me = UserSettings.getUsername();
+                    var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+                    var texts = _.values(boardContent.texts).filter(function(text){
+                        var intersects = intersectRect(text.bounds,ray)
+                        return intersects && (text.author == me);
+                    });
+                    if(texts.length > 0){
+                        return texts[0];
+                    }
+                    else{
+                        return false;
+                    }
+                },
                 editorAt : function(x,y,z,worldPos){
                     var threshold = 10;
                     var me = UserSettings.getUsername();
@@ -1611,17 +1631,56 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos){
                         var clickTime = Date.now();
+												var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
                             if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
-				blit();
+                                blit();
                             }
                         });
                         var sel;
                         Modes.select.clearSelection();
-                        if (editor){
+												if (oldEditor){
+													var deleteTransform = batchTransform();
+													deleteTransform.isDeleted = true;
+													if ("texts" in Modes.select.selected){
+															deleteTransform.textIds = [oldEditor.identity];
+													}
+													sendStanza(deleteTransform);
+
+													carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+													var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
+															text: oldEditor.text,
+															italic: oldEditor.style == "italic",
+															bold: oldEditor.weight == "bold",
+															underline: oldEditor.decoration == "underline",
+															color: oldEditor.color,
+															size: oldEditor.size
+													}]);
+													console.log("found oldText, converting to newText:",oldEditor,newEditor);
+													var newDoc = newEditor.doc;
+													newDoc.select(0,1);
+													boardContent.multiWordTexts[newEditor.identity] = newEditor;
+													sel = {multiWordTexts:{}};
+													sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+													Modes.select.setSelection(sel);
+													editor = newEditor;
+
+													var source = newEditor;
+													source.privacy = Privacy.getCurrentPrivacy();
+													source.target = "presentationSpace";
+													source.slide = Conversations.getCurrentSlideJid();
+													sendRichText(source);
+													/*This is important to the zoom strategy*/
+													incorporateBoardBounds(editor.bounds);
+													
+													var node = newDoc.byOrdinal(0);
+													newDoc.mousedownHandler(node);
+													newDoc.mouseupHandler(node);
+
+												} else if (editor){
                             var doc = editor.doc;
                             var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
@@ -1667,49 +1726,49 @@ var Modes = (function(){
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
-								handleDrop:function(html,x,y){
-									if (html.length > 0){
-										var newRuns = carota.html.parse(html,{});
-										console.log("newRuns:",newRuns);
-										var worldPos = screenToWorld(x,y);
-										Modes.text.activate();
-										var clickTime = Date.now();
-										var sel;
-										Modes.select.clearSelection();
-										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-										var newEditor = createBlankText(worldPos,[{
-											text:" ",
-											italic:carota.runs.nextInsertFormatting.italic == true,
-											bold:carota.runs.nextInsertFormatting.bold == true,
-											underline:carota.runs.nextInsertFormatting.underline == true,
-											color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-											size:carota.runs.defaultFormatting.size / scale()
-										}]);
-										var newDoc = newEditor.doc;
-										newDoc.select(0,1);
-										boardContent.multiWordTexts[newEditor.identity] = newEditor;
-										sel = {multiWordTexts:{}};
-										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-										Modes.select.setSelection(sel);
-										editor = newEditor;
-										var node = newDoc.byOrdinal(0);
-										newDoc.mousedownHandler(node);
-										newDoc.mouseupHandler(node);
-										editor.doc.invalidateBounds();
-										editor.doc.isActive = true;
-										editor.doc.load(newRuns);
-										Progress.historyReceived["ClearMultiTextEchoes"] = function(){
-												Modes.text.echoesToDisregard = {};
-										};
-										Modes.text.scrollToCursor(editor);
-										var source = boardContent.multiWordTexts[editor.identity];
-										source.privacy = Privacy.getCurrentPrivacy();
-										source.target = "presentationSpace";
-										source.slide = Conversations.getCurrentSlideJid();
-										sendRichText(source);
-										Progress.call("onSelectionChanged",[Modes.select.selected]);
-									};
-								},
+                handleDrop:function(html,x,y){
+                    if (html.length > 0){
+                        var newRuns = carota.html.parse(html,{});
+                        console.log("newRuns:",newRuns);
+                        var worldPos = screenToWorld(x,y);
+                        Modes.text.activate();
+                        var clickTime = Date.now();
+                        var sel;
+                        Modes.select.clearSelection();
+                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                        var newEditor = createBlankText(worldPos,[{
+                            text:" ",
+                            italic:carota.runs.nextInsertFormatting.italic == true,
+                            bold:carota.runs.nextInsertFormatting.bold == true,
+                            underline:carota.runs.nextInsertFormatting.underline == true,
+                            color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+                            size:carota.runs.defaultFormatting.size / scale()
+                        }]);
+                        var newDoc = newEditor.doc;
+                        newDoc.select(0,1);
+                        boardContent.multiWordTexts[newEditor.identity] = newEditor;
+                        sel = {multiWordTexts:{}};
+                        sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+                        Modes.select.setSelection(sel);
+                        editor = newEditor;
+                        var node = newDoc.byOrdinal(0);
+                        newDoc.mousedownHandler(node);
+                        newDoc.mouseupHandler(node);
+                        editor.doc.invalidateBounds();
+                        editor.doc.isActive = true;
+                        editor.doc.load(newRuns);
+                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                            Modes.text.echoesToDisregard = {};
+                        };
+                        Modes.text.scrollToCursor(editor);
+                        var source = boardContent.multiWordTexts[editor.identity];
+                        source.privacy = Privacy.getCurrentPrivacy();
+                        source.target = "presentationSpace";
+                        source.slide = Conversations.getCurrentSlideJid();
+                        sendRichText(source);
+                        Progress.call("onSelectionChanged",[Modes.select.selected]);
+                    };
+                },
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
@@ -1799,7 +1858,8 @@ var Modes = (function(){
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
-                                y:currentVideo.y
+                                y:currentVideo.y,
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -1853,11 +1913,26 @@ var Modes = (function(){
                     resetVideoUpload();
                 }
             });
+            Progress.beforeLeavingSlide["videos"] = function(){
+                if ("videos" in boardContent){
+                    _.forEach(boardContent.videos,function(video){
+                        if (video != null && video != undefined && "destroy" in video){
+                            video.destroy();
+                        }
+                    });
+                }
+            };
             return {
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.video;
-                    setActiveMode("#videoTools","#videoMode");
+                    setActiveMode("#insertTools","#videoMode");
+                    $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+                    $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
+                    $(".active").removeClass("active");
+                    $("#videoMode").addClass("active");
+                    $(".insetColumn").hide();
+                    $("#videoTools").show();
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);
@@ -1956,76 +2031,75 @@ var Modes = (function(){
                 }
             })();
             var clientSideProcessImage = function(onComplete,thisCurrentImage){
-								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
+                var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
                 if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
-									console.log("returning because currentImage is empty",currentImage);
+                    console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
-									var originalSrc = readerE.target.result;
-									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
-                    var originalSize = originalSrc.length;
-										return originalSize < img;
-									});
+                    var originalSrc = readerE.target.result;
+                    clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
+                        var originalSize = originalSrc.length;
+                        return originalSize < img;
+                    });
                 }
                 reader.readAsDataURL(state.fileUpload);
             };
-						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
-							var thisCurrentImage = state != undefined ? state : currentImage;
-                    var renderCanvas = $("<canvas/>");
-                    var img = new Image();
-										img.setAttribute("crossOrigin","Anonymous");
-										img.onerror = function(e){
-											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
-										};
-                    img.onload = function(e){
-                        var width = img.width;
-                        var height = img.height;
-                        var dims = imageModes.getResizeFunction()(width,height);
-                        var w = dims.w;
-                        var h = dims.h;
-                        var quality = dims.q;
-                        /*
-                         renderCanvas.width = w;
-                         renderCanvas.height = h;
-                         renderCanvas.attr("width",w);
-                         renderCanvas.attr("height",h);
-                         renderCanvas.css({
-                         width:px(w),
-                         height:px(h)
-                         });
-                         renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                         currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
-                         */
-                        renderCanvas.width = width;
-                        renderCanvas.height = height;
-                        renderCanvas.attr("width",width);
-                        renderCanvas.attr("height",height);
-                        renderCanvas.css({
-                            width:px(width),
-                            height:px(height)
-                        });
-												var ctx = renderCanvas[0].getContext("2d");
-												ctx.rect(0,0,width,height);
-												ctx.fillStyle = "white";
-												ctx.fill();
-                        ctx.drawImage(img,0,0,width,height);
-                        var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
-                        thisCurrentImage.width = w;
-                        thisCurrentImage.height = h;
-                        thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
-                        var newSize = thisCurrentImage.resizedImage.length;
-												if (ifBiggerPred(newSize)){
-													thisCurrentImage.resizedImage = originalSrc;
-												}
-                        onComplete(thisCurrentImage);
-                    };
-                    img.src = originalSrc;
-
-						};
+            var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+                var thisCurrentImage = state != undefined ? state : currentImage;
+                var renderCanvas = $("<canvas/>");
+                var img = new Image();
+                img.setAttribute("crossOrigin","Anonymous");
+                img.onerror = function(e){
+                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+                };
+                img.onload = function(e){
+                    var width = img.width;
+                    var height = img.height;
+                    var dims = imageModes.getResizeFunction()(width,height);
+                    var w = dims.w;
+                    var h = dims.h;
+                    var quality = dims.q;
+                    /*
+                     renderCanvas.width = w;
+                     renderCanvas.height = h;
+                     renderCanvas.attr("width",w);
+                     renderCanvas.attr("height",h);
+                     renderCanvas.css({
+                     width:px(w),
+                     height:px(h)
+                     });
+                     renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                     currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+                     */
+                    renderCanvas.width = width;
+                    renderCanvas.height = height;
+                    renderCanvas.attr("width",width);
+                    renderCanvas.attr("height",height);
+                    renderCanvas.css({
+                        width:px(width),
+                        height:px(height)
+                    });
+                    var ctx = renderCanvas[0].getContext("2d");
+                    ctx.rect(0,0,width,height);
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                    ctx.drawImage(img,0,0,width,height);
+                    var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
+                    thisCurrentImage.width = w;
+                    thisCurrentImage.height = h;
+                    thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
+                    var newSize = thisCurrentImage.resizedImage.length;
+                    if (ifBiggerPred(newSize)){
+                        thisCurrentImage.resizedImage = originalSrc;
+                    }
+                    onComplete(thisCurrentImage);
+                };
+                img.src = originalSrc;
+            };
             var sendImageToServer = function(imageDef){
                 if (imageDef.type == "imageDefinition"){
                     WorkQueue.pause();
@@ -2051,10 +2125,11 @@ var Modes = (function(){
                                 bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
                                 width:imageDef.width,
                                 height:imageDef.height,
+                                x:imageDef.x,
+                                y:imageDef.y,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                x:imageDef.x,
-                                y:imageDef.y
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences()).map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2111,7 +2186,13 @@ var Modes = (function(){
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
-                    setActiveMode("#imageTools","#imageMode");
+                    setActiveMode("#insertTools","#imageMode");
+                    $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+                    $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
+                    $(".active").removeClass("active");
+                    $("#imageMode").addClass("active");
+                    $(".insetColumn").hide();
+                    $("#imageTools").show();
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);
@@ -2126,45 +2207,45 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
-								handleDroppedSrc:function(src,x,y){
-									var worldPos = screenToWorld(x,y);
-									var thisCurrentImage = {
-											"type":"imageDefinition",
-											"screenX":x,
-											"screenY":y,
-											"x":worldPos.x,
-											"y":worldPos.y
-									};
-									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
-								},	
+                handleDroppedSrc:function(src,x,y){
+                    var worldPos = screenToWorld(x,y);
+                    var thisCurrentImage = {
+                        "type":"imageDefinition",
+                        "screenX":x,
+                        "screenY":y,
+                        "x":worldPos.x,
+                        "y":worldPos.y
+                    };
+                    clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
+                },
 
-								handleDrop:function(dataTransfer,x,y){
-									var yOffset = 0;
-									var processed = [];
-									var processFile = function(file,sender){
-										if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
-											var worldPos = screenToWorld(x,y + yOffset);
-											var thisCurrentImage = {
-													"type":"imageDefinition",
-													"screenX":x,
-													"screenY":y + yOffset,
-													"x":worldPos.x,
-													"y":worldPos.y
-											};
-											thisCurrentImage.fileUpload = file;
-											console.log("handlingDrop",file,sender,thisCurrentImage);
-											processed.push(file);
-											clientSideProcessImage(sendImageToServer,thisCurrentImage);
-											yOffset += 50;
-										}
-									};
-									_.forEach(dataTransfer.files,function(f){processFile(f,"file");});
-									_.forEach(dataTransfer.items,function(item){
-										var file = item.getAsFile(0);
-										processFile(file,"item");
-									});
+                handleDrop:function(dataTransfer,x,y){
+                    var yOffset = 0;
+                    var processed = [];
+                    var processFile = function(file,sender){
+                        if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+                            var worldPos = screenToWorld(x,y + yOffset);
+                            var thisCurrentImage = {
+                                "type":"imageDefinition",
+                                "screenX":x,
+                                "screenY":y + yOffset,
+                                "x":worldPos.x,
+                                "y":worldPos.y
+                            };
+                            thisCurrentImage.fileUpload = file;
+                            console.log("handlingDrop",file,sender,thisCurrentImage);
+                            processed.push(file);
+                            clientSideProcessImage(sendImageToServer,thisCurrentImage);
+                            yOffset += 50;
+                        }
+                    };
+                    _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
+                    _.forEach(dataTransfer.items,function(item){
+                        var file = item.getAsFile(0);
+                        processFile(file,"item");
+                    });
 
-								},	
+                },
                 deactivate:function(){
                     resetImageUpload();
                     removeActiveMode();
@@ -2246,7 +2327,7 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{},videos:{}};
+                Modes.select.selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -2428,6 +2509,7 @@ var Modes = (function(){
                         func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
+                        console.log("DOWN",worldPos);
                         Modes.select.resizing = false;
                         Modes.select.dragging = false;
                         originPoint = {x:x,y:y};
@@ -2456,7 +2538,7 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
-                        console.log(x,y,worldPos,Modes.select.dragging);
+                        console.log("SELECT DOWN",x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
@@ -2768,6 +2850,8 @@ var Modes = (function(){
             var up = function(){};
             var down = function(){};
             var move = function(){};
+
+            var mousePressure = 256;
             $(function(){
                 $(".activeBrush").removeClass("activeBrush");
                 var drawTools = function(){
@@ -2894,7 +2978,6 @@ var Modes = (function(){
                 var currentStroke = [];
                 var isDown = false;
                 var resumeWork;
-                var mousePressure = 256;
                 down = function(x,y,z,worldPos,modifiers){
                     deleted = [];
                     isDown = true;
@@ -2906,17 +2989,22 @@ var Modes = (function(){
                         } else {
                             boardContext.globalAlpha = 1.0;
                         }
-                        currentStroke = [x, y, mousePressure * z];
-			boardContext.beginPath();
+                        currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
+                        trail.x = x;
+                        trail.y = y;
+                        boardContext.beginPath();
                         var newWidth = Modes.draw.drawingAttributes.width * z;
-			boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
-			boardContext.fill();
+                        boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
+                        boardContext.fill();
                     } else {
                     }
                 };
                 var raySpan = 10;
                 var deleted = [];
+                var trail = {};
                 move = function(x,y,z,worldPos,modifiers){
+                    x = Math.round(x);
+                    y = Math.round(y);
                     if(erasing || modifiers.eraser){
                         var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                         var markAsDeleted = function(bounds){
@@ -2940,17 +3028,18 @@ var Modes = (function(){
                         boardContext.globalAlpha = 1.0;
                     }
                     else{
-                        var oldWidth = boardContext.lineWidth;
                         var newWidth = Modes.draw.drawingAttributes.width * z;
                         boardContext.beginPath();
                         boardContext.lineCap = "round";
                         boardContext.lineWidth = newWidth;
                         var lastPoint = _.takeRight(currentStroke,3);
-                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.moveTo(trail.x,trail.y);
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
-                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
                     }
+                    trail.x = x;
+                    trail.y = y;
                 };
                 up = function(x,y,z,worldPos,modifiers){
                     isDown = false;
@@ -2965,11 +3054,10 @@ var Modes = (function(){
                         boardContext.beginPath();
                         boardContext.lineWidth = newWidth;
                         boardContext.lineCap = "round";
-                        var lastPoint = _.takeRight(currentStroke,3);
-                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.moveTo(trail.x,trail.y);
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
-                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
                         strokeCollected(currentStroke);
                     }
                     boardContext.globalAlpha = 1.0;
@@ -2978,6 +3066,7 @@ var Modes = (function(){
             return {
                 name:"draw",
                 brushes:brushes,
+                mousePressure:mousePressure,
                 activate:function(){
                     boardContext.setLineDash([]);
                     if(Modes.currentMode == Modes.draw){

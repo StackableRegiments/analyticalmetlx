@@ -12,8 +12,8 @@ import org.apache.commons.io._
 import javax.xml.bind.DatatypeConverter
 
 object HttpResponder extends HttpCacher with Logger {
-  private val snapshotExpiry = 10 seconds
-  private val quizImageExpiry = 30 seconds
+  private val snapshotExpiry = 0 seconds
+  private val quizImageExpiry = 0 seconds
   protected val server = ServerConfiguration.default
   debug("HttpResponder for server: %s".format(server))
   def getSnapshot(jid:String,size:String) = {

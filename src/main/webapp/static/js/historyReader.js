@@ -19,6 +19,11 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
+
+        json.multiWordTexts = _.pickBy(json.multiWordTexts,isUsable);
+        json.images = _.pickBy(json.images,isUsable);
+        json.inks = _.pickBy(json.inks,isUsable);
+
         boardContent = json;
         boardContent.minX = 0;
         boardContent.minY = 0;
@@ -44,10 +49,15 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             prerenderVideo(video);
         });
         prerenderTextMark = Date.now();
-        _.each(boardContent.multiWordTexts,function(text,i){
-            var editor = Modes.text.editorFor(text).doc;
-            editor.load(text.words);
-            incorporateBoardBounds(text.bounds);
+        _.each(boardContent.multiWordTexts,function(text){
+            if(isUsable(text)){
+                var editor = Modes.text.editorFor(text).doc;
+                editor.load(text.words);
+                incorporateBoardBounds(text.bounds);
+            }
+            else{
+                console.log("Not usable",text);
+            }
         });
         renderMultiWordMark = Date.now();
 
@@ -178,7 +188,26 @@ function isUsable(element){
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    return boundsOk && sizeOk && textOk;
+    var myGroups = _.map(Conversations.getCurrentGroup(),"id");
+    var forMyGroup = _.isEmpty(element.audiences) ||
+            Conversations.isAuthor() ||
+            _.some(element.audiences,function(audience){
+                return audience.action == "whitelist" && _.includes(myGroups,audience.name);
+            });
+    var isMine = element.author == UserSettings.getUsername();
+    var isDirectedToMe = _.some(element.audiences,function(audience){
+        return audience.action == "direct" && audience.name == UserSettings.getUsername();
+    });
+    var availableToMe = isMine || isDirectedToMe || forMyGroup;
+    return boundsOk && sizeOk && textOk && availableToMe;
+}
+function usableStanzas(){
+    return _.map(boardContent.multiWordTexts).map(function(v){
+        return {
+            identity:v.identity,
+            usable:isUsable(v)
+        }
+    });
 }
 var leftPoint = function(xDelta,yDelta,l,x2,y2,bulge){
     var px = yDelta * l * bulge;
@@ -456,6 +485,10 @@ function prerenderVideo(video){
                 video.video.play();
             }
         };
+        video.destroy = function(){
+            video.video.removeAttribute("src");
+            video.video.load();
+        };
         video.pause = function(){
             if (!video.video.paused){
                 video.video.pause();
@@ -646,6 +679,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 var renderSelectionOutlines = function(){
                     var size = Modes.select.resizeHandleSize;
                     canvasContext.save();
+                    canvasContext.strokeWidth = 1;
                     var multipleItems = [];
                     _.forEach(Modes.select.selected,function(category){
                         _.forEach(category,function(item){
@@ -828,6 +862,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
             HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
         }
     } catch(e){
+        console.log(e);
         if ("HealthChecker" in window){
             HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
         }
@@ -872,6 +907,11 @@ function unpix(str){
 }
 function updateConversationHeader(){
     $("#heading").text(Conversations.getCurrentConversation().title);
+    var groupV = $("#currentGroupTitle").empty();
+    var group = Conversations.getCurrentGroup();
+    if(group.length){
+        groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
+    }
 }
 function clearBoard(incContext,rect){
     try {

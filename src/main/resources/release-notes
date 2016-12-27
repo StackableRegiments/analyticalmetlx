@@ -1,3 +1,40 @@
+1.0.6
+Improvement: METL-331: Slide display virtualisation.
+
+1.0.5
+Story: METL-325: Add option in Group simulation to only include present members in simulation.
+Story: METL-129: Conversation author deletes slide.
+Improvement: METL-315: Remove slide column from Recycle Bin as it only ever shows current slide content.
+Improvement: METL-322: smartGroups provider.
+Bugfix: METL-133: Selection line thickness follows most recently used ink thickness.
+Bugfix: METL-320: Health bar not visible on top left of Whiteboard (IE and iPad only).
+
+1.0.4
+Improvement: METL-83: Tweak layout of Answers page.
+
+1.0.3
+Feature: METL-323: Simulate group allocation before committing.
+Feature: METL-321: Create interface to emit events to MeTLing Pot.
+
+1.0.2
+Bugfix: METL-312: Add Page makes page numbering incorrect.
+Improvement: METL-306: Improve D2L performance when logging in.
+Improvement: METL-307: Improve possible participants listing performance.
+
+1.0.1
+Feature: METL-153: Slider under Settings to control Thumbnail column width.
+Feature: METL-208: Author can add group slide.
+Feature: METL-209: Show liveness meters on the main board page.
+Feature: METL-277: More sophisticated group builder with manual controls.
+Feature: METL-243: Video conferencing via TokBox.
+Feature: METL-254: Create grade in MeTL.
+Feature: METL-255: Synchronize grades with D2L.
+Feature: METL-304: Groups create a grade for themselves.
+Improvement: METL-252: Plugin framework.
+Improvement: METL-271: Enhance D2L API.
+Improvement: METL-292: Explicit groupProvider fetch mechanism.
+Improvement: METL-297: Schemify indices automatically.
+
 0.15.1
 Improvement: METL-282: Upgraded jsGrid to 1.5.3 to fix bug.
 
@@ -27,6 +64,13 @@ Bugfix: METL-214: Rename Poll "Display on canvas" to "Display on current page".
 0.12.7
 Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
 Bugfix: METL-266: Rooms not being garbage collected.
+0.13
+Pre-release-feature: METL-243: Video conferencing.
+Pre-release-feature: METL-208: Group-activity slides.
+Pre-release-feature: METL-209: Liveness meters.
+Pre-release-feature: UNKNOWN: Thumbnail render immediacy and responsiveness.
+Pre-release-improvement: METL-116: Thumbnail rendering time.
+Pre-release-improvement: METL-116: History memory consumption.
 
 0.12.6
 Feature: METL-251: Diagnostic endpoint to monitor server performance.
@@ -40,7 +84,10 @@ Bugfix: METL-245: MeTL actor fails during construction.
 Bugfix: METL-247: Attendances are not using their index.
 Bugfix: METL-248: Superuser powers don't let a user search for and/or enter any conversation.
 
-0.12.1
+0.12.2
+Bugfix: METL-230: Paste image from clipboard fails in Firefox.
+
+0.12
 Feature: METL-95: Added yellow text capability.
 
 0.11

@@ -7,6 +7,9 @@ var overrides = {
     specs: [
         './src/test/js/webdriver/single/**'
     ],
+    suites:{
+        learning:['./src/test/js/webdriver/single/*.js'],
+    }, 
     capabilities: {
         user:{
             desiredCapabilities:{

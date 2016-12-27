@@ -72,7 +72,7 @@ var Conversations = (function(){
                 } else {
                     if (shouldModifyConversation(details)){
                         return $("<a/>",{
-                            href:sprintf("/editConversation?conversationJid=%s",details.jid),
+                            href:sprintf("/editConversation?conversationJid=%s&unique=true",details.jid),
                             text:"Edit"
                         });
                     } else {
@@ -313,7 +313,9 @@ var Conversations = (function(){
             return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
         });
         var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
-        dataGridItems = _.map(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)),function(conv){
+	var candidates = _.clone(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)));
+	console.log("candidates",candidates);
+        dataGridItems = _.uniqBy(_.map(candidates,function(conv){
             if (conv.subject == "deleted"){
                 conv.lifecycle = "deleted";
             } else if (conv.creation > newThreshold){
@@ -322,7 +324,8 @@ var Conversations = (function(){
                 conv.lifecycle = "available";
             }
             return conv;
-        });
+        }),"jid");
+	console.log("rendering",dataGridItems);
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");
@@ -357,10 +360,11 @@ var Conversations = (function(){
         return userGroups
     };
     var receiveConversationDetailsFunc = function(details){
-        currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
+        currentSearchResults.push(details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
+        console.log("receiveSearchResults",results);
         currentSearchResults = results;
         permitOneSearch();
         updateQueryParams();
@@ -381,7 +385,7 @@ var Conversations = (function(){
         reRender();
     };
     var updateQueryParams = function(){
-			console.log("updating queryparams:",getQueryFunc(),window.location);
+        console.log("updating queryparams:",getQueryFunc(),window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var q = getQueryFunc();
@@ -445,6 +449,7 @@ function receiveUsername(username){ //invoked by Lift
 function receiveUserGroups(userGroups){ //invoked by Lift
     Conversations.receiveUserGroups(userGroups);
 }
+
 function receiveConversationDetails(details){ //invoked by Lift
     Conversations.receiveConversationDetails(details);
 }

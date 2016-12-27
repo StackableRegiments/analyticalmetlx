@@ -236,6 +236,8 @@ class H2Conversation extends H2MeTLContent[H2Conversation]{
   object permissions extends MappedMeTLString(this,256)
   object blackList extends MappedText(this)
   object slides extends MappedText(this)
+  object foreignRelationshipSystem extends MappedMeTLString(this,1024)
+  object foreignRelationshipKey extends MappedMeTLString(this,H2Constants.url)
 }
 object H2Conversation extends H2Conversation with LongKeyedMetaMapper[H2Conversation]{
 }
@@ -312,24 +314,24 @@ object H2Grade extends H2Grade with LongKeyedMetaMapper[H2Grade] {
 }
 class H2Grade extends H2MeTLStanza[H2Grade] {
   def getSingleton = H2Grade
-  object gradeId extends MappedString(this,H2Constants.identity)
-  object location extends MappedString(this,H2Constants.room)
-  object name extends MappedString(this,H2Constants.url)
+  object gradeId extends MappedMeTLString(this,H2Constants.identity)
+  object location extends MappedMeTLString(this,H2Constants.room)
+  object name extends MappedMeTLString(this,H2Constants.url)
   object description extends MappedText(this)
   object visible extends MappedBoolean(this)
   object gradeType extends MappedEnum(this,MeTLGradeValueType)
-  object foreignRelationshipSystem extends MappedString(this,1024)
-  object foreignRelationshipKey extends MappedString(this,H2Constants.url)
+  object foreignRelationshipSystem extends MappedMeTLString(this,1024)
+  object foreignRelationshipKey extends MappedMeTLString(this,H2Constants.url)
   object numericMaximum extends MappedDouble(this)
   object numericMinimum extends MappedDouble(this)
-  object gradeReferenceUrl extends MappedString(this,H2Constants.url)
+  object gradeReferenceUrl extends MappedMeTLString(this,H2Constants.url)
 }
 trait H2GradeValue[C <:H2MeTLStanza[C]] extends H2MeTLStanza[C]{
   self: C =>
-  object privateComments extends MappedString[C](this,4096)
-  object comments extends MappedString[C](this,4096)
-  object gradedUser extends MappedString[C](this,H2Constants.author)
-  object gradeId extends MappedString[C](this,H2Constants.identity)
+  object privateComments extends MappedMeTLString[C](this,4096)
+  object comments extends MappedMeTLString[C](this,4096)
+  object gradedUser extends H2MeTLIndexedString[C](this,H2Constants.author)
+  object gradeId extends MappedMeTLString[C](this,H2Constants.identity)
 }
 object H2NumericGradeValue extends H2NumericGradeValue with LongKeyedMetaMapper[H2NumericGradeValue]{}
 class H2NumericGradeValue extends H2GradeValue[H2NumericGradeValue] {
@@ -344,5 +346,5 @@ class H2BooleanGradeValue extends H2GradeValue[H2BooleanGradeValue] {
 object H2TextGradeValue extends H2TextGradeValue with LongKeyedMetaMapper[H2TextGradeValue]{}
 class H2TextGradeValue extends H2GradeValue[H2TextGradeValue] {
   def getSingleton = H2TextGradeValue
-  object gradeValue extends MappedString(this,64)
+  object gradeValue extends MappedMeTLString(this,64)
 }

@@ -32,32 +32,36 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
   val client = new com.opentok.util.HttpClient.Builder(apiKey,secret).build()
   protected var sessions:Map[String,Session] = Map.empty[String,Session]
   protected var broadcasts:Map[String,TokBoxBroadcast] = Map.empty[String,TokBoxBroadcast]
-  def getSessionToken(description:String,role:TokRole.Value = TokRole.Subscriber):TokBoxSession = {
-    val session = sessions.get(description).getOrElse({
-      val newSession = openTok.createSession(
-        new SessionProperties.Builder()
-          .mediaMode(MediaMode.ROUTED)
-  //        .location(description)
-          .archiveMode(ArchiveMode.ALWAYS)
-          .build()
-        )
-//      startBroadcast(newSession,TokBroadcastLayout.bestFit)
-      sessions = sessions.updated(description,newSession)
-      newSession
-    })
-    val sessionId = session.getSessionId()
-    val sessionToken = session.generateToken(
-      new TokenOptions.Builder()
-        .role(role match {
-          case TokRole.Moderator => Role.MODERATOR
-          case TokRole.Publisher => Role.PUBLISHER
-          case _ => Role.SUBSCRIBER
-        })
-        .expireTime((System.currentTimeMillis() / 1000L) + (7 * 24 * 60 * 60)) // 1 week from now
-        .data("name=%s&description=%s".format(Globals.currentUser.is,description))
-      .build()
-    )
-    TokBoxSession(apiKey,sessionId,sessionToken,description,Globals.currentUser.is)
+  def getSessionToken(description:String,role:TokRole.Value = TokRole.Subscriber):Either[Exception,TokBoxSession] = {
+    try {
+      val session = sessions.get(description).getOrElse({
+        val newSession = openTok.createSession(
+          new SessionProperties.Builder()
+            .mediaMode(MediaMode.ROUTED)
+    //        .location(description)
+            .archiveMode(ArchiveMode.ALWAYS)
+            .build()
+          )
+  //      startBroadcast(newSession,TokBroadcastLayout.bestFit)
+        sessions = sessions.updated(description,newSession)
+        newSession
+      })
+      val sessionId = session.getSessionId()
+      val sessionToken = session.generateToken(
+        new TokenOptions.Builder()
+          .role(role match {
+            case TokRole.Moderator => Role.MODERATOR
+            case TokRole.Publisher => Role.PUBLISHER
+            case _ => Role.SUBSCRIBER
+          })
+          .expireTime((System.currentTimeMillis() / 1000L) + (7 * 24 * 60 * 60)) // 1 week from now
+          .data("name=%s&description=%s".format(Globals.currentUser.is,description))
+        .build()
+      )
+      Right(TokBoxSession(apiKey,sessionId,sessionToken,description,Globals.currentUser.is))
+    } catch {
+      case e:Exception => Left(e)
+    }
   }
   def startArchive(session:TokBoxSession):TokBoxArchive = {
     val archiveName = "%s_%s_%s".format(session.description,session.username,new java.util.Date().getTime().toString())
@@ -117,7 +121,7 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
       }
     }
   } 
-  def removeArchive(session:TokBoxSession,archiveId:TokBoxArchive):Boolean = {
+  def removeArchive(session:TokBoxSession,archiveId:String):Boolean = {
     performDelete("%s/v2/partner/%s/archive/%s".format(baseUrl,session.apiKey,archiveId)) match {
       case Right(s) => true
       case Left(e) => {

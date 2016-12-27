@@ -8,6 +8,7 @@ import net.liftweb.util.Helpers._
 import Privacy._
 import net.liftweb.json.{Serialization, NoTypeHints, TypeInfo, Formats, MappingException}
 import net.liftweb.json.JsonAST._
+import com.metl.liftAuthenticator.ForeignRelationship
 
 object ConversionHelper extends Logger {
   def toDouble(a:Any):Double = a match{
@@ -78,14 +79,19 @@ trait JsonSerializerHelper {
   def getBooleanByName(input:JObject,name:String) = (input \ name).extract[Boolean]
   def getIntByName(input:JObject,name:String) = (input \ name).extract[Int]
   def getLongByName(input:JObject,name:String) = (input \ name).extract[Long]
-  def getDoubleByName(input:JObject,name:String) = (input \ name).extract[Double]
+  def getDoubleByName(input:JObject,name:String) = tryo((input \ name).extract[Double]) match {
+    case Full(d) => d
+    case malformedDouble => {
+      error("getDoubleByName failed: %s in %s".format(name,input))
+        (input \ name).extract[Int].toDouble
+    }
+  }
   def getPrivacyByName(input:JObject,name:String) = (input \ name).extract[Privacy]
   def getObjectByName(input:JObject,name:String) = input.values(name).asInstanceOf[JObject]
   def getOptionalStringByName(input:JObject,name:String) = (input \ name).extract[Option[String]]
   def getListOfDoublesByName(input:JObject,name:String) = (input \ name).extract[List[Double]]
   def getListOfStringsByName(input:JObject,name:String) = (input \ name).extract[List[String]]
   def getListOfObjectsByName(input:JObject,name:String) = {
-    //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
     input.obj.find(_.name == name).toList.flatMap(_.value match {
       case JArray(l) => {
         val objs:List[JObject] = l.flatMap((li:JValue) => li match {
@@ -102,12 +108,12 @@ trait JsonSerializerHelper {
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
-class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSerializerHelper {
+class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSerializerHelper with Logger {
   type T = JValue
   val configName = config.name
 
   protected def parseAudiences(input:MeTLData):List[JField] = {
-    List(
+    val res = List(
       JField("audiences",JArray(input.audiences.map(a => {
         JObject(List(
           JField("domain",JString(a.domain)),
@@ -117,8 +123,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         ))
       })))
     )
+    res
   }
-
   protected def parseMeTLContent(input:MeTLStanza):List[JField] = {
     List(
       JField("author",JString(input.author)),
@@ -150,7 +156,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
   }
 
   protected def parseJObjForMeTLContent(input:JObject,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
-    val author = (input \ "author").extract[String] //getStringByName(input,"author")
+    val author = (input \ "author").extract[String]
     val timestamp = getLongByName(input,"timestamp")
     val audiences = parseJObjForAudiences(input,config)
     ParsedMeTLContent(author,timestamp,audiences)
@@ -370,7 +376,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
         val bytes = url.map(u => config.getResource(u))
-        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted)
+        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted,mc.audiences)
       }
       case _ => MeTLFile.empty
     }
@@ -391,7 +397,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val id = getStringByName(input,"id")
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
-        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted)
+        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences)
       }
       case _ => MeTLVideoStream.empty
     }
@@ -481,21 +487,29 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   })
   override def toMeTLImage(i:JValue):MeTLImage = Stopwatch.time("JsonSerializer.toMeTLImage",{
-    i match {
-      case input:JObject => {
-        val mc = parseJObjForMeTLContent(input,config)
-        val cc = parseJObjForCanvasContent(input)
-        val tag = getStringByName(input,"tag")
-        val source = Full(getStringByName(input,"source"))
-        val imageBytes = source.map(u => config.getResource(u))
-        val pngBytes = Empty
-        val width = getDoubleByName(input,"width")
-        val height = getDoubleByName(input,"height")
-        val x = getDoubleByName(input,"x")
-        val y = getDoubleByName(input,"y")
-        MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+    try{
+      i match {
+        case input:JObject => {
+          val mc = parseJObjForMeTLContent(input,config)
+          val cc = parseJObjForCanvasContent(input)
+          val tag = getStringByName(input,"tag")
+          val source = Full(getStringByName(input,"source"))
+          val imageBytes = source.map(u => config.getResource(u))
+          val pngBytes = Empty
+          val width = getDoubleByName(input,"width")
+          val height = getDoubleByName(input,"height")
+          val x = getDoubleByName(input,"x")
+          val y = getDoubleByName(input,"y")
+          MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        }
+        case _ => MeTLImage.empty
       }
-      case _ => MeTLImage.empty
+    }
+    catch{
+      case e => {
+        error("JsonSerializer.toMeTLImage failed on %s: %s".format(i,e))
+        throw e
+      }
     }
   })
   override def fromMeTLImage(input:MeTLImage):JValue = Stopwatch.time("JsonSerializer.fromMeTLImage",{
@@ -819,11 +833,25 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         }
         val permissions = toPermissions(getObjectByName(input,"permissions"))
         val blacklist = getListOfStringsByName(input,"blacklist")
+        val audiences = parseJObjForAudiences(input,config)
         val thisConfig = getStringByName(input,"configName") match {
           case "" => config
           case other => ServerConfiguration.configForName(other)
         }
-        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist)
+        val foreignRelationship = getOptionalObjectByName(input,"foreignRelationship").flatMap(n => {
+          n.value match {
+            case jo:JObject => {
+              for {
+                sys <- getOptionalStringByName(jo,"system")
+                key <- getOptionalStringByName(jo,"key")
+              } yield {
+                ForeignRelationship(sys,key)
+              }
+            }
+            case _ => None
+          }
+        })
+        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist,audiences,foreignRelationship)
       }
       case _ => Conversation.empty
     }
@@ -843,7 +871,12 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("permissions",fromPermissions(input.permissions)),
       JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList)),
       JField("configName",JString(input.server.name))
-    ))
+    ) ::: input.foreignRelationship.toList.map(fr => {
+      JField("foreignRelationship",JObject(List(
+        JField("system",JString(fr.system)),
+        JField("key",JString(fr.key))
+      )))
+    }) ::: parseAudiences(input))
   })
   override def toSlide(i:JValue):Slide = Stopwatch.time("JsonSerializer.toSlide",{
     i match {
@@ -855,7 +888,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val defaultWidth = getIntByName(input,"defaultWidth")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
-        val groupSet = getListOfObjectsByName(input,"groupSet").map(gs => toGroupSet(gs))
+        val groupSet = getListOfObjectsByName(input,"groupSets").map(gs => toGroupSet(gs))
         Slide(config,author,id,index,defaultHeight,defaultWidth,exposed,slideType,groupSet)
       }
       case _ => Slide.empty
@@ -869,8 +902,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("defaultHeight",JInt(input.defaultHeight)),
       JField("defaultWidth",JInt(input.defaultWidth)),
       JField("exposed",JBool(input.exposed)),
-      JField("slideType",JString(input.slideType))
-    ) ::: List(input.groupSet.map(gs => JField("groupSet",fromGroupSet(gs)))).flatten)
+      JField("slideType",JString(input.slideType)),
+      JField("groupSets",JArray(input.groupSet.map(fromGroupSet _)))))
   })
   override def toGroupSet(i:JValue):GroupSet = Stopwatch.time("JsonSerializer.toGroupSet",{
     i match {
@@ -902,7 +935,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           case "byTotalGroups" => ByTotalGroups(getIntByName(input,"groupCount"))
           case "onePersonPerGroup" => OnePersonPerGroup
           case "everyoneInOneGroup" => EveryoneInOneGroup
-          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursiely into a Map.
+          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursively into a Map.
           case _ => EveryoneInOneGroup
         }
       }
@@ -927,8 +960,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val audiences = parseJObjForAudiences(input,config)
         val id = getStringByName(input,"id")
         val location = getStringByName(input,"location")
+        val timestamp = getLongByName(input,"timestamp")
         val members = getListOfStringsByName(input,"members")
-        Group(config,id,location,members,audiences)
+        Group(config,id,location,timestamp,members,audiences)
       }
       case _ => Group.empty
     }
@@ -937,6 +971,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     toJsObj("group",List(
       JField("id",JString(input.id)),
       JField("location",JString(input.location)),
+      JField("timestamp",JInt(input.timestamp)),
       JField("members",JArray(input.members.map(m => JString(m))))
     ) ::: parseAudiences(input))
   })

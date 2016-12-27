@@ -110,6 +110,7 @@ object Globals extends PropertyReader with Logger {
   })
 
   val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
+  var metlingPots:List[MeTLingPotAdaptor] = Nil
   val brightSpaceValenceIntegrations = {
     val bsvin = readNode(propFile,"brightSpaceValence")
     (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
@@ -158,7 +159,7 @@ object Globals extends PropertyReader with Logger {
     def authenticatedUsername:String = actualUsername.is
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
-        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,personalAttributes)
+        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,personalAttributes.map(pa => Detail(pa._1,pa._2)))
         val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
         val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
         val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
@@ -175,7 +176,7 @@ object Globals extends PropertyReader with Logger {
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
         val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(Member(username,Nil,None)),Nil))
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
+        val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes.map(ua => Detail(ua._1,ua._2)))
         if (authenticated){
           actualUsername(username)
           val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))

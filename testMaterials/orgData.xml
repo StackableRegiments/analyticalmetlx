@@ -5,14 +5,57 @@
     <member>studentC</member>
     <member>studentD</member>
     <member>studentE</member>
+    <member>studentF</member>
+    <member>studentG</member>
+    <member>studentH</member>
+    <member>studentI</member>
+    <member>studentJ</member>
+    <member>studentK</member>
+    <member>studentL</member>
+    <member>studentM</member>
+    <member>studentN</member>
+    <member>studentO</member>
+    <member>studentP</member>
+    <member>studentQ</member>
+    <member>studentS</member>
+    <member>studentT</member>
+    <member>studentU</member>
+    <member>studentV</member>
+    <member>studentW</member>
+    <member>studentX</member>
+    <member>studentY</member>
+    <member>studentZ</member>
     <member>teacher</member>
-    <groupSet>
+    <groupSet name="groupSet1" type="assignment">
       <group name="group1" type="assignment">
-        <member>studentA</member>
+        <member>studentW</member>
+        <member>studentX</member>
+        <member>studentY</member>
+        <member>studentZ</member>
       </group>
       <group name="group2" type="assignment">
+        <member>studentA</member>
         <member>studentB</member>
         <member>studentC</member>
+        <member>studentD</member>
+      </group>
+    </groupSet>
+    <groupSet name="groupSet2" type="assignment">
+      <group name="group1" type="assignment">
+        <member>studentB</member>
+        <member>studentC</member>
+      </group>
+      <group name="group2" type="assignment">
+        <member>studentA</member>
+      </group>
+    </groupSet>
+  </orgUnit>
+  <orgUnit name="Org Unit B" type="course">
+    <member>studentA</member>
+    <member>teacher</member>
+    <groupSet name="groupSet3" type="assignment">
+      <group name="group3" type="assignment">
+        <member>studentA</member>
       </group>
     </groupSet>
   </orgUnit>
@@ -44,7 +87,7 @@
     <detail key="firstName" value="Studenti"/>
     <detail key="surname" value="Dardvark"/>
   </personalDetails>
-<personalDetails username="studentE">
+  <personalDetails username="studentE">
     <detail key="D2L_Identifier" value="105"/>
     <detail key="D2L_Profile_Identifier" value="AbcDEFgHI5"/>
     <detail key="displayName" value="Eardvark, Studentu"/>
