@@ -29,9 +29,9 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         boardContent.minY = 0;
         boardContent.maxX = boardWidth;
         boardContent.maxY = boardHeight;
-	/*Use 1:1 pixel size as a reasonable starting position.  This will keep textboxes from measuring themselves against a miniscule world and deciding that they are enormously wide*/
-	viewboxWidth = boardContent.maxX - boardContent.minX;
-	viewboxHeight = boardContent.maxY - boardContent.minY;
+        /*Use 1:1 pixel size as a reasonable starting position.  This will keep textboxes from measuring themselves against a miniscule world and deciding that they are enormously wide*/
+        viewboxWidth = boardContent.maxX - boardContent.minX;
+        viewboxHeight = boardContent.maxY - boardContent.minY;
         $.each(boardContent.inks,function(i,ink){
             prerenderInk(ink);
         });
@@ -624,12 +624,14 @@ function render(content,hq,incCanvasContext,incViewBounds){
             try{
                 var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
                 visibleBounds = [];
+                var rendered = [];
                 var renderInks = function(inks){
                     if (inks != undefined){
                         $.each(inks,function(i,ink){
                             try{
                                 if(intersectRect(ink.bounds,viewBounds)){
                                     drawInk(ink,canvasContext);
+                                    rendered.push(ink);
                                 }
                             }
                             catch(e){
@@ -646,6 +648,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                             }
                             if(intersectRect(text.bounds,viewBounds)){
                                 drawMultiwordText(text);
+                                rendered.push(text);
                             }
                         });
                     }
@@ -657,6 +660,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                             if (intersectRect(video.bounds,viewBounds)){
                                 drawVideo(video,canvasContext);
                                 Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+                                rendered.push(video);
                             }
                         });
                     }
@@ -668,6 +672,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                     $.each(content.texts,function(i,text){
                         if(intersectRect(text.bounds,viewBounds)){
                             drawText(text,canvasContext);
+                            rendered.push(text);
                         }
                     });
                     textsRenderedMark = Date.now();
@@ -716,6 +721,31 @@ function render(content,hq,incCanvasContext,incViewBounds){
                         });
                     });
                 }
+                var renderContentIdentification = function(){
+                    canvasContext.save();
+                    if(Modes.select.isAdministeringContent()){
+                        var visibleUsers = _.groupBy(rendered,"author");
+                        var pad = 3;
+                        _.each(visibleUsers,function(content,user){
+                            var userBounds = _.reduce(_.map(content,"bounds"),mergeBounds);
+                            var tl = worldToScreen(userBounds[0],userBounds[1]);
+                            canvasContext.strokeStyle = "black";
+                            canvasContext.lineWidth = 0.1;
+                            _.each(content,function(c){
+				canvasContext.beginPath();
+                                canvasContext.moveTo(tl.x,tl.y);
+                                var cB = worldToScreen(c.bounds[0],c.bounds[1]);
+                                canvasContext.lineTo(cB.x,cB.y);
+                                canvasContext.stroke();
+                            });
+                            canvasContext.fillStyle = "black";
+                            canvasContext.fillRect(tl.x - pad,tl.y,canvasContext.measureText(user).width + pad * 2,14);
+                            canvasContext.fillStyle = "white";
+                            canvasContext.fillText(user,tl.x,tl.y+10);
+                        });
+                    }
+                    canvasContext.restore();
+                };
                 var renderSelectionGhosts = function(){
                     var zero = Modes.select.marqueeWorldOrigin;
                     if(Modes.select.dragging){
@@ -853,6 +883,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderImmediateContent();
                 renderSelectionOutlines();
                 renderSelectionGhosts();
+                renderContentIdentification();
                 renderCanvasInteractables();
                 imagesRenderedMark = Date.now();
             }

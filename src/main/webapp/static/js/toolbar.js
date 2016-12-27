@@ -155,13 +155,13 @@ function registerPositionHandlers(contexts,down,move,up){
         context.css({"touch-action":"none"});
         var isGesture = false;
         var trackedTouches = {};
-				var checkIsGesture = function(pointerEvent){
-					if (pointerEvent !== undefined && pointerEvent.originalEvent.pointerType == "touch"){
-						return (_.size(trackedTouches) > 1);
-					} else {
-						return false;
-					}
-				}
+        var checkIsGesture = function(pointerEvent){
+            if (pointerEvent !== undefined && pointerEvent.originalEvent.pointerType == "touch"){
+                return (_.size(trackedTouches) > 1);
+            } else {
+                return false;
+            }
+        }
         var updatePoint = function(pointerEvent){
             var pointId = pointerEvent.originalEvent.pointerId;
             var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
@@ -185,9 +185,9 @@ function registerPositionHandlers(contexts,down,move,up){
             };
             pointItem.points.push(newPoint);
             pointItem.eraser = pointItem.eraser || isEraser;
-						if (pointerEvent.originalEvent.pointerType == "touch"){
-							trackedTouches[pointId] = pointItem;
-						}
+            if (pointerEvent.originalEvent.pointerType == "touch"){
+                trackedTouches[pointId] = pointItem;
+            }
             if (checkIsGesture(pointerEvent)){
                 if (isGesture == false){
                     _.each(trackedTouches,function(series){
@@ -213,9 +213,9 @@ function registerPositionHandlers(contexts,down,move,up){
             var y = pointerEvent.pageY - o.top;
             var z = pointerEvent.originalEvent.pressure || 0.5;
             var worldPos = screenToWorld(x,y);
-						if (pointerEvent.originalEvent.pointerType == "touch"){
-							delete trackedTouches[pointId];
-						}
+            if (pointerEvent.originalEvent.pointerType == "touch"){
+                delete trackedTouches[pointId];
+            }
             if (isGesture && _.size(trackedTouches) == 0){
                 isGesture = false;
                 isDown = false;
@@ -231,41 +231,41 @@ function registerPositionHandlers(contexts,down,move,up){
         }
         if (detectPointerEvents()){
             var performGesture = _.throttle(function(){
-								takeControlOfViewbox();
+                takeControlOfViewbox();
 
-								var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
-										var first = _.first(item.points);
-										var last = _.last(item.points);
-										return [first,last];
-								});
-								trackedTouches = {};
-								var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
-								var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+                var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+                    var first = _.first(item.points);
+                    var last = _.last(item.points);
+                    return [first,last];
+                });
+                trackedTouches = {};
+                var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+                var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-								Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+                Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
 
-								var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
-								var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
-								var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
-								var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
-								var prevYScale = prevNorthMost - prevSouthMost;
-								var prevXScale = prevWestMost - prevEastMost;
+                var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                var prevYScale = prevNorthMost - prevSouthMost;
+                var prevXScale = prevWestMost - prevEastMost;
 
-								var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
-								var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
-								var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
-								var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
-								var yScale = northMost - southMost;
-								var xScale = westMost - eastMost;
+                var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                var yScale = northMost - southMost;
+                var xScale = westMost - eastMost;
 
-								var previousScale = (prevXScale + prevYScale)       / 2;
-								var currentScale = (xScale + yScale)        / 2;
-								Zoom.scale(previousScale / currentScale);
+                var previousScale = (prevXScale + prevYScale)       / 2;
+                var currentScale = (xScale + yScale)        / 2;
+                Zoom.scale(previousScale / currentScale);
             },25);
             context.bind("pointerdown",function(e){
                 if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
-									isGesture = true;
-								}
+                    isGesture = true;
+                }
                 var point = updatePoint(e);
                 e.preventDefault();
                 WorkQueue.pause();
@@ -1631,7 +1631,7 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos){
                         var clickTime = Date.now();
-												var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
+                        var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
@@ -1642,45 +1642,45 @@ var Modes = (function(){
                         });
                         var sel;
                         Modes.select.clearSelection();
-												if (oldEditor){
-													var deleteTransform = batchTransform();
-													deleteTransform.isDeleted = true;
-													if ("texts" in Modes.select.selected){
-															deleteTransform.textIds = [oldEditor.identity];
-													}
-													sendStanza(deleteTransform);
+                        if (oldEditor){
+                            var deleteTransform = batchTransform();
+                            deleteTransform.isDeleted = true;
+                            if ("texts" in Modes.select.selected){
+                                deleteTransform.textIds = [oldEditor.identity];
+                            }
+                            sendStanza(deleteTransform);
 
-													carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-													var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
-															text: oldEditor.text,
-															italic: oldEditor.style == "italic",
-															bold: oldEditor.weight == "bold",
-															underline: oldEditor.decoration == "underline",
-															color: oldEditor.color,
-															size: oldEditor.size
-													}]);
-													console.log("found oldText, converting to newText:",oldEditor,newEditor);
-													var newDoc = newEditor.doc;
-													newDoc.select(0,1);
-													boardContent.multiWordTexts[newEditor.identity] = newEditor;
-													sel = {multiWordTexts:{}};
-													sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-													Modes.select.setSelection(sel);
-													editor = newEditor;
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
+                                text: oldEditor.text,
+                                italic: oldEditor.style == "italic",
+                                bold: oldEditor.weight == "bold",
+                                underline: oldEditor.decoration == "underline",
+                                color: oldEditor.color,
+                                size: oldEditor.size
+                            }]);
+                            console.log("found oldText, converting to newText:",oldEditor,newEditor);
+                            var newDoc = newEditor.doc;
+                            newDoc.select(0,1);
+                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
+                            sel = {multiWordTexts:{}};
+                            sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+                            Modes.select.setSelection(sel);
+                            editor = newEditor;
 
-													var source = newEditor;
-													source.privacy = Privacy.getCurrentPrivacy();
-													source.target = "presentationSpace";
-													source.slide = Conversations.getCurrentSlideJid();
-													sendRichText(source);
-													/*This is important to the zoom strategy*/
-													incorporateBoardBounds(editor.bounds);
-													
-													var node = newDoc.byOrdinal(0);
-													newDoc.mousedownHandler(node);
-													newDoc.mouseupHandler(node);
+                            var source = newEditor;
+                            source.privacy = Privacy.getCurrentPrivacy();
+                            source.target = "presentationSpace";
+                            source.slide = Conversations.getCurrentSlideJid();
+                            sendRichText(source);
+                            /*This is important to the zoom strategy*/
+                            incorporateBoardBounds(editor.bounds);
 
-												} else if (editor){
+                            var node = newDoc.byOrdinal(0);
+                            newDoc.mousedownHandler(node);
+                            newDoc.mouseupHandler(node);
+
+                        } else if (editor){
                             var doc = editor.doc;
                             var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
@@ -2384,8 +2384,8 @@ var Modes = (function(){
                     $("#administerContent").removeClass("activeBrush");
                 }
                 clearSelectionFunction();
+		blit();
             };
-
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
                     $("#ban").show();
@@ -2423,6 +2423,7 @@ var Modes = (function(){
             };
             return {
                 name:"select",
+                isAdministeringContent:function(){return isAdministeringContent;},
                 selected:{
                     images:{},
                     texts:{},
