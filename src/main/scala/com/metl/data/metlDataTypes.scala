@@ -322,6 +322,14 @@ object MeTLCanvasContent{
   def unapply(in:MeTLCanvasContent) = Some((in.server,in.author,in.timestamp,in.target,in.privacy,in.slide,in.identity,in.audiences,in.scaleFactorX,in.scaleFactorY))
   def empty = MeTLCanvasContent(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","")
 }
+case class MeTLChatMessage(override val server:ServerConfiguration, override val author:String, override val timestamp:Long, identity:String, contentType:String, content:String, context:String, override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLChatMessage = Stopwatch.time("MeTLChatMessage.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+}
+object MeTLChatMessage {
+  def empty = MeTLChatMessage(ServerConfiguration.empty,"",0L,"","","","",Nil)
+}
 object MeTLTextWord {
   def empty = MeTLTextWord("",false,false,false,"",Color.empty,"",0.0)
 }

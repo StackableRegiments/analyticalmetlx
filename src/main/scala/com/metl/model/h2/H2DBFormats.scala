@@ -260,7 +260,15 @@ class H2Theme extends H2MeTLStanza[H2Theme]{
 }
 object H2Theme extends H2Theme with LongKeyedMetaMapper[H2Theme]{
 }
-
+class H2ChatMessage extends H2MeTLStanza[H2ChatMessage]{
+  def getSingleton = H2ChatMessage
+  object content extends MappedMeTLString(this,4096)
+  object contentType extends MappedMeTLString(this,64)
+  object identity extends MappedMeTLString(this,H2Constants.identity)
+  object context extends MappedMeTLString(this,H2Constants.identity)
+}
+object H2ChatMessage extends H2ChatMessage with LongKeyedMetaMapper[H2ChatMessage]{
+}
 
 class H2VideoStream extends H2MeTLStanza[H2VideoStream]{
   def getSingleton = H2VideoStream

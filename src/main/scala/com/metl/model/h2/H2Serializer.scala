@@ -70,6 +70,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
         i.metlType.get match {
           case "ink" => toMeTLInk(i.asInstanceOf[H2Ink])
           case "theme" => toTheme(i.asInstanceOf[H2Theme])
+          case "chatMessage" => toChatMessage(i.asInstanceOf[H2ChatMessage])
           case "text" => toMeTLText(i.asInstanceOf[H2Text])
           case "multiWordText" => toMeTLMultiWordText(i.asInstanceOf[H2MultiWordText])
           case "image" => toMeTLImage(i.asInstanceOf[H2Image])
@@ -172,7 +173,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     val c = decStanza(h)
     MeTLTheme(config,c.author,c.timestamp,h.location.get,Theme(c.author,h.text.get,h.origin.get),c.audiences)
   }
-  override def fromTheme(i:MeTLTheme):H2Theme = incMeTLContent(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin).author(i.theme.author).room(i.location)
+  override def fromTheme(i:MeTLTheme):H2Theme = incStanza(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin).author(i.theme.author).room(i.location)
+
+  def toChatMessage(h:H2ChatMessage):MeTLChatMessage = {
+    val c = decStanza(h)
+    MeTLChatMessage(config,c.author,c.timestamp,h.identity.get,h.contentType.get,h.content.get,h.context.get,c.audiences)
+  }
+  override def fromChatMessage(i:MeTLChatMessage):H2ChatMessage = incStanza(H2ChatMessage.create,i,"chatMessage").identity(i.identity).contentType(i.contentType).content(i.content).context(i.context)
 
   def toMeTLImage(i:H2Image):MeTLImage = {
     val cc = decCanvasContent(i)
