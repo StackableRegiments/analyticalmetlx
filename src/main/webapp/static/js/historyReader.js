@@ -29,6 +29,9 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         boardContent.minY = 0;
         boardContent.maxX = boardWidth;
         boardContent.maxY = boardHeight;
+	/*Use 1:1 pixel size as a reasonable starting position.  This will keep textboxes from measuring themselves against a miniscule world and deciding that they are enormously wide*/
+	viewboxWidth = boardContent.maxX - boardContent.minX;
+	viewboxHeight = boardContent.maxY - boardContent.minY;
         $.each(boardContent.inks,function(i,ink){
             prerenderInk(ink);
         });

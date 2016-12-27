@@ -367,17 +367,17 @@ describe('When the class breaks into groups,', function() {
         tT.driver.execute("$('#isolateGroup_1').click()");
         tT.textMode.click();
         tT.keyboard(130,300,"RESPONSE TO GROUP 1 ONLY");
-        browser.pause(TEXT_DELAY);//Let everything synchronize
         tT.inkMode.click();
         tT.handwrite(_.map(_.range(200,400,15), function(i){
             return {x:50,y:i};
         }));
         tT.addImage("testMaterials/stormtrooper.jpg");
+        browser.pause(TEXT_DELAY);//Let everything synchronize
         var peer = sA;
         var nonPeer = sC;
-        assert.equal(_.keys(sB.inkStanzas).length,3);
+        assert.equal(_.keys(sB.inkStanzas).length,4);
         assert.equal(_.keys(sA.inkStanzas).length,2);
-        assert.equal(_.keys(sB.textStanzas).length,3);
+        assert.equal(_.keys(sB.textStanzas).length,4);
         assert.equal(_.keys(sA.textStanzas).length,2);
         assert.equal(_.keys(sB.imageStanzas).length,4);
         assert.equal(_.keys(sA.imageStanzas).length,2);
@@ -468,20 +468,20 @@ describe('When the class breaks into groups,', function() {
             user.textMode.click();
             user.keyboard(200,50 * (ui + 3),sprintf("Stormtrooper %s",ui));
         });
-        browser.pause(TEXT_DELAY);//Let everything synchronize
+        browser.pause(TEXT_DELAY * 3);//Let everything synchronize
         console.log("SB",sB.plainTexts);
         console.log("SC",sC.plainTexts);
         console.log("SA",sA.plainTexts);
-        assert.equal(_.keys(sB.inkStanzas).length,5);
-        assert.equal(_.keys(sB.textStanzas).length,5);
+        assert.equal(_.keys(sB.inkStanzas).length,6);
+        assert.equal(_.keys(sB.textStanzas).length,6);
         assert.equal(_.keys(sB.imageStanzas).length,6);
 
-        assert.equal(_.keys(sC.inkStanzas).length,5);
-        assert.equal(_.keys(sC.textStanzas).length,5);
+        assert.equal(_.keys(sC.inkStanzas).length,6);
+        assert.equal(_.keys(sC.textStanzas).length,6);
         assert.equal(_.keys(sC.imageStanzas).length,6);
 
         assert.equal(_.keys(sA.inkStanzas).length,2);
-        assert.equal(_.keys(sA.textStanzas).length,3);
+        assert.equal(_.keys(sA.textStanzas).length,2);
         assert.equal(_.keys(sA.imageStanzas).length,2);
     });
 });

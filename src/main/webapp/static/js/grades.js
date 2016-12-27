@@ -9,10 +9,10 @@ var Grades = (function(){
     var gradebooks = [];
     var spin = function(el,on,target){
         if(on){
-	    $(el).prop("disabled",true).css({position:"relative"});
-	    if(target){
-		el = target(el);
-	    }
+            $(el).prop("disabled",true).css({position:"relative"});
+            if(target){
+                el = target(el);
+            }
             el.append(
                 $("<div />",{
                     class:"spinner"
@@ -253,7 +253,7 @@ var Grades = (function(){
                             var associatedGrade = undefined;
                             var reRenderAssociations = function(){
                                 var aNodes = innerRoot.find(".associateController");
-				spin(aNodes,false);
+                                spin(aNodes,false);
                                 if ("foreignRelationship" in newGrade){
                                     aNodes.find(".createAssociation").hide();
                                     var system = newGrade.foreignRelationship.sys;
@@ -386,8 +386,8 @@ var Grades = (function(){
                                 }
                             });
                             var innerRoot = gradeAssessTemplate.clone();
-			    $("#"+uniqId).append(innerRoot);
-			    spin(innerRoot,true);
+                            $("#"+uniqId).append(innerRoot);
+                            spin(innerRoot,true);
                             var gradebookDatagrid       = innerRoot.find(".gradebookDatagrid");
                             var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
                             gradebookDatagrid.empty();
@@ -432,7 +432,7 @@ var Grades = (function(){
                                         });
                                         andThen(data);
                                     }).fail(function(jqxhr,textStatus,error){
-					spin(innerRoot,false);
+                                        spin(innerRoot,false);
                                         console.log("error",textStatus,error);
                                     });
                                 } else {
@@ -570,7 +570,7 @@ var Grades = (function(){
                                                     if (thisRemoteGrade !== undefined){
                                                         datum.remoteGrade = thisRemoteGrade.gradeValue;
                                                     }
-						    spin(b,false);
+                                                    spin(b,false);
                                                 });
                                                 return withData(modifiedData);
                                             });
@@ -582,8 +582,8 @@ var Grades = (function(){
                                     innerRoot.find(".sendGradesToRemote").on("click",function(){
                                         var b = this;
                                         spin(b,true,function(e){
-					    return $(e).find("span");
-					});
+                                            return $(e).find("span");
+                                        });
                                         var gradesToSend = _.filter(gradeValues[grade.id],function(g){
                                             return g.gradeValue != undefined;
                                         });
@@ -602,21 +602,21 @@ var Grades = (function(){
                                                             datum.remoteGrade = thisRemoteGrade.gradeValue;
                                                         }
                                                     });
-						    spin(b,false);
+                                                    spin(b,false);
                                                     return withData(modifiedData);
                                                 })
                                             },
                                             url:sprintf("/updateExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),
                                             contentType:"application/json"
                                         }).fail(function(jqxhr,textStatus,error){
-					    spin(b,false);
+                                            spin(b,false);
                                             console.log("error",textStatus,error);
                                         });
                                     });
                                 } else {
                                     innerRoot.find(".gradeSyncActions").remove();
                                 }
-				spin(innerRoot,false);
+                                spin(innerRoot,false);
                             };
                             generateData(withData);
                         });

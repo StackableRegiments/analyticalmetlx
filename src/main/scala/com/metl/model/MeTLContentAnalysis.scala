@@ -64,33 +64,45 @@ class ChunkAnalyzer extends Logger with Chunker{
     }
   }
   def add(c:MeTLStanza,room:MeTLRoom) = {
-    if(Globals.liveIntegration){
-      c match {
-        case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
-          case Right(t) => {
+    c match {
+      case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
+        case Right(t) => {
+          if(Globals.liveIntegration){
             CanvasContentAnalysis.getDescriptions(t) match {
               case (descriptions,words) => List(
                 descriptions.foreach(word => emit(Theme(i.author, word, "imageRecognition"),room)),
                 words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
             }
           }
-          case failure => warn(failure)
         }
-        case t:MeTLMultiWordText => {
-          t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
-        }
-        case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
-          case Some(partial) if (i.timestamp - latest(partial) < Globals.chunkingTimeout) => partialChunks + (i.author -> (i :: partial))
-          case Some(partial) => {
+        case failure => warn(failure)
+      }
+      case t:MeTLMultiWordText => {
+        t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
+        val corpus = t.words.map(_.text).mkString(" ")
+        val us = urls(corpus)
+        warn("Chunker considering corpus: %s -> %s".format(corpus,us))
+        us.foreach(url =>{
+          warn("Chunker found url: %s".format(url))
+          room ! MotherMessage(<a href={url}>{url}</a>,Nil)
+        })
+      }
+      case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
+        case Some(partial) if (i.timestamp - latest(partial) < Globals.chunkingTimeout) => partialChunks + (i.author -> (i :: partial))
+        case Some(partial) => {
+          if(Globals.liveIntegration){
             val desc = CanvasContentAnalysis.extract(partial)
             desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
             desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
             partialChunks + (i.author -> List(i))
           }
-          case None => partialChunks + (i.author -> (List(i)))
+          else{
+            partialChunks + (i.author -> List(i))
+          }
         }
-        case default => {}
+        case None => partialChunks + (i.author -> (List(i)))
       }
+      case default => {}
     }
   }
 }

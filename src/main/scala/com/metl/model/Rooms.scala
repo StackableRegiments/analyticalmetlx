@@ -130,6 +130,7 @@ case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
 case class UpdateThumb(slide:String)
 case class ConversationParticipation(roomName:String,currentParticipants:List[String],possibleParticipants:List[String])
 case class UpdateConversationDetails(roomName:String)
+case class MotherMessage(html:NodeSeq,audiences:List[Audience])
 
 case object HealthyWelcomeFromRoom
 case object Ping
@@ -316,6 +317,12 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       }
     }
     case u@UpdateThumb(slide) => joinedUsers.foreach(_._3 ! u)
+    case m@MotherMessage(html,audiences) => roomMetaData match {
+      case sl:SlideRoom => {
+        joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"mother",new Date().getTime,nextFuncName,"html",html.toString,sl.cd.jid.toString,audiences))
+      }
+      case _ => None
+    }
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom received unknown message")
@@ -383,7 +390,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             mp.postItems(List(
               MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",j.username),KVP("informalAcademic","joined"),Some(KVP("room",location)),None,None)
             ))
-          })          
+          })
         }
         j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance)
       }
