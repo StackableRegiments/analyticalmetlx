@@ -271,8 +271,10 @@ var Grades = (function(){
 									reRenderFunc();
 								}
 							});
+							var changeGvPopupTemplate = {};
 							var innerRoot = gradeAssessTemplate.clone();
 							var gradebookDatagrid	= innerRoot.find(".gradebookDatagrid");
+							var changeGvPopupTemplate = innerRoot.find(".gradeValueEditPopup").clone();
 							var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
 							gradebookDatagrid.empty();
 							var data = gradeValues[grade.id];
@@ -299,63 +301,90 @@ var Grades = (function(){
 							data = _.filter(data,function(d){
 								return d.type == gradeType;
 							});
+							var changeGradeFunc = function(gv){
+								var changeGvId = sprintf("changeGvPopup_%s",_.uniqueId());
+								var changeGvContainer = $("<div/>",{
+									id:changeGvId
+								});
+								console.log("gvPopup",gv);
+								var changeGvAlert = $.jAlert({
+									type:"modal",
+									content:changeGvContainer[0].outerHTML,
+									title:sprintf("change grade for %s",gv.gradedUser)
+								});
+								var gvActualContainer = $("#"+changeGvId);
+								var gvChangeElem = changeGvPopupTemplate.clone();
+								var scoringRoot = gvChangeElem.find(".changeGradeContainer");
+								var numericScore = scoringRoot.find(".numericScore");
+								var booleanScore = scoringRoot.find(".booleanScore");
+								var booleanScoreLabel = scoringRoot.find(".booleanScoreLabel");
+								var textScore = scoringRoot.find(".textScore");
+								var newGv = _.cloneDeep(gv);
+								switch (grade.gradeType){
+									case "numeric":
+										var changeScoreFunc = function(ev){
+											newGv.gradeValue = parseFloat(numericScore.val());
+										};
+										numericScore.val(gv.gradeValue).attr("min",grade.numericMinimum).attr("max",grade.numericMaximum).on("blur",changeScoreFunc);
+										booleanScore.remove();
+										booleanScoreLabel.remove();
+										textScore.remove();
+									break;
+									case "text":
+										numericScore.remove();
+										var changeScoreFunc = function(ev){
+											newGv.gradeValue = textScore.val();
+										};	
+										textScore.val(gv.gradeValue).on("blur",changeScoreFunc);
+										booleanScoreLabel.remove();
+										booleanScore.remove();
+									break;
+									case "boolean":
+										numericScore.remove();
+										var booleanScoreId = sprintf("booleanScoreId_%s",_.uniqueId());
+										var changeScoreFunc = function(ev){
+											newGv.gradeValue = booleanScore.prop("checked");
+										};
+										booleanScore.on("change",changeScoreFunc).prop("checked",gv.gradeValue).attr("id",booleanScoreId);
+										booleanScoreLabel.attr("for",booleanScoreId);
+										textScore.remove();
+									break;
+									default:
+										numericScore.remove();
+										booleanScore.remove();
+										booleanScoreLabel.remove();
+										textScore.remove();
+									break;
+								}
+								var cbId = sprintf("privateComment_%s",_.uniqueId);
+								var commentBox = gvChangeElem.find(".gradeValueCommentTextbox").val(gv.gradeComment).attr("id",cbId);
+								commentBox.on("blur",function(){
+									newGv.gradeComment = $(this).val();
+								});
+								gvChangeElem.find(".gradeValueCommentTextboxLabel").attr("for",cbId);
+								var pvcbId = sprintf("privateComment_%s",_.uniqueId);
+								var privateCommentBox = gvChangeElem.find(".gradeValuePrivateCommentTextbox").val(gv.gradePrivateComment).attr("id",pvcbId);
+								privateCommentBox.on("blur",function(){
+									newGv.gradePrivateComment = $(this).val();
+								});
+								gvChangeElem.find(".gradeValuePrivateCommentTextboxLabel").attr("for",pvcbId);
+								var gvChangeSubmit = gvChangeElem.find(".submitGradeValueChange");
+								gvChangeSubmit.on("click",function(){
+									sendStanza(newGv);
+									changeGvAlert.closeAlert();
+								});
+								var gvChangeCancel = gvChangeElem.find(".cancelGradeValueChange");
+								gvChangeCancel.on("click",function(){
+									changeGvAlert.closeAlert();
+								});
+								gvActualContainer.append(gvChangeElem);
+							};
 							var gradebookFields = [
 								{name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
 								{name:"timestamp",type:"dateField",title:"When",readOnly:true},
-								{
-									name:"gradeValue",
-									type:"text",
-									title:"Score",
-									readOnly:true,
-									sorting:true,
-									itemTemplate:function(score,gradeValue){
-										var scoringRoot = assessUserTemplate.clone();
-										var numericScore = scoringRoot.find(".numericScore");
-										var booleanScore = scoringRoot.find(".booleanScore");
-										var booleanScoreLabel = scoringRoot.find(".booleanScoreLabel");
-										var textScore = scoringRoot.find(".textScore");
-										switch (grade.gradeType){
-											case "numeric":
-												var changeScoreFunc = function(ev){
-													gradeValue.gradeValue = parseFloat(numericScore.val());
-													sendStanza(gradeValue);			
-												};
-												numericScore.val(gradeValue.gradeValue).attr("min",grade.numericMinimum).attr("max",grade.numericMaximum).on("blur",changeScoreFunc);
-												booleanScore.remove();
-												booleanScoreLabel.remove();
-												textScore.remove();
-											break;
-											case "text":
-												numericScore.remove();
-												var changeScoreFunc = function(ev){
-													gradeValue.gradeValue = textScore.val();
-													sendStanza(gradeValue);
-												};	
-												textScore.val(gradeValue.gradeValue).on("blur",changeScoreFunc);
-												booleanScoreLabel.remove();
-												booleanScore.remove();
-											break;
-											case "boolean":
-												numericScore.remove();
-												var booleanScoreId = sprintf("booleanScoreId_%s",_.uniqueId());
-												var changeScoreFunc = function(ev){
-													gradeValue.gradeValue = booleanScore.prop("checked");
-													sendStanza(gradeValue);			
-												};
-												booleanScore.on("change",changeScoreFunc).prop("checked",gradeValue.gradeValue).attr("id",booleanScoreId);
-												booleanScoreLabel.attr("for",booleanScoreId);
-												textScore.remove();
-											break;
-											default:
-												numericScore.remove();
-												booleanScore.remove();
-												booleanScoreLabel.remove();
-												textScore.remove();
-											break;
-										}
-										return scoringRoot;	
-									}
-								}
+								{name:"gradeValue",type:"text",title:"Score",readOnly:true, sorting:true },
+								{name:"gradeComment",type:"text",title:"Comment",readOnly:true,sorting:true},
+								{name:"gradePrivateComment",type:"text",title:"PrivateComment",readOnly:true,sorting:true}
 							];
 							$("#"+uniqId).append(innerRoot);
 							gradebookDatagrid.jsGrid({
@@ -366,6 +395,9 @@ var Grades = (function(){
 								sorting:true,
 								paging:true,
 								noDataContent: "No gradeable users",
+								rowClick: function(obj){
+									changeGradeFunc(obj.item);
+								},
 								controller: {
 									loadData: function(filter){
 										if ("sortField" in filter){
