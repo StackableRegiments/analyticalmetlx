@@ -333,6 +333,16 @@ object MeTLChatMessage {
 object MeTLTextWord {
   def empty = MeTLTextWord("",false,false,false,"",Color.empty,"",0.0)
 }
+
+case class MeTLChatMessage(override val server:ServerConfiguration, override val author:String, override val timestamp:Long, identity:String, contentType:String, content:String, context:String, override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLChatMessage = Stopwatch.time("MeTLChatMessage.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+}
+object MeTLChatMessage {
+  def empty = MeTLChatMessage(ServerConfiguration.empty,"",0L,"","","","",Nil)
+}
+
 case class MeTLTextWord(text:String,bold:Boolean,underline:Boolean,italic:Boolean,justify:String,color:Color,font:String,size:Double){
   def scale(factor:Double):MeTLTextWord = copy(size=size * factor)
 }

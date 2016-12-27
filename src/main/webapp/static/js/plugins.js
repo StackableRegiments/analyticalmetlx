@@ -1,5 +1,199 @@
 var Plugins = (function(){
     return {
+				"Chat":(function(){
+					var outer = {};
+					var cmHost = {};
+					var cmTemplate = {};
+					var containerId = sprintf("chatbox_%s",_.uniqueId());
+					var container = $("<div />",{
+						id:containerId
+					});
+					var renderChatMessage = function(chatMessage,targetType,target,context){
+						var rootElem = cmTemplate.clone();
+						var username = UserSettings.getUsername();
+						var authorElem = rootElem.find(".chatMessageAuthor");
+						authorElem.text(chatMessage.author);
+						rootElem.find(".chatMessageTimestamp").text(new Date(chatMessage.timestamp).toISOString());
+						var contentElem = rootElem.find(".chatMessageContent");
+						switch (chatMessage.contentType){
+							case "text":
+								contentElem.text(chatMessage.content);
+								break;
+							case "html":
+								contentElem.html(chatMessage.content);
+								break;
+						}
+						if (targetType && target){
+							switch (targetType){
+								case "whisperTo":
+									contentElem.addClass("whisper");
+									authorElem.text(sprintf("to %s",target));
+								break;
+								case "whisperFrom":
+									contentElem.addClass("whisper");
+									authorElem.text(sprintf("from %s",target));
+								break;
+								case "groupChatTo":
+									contentElem.addClass("groupChat");
+									authorElem.text(sprintf("to %s",target));
+								break;
+								case "groupChatFrom":
+									contentElem.addClass("groupChat");
+									authorElem.text(sprintf("from %s",target));
+								break;
+							}
+						}
+						return rootElem;
+					};
+					var actOnStanzaReceived = function(stanza){
+						if (stanza && "type" in stanza && stanza.type == "chatMessage"){
+							var username = UserSettings.getUsername();
+							var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
+								return _.map(slide.groupSets,function(groupSet){
+									return groupSet.groups;
+								});
+							})));
+							boardContent.chatMessages.push(stanza);
+							if (!stanza.audiences.length){ //it's a public message
+								cmHost.append(renderChatMessage(stanza));
+								cmHost.scrollTop(cmHost[0].scrollHeight);
+							} else { // it's targetted
+								var relAud = _.find(stanza.audiences,function(aud){
+									return aud.type == "user" || aud.type == "group";
+								});
+								if (stanza.author == username){ //it's from me
+									if (relAud && relAud.type == "user"){
+										cmHost.append(renderChatMessage(stanza,"whisperTo",relAud.name));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									} else if (relAud && relAud.type == "group"){
+										cmHost.append(renderChatMessage(stanza,"groupChatTo",relAud.name));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									}
+								} else { // it's possibly targetted to me
+									if (relAud && relAud.type == "user" && relAud.name == username){
+										cmHost.append(renderChatMessage(stanza,"whisperFrom",stanza.author));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									} else if (relAud && relAud.type == "group" && _.some(convGroups,function(g){ return g.name == relAud.name && _.some(g.members,function(m){ return m.name == username; });})){
+										cmHost.append(renderChatMessage(stanza,"groupChatFrom",stanza.author,relAud.name));
+										cmHost.scrollTop(cmHost[0].scrollHeight);
+									}
+								}
+							}
+						}
+					};
+					var actOnHistoryReceived = function(history){
+						_.forEach(history.chatMessages,actOnStanzaReceived);
+					};
+					var createChatMessage = function(text,context,audiences){
+						var author = UserSettings.getUsername();
+						var loc = Conversations.getCurrentSlideJid();
+						var now = new Date().getTime();
+						var id = sprintf("%s_%s_%s",author,loc,now);
+						var cm = {
+							type:"chatMessage",
+							author:author,
+							timestamp:now,
+							identity:id,
+							contentType:"text",
+							content:text,
+							context:context || loc,
+							audiences:audiences || []
+						};
+						console.log("created chat message:",cm);
+						return cm;
+					};
+					var sendChatMessage = function(text){
+						if (text && text.length){
+							var audiences = [];
+							var context = "";
+							var message = "";
+							if (text.startsWith("/w")){
+								var parts = text.split(" ");
+								if (parts.length && parts.length >= 2){
+									audiences.push({
+										domain:"metl",
+										name:parts[1],
+										type:"user",
+										action:"read"
+									});
+									message = _.drop(parts,2).join(" ");
+								} else {
+									return text;
+								}
+							} else if (text.startsWith("/g")){
+								var parts = text.split(" ");
+								if (parts.length && parts.length >= 2){
+									audiences.push({
+										domain:"metl",
+										name:parts[1],
+										type:"group",
+										action:"read"
+									});
+									message = _.drop(parts,2).join(" ");
+								} else {
+									return text;
+								}
+							} else {
+								message = text;
+							}
+							sendStanza(createChatMessage(message,context,audiences));
+							return "";
+						} else {
+							return text;
+						}
+					};
+
+					return {
+						style:".chatMessage {color:white}"+
+					".chatMessageContainer {background:black; overflow-y:auto; height:110px;}"+
+					".chatContainer {width:320px;height:140px;}"+
+					".chatMessageAuthor {color:gray; background:black}"+
+					".chatMessageTimestamp {color:red; background:black; font-size:small;}"+
+					".chatMessageContent {background:black}"+
+					".chatboxContainer {background:black}"+
+					".chatbox {background:white; color:black; display:inline-block; padding:0px; margin:0px;}"+
+					".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
+					".groupChat {color:orange}"+
+					".whisper {color:pink}",
+						load:function(bus,params){
+							bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
+							bus.historyReceived["Chatbox"] = actOnHistoryReceived;
+							container.append('<div class="chatContainer" >'+
+								'<div class="chatMessageContainer" >'+
+								'<div class="chatMessage" >'+
+								'<span class="chatMessageTimestamp" >'+
+								'</span>'+
+								'<span class="chatMessageAuthor" >'+
+								'</span>'+
+								'<span class="chatMessageContent">'+
+								'</span>'+
+								'</div>'+
+								'</div>'+
+								'<div class="chatboxContainer">'+
+								'<input type="text" class="chatbox">'+
+								'</input>'+
+								'<button class="chatboxSend">Send</button>'+
+								'</div>'+
+								'</div>');
+							return container;
+						},
+						initialize:function(){
+							outer = $("#"+containerId);
+							cmHost = outer.find(".chatMessageContainer");
+							cmTemplate = cmHost.find(".chatMessage").clone();
+							cmHost.empty();
+							var chatbox = outer.find(".chatboxContainer .chatbox").on("keydown",function(ev){
+								if (ev.keyCode == 13){
+									var cb = $(this);
+									cb.val(sendChatMessage(cb.val()));
+								}
+							});
+							var sendButton = outer.find(".chatboxContainer .chatboxSend").on("click",function(){
+								chatbox.val(sendChatMessage(chatbox.val()));
+							});
+						}
+					};
+				})(),
         "Face to face":(function(){
             var container = $("<div />");
             return {

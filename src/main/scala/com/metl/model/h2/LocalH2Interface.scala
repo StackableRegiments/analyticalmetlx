@@ -60,12 +60,12 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2UnhandledContent,
         DatabaseVersion,
         H2Theme,
-        H2UndeletedCanvasContent,
         H2Grade,
         H2NumericGradeValue,
         H2BooleanGradeValue,
         H2TextGradeValue,
-        H2ChatMessage
+        H2ChatMessage,
+        H2UndeletedCanvasContent
       ):_*
     )
     // this starts our pool in advance
