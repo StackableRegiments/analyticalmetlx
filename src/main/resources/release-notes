@@ -1,4 +1,11 @@
-<<<<<<< HEAD
+1.0.8
+Story: METL-338: Comments UI on grades.
+Story: METL-339: Chatbox publishes any URL identified within a teacher-published textbox.
+Story: METL-131: Force follow myself.
+Story: METL-165: Identify selected canvas content.
+Bugfix: METL-82: Images within table cells are not scaled to fit the cell.
+Bugfix: METL-340: When a textbox is the only content its size is unpredictable.
+
 1.0.7
 Story: METL-335: Chatbox.
 Story: METL-328: Show groupset name and checkbox.
@@ -7,8 +14,6 @@ Improvement: METL-334: Loading spinners and disabled buttons (prototype).
 Bugfix: METL-332: Sometimes new conversation is displayed twice.
 Bugfix: METL-320: Health bar not visible on top left of Whiteboard (further tweaks).
 
-=======
->>>>>>> origin/METL-338
 1.0.6
 Improvement: METL-331: Slide display virtualisation.
 
