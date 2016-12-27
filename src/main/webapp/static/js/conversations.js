@@ -433,27 +433,20 @@ var Conversations = (function(){
         currentlyDisplayedConversations = listOfConversations;
         refreshConversationSearchResults();
     };
-    //var onSyncMoveTimerElapsed = undefined;
     var actOnSyncMove = function(jid){
-        if ((Conversations.getIsSyncedToTeacher() && !shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
+        console.log("actOn",jid);
+        if ((Conversations.getIsSyncedToTeacher() || shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
             if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
                 WorkQueue.enqueue(function(){
-                    performSyncMoveTo(jid);
+                    if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
+                        currentTeacherSlide = jid;
+                        doMoveToSlide(jid);
+                    }
                     return false;
                 });
             }
         }
     }
-    var performSyncMoveTo = function(jid){
-        if ((!shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
-            if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
-                currentTeacherSlide = jid;
-                if (Conversations.getIsSyncedToTeacher()){
-                    doMoveToSlide(jid);
-                }
-            }
-        }
-    };
     var updateThumbnailFor = function(slideId) {
         var slide = _.find(currentConversation.slides, ['id',parseInt(slideId)]);
         ThumbCache.paint(slide);
@@ -1038,7 +1031,8 @@ function receiveConversationDetails(details){
     Progress.call("conversationDetailsReceived",[details]);
 }
 function receiveSyncMove(jid){
-    if(Conversations.getIsSyncedToTeacher()){
+    console.log("receiveSyncMove",jid)
+    if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
         Progress.call("syncMoveReceived",[jid]);
     }
 }

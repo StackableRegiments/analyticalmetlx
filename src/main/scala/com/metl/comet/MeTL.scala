@@ -154,14 +154,17 @@ class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
     case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
       trace("incoming syncMove: %s".format(c))
       val newJid = c.commandParameters(0).toInt
-      currentConversation.filter(cc => currentSlide.exists(_ != newJid)).map(cc => {
-        cc.slides.find(_.id == newJid).foreach(slide => {
-          trace("moving to: %s".format(slide))
-          currentSlide = Some(slide.id)
-          reRender
-          partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
+      val signature = c.commandParameters(1)
+      if(signature != uniqueId){
+        currentConversation.filter(cc => currentSlide.exists(_ != newJid)).map(cc => {
+          cc.slides.find(_.id == newJid).foreach(slide => {
+            trace("moving to: %s".format(slide))
+            currentSlide = Some(slide.id)
+            reRender
+            partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
+          })
         })
-      })
+      }
     }
     case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
       //not relaying teacherInConversation to page
@@ -530,7 +533,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
           key <- newRelationshipKey
           if (sys != null && sys != "")
           if (key != null && key != "")
-        } yield {
+            } yield {
           com.metl.liftAuthenticator.ForeignRelationship(sys,key)
         }
         var newC = c.replaceSubject(newSubject).setForeignRelationship(newRelationship)
@@ -1316,23 +1319,29 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     trace(receiveConversationDetails)
     val receiveCurrentSlide:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_CURRENT_SLIDE, JString(cc)))
     trace(receiveCurrentSlide)
-    val receiveLastSyncMove:Box[JsCmd] = currentConversation.map(cc => {
-      trace("receiveLastSyncMove attempting to get room %s, %s".format(cc,server))
-      val room = MeTLXConfiguration.getRoom(cc.jid.toString,server)
-      trace("receiveLastSyncMove: %s".format(room))
-      val history = room.getHistory
-      trace("receiveLastSyncMove: %s".format(history))
-      history.getLatestCommands.get("/SYNC_MOVE") match{
-        case Some(lastSyncMove) =>{
-          trace("receiveLastSyncMove found move: %s".format(lastSyncMove))
-          Call(RECEIVE_SYNC_MOVE,JString(lastSyncMove.commandParameters(0).toString))
+    val receiveLastSyncMove:Box[JsCmd] = if(shouldModifyConversation()){
+      Empty
+    }
+    else {
+      currentConversation.map(cc => {
+        trace("receiveLastSyncMove attempting to get room %s, %s".format(cc,server))
+        val room = MeTLXConfiguration.getRoom(cc.jid.toString,server)
+        trace("receiveLastSyncMove: %s".format(room))
+        val history = room.getHistory
+        trace("receiveLastSyncMove: %s".format(history))
+        history.getLatestCommands.get("/SYNC_MOVE") match{
+          case Some(lastSyncMove) =>{
+            trace("receiveLastSyncMove found move: %s".format(lastSyncMove))
+            val cp = lastSyncMove.commandParameters
+            Call(RECEIVE_SYNC_MOVE,JInt(cp(0).toInt),JString(cp(1).toString))
+          }
+          case _ =>{
+            trace("receiveLastSyncMove no move found")
+            Noop
+          }
         }
-        case _ =>{
-          trace("receiveLastSyncMove no move found")
-          Noop
-        }
-      }
-    })
+      })
+    }
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
       val sessionName = tokSessionTup._1
@@ -1472,7 +1481,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         trace("conversation contains slide")
         currentSlide = Full(jid)
         if (cc.author.trim.toLowerCase == username.trim.toLowerCase && isInteractiveUser.map(iu => iu == true).getOrElse(true)){
-          val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid))
+          val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid,uniqueId))
           rooms.get((server,cc.jid.toString)).map(r => r() ! LocalToServerMeTLStanza(syncMove))
         }
         joinRoomByJid(jid)
@@ -1783,7 +1792,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
         trace("incoming syncMove: %s".format(c))
         val newJid = c.commandParameters(0).toInt
-        partialUpdate(Call(RECEIVE_SYNC_MOVE,newJid))
+        val signature = c.commandParameters(1)
+        if(uniqueId != signature){//Don't respond to moves that started at this actor
+          partialUpdate(Call(RECEIVE_SYNC_MOVE,JInt(newJid),JString(signature)))
+        }
       }
       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
         //not relaying teacherInConversation to page
@@ -1796,10 +1808,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         //not sending the quizResponse to the page, because you're not the author and it's not yours
       }
       /*
-      case g:MeTLGrade if !shouldModifyConversation() && !g.visible => {
-        //not sending a grade to the page because you're not the author, and this one's not visible
-      }
-      */
+       case g:MeTLGrade if !shouldModifyConversation() && !g.visible => {
+       //not sending a grade to the page because you're not the author, and this one's not visible
+       }
+       */
       case gv:MeTLGradeValue => {
         currentConversation.foreach(cc => {
           if (shouldModifyConversation(cc)){
@@ -1830,31 +1842,31 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
   })
   /*
-  protected var expectedAttendanceCache:Option[List[Member]] = None
-  def getAttendance = {
-    val expectedAttendance = expectedAttendanceCache.getOrElse({
-      val calced = (for(
-        c <- currentConversation.toList;
-        gp <- Globals.groupsProviders.filter(_.canQuery);
-        ou <- gp.getOrgUnit(c.subject).toList) yield gp.getMembersFor(ou)).flatten
-    expectedAttendanceCache = Some(calced)
-    calced
-    })
-    val actualAttendance = (for(
-      conversation <- currentConversation;
-      room <- rooms.get(server,conversation.jid.toString)) yield {
-      room().getAttendances
-        .filter(_.present)
-        .map(_.author)
-        .distinct
-        .map(JString(_))
-    }).getOrElse(Nil)
-    trace("actualAttendance: %s".format(actualAttendance.toString))
-    currentSlide.map(slideJid => JObject(List(
-      JField("val",JInt(actualAttendance.length)),
-      JField("max",JInt(expectedAttendance.length)))))
-  }
-  */
+   protected var expectedAttendanceCache:Option[List[Member]] = None
+   def getAttendance = {
+   val expectedAttendance = expectedAttendanceCache.getOrElse({
+   val calced = (for(
+   c <- currentConversation.toList;
+   gp <- Globals.groupsProviders.filter(_.canQuery);
+   ou <- gp.getOrgUnit(c.subject).toList) yield gp.getMembersFor(ou)).flatten
+   expectedAttendanceCache = Some(calced)
+   calced
+   })
+   val actualAttendance = (for(
+   conversation <- currentConversation;
+   room <- rooms.get(server,conversation.jid.toString)) yield {
+   room().getAttendances
+   .filter(_.present)
+   .map(_.author)
+   .distinct
+   .map(JString(_))
+   }).getOrElse(Nil)
+   trace("actualAttendance: %s".format(actualAttendance.toString))
+   currentSlide.map(slideJid => JObject(List(
+   JField("val",JInt(actualAttendance.length)),
+   JField("max",JInt(expectedAttendance.length)))))
+   }
+   */
   private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
   private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
   private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)
