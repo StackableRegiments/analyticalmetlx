@@ -344,7 +344,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   protected def putToD2L[T](url:java.net.URI,json:JValue,expectHttpFailure:Boolean = false)(implicit m:Manifest[T]):Option[T] = {
     try {
       val jValueString = compactRender(json)
-      val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,List(("Content-Type","application/json")))
+      val headers = List(("Content-Type","application/json"))
+      val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,headers)
+      println("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
       None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -559,7 +561,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
     val gv = Extraction.decompose(gradeValue)
-    println("sending new gradeValue: %s".format(gv))
+    println("sending new gradeValue: %s".format(compactRender(gv)))
     putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
   }
 

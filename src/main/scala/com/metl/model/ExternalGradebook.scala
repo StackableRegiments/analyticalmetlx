@@ -18,8 +18,8 @@ object ExternalGradebooks {
         appKey <- (n \ "@appKey").headOption.map(_.text)
         userId <- (n \ "@userId").headOption.map(_.text)
         userKey <- (n \ "@userKey").headOption.map(_.text)
-        leApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
-        lpApiVersion <- (n \ "@leApiVersion").headOption.map(_.text)
+        leApiVersion <- (n \ "@leApiVersion").headOption.map(_.text)
+        lpApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
         acceptableRoleList = (n \ "acceptableRole").toList.map(_.text)
       } yield {
         new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
@@ -125,8 +125,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     val valueScore = None
     val textScore = in.getTextGrade
     D2LIncomingGradeValue(
-      Comments = D2LDescriptionInput(Content = Some(in.getComment.getOrElse("")),Type=Some("Html")),
-      PrivateComments = D2LDescriptionInput(Content = Some(in.getPrivateComment.getOrElse("")),Type=Some("Html")),
+      Comments = D2LDescriptionInput(Content = Some(in.getComment.getOrElse("")),Type=Some("Text")),
+      PrivateComments = D2LDescriptionInput(Content = Some(in.getPrivateComment.getOrElse("")),Type=Some("Text")),
       GradeObjectType = gradeObjectType,
       PointsNumerator = numericScore,
       Pass = passScore,
