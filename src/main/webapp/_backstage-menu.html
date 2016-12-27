@@ -145,6 +145,10 @@
 					</div>
 					<div id="gradesDatagrid">
 						<span class="gradeAssessContainer">
+							<div class="gradeSyncActions">
+								<button class="getRemoteData button-transparent-border mth"><span>Refresh remote data</span></button>
+								<button class="sendGradesToRemote button-transparent-border mth"><span>Send grades</span></button>
+							</div>
 							<div class="gradebookDatagrid">
 								<span class="gradeValueEditPopup">
 									<div class="changeGradeContainer">
@@ -204,8 +208,35 @@
 									<input type="checkbox" class="gradeVisibleCheckbox"></input>
 									<label class="gradeVisibleLabel">Visible to students</label>
 								</div>
-								<input type="button" class="cancelGradeEdit" value="cancel"></input>
-								<input type="button" class="submitGradeEdit" value="submit"></input>
+								<div class="associateController">
+									<span class="refreshAssociation">
+										<span class="associationSystem"></span> :
+										<span class="associationOrgUnit"></span> :
+										<span class="associationGradeId"></span>
+										<span class="association"></span>
+										<button class="requestRefreshAssociation button-transparent-border mth"><span>Refresh from remote</span></button>
+									</span>
+									<span class="createAssociation">
+										<span class="requestAssocPhase1 associationPhase">
+											<button class="requestAssociation button-transparent-border mth"><span>Create association</span></button>
+										</span>
+										<span class="requestAssocPhase2 associationPhase">
+											<select id="chooseGradebookForGradeSelectBox" class="chooseGradebook"></select>
+											<label for="chooseGradebookForGradeSelectBox">Gradebooks</label>
+											<button class="commitGradebook button-transparent-border mth"><span>Select Gradebook</span></button>
+										</span>
+										<span class="requestAssocPhase3 associationPhase">
+											<select id="chooseOrgUnitForGradeSelectBox" class="chooseOrgUnit"></select>
+											<label for="chooseOrgUnitForGradeSelectBox">Courses</label>
+											<button class="commitOrgUnit button-transparent-border mth"><span>Select Course</span></button>
+										</span>
+										<span class="requestAssocPhase4 associationPhase">
+											<button class="createGrade button-transparent-border mth"><span>Create grade</span></button>
+										</span>
+									</span>
+								</div>
+								<button class="cancelGradeEdit button-transparent-border mth"><span>Cancel</span></button>
+								<button class="submitGradeEdit button-transparent-border mth"><span>Submit</span></button>
 							</fieldSet>
 						</span>
 						<span class="gradeActionsContainer">

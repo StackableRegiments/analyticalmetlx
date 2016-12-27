@@ -217,15 +217,20 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     })
   }
+  def setupExternalGradebooksFromFile(filePath:String) = {
+    val nodes = XML.load(filePath) \\ "externalGradebooks"
+    Globals.gradebookProviders = ExternalGradebooks.configureFromXml(nodes)
+  }
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
     ifConfigured(authorizationNodes,"selfGroups",(n:NodeSeq) => {
-      Globals.groupsProviders = new SelfGroupsProvider() :: Globals.groupsProviders
+      Globals.groupsProviders = new SelfGroupsProvider("selfGroups") :: Globals.groupsProviders
     },false)
     ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
       Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
     },true)
+    println("groupsProviders: %s".format(Globals.getGroupsProviders.map(gp => "%s[%s](%s)".format(gp,gp.storeId,gp.canQuery))))
     info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
@@ -338,6 +343,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     //setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
 
+    setupExternalGradebooksFromFile(Globals.configurationFileLocation)
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
