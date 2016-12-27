@@ -5,11 +5,15 @@ title: Learning
 
 ## Polls
 
-A teacher can create polls, view responses and display the poll results in the conversation.
+The teacher can create polls, view responses and display the poll results in the conversation.
+
+[More...](guide-polls.html)
 
 ## Grades
 
-...
+The teacher can assess students and assign grades.
+
+[More...](guide-grades.html)
 
 ## Attachments
 
@@ -23,15 +27,16 @@ which gives the user control over the content location (and whether it is privat
 ## Submissions
 
 The submissions view shows the conversation owner content that users have submitted (including user name). 
-The instructor can also choose to display the submission on the next page (without user name).
+The conversation owner can also choose to display the submission on the next page (without user name).
 
 ## Group Builder
 
-...
+The teacher can use this screen to move students between [Groups](guide-groups.html).  
 
 ## Participants
 
-The participants view of a page shows the conversation owner how active each user is on that page.
+The participants screen shows the conversation owner how active each user is on that page.  
+This screen also contains the [Word Cloud](guide-word-cloud.html) analysis. 
 
 ## Content Filter
 

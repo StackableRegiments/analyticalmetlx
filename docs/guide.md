@@ -3,9 +3,21 @@ layout: guide
 title: User Guide
 ---
 
-This is information for teachers, teaching assistants, student champions and all other MeTL users.
+This is for teachers, teaching assistants, student champions and all other MeTL users.
 
-It covers navigation of the MeTL user interface (also referred to as whiteboard) as well as the best ways to support teaching activities.
+Topics include:
+- [Conversation](guide-conversation-search.html) management 
+- [Whiteboard](guide-whiteboard.html) navigation 
+- Conversation [Options](guide-options.html)
+- Associated [Learning](guide-learning.html) tools
+- [Settings](guide-settings.html)
+
+Tips to support teaching activities are provided throughout the guide.
+
+## Conventions
+
+- "Conversation owner" is sometimes referred to as teacher when in a pedagogical (teaching) context. 
+- "Other user" is sometimes referred to as student in the same context.
 
 <!--
 ## Content
