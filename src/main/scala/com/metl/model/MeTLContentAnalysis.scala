@@ -32,6 +32,7 @@ trait Chunker{
 }
 class ChunkAnalyzer extends Logger with Chunker{
   var partialChunks = Map.empty[String,List[MeTLInk]]
+  var alreadyReleased = Set.empty[String]
   val URL = """(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""".r
   def urls(s:String) = URL.findAllIn(s)
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
@@ -81,10 +82,12 @@ class ChunkAnalyzer extends Logger with Chunker{
         t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
         val corpus = t.words.map(_.text).mkString(" ")
         val us = urls(corpus)
-        warn("Chunker considering corpus: %s -> %s".format(corpus,us))
         us.foreach(url =>{
-          warn("Chunker found url: %s".format(url))
-          room ! MotherMessage(<a href={url}>{url}</a>,Nil)
+          val identity = "%s@%s:%s".format(url,c.author,room.location)
+          if(!alreadyReleased(identity)){
+            room ! MotherMessage(<a href={url}>{url}</a>,Nil)
+            alreadyReleased = alreadyReleased + identity
+          }
         })
       }
       case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
