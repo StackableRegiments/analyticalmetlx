@@ -54,6 +54,14 @@ var Grades = (function(){
 						var oldGrade = grades[stanza.id];
 						if (oldGrade == undefined || oldGrade.timestamp < stanza.timestamp){
 							grades[stanza.id] = stanza;
+							if (!skipRender){
+								if (oldGrade){
+									if ("visible" in oldGrade && oldGrade.visible == false && "visible" in stanza && stanza.visible == true){ // when a slide is made visible, the student may not necessarily have all their grade values already, so they'll be unable to see them until they've fetched a new history.  So, if it was visible before, then this change shouldn't trigger a history load.
+										getHistory(Conversations.getCurrentSlideJid());
+									} else {
+									}
+								}
+							}
 						}
 					break;
 					case "numericGradeValue":
