@@ -76,7 +76,7 @@ var Quizzes = (function(){
             reRenderActiveGraphFunction = function(quizId){
                 if (quizId == quizSummary.key){
                     var rootElem = showResultsTemplate.clone();
-		    rootElem.find(".quizQuestion").text(quiz.question);
+                    rootElem.find(".quizQuestion").text(quiz.question);
                     var quizResultsPopupId = sprintf("quizResultsPopupGraph_%s",quiz.id);
                     var svg = $(quizResultsGraphs[quizSummary.key]).clone();
                     rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId).append(svg.clone()).css({width:"45%"});
@@ -152,6 +152,43 @@ var Quizzes = (function(){
                             processData: false
                         });
                     };
+                    var word = function(body,size){
+                        return {
+                            bold:false,
+                            color:["#000000",255],
+                            font:"sans-serif",
+                            italic:false,
+                            justify:"left",
+                            size:size,
+                            text:sprintf("%s\n",body),
+                            underline:false
+                        };
+                    }
+                    var labels = function(slide){
+                        var opts = _.map(quiz.options,function(opt){
+                            return word(sprintf("%s: %s",opt.name,opt.text),18);
+                        });
+                        opts.unshift(word(quiz.question,24));
+                        opts.push(word("\n",24));
+                        var stanza = {
+                            author:UserSettings.getUsername(),
+                            timestamp:-1,
+                            target:"presentationSpace",
+                            tag:"_",
+                            privacy:"PUBLIC",
+                            slide:slide,
+                            identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
+                            type:"multiWordText",
+                            x:margin.left,
+                            y:margin.bottom + resultsH,
+                            requestedWidth:resultsW,
+                            width:resultsW,
+                            height:resultsH,
+                            words:opts,
+                            audiences:[]
+                        }
+                        return stanza;
+                    };
                     rootElem.find(".quizResultsShouldDisplayOnSlide").unbind("click").on("click",function(){
                         withSvgQuizImage(function(newIdentity,w,h){
                             var slideId = Conversations.getCurrentSlideJid();
@@ -171,10 +208,11 @@ var Quizzes = (function(){
                                 tag:newTag,
                                 target:"presentationSpace",
                                 timestamp:t,
-                                x:10,
-                                y:10
+                                x:margin.left,
+                                y:margin.top
                             };
                             sendStanza(imageStanza);
+                            sendStanza(labels(slideId));
                             jAlert.closeAlert();
                             hideBackstage();
                         });
@@ -182,8 +220,8 @@ var Quizzes = (function(){
                     rootElem.find(".quizResultsShouldDisplayOnNextSlide").unbind("click").on("click",function(){
                         withSvgQuizImage(function(newIdentity,w,h){
                             var convJid = Conversations.getCurrentConversationJid();
-                            newIndex = Conversations.getCurrentSlide().index + 1;
-                            addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity);
+                            var newIndex = Conversations.getCurrentSlide().index + 1;
+                            addImageSlideToConversationAtIndex(convJid,newIndex,newIdentity,labels("0"));
                             jAlert.closeAlert();
                             hideBackstage();
                         });
@@ -541,6 +579,12 @@ var Quizzes = (function(){
             return {};
         }
     };
+    var margin = {
+        left:30,
+        right:30,
+        top:30,
+        bottom:30
+    }
     var generateQuizResultsGraph = function(quiz,w,h){
         var theseQuizAnswerers = quizAnswersFunction(quiz);
         var quizOptionAnswerCount = function(quiz, qo){
@@ -562,12 +606,7 @@ var Quizzes = (function(){
             };
         });
 
-        var margin = {
-            left:30,
-            right:30,
-            top:30,
-            bottom:30
-        }
+
         var elem = document.createElementNS("http://www.w3.org/2000/svg", 'svg')
         var svg = d3.select(elem)
                 .attr("width","100%")

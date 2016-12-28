@@ -947,9 +947,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case JArray(groups) => groups.map(getArgAsListOfStrings _).map(members => com.metl.data.Group(serverConfig,nextFuncName,jid,new Date().getTime,members))
         case _ => Nil
       }
-      warn("initialGroups: %s".format(initialGroups))
       val c = serverConfig.detailsOfConversation(jid)
-      warn("Requested group slide: %s".format(args))
       val grouping = getArgAsString(args(2)) match {
         case "byTotalGroups" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByTotalGroups(getArgAsInt(args(4))),initialGroups)
         case "byMaximumSize" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByMaximumSize(getArgAsInt(args(4))),initialGroups)
@@ -970,10 +968,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case _ => c
       })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
-    ClientSideFunction("addImageSlideToConversationAtIndex",List("jid","index","resourceId"),(args) => {
+    ClientSideFunction("addImageSlideToConversationAtIndex",List("jid","index","resourceId","caption"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val resourceId = getArgAsString(args(2))
+      val captionArg = getArgAsJValue(args(3))
+      val caption = serializer.toMeTLMultiWordText(captionArg)
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(shouldModifyConversation(c) match {
         case true => {
@@ -987,6 +987,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
             val subImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
             slideRoom ! LocalToServerMeTLStanza(subImage)
+            slideRoom ! LocalToServerMeTLStanza(caption.copy(slide=ho.id.toString))
           })
           newC
         }
@@ -1418,7 +1419,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       currentConversation
     } else {
       trace("conversation denied: %s, %s.".format(jid,details.subject))
-      warn("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+      trace("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
       tokSessions -= details.jid.toString
@@ -1773,7 +1774,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         val newConv = serverConfig.detailsOfConversation(newJid.toString)
         if (currentConversation.exists(_.jid == newConv.jid)){
           if (!shouldDisplayConversation(newConv)){
-            warn("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+            debug("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
             currentConversation = Empty
             currentSlide = Empty
             reRender

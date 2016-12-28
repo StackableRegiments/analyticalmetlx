@@ -1007,6 +1007,7 @@ var Conversations = (function(){
         overrideAllocation : overrideAllocationFunction,
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
+        goToSlide : doMoveToSlide,
         updateThumbnail :updateThumbnailFor,
         getIsBanned : getIsBannedFunction,
         refreshSlideDisplay : refreshSlideDisplay
