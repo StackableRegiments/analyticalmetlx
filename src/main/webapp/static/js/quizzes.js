@@ -76,10 +76,11 @@ var Quizzes = (function(){
             reRenderActiveGraphFunction = function(quizId){
                 if (quizId == quizSummary.key){
                     var rootElem = showResultsTemplate.clone();
+		    rootElem.find(".quizQuestion").text(quiz.question);
                     var quizResultsPopupId = sprintf("quizResultsPopupGraph_%s",quiz.id);
                     var svg = $(quizResultsGraphs[quizSummary.key]).clone();
-                    rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId).append(svg.clone());
-                    var quizImagePreview = rootElem.find(".quizImagePreview");
+                    rootElem.find(".quizResultsGraph").attr("id",quizResultsPopupId).append(svg.clone()).css({width:"45%"});
+                    var quizImagePreview = rootElem.find(".quizImagePreview").css({"max-width":"45%"});
                     quizImagePreview.attr("src",urlForQuizImage(quiz.id));
                     if ("url" in quiz){
                         quizImagePreview.show();

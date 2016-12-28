@@ -149,7 +149,7 @@ var Grades = (function(){
 									id:uniqId
 								});
 								var jAlert = $.jAlert({
-									title:"edit grade",
+									title:"Edit grade",
 									width:"50%",
 									content:outer[0].outerHTML
 								});
