@@ -1,3 +1,6 @@
+1.0.10
+Bugfix: METL-345: Display Poll behaviour differs from description.
+
 1.0.9
 Bugfix: METL-344: Display Poll dialog is stretched off the page by polls iwth images.
 Bugfix: METL-347: Edit Grade: Visible to Students checkbox text is unstyled.
