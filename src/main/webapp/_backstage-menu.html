@@ -242,7 +242,7 @@
                   <input type="checkbox" class="gradeVisibleCheckbox"></input>
                   <label class="gradeVisibleLabel">Visible to students</label>
                 </div>
-                <div class="associateController" style="position:relative">
+                <div class="associateController" style="position:relative;min-height:150px;width:100%;">
                   <span class="refreshAssociation">
                     <span class="associationSystem"></span> :
                     <span class="associationOrgUnit"></span> :
@@ -268,9 +268,12 @@
                       <button class="createGrade button-transparent-border mth"><span>Create grade</span></button>
                     </span>
                   </span>
+		  <div class="grades blocker" style="display:none;height:100%;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>
                 </div>
-                <button class="cancelGradeEdit button-transparent-border mth"><span>Cancel</span></button>
-                <button class="submitGradeEdit button-transparent-border mth"><span>Submit</span></button>
+                <div class="flex-container-responsive">
+                  <button class="cancelGradeEdit button-transparent-border mth"><span>Cancel</span></button>
+                  <button class="submitGradeEdit button-transparent-border mth"><span>Submit</span></button>
+                </div>
               </fieldSet>
             </span>
             <span class="gradeActionsContainer">
