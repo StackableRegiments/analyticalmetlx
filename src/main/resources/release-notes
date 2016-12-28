@@ -1,3 +1,9 @@
+1.0.9
+Bugfix: METL-344: Display Poll dialog is stretched off the page by polls iwth images.
+Bugfix: METL-347: Edit Grade: Visible to Students checkbox text is unstyled.
+Bugfix: METL-341: Chat is repeated when a new page is joined.
+Bugfix: METL-342: Erased ink (with the Eraser tool) does not appear in recycle bin.
+
 1.0.8
 Story: METL-338: Comments UI on grades.
 Story: METL-339: Chatbox publishes any URL identified within a teacher-published textbox.
