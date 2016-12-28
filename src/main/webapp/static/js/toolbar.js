@@ -2496,6 +2496,9 @@ var Modes = (function(){
                                 deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
                             }
                             sendStanza(deleteTransform);
+														_.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
+															Progress.call("onCanvasContentDeleted",[stanza]);
+														});
                             clearSelectionFunction();
                         }
                     });
@@ -3017,7 +3020,7 @@ var Modes = (function(){
                             $.each(coll,function(i,item){
                                 if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
                                     delete coll[item.identity];
-                                    deleted.push(item.identity);
+                                    deleted.push(item);
                                     markAsDeleted(item.bounds);
                                 }
                             })
@@ -3047,7 +3050,10 @@ var Modes = (function(){
                     if(erasing || modifiers.eraser){
                         var deleteTransform = batchTransform();
                         deleteTransform.isDeleted = true;
-                        deleteTransform.inkIds = deleted;
+                        deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
+												_.forEach(deleted,function(stanza){
+													Progress.call("onCanvasContentDeleted",[stanza]);
+												});
                         sendStanza(deleteTransform);
                     } else {
                         var newWidth = Modes.draw.drawingAttributes.width * z;
