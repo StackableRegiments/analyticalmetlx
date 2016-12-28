@@ -17,7 +17,7 @@ The teacher can assess students and assign grades.
 
 ## Attachments
 
-The conversation owner can attach files to the conversation that users can download to their own devices.
+The conversation owner can attach files to the conversation that users can then download to their own devices.
 
 > **Tip**
 > 

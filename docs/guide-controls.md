@@ -100,7 +100,7 @@ and ink can be highly customized by selecting the `More` control.
 
 ### Erase
 
-Select entire ink strokes to remove. Erased ink is not available in the [Recycle Bin](guide-recycle-bin.html).
+Select an ink stroke to remove it. Erased ink can be restored from the [Recycle Bin](guide-recycle-bin.html).
 
 ### Mode
 
