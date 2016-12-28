@@ -20,7 +20,8 @@ lazy val root = (project in file(".")).
 
 resolvers ++= Seq(
   "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",
-  "releases"        at "https://oss.sonatype.org/content/repositories/releases"
+  "releases"        at "https://oss.sonatype.org/content/repositories/releases",
+  "tokbox"        at  "http://tokbox.bintray.com/maven"
 )
 
 seq(webSettings :_*)
@@ -111,6 +112,8 @@ libraryDependencies ++= {
     "org.kurento" % "kurento-utils-js" % "6.5.0",
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
+    //"com.opentok.android" % "opentok-android-sdk" % "2.10.0-REL-2706",
+    "com.google.android" % "android-test" % "4.1.1.4",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
     //    "org.scalactic" %% "scalactic" % "3.0.0",
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
