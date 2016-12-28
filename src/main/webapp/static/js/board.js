@@ -1034,9 +1034,10 @@ function takeControlOfViewbox(){
 }
 function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
-    requestedViewboxWidth = boardContent.width;
-    requestedViewboxHeight = boardContent.height;
-    IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height,followable);
+    var s = Modes.select.resizeHandleSize;
+    requestedViewboxWidth = boardContent.width + s * 2;
+    requestedViewboxHeight = boardContent.height + s * 2;
+    IncludeView.specific(boardContent.minX - s,boardContent.minY - s,boardContent.width,boardContent.height,followable);
 }
 function zoomToOriginal(followable){
     takeControlOfViewbox();
