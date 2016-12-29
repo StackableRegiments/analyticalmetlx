@@ -102,7 +102,7 @@ You will need to log onto the network again on a separate browser tab.  Once you
 
 You might like to consult the [MeTL FAQ]({{site.baseurl}}/academy-faq.html), a cross-institutional reference point for common usage and other questions.
 
-If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the Saint Leo Learning Innovation Team.
+![Saint Leo University](images/slu-32.png) If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the Saint Leo Learning Innovation Team.
 
 # Escalation
 
