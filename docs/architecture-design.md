@@ -228,7 +228,7 @@ All objects which appear visually on the main canvas have the following attribut
       scaleFactorY:{type:Double}
     }
 
-The target is the location on which the content should appear (eg the private note space or the public canvas).
+The target is the location on which the content should appear (e.g. the private note space or the public canvas).
 
 A `Privacy` can be Private or Public.
 

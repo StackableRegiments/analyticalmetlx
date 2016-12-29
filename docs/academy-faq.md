@@ -164,7 +164,7 @@ This will display a selection marquee around the text, and place you into edit m
 Note: the aspect ratio of the device screen will control the aspect ratio of the zoom marquee.
 
 ## How do I create a custom background on a page? 
-1. Create a background (eg graph paper) in PowerPoint or a drawing application and save it as an image. 
+1. Create a background (e.g. graph paper) in PowerPoint or a drawing application and save it as an image. 
 2. Click on *Insert Image*.
 3. Browse for your saved image.
 4. Position and stretch it as desired. 
@@ -174,14 +174,14 @@ Using this principle, a library of desired images can easily be generated and re
 ## How do I send students a link to a particular page?
 1. Click on **Options**.
 2. Right click on **Deeplink this page** and *Copy link address*.
-3. Paste the copied URL into your communication mechanism (eg email, Moodle).
+3. Paste the copied URL into your communication mechanism (e.g. email, Moodle).
 
 Alternatively:
 1. Click on **Options**.
 2. Click on **Deeplink this page**.
 3. The URL bar in the browser is modified to be suitable for linking.
 4. Select and copy the URL from the browser bar.
-5. Paste the copied URL into your communication mechanism (eg email, Moodle).
+5. Paste the copied URL into your communication mechanism (e.g. email, Moodle).
 
 ## How do I delete inappropriate student content?
 To ban any text, ink or image on a Page (and place the author into private mode):

@@ -3,7 +3,7 @@ layout: guide
 title: Groups
 ---
 
-## Group creation
+## Create Groups
 
 A conversation can be split into groups.  This can only be done by the author of the conversation (the teacher).
 
@@ -36,6 +36,8 @@ As these groups are toggled for inclusion, they appear on the right hand side of
 Only groups from the teacher's Org Units will be made available for inclusion.
 
 Once the teacher has selected the priority for automatic filling and optionally included existing groups, they press "Fill".  A new page is then constructed, in which groups will always apply.  The teacher is taken to that new page.  The conversation is automatically set to "Students must follow" and the students are also automatically taken to the page.  As they arrive, they are allocated unless they already appeared in an external group.
+
+## View Groups
 
 The teacher may view the existing groups by reopening the dialog using the same button.  At this stage the prioritization strategy cannot be altered.  Groups may be rearranged by dragging and dropping the student names between them.
 

@@ -1,5 +1,5 @@
 ---
 layout: guide
-title: Integrations
+title: Grades
 ---
 

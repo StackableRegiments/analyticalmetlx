@@ -398,6 +398,42 @@ Full-Width Styles
     text-decoration: none;
 }
 
+#sidebar {
+    display: block;
+    position: absolute;
+    top: -10px;
+    left: -130px;
+    width: 130px;
+    background-color: #4078c0;
+}
+
+#sidebar ul {
+    list-style: none;
+    padding:0;
+    margin:0;
+}
+
+#sidebar li {
+    padding-left: 1em;
+    text-indent: -.7em;
+}
+
+/*
+#sidebar li:before {
+    content: "-";
+    padding-right: .7em;
+    color: #eee;
+}
+*/
+
+#sidebar a {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 200;
+    font-family: 'Advent Pro', sans-serif;
+    text-shadow: #111 0px 0px 10px;
+}
+
 #main_content_wrap {
     background: #f2f2f2;
     border-top: 1px solid #111;
@@ -441,6 +477,19 @@ Full-Width Styles
     box-shadow: 0 0 10px rgba(0, 0, 0, .5);
     border-bottom-left-radius: 2px;
     border-bottom-right-radius: 2px;
+}
+
+.text-image {
+    margin: 10px;
+    float: right;
+}
+
+.escalation {
+    text-align: right;
+    font-style: italic;
+    font-weight: bold;
+    margin-right: 20px;
+    clear: right;
 }
 
 /*******************************************************************************
