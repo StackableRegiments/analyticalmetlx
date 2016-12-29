@@ -1,7 +1,7 @@
 var Privacy = (function(){
     var privacy = "PUBLIC";
     var setPrivacyIndicators = function(){
-        $.each({privateMode:"PRIVATE",publicMode:"PUBLIC"},function(id,p){
+        $.each(privacyButtons,function(id,p){
             if (p == privacy){
                 $("#"+id).addClass("activePrivacy active");
             } else {
@@ -54,11 +54,11 @@ var Privacy = (function(){
                         button.removeClass("disabledButton");
                     }
                 }
-								if ("multiWordTexts" in selection){
+                if ("multiWordTexts" in selection){
                     if (_.some(selection.multiWordTexts,function(item){return item.privacy != p;})){
                         button.removeClass("disabledButton");
                     }
-								}
+                }
                 if ("texts" in selection){
                     if (_.some(selection.texts,function(item){return item.privacy != p;})){
                         button.removeClass("disabledButton");
