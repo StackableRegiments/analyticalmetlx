@@ -12,7 +12,7 @@ var TokBox = (function(){
             var support = OT.checkSystemRequirements();
             if (support == 0){
                 if (!shownError){
-                    errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome, Firefox or Internet Explorer.");
+                    errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome or Firefox.");
                     shownError = true;
                 }
             } else if (enabled && !(desc.sessionId in sessions)){
