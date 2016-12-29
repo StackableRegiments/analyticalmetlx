@@ -1,3 +1,11 @@
+1.0.11
+Bugfix: METL-300: Autofit Zoom goes to boundary of image and does not show resize handles.
+Bugfix: METL-217: Conversation table | Created column should be in "19 Oct 2016" format.
+Bugfix: METL-310: Videoconf disabled dialog incorrectly suggests latest IE.
+Bugfix: METL-317: Public/Private button selection (orange) went missing.
+Bugfix: METL-318: Hovering over Unban All button does not change mouse cursor.
+Improvement: METL-334: Additional work on spinners and button disables.
+
 1.0.10
 Bugfix: METL-345: Display Poll behaviour differs from description.
 
