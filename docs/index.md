@@ -2,7 +2,7 @@
 layout: index
 ---
 
-<img src="images/ironman-full.png" alt="MeTL Collaboration" align="right" width="350px" class="text-image"/>
+<img src="images/ironman-full.png" alt="MeTL Collaboration" width="250px" class="text-image"/>
 
 <h1>Welcome to MeTL</h1>
 
@@ -24,9 +24,11 @@ view our [executive](executive.html) proposition.
 
 If you're looking to teach in a way which enables your class to spontaneously form effective working groups, maximizes remote participation and makes available structured advice on the outcomes afterwards, visit the [academy](academy.html).
 
+<!--
 ## Architecture
 
 If you're considering adopting this system and want to ensure that it fits with your IT policy, integrates to your centralized services and matches your expectations of data custody, explore our [architecture](architecture.html).
+-->
 
 ## Support
 

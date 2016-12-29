@@ -40,6 +40,7 @@ This screen also contains the [Word Cloud](guide-word-cloud.html) analysis.
 
 ## Content Filter
 
+<img src="images/content-filter.png" alt="Content filter" width="200" class="text-image"/>
 The content filter allows the conversation owner to hide their own private or public content or that of other users. 
 This action only hides content on the user screen, it does not delete it. 
 

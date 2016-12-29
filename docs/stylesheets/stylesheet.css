@@ -481,6 +481,15 @@ Full-Width Styles
 
 .text-image {
     margin: 10px;
+    float: right;
+}
+
+.escalation {
+    text-align: right;
+    font-style: italic;
+    font-weight: bold;
+    margin-right: 20px;
+    clear: right;
 }
 
 /*******************************************************************************

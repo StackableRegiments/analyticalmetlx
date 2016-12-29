@@ -3,17 +3,18 @@ layout: default
 title: Academy
 ---
 
+<!--
 ## Content
 
 - [How do I teach with MeTL](#how-do-i-teach-with-metl)
 - [Why do I teach with MeTL?](#why-do-i-teach-with-metl)
-<!--- [How do I know MeTL works?](#how-do-i-know-metl-works)-->
+-->
 
 ## How do I teach with MeTL?
 
 - read the [User Guide](guide.html)
 - check the [Frequently Asked Questions](academy-faq.html)
-- view the [Tutorials](academy-tutorials.html)
+<!--- view the [Tutorials](academy-tutorials.html)-->
 
 ## Why do I teach with MeTL?
 
@@ -28,6 +29,8 @@ Teachers have to manage classes of students with different levels of prior knowl
 The more informed the teacher is about their class's progress, the more effective they can be. Relevant information comes from many sources, some outside the immediate experience of the teacher in the classroom. MeTL shares student activity with the teacher, and with other students. MeTL uses this information to provide many sources of immediate feedback, which the teacher can choose to share with the class or manage privately. But MeTL can also, with the appropriate integration, gather and analyse information from many sources to help, for example, in suggesting effective group membership, or identify, as early as possible, students who are at risk.
 
 By engaging students in the learning journey from the beginning, rather than presenting them with the end of the journey, which is too often a characteristic of a pre-prepared presentation, learning and teaching is more rewarding, enjoyable and effective.
+
+<a href="http://innovation.saintleo.edu/wp-content/uploads/2016/08/MeTL-Promo-2.mp4" target="_blank">Watch MeTL in action at Saint Leo University</a>
 
 <!--
 ## How do I know MeTL works?

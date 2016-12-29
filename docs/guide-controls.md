@@ -113,6 +113,8 @@ Select an ink stroke to remove it. Erased ink can be restored from the [Recycle 
 
 Text boxes can be inserted by any device with a keyboard and can be resized, moved or formatted.
 
+[More...](articulate/working-with-text-boxes/story.html)
+
 ## Insert
 
 Adds an image or a video to the canvas. 
