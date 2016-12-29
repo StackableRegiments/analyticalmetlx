@@ -1,21 +1,26 @@
 1.0.5
 
-New config elements <groupsProvider><smartGroups/></groupsProvider>.
+New config: 
+	<groupsProvider><smartGroups/></groupsProvider>.
 
 1.0.3
 
-METL-321:
-Update config "metlingPotAdaptors", in "exclusions", to contain ApiGatewayMetlingPotAdaptor.
+New config: 
+	<metlingPotAdaptors><ApiGatewayMetlingPotAdaptor/></metlingPotAdaptors>
 
 1.0.2
 
-New config elements (holding credentials).
+New config: 
+	<externalGradebooks><d2lGradebook/></externalGradebooks>
 
 0.11.1
 
-METL-229:
-Update config "authenticationConfiguration", in "exclusions", to contain /about and /releaseNotes.
-
+New config: 
+    <exclusions>
+		<requestUriStartsWith value="/about"/>
+        <requestUriStartsWith value="/releaseNotes"/>
+    </exclusions>
+	
 0.10.1
 
 METL-205:
