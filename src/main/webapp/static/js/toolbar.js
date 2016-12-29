@@ -2053,7 +2053,7 @@ var Modes = (function(){
                 var img = new Image();
                 img.setAttribute("crossOrigin","Anonymous");
                 img.onerror = function(e){
-                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly.  You may need to download the image first and then upload it.");
                 };
                 img.onload = function(e){
                     var width = img.width;

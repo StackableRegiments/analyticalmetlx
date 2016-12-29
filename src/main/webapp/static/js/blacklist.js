@@ -28,7 +28,7 @@ var Blacklist = (function(){
                 return new Date(a) - new Date(b);
             },
             itemTemplate: function(i){
-                return new Date(i).toLocaleString();
+                return moment(i).format('MMM Do YYYY, h:mm a');
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},

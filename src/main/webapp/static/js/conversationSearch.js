@@ -38,7 +38,8 @@ var Conversations = (function(){
                 return new Date(a) - new Date(b);
             },
             itemTemplate: function(i){
-                return new Date(i).toLocaleString();
+		console.log("New date",i);
+                return moment(i).format('MMM Do YYYY, h:mm a');
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
