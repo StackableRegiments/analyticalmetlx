@@ -23,7 +23,6 @@ If your question is not answered below, try the [User Guide](guide.html).
 - [Conversation](#conversation)
   - [How do I return to Conversation Search?](#how-do-i-return-to-conversation-search) 
   - [How do I select a single item?](#how-do-i-select-a-single-item) 
-  - [How do I select a text box?](#how-do-i-select-a-text-box)
   - [How do I undo an action?](#how-do-i-undo-an-action) 
   - [How do I edit a text box?](#how-do-i-edit-a-text-box) 
   - [How do I zoom to a particular part of the Whiteboard?](#how-do-i-zoom-to-a-particular-part-of-the-whiteboard)
@@ -135,13 +134,6 @@ that has been selected because they overlapped the area that was selected.
 This is a subtractive method of content selection and is designed for mobile devices. 
 It is the opposite of the additive method generally used in applications with a keyboard, such as PowerPoint.
 
-## How do I select a text box?
-
-1. Click on **Select**.
-2. Touch the text box or draw a marquee that intersects it. 
-
-[Learn More](articulate/working-with-text-boxes/story.html)
-
 ## How do I undo an action?
 
 An Undo button is not included because of the potential interactions between content belonging to different participants. 
@@ -156,6 +148,8 @@ If you want to undo a deletion, there is a feature that recovers deleted content
 2. Click the text you want to edit.
 
 This will display a selection marquee around the text, and place you into edit mode.
+
+[Learn More](articulate/working-with-text-boxes/story.html)
 
 ## How do I zoom to a particular part of the Whiteboard?
 1. Click on **Zoom**.
