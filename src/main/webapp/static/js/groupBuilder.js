@@ -104,6 +104,7 @@ var GroupBuilder = (function(){
     var simulate = function(strategy,parameter,presentStudentsOnly){
         console.log(strategy,parameter,presentStudentsOnly);
         var groups = flatInitialGroups();
+	console.log("flatInitialGroups",groups);
         var participants;
         switch(presentStudentsOnly){
         case "allPresent": participants = Participants.getParticipants();
