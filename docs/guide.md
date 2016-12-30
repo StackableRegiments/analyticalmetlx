@@ -14,6 +14,9 @@ Topics include:
 
 ## Conventions
 
+Content that applies only to particular institutions is marked with a sticker, for example: 
+![Saint Leo University](images/slu-32.png) Saint Leo University (SLU).
+
 - In a pedagogical (teaching) context: "Conversation owner" may be referred to as teacher, and "Other user" as student.
 - ![Saint Leo University](images/slu-16.png) SLU users may use the term *Whiteboard* to refer to a [Conversation](guide-conversation.html).
 
