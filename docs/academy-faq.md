@@ -7,23 +7,23 @@ If your question is not answered below, try the [User Guide](guide.html).
 
 ## Content
 
-- [How do I select a text box?](#how-do-i-select-a-text-box)
 - [How do I make MeTL full screen?](#how-do-i-make-metl-full-screen)
 - [Which browser should I use?](#which-browser-should-i-use)
 - [Which device should I use?](#which-device-should-i-use)
 - [Why doesn't feature X work?](#why-doesnt-feature-x-work)
 - [How do I set up a classroom computer with MeTL?](#how-do-i-set-up-a-classroom-computer-with-metl-) ![Saint Leo University](images/slu-16.png)
 - [What is the URL for Whiteboard?](#what-is-the-url-for-whiteboard-) ![Saint Leo University](images/slu-16.png)
-- [Conversations](#conversations)
+- [Conversation Search](#conversation-search)
   - [How do I find a conversation?](#how-do-i-find-a-conversation)
   - [How do I join a conversation?](#how-do-i-join-a-conversation)
   - [How do I rename a conversation?](#how-do-i-rename-a-conversation)
   - [How do I restrict a conversation to my class?](#how-do-i-restrict-a-conversation-to-my-class)
   - [How do I restrict a conversation so that only I can see it?](#how-do-i-restrict-a-conversation-so-that-only-i-can-see-it)
   - [How do I import a PowerPoint presentation?](#how-do-i-import-a-powerpoint-presentation)
-- [Whiteboard](#whiteboard)
+- [Conversation](#conversation)
   - [How do I return to Conversation Search?](#how-do-i-return-to-conversation-search) 
   - [How do I select a single item?](#how-do-i-select-a-single-item) 
+  - [How do I select a text box?](#how-do-i-select-a-text-box)
   - [How do I undo an action?](#how-do-i-undo-an-action) 
   - [How do I edit a text box?](#how-do-i-edit-a-text-box) 
   - [How do I zoom to a particular part of the Whiteboard?](#how-do-i-zoom-to-a-particular-part-of-the-whiteboard)
@@ -32,13 +32,6 @@ If your question is not answered below, try the [User Guide](guide.html).
   - [How do I delete inappropriate student content?](#how-do-i-delete-inappropriate-student-content)
   - [How do I export a conversation to Microsoft OneNote?](#how-do-i-export-a-conversation-to-microsoft-onenote-) ![Saint Leo University](images/slu-16.png)
   - [How do I print a conversation to PDF?](#how-do-i-print-a-conversation-to-pdf) 
-
-## How do I select a text box?
-
-1. Click on **Select**.
-2. Touch the text box or draw a marquee that intersects it. 
-
-[Learn More](tutorials.html)
 
 ## How do I make MeTL full screen?
 
@@ -80,7 +73,7 @@ The URL is [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lions
 You can also access it through D2L under your courses. 
 ![MeTL via D2L](images/faq-metl-via-d2l.png)
 
-# Conversations
+# Conversation Search
 
 ## How do I find a conversation?
 Type the name of the conversation in the Search box and press Enter or click the Search button. 
@@ -127,7 +120,7 @@ This is useful if you want to prepare a conversation for a class but do not want
 
 Conversations can also be imported from PDFs and Word documents.
 
-# Whiteboard
+# Conversation
 
 ## How do I return to [Conversation Search](guide-conversation-search.html)?
 1. Click **Options**.
@@ -141,6 +134,13 @@ that has been selected because they overlapped the area that was selected.
 
 This is a subtractive method of content selection and is designed for mobile devices. 
 It is the opposite of the additive method generally used in applications with a keyboard, such as PowerPoint.
+
+## How do I select a text box?
+
+1. Click on **Select**.
+2. Touch the text box or draw a marquee that intersects it. 
+
+[Learn More](articulate/working-with-text-boxes/story.html)
 
 ## How do I undo an action?
 
