@@ -1,3 +1,9 @@
+1.0.13
+Bugfix: METL-361: Rename "manage banned content" to "banned content" and "Group Builder" to "Group editor".
+Bugfix: METL-363: There is blank space between the plugins and the canvas.
+Bugfix: METL-364: Grade listings next to member names in groups plugin are sloppy looking.
+Improvement: METL-350: Improve styling of loading spinners.
+
 1.0.12
 Bugfix: METL-362: D2L server can't connect to API gateway.
 Bugfix: METL-349: "Submitted to instructor" dialog text is all lowercased.
