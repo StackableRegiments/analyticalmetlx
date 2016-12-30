@@ -3,7 +3,7 @@ package com.metl.model
 import com.opentok.android.{OpentokError,Session,Stream,Connection}
 import net.liftweb.common._
 
-object TokBoxHelper {
+object TokBoxHelper extends Logger {
   def getSessionNamesFor(room:RoomMetaData):List[String] = {
     room match {
       case cr:ConversationRoom => List(cr.jid)
@@ -12,19 +12,26 @@ object TokBoxHelper {
     }
   }
   def getMonitors(room:RoomMetaData):List[TokBoxMonitor] = {
-    for {
-      tb <- Globals.tokBox.toList
-      sn <- getSessionNamesFor(room)
-      s <- tb.getSessionToken(sn,TokRole.Moderator).right.toOption.toList
-    } yield {
-      new TokBoxMonitor(s.apiKey.toString,s.sessionId,s.token)
+    try {
+      for {
+        tb <- Globals.tokBox.toList
+        sn <- getSessionNamesFor(room)
+        s <- tb.getSessionToken(sn,TokRole.Moderator).right.toOption.toList
+      } yield {
+        new TokBoxMonitor(s)
+      }
+    } catch {
+      case e:Throwable => {
+        error("tokboxHelper getMonitors error",e)
+        Nil
+      }
     }
   }
 }
 
-class TokBoxMonitor(apiKey:String,sessionId:String,token:String) extends Session.SessionListener with Session.ArchiveListener with Session.ConnectionListener with Session.ReconnectionListener with Logger {
+class TokBoxMonitor(tokboxSession:TokBoxSession) extends Session.SessionListener with Session.ArchiveListener with Session.ConnectionListener with Session.ReconnectionListener with Logger {
     protected val mSession:Session = {
-      val session = new Session(new android.test.mock.MockContext(), apiKey,sessionId)
+      val session = new Session(new android.test.mock.MockContext(), tokboxSession.apiKey.toString,tokboxSession.sessionId)
       session.setSessionListener(this)
       session.setArchiveListener(this)
       session.setConnectionListener(this)
@@ -64,7 +71,7 @@ class TokBoxMonitor(apiKey:String,sessionId:String,token:String) extends Session
     override def onDisconnected(session:Session):Unit = {
       warn("disconnected: %s".format(session.getSessionId))
       if (keepAlive){
-        mSession.connect(token)
+        mSession.connect(tokboxSession.token)
       }
     }
     override def onError(session:Session,e:OpentokError):Unit = {
@@ -85,7 +92,7 @@ class TokBoxMonitor(apiKey:String,sessionId:String,token:String) extends Session
     protected var keepAlive = false
     def init:Unit = {
       keepAlive = true
-      mSession.connect(token)
+      mSession.connect(tokboxSession.token)
     }
     def shutdown:Unit = {
       keepAlive = false

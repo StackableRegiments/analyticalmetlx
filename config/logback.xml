@@ -39,6 +39,7 @@
   <logger name="com.metl.utils.StopwatchActor" level="ALL"/>
   <logger name="com.metl.model.CanvasContentAnalysis" level="WARN"/>
   <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="WARN"/>
+	<logger name="com.metl.model.TokBoxMonitor" level="TRACE"/>
   <logger name="com.metl.model.SecurityListener" level="WARN">
     <appender-ref ref="SECURITY_FILE"/>
   </logger>

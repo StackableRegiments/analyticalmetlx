@@ -1,6 +1,5 @@
 import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
-import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
@@ -24,23 +23,41 @@ resolvers ++= Seq(
   "tokbox"        at  "http://tokbox.bintray.com/maven"
 )
 
-seq(webSettings :_*)
+enablePlugins(JettyPlugin)
 
-startScriptJettyVersion in Compile := "9.2.10.v20150310"
+val jettyVersion = "9.4.0.v20161208"
 
-startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
+containerLibs in Jetty := Seq("org.eclipse.jetty" % "jetty-runner" % jettyVersion intransitive())
 
-startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://refer.adm.monash.edu/jetty-distribution-" + version + ".zip" }
+containerPort := 8080
 
-startScriptJettyContextPath := "/"
+javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.local.xml", "-Dlogback.configurationFile=config/logback.xml", "-Drun.mode=development", "-Dmetl.stopwatch.enabled=true", "-Dmetl.stopwatch.minimumLog=2")
 
-startScriptJettyHome in Compile <<= (streams, target, startScriptJettyURL in Compile, startScriptJettyChecksum in Compile) map startScriptJettyHomeTask
+fork in Jetty := true
+/*
 
-startScriptForWar in Compile <<= (streams, startScriptBaseDirectory, startScriptFile in Compile, com.earldouglas.xsbtwebplugin.PluginKeys.packageWar in Compile, startScriptJettyHome in Compile, startScriptJettyContextPath in Compile) map startScriptForWarTask
+libraryDependencies ++= Seq("net.java.dev.jna" % "jna-platform" % "4.1.0")
 
-startScript in Compile <<= startScriptForWar in Compile
+unmanagedResourceDirectories in Compile += baseDirectory.value / "lib"
 
-seq(genericStartScriptSettings:_*)
+includeFilter in (Compile, unmanagedResourceDirectories):= ".dll,.so"
+*/
+/*
+libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
+
+containerLibs in Container := Seq(
+  "org.eclipse.jetty" % "jetty-webapp" % jettyVersion,
+  "org.eclipse.jetty" % "jetty-plus" % jettyVersion,
+  //"test"              %% "runner"       % "0.1.0-SNAPSHOT"
+  "org.eclipse.jetty"              % "jetty-runner"       % jettyVersion
+)
+
+//containerLaunchCmd in Container := Seq("runner.Run", "8080",(target in webappPrepare).value.absolutePath)
+*/
+
+target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
+
+watchSources := watchSources.value.filterNot { x => x.isDirectory || x.getAbsolutePath.contains("webapp") }
 
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
 
@@ -50,7 +67,6 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val jettyVersion = "9.3.10.v20160621"
   Seq(
     //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
     //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config

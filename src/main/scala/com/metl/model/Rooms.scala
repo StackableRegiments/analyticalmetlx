@@ -263,14 +263,18 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   }
   protected def heartbeat = scheduleMessageForMe(Ping,pollInterval)
   protected def checkChunkExpiry = scheduleMessageForMe(CheckChunks,chunkExpiry)
+
+  protected lazy val tokMonitors:List[TokBoxMonitor] = TokBoxHelper.getMonitors(roomMetaData)
   def localSetup = {
     info("MeTLRoom(%s):localSetup".format(location))
     heartbeat
     checkChunkExpiry
+    tokMonitors.foreach(_.init)
   }
   def localShutdown = {
     info("MeTLRoom(%s):localShutdown".format(location))
     messageBus.release
+    tokMonitors.foreach(_.shutdown)
   }
   initialize
   case object IrrelevantMatch
