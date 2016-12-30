@@ -102,7 +102,7 @@ You will need to log onto the network again on a separate browser tab.  Once you
 
 You might like to consult the [MeTL FAQ]({{site.baseurl}}/academy-faq.html), a cross-institutional reference point for common usage and other questions.
 
-![Saint Leo University](images/slu-32.png) If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the Saint Leo Learning Innovation Team.
+![Saint Leo University](images/slu-32.png) If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the <a href="http://tali.saintleo.edu">Teaching and Learning Innovation</a> team.
 
 <div class="escalation">Escalate to <a href="#tali">TALI</a></div>
 
@@ -112,7 +112,7 @@ You might like to consult the [MeTL FAQ]({{site.baseurl}}/academy-faq.html), a c
 ![Saint Leo University](images/slu-32.png) Phone **(352) 588-8888** or email <a href="mailto:helpdesk@saintleo.edu">helpdesk@saintleo.edu</a>
 
 ## TALI
-![Saint Leo University](images/slu-32.png) <a href="http://tali.saintleo.edu">Teaching and Learning Innovation</a> resources
+![Saint Leo University](images/slu-32.png) <a href="http://tali.saintleo.edu">Teaching and Learning Innovation</a>
 
 ## MeTL Support
 Email a screenshot and any error messages to <a href="mailto:support@stackableregiments.com">support@stackableregiments.com</a>
