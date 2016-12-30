@@ -3,9 +3,15 @@ layout: guide
 title: Conversation
 ---
 
-![Canvas](images/guide-canvas.png)
-
 A conversation is a collection of pages where teachers and students share content. 
+
+![Conversation](images/guide-conversation.png)
+
+## Controls
+
+Buttons for adding content and modifying conversation settings.
+ 
+[More...]({{site.baseurl}}/guide-controls.html)
 
 ## Options
 
