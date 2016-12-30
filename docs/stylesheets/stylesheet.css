@@ -50,7 +50,7 @@ Theme Styles
 body {
     box-sizing: border-box;
     color: #373737;
-    background: #212121;
+    background: #f2f2f2;
     font-size: 16px;
     font-family: 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
     line-height: 1.5;
@@ -140,7 +140,6 @@ strong {
 
 img {
     position: relative;
-    margin: 0 auto;
     max-width: 739px;
     padding: 5px;
     margin: 10px 0 10px 0;
@@ -212,14 +211,12 @@ ul, ol, dl {
 }
 
 ul {
-    list-style-position: inside;
-    list-style: disc;
+    list-style: disc inside;
     padding-left: 20px;
 }
 
 ol {
-    list-style-position: inside;
-    list-style: decimal;
+    list-style: decimal inside;
     padding-left: 20px;
 }
 
@@ -285,31 +282,33 @@ Full-Width Styles
 #searchBar {
     display: block;
     position: absolute;
-    top: 5px;
+    top: 15px;
     right: 15px;
     z-index: 10;
+    font-size: 15px;
+    font-weight: 200;
+    font-family: 'Advent Pro', sans-serif;
+    text-shadow: #111 0 0 10px;
 }
 
 #searchBar #search form {
-    background: #212121;
+    background: transparent;
     padding: 0;
 }
 
-#searchBar #searchString {
+#searchBar #q {
     width: 150px;
-    border: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) inset;
-    padding: 0.5em 0.6em;
+    border-style: none;
+    padding: 0.3em 0.6em;
     background-color: #eee;
-    margin-right: 0;
+    margin: 0;
 }
 
 #searchBar #searchButton {
     color: #fff;
     background: #4078c0;
-    font-weight: 700;
     border-style: none;
-    padding: 0.5em 0.6em;
+    padding: 0.3em 0.6em;
 }
 
 #header_wrap {
@@ -326,27 +325,25 @@ Full-Width Styles
 }
 
 #project_title {
-    margin: 0px 0px 0px 20px;
+    margin: 0 0 0 20px;
     color: #fff;
     font-size: 42px;
     font-weight: 700;
-    text-shadow: #111 0px 0px 10px;
+    text-shadow: #111 0 0 10px;
 }
 
 #project_tagline {
-    margin: 0px 0px 0px 20px;
+    margin: 35px 0 0 150px;
     color: #ffffff;
     font-size: 30px;
     font-weight: 200;
     font-family: 'Advent Pro', sans-serif;
     background: none;
     text-shadow: #111 0px 0px 0px;
-    margin-top: 35px;
-    margin-left: 150px;
 }
 
 #nav {
-    margin: 0px 0px 0px 20px;
+    margin: 0 0 0 20px;
 }
 
 #nav-guide {
@@ -402,8 +399,8 @@ Full-Width Styles
     display: block;
     position: absolute;
     top: -10px;
-    left: -130px;
-    width: 130px;
+    left: -140px;
+    width: 140px;
     background-color: #4078c0;
 }
 
@@ -436,8 +433,8 @@ Full-Width Styles
 
 #main_content_wrap {
     background: #f2f2f2;
-    border-top: 1px solid #111;
-    border-bottom: 1px solid #111;
+    /*border-top: 1px solid #111;*/
+    /*border-bottom: 1px solid #111;*/
 }
 
 #main_content {
@@ -451,32 +448,37 @@ Full-Width Styles
     background: -ms-linear-gradient(top, #373737, #212121);
     background: -o-linear-gradient(top, #373737, #212121);
     background: linear-gradient(top, #373737, #212121);
+    clear: right;
+    padding: 0 0 50px 0;
 }
 
 #footer_wrap .inner {
-    padding: 0px;
+    padding: 0;
 }
 
 .copyright {
-    padding: 45px 0px 0px;
-    margin: 0px;
+    padding: 45px 0 0;
+    margin: 0;
     color: #999999;
 }
 
 #forkme_banner {
     display: block;
     position: absolute;
-    bottom: 0px;
+    bottom: 0;
     right: 15px;
-    width: 110px;
+    width: 90px;
     z-index: 10;
     padding: 10px 50px 10px 10px;
     color: #fff;
     background: url('../images/blacktocat.png') #4078c0 no-repeat 95% 50%;
-    font-weight: 700;
     box-shadow: 0 0 10px rgba(0, 0, 0, .5);
     border-bottom-left-radius: 2px;
     border-bottom-right-radius: 2px;
+    font-size: 15px;
+    font-weight: 200;
+    font-family: 'Advent Pro', sans-serif;
+    text-shadow: #111 0px 0px 10px;
 }
 
 .text-image {

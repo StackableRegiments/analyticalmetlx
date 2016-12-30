@@ -21,7 +21,7 @@ The conversation owner can attach files to the conversation that users can then 
 
 > **Tip**
 > 
-> This can be used to pass content to students such that they can add it to the Whiteboard as themselves, 
+> This can be used to pass content to students such that they can add it to the [Canvas](guide-canvas.html) as themselves, 
 which gives the user control over the content location (and whether it is private or public).
 
 ## Submissions

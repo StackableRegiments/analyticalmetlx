@@ -23,7 +23,7 @@ title: Support
 
 ## Can you find the application?
 
-The Whiteboard system can be found at [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu), or through the Learning Management System.
+![Saint Leo University](images/slu-32.png) The Whiteboard system can be found at [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu), or through the Learning Management System.
 
 It is also the `Whiteboard` link at [https://lionsshare.saintleo.edu](https://lionsshare.saintleo.edu).
 
@@ -59,7 +59,7 @@ If you have been instructed to find a conversation which isn't showing up in the
 ## Do you see a healthy page?
 
 <img src="images/whiteboard-healthy.png" alt="Healthy" width="250" class="text-image"/>
-A healthy MeTL conversation has:
+A healthy conversation has:
 - The title of the conversation on the top of the screen.
 - Your username before the title of the conversation.
 - A central content space where your own ink is captured while in Ink mode.  Other people's content will also be displayed here.

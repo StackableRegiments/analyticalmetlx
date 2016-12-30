@@ -25,7 +25,7 @@ If your question is not answered below, try the [User Guide](guide.html).
   - [How do I select a single item?](#how-do-i-select-a-single-item) 
   - [How do I undo an action?](#how-do-i-undo-an-action) 
   - [How do I edit a text box?](#how-do-i-edit-a-text-box) 
-  - [How do I zoom to a particular part of the Whiteboard?](#how-do-i-zoom-to-a-particular-part-of-the-whiteboard)
+  - [How do I zoom to a particular part of the Canvas?](#how-do-i-zoom-to-a-particular-part-of-the-canvas)
   - [How do I create a custom background on a page?](#how-do-i-create-a-custom-background-on-a-page)
   - [How do I send students a link to a particular page?](#how-do-i-send-students-a-link-to-a-particular-page)
   - [How do I delete inappropriate student content?](#how-do-i-delete-inappropriate-student-content)
@@ -90,7 +90,7 @@ Click on the search result row containing the conversation you want to join.
 4. Scroll back up to the top of the screen and click “Back to search” to return to the search screen, 
 or “Join conversation” to join the conversation. 
 
-The new name will appear in the banner of the Whiteboard screen.
+The new name will appear in the Conversation banner.
 
 ## How do I restrict a conversation to my class?
 By default when you create a conversation it is unrestricted. 
@@ -126,7 +126,7 @@ Conversations can also be imported from PDFs and Word documents.
 2. Click **Conversations**.
 
 ## How do I select a single item?
-When you click on the whiteboard, all content that you own and that intersects the point you clicked will be selected. 
+When you click on the [canvas](guide-canvas.html), all content that you own and that intersects the point you clicked will be selected. 
 To deselect unwanted content, click on the unwanted content in an area where only that content occurs. 
 You may have to do this several times to isolate a single piece of content from other content 
 that has been selected because they overlapped the area that was selected. 
@@ -151,7 +151,7 @@ This will display a selection marquee around the text, and place you into edit m
 
 [Learn More](articulate/working-with-text-boxes/story.html)
 
-## How do I zoom to a particular part of the Whiteboard?
+## How do I zoom to a particular part of the Canvas?
 1. Click on **Zoom**.
 2. Drag a marquee around the area you want to zoom into.
 

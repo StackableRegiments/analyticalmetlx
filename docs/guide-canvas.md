@@ -1,22 +1,27 @@
 ---
 layout: guide
-title: Controls
+title: Canvas
 ---
+
+The canvas is the central area of a conversation where [Ink](#ink) is drawn, [Text](#text) is typed, 
+and Image or Video content may be [Insert](#insert)ed.
+
+# Controls
 
 <img src="images/guide-controls.png" alt="Controls" align="right" height="500"/>
 
 The state of a control is indicated by the background color.
 
-- White means the control is available (e.g. the Private control). 
-- Grey means the control is unavailable (e.g. the Show control). 
-- Gold means the control is active (e.g. the Public control).
+- White means the control is available (e.g. the `Private` control). 
+- Grey means the control is unavailable (e.g. the `Show` control). 
+- Gold means the control is active (e.g. the `Public` control).
 
 ## Private / Public
  
 This controls the visibility of new content (i.e. ink, text, image/video). 
  
-- Public: content will be visible to everyone. 
-- Private: content will only be visible to the creator. 
+- `Public` content will be visible to everyone. 
+- `Private` content will only be visible to the creator. 
 
 All users can insert private content at any time, but the conversation owner may restrict the ability of users to 
 create public content or show (publish / make public) existing private content 
