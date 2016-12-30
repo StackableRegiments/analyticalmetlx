@@ -24,13 +24,25 @@ case class KVP(`type`:String,name:String)
 case class MeTLingPotItem(source:String,timestamp:Long,actor:KVP,action:KVP,context:Option[KVP],target:Option[KVP],value:Option[String])
 
 class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
+  import com.amazonaws.opensdk.config.{ConnectionConfiguration,TimeoutConfiguration}
   def client:MetlingPotInputItem = {
-    val builder = MetlingPotInputItem.builder()
-    builder.setIamCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey)))
-    builder.setIamRegion(region)
-    builder.setEndpoint(endpoint)
-    apiGatewayApiKey.foreach(agak => builder.setApiKey(agak))
-    builder.build
+    def attachApiKey(in:MetlingPotInputItemClientBuilder):MetlingPotInputItemClientBuilder = {
+      apiGatewayApiKey.map(agak => in.apiKey(agak)).getOrElse(in)
+    }
+    attachApiKey(
+      MetlingPotInputItem.builder().connectionConfiguration(
+        new ConnectionConfiguration()
+          .maxConnections(100)
+          .connectionMaxIdleMillis(1000) // 1 second
+       ).timeoutConfiguration(
+        new TimeoutConfiguration()
+          .httpRequestTimeout(20 * 1000) // 20 seconds
+          .totalExecutionTimeout(30 * 1000) // 30 seconds
+          .socketTimeout(2 * 1000) // 2 seconds
+      ).iamCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey)))
+      .iamRegion(region)
+      .endpoint(endpoint)
+    ).build()
   }
 }
 
