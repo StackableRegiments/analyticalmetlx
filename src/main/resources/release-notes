@@ -1,3 +1,8 @@
+1.0.12
+Bugfix: METL-362: D2L server can't connect to API gateway.
+Bugfix: METL-349: "Submitted to instructor" dialog text is all lowercased.
+Bugfix: METL-359: Chat box is prejudiced towards displaying with a neutral theme.
+
 1.0.11
 Bugfix: METL-300: Autofit Zoom goes to boundary of image and does not show resize handles.
 Bugfix: METL-217: Conversation table | Created column should be in "19 Oct 2016" format.
