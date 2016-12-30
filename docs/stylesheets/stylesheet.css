@@ -58,7 +58,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    margin: 10px 0;
+    padding: 10px 0;
     font-weight: 700;
     color: #222222;
     font-family: 'Lucida Grande', 'Calibri', Helvetica, Arial, sans-serif;
@@ -398,7 +398,6 @@ Full-Width Styles
 #sidebar {
     display: block;
     position: absolute;
-    top: -10px;
     left: -140px;
     width: 140px;
     background-color: #4078c0;
@@ -415,13 +414,11 @@ Full-Width Styles
     text-indent: -.7em;
 }
 
-/*
 #sidebar li:before {
-    content: "-";
-    padding-right: .7em;
+    content: " ";
+    padding-right: 0.2em;
     color: #eee;
 }
-*/
 
 #sidebar a {
     color: #fff;
@@ -433,8 +430,6 @@ Full-Width Styles
 
 #main_content_wrap {
     background: #f2f2f2;
-    /*border-top: 1px solid #111;*/
-    /*border-bottom: 1px solid #111;*/
 }
 
 #main_content {
