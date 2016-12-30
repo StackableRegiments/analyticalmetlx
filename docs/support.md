@@ -104,10 +104,15 @@ You might like to consult the [MeTL FAQ]({{site.baseurl}}/academy-faq.html), a c
 
 ![Saint Leo University](images/slu-32.png) If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the Saint Leo Learning Innovation Team.
 
+<div class="escalation">Escalate to <a href="#tali">TALI</a></div>
+
 # Escalation
 
 ## UTS Helpdesk
-Phone (352) 588-8888 or email <a href="mailto:helpdesk@saintleo.edu">helpdesk@saintleo.edu</a>.
+![Saint Leo University](images/slu-32.png) Phone **(352) 588-8888** or email <a href="mailto:helpdesk@saintleo.edu">helpdesk@saintleo.edu</a>
+
+## TALI
+![Saint Leo University](images/slu-32.png) <a href="http://tali.saintleo.edu">Teaching and Learning Innovation</a> resources
 
 ## MeTL Support
-Email a screenshot and any error messages to <a href="mailto:support@stackableregiments.com">support@stackableregiments.com</a>.
+Email a screenshot and any error messages to <a href="mailto:support@stackableregiments.com">support@stackableregiments.com</a>
