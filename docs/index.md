@@ -2,7 +2,7 @@
 layout: index
 ---
 
-<img src="images/ironman-full.png" alt="MeTL Collaboration" width="250px" class="text-image"/>
+<img src="images/ironman-full.png" alt="MeTL Collaboration" width="350px" class="text-image"/>
 
 <h1>Welcome to MeTL</h1>
 
