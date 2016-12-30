@@ -8,37 +8,11 @@ import java.io.Serializable;
 /**
  * 
  */
-public class SmartGroupsRequest implements Serializable, Cloneable {
-
-    private Double groupCount;
+public class Group implements Serializable, Cloneable {
 
     private java.util.List<String> members;
 
-    /**
-     * @param groupCount
-     */
-
-    public void setGroupCount(Double groupCount) {
-        this.groupCount = groupCount;
-    }
-
-    /**
-     * @return
-     */
-
-    public Double getGroupCount() {
-        return this.groupCount;
-    }
-
-    /**
-     * @param groupCount
-     * @return Returns a reference to this object so that method calls can be chained together.
-     */
-
-    public SmartGroupsRequest groupCount(Double groupCount) {
-        setGroupCount(groupCount);
-        return this;
-    }
+    private String name;
 
     /**
      * @return
@@ -72,7 +46,7 @@ public class SmartGroupsRequest implements Serializable, Cloneable {
      * @return Returns a reference to this object so that method calls can be chained together.
      */
 
-    public SmartGroupsRequest members(String... members) {
+    public Group members(String... members) {
         if (this.members == null) {
             setMembers(new java.util.ArrayList<String>(members.length));
         }
@@ -87,8 +61,34 @@ public class SmartGroupsRequest implements Serializable, Cloneable {
      * @return Returns a reference to this object so that method calls can be chained together.
      */
 
-    public SmartGroupsRequest members(java.util.Collection<String> members) {
+    public Group members(java.util.Collection<String> members) {
         setMembers(members);
+        return this;
+    }
+
+    /**
+     * @param name
+     */
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return
+     */
+
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     * @param name
+     * @return Returns a reference to this object so that method calls can be chained together.
+     */
+
+    public Group name(String name) {
+        setName(name);
         return this;
     }
 
@@ -103,10 +103,10 @@ public class SmartGroupsRequest implements Serializable, Cloneable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
-        if (getGroupCount() != null)
-            sb.append("GroupCount: ").append(getGroupCount()).append(",");
         if (getMembers() != null)
-            sb.append("Members: ").append(getMembers());
+            sb.append("Members: ").append(getMembers()).append(",");
+        if (getName() != null)
+            sb.append("Name: ").append(getName());
         sb.append("}");
         return sb.toString();
     }
@@ -118,16 +118,16 @@ public class SmartGroupsRequest implements Serializable, Cloneable {
         if (obj == null)
             return false;
 
-        if (obj instanceof SmartGroupsRequest == false)
+        if (obj instanceof Group == false)
             return false;
-        SmartGroupsRequest other = (SmartGroupsRequest) obj;
-        if (other.getGroupCount() == null ^ this.getGroupCount() == null)
-            return false;
-        if (other.getGroupCount() != null && other.getGroupCount().equals(this.getGroupCount()) == false)
-            return false;
+        Group other = (Group) obj;
         if (other.getMembers() == null ^ this.getMembers() == null)
             return false;
         if (other.getMembers() != null && other.getMembers().equals(this.getMembers()) == false)
+            return false;
+        if (other.getName() == null ^ this.getName() == null)
+            return false;
+        if (other.getName() != null && other.getName().equals(this.getName()) == false)
             return false;
         return true;
     }
@@ -137,15 +137,15 @@ public class SmartGroupsRequest implements Serializable, Cloneable {
         final int prime = 31;
         int hashCode = 1;
 
-        hashCode = prime * hashCode + ((getGroupCount() == null) ? 0 : getGroupCount().hashCode());
         hashCode = prime * hashCode + ((getMembers() == null) ? 0 : getMembers().hashCode());
+        hashCode = prime * hashCode + ((getName() == null) ? 0 : getName().hashCode());
         return hashCode;
     }
 
     @Override
-    public SmartGroupsRequest clone() {
+    public Group clone() {
         try {
-            return (SmartGroupsRequest) super.clone();
+            return (Group) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new IllegalStateException("Got a CloneNotSupportedException from Object.clone() " + "even though we're Cloneable!", e);
         }

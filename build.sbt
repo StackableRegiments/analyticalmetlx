@@ -118,12 +118,11 @@ libraryDependencies ++= {
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
     //for AWS API Gateway interaction
-    "com.amazonaws" % "aws-android-sdk-apigateway-core" % "2.3.1",
-    "com.google.code.gson" % "gson" % "2.2.4"
+	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
-javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
+javacOptions ++= Seq("-source", "8", "-target", "8")
 
 // append -deprecation to the options passed to the Scala compiler
 scalacOptions += "-deprecation"
