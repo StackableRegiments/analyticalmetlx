@@ -1,71 +1,168 @@
-/*
- * Copyright 2010-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * apache2
  */
-
 package com.metlingpot;
 
+import java.net.*;
 import java.util.*;
+import java.util.Map.Entry;
 
-import com.metlingpot.model.InputItemsPutRequest;
-import com.metlingpot.model.Error;
-import com.metlingpot.model.InputItemsResponse;
-import com.metlingpot.model.SearchItemsResponse;
-import com.metlingpot.model.SearchItemsPutRequest;
-import com.metlingpot.model.SmartGroupsRequest;
-import com.metlingpot.model.SmartGroupsResponse;
+import org.apache.commons.logging.*;
 
+import com.amazonaws.*;
+import com.amazonaws.opensdk.*;
+import com.amazonaws.opensdk.model.*;
+import com.amazonaws.opensdk.protect.model.transform.*;
+import com.amazonaws.auth.*;
+import com.amazonaws.handlers.*;
+import com.amazonaws.http.*;
+import com.amazonaws.internal.*;
+import com.amazonaws.metrics.*;
+import com.amazonaws.regions.*;
+import com.amazonaws.transform.*;
+import com.amazonaws.util.*;
+import com.amazonaws.protocol.json.*;
+import com.amazonaws.util.AWSRequestMetrics.Field;
+import com.amazonaws.annotation.ThreadSafe;
+import com.amazonaws.client.AwsSyncClientParams;
+import com.amazonaws.client.ClientHandler;
+import com.amazonaws.client.ClientHandler;
+import com.amazonaws.client.ClientHandlerParams;
+import com.amazonaws.client.ClientExecutionParams;
+import com.amazonaws.opensdk.protect.client.SdkClientHandler;
+import com.amazonaws.SdkBaseException;
 
-@com.amazonaws.mobileconnectors.apigateway.annotation.Service(endpoint = "https://jq6f5gsrq9.execute-api.us-east-1.amazonaws.com/future")
-public interface MetlingPotInputItemClient {
+import com.metlingpot.model.*;
+import com.metlingpot.model.transform.*;
 
+/**
+ * Client for accessing MetlingPotInputItem. All service calls made using this client are blocking, and will not return
+ * until the service call completes.
+ * <p>
+ * 
+ */
+@ThreadSafe
+public class MetlingPotInputItemClient implements MetlingPotInputItem {
+
+    private final ClientHandler clientHandler;
+
+    private final com.amazonaws.opensdk.protect.protocol.ApiGatewayProtocolFactoryImpl protocolFactory = new com.amazonaws.opensdk.protect.protocol.ApiGatewayProtocolFactoryImpl(
+            new JsonClientMetadata()
+                    .withProtocolVersion("1.1")
+                    .withSupportsCbor(false)
+                    .withSupportsIon(false)
+                    .withContentTypeOverride("application/json")
+                    .addErrorMetadata(
+                            new JsonErrorShapeMetadata().withErrorCode("InternalServerErrorException").withModeledClass(
+                                    com.metlingpot.model.InternalServerErrorException.class))
+                    .withBaseServiceExceptionClass(com.metlingpot.model.MetlingPotInputItemException.class));
 
     /**
-     * A generic invoker to invoke any API Gateway endpoint.
-     * @param request
-     * @return ApiResponse
+     * Constructs a new client to invoke service methods on MetlingPotInputItem using the specified parameters.
+     *
+     * <p>
+     * All service calls made using this new client object are blocking, and will not return until the service call
+     * completes.
+     *
+     * @param clientParams
+     *        Object providing client parameters.
      */
-    com.amazonaws.mobileconnectors.apigateway.ApiResponse execute(com.amazonaws.mobileconnectors.apigateway.ApiRequest request);
-    
+    MetlingPotInputItemClient(AwsSyncClientParams clientParams) {
+        this.clientHandler = new SdkClientHandler(new ClientHandlerParams().withClientParams(clientParams));
+    }
+
     /**
-     * 
-     * 
-     * @param body 
-     * @return InputItemsResponse
+     * @param putInputItemRequest
+     * @return Result of the PutInputItem operation returned by the service.
+     * @throws InternalServerErrorException
+     * @sample MetlingPotInputItem.PutInputItem
      */
-    @com.amazonaws.mobileconnectors.apigateway.annotation.Operation(path = "/inputItem", method = "PUT")
-    InputItemsResponse inputItemPut(
-            InputItemsPutRequest body);
-    
+    @Override
+    public PutInputItemResult putInputItem(PutInputItemRequest putInputItemRequest) {
+        HttpResponseHandler<PutInputItemResult> responseHandler = protocolFactory.createResponseHandler(new JsonOperationMetadata().withPayloadJson(true)
+                .withHasStreamingSuccessResponse(false), new PutInputItemResultJsonUnmarshaller());
+
+        HttpResponseHandler<SdkBaseException> errorResponseHandler = createErrorResponseHandler(new JsonErrorShapeMetadata().withModeledClass(
+                InternalServerErrorException.class).withHttpStatusCode(500));
+
+        return clientHandler.execute(new ClientExecutionParams<PutInputItemRequest, PutInputItemResult>()
+                .withMarshaller(new PutInputItemRequestMarshaller(protocolFactory)).withResponseHandler(responseHandler)
+                .withErrorResponseHandler(errorResponseHandler).withInput(putInputItemRequest));
+    }
+
     /**
-     * 
-     * 
-     * @param body 
-     * @return SearchItemsResponse
+     * @param putSearchRequest
+     * @return Result of the PutSearch operation returned by the service.
+     * @throws InternalServerErrorException
+     * @sample MetlingPotInputItem.PutSearch
      */
-    @com.amazonaws.mobileconnectors.apigateway.annotation.Operation(path = "/search", method = "PUT")
-    SearchItemsResponse searchPut(
-            SearchItemsPutRequest body);
-    
+    @Override
+    public PutSearchResult putSearch(PutSearchRequest putSearchRequest) {
+        HttpResponseHandler<PutSearchResult> responseHandler = protocolFactory.createResponseHandler(new JsonOperationMetadata().withPayloadJson(true)
+                .withHasStreamingSuccessResponse(false), new PutSearchResultJsonUnmarshaller());
+
+        HttpResponseHandler<SdkBaseException> errorResponseHandler = createErrorResponseHandler(new JsonErrorShapeMetadata().withModeledClass(
+                InternalServerErrorException.class).withHttpStatusCode(500));
+
+        return clientHandler.execute(new ClientExecutionParams<PutSearchRequest, PutSearchResult>()
+                .withMarshaller(new PutSearchRequestMarshaller(protocolFactory)).withResponseHandler(responseHandler)
+                .withErrorResponseHandler(errorResponseHandler).withInput(putSearchRequest));
+    }
+
     /**
-     * 
-     * 
-     * @param body 
-     * @return SmartGroupsResponse
+     * @param putSmartgroupsRequest
+     * @return Result of the PutSmartgroups operation returned by the service.
+     * @throws InternalServerErrorException
+     * @sample MetlingPotInputItem.PutSmartgroups
      */
-    @com.amazonaws.mobileconnectors.apigateway.annotation.Operation(path = "/smartgroups", method = "PUT")
-    SmartGroupsResponse smartgroupsPut(
-            SmartGroupsRequest body);
-    
+    @Override
+    public PutSmartgroupsResult putSmartgroups(PutSmartgroupsRequest putSmartgroupsRequest) {
+        HttpResponseHandler<PutSmartgroupsResult> responseHandler = protocolFactory.createResponseHandler(new JsonOperationMetadata().withPayloadJson(true)
+                .withHasStreamingSuccessResponse(false), new PutSmartgroupsResultJsonUnmarshaller());
+
+        HttpResponseHandler<SdkBaseException> errorResponseHandler = createErrorResponseHandler(new JsonErrorShapeMetadata().withModeledClass(
+                InternalServerErrorException.class).withHttpStatusCode(500));
+
+        return clientHandler.execute(new ClientExecutionParams<PutSmartgroupsRequest, PutSmartgroupsResult>()
+                .withMarshaller(new PutSmartgroupsRequestMarshaller(protocolFactory)).withResponseHandler(responseHandler)
+                .withErrorResponseHandler(errorResponseHandler).withInput(putSmartgroupsRequest));
+    }
+
+    @Override
+    public RawResult execute(RawRequest request) {
+        return execute(request, (r, c) -> {
+        });
+    }
+
+    @Override
+    public RawResult execute(RawRequest request, ResultContentConsumer consumer) {
+        if (consumer == null) {
+            throw new IllegalArgumentException("consumer must not be null");
+        }
+
+        HttpResponseHandler<RawResult> responseHandler = protocolFactory.createResponseHandler(new JsonOperationMetadata().withPayloadJson(false)
+                .withHasStreamingSuccessResponse(true), new RawResultUnmarshaller(consumer));
+
+        HttpResponseHandler<SdkBaseException> errorResponseHandler = createErrorResponseHandler();
+
+        return clientHandler.execute(new ClientExecutionParams<RawRequest, RawResult>().withMarshaller(new RawRequestMarshaller(protocolFactory))
+                .withResponseHandler(responseHandler).withErrorResponseHandler(errorResponseHandler).withInput(request));
+    }
+
+    /**
+     * Create the error response handler for the operation.
+     * 
+     * @param errorShapeMetadata
+     *        Error metadata for the given operation
+     * @return Configured error response handler to pass to HTTP layer
+     */
+    private HttpResponseHandler<SdkBaseException> createErrorResponseHandler(JsonErrorShapeMetadata... errorShapeMetadata) {
+        return protocolFactory.createErrorResponseHandler(new JsonErrorResponseMetadata().withErrorShapes(Arrays.asList(errorShapeMetadata)));
+    }
+
+    @Override
+    public void shutdown() {
+        clientHandler.shutdown();
+    }
+
 }
-
