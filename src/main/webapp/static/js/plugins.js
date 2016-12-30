@@ -1,7 +1,7 @@
 var Plugins = (function(){
     return {
         "Chat":(function(){
-						var chatMessages = {};
+            var chatMessages = {};
             var outer = {};
             var cmHost = {};
             var cmTemplate = {};
@@ -48,43 +48,43 @@ var Plugins = (function(){
             };
             var actOnStanzaReceived = function(stanza){
                 if (stanza && "type" in stanza && stanza.type == "chatMessage" && "identity" in stanza){
-									if (stanza.identity in chatMessages){
-										//ignore this one, I've already got it.
-									} else {
-										chatMessages[stanza.identity] = stanza;
-                    var username = UserSettings.getUsername();
-                    var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
-                        return _.map(slide.groupSets,function(groupSet){
-                            return groupSet.groups;
-                        });
-                    })));
-                    boardContent.chatMessages.push(stanza);
-                    if (!stanza.audiences.length){ //it's a public message
-                        cmHost.append(renderChatMessage(stanza));
-                        cmHost.scrollTop(cmHost[0].scrollHeight);
-                    } else { // it's targetted
-                        var relAud = _.find(stanza.audiences,function(aud){
-                            return aud.type == "user" || aud.type == "group";
-                        });
-                        if (stanza.author == username){ //it's from me
-                            if (relAud && relAud.type == "user"){
-                                cmHost.append(renderChatMessage(stanza,"whisperTo",relAud.name));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
-                            } else if (relAud && relAud.type == "group"){
-                                cmHost.append(renderChatMessage(stanza,"groupChatTo",relAud.name));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
-                            }
-                        } else { // it's possibly targetted to me
-                            if (relAud && relAud.type == "user" && relAud.name == username){
-                                cmHost.append(renderChatMessage(stanza,"whisperFrom",stanza.author));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
-                            } else if (relAud && relAud.type == "group" && _.some(convGroups,function(g){ return g.name == relAud.name && _.some(g.members,function(m){ return m.name == username; });})){
-                                cmHost.append(renderChatMessage(stanza,"groupChatFrom",stanza.author,relAud.name));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
+                    if (stanza.identity in chatMessages){
+                        //ignore this one, I've already got it.
+                    } else {
+                        chatMessages[stanza.identity] = stanza;
+                        var username = UserSettings.getUsername();
+                        var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
+                            return _.map(slide.groupSets,function(groupSet){
+                                return groupSet.groups;
+                            });
+                        })));
+                        boardContent.chatMessages.push(stanza);
+                        if (!stanza.audiences.length){ //it's a public message
+                            cmHost.append(renderChatMessage(stanza));
+                            cmHost.scrollTop(cmHost[0].scrollHeight);
+                        } else { // it's targetted
+                            var relAud = _.find(stanza.audiences,function(aud){
+                                return aud.type == "user" || aud.type == "group";
+                            });
+                            if (stanza.author == username){ //it's from me
+                                if (relAud && relAud.type == "user"){
+                                    cmHost.append(renderChatMessage(stanza,"whisperTo",relAud.name));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                } else if (relAud && relAud.type == "group"){
+                                    cmHost.append(renderChatMessage(stanza,"groupChatTo",relAud.name));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                }
+                            } else { // it's possibly targetted to me
+                                if (relAud && relAud.type == "user" && relAud.name == username){
+                                    cmHost.append(renderChatMessage(stanza,"whisperFrom",stanza.author));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                } else if (relAud && relAud.type == "group" && _.some(convGroups,function(g){ return g.name == relAud.name && _.some(g.members,function(m){ return m.name == username; });})){
+                                    cmHost.append(renderChatMessage(stanza,"groupChatFrom",stanza.author,relAud.name));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                }
                             }
                         }
                     }
-									}
                 }
             };
             var actOnHistoryReceived = function(history){
@@ -151,13 +151,13 @@ var Plugins = (function(){
 
             return {
                 style:".chatMessage {color:white}"+
-                    ".chatMessageContainer {background:black; overflow-y:auto; height:110px;}"+
+                    ".chatMessageContainer {overflow-y:auto; height:110px;}"+
                     ".chatContainer {width:320px;height:140px;}"+
-                    ".chatMessageAuthor {color:gray; background:black;margin-right:1em;}"+
-                    ".chatMessageTimestamp {color:red; background:black; font-size:small;display:none;}"+
-                    ".chatMessageContent {background:black}"+
-                    ".chatboxContainer {background:black}"+
-                    ".chatbox {background:white; color:black; display:inline-block; padding:0px; margin:0px;}"+
+                    ".chatMessageAuthor {color:gray;margin-right:1em;font-weight:bold;}"+
+                    ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
+                    ".chatboxContainer {display:flex;}"+
+                    ".chatboxContainer input{flex-grow:1;}"+
+                    ".chatbox {background-color:white;color:black; display:inline-block; padding:0px; margin:0px;}"+
                     ".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
                     ".groupChat {color:orange}"+
                     ".whisper {color:pink}",
