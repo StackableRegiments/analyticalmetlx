@@ -256,7 +256,7 @@ var Plugins = (function(){
                 return b;
             };
             return {
-                style:".groupsPluginMember{margin-left:0.5em;}"+
+                style:".groupsPluginMember{margin-left:0.5em;display:flex;}"+
                     " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
                     " .groupsPluginGroupContainer .icon-txt, .groupsPluginAllGroupsControls .icon-txt, .groupsPluginAllGroupsControls .fa{color:white;}"+
                     " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
