@@ -6,6 +6,7 @@ title: User Guide
 This is for teachers, teaching assistants, student champions and all other MeTL users.
 
 Topics include:
+
 - [Conversation Search](guide-conversation-search.html) 
 - [Conversation](guide-conversation.html) Usage
   - Conversation [Options](guide-options.html)
