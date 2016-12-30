@@ -198,7 +198,7 @@ var Submissions = (function(){
                 console.log(submissionStanza);
                 sendStanza(submissionStanza);
                 WorkQueue.gracefullyResume();
-                successAlert("submission sent","your submission has been sent to the instructor");
+                successAlert("Submission sent","Your submission has been sent to the instructor");
             },
             error: function(e){
                 console.log(e);
