@@ -25,6 +25,8 @@ title: Support
 
 ![Saint Leo University](images/slu-32.png) The Whiteboard system can be found at [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu), or through the Learning Management System.
 
+<img src="images/guide-slu-access.png" alt="SLU Access" align="right" width="400" class="text-image"/>
+
 It is also the `Whiteboard` link at [https://lionsshare.saintleo.edu](https://lionsshare.saintleo.edu).
 
 <div class="escalation">Escalate to <a href="#uts-helpdesk">UTS Helpdesk</a></div>
