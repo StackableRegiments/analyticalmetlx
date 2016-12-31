@@ -17,7 +17,7 @@ Uncheck this box to hide the [controls](guide-canvas.html#controls) to the left 
 
 The health check screen shows how well MeTL is running on your device, as well as server response time.
 
-![Health](images/guide-health.png)
+<img src="images/guide-health.png" alt="Health Check" width="700"/>
 
 There are three main charts, but other charts may appear after certain actions have been taken in the conversation.
 
