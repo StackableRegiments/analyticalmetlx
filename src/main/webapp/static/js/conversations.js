@@ -82,12 +82,15 @@ var Conversations = (function(){
         var rollAudiences = function(){
             _.each(groupActivity,rollAudience);
         }
+        var conversationActivity;
         var displayAudiences = function(){
             ensureTracking("anyPrivate");
             ensureTracking("anyPublic");
             groupTraces.anyPrivate = groupTraces.anyPrivate || {};
             groupTraces.anyPublic = groupTraces.anyPublic || {};
-            conversationActivity = conversationActivity || $("#conversationActivity");
+            if(!conversationActivity || !conversationActivity.length){
+                conversationActivity = $("#conversationActivity");
+            }
             WorkQueue.enqueue(function(){
                 _.each(currentConversation.slides,updateSlide);
                 if(conversationActivity.find("svg").length == 0){
@@ -107,7 +110,6 @@ var Conversations = (function(){
             return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
         }
         var scrollContainer;
-        var conversationActivity;
         var updateSlide = function(slide){
             var gs = Conversations.getGroupsFor(slide);
             if(! _.every(gs,groupTraceIsAccurate)){
