@@ -306,7 +306,7 @@ var GroupBuilder = (function(){
         $(".groupsOu.blocker").toggle(blocked);
     }
     var statusReport = function(msg){
-	console.log(msg);
+        console.log(msg);
         $("#groupSlideDialog .importGroups").text(msg);
     }
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
@@ -326,9 +326,7 @@ var GroupBuilder = (function(){
             var choice = $(this).val();
             if(choice != "NONE"){
                 blockGroups(true);
-                _.delay(function(){
-                    getOrgUnitsFromGroupProviders(choice);
-                },2000);
+                getOrgUnitsFromGroupProviders(choice);
             }
         });
     };
