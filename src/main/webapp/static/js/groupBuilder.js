@@ -104,7 +104,7 @@ var GroupBuilder = (function(){
     var simulate = function(strategy,parameter,presentStudentsOnly){
         console.log(strategy,parameter,presentStudentsOnly);
         var groups = flatInitialGroups();
-	console.log("flatInitialGroups",groups);
+        console.log("flatInitialGroups",groups);
         var participants;
         switch(presentStudentsOnly){
         case "allPresent": participants = Participants.getParticipants();
@@ -165,6 +165,15 @@ var GroupBuilder = (function(){
                     value:params[1]
                 }).appendTo(container);
             });
+    }
+    var refreshToolState = function(){
+        var menuButton = $("#menuGroups");
+        if(Conversations.shouldModifyConversation()){
+            menuButton.parent().show();
+        }
+        else{
+            menuButton.parent().hide();
+        }
     }
     var render = function(){
         var container = $("#groupsPopup");
@@ -236,7 +245,7 @@ var GroupBuilder = (function(){
             });
             g.appendTo(groupsV);
         });
-	iteratedGroups = simulated;
+        iteratedGroups = simulated;
     };
     var showAddGroupSlideDialogFunc = function(){
         getGroupsProviders();
@@ -336,6 +345,7 @@ var GroupBuilder = (function(){
         if(backstage == "groups"){
             render();
         }
+        refreshToolState();
     };
     Progress.currentSlideJidReceived["GroupBuilder"] = function(){
         if(currentBackstage == "groups"){
