@@ -193,6 +193,7 @@
               <div class="gradebookDatagrid">
                 <span class="gradeValueEditPopup">
                   <div class="changeGradeContainer">
+                    <label class="gradeValueCommentTextboxLabel">Value</label>
                     <input class="numericScore" type="number"></input>
                     <input class="textScore" type="text"></input>
                     <div class="permission-states">
@@ -205,11 +206,13 @@
                     <input class="gradeValueCommentTextbox" type="text"></input>
                   </div>
                   <div class="changePrivateCommentContainer">
-                    <label class="gradeValuePrivateCommentTextboxLabel">Private Comment</label>
+                    <label class="gradeValuePrivateCommentTextboxLabel">Private comment</label>
                     <input class="gradeValuePrivateCommentTextbox" type="text"></input>
                   </div>
-                  <button class="submitGradeValueChange">Submit</button>
-                  <button class="cancelGradeValueChange">Cancel</button>
+                  <div class="flex-container-responsive">
+                    <button class="submitGradeValueChange" style="border:1px solid black;margin-right:1em;">Submit</button>
+                    <button class="cancelGradeValueChange" style="border:1px solid black">Cancel</button>
+                  </div>
                 </span>
                 <span class="gradeUserContainer">
                   <input class="numericScore" type="number"></input>
@@ -245,12 +248,13 @@
                   <label class="numericMaxLabel">Maximum</label>
                   <input type="number" class="numericMaxTextbox"></input>
                 </div>
-                <div class="permission-states">
+                <div class="permission-states mb">
                   <input type="checkbox" class="gradeVisibleCheckbox"></input>
-                  <label class="gradeVisibleLabel">Visible to students</label>
+                  <label class="gradeVisibleLabel"><span class="icon-txt">Visible to students</span></label>
                 </div>
                 <div class="associateController" style="position:relative;min-height:150px;width:100%;">
                   <span class="refreshAssociation">
+		    <label>Associated grade</label>
                     <span class="associationSystem"></span> :
                     <span class="associationOrgUnit"></span> :
                     <span class="associationGradeId"></span>
@@ -259,26 +263,26 @@
                   </span>
                   <span class="createAssociation">
                     <span class="requestAssocPhase1 associationPhase">
-                      <button class="requestAssociation button-transparent-border mth"><span>Create association</span></button>
+                      <button class="requestAssociation button-transparent-border mth"><span>Associate this grade with a remote grade</span></button>
                     </span>
                     <span class="requestAssocPhase2 associationPhase">
+                      <label for="chooseGradebookForGradeSelectBox">Choose a gradebook</label>
                       <select id="chooseGradebookForGradeSelectBox" class="chooseGradebook"></select>
-                      <label for="chooseGradebookForGradeSelectBox">Gradebooks</label>
-                      <button class="commitGradebook button-transparent-border mth"><span>Select Gradebook</span></button>
+                      <button class="commitGradebook button-transparent-border mth"><span>Associate with this gradebook</span></button>
                     </span>
                     <span class="requestAssocPhase3 associationPhase">
-                      <select id="chooseOrgUnitForGradeSelectBox" class="chooseOrgUnit"></select>
                       <label for="chooseOrgUnitForGradeSelectBox">Courses</label>
-                      <button class="commitOrgUnit button-transparent-border mth"><span>Select Course</span></button>
+                      <select id="chooseOrgUnitForGradeSelectBox" class="chooseOrgUnit"></select>
+                      <button class="commitOrgUnit button-transparent-border mth"><span>Associate within this course</span></button>
                     </span>
                     <span class="requestAssocPhase4 associationPhase">
-                      <button class="createGrade button-transparent-border mth"><span>Create grade</span></button>
+                      <button class="createGrade button-transparent-border mth"><span>Associate this grade</span></button>
                     </span>
                   </span>
                   <div class="grades blocker" style="display:none;height:100%;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>
                 </div>
                 <div class="flex-container-responsive">
-                  <button class="cancelGradeEdit button-transparent-border mth"><span>Cancel</span></button>
+                  <button class="cancelGradeEdit button-transparent-border mth mr"><span>Cancel</span></button>
                   <button class="submitGradeEdit button-transparent-border mth"><span>Submit</span></button>
                 </div>
               </fieldSet>
