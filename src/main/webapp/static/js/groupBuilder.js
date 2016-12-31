@@ -53,7 +53,6 @@ var GroupBuilder = (function(){
                 })).appendTo(importV);
 
         var groupId = 0;
-        console.log(externalGroups);
         _.each(externalGroups,function(orgUnit){
             _.each(orgUnit,function(groupCat){
                 var ou = groupCat.orgUnit;
@@ -74,12 +73,12 @@ var GroupBuilder = (function(){
                         id:inputId
                     }).on("click",function(){
                         if(cacheKey in initialGroups){
-                            delete initialGroups[cacheKey];
+			    initialGroups = {};
                         }
                         else{
-                            initialGroups = {cacheKey:groupSet};
+			    initialGroups = {};
+			    initialGroups[cacheKey] = groupSet;
                         }
-			console.log("Toggling",cacheKey);
 			iteratedGroups = [];
                         doSimulation(flatInitialGroups());
                     }).appendTo(groupSetHeader);
@@ -105,7 +104,7 @@ var GroupBuilder = (function(){
         });
     }
     var simulate = function(strategy,parameter,presentStudentsOnly){
-        console.log(strategy,parameter,presentStudentsOnly);
+        console.log("Simulate",strategy,parameter,presentStudentsOnly);
         var groups = flatInitialGroups();
 	console.log("flatInitialGroups",groups);
         var participants;
