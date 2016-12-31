@@ -1,3 +1,15 @@
+1.0.14
+Story: METL-234: User clicks help button.
+Bugfix: METL-371: Students can see Group Editor.
+Bugfix: METL-320: Health bar not visible on top left of Whiteboard.
+Bugfix: METL-354: Activity bar should be reversed (left for right).
+Bugfix: METL-365: No blocker on groups provider selection.
+Bugfix: METL-367: Reduce precision of stats in Health Check.
+Bugfix: METL-369: No text around or within health check graphs.
+Bugfix: METL-370: Banned content grid does not render.
+Bugfix: METL-372: Visual bugs in Grades.
+Improvement: METL-368: Health check improvements.
+
 1.0.13
 Bugfix: METL-361: Rename "manage banned content" to "banned content" and "Group Builder" to "Group editor".
 Bugfix: METL-363: There is blank space between the plugins and the canvas.
