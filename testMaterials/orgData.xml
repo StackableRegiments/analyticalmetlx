@@ -31,12 +31,12 @@
         <member>studentW</member>
         <member>studentX</member>
         <member>studentY</member>
-        <member>studentZ</member>
+        <member>studentC</member>
       </group>
       <group name="group2" type="assignment">
         <member>studentA</member>
         <member>studentB</member>
-        <member>studentC</member>
+        <member>studentE</member>
         <member>studentD</member>
       </group>
     </groupSet>
