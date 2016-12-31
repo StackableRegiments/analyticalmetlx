@@ -42,6 +42,7 @@ var GroupBuilder = (function(){
             id:"clearGroups"
         }).on("click",function(){
             initialGroups = {};
+	    iteratedGroups = [];
             doSimulation();
         }).appendTo(importV).prop("checked",true);
         $("<label />",{
@@ -78,7 +79,9 @@ var GroupBuilder = (function(){
                         else{
                             initialGroups = {cacheKey:groupSet};
                         }
-                        doSimulation();
+			console.log("Toggling",cacheKey);
+			iteratedGroups = [];
+                        doSimulation(flatInitialGroups());
                     }).appendTo(groupSetHeader);
                     inputV.prop("checked",cacheKey in initialGroups);
                     $("<label />",{
