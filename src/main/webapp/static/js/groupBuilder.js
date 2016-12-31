@@ -222,7 +222,6 @@ var GroupBuilder = (function(){
         simulated = simulated || simulate(_strategy,_parameters[_strategy],_presentStudentsOnly);
         groupsV.empty();
         _.each(simulated,function(group){
-            console.log(group);
             var g = $("<div />",{
                 class:"groupBuilderGroup ghost"
             });
@@ -312,6 +311,13 @@ var GroupBuilder = (function(){
         });
         strategySelect.val(_strategy).change();
     };
+    var blockGroups = function(blocked){
+        $(".groupsOu.blocker").toggle(blocked);
+    }
+    var statusReport = function(msg){
+        console.log(msg);
+        $("#groupSlideDialog .importGroups").text(msg);
+    }
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
         var select = $(".jAlert .ouSelector").empty();
         $("<option />",{
@@ -328,9 +334,26 @@ var GroupBuilder = (function(){
         select.on("change",function(){
             var choice = $(this).val();
             if(choice != "NONE"){
+                blockGroups(true);
                 getOrgUnitsFromGroupProviders(choice);
             }
         });
+    };
+    Progress.orgUnitsReceived["GroupBuilder"] = function(orgUnits){
+        if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+        }
+        else{
+            blockGroups(false);
+            statusReport(sprintf("No Org Units found for user %s",UserSettings.getUsername()));
+        }
+    };
+    Progress.groupSetsReceived["GroupBuilder"] = function(groupSets){
+        if ("groupSets" in groupSets && groupSets.groupSets.length){
+        }
+        else{
+            blockGroups(false);
+            statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.groupSets.name));
+        }
     };
     Progress.groupsReceived["GroupBuilder"] = function(args){
         var byOrgUnit = externalGroups[args.orgUnit.name];
@@ -340,6 +363,7 @@ var GroupBuilder = (function(){
         }
         byOrgUnit[args.groupSet.name] = args;
         renderExternalGroups();
+        blockGroups(false);
     };
     Progress.onBackstageShow["GroupBuilder"] = function(backstage){
         if(backstage == "groups"){

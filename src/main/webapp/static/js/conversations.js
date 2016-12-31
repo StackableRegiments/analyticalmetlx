@@ -82,12 +82,15 @@ var Conversations = (function(){
         var rollAudiences = function(){
             _.each(groupActivity,rollAudience);
         }
+        var conversationActivity;
         var displayAudiences = function(){
             ensureTracking("anyPrivate");
             ensureTracking("anyPublic");
             groupTraces.anyPrivate = groupTraces.anyPrivate || {};
             groupTraces.anyPublic = groupTraces.anyPublic || {};
-            conversationActivity = conversationActivity || $("#conversationActivity");
+            if(!conversationActivity || !conversationActivity.length){
+                conversationActivity = $("#conversationActivity");
+            }
             WorkQueue.enqueue(function(){
                 _.each(currentConversation.slides,updateSlide);
                 if(conversationActivity.find("svg").length == 0){
@@ -107,7 +110,6 @@ var Conversations = (function(){
             return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
         }
         var scrollContainer;
-        var conversationActivity;
         var updateSlide = function(slide){
             var gs = Conversations.getGroupsFor(slide);
             if(! _.every(gs,groupTraceIsAccurate)){
@@ -1050,7 +1052,7 @@ function receiveGroupsProviders(providers){
     Progress.call("groupProvidersReceived",[providers]);
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
-    console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+    Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
             getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
@@ -1058,7 +1060,7 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     }
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-    console.log("receiveGroupSetsForOrgUnit",groupSets);
+    Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
             getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
