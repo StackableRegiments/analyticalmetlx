@@ -419,7 +419,7 @@ var subcategoryMapping = {
     optsToolbar:".applicationGroup"
 };
 var categoryMapping = _.fromPairs(_.flatMap({
-    metaToolbar:"integrations print recycleBin",
+    metaToolbar:"integrations print recycleBin help",
     optsToolbar:"settings healthCheck",
     roomToolbar:"grades blacklist submissions attachments participants groups quizzes contentFilter"
 },function(v,k){
@@ -662,7 +662,7 @@ $(function(){
     });
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
-	Quizzes.reRender();
+        Quizzes.reRender();
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
@@ -796,6 +796,10 @@ $(function(){
     $('#menuIntegrations').click(function(){
         showBackstage("integrations");
         updateActiveMenu(this);
+    });
+    $('#menuHelp').click(function(){
+	showBackstage("help");
+	updateActiveMenu(this);
     });
     $("#menuHealthCheck").click(function(){
         showBackstage("healthCheck");
