@@ -6,7 +6,7 @@ var SparkLine = (function(){
     }
     function svgLine(container, data, width, height, updateDelay, transitionDelay) {
         var graph = d3.select(container[0]).append("svg:svg").attr("class","sparkline").attr("width", width).attr("height", height);
-        var x = d3.scaleLinear().domain([0,data[0].length]).range([0, width]);
+        var x = d3.scaleLinear().domain([0,data[0].length]).range([width,0]);
         var y = d3.scaleLinear().domain(d3.extent(data)).range([0, height]);
 
         var line = d3.line()
