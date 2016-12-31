@@ -3,15 +3,15 @@ layout: guide
 title: Groups
 ---
 
-## Create Groups
-
 A conversation can be split into groups.  This can only be done by the author of the conversation (the teacher).
 
 The groups will come into existence on a new page, which will appear in the conversation after the teacher's current page.  Each member of the class will be allocated into one and only one group.  The teacher will not be in any group but will be able to see all the content from all of them.
 
 A member of a group can only see content from the other group members and the teacher.
 
-The teacher starts creating a group by pressing the button on the top right of the screen.
+## Create Groups
+
+The teacher creates a group page by pressing the button on the top right of the screen.
 
 <img src="images/guide-group-start.png" alt="The button to add a Group slide" height="100"/>
 
