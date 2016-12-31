@@ -1050,7 +1050,7 @@ function receiveGroupsProviders(providers){
     Progress.call("groupProvidersReceived",[providers]);
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
-    console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+    Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
             getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
@@ -1058,7 +1058,7 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     }
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-    console.log("receiveGroupSetsForOrgUnit",groupSets);
+    Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
             getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
