@@ -151,6 +151,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         console.log("receiveHistory exception",e);
     }
 }
+
 var lineDrawingThreshold = 25;
 function incorporateBoardBounds(bounds){
     if (!isNaN(bounds[0])){
