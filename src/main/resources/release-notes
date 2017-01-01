@@ -1,3 +1,9 @@
+1.0.16
+Bugfix: METL-215: When banned, the "Public" and "Show" buttons should be greyed to indicate they are disabled.
+Bugfix: METL-355: In Future the Reset and Auto fit controls do not work properly.
+Bugfix: METL-378: IE not displaying health bars properly.
+Bugfix: METL-379: Conversation title hides behind buttons.
+
 1.0.15
 Bugfix: METL-360: Groups don't resort after bringing in an external provider properly.
 Bugfix: METL-300: Autofit Zoom goes to boundary of image and does not show resize handles.
