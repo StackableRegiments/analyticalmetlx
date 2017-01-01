@@ -393,13 +393,13 @@ body {
 }
 
 .nav_sub_link a {
-    background-color: #212121;
+    background-color: #494949;
     margin: 0;
     padding: 5px;
 }
 
 #nav-guide .nav_sub_link a {
-    background-color: #4078c0;
+    background-color: #494949;
 }
 
 .pure-menu-active>.pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
@@ -408,12 +408,7 @@ body {
 }
 
 .pure-menu-active>.nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
-    background-color: #212121;
-    text-decoration: none;
-}
-
-#nav-guide .pure-menu-active>.nav_sub_link .pure-menu-link, #nav-guide .nav_sub_link .pure-menu-link:hover, #nav-guide .nav_sub_link .pure-menu-link:focus {
-    background-color: #4078c0;
+    background-color: #494949;
     text-decoration: none;
 }
 
