@@ -287,7 +287,7 @@ Full-Width Styles
 *******************************************************************************/
 
 body {
-    background: #212121;
+    background: #373737;
 }
 
 .outer {
@@ -415,8 +415,8 @@ body {
 #sidebar {
     display: block;
     position: absolute;
-    left: -140px;
-    width: 140px;
+    left: -160px;
+    width: 160px;
     background-color: transparent;
     border-right: 1px solid #999999;
 }
@@ -440,10 +440,9 @@ body {
 
 #sidebar a {
     color: #212121;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 18px;
+    font-weight: normal;
     font-family: 'Advent Pro', sans-serif;
-    /*text-shadow: #111 0px 0px 10px;*/
 }
 
 #main_content_wrap {
@@ -452,7 +451,7 @@ body {
 
 #main_content {
     padding-top: 0;
-    min-height: 580px; /* Update this when the length of the sidebar changes. */
+    min-height: 700px; /* Update this when the length of the sidebar changes. */
 }
 
 #footer_wrap {
