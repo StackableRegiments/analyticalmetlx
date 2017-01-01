@@ -243,7 +243,7 @@ var Conversations = (function(){
             }
         }));
     }
-    var isVisible = function(slide,thumbScroller){
+    var doIfVisible = function(slide,thumbScroller,func){
         var slidesTop = 0;
         var slidesBottom = thumbScroller.height();
         var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
@@ -252,12 +252,14 @@ var Conversations = (function(){
         var slideBottom = slideTop + slideContainer.height();
         var visible =  (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
         if(slidesTop + slidesBottom + slideTop + slideBottom == 0){
-            _.defer(function(){
-                isVisible(slide,thumbScroller);
-            });
+            _.delay(function(){
+                doIfVisible(slide,thumbScroller,func);
+            },1000);
             visible = false;
         }
-        return visible;
+	else if(visible){
+	    func();
+	}
     }
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
@@ -287,9 +289,9 @@ var Conversations = (function(){
             return positions[ia] - positions[ib];
         }).detach().appendTo(slideContainer);
         _.each(ss,function(slide){
-            if(isVisible(slide,scrollContainer)){
+            doIfVisible(slide,scrollContainer,function(){
                 updateThumbnailFor(slide.id);
-            }
+            });
         });
         //Build the UI
         var slideControls = $("#slideControls");
@@ -488,7 +490,6 @@ var Conversations = (function(){
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
-        refreshSlideDisplay();
         loadCurrentGroup(currentConversation);
     };
     var updateLinks = function(){
@@ -596,7 +597,6 @@ var Conversations = (function(){
             redrawSyncState();
             var myLocation = _.find(details.slides,function(s){ return s.id == currentSlide; });
             var teacherLocation = _.find(details.slides,function(s){ return sprintf("%s",s.id) == currentTeacherSlide; });
-            console.log("Location",myLocation,currentTeacherSlide,teacherLocation);
             var relocate = false;
             if(myLocation){
                 relocate = !myLocation.exposed;
@@ -606,7 +606,6 @@ var Conversations = (function(){
             }
             if(relocate){
                 var possibleLocation = teacherLocation || _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
-                console.log("Relocation",teacherLocation,possibleLocation);
                 if (possibleLocation){
                     doMoveToSlide(possibleLocation.id.toString());
                 } else {
@@ -782,7 +781,6 @@ var Conversations = (function(){
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
-        console.log("updating queryparams:",currentConversation,currentSlide,window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
@@ -801,7 +799,6 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
-        console.log("Requesting moveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;
@@ -1030,11 +1027,9 @@ function receiveCurrentConversation(jid){
     Progress.call("currentConversationJidReceived",[jid]);
 }
 function receiveConversationDetails(details){
-    console.log("receiveConversationDetails");
     Progress.call("conversationDetailsReceived",[details]);
 }
 function receiveSyncMove(jid){
-    console.log("receiveSyncMove",jid)
     if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
         Progress.call("syncMoveReceived",[jid]);
     }

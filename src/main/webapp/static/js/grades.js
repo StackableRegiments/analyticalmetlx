@@ -116,7 +116,6 @@ var Grades = (function(){
                 {name:"description",type:"text",title:"Description",readOnly:true,sorting:true},
                 {name:"location",type:"text",title:"Location",readOnly:true,sorting:true},
                 {name:"timestamp",type:"dateField",title:"When",readOnly:true,itemTemplate:function(t){
-                    console.log("Timestamp",t);
                     if(t == 0){
                         return "";
                     }
@@ -522,7 +521,6 @@ var Grades = (function(){
                                     var gradebookFields = [
                                         {name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
                                         {name:"timestamp",type:"dateField",title:"When",readOnly:true,itemTemplate:function(t){
-                                            console.log("Timestamp",t);
                                             if(t == 0){
                                                 return "";
                                             }
@@ -688,7 +686,6 @@ var Grades = (function(){
                             return shouldModifyConversation || grade.visible;
                         }),function(grade){
                             var thisGrade = gradeValues[grade.id];
-                            console.log("found my grade:",grade,thisGrade);
                             if (thisGrade !== undefined){
                                 var myGradeValue = thisGrade[UserSettings.getUsername()];
                                 if (myGradeValue !== undefined){
