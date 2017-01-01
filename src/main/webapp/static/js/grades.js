@@ -116,15 +116,15 @@ var Grades = (function(){
                 {name:"description",type:"text",title:"Description",readOnly:true,sorting:true},
                 {name:"location",type:"text",title:"Location",readOnly:true,sorting:true},
                 {name:"timestamp",type:"dateField",title:"When",readOnly:true,itemTemplate:function(t){
-		    if(t == 0){
-			return "";
-		    }
+                    console.log("Timestamp",t);
+                    if(t == 0){
+                        return "";
+                    }
                     return moment(t).format('MMM Do YYYY, h:mm a');
                 }}
             ];
             var teacherFields = [
                 {name:"gradeType",type:"text",title:"Type",readOnly:true,sorting:true},
-                //                      {name:"author",type:"text",title:"Who",readOnly:true,sorting:true}
                 {
                     name:"identity",
                     type:"text",
@@ -244,7 +244,7 @@ var Grades = (function(){
                                                 spin(this,false);
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
-						console.log(textStatus,error);
+                                                console.log(textStatus,error);
                                                 alert(sprintf("Error: %s \r\n %s",textStatus,error));
                                             });
                                         });
@@ -298,13 +298,13 @@ var Grades = (function(){
                                                     aNodes.find(".requestAssocPhase3").show();
                                                 } else {
                                                     console.log("found no data:",data);
-						    aNodes.text("No gradebooks found");
+                                                    aNodes.text("No gradebooks found");
                                                 }
                                                 spin(aNodes,false);
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
                                                 console(sprintf("error: %s \r\n %s",textStatus,error));
-						alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
+                                                alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
                                             });
                                         } else {
                                             aNodes.find(".requestAssocPhase4").show();
@@ -521,7 +521,13 @@ var Grades = (function(){
                                     };
                                     var gradebookFields = [
                                         {name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
-                                        {name:"timestamp",type:"dateField",title:"",readOnly:true},
+                                        {name:"timestamp",type:"dateField",title:"When",readOnly:true,itemTemplate:function(t){
+                                            console.log("Timestamp",t);
+                                            if(t == 0){
+                                                return "";
+                                            }
+                                            return moment(t).format('MMM Do YYYY, h:mm a');
+                                        }},
                                         {name:"gradeValue",type:"text",title:"Score",readOnly:true, sorting:true },
                                         {name:"gradeComment",type:"text",title:"Comment",readOnly:true,sorting:true},
                                         {name:"gradePrivateComment",type:"text",title:"Private comment",readOnly:true,sorting:true}
