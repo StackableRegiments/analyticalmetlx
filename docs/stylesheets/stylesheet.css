@@ -316,12 +316,12 @@ body {
 }
 
 #header_wrap {
-    background: #212121;
-    background: -moz-linear-gradient(top, #373737, #212121);
-    background: -webkit-linear-gradient(top, #373737, #212121);
-    background: -ms-linear-gradient(top, #373737, #212121);
-    background: -o-linear-gradient(top, #373737, #212121);
-    background: linear-gradient(top, #373737, #212121);
+    background: #373737;
+    background: -moz-linear-gradient(bottom, #494949, #373737);
+    background: -webkit-linear-gradient(bottom, #494949, #373737);
+    background: -ms-linear-gradient(bottom, #494949, #373737);
+    background: -o-linear-gradient(bottom, #494949, #373737);
+    background: linear-gradient(bottom, #494949, #373737);
 }
 
 #header_wrap .inner {
@@ -404,7 +404,8 @@ body {
     position: absolute;
     left: -140px;
     width: 140px;
-    background-color: #4078c0;
+    background-color: transparent;
+    border-right: 1px solid #999999;
 }
 
 #sidebar ul {
@@ -425,11 +426,11 @@ body {
 }
 
 #sidebar a {
-    color: #fff;
+    color: #212121;
     font-size: 15px;
-    font-weight: 200;
+    font-weight: 500;
     font-family: 'Advent Pro', sans-serif;
-    text-shadow: #111 0px 0px 10px;
+    /*text-shadow: #111 0px 0px 10px;*/
 }
 
 #main_content_wrap {
@@ -442,12 +443,12 @@ body {
 }
 
 #footer_wrap {
-    background: #212121;
-    background: -moz-linear-gradient(top, #373737, #212121);
-    background: -webkit-linear-gradient(top, #373737, #212121);
-    background: -ms-linear-gradient(top, #373737, #212121);
-    background: -o-linear-gradient(top, #373737, #212121);
-    background: linear-gradient(top, #373737, #212121);
+    background: #373737;
+    background: -moz-linear-gradient(top, #494949, #373737);
+    background: -webkit-linear-gradient(top, #494949, #373737);
+    background: -ms-linear-gradient(top, #494949, #373737);
+    background: -o-linear-gradient(top, #494949, #373737);
+    background: linear-gradient(top, #494949, #373737);
     clear: right;
     padding: 0 0 50px 0;
 }
