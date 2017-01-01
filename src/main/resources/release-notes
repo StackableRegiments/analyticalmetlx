@@ -1,3 +1,17 @@
+1.0.15
+Bugfix: METL-360: Groups don't resort after bringing in an external provider properly.
+Bugfix: METL-300: Autofit Zoom goes to boundary of image and does not show resize handles.
+Bugfix: METL-124: New pages zoom in undesirably.
+Bugfix: METL-123: Autofit not shrinking to current content size.
+Bugfix: METL-356: Some elements are predjudiced towards displaying with a neutral theme.
+Bugfix: METL-377: Thumbnails do not appear until interacted with.
+Bugfix: METL-133: Selection line thickness follows most recently used ink thickness.
+Bugfix: METL-383: Scroll bars within thumbnail panel.
+Bugfix: METL-381: Page numbering not adjusted on add page or reorder pages.
+Bugfix: METL-392: Conversation level actions should have white text.
+Bugfix: METL-372: Visual bugs in Grades.
+Bugfix: METL-391: Can't insert image in Edge, Firefox or IE.
+
 1.0.14
 Story: METL-234: User clicks help button.
 Bugfix: METL-371: Students can see Group Editor.
