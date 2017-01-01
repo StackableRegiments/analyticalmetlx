@@ -364,9 +364,18 @@ function calculateImageBounds(image){
 function calculateVideoBounds(video){
     video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
 }
+function urlEncodeSlideName(slideName){
+	var newSlideName = btoa(slideName);//encodeURIComponent(slideName).replace(/\./g,"%2E").replace(/\-/g,"%2D");
+	console.log("safetyingSlideName:",slideName,newSlideName);
+	return newSlideName;
+}
 function calculateImageSource(image){
     var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-    return sprintf("/proxyImageUrl/%s?source=%s",slide,encodeURIComponent(image.source));
+    return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source));
+}
+function calculateVideoSource(video){
+    var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
+    return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity));
 }
 function calculateTextBounds(text){
     text.bounds = [text.x,text.y,text.x + text.width, text.y + (text.runs.length * text.size * 1.25)];
@@ -439,7 +448,7 @@ function prerenderImage(image) {
 function prerenderVideo(video){
     if (!("video" in video)){
         var vid = $("<video/>",{
-            src:sprintf("/videoProxy/%s/%s",video.slide,video.identity)
+            src:calculateVideoSource(video)
         });
         video.video = vid[0];
         video.getState = function(){

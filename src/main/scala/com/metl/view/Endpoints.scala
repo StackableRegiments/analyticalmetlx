@@ -245,8 +245,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       //S.containerSession.foreach(s => s.terminate)
       Full(RedirectResponse("/conversationSearch"))
     })
-    case req@Req("videoProxy" :: slideJid :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
+    case req@Req("videoProxy" :: slideJidB64 :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
       val config = ServerConfiguration.default
+      val slideJid = new String(base64Decode(slideJidB64))
       Full(MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid)).getHistory.getVideoByIdentity(identity).map(video => {
         video.videoBytes.map(bytes => {
           val fis = new ByteArrayInputStream(bytes)
@@ -480,8 +481,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       ()=> Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri", StatelessHtml.proxyDataUri(slide,source))
     case Req(List("proxy",slide,source),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxy", StatelessHtml.proxy(slide,source))
-    case r@Req(List("proxyImageUrl",slide),_,_) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", StatelessHtml.proxyImageUrl(slide,r.param("source").getOrElse("")))
+    case r@Req(List("proxyImageUrl",slide),_,_) => 
+      () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", StatelessHtml.proxyImageUrl(new String(base64Decode(slide)),r.param("source").getOrElse("")))
     case Req(List("quizProxy",conversation,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", StatelessHtml.quizProxy(conversation,identity))
     case Req(List("quizResultsGraphProxy",conversation,identity,width,height),_,_) =>
