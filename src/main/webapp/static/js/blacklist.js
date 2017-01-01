@@ -255,9 +255,7 @@ var Blacklist = (function(){
                 highlight:nextColour(author)
             };
         });
-
         _.forEach(_.values(inks),function(ink){
-
             var inkShadow = _.cloneDeep(ink);
             inkShadow.thickness = inkShadow.thickness * 3;
             inkShadow.color = _.find(colouredAuthors,{username:ink.author}).highlight;
@@ -299,7 +297,6 @@ var Blacklist = (function(){
         });
 
         var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
-        //successAlert("alert","<img src="+imageData+"></img>");
         var t = new Date().getTime();
         var username = UserSettings.getUsername();
         var currentSlide = Conversations.getCurrentSlide().id;
@@ -307,7 +304,6 @@ var Blacklist = (function(){
         var title = sprintf("submission%s%s.jpg",username,t.toString());
         var identity = sprintf("%s:%s:%s",currentConversation,title,t);
         var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentConversation.toString(),encodeURI(identity));
-
 
         $.ajax({
             url: url,
@@ -327,7 +323,6 @@ var Blacklist = (function(){
                     type:"submission",
                     url:newIdentity
                 };
-                console.log(submissionStanza);
                 sendStanza(submissionStanza);
 
                 var deleter = batchTransform();
@@ -335,9 +330,7 @@ var Blacklist = (function(){
                 deleter.textIds = _.map(_.values(texts),"identity");
                 deleter.multiWordTextIds = _.map(_.values(multiWordTexts),"identity");
                 deleter.imageIds = _.map(_.values(images),"identity");
-                //                                      deleter.isDeleted = true;
                 deleter.newPrivacy = "private";
-                console.log(deleter);
                 sendStanza(deleter);
 
                 WorkQueue.gracefullyResume();
@@ -363,7 +356,6 @@ var Blacklist = (function(){
         getCurrentBlacklist:function(){return Conversations.shouldModifyConversation() ? currentBlacklist : {};},
         processBlacklist:onBlacklistReceived,
         getBlacklistedAuthors:function(){return Conversations.shouldModifyConversation() ? blacklistAuthors : [];},
-        //banSelection:serverSideBanSelectionFunc
         banSelection:clientSideBanSelectionFunc,
         reRender:renderBlacklistsInPlace
     };

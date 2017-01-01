@@ -8,7 +8,9 @@ var Privacy = (function(){
                 $("#"+id).removeClass("activePrivacy active");
             }
         });
-        $("#currentlyBanned").text(Conversations.getIsBanned() == true ? "(banned because of inappropriate content)" : "");
+	var banned = Conversations.getIsBanned();
+	$("#publicize").toggleClass("disabled",banned);
+        $("#currentlyBanned").text(banned == true ? "(banned because of inappropriate content)" : "");
         $("#currentPrivacyStatus").text(privacy == "PUBLIC"? "publicly" : "privately");
     };
     var attemptToSetPrivacy = function(p){

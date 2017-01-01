@@ -22,6 +22,7 @@ var Conversations = (function(){
             successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
         };
         var updateBannedVisualState = function(){
+	    $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
         };
         return {
             checkIsBanned:function(conversation,freshCheck){
