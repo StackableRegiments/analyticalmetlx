@@ -99,16 +99,16 @@
         <tr id="sharingContainer">
           <th>Sharing: </th>
           <td class="conversationSharing">
-              <div class="conversationSharingCategoryContainer">
-                  <div><span class="btn-icon fa conversationSharingCollapser"></span><span class="conversationSharingCategory"></span></div>
-                  <div class="conversationSharingChoiceContainer">
-                      <div class="conversationSharingChoice indent">
-                          <input class="conversationSharingChoiceInputElement" type="radio" name="conversationSharingChoice"></input>
-                          <label class="conversationSharingChoiceLabel"></label>
-                          <br></br>
-                      </div>
-                  </div>
+            <div class="conversationSharingCategoryContainer">
+              <div><span class="btn-icon fa conversationSharingCollapser"></span><span class="conversationSharingCategory"></span></div>
+              <div class="conversationSharingChoiceContainer">
+                <div class="conversationSharingChoice indent">
+                  <input class="conversationSharingChoiceInputElement" type="radio" name="conversationSharingChoice"></input>
+                  <label class="conversationSharingChoiceLabel"></label>
+                  <br></br>
+                </div>
               </div>
+            </div>
           </td>
         </tr>
         <tr>
@@ -120,9 +120,9 @@
       </table>
       <h2>Conversation level actions</h2>
       <div class="indent">
-        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="archiveChallenge"><div class="icon-txt">Archive</div></button>
-        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="unarchiveChallenge"><div class="icon-txt">Unarchive</div></button>
-        <button class="btn-icon fa fa-copy directlyOnBackground" type="button" id="duplicateChallenge"><div class="icon-txt">Duplicate</div></button>
+        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="archiveChallenge"><div class="icon-txt directlyOnBackground">Archive</div></button>
+        <button class="btn-icon fa fa-archive directlyOnBackground" type="button" id="unarchiveChallenge"><div class="icon-txt directlyOnBackground">Unarchive</div></button>
+        <button class="btn-icon fa fa-copy directlyOnBackground" type="button" id="duplicateChallenge"><div class="icon-txt directlyOnBackground">Duplicate</div></button>
       </div>
       <h2 class="slideActions">Page level actions</h2>
       <span id="reorderInProgress">
@@ -141,7 +141,7 @@
             <th>Move up</th>
             <th>Id</th>
             <th>Index</th>
-						<th>Exposure</th>
+            <th>Exposure</th>
             <th>Join</th>
           </tr>
         </thead>
@@ -162,11 +162,11 @@
             <td>
               <span class="slideIndex"></span>
             </td>
-						<td>
-							<span class="slideExposedContainer">
-								<input type="checkbox" class="slideExposedCheckbox"></input>
-								<label class="slideExposedCheckboxLabel"></label>
-							</span>
+            <td>
+              <span class="slideExposedContainer">
+                <input type="checkbox" class="slideExposedCheckbox"></input>
+                <label class="slideExposedCheckboxLabel"></label>
+              </span>
             <td>
               <a class="slideAnchor">
                 <img class="slideThumbnail"></img>
