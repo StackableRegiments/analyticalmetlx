@@ -365,9 +365,9 @@ function calculateVideoBounds(video){
     video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
 }
 function urlEncodeSlideName(slideName){
-	var newSlideName = btoa(slideName);//encodeURIComponent(slideName).replace(/\./g,"%2E").replace(/\-/g,"%2D");
-	console.log("safetyingSlideName:",slideName,newSlideName);
-	return newSlideName;
+    var newSlideName = btoa(slideName);//encodeURIComponent(slideName).replace(/\./g,"%2E").replace(/\-/g,"%2D");
+    console.log("safetyingSlideName:",slideName,newSlideName);
+    return newSlideName;
 }
 function calculateImageSource(image){
     var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
@@ -696,7 +696,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 var renderSelectionOutlines = function(){
                     var size = Modes.select.resizeHandleSize;
                     canvasContext.save();
-                    canvasContext.strokeWidth = 1;
+                    canvasContext.lineWidth = 1;
                     var multipleItems = [];
                     _.forEach(Modes.select.selected,function(category){
                         _.forEach(category,function(item){
@@ -724,6 +724,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                         _.each(category,function(interactable){
                             if (interactable != undefined && "render" in interactable){
                                 canvasContext.save();
+                                canvasContext.lineWidth = 1;
                                 interactable.render(canvasContext);
                                 canvasContext.restore();
                             };
@@ -741,7 +742,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                             canvasContext.strokeStyle = "black";
                             canvasContext.lineWidth = 0.1;
                             _.each(content,function(c){
-				canvasContext.beginPath();
+                                canvasContext.beginPath();
                                 canvasContext.moveTo(tl.x,tl.y);
                                 var cB = worldToScreen(c.bounds[0],c.bounds[1]);
                                 canvasContext.lineTo(cB.x,cB.y);
