@@ -144,14 +144,10 @@ html{
     background-size:100% 100%;
     background-opacity:0.5;
 }
-.headerRow1{
-    width:100%;
-    font-weight:800;
+#masterHeaderFlexContainer{
     color:white;
-    padding-left:2px;
-    display:inline-block;
-    position:fixed;
     pointer-events:none;
+    display:flex;
     meter,svg{
         height:10px;
         width:50px;
@@ -171,12 +167,12 @@ html{
         display:inline-block;
     }
     .meters{
-        margin-left:2px;
+        margin-left:4px;
     }
     .heading{
         vertical-align:top;
-        position:absolute;
         margin-left:10px;
+	flex-grow:1;
     }
 }
 .groupBuilderGroup{
