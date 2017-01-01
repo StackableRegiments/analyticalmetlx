@@ -33,11 +33,11 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         viewboxWidth = boardContent.maxX - boardContent.minX;
         viewboxHeight = boardContent.maxY - boardContent.minY;
         $.each(boardContent.inks,function(i,ink){
-            prerenderInk(ink);
+            prerenderInk(ink,true);
         });
         prerenderInkMark = Date.now();
         $.each(boardContent.highlighters,function(i,ink){
-            prerenderInk(ink);
+            prerenderInk(ink,true);
         });
         prerenderHighlightersMark = Date.now();
         $.each(boardContent.texts,function(i,text){
@@ -272,7 +272,7 @@ function determineScaling(inX,inY){
         scaleY:outputScaleY
     };
 }
-function prerenderInk(ink){
+function prerenderInk(ink,onBoard){
     if(!isUsable(ink)){
         if(ink.identity in boardContent.inks){
             delete boardContent.inks[ink.identity];
@@ -283,7 +283,9 @@ function prerenderInk(ink){
         return false;
     }
     calculateInkBounds(ink);
-    incorporateBoardBounds(ink.bounds);
+    if(onBoard){
+        incorporateBoardBounds(ink.bounds);
+    }
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
     var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2;
     var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2;
@@ -365,8 +367,7 @@ function calculateVideoBounds(video){
     video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
 }
 function urlEncodeSlideName(slideName){
-    var newSlideName = btoa(slideName);//encodeURIComponent(slideName).replace(/\./g,"%2E").replace(/\-/g,"%2D");
-    console.log("safetyingSlideName:",slideName,newSlideName);
+    var newSlideName = btoa(slideName);
     return newSlideName;
 }
 function calculateImageSource(image){

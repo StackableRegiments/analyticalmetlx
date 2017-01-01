@@ -820,7 +820,6 @@ var Modes = (function(){
             Modes.canvasInteractables[category] = [];
         }
         Modes.canvasInteractables[category].push(interaction);
-        //console.log("Pushing",category);
     }
     $(function(){
         var attrs = {opacity:1};

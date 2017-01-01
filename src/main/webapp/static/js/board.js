@@ -315,6 +315,9 @@ function actOnReceivedStanza(stanza){
     try{
         if(stanza.type in stanzaHandlers){
             stanzaHandlers[stanza.type](stanza);
+            if(Progress.onBoardContentChanged.autoZooming){
+                measureBoardContent(stanza.type == "multiWordText");
+            }
             Progress.call("onBoardContentChanged");
         }
         else{
@@ -778,12 +781,6 @@ function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
             height:px(h)
         });
         var ctx = canvas[0].getContext("2d");
-        /*
-         ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
-         ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
-         ctx.msImageSmoothingEnabled = !disableImageSmoothing;
-         ctx.imageSmoothingEnabled = !disableImageSmoothing;
-         */
         ctx.drawImage(incCanvas,0,0,w,h);
         return canvas[0];
     } else {
@@ -821,51 +818,6 @@ function multiStageRescale(incCanvas,w,h,stanza){
         } else {
             return incCanvas;
         }
-
-        /*
-         if (w >= 1 && h >= 1 && iw != w && ih != h && w < iw && h < ih){
-         var sdw = iw;
-         var sdh = ih;
-         if (w > sdw){ // growing x
-         sdw = w;
-         } else if (w < sdw){ // shrinking x
-         sdw = sdw * sf;
-         if (w > sdw){
-         save = false;
-         sdw = w;
-         }
-         }
-         if (h > sdh){ // growing y
-         sdh = h;
-         } else if (h < sdh){ // shrinking y
-         sdh = sdh * sf;
-         if (h > sdh){
-         save = false;
-         sdh = h;
-         }
-         }
-         var key = Math.floor(sdw);
-         console.log("rescaling:",w,h,iw,ih,sdw,sdh,key,iwSize);
-         if (key == iwSize){
-         return incCanvas;
-         } else {
-         if (key in mm){
-         console.log("returning cached value:",key);
-         return multiStageRescale(mm[key],w,h,stanza);
-         } else {
-         var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
-         if (save){
-         mm[key] = newCanvas;
-         }
-         console.log("generating mipmap:",w,h,sdw,sdh,key);
-         return multiStageRescale(newCanvas,w,h,stanza);
-         }
-         }
-         } else {
-         console.log("returning:",w,h,iwSize);
-         return incCanvas;
-         }
-         */
     } else {
         return incCanvas;
     }
@@ -914,26 +866,36 @@ function drawInk(ink,incCanvasContext){
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
+    if(!c){
+        c = ink.canvas = prerenderInk(ink,incCanvasContext);
+    }
     var cWidth = c.width;
     var cHeight = c.height;
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
         var img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
-        try{
-            var inset = ink.thickness / 2;
-            var sW = img.width;
-            var sH = img.height;
-            var xFactor = img.width / cWidth;
-            var yFactor = img.height / cHeight;
-            var iX = inset * xFactor;
-            var iY = inset * yFactor;
-            canvasContext.drawImage(img,
-                                    0, 0,
-                                    sW, sH,
-                                    sBounds.screenPos.x - iX,sBounds.screenPos.y - iY,
-                                    sBounds.screenWidth + 2 * iX,sBounds.screenHeight + 2 * iY);
+        if(img){
+            try{
+                var inset = ink.thickness / 2;
+                var sW = img.width;
+                var sH = img.height;
+                var xFactor = img.width / cWidth;
+                var yFactor = img.height / cHeight;
+                var iX = inset * xFactor;
+                var iY = inset * yFactor;
+                canvasContext.drawImage(img,
+                                        0, 0,
+                                        sW, sH,
+                                        sBounds.screenPos.x - iX,sBounds.screenPos.y - iY,
+                                        sBounds.screenWidth + 2 * iX,sBounds.screenHeight + 2 * iY);
+            }
+            catch(e){
+                console.log("Exception in drawInk",e);
+            }
         }
-        catch(e){
-            console.log("Exception in drawInk",e);
+        else{
+            console.log(ink);
+            c = ink.canvas = prerenderInk(ink,incCanvasContext);
+            img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
         }
     }
 }
@@ -1032,12 +994,35 @@ function takeControlOfViewbox(){
     delete Progress.onBoardContentChanged.autoZooming;
     UserSettings.setUserPref("followingTeacherViewbox",true);
 }
+function measureBoardContent(includingText){
+    if(includingText){
+        _.each(boardContent.multiWordTexts,function(t){
+            t.doc.invalidateBounds();
+        });
+    }
+    var content = _.flatMap([boardContent.multiWordTexts,boardContent.inks,boardContent.images,boardContent.videos],_.values);
+    if(content.length == 0){
+        boardContent.height = boardHeight;
+        boardContent.width = boardWidth;
+    }
+    else{
+        var bs = _.map(content,"bounds")
+        bs.push([0,0,0,0]);/*Ensure origin is included*/
+        var bounds = _.reduce(bs,mergeBounds);
+        boardContent.width = bounds.width;
+        boardContent.height = bounds.height;
+	boardContent.minX = bounds.minX;
+	boardContent.minY = bounds.minY;
+    }
+}
 function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
-    var s = Modes.select.resizeHandleSize;
-    requestedViewboxWidth = boardContent.width + s * 2;
-    requestedViewboxHeight = boardContent.height + s * 2;
-    IncludeView.specific(boardContent.minX - s,boardContent.minY - s,boardContent.width,boardContent.height,followable);
+    if(Modes.currentMode.name != "text"){
+        var s = Modes.select.resizeHandleSize;
+        requestedViewboxWidth = boardContent.width + s * 2;
+        requestedViewboxHeight = boardContent.height + s * 2;
+        IncludeView.specific(boardContent.minX,boardContent.minY - s * 2,requestedViewboxWidth,requestedViewboxHeight,followable);
+    }
 }
 function zoomToOriginal(followable){
     takeControlOfViewbox();
