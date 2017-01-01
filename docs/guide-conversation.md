@@ -11,7 +11,7 @@ A conversation is a collection of pages where teachers and students share conten
 
 Buttons for adding content and modifying conversation settings.
  
-[More...]({{site.baseurl}}/guide-controls.html)
+[More...]({{site.baseurl}}/guide-canvas.html#controls)
 
 ## Options
 
@@ -79,12 +79,12 @@ Select a thumbnail to move to that page.
 
 ## Chat
 
-All users can send messages to the conversation.
- 
-[More...]({{site.baseurl}}/guide-chat.html)
+All users can send messages to the conversation, unless they have been [banned](guide-learning.html#banned-content).
 
+<img src="images/guide-chat.png" alt="Chat" width="350px"/>
+ 
 ## Face to Face over Video
 
 The `Stream To` button allows users to stream video to other users in the conversation. 
 
-[More...]({{site.baseurl}}/guide-video.html)
+<!-- [More...]({{site.baseurl}}/guide-video.html) -->
