@@ -13,6 +13,14 @@ New config:
 New config: 
 	<externalGradebooks><d2lGradebook/></externalGradebooks>
 
+1.0.1
+
+New config:
+	<tokbox/>
+
+Update config:
+    <cloudConverterApiKey/>
+	
 0.11.1
 
 New config: 
