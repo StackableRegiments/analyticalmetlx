@@ -199,11 +199,29 @@ pre code {
     box-shadow: none;
 }
 
+blockquote:before {
+    content: "Tip";
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+}
+
 blockquote {
-    color: #666;
-    margin-bottom: 20px;
-    padding: 0 0 0 20px;
-    border-left: 3px solid #bbb;
+    color: #000;
+    background-color: #F7C85B;
+    margin: 0 0 0 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 55%;
+    /*font-size: 15px;*/
+    /*font-weight: 500;*/
+    /*font-family: 'Advent Pro', sans-serif;*/
+    /*text-shadow: #111 0 0 10px;*/
+}
+
+blockquote p {
+    margin: 0;
+    padding: 0;
 }
 
 ul, ol, dl {
@@ -483,7 +501,7 @@ body {
 }
 
 .text-image {
-    margin: 10px;
+    margin-left: 10px;
     float: right;
 }
 

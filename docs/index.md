@@ -2,9 +2,9 @@
 layout: index
 ---
 
-<img src="images/ironman-full.png" alt="MeTL Collaboration" width="350px" class="text-image"/>
-
 <h1>Welcome to MeTL</h1>
+
+<img src="images/ironman-full.png" alt="MeTL Collaboration" width="350px" class="text-image"/>
 
 MeTL supports learning in a collaborative space for teachers and students. It is equally functional across synchronous and asynchronous spaces, and partners well with structured activity repositories such as LMSs and document stores. 
 

@@ -15,8 +15,6 @@ This hides most controls and uses the [content filter](guide-learning.html#conte
 To leave this mode, exit and rejoin the conversation (select `Options` and `Conversations`, 
 then [Join](guide-conversation-search.html#join-a-conversation) the current conversation). 
 
-> **Tip**
->
 > Log in as the teacher on both the class PC (that controls the projector) and on your portable device.
 >
 > 1. [Join](guide-conversation-search.html#join-a-conversation) the class conversation on the class PC. 
@@ -30,8 +28,6 @@ This allows you to see your own private content as well as any information that 
 
 Update the browser URL bar with a deeplink which, when followed, will join the conversation.
  
-> **Tip**
->
 > Deeplink URLs can be copied and sent to students.
 
 ### Deeplink this page
@@ -42,9 +38,7 @@ Update the browser URL bar with a deeplink which, when followed, will join the c
 
 Export the conversation to Microsoft OneNote.
  
-> ![Saint Leo University](images/slu-32.png) **Tip** 
->
-> First set up a OneNote account in Microsoft Office 365 (provided by Saint Leo University).
+> ![Saint Leo University](images/slu-32.png) First set up a OneNote account in Microsoft Office 365 (provided by Saint Leo University).
 
 ## Conversations
 

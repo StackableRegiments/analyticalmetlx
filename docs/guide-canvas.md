@@ -41,8 +41,6 @@ Only available to the conversation owner.
 - Active: when the owner navigates to a page other users will follow the owner to that page. 
 - Inactive: when the owner navigates to a page other users will remain on their current page. 
 
-> **Tip**
-> 
 > Do **NOT** leave this active after class, or students will not be able to navigate to other pages for revision. 
 
 When the current user is not the conversation owner, a `Follow teacher` control appears below this control. 
@@ -88,8 +86,6 @@ The conversation owner can select content created by other users.
 Make the selected content private and ban the creator 
 (prevent them from creating any new public content or publishing existing private content).
 
-> **Tip**
-> 
 > Use this control if students create inappropriate content.
 
 Banned users can be unbanned in the [Banned Content](guide-learning#banned-content) screen.
@@ -156,8 +152,6 @@ canvas on all sides to become visible.
 
 When `Zoom` is selected, dragging a marquee within the canvas sets the zoom level to display only that area. 
 
-> **Tip**
->
 > A two-finger pinch gesture can be used to zoom on devices that support it.
 
 ### Reset 
@@ -174,6 +168,4 @@ Set the zoom level to show all content that is visible to the current user on th
 
 Move the viewport to make different areas of the canvas visible. 
 
-> **Tip**
->
 > A two-finger drag gesture can be used to pan on devices that support it.

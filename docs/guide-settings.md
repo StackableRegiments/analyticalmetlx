@@ -34,6 +34,4 @@ This shows how long the server takes to respond, which is related to network and
 
 This shows how long it takes for a message to reach the server, which is related to your network.
 
-> **Tip** 
->
 > If you are having trouble with MeTL performance, the support team may ask for a screenshot of the Health Check screen. 
