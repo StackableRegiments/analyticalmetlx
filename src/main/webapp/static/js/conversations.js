@@ -112,12 +112,12 @@ var Conversations = (function(){
         var scrollContainer;
         var updateSlide = function(slide){
             var gs = Conversations.getGroupsFor(slide);
+            scrollContainer = scrollContainer || $("#thumbScrollContainer");
+            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+            if(slideContainer){
+                slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
+            }
             if(! _.every(gs,groupTraceIsAccurate)){
-                scrollContainer = scrollContainer || $("#thumbScrollContainer");
-                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                if(slideContainer){
-                    slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
-                }
                 paintGroups(slide,slideContainer);
             }
             _.each(gs,function(group){
