@@ -40,7 +40,6 @@ var HealthChecker = (function(){
 
                 var serverSideTime = timeObj.serverTime;
                 var timeDiff = nowTime.getTime() - (serverSideTime + latency);
-                console.log("calculating time offset:",nowTime.getTime(),serverSideTime,latency);
                 clockOffset = timeDiff;
                 addMeasureFunc("serverResponse",true,serverWorkTime);
                 addMeasureFunc("latency",true,latency);
@@ -413,10 +412,10 @@ var HealthCheckViewer = (function(){
             var overallLatencyData = descriptionData["latency"];
             if (overallLatencyData != undefined){
                 c(".healthCheckSummaryLatencyContainer").show();
-                c(".latencyAverage").text(overallLatencyData.average);
-                c(".worstLatency").text(overallLatencyData.min);
-                c(".bestLatency").text(overallLatencyData.max);
-                c(".successRate").text(overallLatencyData.successRate * 100);
+                c(".latencyAverage").text(parseInt(overallLatencyData.average));
+                c(".worstLatency").text(parseInt(overallLatencyData.min));
+                c(".bestLatency").text(parseInt(overallLatencyData.max));
+                c(".successRate").text(parseInt(overallLatencyData.successRate * 100));
                 if (overallLatencyData.average > 200){
                     c(".latencyHumanReadable").text("poor");
                 } else if (overallLatencyData.average > 50){
@@ -431,7 +430,7 @@ var HealthCheckViewer = (function(){
             if (overallServerResponseData != undefined){
                 c(".heathCheckSummaryServerResponseContainer").show();
                 var serverHealthData = overallServerResponseData.average;
-                c(".serverResponseAverage").text(serverHealthData);
+                c(".serverResponseAverage").text(parseInt(serverHealthData));
                 var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
                 c(".serverResponseHumanReadable").text(humanReadableServerHealthData);
             } else {

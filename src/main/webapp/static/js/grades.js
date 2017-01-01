@@ -10,7 +10,7 @@ var Grades = (function(){
     var reRenderFunc = function(){};
     var spin = function(el,off){
         $(el).prop("disabled",off);
-	$(".grades.blocker").toggle(off);
+        $(".grades.blocker").toggle(off);
     }
     var clearState = function(){
         grades = {};
@@ -115,7 +115,12 @@ var Grades = (function(){
                 },
                 {name:"description",type:"text",title:"Description",readOnly:true,sorting:true},
                 {name:"location",type:"text",title:"Location",readOnly:true,sorting:true},
-                {name:"timestamp",type:"dateField",title:"When",readOnly:true}
+                {name:"timestamp",type:"dateField",title:"When",readOnly:true,itemTemplate:function(t){
+		    if(t == 0){
+			return "";
+		    }
+                    return moment(t).format('MMM Do YYYY, h:mm a');
+                }}
             ];
             var teacherFields = [
                 {name:"gradeType",type:"text",title:"Type",readOnly:true,sorting:true},
@@ -123,7 +128,7 @@ var Grades = (function(){
                 {
                     name:"identity",
                     type:"text",
-                    title:"actions",
+                    title:"Actions",
                     readOnly:true,
                     sorting:false,
                     itemTemplate:function(identity,grade){
@@ -239,7 +244,8 @@ var Grades = (function(){
                                                 spin(this,false);
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
-                                                alert(sprintf("error: %s \r\n %s",textStatus,error));
+						console.log(textStatus,error);
+                                                alert(sprintf("Error: %s \r\n %s",textStatus,error));
                                             });
                                         });
                                         aNodes.find(".refreshAssociation").show();
@@ -259,7 +265,6 @@ var Grades = (function(){
                                         } else if (chosenGradebook == undefined){
                                             chosenGradebook = gradebooks[0];
                                             aNodes.find(".chooseGradebook").html(_.map(gradebooks,function(gb){
-
                                                 return $("<option/>",{
                                                     value:gb,
                                                     text:gb
@@ -293,11 +298,13 @@ var Grades = (function(){
                                                     aNodes.find(".requestAssocPhase3").show();
                                                 } else {
                                                     console.log("found no data:",data);
+						    aNodes.text("No gradebooks found");
                                                 }
                                                 spin(aNodes,false);
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
-                                                alert(sprintf("error: %s \r\n %s",textStatus,error));
+                                                console(sprintf("error: %s \r\n %s",textStatus,error));
+						alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
                                             });
                                         } else {
                                             aNodes.find(".requestAssocPhase4").show();
@@ -344,7 +351,7 @@ var Grades = (function(){
                                     id:uniqId
                                 });
                                 var jAlert = $.jAlert({
-                                    title:"assess grade",
+                                    title:"Assess grade",
                                     width:"auto",
                                     content:outer[0].outerHTML,
                                     onClose:function(){
@@ -438,7 +445,7 @@ var Grades = (function(){
                                         var changeGvAlert = $.jAlert({
                                             type:"modal",
                                             content:changeGvContainer[0].outerHTML,
-                                            title:sprintf("change grade for %s",gv.gradedUser)
+                                            title:sprintf("Change score for %s",gv.gradedUser)
                                         });
                                         var gvActualContainer = $("#"+changeGvId);
                                         var gvChangeElem = changeGvPopupTemplate.clone();
@@ -514,10 +521,10 @@ var Grades = (function(){
                                     };
                                     var gradebookFields = [
                                         {name:"gradedUser",type:"text",title:"Who",readOnly:true,sorting:true},
-                                        {name:"timestamp",type:"dateField",title:"When",readOnly:true},
+                                        {name:"timestamp",type:"dateField",title:"",readOnly:true},
                                         {name:"gradeValue",type:"text",title:"Score",readOnly:true, sorting:true },
                                         {name:"gradeComment",type:"text",title:"Comment",readOnly:true,sorting:true},
-                                        {name:"gradePrivateComment",type:"text",title:"PrivateComment",readOnly:true,sorting:true}
+                                        {name:"gradePrivateComment",type:"text",title:"Private comment",readOnly:true,sorting:true}
                                     ];
                                     if ("foreignRelationship" in grade){
                                         gradebookFields.push(

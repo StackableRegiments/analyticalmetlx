@@ -18,8 +18,8 @@
 }
 .chatMessageContent{
     a{
-	color:white;
-	text-decoration:underline;
+        color:white;
+        text-decoration:underline;
     }
 }
 .findExisting{
@@ -138,6 +138,11 @@ html{
     margin-top:-54px;
     z-index:3;
     background-color:@body-bg;
+}
+.healthCheckCanvas{
+    background-image:@body-backgroundimage;
+    background-size:100% 100%;
+    background-opacity:0.5;
 }
 .headerRow1{
     width:100%;
@@ -400,11 +405,12 @@ td.conversationSharing{
         height:auto;
     }
 }
+#healthCheckListing{
+    background-image:@body-backgroundimage;
+}
 .dots{
     flex-wrap:wrap;
 }
-/* fix this jodi! */
-
 .navigationNext, .navigationPrevious {
     a {
         .fa;
