@@ -1,3 +1,6 @@
+1.0.19
+Bugfix: METL-408: groupsProviders all share the same name if any have a name specified.
+
 1.0.18
 Bugfix: METL-402: Isolate on Group 1 is visible to Group 2.
 Bugfix: METL-403: Group member name is represented as "true" mid simulation.
