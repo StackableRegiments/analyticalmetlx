@@ -247,7 +247,6 @@ function commandReceived(c){
             return;
         }
         if(Conversations.getIsSyncedToTeacher()){
-            console.log("teacherViewMoved",c);
             var f = function(){
                 var controllerIdentity = c.parameters[4];
                 var slide = ps[5];
@@ -640,20 +639,16 @@ function transformReceived(transform){
         });
         $.each(transform.videoIds,function(i,id){
             var video = boardContent.videos[id];
-            console.log("Shifting video",video.x,video.y);
             video.x += transform.xTranslate;
             video.y += transform.yTranslate;
             calculateVideoBounds(video);
-            console.log("Shifting video",video.x,video.y);
             transformBounds.incorporateBounds(video.bounds);
         });
         $.each(transform.imageIds,function(i,id){
             var image = boardContent.images[id];
-            console.log("Shifting image",image.x,image.y);
             image.x += transform.xTranslate;
             image.y += transform.yTranslate;
             calculateImageBounds(image);
-            console.log("Shifting image",image.x,image.y);
             transformBounds.incorporateBounds(image.bounds);
         });
         $.each(transform.textIds,function(i,id){
@@ -893,7 +888,6 @@ function drawInk(ink,incCanvasContext){
             }
         }
         else{
-            console.log(ink);
             c = ink.canvas = prerenderInk(ink,incCanvasContext);
             img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
         }
