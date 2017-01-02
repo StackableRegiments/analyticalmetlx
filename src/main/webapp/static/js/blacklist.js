@@ -65,7 +65,7 @@ var Blacklist = (function(){
                                 }
                             });
                         }
-                        rootElem.find(".blacklistImage").attr("src",url);
+                        rootElem.find(".blacklistImage").attr("src",url).css({"max-width":"100%"});
                         $.jAlert({
                             title:title,
                             closeOnClick:true,
