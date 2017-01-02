@@ -3,7 +3,7 @@ var GroupBuilder = (function(){
     var externalGroups = {};
     var iteratedGroups = [];
     var _strategy = "byMaximumSize";
-    var _presentStudentsOnly = false;
+    var _groupScope = "allPresent";
     var _parameters = {
         byTotalGroups:5,
         byMaximumSize:4
@@ -103,19 +103,21 @@ var GroupBuilder = (function(){
             });
         });
     }
-    var simulate = function(strategy,parameter,presentStudentsOnly){
-        console.log("Simulate",strategy,parameter,presentStudentsOnly);
+    var simulate = function(strategy,parameter,groupScope){
+        console.log("Simulate",strategy,parameter,groupScope);
         var groups = flatInitialGroups();
         console.log("flatInitialGroups",groups);
-        var participants;
-        switch(presentStudentsOnly){
-        case "allPresent": participants = Participants.getParticipants();
-            break;
-        default: participants = Participants.getPossibleParticipants();
-            break;
+        var participants = {};
+        switch(groupScope){
+        case "allPresent": _.each(Participants.getParticipants(),function(v){
+            participants[v.name] = true;
+        }); break;
+        case "allEnrolled": _.each(Participants.getPossibleParticipants(),function(v){
+            participants[v] = true;
+        }); break;
         }
-        var attendees = _.without(participants, Conversations.getCurrentConversation().author);
-        attendees = _.omitBy(attendees,function(k){
+        delete participants[Conversations.getCurrentConversation().author];
+        var attendees = _.omitBy(participants,function(v,k){
             return _.some(groups,function(g){
                 return k in g;
             });
@@ -126,13 +128,13 @@ var GroupBuilder = (function(){
             for(var i = groups.length; i < parseInt(parameter);i++){
                 groups.push({});
             }
-            filler = function(p){
+            filler = function(k,p){
                 var targetG = _.sortBy(groups,function(g){return _.keys(g).length})
                 targetG[0][p] = true;
             }
             break;
         case "byMaximumSize":
-            filler = function(p){
+            filler = function(k,p){
                 var targetG = _.find(groups,function(g){
                     return _.keys(g).length < parseInt(parameter);
                 });
@@ -145,8 +147,8 @@ var GroupBuilder = (function(){
             break;
         }
         _.each(attendees,filler);
-        console.log(groups);
-        return _.map(groups,_.keys);
+        console.log("Simulation participants",participants,attendees,groups);
+        return groups;
     }
     var renderGroupScopes = function(container){
         _.each([
@@ -155,7 +157,7 @@ var GroupBuilder = (function(){
                 $("<option />",{
                     text:params[0],
                     value:params[1]
-                }).appendTo(container);
+                }).prop("selected",params[1] == _groupScope).appendTo(container);
             });
     }
     var renderStrategies = function(container){
@@ -221,7 +223,7 @@ var GroupBuilder = (function(){
     var doSimulation = function(simulated){
         var container = $(".jAlert .groupSlideDialog");
         var groupsV = container.find(".groups");
-        simulated = simulated || simulate(_strategy,_parameters[_strategy],_presentStudentsOnly);
+        simulated = simulated || simulate(_strategy,_parameters[_strategy],_groupScope);
         groupsV.empty();
         _.each(simulated,function(group){
             var g = $("<div />",{
@@ -234,11 +236,9 @@ var GroupBuilder = (function(){
                 drop:function(e,ui){
                     var member = $(ui.draggable).text();
                     _.each(simulated,function(gr){
-                        if(_.includes(gr,member)){
-                            gr.splice(gr.indexOf(member),1);
-                        }
+			delete gr[member];
                     });
-                    group.push(member);
+		    group[member] = true;
                     iteratedGroups = simulated;
                     doSimulation(simulated);
                     e.preventDefault();
@@ -260,7 +260,8 @@ var GroupBuilder = (function(){
                 theme:'green',
                 closeAlert:true,
                 onClick:function(){
-                    var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(flatInitialGroups(),_.keys);
+                    var seed = _.map(iteratedGroups,_.keys);
+                    console.log("IteratedGroups",iteratedGroups,seed);
                     Conversations.addGroupSlide(_strategy, parseInt(_parameters[_strategy]), seed);
                     initialGroups = {};
                     iteratedGroups = [];
@@ -271,14 +272,14 @@ var GroupBuilder = (function(){
         container = $(".jAlert .groupSlideDialog");
         var strategySelect = container.find(".strategySelect");
         var parameterSelect = container.find(".parameterSelect");
-        var groupScope = container.find(".presentStudentsOnly");
+        var groupScope = container.find(".groupScope");
         var groupsV = container.find(".groups");
         renderStrategies(strategySelect);
         renderGroupScopes(groupScope);
 
-        container.on("change",".presentStudentsOnly",function(){
-            _presentStudentsOnly = $(this).val();
-            console.log(_presentStudentsOnly);
+        container.on("change",".groupScope",function(){
+            _groupScope = $(this).val();
+            console.log(_groupScope);
             doSimulation();
         });
         container.on("change",".strategySelect",function(){
