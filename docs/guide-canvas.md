@@ -1,22 +1,27 @@
 ---
 layout: guide
-title: Controls
+title: Canvas
 ---
+
+The canvas is the central area of a conversation where [Ink](#ink) is drawn, [Text](#text) is typed, 
+and Image or Video content may be [Insert](#insert)ed.
+
+# Controls
 
 <img src="images/guide-controls.png" alt="Controls" align="right" height="500"/>
 
 The state of a control is indicated by the background color.
 
-- White means the control is available (e.g. the Private control). 
-- Grey means the control is unavailable (e.g. the Show control). 
-- Gold means the control is active (e.g. the Public control).
+- White means the control is available (e.g. the `Private` control). 
+- Grey means the control is unavailable (e.g. the `Show` control). 
+- Gold means the control is active (e.g. the `Public` control).
 
 ## Private / Public
  
 This controls the visibility of new content (i.e. ink, text, image/video). 
  
-- Public: content will be visible to everyone. 
-- Private: content will only be visible to the creator. 
+- `Public` content will be visible to everyone. 
+- `Private` content will only be visible to the creator. 
 
 All users can insert private content at any time, but the conversation owner may restrict the ability of users to 
 create public content or show (publish / make public) existing private content 
@@ -36,8 +41,6 @@ Only available to the conversation owner.
 - Active: when the owner navigates to a page other users will follow the owner to that page. 
 - Inactive: when the owner navigates to a page other users will remain on their current page. 
 
-> **Tip**
-> 
 > Do **NOT** leave this active after class, or students will not be able to navigate to other pages for revision. 
 
 When the current user is not the conversation owner, a `Follow teacher` control appears below this control. 
@@ -83,8 +86,6 @@ The conversation owner can select content created by other users.
 Make the selected content private and ban the creator 
 (prevent them from creating any new public content or publishing existing private content).
 
-> **Tip**
-> 
 > Use this control if students create inappropriate content.
 
 Banned users can be unbanned in the [Banned Content](guide-learning#banned-content) screen.
@@ -151,8 +152,6 @@ canvas on all sides to become visible.
 
 When `Zoom` is selected, dragging a marquee within the canvas sets the zoom level to display only that area. 
 
-> **Tip**
->
 > A two-finger pinch gesture can be used to zoom on devices that support it.
 
 ### Reset 
@@ -169,6 +168,4 @@ Set the zoom level to show all content that is visible to the current user on th
 
 Move the viewport to make different areas of the canvas visible. 
 
-> **Tip**
->
 > A two-finger drag gesture can be used to pan on devices that support it.

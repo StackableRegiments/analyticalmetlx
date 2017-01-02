@@ -1,5 +1,0 @@
----
-layout: guide
-title: Chat
----
-

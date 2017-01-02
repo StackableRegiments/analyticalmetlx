@@ -23,7 +23,9 @@ title: Support
 
 ## Can you find the application?
 
-The Whiteboard system can be found at [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu), or through the Learning Management System.
+![Saint Leo University](images/slu-32.png) The Whiteboard system can be found at [https://whiteboard.lionsshare.saintleo.edu](https://whiteboard.lionsshare.saintleo.edu), or through the Learning Management System.
+
+<img src="images/guide-slu-access.png" alt="SLU Access" align="right" width="400" class="text-image"/>
 
 It is also the `Whiteboard` link at [https://lionsshare.saintleo.edu](https://lionsshare.saintleo.edu).
 
@@ -59,7 +61,7 @@ If you have been instructed to find a conversation which isn't showing up in the
 ## Do you see a healthy page?
 
 <img src="images/whiteboard-healthy.png" alt="Healthy" width="250" class="text-image"/>
-A healthy MeTL conversation has:
+A healthy conversation has:
 - The title of the conversation on the top of the screen.
 - Your username before the title of the conversation.
 - A central content space where your own ink is captured while in Ink mode.  Other people's content will also be displayed here.
@@ -102,12 +104,17 @@ You will need to log onto the network again on a separate browser tab.  Once you
 
 You might like to consult the [MeTL FAQ]({{site.baseurl}}/academy-faq.html), a cross-institutional reference point for common usage and other questions.
 
-![Saint Leo University](images/slu-32.png) If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the Saint Leo Learning Innovation Team.
+![Saint Leo University](images/slu-32.png) If you can't see how to fit Whiteboard into your instructional use case, consider consulting with the <a href="http://tali.saintleo.edu">Teaching and Learning Innovation</a> team.
+
+<div class="escalation">Escalate to <a href="#tali">TALI</a></div>
 
 # Escalation
 
 ## UTS Helpdesk
-Phone (352) 588-8888 or email <a href="mailto:helpdesk@saintleo.edu">helpdesk@saintleo.edu</a>.
+![Saint Leo University](images/slu-32.png) Phone **(352) 588-8888** or email <a href="mailto:helpdesk@saintleo.edu">helpdesk@saintleo.edu</a>
+
+## TALI
+![Saint Leo University](images/slu-32.png) <a href="http://tali.saintleo.edu">Teaching and Learning Innovation</a>
 
 ## MeTL Support
-Email a screenshot and any error messages to <a href="mailto:support@stackableregiments.com">support@stackableregiments.com</a>.
+Email a screenshot and any error messages to <a href="mailto:support@stackableregiments.com">support@stackableregiments.com</a>
