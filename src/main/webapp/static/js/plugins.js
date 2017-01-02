@@ -446,6 +446,7 @@ var Plugins = (function(){
         })()
     };
 })();
+
 $(function(){
     var pluginBar = $("#pluginBar");
     var styleContainer = $("<style></style>").appendTo($("body"));
