@@ -223,14 +223,18 @@ var HealthCheckViewer = (function(){
         if (!(categoryName in charts)){
             var category = adjustTimeFunc(rawCategory);
             var rootElem = healthCheckItemTemplate.clone();
-            var canvas = $("<canvas />").addClass("healthCheckCanvas");
+            var canvas = $("<canvas />").addClass("healthCheckCanvas").css({"margin-top":"-20px"});
             rootElem.html(canvas);
             healthCheckContainer.append(rootElem);
             var options = {
                 title: {
                     display: true,
-                    text: categoryName
+                    text: categoryName,
+		    padding:20
                 },
+		legend:{
+		    display:false
+		},
                 scales: {
                     yAxes: [
                         {
@@ -244,9 +248,6 @@ var HealthCheckViewer = (function(){
                             display:true,
                             position:"left",
                             ticks: {
-                            },
-                            labels: {
-                                show: true
                             }
                         },
                         {
@@ -263,9 +264,6 @@ var HealthCheckViewer = (function(){
                                 beginAtZero:true,
                                 min:0,
                                 stepSize:1
-                            },
-                            labels: {
-                                show: true
                             }
                         }
                     ],
@@ -277,7 +275,7 @@ var HealthCheckViewer = (function(){
                             labelString:"time (seconds)"
                         },
                         ticks: {
-                            beginAtZero:true,
+                            beginAtZero:true
                         }
                     }]
                 },
@@ -291,12 +289,8 @@ var HealthCheckViewer = (function(){
                     bar: {
                         fill:true
                     }
-                },
-                legend:{
-                    display:true
                 }
             };
-
             var data = {
                 labels: _.map(category,"instant"),
                 datasets:[
