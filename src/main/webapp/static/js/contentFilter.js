@@ -153,6 +153,7 @@ var ContentFilter = (function(){
                 fil.enabled = enabled;
             }
         });
+	console.log("Settting filter",id,enabled,"yields",filters);
         renderContentFilters();
         blit();
     };

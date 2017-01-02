@@ -42,7 +42,7 @@ var GroupBuilder = (function(){
             id:"clearGroups"
         }).on("click",function(){
             initialGroups = {};
-	    iteratedGroups = [];
+            iteratedGroups = [];
             doSimulation();
         }).appendTo(importV).prop("checked",true);
         $("<label />",{
@@ -73,13 +73,13 @@ var GroupBuilder = (function(){
                         id:inputId
                     }).on("click",function(){
                         if(cacheKey in initialGroups){
-			    initialGroups = {};
+                            initialGroups = {};
                         }
                         else{
-			    initialGroups = {};
-			    initialGroups[cacheKey] = groupSet;
+                            initialGroups = {};
+                            initialGroups[cacheKey] = groupSet;
                         }
-			iteratedGroups = [];
+                        iteratedGroups = [];
                         doSimulation(flatInitialGroups());
                     }).appendTo(groupSetHeader);
                     inputV.prop("checked",cacheKey in initialGroups);
@@ -227,7 +227,7 @@ var GroupBuilder = (function(){
             var g = $("<div />",{
                 class:"groupBuilderGroup ghost"
             });
-            _.each(group,function(member){
+            _.each(group,function(v,member){
                 renderMember(member).draggable().appendTo(g);
             });
             g.droppable({
