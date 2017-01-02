@@ -58,7 +58,6 @@ object GroupsProvider {
     }).getOrElse(gp)
   }
   def constructFromXml(outerNodes:NodeSeq):List[GroupsProvider] = {
-    val name = (outerNodes \\ "@name").headOption.map(_.text)
     (for {
       x <- (outerNodes \\ "smartGroups")
       endpoint <- (x \ "@endpoint").headOption.map(_.text)
@@ -68,12 +67,14 @@ object GroupsProvider {
       apiGatewayKey = (x \ "@apiKey").headOption.map(_.text)
       groupSize <- (x \ "@groupSize").headOption.map(_.text.toInt)
     } yield {
+      val name = (x \ "@name").headOption.map(_.text)
       val n = name.getOrElse("smartGroups_from_%s".format(endpoint))
       new SmartGroupsProvider(n,endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayKey,groupSize)
     }).toList :::
     (for {
       in <- (outerNodes \\ "selfGroups")
     } yield {
+      val name = (in \ "@name").headOption.map(_.text)
       new SelfGroupsProvider(name.getOrElse("selfGroups"))
     }).toList ::: 
     (for {
@@ -86,12 +87,14 @@ object GroupsProvider {
       userId <- (dNodes \ "@userId").headOption.map(_.text)
       userKey <- (dNodes \ "@userKey").headOption.map(_.text)
     } yield {
+      val name = (dNodes \\ "@name").headOption.map(_.text)
       val n = name.getOrElse("d2lInteface_to_%s".format(host))
       possiblyFilter(outerNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion))
     }).toList ::: 
     (for {
       in <- (outerNodes \\ "flatFileGroups")
       } yield {
+      val name = (in \ "@name").headOption.map(_.text)
       (in \\ "@format").headOption.toList.flatMap(ho => ho.text match {
         case "stLeo" => {
           (in \\ "@location").headOption.map(_.text).map(loc => {
