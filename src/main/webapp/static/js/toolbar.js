@@ -1072,7 +1072,6 @@ var Modes = (function(){
                     Modes.select.offset = {x:root.x2,y:root.y2};
                     blit();
 
-                    console.log("Free transform down");
                     return false;
                 },
                 move:function(worldPos){
@@ -1123,7 +1122,6 @@ var Modes = (function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
-                    console.log("Free transform up");
                     sendStanza(resized);
                     blit();
                     return false;
@@ -1445,7 +1443,6 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
-                        console.log("Textbox",t.identity,t.doc.width());
                         t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
                             return l.positionedWords.length;
@@ -1657,7 +1654,6 @@ var Modes = (function(){
                                 color: oldEditor.color,
                                 size: oldEditor.size
                             }]);
-                            console.log("found oldText, converting to newText:",oldEditor,newEditor);
                             var newDoc = newEditor.doc;
                             newDoc.select(0,1);
                             boardContent.multiWordTexts[newEditor.identity] = newEditor;
@@ -1727,7 +1723,6 @@ var Modes = (function(){
                 handleDrop:function(html,x,y){
                     if (html.length > 0){
                         var newRuns = carota.html.parse(html,{});
-                        console.log("newRuns:",newRuns);
                         var worldPos = screenToWorld(x,y);
                         Modes.text.activate();
                         var clickTime = Date.now();
@@ -1880,7 +1875,7 @@ var Modes = (function(){
                             WorkQueue.gracefullyResume();
                         },
                         error: function(e){
-                            console.log(e);
+                            console.log("Image upload ex",e);
                             resetImageUpload();
                             errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
@@ -2231,7 +2226,6 @@ var Modes = (function(){
                                 "y":worldPos.y
                             };
                             thisCurrentImage.fileUpload = file;
-                            console.log("handlingDrop",file,sender,thisCurrentImage);
                             processed.push(file);
                             clientSideProcessImage(sendImageToServer,thisCurrentImage);
                             yOffset += 50;
@@ -2511,7 +2505,6 @@ var Modes = (function(){
                         func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
-                        console.log("DOWN",worldPos);
                         Modes.select.resizing = false;
                         Modes.select.dragging = false;
                         originPoint = {x:x,y:y};
@@ -2540,7 +2533,6 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
-                        console.log("SELECT DOWN",x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
@@ -2704,7 +2696,7 @@ var Modes = (function(){
                             blit();
                         }
                         catch(e){
-                            console.log("Selection up",e);
+                            console.log("Selection up ex",e);
                         }
                     }
                     Modes.select.dragging = false;

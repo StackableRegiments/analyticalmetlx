@@ -65,7 +65,7 @@ var Blacklist = (function(){
                                 }
                             });
                         }
-                        rootElem.find(".blacklistImage").attr("src",url);
+                        rootElem.find(".blacklistImage").attr("src",url).css({"max-width":"100%"});
                         $.jAlert({
                             title:title,
                             closeOnClick:true,
@@ -139,7 +139,6 @@ var Blacklist = (function(){
                 unbanAllButton.show();
                 unbanAllButton.unbind("click");
                 unbanAllButton.on("click",function(){
-                    console.log("unbanall click");
                     changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
                 });
             } else {
@@ -150,7 +149,6 @@ var Blacklist = (function(){
                 var rootElem = blacklistAuthorTemplate.clone();
                 rootElem.find(".blacklistAuthorName").text(author);
                 rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
-                    console.log(sprintf("unban %s click",author));
                     blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
                     changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
                 });
