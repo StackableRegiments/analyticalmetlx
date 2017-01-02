@@ -1,25 +1,46 @@
 1.0.5
 
+Environment has MeTLing Pot Adaptor
+-----------------------------------
+
 New config: 
-	<groupsProvider><smartGroups/></groupsProvider>.
+	<groupsProvider>
+		<smartGroups name="SmartGroups"/>
+	</groupsProvider>
+
+SLU Only
+--------
+
+Replace config: 
+	<groupsProvider>
+		<flatFileGroups/>
+	</groupsProvider>
+with:
+	<groupsProvider>
+		<d2lGroupsProvider name="D2L_Courses"/>
+	</groupsProvider>
 
 1.0.3
 
 New config: 
 	<metlingPotAdaptors><ApiGatewayMetlingPotAdaptor/></metlingPotAdaptors>
+(new credentials and apiKey)
 
 1.0.2
 
 New config: 
-	<externalGradebooks><d2lGradebook/></externalGradebooks>
+	<externalGradebooks><d2lGradebook name="D2L_SaintLeo"/></externalGradebooks>
+(same values as existing flatFileGroups provider for D2L)
 
 1.0.1
 
 New config:
 	<tokbox/>
+(same key/secret for all envs)
 
 Update config:
     <cloudConverterApiKey/>
+(same key/secret for all envs)
 	
 0.11.1
 
