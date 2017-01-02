@@ -1,5 +1,6 @@
 1.0.19
 Bugfix: METL-408: groupsProviders all share the same name if any have a name specified.
+Bugfix: METL-360: Groups don't resort after bringing in an external provider properly.
 
 1.0.18
 Bugfix: METL-402: Isolate on Group 1 is visible to Group 2.
