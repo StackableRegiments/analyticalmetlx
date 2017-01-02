@@ -1,3 +1,9 @@
+1.0.18
+Bugfix: METL-402: Isolate on Group 1 is visible to Group 2.
+Bugfix: METL-403: Group member name is represented as "true" mid simulation.
+Bugfix: METL-404: Students in Group Builder are identified by index, not name.
+Bugfix: METL-405: Dropdown in Group Builder has reversed options.
+
 1.0.17
 Bugfix: METL-397: Health check chart styling.
 Bugfix: METL-122: Ban submission overflows screen.

@@ -7,6 +7,7 @@ New config:
 	<groupsProvider>
 		<smartGroups name="SmartGroups"/>
 	</groupsProvider>
+(same credentials and apiKey as <ApiGatewayMetlingPotAdaptor/>)
 
 SLU Only
 --------
