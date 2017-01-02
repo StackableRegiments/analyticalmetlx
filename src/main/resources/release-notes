@@ -1,3 +1,6 @@
+1.0.20
+Bugfix: METL-411: Urlencode usernames passed to d2l.
+
 1.0.19
 Bugfix: METL-408: groupsProviders all share the same name if any have a name specified.
 Bugfix: METL-360: Groups don't resort after bringing in an external provider properly.

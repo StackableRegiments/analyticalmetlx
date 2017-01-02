@@ -1,3 +1,11 @@
+1.0.20
+
+SLU Only
+--------
+
+Update config:
+	<d2lGradebook lpApiVersion="1.15" leApiVersion="1.19"/>
+
 1.0.5
 
 Environment has MeTLing Pot Adaptor
@@ -28,6 +36,9 @@ New config:
 (new credentials and apiKey)
 
 1.0.2
+
+SLU Only
+--------
 
 New config: 
 	<externalGradebooks><d2lGradebook name="D2L_SaintLeo"/></externalGradebooks>
