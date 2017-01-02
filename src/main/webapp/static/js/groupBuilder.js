@@ -280,7 +280,7 @@ var GroupBuilder = (function(){
         container.on("change",".groupScope",function(){
             _groupScope = $(this).val();
             console.log(_groupScope);
-            doSimulation();
+            doSimulation(flatInitialGroups());
         });
         container.on("change",".strategySelect",function(){
             _strategy = $(this).val();
