@@ -1,5 +1,6 @@
 
 var Conversation = (function(){
+	var showLinks = true;
     var conversation = {};
     var userGroups = [];
     var username = "";
@@ -71,6 +72,13 @@ var Conversation = (function(){
         });
     };
     var reRender = function(){
+			if (showLinks){
+				$(".backToConversations").show();
+				$(".joinConversation").show();
+			} else {
+				$(".backToConversations").hide();
+				$(".joinConversation").hide();
+			}
         slidesContainer.html(_.map(_.sortBy(conversation.slides,"index"),function(slide){
             var rootElem = slideTemplate.clone();
             rootElem.find(".slideId").text(slide.id);
@@ -92,7 +100,15 @@ var Conversation = (function(){
                 }
             }).prop("checked",slide.exposed);
             rootElem.find(".slideExposedCheckboxLabel").attr("for",slideExposedId).text(slide.exposed ? "Visible" : "Hidden");
-            rootElem.find(".slideAnchor").attr("href",sprintf("board?conversationJid=%s&slideId=%s&unique=true",conversation.jid.toString(),slide.id.toString())).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
+						if (showLinks){
+							rootElem.find(".slideAnchor").attr("href",sprintf("board?conversationJid=%s&slideId=%s&unique=true",conversation.jid.toString(),slide.id.toString())).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
+						} else {
+							var cont = rootElem.find(".slideAnchorContainer");
+							var thumb = cont.find(".slideThumbnail").clone().attr("src",sprintf("/thumbnail/%s",slide.id));
+							cont.empty();
+							cont.append(thumb);
+						}
+
             rootElem.find(".addSlideBeforeButton").on("click",function(){
                 addSlideToConversationAtIndex(conversation.jid.toString(),slide.index);
                 reRender();
@@ -215,6 +231,10 @@ var Conversation = (function(){
             console.log("exception while reordering slides",e);
         }
     }
+		var setLinkVisibilityFunc = function(shouldShowLinks){
+			showLinks = shouldShowLinks;
+			reRender();
+		};
     $(function(){
         reorderContainer = $("#reorderInProgress");
         sharingContainer = $(".conversationSharing");
@@ -296,7 +316,8 @@ var Conversation = (function(){
         receiveConversationDetails:receiveConversationDetailsFunc,
         getConversationDetails:getConversationDetailsFunc,
         getUsername:getUsernameFunc,
-        getUserGroups:getUserGroupsFunc
+        getUserGroups:getUserGroupsFunc,
+				setLinkVisibility:setLinkVisibilityFunc
     };
 })();
 
@@ -319,4 +340,8 @@ function receiveConversationDetails(details){
 }
 function receiveNewConversationDetails(details){
     console.log("new conversation received");
+}
+function receiveShowLinks(shouldShowLinks){
+	console.log("receivedShowLinks:",shouldShowLinks);
+	Conversation.setLinkVisibility(shouldShowLinks);
 }

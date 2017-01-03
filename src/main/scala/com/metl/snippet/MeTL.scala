@@ -71,7 +71,7 @@ class Metl extends Logger {
     conversationSearch()
   }
   def editConversation(conversationJid:Int):String = {
-    "/editConversation?conversationJid=%s".format(conversationJid.toString)
+    "/editConversation?conversationJid=%s&unique=true".format(conversationJid.toString)
   }
   def conversationSearch():String = {
     "/conversationSearch?unique=true"
@@ -104,6 +104,14 @@ class Metl extends Logger {
           error("invalid argument passed in conversationJid: %s".format(cj),e)
         }
       }
+    })
+    S.param("links").map(links => {
+      name += "_LINKS:%s".format(links.toLowerCase.trim == "false" match {
+        case true => "false"
+        case false => "true"
+      })
+    }).getOrElse({
+      name += "_LINKS:true"
     })
     S.param("unique").foreach(uniq => {
       try {
@@ -151,6 +159,19 @@ class Metl extends Logger {
         }
       }
     })
+  }
+  def getLinksFromName(in:String):Option[Boolean] = {
+    in.split("_").map(_.split(":")).find(_(0) == "LINKS").map(_.drop(1).mkString(":")).flatMap(linksString => {
+      try {
+        Some(linksString.toBoolean)
+      } catch {
+        case e:Exception => {
+          error("invalid argument passed in linksString: %s".format(linksString),e)
+          None
+        }
+      }
+    })
+
   }
   def getQueryFromName(in:String):Option[String] = {
     in.split("_").map(_.split(":")).find(_(0) == "QUERY").map(_.drop(1).mkString(":"))
