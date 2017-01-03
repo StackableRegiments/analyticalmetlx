@@ -210,12 +210,12 @@ var Plugins = (function(){
                     " #videoConfSessionsContainer{display:flex;}"+
                     " .videoContainer{display:flex;}"+
                     " .context, .publisherName{font-size:1rem;}"+
-		    " .thumbWide{width:160px;}"+
+                    " .thumbWide{width:160px;}"+
                     " .broadcastContainer{display:none;}",
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
                                      '<div class="videoConfSessionContainer">'+
-				     '<div class="thumbWide">'+
+                                     '<div class="thumbWide">'+
                                      '<div class="videoConfStartButtonContainer">'+
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
@@ -223,7 +223,7 @@ var Plugins = (function(){
                                      '<span class="context"></span>'+
                                      '</div>'+
                                      '<div class="viewscreen"></div>'+
-				     '</div>'+
+                                     '</div>'+
                                      '<div class="broadcastContainer">'+
                                      '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
                                      '<div class="icon-txt">Watch class</div>'+
@@ -235,7 +235,7 @@ var Plugins = (function(){
                                      '<button class="videoConfSubscribeButton">'+
                                      '<div>Toggle</div>'+
                                      '</button>'+
-				     '<span class="publisherName"></span>'+
+                                     '<span class="publisherName"></span>'+
                                      '</span>'+
                                      '</div>'+
                                      '</div>'+
@@ -397,31 +397,21 @@ var Plugins = (function(){
                             }
                             else {
                                 var studentContainer = $("<div />").css({display:"flex"}).appendTo(overContainer);
-                                console.log("Rendering student");
                                 _.each(groups,function(group){
-                                    console.log(group,Conversations.getCurrentGroup());
                                     if(_.find(Conversations.getCurrentGroup(),group)){
                                         var gc = $("<div />",{
                                             class:"groupsPluginGroupContainer"
                                         }).appendTo(studentContainer);
-                                        var right = $("<div />").appendTo(gc);
-                                        $("<span />",{
-                                            text:sprintf("Group %s",group.title),
-                                            class:"ml"
-                                        }).appendTo(right);
-                                        var controls = $("<div />",{
-                                            class:"groupsPluginGroupControls"
-                                        }).appendTo(right);
                                         var id = sprintf("isolateGroup_%s",group.title);
-                                        var members = $("<div />",{
-                                            class:"groupsPluginGroup"
-                                        }).prependTo(gc);
+                                        var members = $("<div />").appendTo(gc);
                                         _.each(group.members,function(member){
                                             var mV = $("<div />",{
-                                                text:member,
-                                                class:"groupsPluginMember"
+                                                text:member
                                             }).appendTo(members);
                                         });
+                                        $("<div />",{
+                                            text:sprintf("Group %s",group.title)
+                                        }).prependTo(members);
                                     }
                                 });
                             }
