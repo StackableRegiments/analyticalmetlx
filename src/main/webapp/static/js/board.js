@@ -765,7 +765,6 @@ function screenBounds(worldBounds){
     };
 }
 function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
-		console.log("scaleCanvas",w,h);
     if (w >= 1 && h >= 1){
         var canvas = $("<canvas />");
         canvas.width = w;
@@ -785,7 +784,6 @@ function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
 }
 var mipMappingEnabled = true;
 function multiStageRescale(incCanvas,w,h,stanza){
-	console.log("multiStageRescale",incCanvas,w,h,stanza);
     if (mipMappingEnabled){
         stanza = stanza == undefined ? {} : stanza;
         if (!("mipMap" in stanza)){
@@ -859,9 +857,7 @@ function drawText(text,incCanvasContext){
 }
 function drawInk(ink,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
-		console.log("drawInk:");
     var sBounds = screenBounds(ink.bounds);
-		console.log("drawInk:",sBounds);
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
     if(!c){
