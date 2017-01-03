@@ -213,6 +213,7 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 var masterFooter = comp("#masterFooter");
+		var headerHeight = masterHeader.height();
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -221,7 +222,7 @@ var DeviceConfiguration = (function(){
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
                     bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight - masterFooter.height();
+                    bheight = height -  marginsFor([masterHeader,boardColumn]).y - gutterHeight;
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
@@ -255,8 +256,8 @@ var DeviceConfiguration = (function(){
 		});
                 board.width(bwidth);
                 board.height(bheight);
-                toolsColumn.height(bheight);
-                thumbsColumn.height(bheight);
+                toolsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight + gutterWidth)});
+                thumbsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight)});
                 boardColumn.height(bheight);
 
                 boardContext.canvas.width = bwidth;

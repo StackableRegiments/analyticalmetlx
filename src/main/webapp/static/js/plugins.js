@@ -150,17 +150,17 @@ var Plugins = (function(){
             };
 
             return {
-                style:".chatMessage {color:white}"+
+                style:".chatMessage {color:black}"+
                     ".chatMessageContainer {overflow-y:auto; height:110px;}"+
-                    ".chatContainer {width:320px;height:140px;}"+
-                    ".chatMessageAuthor {color:gray;margin-right:1em;font-weight:bold;}"+
+                    ".chatContainer {margin-left:1em;width:320px;height:140px;}"+
+                    ".chatMessageAuthor {color:slategray;margin-right:1em;font-weight:bold;}"+
                     ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
                     ".chatboxContainer {display:flex;}"+
                     ".chatboxContainer input{flex-grow:1;}"+
                     ".chatbox {background-color:white;color:black; display:inline-block; padding:0px; margin:0px;}"+
                     ".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
-                    ".groupChat {color:orange}"+
-                    ".whisper {color:pink}",
+                    ".groupChat {color:darkorange}"+
+                    ".whisper {color:darkblue}",
                 load:function(bus,params){
                     bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
                     bus.historyReceived["Chatbox"] = actOnHistoryReceived;
@@ -455,7 +455,7 @@ $(function(){
     var styleContainer = $("<style></style>").appendTo($("body"));
     _.each(Plugins,function(plugin,label){
         var container = $("<div />",{
-            class:"plugin"
+            class:"plugin translucent"
         });
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);
