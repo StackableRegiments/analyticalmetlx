@@ -291,7 +291,7 @@ var DeviceConfiguration = (function(){
                 DeviceConfiguration.setSlides(true);
                 DeviceConfiguration.setTools(true);
                 if(!initialized && "Modes" in window){
-                    Modes.draw.activate();
+                    Modes.select.activate();
                     if(DeviceConfiguration.getCurrentDevice() == "iPad"){
                         $("#panMode").remove();
                     }
