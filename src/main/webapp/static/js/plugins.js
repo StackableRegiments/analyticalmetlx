@@ -204,10 +204,10 @@ var Plugins = (function(){
             var container = $("<div />");
             return {
                 style:".publishedStream {background:green;} .subscribedStream {background:red;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton {background:white;margin:1px;}"+
-                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer{display:flex;}"+
-                    " .videoConfStartButtonContainer{flex-direction:row;}"+
-                    " .videoConfStartButton{padding:0 1em;font-size:1rem;}"+
+                    " .videoConfStartButton, .videoConfSubscribeButton, .videoConfPermitStudentBroadcastButton {background:white;margin:1px;}"+
+                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer, .videoConfPermitStudentBroadcastContainer{display:flex;}"+
+                    " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
+                    " .videoConfStartButton, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
                     " #videoConfSessionsContainer{display:flex;}"+
                     " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
                     " .context{font-size:1rem;}"+
@@ -218,6 +218,12 @@ var Plugins = (function(){
                                      '<div class="videoConfStartButtonContainer">'+
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
+                                     '</button>'+
+                                     '<span class="context"></span>'+
+                                     '</div>'+
+                                     '<div class="videoConfPermitStudentBroadcastContainer">'+
+                                     '<button class="videoConfPermitStudentBroadcastButton">'+
+                                     '<div>Permit students to broadcast</div>'+
                                      '</button>'+
                                      '<span class="context"></span>'+
                                      '</div>'+
