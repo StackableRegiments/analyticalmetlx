@@ -602,10 +602,10 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     }
   }
   def getUserByOrgDefinedId(userContext:ID2LUserContext,orgDefinedId:String):List[D2LUser] = {
-    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,orgDefinedId),"GET"))
+    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,urlEncode(orgDefinedId)),"GET"))
   }
   def getUserByUsername(userContext:ID2LUserContext,username:String):Option[D2LUser] = {
-    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?userName=%s".format(lpApiVersion,username),"GET"))
+    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?userName=%s".format(lpApiVersion,urlEncode(username)),"GET"))
   }
   def getUsers(userContext:ID2LUserContext):List[D2LUser] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?pagesize=%s".format(lpApiVersion,pageSize),"GET")
