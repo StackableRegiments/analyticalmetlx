@@ -2238,7 +2238,7 @@
                     exports.formattingKeys = [ 'bold', 'italic', 'underline', 'strikeout', 'color', 'font', 'size', 'align', 'script' ];
 
                     exports.defaultFormatting = {
-                        size: 30,
+                        size: 14,
                         font: 'sans-serif',
                         color: ['#000000',255],
                         bold: false,
