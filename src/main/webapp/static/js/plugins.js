@@ -153,7 +153,7 @@ var Plugins = (function(){
                 style:".chatMessage {color:black}"+
                     ".chatMessageContainer {overflow-y:auto; height:110px;}"+
                     ".chatContainer {margin-left:1em;width:320px;height:140px;}"+
-                    ".chatMessageAuthor {color:slategray;margin-right:1em;font-weight:bold;}"+
+                    ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
                     ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
                     ".chatboxContainer {display:flex;}"+
                     ".chatboxContainer input{flex-grow:1;}"+
