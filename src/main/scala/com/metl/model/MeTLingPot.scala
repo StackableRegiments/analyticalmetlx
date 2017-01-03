@@ -37,8 +37,8 @@ class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecr
        ).timeoutConfiguration(
         new TimeoutConfiguration()
           .httpRequestTimeout(20 * 1000) // 20 seconds
-          .totalExecutionTimeout(30 * 1000) // 30 seconds
-          .socketTimeout(2 * 1000) // 2 seconds
+          .totalExecutionTimeout(60 * 1000) // 30 seconds
+          .socketTimeout(30 * 1000) // 2 seconds
       ).iamCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey)))
       .iamRegion(region)
       .endpoint(endpoint)
