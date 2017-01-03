@@ -248,7 +248,7 @@ var TokBoxSession = function(desc,sessionContainer){
                     var uniqueId = sprintf("tokBoxVideoElemSubscriber_%s",_.uniqueId());
                     var rootElem = $(subscriberSection.clone());
                     var tokBoxVideoElemSubscriber = $("<span />",{id:uniqueId,"class":"subscriberVideoElem"});
-                    rootElem.find(".icon-txt").text(ev.stream.name);
+                    rootElem.find(".publisherName").text(ev.stream.name);
                     var button = rootElem.find(".videoConfSubscribeButton");
                     var refreshUI = function(){
                         button.toggleClass("subscribedStream",oldStream.subscribed);

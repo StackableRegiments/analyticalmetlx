@@ -204,17 +204,18 @@ var Plugins = (function(){
             var container = $("<div />");
             return {
                 style:".publishedStream {background:green;} .subscribedStream {background:red;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton {background:white;margin:1px;}"+
+                    " .videoConfStartButton, .videoConfSubscribeButton {background:white;margin:1px;padding:0 1em;font-size:1rem;}"+
                     " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer{display:flex;}"+
                     " .videoConfStartButtonContainer{flex-direction:row;}"+
-                    " .videoConfStartButton{padding:0 1em;font-size:1rem;}"+
                     " #videoConfSessionsContainer{display:flex;}"+
-                    " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
-                    " .context{font-size:1rem;}"+
+                    " .videoContainer{display:flex;}"+
+                    " .context, .publisherName{font-size:1rem;}"+
+		    " .thumbWide{width:160px;}"+
                     " .broadcastContainer{display:none;}",
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
                                      '<div class="videoConfSessionContainer">'+
+				     '<div class="thumbWide">'+
                                      '<div class="videoConfStartButtonContainer">'+
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
@@ -222,17 +223,19 @@ var Plugins = (function(){
                                      '<span class="context"></span>'+
                                      '</div>'+
                                      '<div class="viewscreen"></div>'+
+				     '</div>'+
                                      '<div class="broadcastContainer">'+
                                      '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
                                      '<div class="icon-txt">Watch class</div>'+
                                      '</a>'+
                                      '</div>'+
                                      '<div class="videoSubscriptionsContainer"></div>'+
-                                     '<div class="videoConfContainer">'+
+                                     '<div class="videoConfContainer thumbWide">'+
                                      '<span class="videoContainer">'+
-                                     '<button class="floatingToolbar btn-menu fa fa-television btn-icon videoConfSubscribeButton">'+
-                                     '<div class="icon-txt">Receive</div>'+
+                                     '<button class="videoConfSubscribeButton">'+
+                                     '<div>Toggle</div>'+
                                      '</button>'+
+				     '<span class="publisherName"></span>'+
                                      '</span>'+
                                      '</div>'+
                                      '</div>'+
