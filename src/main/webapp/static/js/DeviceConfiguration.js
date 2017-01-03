@@ -251,8 +251,8 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 6).css({
-		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 3)
+		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 10).css({
+		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 4.5)
 		});
                 board.width(bwidth);
                 board.height(bheight);
