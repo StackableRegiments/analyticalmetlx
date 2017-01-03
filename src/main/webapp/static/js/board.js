@@ -765,6 +765,7 @@ function screenBounds(worldBounds){
     };
 }
 function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
+		console.log("scaleCanvas",w,h);
     if (w >= 1 && h >= 1){
         var canvas = $("<canvas />");
         canvas.width = w;
@@ -784,6 +785,7 @@ function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
 }
 var mipMappingEnabled = true;
 function multiStageRescale(incCanvas,w,h,stanza){
+	console.log("multiStageRescale",incCanvas,w,h,stanza);
     if (mipMappingEnabled){
         stanza = stanza == undefined ? {} : stanza;
         if (!("mipMap" in stanza)){
@@ -796,7 +798,6 @@ function multiStageRescale(incCanvas,w,h,stanza){
         var save = true;
 
         var iwSize = Math.floor(iw);
-
         if (w >= 1 && iw >= 1 && w < iw){ //shrinking
             var sdw = iw * sf;
             var sdh = ih * sf;
@@ -858,11 +859,13 @@ function drawText(text,incCanvasContext){
 }
 function drawInk(ink,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+		console.log("drawInk:");
     var sBounds = screenBounds(ink.bounds);
+		console.log("drawInk:",sBounds);
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
     if(!c){
-        c = ink.canvas = prerenderInk(ink,incCanvasContext);
+        c = ink.canvas = prerenderInk(ink,canvasContext);
     }
     var cWidth = c.width;
     var cHeight = c.height;
