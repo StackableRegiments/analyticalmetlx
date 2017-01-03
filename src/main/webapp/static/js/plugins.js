@@ -230,8 +230,8 @@ var Plugins = (function(){
                                      '</a>'+
                                      '</div>'+
                                      '<div class="videoSubscriptionsContainer"></div>'+
-                                     '<div class="videoConfContainer thumbWide">'+
-                                     '<span class="videoContainer">'+
+                                     '<div class="videoConfContainer">'+
+                                     '<span class="videoContainer thumbWide">'+
                                      '<button class="videoConfSubscribeButton">'+
                                      '<div>Toggle</div>'+
                                      '</button>'+
@@ -261,10 +261,9 @@ var Plugins = (function(){
             return {
                 style:".groupsPluginMember{margin-left:0.5em;display:flex;}"+
                     " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
-                    " .groupsPluginGroupContainer .icon-txt, .groupsPluginAllGroupsControls .icon-txt, .groupsPluginAllGroupsControls .fa{color:white;}"+
                     " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
-                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;color:white;margin-top:0;}"+
-                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;color:white;margin-top:0;}"+
+                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;margin-top:0;}"+
+                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
                     " .isolateGroup{margin-top:0.8em;}"+
                     " .memberCurrentGrade{color:black;background-color:white;margin-right:0.5em;padding:0 .5em;}"+
@@ -287,9 +286,12 @@ var Plugins = (function(){
                                         if(linkedGrade){
                                             var linkedGrades = Grades.getGradeValues()[linkedGrade.id];
                                         }
+                                        var xOffset = 0;
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
-                                        }).append($("<input />",{
+                                        }).on("mousedown",function(){
+					    xOffset = $("#masterFooter").scrollLeft();
+					}).append($("<input />",{
                                             type:"radio",
                                             name:"groupView",
                                             id:"showAll"
@@ -299,6 +301,7 @@ var Plugins = (function(){
                                             });
                                             ContentFilter.clearAudiences();
                                             blit();
+					    $("#masterFooter").scrollLeft(xOffset);
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({
@@ -356,17 +359,21 @@ var Plugins = (function(){
                                             var id = sprintf("isolateGroup_%s",group.title);
                                             var isolate = $("<div />",{
                                                 class:"isolateGroup"
+                                            }).on("mousedown",function(){
+                                                xOffset = $("#masterFooter").scrollLeft();
                                             }).append($("<input />",{
                                                 type:"radio",
                                                 name:"groupView",
                                                 id:id
                                             }).change(function(){
+                                                console.log("masterFooter",xOffset);
                                                 _.each(groups,function(g){
                                                     ContentFilter.setFilter(g.id,false);
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
                                                 blit();
+                                                $("#masterFooter").scrollLeft(xOffset);
                                             })).append($("<label />",{
                                                 for:id
                                             }).append($("<span />",{
