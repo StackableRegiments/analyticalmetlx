@@ -88,6 +88,8 @@ var TokBoxSession = function(desc,sessionContainer){
         return "isConnected" in session && session.isConnected();
     };
 
+		var preferredStreams = {};
+
     var streamButton = sessionContainer.find(".videoConfStartButton");
     var streamContainer = sessionContainer.find(".videoConfContainer");
     var subscriptionsContainer = sessionContainer.find(".videoSubscriptionsContainer");
@@ -255,6 +257,8 @@ var TokBoxSession = function(desc,sessionContainer){
                     };
                     refreshUI();
                     var s = streams[stream.id];
+										var preferredStreamId = stream.name;
+										//console.log("subscribing to",preferredStreamId);
                     var toggleSubscription = function(){
                         if (s.subscribed){
                             stopSubscribing();
@@ -265,13 +269,14 @@ var TokBoxSession = function(desc,sessionContainer){
                     };
                     var startSubscribing = function(){
                         s.subscribed = true;
+												preferredStreams[preferredStreamId] = true;
                         var subscriber = session.subscribe(s.stream,uniqueId,{
                             insertMode:"append",
                             width:videoWidth,
                             height:videoHeight
                         },function(error){
                             if (!error){
-                                console.log("subscribed to stream:",s.stream.name,s.stream.id);
+                                //console.log("subscribed to stream:",s.stream.name,s.stream.id);
                             } else {
                                 rootElem.remove();
                                 console.log("error when subscribing to stream",error,s.stream.name,s.stream.id);
@@ -289,7 +294,8 @@ var TokBoxSession = function(desc,sessionContainer){
                     var stopSubscribing = function(){
                         s.subscribed = false;
                         session.unsubscribe(s.subscriber);
-                        console.log("unsubscribed from stream:",s.stream.name,s.stream.id);
+                        //console.log("unsubscribed from stream:",s.stream.name,s.stream.id);
+												delete preferredStreams[preferredStreamId];
                     };
                     rootElem.find(".videoConfSubscribeButton").on("click",toggleSubscription);
                     tokBoxVideoElemSubscriber.prepend(rootElem);
@@ -299,10 +305,13 @@ var TokBoxSession = function(desc,sessionContainer){
                     if (autoSubscribeAndPublish){
                         startSubscribing();
                     }
+										if (preferredStreamId in preferredStreams){
+												startSubscribing();
+										}
                     refreshVisualState();
                 } else {
                     oldStream["stream"] = stream;
-                    console.log("updating stream with a new version of it, for whatever reason.",ev);
+                    //console.log("updating stream with a new version of it, for whatever reason.",ev);
                 }
             }
         },
@@ -369,19 +378,19 @@ var TokBoxSession = function(desc,sessionContainer){
 
 function receiveTokBoxSessionToken(tokenMsg){
     if ("token" in tokenMsg){
-        console.log("receiveTokBoxSession:",tokenMsg);
+        //console.log("receiveTokBoxSession:",tokenMsg);
         TokBox.receiveTokBoxSession(tokenMsg);
     }
 }
 function removeTokBoxSessions(sessionIds){
-    console.log("removeTokBoxSessions",sessionIds);
+    //console.log("removeTokBoxSessions",sessionIds);
     TokBox.removeSessions(sessionIds);
 }
 function receiveTokBoxEnabled(isEnabled){
     TokBox.setTokBoxEnabledState(isEnabled);
 }
 function receiveTokBoxArchives(archives){
-    console.log("archives:",archives);
+    //console.log("archives:",archives);
 }
 function receiveTokBoxBroadcast(broadcast){
     //TokBox.receiveBroadcast(broadcast);
