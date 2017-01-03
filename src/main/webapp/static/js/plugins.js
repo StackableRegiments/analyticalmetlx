@@ -290,18 +290,18 @@ var Plugins = (function(){
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
                                         }).on("mousedown",function(){
-					    xOffset = $("#masterFooter").scrollLeft();
-					}).append($("<input />",{
+                                            xOffset = $("#masterFooter").scrollLeft();
+                                        }).append($("<input />",{
                                             type:"radio",
                                             name:"groupView",
                                             id:"showAll"
-                                        }).click(function(){
+                                        }).prop("checked",true).click(function(){
                                             _.each(groups,function(g){
                                                 ContentFilter.setFilter(g.id,true);
                                             });
                                             ContentFilter.clearAudiences();
                                             blit();
-					    $("#masterFooter").scrollLeft(xOffset);
+                                            $("#masterFooter").scrollLeft(xOffset);
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({
