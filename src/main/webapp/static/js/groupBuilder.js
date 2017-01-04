@@ -472,7 +472,7 @@ var GroupBuilder = (function(){
     };
     var refreshToolState = function(){
         var menuButton = $("#menuGroups");
-        if(Conversations.shouldModifyConversation()){
+        if($("#roomToolbar.active").length && Conversations.shouldModifyConversation()){
             menuButton.parent().show();
         }
         else{
