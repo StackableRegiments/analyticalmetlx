@@ -844,8 +844,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         })
       } catch {
         case e:Exception => {
-          println("exception while updating permissions: %s\r\n%s\r\n%s".format(args.toString,e.getMessage,e.getStackTraceString))
-          JNull
+          error("exception while updating permissions: %s".format(args.toString),e)
+          throw e
         }
       }
     },Full(RECEIVE_CONVERSATION_DETAILS)),
