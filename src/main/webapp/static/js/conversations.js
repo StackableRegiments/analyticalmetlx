@@ -320,7 +320,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":publishingAllowed,
-            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced,
+						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -334,7 +336,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":oldPerms.studentCanPublish,
-            "usersAreCompulsorilySynced":mustFollowTeacher
+            "usersAreCompulsorilySynced":mustFollowTeacher,
+						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
