@@ -543,6 +543,17 @@ var Conversations = (function(){
                 text:"Export this conversation"
             }));
         }
+				if (Conversations.shouldModifyConversation()){
+					$("#editConversation").unbind("click").click(function(){
+						$.jAlert({
+							title:"edit Conversation",
+							iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+							width:"100%" 
+						});
+					}).show();
+				} else {
+					$("#editConversation").unbind("click").hide();
+				}
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
