@@ -1388,9 +1388,10 @@ var Modes = (function(){
                     red:"#ff0000",
                     blue:"#0000ff",
                     black:"#000000",
-                    yellow:"#ffff00"
+                    yellow:"#ffff00",
+                    green:"#00ff00"
                 };
-                var colors = ["red","blue","black","yellow"];
+                var colors = ["red","blue","black","green","yellow"];
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
@@ -1398,14 +1399,6 @@ var Modes = (function(){
                         $(this).addClass("active");
                         setFormattingProperty("color",[colorCodes[subject],255])();
                     });
-                });
-                presetFullscreen.click(adoptPresetWidth("fullscreen"));
-                fontOptionsToggle.click(function(){fontOptions.toggle()});
-                $("#closeTextDialog").click(function(){
-                    fontOptions.hide();
-                });
-                $("#exitTextEditing").click(function(){
-                    Modes.select.activate();
                 });
             });
             var mapSelected = function(f){
@@ -1765,7 +1758,6 @@ var Modes = (function(){
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
-                    fontOptions.hide();
                     unregisterPositionHandlers(board);
                     _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
@@ -1924,7 +1916,7 @@ var Modes = (function(){
                     $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
                     $(".active").removeClass("active");
                     $("#videoMode").addClass("active");
-                    $(".insetColumn").hide();
+                    $("#insertTools .insetColumn").hide();
                     $("#videoTools").show();
                     var x = 10;
                     var y = 10;
@@ -2184,7 +2176,7 @@ var Modes = (function(){
                     $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
                     $(".active").removeClass("active");
                     $("#imageMode").addClass("active");
-                    $(".insetColumn").hide();
+                    $("#insertTools .insetColumn").hide();
                     $("#imageTools").show();
                     var x = 10;
                     var y = 10;
