@@ -292,8 +292,8 @@ function prerenderInk(ink,onBoard){
         incorporateBoardBounds(ink.bounds);
     }
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
-    var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2;
-    var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2;
+    var rawWidth = ink.bounds[2] - ink.bounds[0] + (ink.thickness);
+    var rawHeight = ink.bounds[3] - ink.bounds[1] + (ink.thickness);
 
     var scaleMeasurements = determineScaling(rawWidth,rawHeight);
     var canvas = $("<canvas />",{
@@ -314,10 +314,11 @@ function prerenderInk(ink,onBoard){
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleMeasurements.scaleY;
+		var scaledThickness = ink.thickness * scaleMeasurements.scaleX;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
-        context.lineWidth = ink.thickness;
+        context.lineWidth = scaledThickness;
         context.lineCap = "round";
         context.strokeStyle = "red";
         context.globalAlpha = 0.3;
@@ -327,7 +328,7 @@ function prerenderInk(ink,onBoard){
             context.moveTo(x,y);
             x = points[p]+contentOffsetX;
             y = points[p+1]+contentOffsetY;
-            pr = ink.thickness * points[p+2];
+            pr = scaledThickness * points[p+2];
             context.lineWidth = pr + 2;
             context.lineTo(x,y);
             context.stroke();
@@ -341,7 +342,7 @@ function prerenderInk(ink,onBoard){
 
     context.beginPath();
     context.moveTo(x,y);
-    pr = ink.thickness * points[2];
+    pr = scaledThickness * points[2];
     context.arc(x,y,pr/2,0,2 * Math.PI);
     context.fill();
     context.lineCap = "round";
@@ -350,7 +351,7 @@ function prerenderInk(ink,onBoard){
         context.moveTo(x,y);
         x = points[p+0] + contentOffsetX;
         y = points[p+1] + contentOffsetY;
-        pr = ink.thickness * points[p+2];
+        pr = scaledThickness * points[p+2];
         context.lineWidth = pr;
         context.lineTo(x,y);
         context.stroke();
