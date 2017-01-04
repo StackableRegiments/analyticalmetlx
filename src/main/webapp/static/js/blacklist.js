@@ -222,7 +222,7 @@ var Blacklist = (function(){
     };
     var clientSideBanSelectionFunc = function(conversationJid,slideId,inks,texts,multiWordTexts,images){
         WorkQueue.pause();
-        var bannedAuthors = _.uniq(_.map(_.flatMap([inks,texts,multiWordTexts,images],_.values),"author"));
+        var bannedAuthors = _.uniq(_.map(_.flatMap([inks,texts,multiWordTexts,images],_.values),"author")).join(", ");
 
         var cc = Conversations.getCurrentConversation();
         changeBlacklistOfConversation(cc.jid.toString(),_.uniq(_.flatten([cc.blacklist,bannedAuthors])));
@@ -256,7 +256,8 @@ var Blacklist = (function(){
         _.forEach(_.values(inks),function(ink){
             var inkShadow = _.cloneDeep(ink);
             inkShadow.thickness = inkShadow.thickness * 3;
-            inkShadow.color = _.find(colouredAuthors,{username:ink.author}).highlight;
+	    var highlight = _.find(colouredAuthors,{username:ink.author});
+            inkShadow.color = highlight ? highlight.highlight : "red";
             inkShadow.isHighlighter = true;
             var tempIdentity = inkShadow.identity + "_banning";
             inkShadow.identity = tempIdentity;

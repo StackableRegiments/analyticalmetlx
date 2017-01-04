@@ -680,7 +680,7 @@ $(function(){
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
 
-    Modes.draw.activate();
+    Modes.select.activate();
 
     $("#progress").hide();
     setLoadProgress(8);
