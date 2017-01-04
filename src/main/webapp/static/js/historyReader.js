@@ -188,7 +188,7 @@ function mergeBounds(b1,b2){
 var boardLimit = 10000;
 function isUsable(element){
     var boundsOk = !(_.some(element.bounds,function(p){
-        return isNaN(p) || p > boardLimit || p < -boardLimit;
+        return isNaN(p);// || p > boardLimit || p < -boardLimit;
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
@@ -231,8 +231,8 @@ var rightPoint = function(xDelta,yDelta,l,x2,y2,bulge){
 }
 var determineCanvasConstants = _.once(function(){
     var currentDevice = DeviceConfiguration.getCurrentDevice();
-    var maxX = 2147483647;
-    var maxY = 2147483647;
+    var maxX = 8192;//2147483647;
+    var maxY = 8192;//2147483647;
     if (currentDevice == "browser"){
         //      maxX = 500;
         //      maxY = 500;
@@ -261,10 +261,14 @@ function determineScaling(inX,inY){
     if (inX > maxX){
         outputScaleX = maxX / inX;
         outputX = inX * outputScaleX;
+				outputScaleY = outputScaleX;
+				outputY = inY * outputScaleX;
     }
-    if (inY > maxY){
-        outputScaleY = maxY / inY;
-        outputY = inY * outputScaleY;
+    if (outputY > maxY){
+        outputScaleY = maxY / outputY;
+        outputY = outputY * outputScaleY;
+				outputScaleX = outputScaleY;
+				outputX = outputX * outputScaleY;
     }
     return {
         width:outputX,
