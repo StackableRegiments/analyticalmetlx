@@ -1161,6 +1161,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       ))
     },Full("receiveOrgUnitsFromGroupsProviders")),
     ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
+      try {
       val sid = getArgAsString(args(0))
       val orgUnitJValue = getArgAsJValue(args(1))
       val orgUnit = orgUnitJValue.extract[OrgUnit]
@@ -1179,6 +1180,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
       ))
+      } catch {
+        case e:Exception => {
+          error("exception in getGroupSetsForOrgUnit: %s".format(args),e)
+          throw e
+        }
+      }
     },Full("receiveGroupSetsForOrgUnit")),
     ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
       val sid = getArgAsString(args(0))
