@@ -543,6 +543,17 @@ var Conversations = (function(){
                 text:"Export this conversation"
             }));
         }
+				if (Conversations.shouldModifyConversation()){
+					$("#editConversation").unbind("click").click(function(){
+						$.jAlert({
+							title:"edit Conversation",
+							iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+							width:"100%" 
+						});
+					}).show();
+				} else {
+					$("#editConversation").unbind("click").hide();
+				}
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
@@ -1076,7 +1087,7 @@ function receiveGroupsForGroupSet(groups){
 //function createConversation(title)
 //function deleteConversation(jid)
 //function renameConversation(jid,newTitle)
-//function changePermissions(jid,newPermissions)
+//function changePermissionsOfConversation(jid,newPermissions)
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)

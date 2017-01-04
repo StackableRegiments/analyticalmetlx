@@ -199,6 +199,7 @@ var Participants = (function(){
     };
     var onDetailsReceived = function(){
         updateButtons();
+				reRenderParticipants();
     };
     var updateFilters = function(){
         _.each(contextFilters,function(val,filter){
@@ -324,6 +325,9 @@ var Participants = (function(){
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
+		$(function(){
+			reRenderParticipants();
+		});
     return {
         getCurrentParticipants:function(){
             return Conversations.shouldModifyConversation() ? currentParticipants : [];

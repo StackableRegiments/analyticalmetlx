@@ -1,3 +1,32 @@
+1.0.21
+Story: METL-32: Bold, italic, underline before text selected.
+Story: METL-115: Provide more colors for Text.
+Story: METL-421: Reduce font size of text in plugins.
+Story: METL-98: More subcontrols in a vertical column so that they do not overlay text.
+Story: METL-430: Teacher restricts student video.
+Story: METL-235: Add Participants and Grades buttons to the Feedback subcontrols.
+Story: METL-329: Teacher edits conversation in popup.
+Story: METL-424: Remember selected video streams after disconnnect/reconnect.
+
+Bugfix: METL-435: Plugins should only be one row tall.
+Bugfix: METL-434: First selected mode should be first in the column.
+Bugfix: METL-416: Using Group Slider position to see other groups is not retained.
+Bugfix: METL-415: Default Groups is to have neither Show All or Isolate radio buttons checked.
+Bugfix: METL-444: Groups plugin radios are too high.
+Bugfix: METL-414: Error message when attempting to copy from Smart Groups.
+Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.
+
+Improvement: METL-427: Shrink large square video buttons to small rectangles.
+Improvement: METL-428: Move group name to above group members in Student view.
+Improvement: METL-353: Reduce default text font size.
+Improvement: METL-440: Increase domain of activity meter.
+Improvement: METL-441: Header and footer should be translucent and the board should extend under them.
+Improvement: METL-394: Add spaces between banned student names on teacher ban confirmation dialog.
+Improvement: METL-330: Restyle edit conversation for popup.
+Improvement: METL-85: Remove Actions column from Submissions for non-author.
+Improvement: METL-438: Disable Force Follow when the teacher ends their session.
+Improvement: METL-394: Add spaces betwen banned student names on teacher ban confirmation dialog.
+
 1.0.20
 Bugfix: METL-411: Urlencode usernames passed to d2l.
 

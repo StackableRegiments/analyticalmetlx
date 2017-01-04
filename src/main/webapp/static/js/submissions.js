@@ -12,6 +12,7 @@ var Submissions = (function(){
         });
     };
     $(function(){
+			var setupSubmissions = function(){
         submissionsDatagrid = $("#submissionsDatagrid");
         insertButtonTemplate = submissionsDatagrid.find(".insertOnNextSlideButtonContainer");
         submissionsDatagrid.empty();
@@ -32,7 +33,7 @@ var Submissions = (function(){
         });
         jsGrid.fields.dateField = DateField;
 
-	var cellStyle = "max-height:100px;max-width:100%;cursor:zoom-in";
+				var cellStyle = "max-height:100px;max-width:100%;cursor:zoom-in";
         var gridFields = [
             {
                 name:"url",
@@ -57,7 +58,9 @@ var Submissions = (function(){
             },
             {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
-            {name:"author",type:"text",title:"Who",readOnly:true},
+            {name:"author",type:"text",title:"Who",readOnly:true}
+				];
+				var teacherFields = [
             {
                 name:"identity",
                 type:"text",
@@ -65,18 +68,17 @@ var Submissions = (function(){
                 readOnly:true,
                 sorting:false,
                 itemTemplate:function(identity,submission){
-                    if (Conversations.shouldModifyConversation()){
-                        var rootElem = insertButtonTemplate.clone();
-                        rootElem.find(".insertOnNextSlideButton").on("click",function(){
-                            addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
-                        });
-                        return rootElem;
-                    } else {
-                        return $("<span/>");
-                    }
+									var rootElem = insertButtonTemplate.clone();
+									rootElem.find(".insertOnNextSlideButton").on("click",function(){
+											addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
+									});
+									return rootElem;
                 }
             }
         ];
+				if (Conversations.shouldModifyConversation()){
+					gridFields = gridFields.concat(teacherFields);
+				}
         submissionsDatagrid.jsGrid({
             width:"100%",
             height:"auto",
@@ -108,6 +110,15 @@ var Submissions = (function(){
             order:"desc"
         });
         renderSubmissionsInPlace();
+			};
+				var loadAfterConversationsLoaded = function(){
+            if (Conversations.inConversation()){
+                setupSubmissions();
+            } else {
+                _.delay(loadAfterConversationsLoaded,500);
+            }
+        };
+        loadAfterConversationsLoaded();
     });
     var filteredSubmissions = function(){
         return _.filter(submissions,filterSubmission);
