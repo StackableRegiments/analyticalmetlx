@@ -1516,7 +1516,8 @@ var Modes = (function(){
                                         $("#blackText"),
                                         $("#redText"),
                                         $("#blueText"),
-                                        $("#yellowText")
+                                        $("#yellowText"),
+                                        $("#greenText")
                                     ];
                                     var setV = function(selector,prop){
                                         var isToggled = (format[prop] == true);
@@ -1541,6 +1542,7 @@ var Modes = (function(){
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
                                     setIf(textColors[3],"color",["#ffff00",255]);
+                                    setIf(textColors[4],"color",["#00ff00",255]);
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
