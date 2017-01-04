@@ -1,117 +1,119 @@
 var Submissions = (function(){
     var submissions = [];
-    var submissionsDatagrid = {};
+    var submissionsDatagrid;
     var insertButtonTemplate = {};
     var reRenderDatagrid = function(){
-        WorkQueue.enqueue(function(){
-            submissionsDatagrid.jsGrid("loadData");
-            var sortObj = submissionsDatagrid.jsGrid("getSorting");
-            if ("field" in sortObj){
-                submissionsDatagrid.jsGrid("sort",sortObj);
-            }
-        });
+        if(submissionsDatagrid && submissionsDatagrid.length > 0){
+            WorkQueue.enqueue(function(){
+                submissionsDatagrid.jsGrid("loadData");
+                var sortObj = submissionsDatagrid.jsGrid("getSorting");
+                if ("field" in sortObj){
+                    submissionsDatagrid.jsGrid("sort",sortObj);
+                }
+            });
+        }
     };
     $(function(){
-			var setupSubmissions = function(){
-        submissionsDatagrid = $("#submissionsDatagrid");
-        insertButtonTemplate = submissionsDatagrid.find(".insertOnNextSlideButtonContainer");
-        submissionsDatagrid.empty();
-        var DateField = function(config){
-            jsGrid.Field.call(this,config);
-        };
-        DateField.prototype = new jsGrid.Field({
-            sorter: function(a,b){
-                return new Date(a) - new Date(b);
-            },
-            itemTemplate: function(i){
-                return new Date(i).toLocaleString();
-            },
-            insertTemplate: function(i){return ""},
-            editTemplate: function(i){return ""},
-            insertValue: function(){return ""},
-            editValue: function(){return ""}
-        });
-        jsGrid.fields.dateField = DateField;
+        var setupSubmissions = function(){
+            submissionsDatagrid = $("#submissionsDatagrid");
+            insertButtonTemplate = submissionsDatagrid.find(".insertOnNextSlideButtonContainer");
+            submissionsDatagrid.empty();
+            var DateField = function(config){
+                jsGrid.Field.call(this,config);
+            };
+            DateField.prototype = new jsGrid.Field({
+                sorter: function(a,b){
+                    return new Date(a) - new Date(b);
+                },
+                itemTemplate: function(i){
+                    return new Date(i).toLocaleString();
+                },
+                insertTemplate: function(i){return ""},
+                editTemplate: function(i){return ""},
+                insertValue: function(){return ""},
+                editValue: function(){return ""}
+            });
+            jsGrid.fields.dateField = DateField;
 
-				var cellStyle = "max-height:100px;max-width:100%;cursor:zoom-in";
-        var gridFields = [
-            {
-                name:"url",
-                type:"text",
-                title:"Preview",
-                readOnly:true,
-                sorting:false,
-                itemTemplate:function(thumbnailUrl,submission){
-                    var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-                    var img = $("<img/>",{src:url,class:"submissionThumbnail",style:cellStyle}).on("click",function(){
+            var cellStyle = "max-height:100px;max-width:100%;cursor:zoom-in";
+            var gridFields = [
+                {
+                    name:"url",
+                    type:"text",
+                    title:"Preview",
+                    readOnly:true,
+                    sorting:false,
+                    itemTemplate:function(thumbnailUrl,submission){
                         var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
-                        var title = sprintf("Submission from %s at %s on page %s",submission.author,new Date(submission.timestamp),submission.slide);
-                        $.jAlert({
-                            title:title,
-                            closeOnClick:true,
-                            width:"90%",
-                            content:$("<img/>",{src:url})[0].outerHTML
+                        var img = $("<img/>",{src:url,class:"submissionThumbnail",style:cellStyle}).on("click",function(){
+                            var url = sprintf("/submissionProxy/%s/%s/%s",Conversations.getCurrentConversationJid(),submission.author,submission.identity);
+                            var title = sprintf("Submission from %s at %s on page %s",submission.author,new Date(submission.timestamp),submission.slide);
+                            $.jAlert({
+                                title:title,
+                                closeOnClick:true,
+                                width:"90%",
+                                content:$("<img/>",{src:url})[0].outerHTML
+                            });
                         });
-                    });
-                    return img;
-                }
-            },
-            {name:"slide",type:"number",title:"Page",readOnly:true},
-            {name:"timestamp",type:"dateField",title:"When",readOnly:true},
-            {name:"author",type:"text",title:"Who",readOnly:true}
-				];
-				var teacherFields = [
-            {
-                name:"identity",
-                type:"text",
-                title:"actions",
-                readOnly:true,
-                sorting:false,
-                itemTemplate:function(identity,submission){
-									var rootElem = insertButtonTemplate.clone();
-									rootElem.find(".insertOnNextSlideButton").on("click",function(){
-											addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
-									});
-									return rootElem;
-                }
-            }
-        ];
-				if (Conversations.shouldModifyConversation()){
-					gridFields = gridFields.concat(teacherFields);
-				}
-        submissionsDatagrid.jsGrid({
-            width:"100%",
-            height:"auto",
-            inserting:false,
-            editing:false,
-            sorting:true,
-            paging:true,
-            noDataContent: "No submissions",
-            controller: {
-                loadData: function(filter){
-                    if ("sortField" in filter){
-                        var sorted = _.sortBy(filteredSubmissions(),function(sub){
-                            return sub[filter.sortField];
+                        return img;
+                    }
+                },
+                {name:"slide",type:"number",title:"Page",readOnly:true},
+                {name:"timestamp",type:"dateField",title:"When",readOnly:true},
+                {name:"author",type:"text",title:"Who",readOnly:true}
+            ];
+            var teacherFields = [
+                {
+                    name:"identity",
+                    type:"text",
+                    title:"actions",
+                    readOnly:true,
+                    sorting:false,
+                    itemTemplate:function(identity,submission){
+                        var rootElem = insertButtonTemplate.clone();
+                        rootElem.find(".insertOnNextSlideButton").on("click",function(){
+                            addSubmissionSlideToConversationAtIndex(Conversations.getCurrentConversationJid(),Conversations.getCurrentSlide().index + 1,submission.identity);
                         });
-                        if ("sortOrder" in filter && filter.sortOrder == "desc"){
-                            sorted = _.reverse(sorted);
-                        }
-                        return sorted;
-                    } else {
-                        return filteredSubmissions();
+                        return rootElem;
                     }
                 }
-            },
-            pageLoading:false,
-            fields: gridFields
-        });
-        submissionsDatagrid.jsGrid("sort",{
-            field:"timestamp",
-            order:"desc"
-        });
-        renderSubmissionsInPlace();
-			};
-				var loadAfterConversationsLoaded = function(){
+            ];
+            if (Conversations.shouldModifyConversation()){
+                gridFields = gridFields.concat(teacherFields);
+            }
+            submissionsDatagrid.jsGrid({
+                width:"100%",
+                height:"auto",
+                inserting:false,
+                editing:false,
+                sorting:true,
+                paging:true,
+                noDataContent: "No submissions",
+                controller: {
+                    loadData: function(filter){
+                        if ("sortField" in filter){
+                            var sorted = _.sortBy(filteredSubmissions(),function(sub){
+                                return sub[filter.sortField];
+                            });
+                            if ("sortOrder" in filter && filter.sortOrder == "desc"){
+                                sorted = _.reverse(sorted);
+                            }
+                            return sorted;
+                        } else {
+                            return filteredSubmissions();
+                        }
+                    }
+                },
+                pageLoading:false,
+                fields: gridFields
+            });
+            submissionsDatagrid.jsGrid("sort",{
+                field:"timestamp",
+                order:"desc"
+            });
+            renderSubmissionsInPlace();
+        };
+        var loadAfterConversationsLoaded = function(){
             if (Conversations.inConversation()){
                 setupSubmissions();
             } else {
