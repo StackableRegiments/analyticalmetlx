@@ -1076,7 +1076,7 @@ function receiveGroupsForGroupSet(groups){
 //function createConversation(title)
 //function deleteConversation(jid)
 //function renameConversation(jid,newTitle)
-//function changePermissions(jid,newPermissions)
+//function changePermissionsOfConversation(jid,newPermissions)
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)
