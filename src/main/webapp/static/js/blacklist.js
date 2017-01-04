@@ -79,7 +79,7 @@ var Blacklist = (function(){
             {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
-                return _.map(o.blacklist,"username").join(",");
+                return _.map(o.blacklist,"username");
             }}
         ];
         blacklistDatagrid.jsGrid({
