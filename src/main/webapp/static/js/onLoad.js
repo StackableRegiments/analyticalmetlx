@@ -659,7 +659,13 @@ $(function(){
     setLoadProgress(3);
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
+        Submissions.reRender();
     });
+		$("#gradesButton").on("click",function(){
+        showBackstage("grades");
+        Grades.reRender();
+		});
+
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
         Quizzes.reRender();

@@ -2787,12 +2787,24 @@ var Modes = (function(){
         },
         feedback:(function(){
             var applyStateStyling = function(){
+							if (Conversations.shouldModifyConversation()){
+								console.log("showing participants button");
+								$("#participantsButton").unbind("click").on("click",function(){
+										showBackstage("participants");
+										Participants.reRender();
+								}).show();
+							} else {
+								console.log("hiding participants button");
+								$("#participantsButton").unbind("click").hide();
+							}
                 switch(currentBackstage){
-                case "quizzes":$("#quizzesButton").addClass(active);
+									case "quizzes":
+										$("#quizzesButton").addClass(active);
                     break;
-                case "submissions":$("#submissionButton").addClass(active);
+									case "submissions":
+										$("#submissionButton").addClass(active);
                     break;
-                default:
+									default:
                     break;
                 }
             };
