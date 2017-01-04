@@ -730,10 +730,12 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
     val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
     val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-    Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced)
+    val studentsMayBroadcast = tryo(getValueOfNode(input,"studentsMayBroadcast").toBoolean).openOr(true)
+    val studentsMayChatPublicly = tryo(getValueOfNode(input,"studentsMayChatPublicly").toBoolean).openOr(true)
+    Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
   })
   override def fromPermissions(input:Permissions):Node = Stopwatch.time("GenericXmlSerializer.fromPermissions",{
-    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced></permissions>
+    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced><studentsMayBroadcast>{input.studentsMayBroadcast}</studentsMayBroadcast><studentsMayChatPublicly>{input.studentsMayChatPublicly}</studentsMayChatPublicly></permissions>
   })
   override def toColor(input:AnyRef):Color = Stopwatch.time("GenericXmlSerializer.toColor",{
     Color.empty

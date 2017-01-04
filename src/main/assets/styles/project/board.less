@@ -85,10 +85,10 @@
     bottom:0;
 }
 .plugin{
-    color:white;
     padding:0 2px;
     display:table-cell;
     vertical-align:top;
+    font-size:1rem;
     .pluginName{
         background-color:@body-bg;
         color:white;
@@ -97,9 +97,19 @@
     }
 }
 #masterFooter{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    z-index:99;
     overflow-x:scroll;
 }
 #masterHeader{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    z-index:99;
     margin-top:2px;
     margin-left:2px;
 }
@@ -144,8 +154,11 @@ html{
     background-size:100% 100%;
     background-opacity:0.5;
 }
+.translucent{
+    color:@text-std;
+    background-color:rgba(1,1,1,0.05);
+}
 #masterHeaderFlexContainer{
-    color:white;
     display:flex;
     meter,svg{
         height:10px;
@@ -169,9 +182,12 @@ html{
         margin-left:4px;
     }
     .heading{
+	text-align:center;
         vertical-align:top;
-        margin-left:10px;
-	flex-grow:1;
+	margin-top:-2px;
+        padding-left:1em;
+        flex-grow:1;
+        color:@text-std;
     }
 }
 .groupBuilderGroup{
@@ -206,6 +222,7 @@ body{
     flex-grow:0;
     flex-wrap:nowrap;
     float:right;
+    margin-top:-3px;
 }
 #slideContainer {
     max-width:10000px;
