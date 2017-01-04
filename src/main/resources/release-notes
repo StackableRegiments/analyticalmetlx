@@ -10,9 +10,9 @@ Bugfix: METL-439: Forming Groups sometimes includes the teacher in the group.
 Bugfix: METL-444: Groups plugin radios are too high.
 Bugfix: METL-449: Restyle plugins now that Permit button has pushed things out of line.
 Bugfix: METL-452: Commas inside usernames.
----
 Bugfix: METL-450: Error creating group page.
 Bugfix: METL-451: Selecting a new color while writing in a color has strange behaviour.
+Bugfix: METL-351: Insert text cannot change color of new text box without exiting Text control.
 
 1.0.21
 Story: METL-32: Bold, italic, underline before text selected.
