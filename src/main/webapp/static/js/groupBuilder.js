@@ -330,7 +330,8 @@ var GroupBuilder = (function(){
                 closeAlert:true,
                 onClick:function(){
                     var sendable = _.filter(participants,function(p){
-                        return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
+                        return p.name != Conversations.getCurrentConversation().author &&
+                            ((groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating));
                     });
                     var calculatedGroups = allocationsFor(sendable);
                     var sendableGroups = _.map(_.values(calculatedGroups),function(members){
