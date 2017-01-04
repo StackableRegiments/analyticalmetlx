@@ -16,7 +16,35 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   implicit val formats = net.liftweb.json.DefaultFormats
   override type T = Object
   val configName = config.name
-  val xmlSerializer = new GenericXmlSerializer(config)
+  val xmlSerializer = new GenericXmlSerializer(config){
+    import scala.xml._
+    protected def getBooleanByNames(input:NodeSeq,tags:List[String]):Option[Boolean] = {
+      tags.foldLeft(None:Option[Boolean])((acc,item) => {
+        (input \\ item).headOption.map(ho => ho.text.toLowerCase.trim) match {
+          case Some("true") if acc == None => Some(true)
+          case Some("false") if acc == None => Some(false)
+          case _ => acc
+        }
+      })
+    }
+    override def toPermissions(input:NodeSeq):Permissions = Stopwatch.time("H2XmlSerializer.toPermissions",{
+      try {
+        val studentsCanOpenFriends = getBooleanByNames(input,List("friends","studentCanOpenFriends")).getOrElse(false)
+        val studentsCanPublish = getBooleanByNames(input,List("publish","studentCanPublish")).getOrElse(true)
+        val usersAreCompulsorilySynced = getBooleanByNames(input,List("follow","usersAreCompulsorilySynced")).getOrElse(false)
+        val studentsMayBroadcast = getBooleanByNames(input,List("video","studentsMayBroadcast")).getOrElse(false)
+        val studentsMayChatPublicly = getBooleanByNames(input,List("chat","studentsMayChatPublicly")).getOrElse(true)
+        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
+      } catch {
+        case e:Exception => {
+          Permissions.default(config)
+        }
+      }
+    })
+    override def fromPermissions(input:Permissions):Node = Stopwatch.time("H2XmlSerializer.fromPermissions",{
+      <p><friends>{input.studentsCanOpenFriends}</friends><publish>{input.studentsCanPublish}</publish><follow>{input.usersAreCompulsorilySynced}</follow><video>{input.studentsMayBroadcast}</video><chat>{input.studentsMayChatPublicly}</chat></p>
+    })
+  }
 
   case class ParsedCanvasContent(target:String,identity:String,slide:String,privacy:Privacy,author:String,timestamp:Long,audiences:List[Audience])
   case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
@@ -400,7 +428,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     xmlSerializer.fromPermissions(p).toString
   }
   def permissionsFromString(s:String):Permissions = {
-    xmlSerializer.toPermissions(scala.xml.XML.loadString(s))
+    try {
+      xmlSerializer.toPermissions(scala.xml.XML.loadString(s))
+    } catch {
+      case e:Exception => {
+        Permissions.default(config)
+      }
+    }
   }
   override def toPointList(input:AnyRef):List[Point] = Stopwatch.time("H2Serializer.toPointList",PointConverter.fromText(input.toString))
   override def fromPointList(input:List[Point]):AnyRef = Stopwatch.time("H2Serializer.fromPointList",PointConverter.toText(input))

@@ -834,13 +834,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
-      val jid = getArgAsString(args(0))
-      val newPermissions = getArgAsJValue(args(1))
-      val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
-        case _ => c
-      })
+      try {
+        val jid = getArgAsString(args(0))
+        val newPermissions = getArgAsJValue(args(1))
+        val c = serverConfig.detailsOfConversation(jid)
+        serializer.fromConversation(shouldModifyConversation(c) match {
+          case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
+          case _ => c
+        })
+      } catch {
+        case e:Exception => {
+          println("exception while updating permissions: %s\r\n%s\r\n%s".format(args.toString,e.getMessage,e.getStackTraceString))
+          JNull
+        }
+      }
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
       val jid = getArgAsString(args(0))

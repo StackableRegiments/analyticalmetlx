@@ -77,6 +77,7 @@ trait JsonSerializerHelper {
 
   def getStringByName(input:JObject,name:String) = (input \ name).extract[String]
   def getBooleanByName(input:JObject,name:String) = (input \ name).extract[Boolean]
+  def getOptionalBooleanByName(input:JObject,name:String) = (input \ name).extract[Option[Boolean]]
   def getIntByName(input:JObject,name:String) = (input \ name).extract[Int]
   def getLongByName(input:JObject,name:String) = (input \ name).extract[Long]
   def getDoubleByName(input:JObject,name:String) = tryo((input \ name).extract[Double]) match {
@@ -1006,8 +1007,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
         val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
         val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-        val studentsMayBroadcast = getBooleanByName(input,"studentsMayBroadcast")
-        val studentsMayChatPublicly = getBooleanByName(input,"studentsMayChatPublicly")
+        val studentsMayBroadcast = getOptionalBooleanByName(input,"studentsMayBroadcast").getOrElse(false)
+        val studentsMayChatPublicly = getOptionalBooleanByName(input,"studentsMayChatPublicly").getOrElse(true)
         Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
       }
       case _ => Permissions.default(config)
