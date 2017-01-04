@@ -477,6 +477,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  private lazy val RECEIVE_SHOW_LINKS = "receiveShowLinks"
   implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))
   override lazy val functionDefinitions = List(
@@ -586,11 +587,13 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
   protected val username = Globals.currentUser.is
+  protected var showLinks = true
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
       conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => serverConfig.detailsOfConversation(jid.toString))
+      showLinks = com.metl.snippet.Metl.getLinksFromName(nameString).getOrElse(true)
     })
   }
 
@@ -598,7 +601,8 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
-      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
+      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c)) &
+      Call(RECEIVE_SHOW_LINKS,showLinks)
     }).getOrElse(RedirectTo(conversationSearch())))
   }
   override def lowPriority = {
