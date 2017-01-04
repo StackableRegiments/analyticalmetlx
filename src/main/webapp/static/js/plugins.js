@@ -151,11 +151,11 @@ var Plugins = (function(){
 
             return {
                 style:".chatMessage {color:black}"+
-                    ".chatMessageContainer {overflow-y:auto; height:110px;}"+
-                    ".chatContainer {margin-left:1em;width:320px;height:140px;}"+
+                    ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
+                    ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
                     ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
                     ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
-                    ".chatboxContainer {display:flex;}"+
+                    ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
                     ".chatboxContainer input{flex-grow:1;}"+
                     ".chatbox {background-color:white;color:black; display:inline-block; padding:0px; margin:0px;}"+
                     ".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
@@ -297,18 +297,18 @@ var Plugins = (function(){
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
                                         }).on("mousedown",function(){
-					    xOffset = $("#masterFooter").scrollLeft();
-					}).append($("<input />",{
+                                            xOffset = $("#masterFooter").scrollLeft();
+                                        }).append($("<input />",{
                                             type:"radio",
                                             name:"groupView",
                                             id:"showAll"
-                                        }).click(function(){
+                                        }).prop("checked",true).click(function(){
                                             _.each(groups,function(g){
                                                 ContentFilter.setFilter(g.id,true);
                                             });
                                             ContentFilter.clearAudiences();
                                             blit();
-					    $("#masterFooter").scrollLeft(xOffset);
+                                            $("#masterFooter").scrollLeft(xOffset);
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({
