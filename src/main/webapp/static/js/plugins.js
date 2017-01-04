@@ -204,7 +204,7 @@ var Plugins = (function(){
             var container = $("<div />");
             return {
                 style:".publishedStream {background:green;} .subscribedStream {background:red;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton, .videoConfPermitStudentBroadcastButton {background:white;margin:1px;}"+
+                    " .videoConfStartButton, .videoConfSubscribeButton, .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
                     " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer, .videoConfPermitStudentBroadcastContainer{display:flex;}"+
                     " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
                     " .videoConfStartButton, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
@@ -216,18 +216,16 @@ var Plugins = (function(){
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
                                      '<div class="videoConfSessionContainer">'+
-                                     '<div class="thumbWide">'+
-                                     '<div class="videoConfStartButtonContainer">'+
+                                     '<div>'+
+                                     '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
                                      '</button>'+
-                                     '<span class="context"></span>'+
-                                     '</div>'+
-                                     '<div class="videoConfPermitStudentBroadcastContainer">'+
-                                     '<button class="videoConfPermitStudentBroadcastButton">'+
-                                     '<div>Permit students to broadcast</div>'+
-                                     '</button>'+
-                                     '<span class="context"></span>'+
+                                     '<span class="context mr" style="margin-top:0.3em"></span>'+
+                                     '<span style="margin-top:0.4em">'+
+                                     '<input type="checkbox" id="canBroadcast">'+
+                                     '<label for="canBroadcast">Students can broadcast</label>'+
+                                     '</span>'+
                                      '</div>'+
                                      '<div class="viewscreen"></div>'+
                                      '</div>'+
