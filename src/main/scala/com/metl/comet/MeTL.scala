@@ -830,9 +830,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val stanza = getArgAsJValue(args(0))
       trace("undeleteStanza: %s".format(stanza.toString))
       val metlData = serializer.toMeTLData(stanza)
-      if (metlData.author == username || shouldModifyConversation()){
-        metlData match {
-          case m:MeTLCanvasContent => {
+      metlData match {
+        case m:MeTLCanvasContent => {
+          if (m.author == username || shouldModifyConversation()){
             currentConversation.map(cc => {
               val t = m match {
                 case i:MeTLInk => "ink"
@@ -860,17 +860,23 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               }
               rooms.get((server,roomId)).foreach(targetRoom => {
                 val room = targetRoom() 
-                val newIdentitySeed = "%s_%s".format(new Date().getTime(),m.identity).take(64)
-                val newM = m.generateNewIdentity(newIdentitySeed)
-                val newIdentity = newM.identity
-                room ! LocalToServerMeTLStanza(MeTLUndeletedCanvasContent(config,username,0L,m.target,m.privacy,m.slide,"%s_%s_%s".format(new Date().getTime(),m.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),m.identity,newIdentity,Nil))
-                
-                room ! LocalToServerMeTLStanza(newM)
+                room.getHistory.getDeletedCanvasContents.find(dc => {
+                  dc.identity == m.identity && dc.author == m.author
+                }).foreach(dc => {
+                  val newIdentitySeed = "%s_%s".format(new Date().getTime(),dc.identity).take(64)
+                  val newM = dc.generateNewIdentity(newIdentitySeed)
+                  val newIdentity = newM.identity
+                  val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
+                  println("created newUDM: %s".format(newUDM))
+                  room ! LocalToServerMeTLStanza(newUDM)
+                  
+                  room ! LocalToServerMeTLStanza(newM)
+                })
               })
             })
           }
-          case notAStanza => error("Not a stanza at undeleteStanza %s".format(notAStanza))
         }
+        case notAStanza => error("Not a stanza at undeleteStanza %s".format(notAStanza))
       }
       JNull
     },Empty),
