@@ -421,7 +421,6 @@ var TokBoxSession = function(desc,sessionContainer){
 
 function receiveTokBoxSessionToken(tokenMsg){
     if ("token" in tokenMsg){
-        //console.log("receiveTokBoxSession:",tokenMsg);
         TokBox.receiveTokBoxSession(tokenMsg);
     }
 }
