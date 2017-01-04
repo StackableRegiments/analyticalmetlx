@@ -1266,6 +1266,9 @@ var Modes = (function(){
                             /*General would interfere with specific during setFormatting*/
                             carota.runs.nextInsertFormatting = {};
                             t.doc.selectedRange().setFormatting(prop,newValue);
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            carota.runs.nextInsertFormatting[prop] = newValue;
+                            t.doc.claimFocus();/*Focus might have left when a control was clicked*/
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1344,41 +1347,6 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
-
-                var adoptPresetWidth = function(preset){
-                    return function(){
-                        _.each(boardContent.multiWordTexts,function(t){
-                            if(t.doc.isActive){
-                                switch(preset){
-                                case "runToEdge":
-                                    var logicalBoardWidth = screenToWorld(boardWidth,0);
-                                    t.doc.width((logicalBoardWidth.x + viewboxX - t.x));
-                                    break;
-                                case "fitToText":
-                                    t.doc.width(t.doc.frame.actualWidth());
-                                    break;
-                                case "widen":
-                                    t.doc.width(t.doc.frame.actualWidth() * 1.6);
-                                    break;
-                                case "narrow":
-                                    t.doc.width(t.doc.frame.actualWidth() * 0.6);
-                                    break;
-                                case "centerOnScreen":
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
-                                    t.doc.selectedRange().setFormatting("align","center");
-                                    t.doc.position.x = viewboxX;
-                                    break;
-                                case "fullscreen":
-                                    t.doc.position.x = viewboxX;
-                                    t.doc.position.y = viewboxY;
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
-                                    break;
-                                }
-                                t.doc.contentChanged.fire();
-                            }
-                        });
-                    };
-                }
                 fontLargerSelector.on("click",scaleCurrentSelection(1.2));
                 fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
@@ -1391,13 +1359,15 @@ var Modes = (function(){
                     yellow:"#ffff00",
                     green:"#00ff00"
                 };
-                var colors = ["red","blue","black","green","yellow"];
+                var colors = ["red","blue","black","yellow","green"];
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
+			Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
+                        console.log("Clicked",subject);
                     });
                 });
             });
@@ -1480,7 +1450,15 @@ var Modes = (function(){
                         }
                     }
                 },
-                editorFor:function(t){
+		refocussing:false,
+                editorFor: function(t){
+                    var textColors = [
+                        $("#blackText"),
+                        $("#redText"),
+                        $("#blueText"),
+                        $("#yellowText"),
+                        $("#greenText")
+                    ];
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
                         editor = boardContent.multiWordTexts[t.identity] = t;
@@ -1508,16 +1486,12 @@ var Modes = (function(){
                             };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
-                                /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
-                                if(editor.doc.save().length > 0){
+                                if(Modes.text.refocussing){
+                                    Modes.text.refocussing = false;
+                                }
+                                else{
                                     var format = formatReport();
                                     carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                                    var textColors = [
-                                        $("#blackText"),
-                                        $("#redText"),
-                                        $("#blueText"),
-                                        $("#yellowText")
-                                    ];
                                     var setV = function(selector,prop){
                                         var isToggled = (format[prop] == true);
                                         if(isToggled){
@@ -1525,6 +1499,7 @@ var Modes = (function(){
                                         }
                                         selector.toggleClass("active",isToggled);
                                     };
+                                    console.log("SelectionChanged",format);
                                     var setIf = function(selector,prop,value){
                                         var equal = _.isEqual(format[prop],value);
                                         if(prop in format){
@@ -1541,6 +1516,7 @@ var Modes = (function(){
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
                                     setIf(textColors[3],"color",["#ffff00",255]);
+                                    setIf(textColors[4],"color",["#00ff00",255]);
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
@@ -2368,7 +2344,7 @@ var Modes = (function(){
                     $("#administerContent").removeClass("activeBrush");
                 }
                 clearSelectionFunction();
-		blit();
+                blit();
             };
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
@@ -2480,9 +2456,9 @@ var Modes = (function(){
                                 deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
                             }
                             sendStanza(deleteTransform);
-														_.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
-															Progress.call("onCanvasContentDeleted",[stanza]);
-														});
+                            _.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
+                                Progress.call("onCanvasContentDeleted",[stanza]);
+                            });
                             clearSelectionFunction();
                         }
                     });
@@ -2787,24 +2763,24 @@ var Modes = (function(){
         },
         feedback:(function(){
             var applyStateStyling = function(){
-							if (Conversations.shouldModifyConversation()){
-								console.log("showing participants button");
-								$("#participantsButton").unbind("click").on("click",function(){
-										showBackstage("participants");
-										Participants.reRender();
-								}).show();
-							} else {
-								console.log("hiding participants button");
-								$("#participantsButton").unbind("click").hide();
-							}
+                if (Conversations.shouldModifyConversation()){
+                    console.log("showing participants button");
+                    $("#participantsButton").unbind("click").on("click",function(){
+                        showBackstage("participants");
+                        Participants.reRender();
+                    }).show();
+                } else {
+                    console.log("hiding participants button");
+                    $("#participantsButton").unbind("click").hide();
+                }
                 switch(currentBackstage){
-									case "quizzes":
-										$("#quizzesButton").addClass(active);
+                case "quizzes":
+                    $("#quizzesButton").addClass(active);
                     break;
-									case "submissions":
-										$("#submissionButton").addClass(active);
+                case "submissions":
+                    $("#submissionButton").addClass(active);
                     break;
-									default:
+                default:
                     break;
                 }
             };
@@ -3045,9 +3021,9 @@ var Modes = (function(){
                         var deleteTransform = batchTransform();
                         deleteTransform.isDeleted = true;
                         deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
-												_.forEach(deleted,function(stanza){
-													Progress.call("onCanvasContentDeleted",[stanza]);
-												});
+                        _.forEach(deleted,function(stanza){
+                            Progress.call("onCanvasContentDeleted",[stanza]);
+                        });
                         sendStanza(deleteTransform);
                     } else {
                         var newWidth = Modes.draw.drawingAttributes.width * z;
