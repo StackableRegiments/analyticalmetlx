@@ -1,3 +1,19 @@
+1.0.22
+Bugfix: METL-438: Disable Force Follow when the teacher ends their session.
+Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.
+Bugfix: METL-447: Banning doesn't show student confirm or prevent student publish.
+Bugfix: METL-449: Restyle plugins now that Permit button has pushed things out of line.
+Bugfix: METL-445: Chat doesn't sit right on the scrollbar.
+Bugfix: METL-415: Default Groups is to have neither Show All or Isolate buttons checked.
+Bugfix: METL-413: Groups - toggling between Enrolled and present students does not refresh the simulation.
+Bugfix: METL-439: Forming Groups sometimes includes the teacher in the group.
+Bugfix: METL-444: Groups plugin radios are too high.
+Bugfix: METL-449: Restyle plugins now that Permit button has pushed things out of line.
+Bugfix: METL-452: Commas inside usernames.
+---
+Bugfix: METL-450: Error creating group page.
+Bugfix: METL-451: Selecting a new color while writing in a color has strange behaviour.
+
 1.0.21
 Story: METL-32: Bold, italic, underline before text selected.
 Story: METL-115: Provide more colors for Text.
