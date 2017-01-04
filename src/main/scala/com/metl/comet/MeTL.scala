@@ -826,6 +826,54 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       sendStanzaToServer(stanza)
       JNull
     },Empty),
+    ClientSideFunction("undeleteStanza",List("stanza"),(args) => {
+      val stanza = getArgAsJValue(args(0))
+      trace("undeleteStanza: %s".format(stanza.toString))
+      val metlData = serializer.toMeTLData(stanza)
+      if (metlData.author == username || shouldModifyConversation()){
+        metlData match {
+          case m:MeTLCanvasContent => {
+            currentConversation.map(cc => {
+              val t = m match {
+                case i:MeTLInk => "ink"
+                case i:MeTLImage => "img"
+                case i:MeTLMultiWordText => "txt"
+                case _ => "_"
+              }
+              val p = m.privacy match {
+                case Privacy.PRIVATE => "private"
+                case Privacy.PUBLIC => "public"
+                case _ => "_"
+              }
+              emit(p,m.identity,t)
+              val roomId = m.privacy match {
+                case Privacy.PRIVATE => {
+                  m.slide+username
+                }
+                case Privacy.PUBLIC => {
+                    m.slide
+                }
+                case other => {
+                  warn("unexpected privacy found in: %s".format(m))
+                  m.slide
+                }
+              }
+              rooms.get((server,roomId)).foreach(targetRoom => {
+                val room = targetRoom() 
+                val newIdentitySeed = "%s_%s".format(new Date().getTime(),m.identity).take(64)
+                val newM = m.generateNewIdentity(newIdentitySeed)
+                val newIdentity = newM.identity
+                room ! LocalToServerMeTLStanza(MeTLUndeletedCanvasContent(config,username,0L,m.target,m.privacy,m.slide,"%s_%s_%s".format(new Date().getTime(),m.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),m.identity,newIdentity,Nil))
+                
+                room ! LocalToServerMeTLStanza(newM)
+              })
+            })
+          }
+          case notAStanza => error("Not a stanza at undeleteStanza %s".format(notAStanza))
+        }
+      }
+      JNull
+    },Empty),
     ClientSideFunction("sendTransientStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
       sendStanzaToServer(stanza,"loopback")
