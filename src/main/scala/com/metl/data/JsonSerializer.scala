@@ -1006,7 +1006,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
         val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
         val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced)
+        val studentsMayBroadcast = getBooleanByName(input,"studentsMayBroadcast")
+        val studentsMayChatPublicly = getBooleanByName(input,"studentsMayChatPublicly")
+        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
       }
       case _ => Permissions.default(config)
     }
@@ -1015,7 +1017,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     JObject(List(
       JField("studentCanOpenFriends",JBool(input.studentsCanOpenFriends)),
       JField("studentCanPublish",JBool(input.studentsCanPublish)),
-      JField("usersAreCompulsorilySynced",JBool(input.usersAreCompulsorilySynced))
+      JField("usersAreCompulsorilySynced",JBool(input.usersAreCompulsorilySynced)),
+      JField("studentsMayBroadcast",JBool(input.studentsMayBroadcast)),
+      JField("studentsMayChatPublicly",JBool(input.studentsMayChatPublicly))
     ))
   })
   protected def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)

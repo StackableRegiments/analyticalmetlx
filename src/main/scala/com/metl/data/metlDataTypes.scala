@@ -234,10 +234,10 @@ object Audience {
   def default(server:ServerConfiguration = ServerConfiguration.default) = Audience(server,"","","","")
 }
 
-case class Permissions(override val server:ServerConfiguration, studentsCanOpenFriends:Boolean,studentsCanPublish:Boolean,usersAreCompulsorilySynced:Boolean) extends MeTLData(server,Nil)
+case class Permissions(override val server:ServerConfiguration, studentsCanOpenFriends:Boolean,studentsCanPublish:Boolean,usersAreCompulsorilySynced:Boolean,studentsMayBroadcast:Boolean,studentsMayChatPublicly:Boolean) extends MeTLData(server,Nil)
 object Permissions{
-  def empty = Permissions(ServerConfiguration.empty,false,false,false)
-  def default(server:ServerConfiguration = ServerConfiguration.default) = Permissions(server,false,true,false)
+  def empty = Permissions(ServerConfiguration.empty,false,false,false,false,false)
+  def default(server:ServerConfiguration = ServerConfiguration.default) = Permissions(server,false,true,false,true,true)
 }
 
 class MeTLData(val server:ServerConfiguration,val audiences:List[Audience] = Nil){
