@@ -184,9 +184,9 @@ var Participants = (function(){
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
-        updateActiveMenu(this);
         updateFilters();
         updateParticipantsListing();
+				updateActiveMenu($("#menuParticipants"));
     };
     var updateButtons = function(){
         if (Conversations.shouldModifyConversation()){
@@ -341,6 +341,7 @@ var Participants = (function(){
         },
         code:function(author){
             return _.keys(participants).indexOf(author);
-        }
+        },
+				openMenu:openParticipantsMenuFunction
     };
 })();
