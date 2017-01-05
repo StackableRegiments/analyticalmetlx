@@ -314,55 +314,53 @@ var Plugins = (function(){
                                                 }).append($("<span />",{
                                                     class:"icon-txt",
                                                     text:"Show all"
-                                                }).css({
-                                                    "margin-top":"3px"
                                                 }))).append(
-																							button("fa-share-square","Share all",function(){
-																								var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
-																								var audiences = ContentFilter.getAudiences();
-                                                _.forEach(groups,function(g){
-                                                  ContentFilter.setFilter(g.id,false);
-                                                });
-																								blit();
-																								var sendSubs = function(listOfGroups,afterFunc){
-																									var group = listOfGroups[0];
-																									if (group){
-																										ContentFilter.setFilter(group.id,true);
-																										ContentFilter.setAudience(group.id);
-																										blit();
-																										_.defer(function(){
-																											Submissions.sendSubmission(function(succeeded){
-																												if (succeeded){
-																													ContentFilter.setFilter(group.id,false);
-																													blit();
-																													_.defer(function(){
-																														sendSubs(_.drop(listOfGroups,1),afterFunc);
-																													});
-																												} else {
-																													errorAlert("Submission failed","Storing this submission failed.");
-																												}
-																											});
-																										});
-																									} else {
-																										successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
-																										afterFunc();
-																									}
-																								};
-																								_.defer(function(){
-																									sendSubs(groups,function(){
-																										_.forEach(origFilters,function(filter){
-																											ContentFilter.setFilter(filter.id,filter.enabled);
-																										});
-																										if (audiences.length){
-																											ContentFilter.setAudience(audiences[0]);
-																										} else {
-																											ContentFilter.clearAudiences();
-																										}
-																										blit();
-																									});
-																								});
-																							})
-																							).appendTo(overContainer);
+                                                    button("fa-share-square","Share all",function(){
+                                                        var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
+                                                        var audiences = ContentFilter.getAudiences();
+                                                        _.forEach(groups,function(g){
+                                                            ContentFilter.setFilter(g.id,false);
+                                                        });
+                                                        blit();
+                                                        var sendSubs = function(listOfGroups,afterFunc){
+                                                            var group = listOfGroups[0];
+                                                            if (group){
+                                                                ContentFilter.setFilter(group.id,true);
+                                                                ContentFilter.setAudience(group.id);
+                                                                blit();
+                                                                _.defer(function(){
+                                                                    Submissions.sendSubmission(function(succeeded){
+                                                                        if (succeeded){
+                                                                            ContentFilter.setFilter(group.id,false);
+                                                                            blit();
+                                                                            _.defer(function(){
+                                                                                sendSubs(_.drop(listOfGroups,1),afterFunc);
+                                                                            });
+                                                                        } else {
+                                                                            errorAlert("Submission failed","Storing this submission failed.");
+                                                                        }
+                                                                    });
+                                                                });
+                                                            } else {
+                                                                successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
+                                                                afterFunc();
+                                                            }
+                                                        };
+                                                        _.defer(function(){
+                                                            sendSubs(groups,function(){
+                                                                _.forEach(origFilters,function(filter){
+                                                                    ContentFilter.setFilter(filter.id,filter.enabled);
+                                                                });
+                                                                if (audiences.length){
+                                                                    ContentFilter.setAudience(audiences[0]);
+                                                                } else {
+                                                                    ContentFilter.clearAudiences();
+                                                                }
+                                                                blit();
+                                                            });
+                                                        });
+                                                    }).css({"margin-top":0})
+                                                ).appendTo(overContainer);
                                         var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                         _.each(groups,function(group){
                                             var gc = $("<div />",{
@@ -395,16 +393,15 @@ var Plugins = (function(){
                                             });
 
                                             var right = $("<div />").appendTo(gc);
+                                            var controls = $("<div />",{
+                                                class:"groupsPluginGroupControls"
+                                            }).appendTo(right);
                                             $("<span />",{
                                                 text:sprintf("Group %s",group.title),
                                                 class:"ml"
                                             }).appendTo(right);
-                                            var controls = $("<div />",{
-                                                class:"groupsPluginGroupControls"
-                                            }).appendTo(right);
-                                            button("fa-share-square","",function(){
+                                            button("fa-share-square","Share",function(){
                                                 isolate.find("input").prop("checked",true).change();
-                                                console.log("Isolating and screenshotting",isolate);
                                                 _.defer(Submissions.sendSubmission);
                                             }).appendTo(controls);
                                             var id = sprintf("isolateGroup_%s",group.title);
@@ -431,7 +428,7 @@ var Plugins = (function(){
                                                 class:"icon-txt",
                                                 text:"Isolate"
                                             }).css({
-                                                "margin-top":"5px"
+                                                "margin-top":"2px"
                                             }))).appendTo(controls);
                                             var members = $("<div />",{
                                                 class:"groupsPluginGroup"
