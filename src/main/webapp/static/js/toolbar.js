@@ -301,7 +301,8 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var pointerOut = function(x,y){
+            var pointerOut = function(x,y,e){
+                var point = releasePoint(e);
                 trackedTouches = {};
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
@@ -315,13 +316,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                        }
+                    }
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -331,7 +331,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    pointerOut(e.offsetX,e.offsetY);
+                    pointerOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -339,7 +339,6 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
             context.bind("pointercancel",pointerClose);
-
         } else {
             context.bind("mousedown",function(e){
                 WorkQueue.pause();
@@ -383,11 +382,13 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var mouseOut = function(x,y){
+            var mouseOut = function(x,y,e){
+		console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
                 var worldY = worldPos.y;
+                var z = 0.5;
                 if(worldX < viewboxX){
                     takeControlOfViewbox();
                     Extend.left();
@@ -396,13 +397,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(x,y,z,worldPos,modifiers(e,false));
+                        }
+                    }
                 }
                 isDown = false;
             }
@@ -410,7 +410,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    mouseOut(e.offsetX,e.offsetY);
+                    mouseOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -1365,7 +1365,7 @@ var Modes = (function(){
                     $(sprintf("#%sText",color)).click(function(){
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
-			Modes.text.refocussing = true;
+                        Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
                         console.log("Clicked",subject);
                     });
@@ -1450,7 +1450,7 @@ var Modes = (function(){
                         }
                     }
                 },
-		refocussing:false,
+                refocussing:false,
                 editorFor: function(t){
                     var textColors = [
                         $("#blackText"),
@@ -2111,7 +2111,7 @@ var Modes = (function(){
                             sendStanza(imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
-			    zoomToFit();
+                            zoomToFit();
                         },
                         error: function(e){
                             console.log(e);
