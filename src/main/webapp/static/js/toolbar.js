@@ -2111,6 +2111,7 @@ var Modes = (function(){
                             sendStanza(imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
+			    zoomToFit();
                         },
                         error: function(e){
                             console.log(e);

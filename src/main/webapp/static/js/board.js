@@ -1011,10 +1011,14 @@ function measureBoardContent(includingText){
 function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
     if(Modes.currentMode.name != "text"){
-        var s = Modes.select.resizeHandleSize;
+	var headerHeight = scaleScreenToWorld($("#masterHeader .heading").height());
+        var s = Modes.select.handlesAtZoom();
         requestedViewboxWidth = boardContent.width + s * 2;
-        requestedViewboxHeight = boardContent.height + s * 2;
-        IncludeView.specific(boardContent.minX,boardContent.minY - s * 2,requestedViewboxWidth,requestedViewboxHeight,followable);
+        requestedViewboxHeight = boardContent.height + headerHeight + s * 2;
+        IncludeView.specific(boardContent.minX,
+			     boardContent.minY - (headerHeight + s /2),
+			     requestedViewboxWidth,
+			     requestedViewboxHeight,followable);
     }
 }
 function zoomToOriginal(followable){
