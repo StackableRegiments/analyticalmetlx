@@ -383,7 +383,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y,e){
-		console.log("mouseout",x,y);
+                console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
@@ -1476,10 +1476,15 @@ var Modes = (function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
+				source.audiences = ContentFilter.getAudiences();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+                            Progress.beforeChangingAudience[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeChangingAudience[t.identity];
+                            };
                             Progress.beforeLeavingSlide[t.identity] = function(){
                                 onChange.flush();
                                 delete Progress.beforeLeavingSlide[t.identity];
@@ -1499,7 +1504,6 @@ var Modes = (function(){
                                         }
                                         selector.toggleClass("active",isToggled);
                                     };
-                                    console.log("SelectionChanged",format);
                                     var setIf = function(selector,prop,value){
                                         var equal = _.isEqual(format[prop],value);
                                         if(prop in format){
@@ -1820,7 +1824,7 @@ var Modes = (function(){
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
                                 y:currentVideo.y,
-                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(permitStudentsToPublishCheckbox)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();

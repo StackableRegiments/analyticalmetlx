@@ -271,9 +271,9 @@ var Plugins = (function(){
                     " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
                     " .isolateGroup{margin-top:0.8em;}"+
-                    " .memberCurrentGrade{color:black;background-color:white;margin-right:0.5em;padding:0 .5em;}"+
+                    " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
                     " .groupsPluginGroupControls{display:flex;}"+
-                    " .groupsPluginGroupGrade{background-color:white;color:black;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
+                    " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
                     " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
                 load:function(bus,params) {
                     var render = function(){
@@ -414,12 +414,13 @@ var Plugins = (function(){
                                                 name:"groupView",
                                                 id:id
                                             }).change(function(){
-                                                console.log("masterFooter",xOffset);
+                                                Progress.call("beforeChangingAudience",[group.id]);
                                                 _.each(groups,function(g){
                                                     ContentFilter.setFilter(g.id,false);
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
+						Modes.select.activate();
                                                 blit();
                                                 $("#masterFooter").scrollLeft(xOffset);
                                             })).append($("<label />",{
