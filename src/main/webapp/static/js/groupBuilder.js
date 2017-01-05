@@ -235,7 +235,7 @@ var GroupBuilder = (function(){
                     }).on("click",function(){
                         clearExternalGroups();
                         _.each(participants,function(p){
-                            _.each(groupSet.groups,function(group,zi){
+                            _.each(groupCat.groups,function(group,zi){
                                 var i = zi + 1;
                                 if(_.includes(_.map(group.members,"name"),p.name)){
                                     console.log("Checking",p.name,"against",_.map(group.members,"name"));
@@ -261,10 +261,11 @@ var GroupBuilder = (function(){
                         text:sprintf("Copy %s from %s",groupSet.name,ou.name)
                     })).appendTo(groupSetHeader);
 
-                    _.each(groupSet.groups,function(group){
+                    _.each(groupCat.groups,function(group){
                         var groupV = $("<div />",{
                             class:"groupBuilderGroup"
                         }).appendTo(groupSetV);
+												console.log("rendering members:",group,group.members);
                         _.each(group.members,function(obj){
                             var name = obj.name;
                             if(!(name in participants)){
@@ -286,6 +287,7 @@ var GroupBuilder = (function(){
             return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
         });
         var groups = allocationsFor(renderable);
+				console.log("rendering allocations:",participants,renderable,groups);
         var groupsV = container.find(".groups");
         groupsV.empty();
         _.each(groups,function(group){
@@ -430,7 +432,7 @@ var GroupBuilder = (function(){
         }
         else{
             blockGroups(false);
-            statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.groupSets.name));
+            statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.orgUnit.name));
         }
     };
     Progress.groupsReceived["GroupBuilder"] = function(args){
@@ -439,6 +441,10 @@ var GroupBuilder = (function(){
             byOrgUnit = {};
             availableGroupSets[args.orgUnit.name] = byOrgUnit;
         }
+				console.log("found members:",byOrgUnit,args.groupSet.name,_.map(args.groups,function(g){
+					console.log("found group:",g);
+					return _.size(g);
+				}));
         byOrgUnit[args.groupSet.name] = args;
         renderAvailableGroupSets();
         blockGroups(false);

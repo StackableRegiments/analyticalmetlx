@@ -1067,7 +1067,9 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
-            getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
+					var ou = _.cloneDeep(orgUnit);
+					delete ou.members;
+					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou);
         });
     }
 }
@@ -1075,7 +1077,11 @@ function receiveGroupSetsForOrgUnit(groupSets){
     Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
-            getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+					var ou = _.cloneDeep(groupSets.orgUnit);
+					delete ou.members;
+					var gs = _.cloneDeep(groupSet);
+					delete gs.members;
+					getGroupsForGroupSet(groupSets.groupsProvider,ou,gs);
         });
     }
 }
