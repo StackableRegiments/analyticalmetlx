@@ -316,7 +316,53 @@ var Plugins = (function(){
                                                     text:"Show all"
                                                 }).css({
                                                     "margin-top":"3px"
-                                                }))).appendTo(overContainer);
+                                                }))).append(
+																							button("fa-share-square","Share all",function(){
+																								var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
+																								var audiences = ContentFilter.getAudiences();
+                                                _.forEach(groups,function(g){
+                                                  ContentFilter.setFilter(g.id,false);
+                                                });
+																								blit();
+																								var sendSubs = function(listOfGroups,afterFunc){
+																									var group = listOfGroups[0];
+																									if (group){
+																										ContentFilter.setFilter(group.id,true);
+																										ContentFilter.setAudience(group.id);
+																										blit();
+																										_.defer(function(){
+																											Submissions.sendSubmission(function(succeeded){
+																												if (succeeded){
+																													ContentFilter.setFilter(group.id,false);
+																													blit();
+																													_.defer(function(){
+																														sendSubs(_.drop(listOfGroups,1),afterFunc);
+																													});
+																												} else {
+																													errorAlert("Submission failed","Storing this submission failed.");
+																												}
+																											});
+																										});
+																									} else {
+																										successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
+																										afterFunc();
+																									}
+																								};
+																								_.defer(function(){
+																									sendSubs(groups,function(){
+																										_.forEach(origFilters,function(filter){
+																											ContentFilter.setFilter(filter.id,filter.enabled);
+																										});
+																										if (audiences.length){
+																											ContentFilter.setAudience(audiences[0]);
+																										} else {
+																											ContentFilter.clearAudiences();
+																										}
+																										blit();
+																									});
+																								});
+																							})
+																							).appendTo(overContainer);
                                         var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                         _.each(groups,function(group){
                                             var gc = $("<div />",{

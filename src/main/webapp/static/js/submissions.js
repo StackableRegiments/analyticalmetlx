@@ -164,8 +164,15 @@ var Submissions = (function(){
 
     Progress.onConversationJoin["Submissions"] = clearState;
     Progress.historyReceived["Submissions"] = historyReceivedFunction;
-    var clientSideSubmissionFunc = function(){
+    var clientSideSubmissionFunc = function(afterFunc){
         WorkQueue.pause();
+				afterFunc = afterFunc || function(succeeded){
+					if (succeeded){
+						successAlert("Submission sent","Your submission has been sent to the instructor");
+					} else {
+						errorAlert("Submission failed","This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
+					}
+				}
         var submissionQuality = 0.4;
         var tempCanvas = $("<canvas />");
         var w = board[0].width;
@@ -211,12 +218,12 @@ var Submissions = (function(){
                 console.log(submissionStanza);
                 sendStanza(submissionStanza);
                 WorkQueue.gracefullyResume();
-                successAlert("Submission sent","Your submission has been sent to the instructor");
+								afterFunc(true);
             },
             error: function(e){
                 console.log(e);
-                errorAlert("Submission failed","This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
-                WorkQueue.gracefullyResume();
+								afterFunc(false);
+								WorkQueue.gracefullyResume();
             },
             data: imageData,
             cache: false,
