@@ -150,15 +150,15 @@ var Plugins = (function(){
             };
 
             return {
-                style:".chatMessage {color:black}"+
+                style:".chatMessage {color:darkgray;}"+
                     ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
                     ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
                     ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
                     ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
                     ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
                     ".chatboxContainer input{flex-grow:1;}"+
-                    ".chatbox {background-color:white;color:black; display:inline-block; padding:0px; margin:0px;}"+
-                    ".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
+                    ".chatbox {background-color:white;color:darkgray; display:inline-block; padding:0px; margin:0px;}"+
+                    ".chatboxSend {display:inline-block; background:white; color:darkgray; padding:0px; margin:0px;}"+
                     ".groupChat {color:darkorange}"+
                     ".whisper {color:darkblue}",
                 load:function(bus,params){
