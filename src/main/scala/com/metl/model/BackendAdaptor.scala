@@ -272,6 +272,54 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
   }
+  def setupUserProfileProvidersFromFile(filePath:String) = {
+    val fileXml = XML.load(filePath)
+    ifConfiguredFromGroup((fileXml \\ "userProfileProvider").headOption.getOrElse(NodeSeq.Empty),Map(
+      "inMemoryUserProfileProvider" -> {
+        (n:NodeSeq) => Globals.userProfileProvider = Some(new CachedInMemoryProfileProvider())
+      },
+      "diskCachedProfileProvider" -> {
+        (n:NodeSeq) => Globals.userProfileProvider = for {
+          path <- (n \ "@path").headOption.map(_.text)
+        } yield {
+          new DiskCachedProfileProvider(path)
+        }
+      },
+      "dbProfileProvider" -> {
+        (n:NodeSeq) => Globals.userProfileProvider = for {
+          o <- Some(true)
+        } yield {
+          net.liftweb.mapper.Schemifier.schemify(true,net.liftweb.mapper.Schemifier.infoF _,MappedUserProfile)
+          new DBBackedProfileProvider()
+        }
+      }
+    ))
+    ifConfigured((fileXml \\ "userProfileSeeds").headOption.getOrElse(NodeSeq.Empty),"userProfileSeed",(n:NodeSeq) => {
+      for {
+        path <- (n \\ "@filename").headOption.map(_.text)
+        format <- (n \\ "@format").headOption.map(_.text)
+      } yield {
+        Globals.userProfileProvider.map(upp => {
+          format match {
+            case "xml" => {
+              val seed = new XmlUserProfileSeed(path)
+              seed.getValues.foreach(p => {
+                upp.updateProfile(p)
+              })
+            }
+            case "csv" => {
+              val seed = new CsvUserProfileSeed(path)
+              seed.getValues.foreach(p => {
+                upp.updateProfile(p)
+              })
+            }
+            case _ => {}
+          }
+        })
+      }
+    },true)
+  }
+
   def setupServersFromFile(filePath:String) = {
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
@@ -350,6 +398,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions
     })
+    setupUserProfileProvidersFromFile(Globals.configurationFileLocation)
     LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
     Globals.metlingPots.foreach(_.init)
