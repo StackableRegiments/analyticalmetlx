@@ -26,7 +26,7 @@ object JNum{
   }
 }
 
-abstract class StronglyTypedJsonActor extends CometActor with CometListener {
+abstract class StronglyTypedJsonActor extends CometActor with CometListener with Logger {
 	protected val functionDefinitions:List[ClientSideFunction]
   case class ClientSideFunction(val name:String,val args:List[String],val serverSideFunc:List[JValue]=>JValue,val returnResultFunction:Box[String],val returnResponse:Boolean = false,val returnArguments:Boolean = false){
     import net.liftweb.json.Extraction._
@@ -71,7 +71,10 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener {
                 }
               }
             }
-            case Left(e) => List(JField("error",JString(e.getMessage)))
+            case Left(e) => {
+              error("exception in ClientSideFunc : %s(%s)".format(name,s),e)
+              List(JField("error",JString(e.getMessage)))
+            }
           }
         } ::: List(
           JField("command",JString(name)),

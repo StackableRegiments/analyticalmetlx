@@ -834,20 +834,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
-      try {
-        val jid = getArgAsString(args(0))
-        val newPermissions = getArgAsJValue(args(1))
-        val c = serverConfig.detailsOfConversation(jid)
-        serializer.fromConversation(shouldModifyConversation(c) match {
-          case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
-          case _ => c
-        })
-      } catch {
-        case e:Exception => {
-          error("exception while updating permissions: %s".format(args.toString),e)
-          throw e
-        }
-      }
+      val jid = getArgAsString(args(0))
+      val newPermissions = getArgAsJValue(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
+        case _ => c
+      })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
       val jid = getArgAsString(args(0))
@@ -1161,7 +1154,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       ))
     },Full("receiveOrgUnitsFromGroupsProviders")),
     ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
-      try {
       val sid = getArgAsString(args(0))
       val orgUnitJValue = getArgAsJValue(args(1))
       val orgUnit = orgUnitJValue.extract[OrgUnit]
@@ -1180,12 +1172,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
       ))
-      } catch {
-        case e:Exception => {
-          error("exception in getGroupSetsForOrgUnit: %s".format(args),e)
-          throw e
-        }
-      }
     },Full("receiveGroupSetsForOrgUnit")),
     ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
       val sid = getArgAsString(args(0))
