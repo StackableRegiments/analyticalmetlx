@@ -1724,7 +1724,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         } else warn("attemped to send a stanza to the server which wasn't yours: %s".format(c))
       }
       case c:MeTLCommand => {
-        if (c.author == username){
+        if (c.author == username && shouldModifyConversation()){
           val conversationSpecificCommands = List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION")
           val slideSpecificCommands = List("/TEACHER_VIEW_MOVED")
           val roomTarget = c.command match {
@@ -1732,9 +1732,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             case s:String if (slideSpecificCommands.contains(s)) => currentSlide.getOrElse("global")
             case _ => "global"
           }
+          val alteredCommand = c match {
+            case MeTLCommand(config,author,timestamp,"/SYNC_MOVE",List(jid),audiences) => MeTLCommand(config,author,timestamp,"/SYNC_MOVE",List(jid,uniqueId),audiences)
+            case other => other
+          }
           rooms.get((serverName,roomTarget)).map(r => {
-            trace("sending MeTLStanza to room: %s <- %s".format(r,c))
-            r() ! LocalToServerMeTLStanza(c)
+            trace("sending MeTLStanza to room: %s <- %s".format(r,alteredCommand))
+            r() ! LocalToServerMeTLStanza(alteredCommand)
           })
         }
       }
