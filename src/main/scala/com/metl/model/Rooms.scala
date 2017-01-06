@@ -119,7 +119,6 @@ class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) ext
   })
 }
 
-
 case class ServerToLocalMeTLStanza[A <: MeTLStanza](stanza:A)
 case class LocalToServerMeTLStanza[A <: MeTLStanza](stanza:A)
 case class ArchiveToServerMeTLStanza[A <: MeTLStanza](stanza:A)
@@ -128,6 +127,10 @@ case class RoomJoinAcknowledged(server:String,room:String) extends RoomStateInfo
 case class RoomLeaveAcknowledged(server:String,room:String) extends RoomStateInformation
 case class JoinRoom(username:String,cometId:String,actor:LiftActor)
 case class LeaveRoom(username:String,cometId:String,actor:LiftActor)
+case class UpdateThumb(slide:String)
+case class ConversationParticipation(roomName:String,currentParticipants:List[String],possibleParticipants:List[String])
+case class UpdateConversationDetails(roomName:String)
+case class MotherMessage(html:NodeSeq,audiences:List[Audience])
 
 case object HealthyWelcomeFromRoom
 case object Ping
@@ -163,21 +166,41 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected def initialize:Unit = {}
   protected val messageBusDefinition = new MessageBusDefinition(location,"unicastBackToOwner",(s:MeTLStanza) => this ! ServerToLocalMeTLStanza(s),onConnectionLost _,onConnectionRegained _)
   protected val messageBus = config.getMessageBus(messageBusDefinition)
+
   def getHistory:History
   def getThumbnail:Array[Byte]
   def getSnapshot(size:RenderDescription):Array[Byte]
 
-  // this is the bit which needs tweaking now - it looks rather a lot like the members are already in the history, and what I should be checking is the slides, which may mean checking conversationDetails a little more frequently.  Fortunately, they're cached, so it shouldn't be expensive.
-  def getAttendance:List[String] = {
-    roomMetaData match {
-      case cr:ConversationRoom => {
-        val attendance = cr.cd.slides.flatMap(_.groupSet.flatMap(_.groups.flatMap(_.members)))
-        debug("known members: %s".format(attendance))
-        attendance
-      }
-      case _ => List.empty[String]
+  protected var conversationCache:Option[Conversation] = roomMetaData match {
+    case cr:ConversationRoom => {
+      Some(cr.cd)
     }
+    case _ => None
   }
+  protected var attendanceCache:List[String] = Nil
+  protected def updatePossibleAttendance = {
+    var startingAttendanceCache = attendanceCache
+    attendanceCache = roomMetaData match {
+      case cr:ConversationRoom => {
+        conversationCache.flatMap(conv => {
+          conv.foreignRelationship.map(fr => {
+            (for {
+              gp <- Globals.getGroupsProvider(fr.system).filter(_.canQuery).toList
+              ou <- gp.getOrgUnit(fr.key).toList
+            } yield {
+              gp.getMembersFor(ou).map(_.name)
+            }).flatten
+          })
+        }).getOrElse({
+          (getAttendances.map(_.author) ::: getAttendance).distinct
+        })
+      }
+      case _ => (getAttendances.map(_.author) ::: getAttendance).distinct
+    }
+    println("UPDATED POSSIBLE ATTENDANCE!; %s => %s".format(startingAttendanceCache,attendanceCache))
+  }
+  def getPossibleAttendance:List[String] = attendanceCache.toList
+  def getAttendance:List[String] = joinedUsers.map(_._1).distinct
   def getAttendances:List[Attendance] = {
     getHistory.getAttendances
   }
@@ -191,22 +214,34 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   def updateGroupSets:Option[Conversation] = {
     roomMetaData match {
       case cr:ConversationRoom => {
-        debug("updating conversationRoom: %s".format(cr))
+        trace("updating conversationRoom: %s".format(cr))
         val details = cr.cd
         var shouldUpdateConversation = false;
-        val a = getAttendances.map(_.author)
+        val a = getAttendances.map(_.author).distinct.filterNot(_ == details.author)
         val newSlides = details.slides.map(slide => {
           slide.copy(groupSet = slide.groupSet.map(gs => {
-            val grouped = gs.groups.flatMap(g => g.members)
+            val grouped = gs.groups.flatMap(g => g.members).distinct
             val ungrouped = a.filterNot(m => grouped.contains(m))
             if (ungrouped.length > 0){
+              trace("ungrouped: %s".format(ungrouped))
               shouldUpdateConversation = true
+              ungrouped.foldLeft(gs.copy())((groupSet,person) => {
+                if(person == details.author){
+                  groupSet
+                }
+                else{
+                  groupSet.groupingStrategy.addNewPerson(groupSet,person)
+                }
+              })
             }
-            ungrouped.foldLeft(gs.copy())((groupSet,person) => groupSet.groupingStrategy.addNewPerson(groupSet,person))
+            else{
+              gs
+            }
           }))
         })
-        debug("newSlides: %s".format(newSlides))
+        trace("newSlides: %s".format(newSlides))
         if (shouldUpdateConversation){
+          warn("pushing conversation update at Rooms::updateGroupSets")
           Some(cr.cd.copy(slides = newSlides))
         } else {
           None
@@ -268,6 +303,26 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("received archived stanza to send to server: %s %s".format(ls, s))
       sendStanzaToServer(s,false)
     })
+    case UpdateConversationDetails(jid) if location == jid => {
+      roomMetaData match {
+        case cr:ConversationRoom => {
+          val currentConvCache = conversationCache.getOrElse(Conversation.empty)
+          val newConv = cr.cd
+          conversationCache = Some(newConv)
+          if (newConv.subject != currentConvCache.subject){
+            updatePossibleAttendance
+          }
+        }
+        case _ => None
+      }
+    }
+    case u@UpdateThumb(slide) => joinedUsers.foreach(_._3 ! u)
+    case m@MotherMessage(html,audiences) => roomMetaData match {
+      case sl:SlideRoom => {
+        joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"mother",new Date().getTime,nextFuncName,"html",html.toString,sl.cd.jid.toString,audiences))
+      }
+      case _ => None
+    }
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom received unknown message")
@@ -282,25 +337,24 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         com.metl.comet.MeTLConversationSearchActorManager ! m
         com.metl.comet.MeTLSlideDisplayActorManager ! m
         com.metl.comet.MeTLEditConversationActorManager ! m
+        m.commandParameters.headOption.foreach(convJid => {
+          MeTLXConfiguration.getRoom(convJid,config.name,ConversationRoom(config.name,convJid)) ! UpdateConversationDetails(convJid)
+        })
       }
       case (m:MeTLCommand,cr:ConversationRoom) if List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION").contains(m.command) => {
         com.metl.comet.MeTLSlideDisplayActorManager ! m
       }
       case (m:Attendance,cr:ConversationRoom) => {
-        trace("attendance received: %s".format(m))
-        //      if (!getAttendance.exists(_ == m.author)){
         updateGroupSets.foreach(c => {
-          trace("updated conversation postGroupsUpdate: %s".format(c))
+          trace("Updating %s because of calculating groups based on %s => %s".format(c.jid,m.author,
+            (for(
+              slide <- c.slides;
+              groupSet <- slide.groupSet;
+              group <- groupSet.groups;
+              member <- group.members) yield member).mkString(",")))
           config.updateConversation(c.jid.toString,c)
         })
-        //      }
       }
-      /*
-       case (m:MeTLCommand,cr:GlobalRoom) if m.command == "/UPDATE_CONVERSATION_DETAILS" => {
-       trace("updating conversation details")
-       cr.cd = config.detailsOfConversation(cr.jid)
-       }
-       */
       case (c:MeTLCanvasContent ,_) => chunker.add(c,this)
       case _ => {}
     }
@@ -314,7 +368,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     trace("%s l->s %s".format(location,s))
     showInterest
     if (shouldBacklog) {
-      debug("MeTLRoom(%s):sendToServer.backlogging".format(location))
+      trace("MeTLRoom(%s):sendToServer.backlogging".format(location))
       backlog.enqueue((s,updateTimestamp))
     } else {
       trace("sendingStanzaToServer: %s".format(s))
@@ -323,19 +377,72 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   })
   protected def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
   protected def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
+    val oldMembers = getChildren.map(_._1)
     joinedUsers = ((j.username,j.cometId,j.actor) :: joinedUsers).distinct
     j.actor ! RoomJoinAcknowledged(configName,location)
+    roomMetaData match {
+      case cr:ConversationRoom => {
+        conversationCache.foreach(conv => {
+          if (joinedUsers.exists(_._1 == conv.author)){
+            // the author's in the room, so don't perform any automatic action. 
+          } else {
+            // the author's not in the room, so check whether the conv's permissions include the mustFollowTeacher behaviour, and disable it if it is.
+            if (conv.permissions.usersAreCompulsorilySynced){
+              config.changePermissions(conv.jid.toString,conv.permissions.copy(usersAreCompulsorilySynced = false))
+            }
+          }
+        })
+        if (!oldMembers.contains(j.username)){
+          updatePossibleAttendance
+          val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
+          joinedUsers.foreach(_._3 ! u)
+          Globals.metlingPots.foreach(mp => {
+            mp.postItems(List(
+              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",j.username),KVP("informalAcademic","joined"),Some(KVP("room",location)),None,None)
+            ))
+          })
+        }
+        j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance)
+      }
+      case _ => {}
+    }
     showInterest
   })
   protected def removeConnection(l:LeaveRoom):Unit = Stopwatch.time("MeTLRoom.removeConnection(%s)".format(l),{
+    val oldMembers = getChildren.map(_._1)
     joinedUsers = joinedUsers.filterNot(i => i._1 == l.username && i._2 == l.cometId)
+    val newMembers = getChildren.map(_._1)
     l.actor ! RoomLeaveAcknowledged(configName,location)
+    roomMetaData match {
+      case cr:ConversationRoom => {
+        conversationCache.foreach(conv => {
+          if (joinedUsers.exists(_._1 == conv.author)){
+            // the author's still in the room 
+          } else {
+            // the author's left, so check whether the conv's permissions include the mustFollowTeacher behaviour.
+            if (conv.permissions.usersAreCompulsorilySynced){
+              config.changePermissions(conv.jid.toString,conv.permissions.copy(usersAreCompulsorilySynced = false))
+            }
+          }
+        })
+        if (oldMembers.contains(l.username) && !newMembers.contains(l.username)){
+          val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
+          joinedUsers.foreach(_._3 ! u)
+          Globals.metlingPots.foreach(mp => {
+            mp.postItems(List(
+              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",l.username),KVP("informalAcademic","left"),Some(KVP("room",location)),None,None)
+            ))
+          })
+        }
+      }
+      case _ => {}
+    }
   })
   protected def possiblyCloseRoom:Boolean = Stopwatch.time("MeTLRoom.possiblyCloseRoom",{
     if (location != "global" && joinedUsers.length == 0 && !recentInterest) {
-      debug("MeTLRoom(%s):heartbeat.closingRoom".format(location))
+      trace("MeTLRoom(%s):heartbeat.closingRoom".format(location))
       chunker.close(this)
-      debug("MeTLRoom(%s):closing final chunks".format(location))
+      trace("MeTLRoom(%s):closing final chunks".format(location))
       creator.removeMeTLRoom(location)
       true
     } else {
@@ -386,8 +493,6 @@ class NoCacheRoom(configName:String,override val location:String,creator:RoomPro
   }
 }
 
-case object ThumbnailRenderRequest
-
 class StartupInformation {
   protected var isFirstTime = true
   def setHasStarted(value:Boolean):Unit = {
@@ -408,10 +513,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   protected def firstTime = initialize
   override def initialize = Stopwatch.time("HistoryCachingRoom.initialize",{
     if (starting.getHasStarted) {
-      debug("initialize: %s (first time)".format(roomMetaData))
+      trace("initialize: %s (first time)".format(roomMetaData))
       starting.setHasStarted(false)
     } else {
-      debug("initialize: %s (subsequent time)".format(roomMetaData))
+      trace("initialize: %s (subsequent time)".format(roomMetaData))
       showInterest
       history = config.getHistory(location).attachRealtimeHook((s) => {
         trace("ROOM %s sending %s to children %s".format(location,s,joinedUsers))
@@ -422,7 +527,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   })
   firstTime
   protected var lastRender = 0L
-  protected val acceptableRenderStaleness = 10000L
+  protected val acceptableRenderStaleness = 0L
   override def getHistory:History = {
     showInterest
     history
@@ -431,6 +536,13 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     if (history.lastVisuallyModified > lastRender){
       snapshots = makeSnapshots
       lastRender = history.lastVisuallyModified
+      roomMetaData match {
+        case s:SlideRoom => {
+          trace("Snapshot update")
+          MeTLXConfiguration.getRoom(s.cd.jid.toString,configName) ! UpdateThumb(history.jid)
+        }
+        case _ => {}
+      }
     }
   })
   protected def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName),{
@@ -440,9 +552,9 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
           case false => history
         }
-        debug("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
+        trace("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
         val result = slideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
-        debug("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
+        trace("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
         result
       }
       case _ => {
@@ -466,26 +578,11 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   override def getThumbnail = {
     getSnapshot(Globals.ThumbnailSize)
   }
-  protected var renderInProgress = false;
-  override def overrideableLowPriority = {
-    case ThumbnailRenderRequest => {
-      if (possiblyCloseRoom){
-      } else {
-        if ((new Date().getTime - lastRender) > acceptableRenderStaleness){
-          renderInProgress = false
-          updateSnapshots
-        } else if (!renderInProgress){
-          renderInProgress = true
-          scheduleMessageForMe(ThumbnailRenderRequest,acceptableRenderStaleness)
-        }
-      }
-    }
-  }
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",{
     history.addStanza(s)
     s match {
       case c:MeTLCanvasContent if (history.lastVisuallyModified > lastRender) => {
-        this ! ThumbnailRenderRequest
+        updateSnapshots
       }
       case _ => {}
     }

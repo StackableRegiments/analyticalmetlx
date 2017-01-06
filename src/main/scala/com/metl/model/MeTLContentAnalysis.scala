@@ -32,9 +32,17 @@ trait Chunker{
 }
 class ChunkAnalyzer extends Logger with Chunker{
   var partialChunks = Map.empty[String,List[MeTLInk]]
+  var alreadyReleased = Set.empty[String]
+  val URL = """(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""".r
+  def urls(s:String) = URL.findAllIn(s)
   def latest(xs:List[MeTLInk]) = xs.map(_.timestamp).sorted.reverse.head
   def emit(t:Theme,room:MeTLRoom) = {
     debug("Emitting: %s".format(t))
+    Globals.metlingPots.foreach(mp => {
+      mp.postItems(List(
+        MeTLingPotItem("canvasContentChunkAnalyzer",new java.util.Date().getTime(),KVP("metlUser",t.author),KVP("informalAcademic",t.origin),Some(KVP("room",room.location)),None,Some(t.text))
+      ))
+    })
     room.addTheme(t)
   }
   def close(room:MeTLRoom) = partialChunks.foreach{
@@ -57,33 +65,47 @@ class ChunkAnalyzer extends Logger with Chunker{
     }
   }
   def add(c:MeTLStanza,room:MeTLRoom) = {
-    if(Globals.liveIntegration){
-      c match {
-        case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
-          case Right(t) => {
+    c match {
+      case i:MeTLImage => CanvasContentAnalysis.ocrOne(i) match {
+        case Right(t) => {
+          if(Globals.liveIntegration){
             CanvasContentAnalysis.getDescriptions(t) match {
               case (descriptions,words) => List(
                 descriptions.foreach(word => emit(Theme(i.author, word, "imageRecognition"),room)),
                 words.foreach(word => emit(Theme(i.author,word,"imageTranscription"),room)))
             }
           }
-          case failure => warn(failure)
         }
-        case t:MeTLMultiWordText => {
-          t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
-        }
-        case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
-          case Some(partial) if (i.timestamp - latest(partial) < Globals.chunkingTimeout) => partialChunks + (i.author -> (i :: partial))
-          case Some(partial) => {
+        case failure => warn(failure)
+      }
+      case t:MeTLMultiWordText => {
+        t.words.foreach(word => emit(Theme(t.author,word.text,"keyboarding"),room))
+        val corpus = t.words.map(_.text).mkString(" ")
+        val us = urls(corpus)
+        us.foreach(url =>{
+          val identity = "%s@%s:%s".format(url,c.author,room.location)
+          if(!alreadyReleased(identity)){
+            room ! MotherMessage(<a href={url}>{url}</a>,Nil)
+            alreadyReleased = alreadyReleased + identity
+          }
+        })
+      }
+      case i:MeTLInk => partialChunks = partialChunks.get(i.author) match {
+        case Some(partial) if (i.timestamp - latest(partial) < Globals.chunkingTimeout) => partialChunks + (i.author -> (i :: partial))
+        case Some(partial) => {
+          if(Globals.liveIntegration){
             val desc = CanvasContentAnalysis.extract(partial)
             desc._1.foreach(word => emit(Theme(i.author,word,"imageRecognition"),room))
             desc._2.foreach(word => emit(Theme(i.author,word,"handwriting"),room))
             partialChunks + (i.author -> List(i))
           }
-          case None => partialChunks + (i.author -> (List(i)))
+          else{
+            partialChunks + (i.author -> List(i))
+          }
         }
-        case default => {}
+        case None => partialChunks + (i.author -> (List(i)))
       }
+      case default => {}
     }
   }
 }

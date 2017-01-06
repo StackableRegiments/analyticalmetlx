@@ -55,8 +55,8 @@ else
         ./node_modules/.bin/wdio --suite=$2 wdio.${MODE}.conf.js
     }
     reset
-    #launch disabled learning
+    launch disabled learning
     reset
-    launch enabled analyzing
+    #launch enabled analyzing
     reset
 fi

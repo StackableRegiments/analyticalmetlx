@@ -88,6 +88,8 @@ abstract class Serializer {
   def fromBooleanGradeValue(input:MeTLBooleanGradeValue):T = throw new SerializationNotImplementedException
   def toTextGradeValue(input:T):MeTLTextGradeValue = throw new SerializationNotImplementedException
   def fromTextGradeValue(input:MeTLTextGradeValue):T = throw new SerializationNotImplementedException
+  def toChatMessage(input:T):MeTLChatMessage = throw new SerializationNotImplementedException
+  def fromChatMessage(input:MeTLChatMessage):T = throw new SerializationNotImplementedException
   def fromMeTLData(input:MeTLData):T = input match {
     case i:MeTLInk => fromMeTLInk(i)
     case t:MeTLText => fromMeTLText(t)
@@ -111,6 +113,7 @@ abstract class Serializer {
     case g:MeTLNumericGradeValue => fromNumericGradeValue(g)
     case g:MeTLBooleanGradeValue => fromBooleanGradeValue(g)
     case g:MeTLTextGradeValue => fromTextGradeValue(g)
+    case cm:MeTLChatMessage => fromChatMessage(cm)
     case uc:MeTLUndeletedCanvasContent => fromMeTLUndeletedCanvasContent(uc)
     case cc:MeTLUnhandledCanvasContent => fromMeTLUnhandledCanvasContent(cc)
     case ms:MeTLUnhandledStanza => fromMeTLUnhandledStanza(ms)
@@ -155,6 +158,8 @@ class PassthroughSerializer extends Serializer {
   override def fromMeTLQuiz(input:MeTLQuiz):Object = input.asInstanceOf[Object]
   override def fromTheme(input:MeTLTheme):Object = input.asInstanceOf[Object]
   override def toTheme(input:Object):MeTLTheme = input.asInstanceOf[MeTLTheme]
+  override def fromChatMessage(input:MeTLChatMessage):Object = input.asInstanceOf[Object]
+  override def toChatMessage(input:Object):MeTLChatMessage = input.asInstanceOf[MeTLChatMessage]
   override def toMeTLQuizResponse(input:Object):MeTLQuizResponse = input.asInstanceOf[MeTLQuizResponse]
   override def fromMeTLQuizResponse(input:MeTLQuizResponse):Object = input.asInstanceOf[Object]
   override def toMeTLFile(input:T):MeTLFile = input.asInstanceOf[MeTLFile]

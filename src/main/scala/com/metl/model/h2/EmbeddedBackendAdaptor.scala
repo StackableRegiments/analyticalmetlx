@@ -23,8 +23,8 @@ object LocalH2ServerConfigurator extends ServerConfigurator{
   }
 }
 
-class SqlBackendAdaptor(name:String,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit) extends PersistedAdaptor(name,"localhost",onConversationDetailsUpdated){
-  override val dbInterface = new SqlInterface(this,vendor,onConversationDetailsUpdated)
+class SqlBackendAdaptor(name:String,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit,startingPoolSize:Int = 0,maxPoolSize:Int = 0) extends PersistedAdaptor(name,"localhost",onConversationDetailsUpdated){
+  override val dbInterface = new SqlInterface(this,vendor,onConversationDetailsUpdated,startingPoolSize,maxPoolSize)
 }
 object SqlServerConfigurator extends ServerConfigurator{
   override def matchFunction(e:Node) = (e \\ "type").headOption.exists(_.text == "sql")
@@ -38,12 +38,13 @@ object SqlServerConfigurator extends ServerConfigurator{
       val vendorAllowPoolExpansion = (e \\ "allowPoolExpansion").headOption.exists(_.text.toLowerCase.trim == "true")
       val vendorMaxPoolSize = (e \\ "maxPoolSize").headOption.map(_.text.toInt).getOrElse(100)
       val vendorMaxExpandedSize = (e \\ "maxExpansion").headOption.map(_.text.toInt).getOrElse(200)
+      val startingPool = (e \\ "poolStartingSize").headOption.map(_.text.toInt).getOrElse(10)
       val vendor = new StandardDBVendor(driver,url,username,password){
         override def allowTemporaryPoolExpansion = vendorAllowPoolExpansion
         override def maxPoolSize = vendorMaxPoolSize
         override def doNotExpandBeyond = vendorMaxExpandedSize
       }
-      new SqlBackendAdaptor((e \\ "name").headOption.map(_.text).getOrElse("sql"),vendor,onConversationDetailsUpdated)
+      new SqlBackendAdaptor((e \\ "name").headOption.map(_.text).getOrElse("sql"),vendor,onConversationDetailsUpdated,startingPool,vendorMaxPoolSize)
     }
   }
 }

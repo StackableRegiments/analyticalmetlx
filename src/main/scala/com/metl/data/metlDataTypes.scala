@@ -6,6 +6,7 @@ import com.metl.model._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import java.util.Date
+import com.metl.liftAuthenticator.ForeignRelationship
 
 object PointConverter {
   def fromText(t:String):List[Point] = parsePoints(t.split(" ").toList)
@@ -93,15 +94,17 @@ object Point{
 
 case class Presentation(override val server:ServerConfiguration,conversation:Conversation,stanzas:Map[Int,List[MeTLStanza]] = Map.empty[Int,List[MeTLStanza]],metaData:List[Tuple2[String,String]] = List.empty[Tuple2[String,String]],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
 object Presentation{
-  def emtpy = Presentation(ServerConfiguration.empty,Conversation.empty)
+  def empty = Presentation(ServerConfiguration.empty,Conversation.empty)
 }
 
-case class GroupSet(override val server:ServerConfiguration,id:String,location:String,groupingStrategy:GroupingStrategy,groups:List[Group],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
+case class GroupSet(override val server:ServerConfiguration,id:String,location:String,groupingStrategy:GroupingStrategy,groups:List[Group],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+  def contains(person:String) = groups.exists(_.members.contains(person))
+}
 object GroupSet {
   def empty = GroupSet(ServerConfiguration.empty,"","",EveryoneInOneGroup,Nil,Nil)
 }
 
-abstract class GroupingStrategy{
+abstract class GroupingStrategy extends Logger {
   def addNewPerson(g:GroupSet,person:String):GroupSet
 }
 
@@ -109,30 +112,47 @@ case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
     val oldGroups = g.groups
     val newGroups = {
-      g.groups.find(group => {
+      oldGroups.find(group => {
         group.members.length < groupSize
       }).map(fg => {
         fg.copy(members = person :: fg.members) :: oldGroups.filter(_.id != fg.id)
       }).getOrElse({
-        Group(g.server,nextFuncName,g.location,List(person)) :: oldGroups
+        Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: oldGroups
       })
     }
+    warn("ByMaximumSize adding %s yields %s".format(person,newGroups))
     g.copy(groups = newGroups)
   }
 }
 case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    val oldGroups = g.groups
-    g.copy(groups = {
-      oldGroups match {
-        case l:List[Group] if l.length < numberOfGroups => Group(g.server,nextFuncName,g.location,List(person)) :: l
-        case l:List[Group] => l.sortWith((a,b) => a.members.length < b.members.length).headOption.map(fg => {
-          fg.copy(members = person :: fg.members) :: l.filter(_.id != fg.id)
-        }).getOrElse({
-          l.head.copy(members = person :: l.head.members) :: l.drop(1)
-        })
-      }
-    })
+    if(g.contains(person)){
+      trace("Already grouped: %s".format(person))
+      g
+    }
+    else{
+      val oldGroups = g.groups
+      val newGroups = g.copy(groups = {
+        oldGroups match {
+          case l:List[Group] if l.length < numberOfGroups => {
+            trace("Adding a group")
+            Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: l
+          }
+          case l:List[Group] => {
+            trace("Adding to an existing group")
+            l.sortWith((a,b) => a.members.length < b.members.length).headOption.map(fg => {
+              trace("  Adding to %s".format(fg))
+              fg.copy(members = person :: fg.members) :: l.filter(_.id != fg.id)
+            }).getOrElse({
+              trace("  Adding to %s".format(l.head))
+              l.head.copy(members = person :: l.head.members) :: l.drop(1)
+            })
+          }
+        }
+      })
+      trace("ByTotalGroups adding %s yields %s".format(person,newGroups))
+      newGroups
+    }
   }
 }
 case class ComplexGroupingStrategy(data:Map[String,String]) extends GroupingStrategy {
@@ -147,21 +167,21 @@ case class ComplexGroupingStrategy(data:Map[String,String]) extends GroupingStra
 }
 case object OnePersonPerGroup extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    g.copy(groups = Group(g.server,nextFuncName,g.location,List(person)) :: g.groups)
+    g.copy(groups = Group(g.server,nextFuncName,g.location,new Date().getTime,List(person)) :: g.groups)
   }
 }
 case object EveryoneInOneGroup extends GroupingStrategy {
   override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    g.copy(groups = List(Group(g.server,g.groups.headOption.map(_.id).getOrElse(nextFuncName),g.location,(person :: g.groups.flatMap(_.members)).distinct)))
+    g.copy(groups = List(Group(g.server,g.groups.headOption.map(_.id).getOrElse(nextFuncName),g.location,new Date().getTime,(person :: g.groups.flatMap(_.members)).distinct)))
   }
 }
 
-case class Group(override val server:ServerConfiguration,id:String,location:String,members:List[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
+case class Group(override val server:ServerConfiguration,id:String,location:String,timestamp:Long,members:List[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
 object Group {
-  def empty = Group(ServerConfiguration.empty,"","",Nil,Nil)
+  def empty = Group(ServerConfiguration.empty,"","",0,Nil,Nil)
 }
 
-case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil,foreignRelationship:Option[ForeignRelationship] = None) extends MeTLData(server,audiences) with Logger{
   def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(server,author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
   def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)
   def replacePermissions(newPermissions:Permissions) = copy(permissions = newPermissions, lastAccessed = new Date().getTime)
@@ -170,6 +190,18 @@ case class Conversation(override val server:ServerConfiguration,author:String,la
     (trimmedSubj == "unrestricted" || author.toLowerCase.trim == username.toLowerCase.trim || userGroups.exists(ug => ug.toLowerCase.trim == trimmedSubj)) && trimmedSubj != "deleted"
   }
   def replaceSubject(newSubject:String) = copy(subject=newSubject,lastAccessed=new Date().getTime)
+  def addGroupSlideAtIndex(index:Int,grouping:GroupSet) = {
+    val oldSlides = slides.map(s => {
+      if (s.index >= index){
+        s.replaceIndex(s.index + 1)
+      } else {
+        s
+      }
+    })
+    val newId = slides.map(s => s.id).max + 1
+    val newSlides = Slide(server,author,newId,index,540,720,true,"SLIDE",List(grouping)) :: oldSlides
+    replaceSlides(newSlides)
+  }
   def addSlideAtIndex(index:Int) = {
     val oldSlides = slides.map(s => {
       if (s.index >= index){
@@ -183,12 +215,13 @@ case class Conversation(override val server:ServerConfiguration,author:String,la
     replaceSlides(newSlides)
   }
   def replaceSlides(newSlides:List[Slide]) = copy(slides=newSlides,lastAccessed = new Date().getTime)
+  def setForeignRelationship(fr:Option[ForeignRelationship]) = copy(foreignRelationship = fr,lastAccessed=new Date().getTime)
 }
 object Conversation{
   def empty = Conversation(ServerConfiguration.empty,"",0L,List.empty[Slide],"","",0,"",0L,Permissions.default(ServerConfiguration.empty),Nil,Nil)
 }
 
-case class Slide(override val server:ServerConfiguration,author:String,id:Int,index:Int,defaultHeight:Int = 540, defaultWidth:Int = 720, exposed:Boolean = false, slideType:String = "SLIDE",groupSet:List[GroupSet] = Nil,override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+case class Slide(override val server:ServerConfiguration,author:String,id:Int,index:Int,defaultHeight:Int = 540, defaultWidth:Int = 720, exposed:Boolean = true, slideType:String = "SLIDE",groupSet:List[GroupSet] = Nil,override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
   def replaceIndex(newIndex:Int) = copy(index=newIndex)
 }
 object Slide{
@@ -201,10 +234,10 @@ object Audience {
   def default(server:ServerConfiguration = ServerConfiguration.default) = Audience(server,"","","","")
 }
 
-case class Permissions(override val server:ServerConfiguration, studentsCanOpenFriends:Boolean,studentsCanPublish:Boolean,usersAreCompulsorilySynced:Boolean) extends MeTLData(server,Nil)
+case class Permissions(override val server:ServerConfiguration, studentsCanOpenFriends:Boolean,studentsCanPublish:Boolean,usersAreCompulsorilySynced:Boolean,studentsMayBroadcast:Boolean,studentsMayChatPublicly:Boolean) extends MeTLData(server,Nil)
 object Permissions{
-  def empty = Permissions(ServerConfiguration.empty,false,false,false)
-  def default(server:ServerConfiguration = ServerConfiguration.default) = Permissions(server,false,true,false)
+  def empty = Permissions(ServerConfiguration.empty,false,false,false,false,false)
+  def default(server:ServerConfiguration = ServerConfiguration.default) = Permissions(server,false,true,false,true,true)
 }
 
 class MeTLData(val server:ServerConfiguration,val audiences:List[Audience] = Nil){
@@ -292,6 +325,16 @@ object MeTLCanvasContent{
 object MeTLTextWord {
   def empty = MeTLTextWord("",false,false,false,"",Color.empty,"",0.0)
 }
+
+case class MeTLChatMessage(override val server:ServerConfiguration, override val author:String, override val timestamp:Long, identity:String, contentType:String, content:String, context:String, override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLChatMessage = Stopwatch.time("MeTLChatMessage.adjustTimestamp",{
+    copy(timestamp = newTime)
+  })
+}
+object MeTLChatMessage {
+  def empty = MeTLChatMessage(ServerConfiguration.empty,"",0L,"","","","",Nil)
+}
+
 case class MeTLTextWord(text:String,bold:Boolean,underline:Boolean,italic:Boolean,justify:String,color:Color,font:String,size:Double){
   def scale(factor:Double):MeTLTextWord = copy(size=size * factor)
 }

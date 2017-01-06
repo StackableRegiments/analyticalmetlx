@@ -217,15 +217,15 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     })
   }
+  def setupExternalGradebooksFromFile(filePath:String) = {
+    val nodes = XML.load(filePath) \\ "externalGradebooks"
+    Globals.gradebookProviders = ExternalGradebooks.configureFromXml(nodes)
+  }
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
-    ifConfigured(authorizationNodes,"selfGroups",(n:NodeSeq) => {
-      Globals.groupsProviders = new SelfGroupsProvider() :: Globals.groupsProviders
-    },false)
-    ifConfigured(authorizationNodes,"flatFileGroups",(n:NodeSeq) => {
-      Globals.groupsProviders = GroupsProvider.createFlatFileGroups(n) ::: Globals.groupsProviders
-    },true)
+    Globals.groupsProviders = GroupsProvider.constructFromXml(authorizationNodes)
+    println("groupsProviders: %s".format(Globals.getGroupsProviders.map(gp => "%s[%s](%s)".format(gp,gp.storeId,gp.canQuery))))
     info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
@@ -242,6 +242,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       LiftRules.unloadHooks.append( () => exs.shutdown)
       exs
     })
+  }
+  def setupMetlingPotsFromFile(filePath:String) = {
+    Globals.metlingPots = MeTLingPot.configureFromXml(XML.load(filePath) \\ "metlingPotAdaptors")
   }
   def setupCachesFromFile(filePath:String) = {
     import net.sf.ehcache.config.{MemoryUnit}
@@ -338,14 +341,18 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     //setupStackAdaptorFromFile(Globals.configurationFileLocation)
     setupClientAdaptorsFromFile(Globals.configurationFileLocation)
 
+    setupExternalGradebooksFromFile(Globals.configurationFileLocation)
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
+    setupMetlingPotsFromFile(Globals.configurationFileLocation)
     LiftRules.unloadHooks.append(() => {
+      Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions
     })
     LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
+    Globals.metlingPots.foreach(_.init)
     info(configs)
   }
   def listRooms(configName:String):List[MeTLRoom] = configs(configName)._2.list
@@ -370,6 +377,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = Conversation.empty
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
   override def getImage(jid:String,identity:String) = MeTLImage.empty

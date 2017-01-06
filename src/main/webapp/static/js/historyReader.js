@@ -19,17 +19,25 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
         historyDownloadedMark = Date.now();
+
+        json.multiWordTexts = _.pickBy(json.multiWordTexts,isUsable);
+        json.images = _.pickBy(json.images,isUsable);
+        json.inks = _.pickBy(json.inks,isUsable);
+
         boardContent = json;
         boardContent.minX = 0;
         boardContent.minY = 0;
         boardContent.maxX = boardWidth;
         boardContent.maxY = boardHeight;
+        /*Use 1:1 pixel size as a reasonable starting position.  This will keep textboxes from measuring themselves against a miniscule world and deciding that they are enormously wide*/
+        viewboxWidth = boardContent.maxX - boardContent.minX;
+        viewboxHeight = boardContent.maxY - boardContent.minY;
         $.each(boardContent.inks,function(i,ink){
-            prerenderInk(ink);
+            prerenderInk(ink,true);
         });
         prerenderInkMark = Date.now();
         $.each(boardContent.highlighters,function(i,ink){
-            prerenderInk(ink);
+            prerenderInk(ink,true);
         });
         prerenderHighlightersMark = Date.now();
         $.each(boardContent.texts,function(i,text){
@@ -44,10 +52,15 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             prerenderVideo(video);
         });
         prerenderTextMark = Date.now();
-        _.each(boardContent.multiWordTexts,function(text,i){
-            var editor = Modes.text.editorFor(text).doc;
-            editor.load(text.words);
-            incorporateBoardBounds(text.bounds);
+        _.each(boardContent.multiWordTexts,function(text){
+            if(isUsable(text)){
+                var editor = Modes.text.editorFor(text).doc;
+                editor.load(text.words);
+                incorporateBoardBounds(text.bounds);
+            }
+            else{
+                console.log("Not usable",text);
+            }
         });
         renderMultiWordMark = Date.now();
 
@@ -138,6 +151,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         console.log("receiveHistory exception",e);
     }
 }
+
 var lineDrawingThreshold = 25;
 function incorporateBoardBounds(bounds){
     if (!isNaN(bounds[0])){
@@ -174,11 +188,30 @@ function mergeBounds(b1,b2){
 var boardLimit = 10000;
 function isUsable(element){
     var boundsOk = !(_.some(element.bounds,function(p){
-        return isNaN(p) || p > boardLimit || p < -boardLimit;
+        return isNaN(p);// || p > boardLimit || p < -boardLimit;
     }));
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
-    return boundsOk && sizeOk && textOk;
+    var myGroups = _.map(Conversations.getCurrentGroup(),"id");
+    var forMyGroup = _.isEmpty(element.audiences) ||
+            Conversations.isAuthor() ||
+            _.some(element.audiences,function(audience){
+                return audience.action == "whitelist" && _.includes(myGroups,audience.name);
+            });
+    var isMine = element.author == UserSettings.getUsername();
+    var isDirectedToMe = _.some(element.audiences,function(audience){
+        return audience.action == "direct" && audience.name == UserSettings.getUsername();
+    });
+    var availableToMe = isMine || isDirectedToMe || forMyGroup;
+    return boundsOk && sizeOk && textOk && availableToMe;
+}
+function usableStanzas(){
+    return _.map(boardContent.multiWordTexts).map(function(v){
+        return {
+            identity:v.identity,
+            usable:isUsable(v)
+        }
+    });
 }
 var leftPoint = function(xDelta,yDelta,l,x2,y2,bulge){
     var px = yDelta * l * bulge;
@@ -198,8 +231,8 @@ var rightPoint = function(xDelta,yDelta,l,x2,y2,bulge){
 }
 var determineCanvasConstants = _.once(function(){
     var currentDevice = DeviceConfiguration.getCurrentDevice();
-    var maxX = 2147483647;
-    var maxY = 2147483647;
+    var maxX = 8192;//2147483647;
+    var maxY = 8192;//2147483647;
     if (currentDevice == "browser"){
         //      maxX = 500;
         //      maxY = 500;
@@ -228,10 +261,14 @@ function determineScaling(inX,inY){
     if (inX > maxX){
         outputScaleX = maxX / inX;
         outputX = inX * outputScaleX;
+				outputScaleY = outputScaleX;
+				outputY = inY * outputScaleX;
     }
-    if (inY > maxY){
-        outputScaleY = maxY / inY;
-        outputY = inY * outputScaleY;
+    if (outputY > maxY){
+        outputScaleY = maxY / outputY;
+        outputY = outputY * outputScaleY;
+				outputScaleX = outputScaleY;
+				outputX = outputX * outputScaleY;
     }
     return {
         width:outputX,
@@ -240,7 +277,7 @@ function determineScaling(inX,inY){
         scaleY:outputScaleY
     };
 }
-function prerenderInk(ink){
+function prerenderInk(ink,onBoard){
     if(!isUsable(ink)){
         if(ink.identity in boardContent.inks){
             delete boardContent.inks[ink.identity];
@@ -251,10 +288,12 @@ function prerenderInk(ink){
         return false;
     }
     calculateInkBounds(ink);
-    incorporateBoardBounds(ink.bounds);
+    if(onBoard){
+        incorporateBoardBounds(ink.bounds);
+    }
     var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
-    var rawWidth = ink.bounds[2] - ink.bounds[0] + ink.thickness / 2;
-    var rawHeight = ink.bounds[3] - ink.bounds[1] + ink.thickness / 2;
+    var rawWidth = ink.bounds[2] - ink.bounds[0] + (ink.thickness);
+    var rawHeight = ink.bounds[3] - ink.bounds[1] + (ink.thickness);
 
     var scaleMeasurements = determineScaling(rawWidth,rawHeight);
     var canvas = $("<canvas />",{
@@ -275,10 +314,11 @@ function prerenderInk(ink){
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleMeasurements.scaleY;
+		var scaledThickness = ink.thickness * scaleMeasurements.scaleX;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
-        context.lineWidth = ink.thickness;
+        context.lineWidth = scaledThickness;
         context.lineCap = "round";
         context.strokeStyle = "red";
         context.globalAlpha = 0.3;
@@ -288,7 +328,7 @@ function prerenderInk(ink){
             context.moveTo(x,y);
             x = points[p]+contentOffsetX;
             y = points[p+1]+contentOffsetY;
-            pr = ink.thickness * points[p+2];
+            pr = scaledThickness * points[p+2];
             context.lineWidth = pr + 2;
             context.lineTo(x,y);
             context.stroke();
@@ -302,7 +342,7 @@ function prerenderInk(ink){
 
     context.beginPath();
     context.moveTo(x,y);
-    pr = ink.thickness * points[2];
+    pr = scaledThickness * points[2];
     context.arc(x,y,pr/2,0,2 * Math.PI);
     context.fill();
     context.lineCap = "round";
@@ -311,7 +351,7 @@ function prerenderInk(ink){
         context.moveTo(x,y);
         x = points[p+0] + contentOffsetX;
         y = points[p+1] + contentOffsetY;
-        pr = ink.thickness * points[p+2];
+        pr = scaledThickness * points[p+2];
         context.lineWidth = pr;
         context.lineTo(x,y);
         context.stroke();
@@ -332,9 +372,17 @@ function calculateImageBounds(image){
 function calculateVideoBounds(video){
     video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
 }
+function urlEncodeSlideName(slideName){
+    var newSlideName = btoa(slideName);
+    return newSlideName;
+}
 function calculateImageSource(image){
     var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-    return sprintf("/proxyImageUrl/%s?source=%s",slide,encodeURIComponent(image.source));
+    return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source));
+}
+function calculateVideoSource(video){
+    var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
+    return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity));
 }
 function calculateTextBounds(text){
     text.bounds = [text.x,text.y,text.x + text.width, text.y + (text.runs.length * text.size * 1.25)];
@@ -407,7 +455,7 @@ function prerenderImage(image) {
 function prerenderVideo(video){
     if (!("video" in video)){
         var vid = $("<video/>",{
-            src:sprintf("/videoProxy/%s/%s",video.slide,video.identity)
+            src:calculateVideoSource(video)
         });
         video.video = vid[0];
         video.getState = function(){
@@ -455,6 +503,10 @@ function prerenderVideo(video){
             if (video.video.paused || video.video.ended){
                 video.video.play();
             }
+        };
+        video.destroy = function(){
+            video.video.removeAttribute("src");
+            video.video.load();
         };
         video.pause = function(){
             if (!video.video.paused){
@@ -588,12 +640,14 @@ function render(content,hq,incCanvasContext,incViewBounds){
             try{
                 var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
                 visibleBounds = [];
+                var rendered = [];
                 var renderInks = function(inks){
                     if (inks != undefined){
                         $.each(inks,function(i,ink){
                             try{
                                 if(intersectRect(ink.bounds,viewBounds)){
                                     drawInk(ink,canvasContext);
+                                    rendered.push(ink);
                                 }
                             }
                             catch(e){
@@ -610,6 +664,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                             }
                             if(intersectRect(text.bounds,viewBounds)){
                                 drawMultiwordText(text);
+                                rendered.push(text);
                             }
                         });
                     }
@@ -621,6 +676,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                             if (intersectRect(video.bounds,viewBounds)){
                                 drawVideo(video,canvasContext);
                                 Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+                                rendered.push(video);
                             }
                         });
                     }
@@ -632,6 +688,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                     $.each(content.texts,function(i,text){
                         if(intersectRect(text.bounds,viewBounds)){
                             drawText(text,canvasContext);
+                            rendered.push(text);
                         }
                     });
                     textsRenderedMark = Date.now();
@@ -646,6 +703,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 var renderSelectionOutlines = function(){
                     var size = Modes.select.resizeHandleSize;
                     canvasContext.save();
+                    canvasContext.lineWidth = 1;
                     var multipleItems = [];
                     _.forEach(Modes.select.selected,function(category){
                         _.forEach(category,function(item){
@@ -673,12 +731,38 @@ function render(content,hq,incCanvasContext,incViewBounds){
                         _.each(category,function(interactable){
                             if (interactable != undefined && "render" in interactable){
                                 canvasContext.save();
+                                canvasContext.lineWidth = 1;
                                 interactable.render(canvasContext);
                                 canvasContext.restore();
                             };
                         });
                     });
                 }
+                var renderContentIdentification = function(){
+                    canvasContext.save();
+                    if(Modes.select.isAdministeringContent()){
+                        var visibleUsers = _.groupBy(rendered,"author");
+                        var pad = 3;
+                        _.each(visibleUsers,function(content,user){
+                            var userBounds = _.reduce(_.map(content,"bounds"),mergeBounds);
+                            var tl = worldToScreen(userBounds[0],userBounds[1]);
+                            canvasContext.strokeStyle = "black";
+                            canvasContext.lineWidth = 0.1;
+                            _.each(content,function(c){
+                                canvasContext.beginPath();
+                                canvasContext.moveTo(tl.x,tl.y);
+                                var cB = worldToScreen(c.bounds[0],c.bounds[1]);
+                                canvasContext.lineTo(cB.x,cB.y);
+                                canvasContext.stroke();
+                            });
+                            canvasContext.fillStyle = "black";
+                            canvasContext.fillRect(tl.x - pad,tl.y,canvasContext.measureText(user).width + pad * 2,14);
+                            canvasContext.fillStyle = "white";
+                            canvasContext.fillText(user,tl.x,tl.y+10);
+                        });
+                    }
+                    canvasContext.restore();
+                };
                 var renderSelectionGhosts = function(){
                     var zero = Modes.select.marqueeWorldOrigin;
                     if(Modes.select.dragging){
@@ -816,6 +900,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderImmediateContent();
                 renderSelectionOutlines();
                 renderSelectionGhosts();
+                renderContentIdentification();
                 renderCanvasInteractables();
                 imagesRenderedMark = Date.now();
             }
@@ -828,6 +913,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
             HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
         }
     } catch(e){
+        console.log(e);
         if ("HealthChecker" in window){
             HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
         }
@@ -872,6 +958,11 @@ function unpix(str){
 }
 function updateConversationHeader(){
     $("#heading").text(Conversations.getCurrentConversation().title);
+    var groupV = $("#currentGroupTitle").empty();
+    var group = Conversations.getCurrentGroup();
+    if(group.length){
+        groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
+    }
 }
 function clearBoard(incContext,rect){
     try {

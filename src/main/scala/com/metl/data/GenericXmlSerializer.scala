@@ -6,6 +6,7 @@ import com.metl.model._
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
+import com.metl.liftAuthenticator.ForeignRelationship
 import Privacy._
 
 trait XmlUtils {
@@ -100,6 +101,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       case i:NodeSeq if hasChild(i,"numericGradeValue") => toNumericGradeValue(i)
       case i:NodeSeq if hasChild(i,"booleanGradeValue") => toBooleanGradeValue(i)
       case i:NodeSeq if hasChild(i,"textGradeValue") => toTextGradeValue(i)
+      case i:NodeSeq if hasChild(i,"chatMessage") => toChatMessage(i)
       case i:NodeSeq if hasChild(i,"undeletedCanvasContent") => toMeTLUndeletedCanvasContent(i)
       case i:NodeSeq if hasSubChild(i,"target") && hasSubChild(i,"privacy") && hasSubChild(i,"slide") && hasSubChild(i,"identity") => toMeTLUnhandledCanvasContent(i)
       case i:NodeSeq if (((i \\ "author").length > 0) && ((i \\ "message").length > 0)) => toMeTLUnhandledStanza(i)
@@ -128,7 +130,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     metlContentToXml(rootName,input,parsedCanvasContentToXml(ParsedCanvasContent(input.target,input.privacy,input.slide,input.identity)) ++ additionalNodes)
   })
   override def fromHistory(input:History):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromHistory", {
-      <history jid={input.jid}>{input.getAll.map(i => fromMeTLData(i))}<deletedContents>{input.getDeletedCanvasContents.map(dcc => fromMeTLData(dcc))}</deletedContents></history>
+    <history jid={input.jid}>{input.getAll.map(i => fromMeTLData(i))}<deletedContents>{input.getDeletedCanvasContents.map(dcc => fromMeTLData(dcc))}</deletedContents></history>
   })
 
   override def toHistory(input:NodeSeq):History = Stopwatch.time("GenericXmlSerializer.toHistory",{
@@ -251,6 +253,22 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val origin = getStringByName(x,"origin")
     MeTLTheme(config,m.author,m.timestamp,location,Theme(m.author,text,origin),m.audiences)
   })
+  override def fromChatMessage(t:MeTLChatMessage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromChatMessage",{
+    metlContentToXml("chatMessage",t,List(
+      <context>{t.context}</context>,
+      <content>{t.content}</content>,
+      <contentType>{t.contentType}</contentType>,
+      <identity>{t.identity}</identity>
+    ))
+  })
+  override def toChatMessage(x:NodeSeq):MeTLChatMessage = Stopwatch.time("GenericXmlSerializer.toChatMessage",{
+    val m = parseMeTLContent(x)
+    val context = getStringByName(x,"context")
+    val contentType = getStringByName(x,"contentType")
+    val content = getStringByName(x,"content")
+    val identity = getStringByName(x,"identity")
+    MeTLChatMessage(config,m.author,m.timestamp,identity,contentType,content,context,m.audiences)
+  })
 
   override def toMeTLInk(input:NodeSeq):MeTLInk = Stopwatch.time("GenericXmlSerializer.toMeTLInk",{
     val m = parseMeTLContent(input,config)
@@ -341,6 +359,12 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   <blue>{input.color.blue}</blue>
   </color>
   </word>
+  def fromAudience(input:Audience) = <audience>
+  <domain>{input.domain}</domain>
+  <name>{input.name}</name>
+  <audienceType>{input.name}</audienceType>
+  <action>{input.name}</action>
+  </audience>
   override def toMeTLWord(input:NodeSeq) = (for {
     text <- (input \\ "text").headOption.map(_.text)
     bold <- (input \\ "bold").headOption.map(_.text.toBoolean)
@@ -376,7 +400,8 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     <height>{input.height}</height>,
     <tag>{input.tag}</tag>,
     <requestedWidth>{input.requestedWidth}</requestedWidth>,
-    <words>{input.words.map(fromMeTLWord _)}</words>
+    <words>{input.words.map(fromMeTLWord _)}</words>,
+    <audiences>{input.audiences.map(fromAudience _)}</audiences>
   )))
   override def toMeTLText(input:NodeSeq):MeTLText = Stopwatch.time("GenericXmlSerializer.toMeTLText",{
     val m = parseMeTLContent(input,config)
@@ -588,7 +613,15 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       case "" => config
       case other => ServerConfiguration.configForName(other)
     }
-    Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist.toList,m.audiences)
+    val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
+      for {
+        sys <- (n \ "@system").headOption.map(_.text)
+        key <- (n \ "@key").headOption.map(_.text)
+      } yield {
+        ForeignRelationship(sys,key)
+      }
+    })
+    Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist.toList,m.audiences,foreignRelationship)
   })
   override def fromConversation(input:Conversation):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversation",{
     metlXmlToXml("conversation",List(
@@ -606,7 +639,9 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       }</blacklist>,
       //                        <configName>{input.server.name}</configName>,
       fromPermissions(input.permissions)
-    ))
+    ) ::: input.foreignRelationship.toList.map(t => {
+      <foreignRelationship system={t.system} key={t.key} />
+    }))
   })
   override def fromConversationList(input:List[Conversation]):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversationList",{
     <conversations>{input.map(c => fromConversation(c))}</conversations>
@@ -676,13 +711,15 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val m = parseMeTLContent(input,config)
     val id = getStringByName(input,"id")
     val location = getStringByName(input,"location")
+    val timestamp = getLongByName(input,"timestamp")
     val members = ((input \ "members") \ "member").map(_.text).toList
-    Group(config,id,location,members,m.audiences)
+    Group(config,id,location,timestamp,members,m.audiences)
   })
   override def fromGroup(input:Group):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGroup",{
     metlXmlToXml("group",List(
       <id>{input.id}</id>,
       <location>{input.location}</location>,
+      <timestamp>{input.timestamp}</timestamp>,
       <members>{input.members.map(m => {
         <member>{m}</member>
       })}</members>
@@ -690,13 +727,21 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   })
 
   override def toPermissions(input:NodeSeq):Permissions = Stopwatch.time("GenericXmlSerializer.toPermissions",{
-    val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
-    val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
-    val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-    Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced)
+    try {
+      val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
+      val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
+      val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
+      val studentsMayBroadcast = tryo(getValueOfNode(input,"studentsMayBroadcast").toBoolean).openOr(true)
+      val studentsMayChatPublicly = tryo(getValueOfNode(input,"studentsMayChatPublicly").toBoolean).openOr(true)
+      Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
+    } catch {
+      case e:Exception => {
+        Permissions.default(config)
+      }
+    }
   })
   override def fromPermissions(input:Permissions):Node = Stopwatch.time("GenericXmlSerializer.fromPermissions",{
-    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced></permissions>
+    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced><studentsMayBroadcast>{input.studentsMayBroadcast}</studentsMayBroadcast><studentsMayChatPublicly>{input.studentsMayChatPublicly}</studentsMayChatPublicly></permissions>
   })
   override def toColor(input:AnyRef):Color = Stopwatch.time("GenericXmlSerializer.toColor",{
     Color.empty
@@ -734,7 +779,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
         (sys,key)
       }
     })
-    val gradeReferenceUrl = (input \\ "gradeReferenceUrl").headOption.map(_.text)   
+    val gradeReferenceUrl = (input \\ "gradeReferenceUrl").headOption.map(_.text)
     MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
   })
   override def fromGrade(input:MeTLGrade):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGrade",{

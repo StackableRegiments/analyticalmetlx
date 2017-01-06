@@ -10,15 +10,41 @@ import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 
 import Privacy._
-
+import com.metl.liftAuthenticator.ForeignRelationship
 
 class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogger {
   implicit val formats = net.liftweb.json.DefaultFormats
   override type T = Object
-    //type A = _ <: Object
-    //override type T = A <: H2MeTLContent[A]
   val configName = config.name
-  val xmlSerializer = new GenericXmlSerializer(config)
+  val xmlSerializer = new GenericXmlSerializer(config){
+    import scala.xml._
+    protected def getBooleanByNames(input:NodeSeq,tags:List[String]):Option[Boolean] = {
+      tags.foldLeft(None:Option[Boolean])((acc,item) => {
+        (input \\ item).headOption.map(ho => ho.text.toLowerCase.trim) match {
+          case Some("true") if acc == None => Some(true)
+          case Some("false") if acc == None => Some(false)
+          case _ => acc
+        }
+      })
+    }
+    override def toPermissions(input:NodeSeq):Permissions = Stopwatch.time("H2XmlSerializer.toPermissions",{
+      try {
+        val studentsCanOpenFriends = getBooleanByNames(input,List("friends","studentCanOpenFriends")).getOrElse(false)
+        val studentsCanPublish = getBooleanByNames(input,List("publish","studentCanPublish")).getOrElse(true)
+        val usersAreCompulsorilySynced = getBooleanByNames(input,List("follow","usersAreCompulsorilySynced")).getOrElse(false)
+        val studentsMayBroadcast = getBooleanByNames(input,List("video","studentsMayBroadcast")).getOrElse(false)
+        val studentsMayChatPublicly = getBooleanByNames(input,List("chat","studentsMayChatPublicly")).getOrElse(true)
+        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
+      } catch {
+        case e:Exception => {
+          Permissions.default(config)
+        }
+      }
+    })
+    override def fromPermissions(input:Permissions):Node = Stopwatch.time("H2XmlSerializer.fromPermissions",{
+      <p><friends>{input.studentsCanOpenFriends}</friends><publish>{input.studentsCanPublish}</publish><follow>{input.usersAreCompulsorilySynced}</follow><video>{input.studentsMayBroadcast}</video><chat>{input.studentsMayChatPublicly}</chat></p>
+    })
+  }
 
   case class ParsedCanvasContent(target:String,identity:String,slide:String,privacy:Privacy,author:String,timestamp:Long,audiences:List[Audience])
   case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
@@ -31,7 +57,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   def fromPrivacy(i:Privacy):String = i.toString.toLowerCase.trim
 
   protected def parseAudiences(in:String):List[Audience] = {
-    tryo((scala.xml.XML.loadString(in) \\ "audience").toList.flatMap(a => {
+    tryo((scala.xml.XML.loadString(in) \ "audience").flatMap(a => {
       for (
         domain <- (a \ "@domain").headOption;
         name <- (a \ "@name").headOption;
@@ -43,13 +69,18 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     }).toList).openOr(Nil)
   }
   protected def incAudiences(in:List[Audience]) = {
+    trace("incAudiences",in)
     <audiences>{
       in.map(a => {
         <audience domain={a.domain} name={a.name} type={a.audienceType} action={a.action}/>
       })
     }</audiences>
   }
-  protected def decStanza[A <:H2MeTLStanza[A]](rec:A):ParsedMeTLContent = ParsedMeTLContent(rec.author.get,rec.timestamp.get,parseAudiences(rec.audiences.get))
+  protected def decStanza[A <:H2MeTLStanza[A]](rec:A):ParsedMeTLContent = {
+    val res = ParsedMeTLContent(rec.author.get,rec.timestamp.get,parseAudiences(rec.audiences.get))
+    trace("decStanza",res)
+    res
+  }
   protected def decCanvasContent[A <: H2MeTLCanvasContent[A]](rec:A):ParsedCanvasContent = {
     val mc = decStanza(rec)
     ParsedCanvasContent(rec.target.get,rec.identity.get,rec.slide.get,toPrivacy(rec.privacy.get),mc.author,mc.timestamp,mc.audiences)
@@ -67,6 +98,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
         i.metlType.get match {
           case "ink" => toMeTLInk(i.asInstanceOf[H2Ink])
           case "theme" => toTheme(i.asInstanceOf[H2Theme])
+          case "chatMessage" => toChatMessage(i.asInstanceOf[H2ChatMessage])
           case "text" => toMeTLText(i.asInstanceOf[H2Text])
           case "multiWordText" => toMeTLMultiWordText(i.asInstanceOf[H2MultiWordText])
           case "image" => toMeTLImage(i.asInstanceOf[H2Image])
@@ -169,7 +201,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     val c = decStanza(h)
     MeTLTheme(config,c.author,c.timestamp,h.location.get,Theme(c.author,h.text.get,h.origin.get),c.audiences)
   }
-  override def fromTheme(i:MeTLTheme):H2Theme = incMeTLContent(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin).author(i.theme.author).room(i.location)
+  override def fromTheme(i:MeTLTheme):H2Theme = incStanza(H2Theme.create,i,"theme").location(i.location).text(i.theme.text).origin(i.theme.origin).author(i.theme.author).room(i.location)
+
+  def toChatMessage(h:H2ChatMessage):MeTLChatMessage = {
+    val c = decStanza(h)
+    MeTLChatMessage(config,c.author,c.timestamp,h.identity.get,h.contentType.get,h.content.get,h.context.get,c.audiences)
+  }
+  override def fromChatMessage(i:MeTLChatMessage):H2ChatMessage = incStanza(H2ChatMessage.create,i,"chatMessage").identity(i.identity).contentType(i.contentType).content(i.content).context(i.context)
 
   def toMeTLImage(i:H2Image):MeTLImage = {
     val cc = decCanvasContent(i)
@@ -177,10 +215,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
       case other:String if other.length > 0 => Full(other)
       case _ => Empty
     }
-    val imageBytes = url.map(u => {
-      val bytes = config.getResource(u)
-      bytes
-    })
+    val imageBytes = url.map(u => config.getResource(u))
     MeTLImage(config,cc.author,cc.timestamp,i.tag.get,url,imageBytes,Empty,i.width.get,i.height.get,i.x.get,i.y.get,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences)
   }
   def toMeTLImage(i:H2Image,imageData:Array[Byte]):MeTLImage = {
@@ -194,11 +229,16 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   }
   override def fromMeTLImage(i:MeTLImage):H2Image = incCanvasContent(H2Image.create,i,"image").tag(i.tag).source(i.source.openOr("")).width(i.width).height(i.height).x(i.x).y(i.y)
   def decodeMultiWords(wordString:String) = net.liftweb.json.parse(wordString).extract[List[MeTLTextWord]]
+  def decodeAudiences(audienceString:String) = {
+    trace(audienceString)
+    net.liftweb.json.parse(audienceString).extract[List[Audience]]
+  }
   def toMeTLMultiWordText(i:H2MultiWordText):MeTLMultiWordText = {
     val cc = decCanvasContent(i)
     MeTLMultiWordText(config,cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get),cc.audiences)
   }
   def encodeMultiWords(words:Seq[MeTLTextWord]):String = net.liftweb.json.Serialization.write(words)
+  
   override def fromMeTLMultiWordText(t:MeTLMultiWordText):H2MultiWordText = incCanvasContent(H2MultiWordText.create,t,"multiWordText").x(t.x).y(t.y).width(t.width).height(t.height).requestedWidth(t.requestedWidth).tag(t.tag).words(encodeMultiWords(t.words))
   def toMeTLText(i:H2Text):MeTLText = {
     val cc = decCanvasContent(i)
@@ -324,13 +364,24 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromMeTLQuizResponse(i:MeTLQuizResponse):H2QuizResponse = {
     incStanza(H2QuizResponse.create,i,"quizResponse").answer(i.answer).answerer(i.answerer).quizId(i.id)
   }
-  def toConversation(i:H2Conversation):Conversation = Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList)
+  def toConversation(i:H2Conversation):Conversation = {
+    val fr = for {
+      sys <- Some(i.foreignRelationshipSystem.get)
+      if (sys != null && sys != "")
+      key <- Some(i.foreignRelationshipKey.get)
+      if (key != null && key != "")
+    } yield {
+      ForeignRelationship(sys,key)
+    }
+    val audiences = parseAudiences(i.audiences.get)
+    Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList,parseAudiences(i.audiences.get),fr)
+  }
   override def fromConversation(i:Conversation):H2Conversation = {
     val rec = H2Conversation.find(By(H2Conversation.jid,i.jid)) match {
       case Full(c) => c
       case _ => H2Conversation.create
     }
-    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides))
+    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides)).foreignRelationshipSystem(i.foreignRelationship.map(_.system).getOrElse("")).foreignRelationshipKey(i.foreignRelationship.map(_.key).getOrElse("")).audiences(incAudiences(i.audiences).toString)
   }
   def optionsToString(ls:List[QuizOption]):String = {
     val xml = <options>{ls.map(o => xmlSerializer.fromQuizOption(o))}</options>
@@ -377,7 +428,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     xmlSerializer.fromPermissions(p).toString
   }
   def permissionsFromString(s:String):Permissions = {
-    xmlSerializer.toPermissions(scala.xml.XML.loadString(s))
+    try {
+      xmlSerializer.toPermissions(scala.xml.XML.loadString(s))
+    } catch {
+      case e:Exception => {
+        Permissions.default(config)
+      }
+    }
   }
   override def toPointList(input:AnyRef):List[Point] = Stopwatch.time("H2Serializer.toPointList",PointConverter.fromText(input.toString))
   override def fromPointList(input:List[Point]):AnyRef = Stopwatch.time("H2Serializer.fromPointList",PointConverter.toText(input))
