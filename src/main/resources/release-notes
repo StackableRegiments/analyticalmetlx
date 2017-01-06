@@ -1,7 +1,6 @@
 1.1.2
 Improvement: METL-324: Filter API endpoints for grades/other secure content.
 Improvement: METL-295: User profile.
-Bugfix: METL-466: Remove non-orgUnits from the d2l getGroups system.
 
 1.1.1
 Story: METL-419: Teacher submits all groups in one action.
