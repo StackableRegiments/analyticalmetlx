@@ -235,7 +235,7 @@ var GroupBuilder = (function(){
                     }).on("click",function(){
                         clearExternalGroups();
                         _.each(participants,function(p){
-                            _.each(groupSet.groups,function(group,zi){
+                            _.each(groupCat.groups,function(group,zi){
                                 var i = zi + 1;
                                 if(_.includes(_.map(group.members,"name"),p.name)){
                                     p.group = {
@@ -261,12 +261,22 @@ var GroupBuilder = (function(){
                     })).appendTo(groupSetHeader);
 
                     var author = Conversations.getCurrentConversation().author;
-                    _.each(groupSet.groups,function(group){
+                    _.each(groupCat.groups,function(group){
                         var groupV = $("<div />",{
                             class:"groupBuilderGroup"
                         }).appendTo(groupSetV);
-                        var validMembers = _.filter(group.members,function(m){
+                        var validMembers = _.filter(group.members,function(m) {
                             return m.name != author;
+                        });
+                        _.each(validMembers,function(obj){
+                            var name = obj.name;
+                            if(!(name in participants)){
+                                participants[name] = {
+                                    name:name,
+                                    enrolled:false
+                                };
+                            }
+                            renderMember(participants[name]).appendTo(groupV);
                         });
                         if(validMembers.length > 0){
                             groupSetV.appendTo(ouV);
@@ -285,13 +295,14 @@ var GroupBuilder = (function(){
                 }
             });
         });
-    }
+    };
     var renderAllocations = function(){
         var container = $(".jAlert .groupSlideDialog");
         var renderable = _.filter(participants,function(p){
             return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
         });
         var groups = allocationsFor(renderable);
+				console.log("rendering allocations:",participants,renderable,groups);
         var groupsV = container.find(".groups");
         groupsV.empty();
         _.each(groups,function(group){
@@ -420,7 +431,29 @@ var GroupBuilder = (function(){
             var choice = $(this).val();
             if(choice != "NONE"){
                 blockGroups(true);
-                getOrgUnitsFromGroupProviders(choice);
+                var conv = Conversations.getCurrentConversation();
+                console.log("finding specific groups",conv);
+                if ("foreignRelationship" in conv && "system" in conv.foreignRelationship && "key" in conv.foreignRelationship){
+                    var gp = conv.foreignRelationship.system;
+                    var k = conv.foreignRelationship.key;
+                    console.log("finding specific groups from foreignRelationship",conv.foreignRelationship,gp,k);
+                    if (gp == choice){
+                        getGroupSetsForOrgUnit(gp,{
+                            ouType:"orgUnit",
+                            name:conv.foreignRelationship.key,
+                            members:[],
+                            groupSets:[],
+                            foreignRelationship:{
+                                system:gp,
+                                key:k
+                            }
+                        });
+                    } else {
+                        getOrgUnitsFromGroupProviders(choice);
+                    }
+                } else {
+                    getOrgUnitsFromGroupProviders(choice);
+                }
             }
         });
     };
@@ -437,7 +470,7 @@ var GroupBuilder = (function(){
         }
         else{
             blockGroups(false);
-            statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.groupSets.name));
+            statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.orgUnit.name));
         }
     };
     Progress.groupsReceived["GroupBuilder"] = function(args){

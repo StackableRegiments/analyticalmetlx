@@ -16,6 +16,9 @@ Bugfix: METL-439: Forming Groups sometimes includes the teacher in a group.
 Bugfix: METL-448: Launching Participants or Grades from Controls does not select their button.
 Bugfix: METL-316: Teacher failed to restore student content from recycle bin.
 
+1.1.0
+Bugfix: METL-466: Remove non-orgUnits from the d2l getGroups system.
+
 1.0.22
 Bugfix: METL-438: Disable Force Follow when the teacher ends their session.
 Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.

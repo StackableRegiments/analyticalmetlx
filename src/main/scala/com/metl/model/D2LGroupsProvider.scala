@@ -653,7 +653,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
     val uc = interface.getUserContext
     interface.getUserByUsername(uc,userData.username).toList.flatMap(user => {
       val enrollments = interface.getEnrollments(uc,user.UserId.toString)  
-      enrollments.map(en => {
+      enrollments.filter(_.OrgUnit.Type.Id == 3).map(en => {
         OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
       })
     })
