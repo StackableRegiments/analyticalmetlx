@@ -8,6 +8,7 @@ import net.liftweb.util.Helpers._
 import Privacy._
 import net.liftweb.json.{Serialization, NoTypeHints, TypeInfo, Formats, MappingException}
 import net.liftweb.json.JsonAST._
+import com.metl.liftAuthenticator.ForeignRelationship
 
 object ConversionHelper extends Logger {
   def toDouble(a:Any):Double = a match{
@@ -76,15 +77,22 @@ trait JsonSerializerHelper {
 
   def getStringByName(input:JObject,name:String) = (input \ name).extract[String]
   def getBooleanByName(input:JObject,name:String) = (input \ name).extract[Boolean]
+  def getOptionalBooleanByName(input:JObject,name:String) = (input \ name).extract[Option[Boolean]]
   def getIntByName(input:JObject,name:String) = (input \ name).extract[Int]
   def getLongByName(input:JObject,name:String) = (input \ name).extract[Long]
-  def getDoubleByName(input:JObject,name:String) = (input \ name).extract[Double]
+  def getDoubleByName(input:JObject,name:String) = tryo((input \ name).extract[Double]) match {
+    case Full(d) => d
+    case malformedDouble => {
+      error("getDoubleByName failed: %s in %s".format(name,input))
+        (input \ name).extract[Int].toDouble
+    }
+  }
   def getPrivacyByName(input:JObject,name:String) = (input \ name).extract[Privacy]
   def getObjectByName(input:JObject,name:String) = input.values(name).asInstanceOf[JObject]
+  def getOptionalStringByName(input:JObject,name:String) = (input \ name).extract[Option[String]]
   def getListOfDoublesByName(input:JObject,name:String) = (input \ name).extract[List[Double]]
   def getListOfStringsByName(input:JObject,name:String) = (input \ name).extract[List[String]]
   def getListOfObjectsByName(input:JObject,name:String) = {
-    //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
     input.obj.find(_.name == name).toList.flatMap(_.value match {
       case JArray(l) => {
         val objs:List[JObject] = l.flatMap((li:JValue) => li match {
@@ -97,15 +105,16 @@ trait JsonSerializerHelper {
     })
     //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
   }
+  def getOptionalObjectByName(input:JObject,name:String) = input.obj.find(_.name == name).toList.headOption 
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
-class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSerializerHelper {
+class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSerializerHelper with Logger {
   type T = JValue
   val configName = config.name
 
   protected def parseAudiences(input:MeTLData):List[JField] = {
-    List(
+    val res = List(
       JField("audiences",JArray(input.audiences.map(a => {
         JObject(List(
           JField("domain",JString(a.domain)),
@@ -115,8 +124,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         ))
       })))
     )
+    res
   }
-
   protected def parseMeTLContent(input:MeTLStanza):List[JField] = {
     List(
       JField("author",JString(input.author)),
@@ -148,7 +157,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
   }
 
   protected def parseJObjForMeTLContent(input:JObject,config:ServerConfiguration = ServerConfiguration.empty):ParsedMeTLContent = {
-    val author = (input \ "author").extract[String] //getStringByName(input,"author")
+    val author = (input \ "author").extract[String]
     val timestamp = getLongByName(input,"timestamp")
     val audiences = parseJObjForAudiences(input,config)
     ParsedMeTLContent(author,timestamp,audiences)
@@ -179,6 +188,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("texts",JObject(latestTexts)),
       //JField("texts",JObject(texts.map(i => JField(i.identity,fromMeTLText(i))))),
       JField("themes",JArray(input.getThemes.map(fromTheme _))),
+      JField("chatMessages",JArray(input.getChatMessages.map(fromChatMessage _))),
       JField("multiWordTexts",JObject(latestMultiWords)),
       //JField("multiWordTexts",JObject(multiWordTexts.map(i => JField(i.identity,fromMeTLMultiWordText(i))))),
       JField("quizzes",JArray(input.getQuizzes.map(i => fromMeTLQuiz(i)))),
@@ -188,6 +198,13 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("commands",JArray(input.getCommands.map(i => fromMeTLCommand(i)))),
       JField("files",JArray(input.getFiles.map(i => fromMeTLFile(i)))),
       JField("videoStreams",JArray(input.getVideoStreams.map(i => fromMeTLVideoStream(i)))),
+      JField("grades",JArray(input.getGrades.map(i => fromGrade(i)))),
+      JField("gradeValues",JArray(input.getGradeValues.flatMap{
+        case i:MeTLNumericGradeValue => Some(fromNumericGradeValue(i))
+        case i:MeTLBooleanGradeValue => Some(fromBooleanGradeValue(i))
+        case i:MeTLTextGradeValue => Some(fromTextGradeValue(i))
+        case _ => None
+      })),
       JField("deletedCanvasContents",JArray(input.getDeletedCanvasContents.map(i => fromMeTLData(i)))),
       JField("undeletedCanvasContents",JArray(input.getUndeletedCanvasContents.map(i => fromMeTLUndeletedCanvasContent(i)))),
       JField("unhandledCanvasContents",JArray(input.getUnhandledCanvasContents.map(i => fromMeTLUnhandledCanvasContent(i)))),
@@ -223,10 +240,19 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     getFields(i,"files").foreach(jf => history.addStanza(toMeTLFile(jf.value)))
     getFields(i,"videoStreams").foreach(jf => history.addStanza(toMeTLVideoStream(jf.value)))
     getFields(i,"themes").foreach(jf => history.addStanza(toTheme(jf.value)))
+    getFields(i,"chatMessages").foreach(jf => history.addStanza(toChatMessage(jf.value)))
     getFields(i,"deletedCanvasContents").foreach(jf => {
       toMeTLData(jf.value) match {
         case cc:MeTLCanvasContent => history.addDeletedCanvasContent(cc)
         case _ => {}
+      }
+    })
+    getFields(i,"grades").foreach(jf => history.addStanza(toGrade(jf.value)))
+    getFields(i,"gradeValues").foreach(jf => {
+      jf.value match {
+        case jo:JObject if (isOfType(jo,"numericGradeValue")) => history.addStanza(toNumericGradeValue(jo))
+        case jo:JObject if (isOfType(jo,"textGradeValue")) => history.addStanza(toTextGradeValue(jo))
+        case jo:JObject if (isOfType(jo,"booleanGradeValue")) => history.addStanza(toBooleanGradeValue(jo))
       }
     })
     getFields(i,"undeletedCanvasContent").foreach(jf => history.addStanza(toMeTLUndeletedCanvasContent(jf.value)))
@@ -261,6 +287,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"dirtyVideo")) => toMeTLDirtyVideo(jo)
       case jo:JObject if (isOfType(jo,"submission")) => toSubmission(jo)
       case jo:JObject if (isOfType(jo,"quiz")) => toMeTLQuiz(jo)
+      case jo:JObject if (isOfType(jo,"theme")) => toTheme(jo)
+      case jo:JObject if (isOfType(jo,"chatMessage")) => toChatMessage(jo)
       case jo:JObject if (isOfType(jo,"quizResponse")) => toMeTLQuizResponse(jo)
       case jo:JObject if (isOfType(jo,"moveDelta")) => toMeTLMoveDelta(jo)
       case jo:JObject if (isOfType(jo,"command")) => toMeTLCommand(jo)
@@ -268,6 +296,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"file")) => toMeTLFile(jo)
       case jo:JObject if (isOfType(jo,"videoStream")) => toMeTLVideoStream(jo)
       case jo:JObject if (isOfType(jo,"undeletedCanvasContent")) => toMeTLUndeletedCanvasContent(jo)
+      case jo:JObject if (isOfType(jo,"grade")) => toGrade(jo)
+      case jo:JObject if (isOfType(jo,"numericGradeValue")) => toNumericGradeValue(jo)
+      case jo:JObject if (isOfType(jo,"textGradeValue")) => toTextGradeValue(jo)
+      case jo:JObject if (isOfType(jo,"booleanGradeValue")) => toBooleanGradeValue(jo)
       case other:JObject if hasFields(other,List("target","privacy","slide","identity")) => toMeTLUnhandledCanvasContent(other)
       case other:JObject if hasFields(other,List("author","timestamp")) => toMeTLUnhandledStanza(other)
       case other:JObject => toMeTLUnhandledData(other)
@@ -327,6 +359,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val location = getStringByName(input,"location")
         MeTLTheme(config,mc.author,mc.timestamp,location,Theme(mc.author,text,origin),mc.audiences)
       }
+      case _ => MeTLTheme.empty
     }
   })
 
@@ -335,6 +368,27 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("text",JString(t.theme.text)),
       JField("origin",JString(t.theme.origin)),
       JField("location",JString(t.location))
+    ) ::: parseMeTLContent(t))
+  })
+  override def toChatMessage(i:JValue):MeTLChatMessage = Stopwatch.time("JsonSerializer.toChatMessage",{
+    i match {
+      case input:JObject => {
+        val mc = parseJObjForMeTLContent(input,config)
+        val content = getStringByName(input,"content")
+        val contentType = getStringByName(input,"contentType")
+        val context = getStringByName(input,"context")
+        val identity = getStringByName(input,"identity")
+        MeTLChatMessage(config,mc.author,mc.timestamp,identity,contentType,content,context,mc.audiences)
+      }
+    }
+  })
+
+  override def fromChatMessage(t:MeTLChatMessage):JValue = Stopwatch.time("JsonSerializer.fromChatMessage",{
+    toJsObj("chatMessage",List(
+      JField("identity",JString(t.identity)),
+      JField("contentType",JString(t.contentType)),
+      JField("content",JString(t.content)),
+      JField("context",JString(t.context))
     ) ::: parseMeTLContent(t))
   })
 
@@ -348,7 +402,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
         val bytes = url.map(u => config.getResource(u))
-        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted)
+        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted,mc.audiences)
       }
       case _ => MeTLFile.empty
     }
@@ -369,7 +423,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val id = getStringByName(input,"id")
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
-        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted)
+        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences)
       }
       case _ => MeTLVideoStream.empty
     }
@@ -459,21 +513,29 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   })
   override def toMeTLImage(i:JValue):MeTLImage = Stopwatch.time("JsonSerializer.toMeTLImage",{
-    i match {
-      case input:JObject => {
-        val mc = parseJObjForMeTLContent(input,config)
-        val cc = parseJObjForCanvasContent(input)
-        val tag = getStringByName(input,"tag")
-        val source = Full(getStringByName(input,"source"))
-        val imageBytes = source.map(u => config.getResource(u))
-        val pngBytes = Empty
-        val width = getDoubleByName(input,"width")
-        val height = getDoubleByName(input,"height")
-        val x = getDoubleByName(input,"x")
-        val y = getDoubleByName(input,"y")
-        MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+    try{
+      i match {
+        case input:JObject => {
+          val mc = parseJObjForMeTLContent(input,config)
+          val cc = parseJObjForCanvasContent(input)
+          val tag = getStringByName(input,"tag")
+          val source = Full(getStringByName(input,"source"))
+          val imageBytes = source.map(u => config.getResource(u))
+          val pngBytes = Empty
+          val width = getDoubleByName(input,"width")
+          val height = getDoubleByName(input,"height")
+          val x = getDoubleByName(input,"x")
+          val y = getDoubleByName(input,"y")
+          MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        }
+        case _ => MeTLImage.empty
       }
-      case _ => MeTLImage.empty
+    }
+    catch{
+      case e => {
+        error("JsonSerializer.toMeTLImage failed on %s: %s".format(i,e))
+        throw e
+      }
     }
   })
   override def fromMeTLImage(input:MeTLImage):JValue = Stopwatch.time("JsonSerializer.fromMeTLImage",{
@@ -797,11 +859,25 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         }
         val permissions = toPermissions(getObjectByName(input,"permissions"))
         val blacklist = getListOfStringsByName(input,"blacklist")
+        val audiences = parseJObjForAudiences(input,config)
         val thisConfig = getStringByName(input,"configName") match {
           case "" => config
           case other => ServerConfiguration.configForName(other)
         }
-        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist)
+        val foreignRelationship = getOptionalObjectByName(input,"foreignRelationship").flatMap(n => {
+          n.value match {
+            case jo:JObject => {
+              for {
+                sys <- getOptionalStringByName(jo,"system")
+                key <- getOptionalStringByName(jo,"key")
+              } yield {
+                ForeignRelationship(sys,key)
+              }
+            }
+            case _ => None
+          }
+        })
+        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist,audiences,foreignRelationship)
       }
       case _ => Conversation.empty
     }
@@ -821,7 +897,12 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("permissions",fromPermissions(input.permissions)),
       JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList)),
       JField("configName",JString(input.server.name))
-    ))
+    ) ::: input.foreignRelationship.toList.map(fr => {
+      JField("foreignRelationship",JObject(List(
+        JField("system",JString(fr.system)),
+        JField("key",JString(fr.key))
+      )))
+    }) ::: parseAudiences(input))
   })
   override def toSlide(i:JValue):Slide = Stopwatch.time("JsonSerializer.toSlide",{
     i match {
@@ -833,7 +914,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val defaultWidth = getIntByName(input,"defaultWidth")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
-        val groupSet = getListOfObjectsByName(input,"groupSet").map(gs => toGroupSet(gs))
+        val groupSet = getListOfObjectsByName(input,"groupSets").map(gs => toGroupSet(gs))
         Slide(config,author,id,index,defaultHeight,defaultWidth,exposed,slideType,groupSet)
       }
       case _ => Slide.empty
@@ -847,8 +928,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("defaultHeight",JInt(input.defaultHeight)),
       JField("defaultWidth",JInt(input.defaultWidth)),
       JField("exposed",JBool(input.exposed)),
-      JField("slideType",JString(input.slideType))
-    ) ::: List(input.groupSet.map(gs => JField("groupSet",fromGroupSet(gs)))).flatten)
+      JField("slideType",JString(input.slideType)),
+      JField("groupSets",JArray(input.groupSet.map(fromGroupSet _)))))
   })
   override def toGroupSet(i:JValue):GroupSet = Stopwatch.time("JsonSerializer.toGroupSet",{
     i match {
@@ -880,7 +961,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           case "byTotalGroups" => ByTotalGroups(getIntByName(input,"groupCount"))
           case "onePersonPerGroup" => OnePersonPerGroup
           case "everyoneInOneGroup" => EveryoneInOneGroup
-          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursiely into a Map.
+          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursively into a Map.
           case _ => EveryoneInOneGroup
         }
       }
@@ -905,8 +986,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val audiences = parseJObjForAudiences(input,config)
         val id = getStringByName(input,"id")
         val location = getStringByName(input,"location")
+        val timestamp = getLongByName(input,"timestamp")
         val members = getListOfStringsByName(input,"members")
-        Group(config,id,location,members,audiences)
+        Group(config,id,location,timestamp,members,audiences)
       }
       case _ => Group.empty
     }
@@ -915,6 +997,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     toJsObj("group",List(
       JField("id",JString(input.id)),
       JField("location",JString(input.location)),
+      JField("timestamp",JInt(input.timestamp)),
       JField("members",JArray(input.members.map(m => JString(m))))
     ) ::: parseAudiences(input))
   })
@@ -924,7 +1007,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
         val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
         val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced)
+        val studentsMayBroadcast = getOptionalBooleanByName(input,"studentsMayBroadcast").getOrElse(false)
+        val studentsMayChatPublicly = getOptionalBooleanByName(input,"studentsMayChatPublicly").getOrElse(true)
+        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
       }
       case _ => Permissions.default(config)
     }
@@ -933,7 +1018,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     JObject(List(
       JField("studentCanOpenFriends",JBool(input.studentsCanOpenFriends)),
       JField("studentCanPublish",JBool(input.studentsCanPublish)),
-      JField("usersAreCompulsorilySynced",JBool(input.usersAreCompulsorilySynced))
+      JField("usersAreCompulsorilySynced",JBool(input.usersAreCompulsorilySynced)),
+      JField("studentsMayBroadcast",JBool(input.studentsMayBroadcast)),
+      JField("studentsMayChatPublicly",JBool(input.studentsMayChatPublicly))
     ))
   })
   protected def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
@@ -983,5 +1070,140 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JDouble(input.y),
       JDouble(input.thickness)
     )
+  })
+  override def toGrade(input:JValue):MeTLGrade = Stopwatch.time("JsonSerializer.toGrade",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val id = getStringByName(j,"id")
+        val name = getStringByName(j,"name")
+        val description = getStringByName(j,"description")
+        val location = getStringByName(j,"location")
+        val visible = getBooleanByName(j,"visible")
+        val gradeType = MeTLGradeValueType.parse(getStringByName(j,"gradeType"))
+        val numericMaximum = if (gradeType == MeTLGradeValueType.Numeric){
+          Some(getDoubleByName(j,"numericMaximum"))
+        } else {
+          None
+        }
+        val numericMinimum = if (gradeType == MeTLGradeValueType.Numeric){
+          Some(getDoubleByName(j,"numericMinimum"))
+        } else {
+          None
+        }
+        val foreignRelationship = getOptionalObjectByName(j,"foreignRelationship").flatMap(n => {
+          n.value match {
+            case jo:JObject => {
+              for {
+                sys <- getOptionalStringByName(jo,"sys")
+                key <- getOptionalStringByName(jo,"key")
+              } yield {
+                (sys,key)
+              }
+            }
+            case _ => None
+          }
+        })
+        val gradeReferenceUrl = getOptionalStringByName(j,"gradeReferenceUrl")
+        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
+      }
+      case _ => MeTLGrade.empty
+    }
+  })
+  override def fromGrade(input:MeTLGrade):JValue = Stopwatch.time("JsonSerializer.fromGrade",{
+    toJsObj("grade",List(
+      JField("id",JString(input.id)),
+      JField("name",JString(input.name)),
+      JField("description",JString(input.description)),
+      JField("visible",JBool(input.visible)),
+      JField("location",JString(input.location)),
+      JField("gradeType",JString(MeTLGradeValueType.print(input.gradeType)))
+    ) ::: input.gradeReferenceUrl.toList.map(gru => {
+      JField("gradeReferenceUrl",JString(gru))
+    }) ::: input.foreignRelationship.toList.map(frs => {
+      JField("foreignRelationship",JObject(List(
+        JField("sys",JString(frs._1)),
+        JField("key",JString(frs._2))
+      )))
+    }) ::: input.numericMaximum.toList.map(nm => {
+      JField("numericMaximum",JDouble(nm))
+    }) ::: input.numericMinimum.toList.map(nm => {
+      JField("numericMinimum",JDouble(nm))
+    }) :::parseMeTLContent(input))
+  })
+  override def toNumericGradeValue(input:JValue):MeTLNumericGradeValue = Stopwatch.time("JsonSerializer.toNumericGradeValue",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val gradeId = getStringByName(j,"gradeId")
+        val gradedUser = getStringByName(j,"gradedUser")
+        val gradeValue = getDoubleByName(j,"gradeValue")
+        val gradeComment = getOptionalStringByName(j,"gradeComment")
+        val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
+        MeTLNumericGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+      }
+      case _ => MeTLNumericGradeValue.empty
+    }
+  })
+  override def fromNumericGradeValue(input:MeTLNumericGradeValue):JValue = Stopwatch.time("JsonSerializer.fromNumericGradeValue",{
+    toJsObj("numericGradeValue",List(
+      JField("gradeId",JString(input.gradeId)),
+      JField("gradedUser",JString(input.gradedUser)),
+      JField("gradeValue",JDouble(input.gradeValue))
+    ) ::: input.gradeComment.toList.map(s => {
+      JField("gradeComment",JString(s))
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      JField("gradePrivateComment",JString(s))
+    }) ::: parseMeTLContent(input))
+  })
+  override def toBooleanGradeValue(input:JValue):MeTLBooleanGradeValue = Stopwatch.time("JsonSerializer.toBooleanGradeValue",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val gradeId = getStringByName(j,"gradeId")
+        val gradedUser = getStringByName(j,"gradedUser")
+        val gradeValue = getBooleanByName(j,"gradeValue")
+        val gradeComment = getOptionalStringByName(j,"gradeComment")
+        val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
+        MeTLBooleanGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+      }
+      case _ => MeTLBooleanGradeValue.empty
+    }
+  })
+  override def fromBooleanGradeValue(input:MeTLBooleanGradeValue):JValue = Stopwatch.time("JsonSerializer.fromBooleanGradeValue",{
+    toJsObj("booleanGradeValue",List(
+      JField("gradeId",JString(input.gradeId)),
+      JField("gradedUser",JString(input.gradedUser)),
+      JField("gradeValue",JBool(input.gradeValue))
+    ) ::: input.gradeComment.toList.map(s => {
+      JField("gradeComment",JString(s))
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      JField("gradePrivateComment",JString(s))
+    }) ::: parseMeTLContent(input))
+  })
+  override def toTextGradeValue(input:JValue):MeTLTextGradeValue = Stopwatch.time("JsonSerializer.toTextGradeValue",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val gradeId = getStringByName(j,"gradeId")
+        val gradedUser = getStringByName(j,"gradedUser")
+        val gradeValue = getStringByName(j,"gradeValue")
+        val gradeComment = getOptionalStringByName(j,"gradeComment")
+        val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
+        MeTLTextGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+      }
+      case _ => MeTLTextGradeValue.empty
+    }
+  })
+  override def fromTextGradeValue(input:MeTLTextGradeValue):JValue = Stopwatch.time("JsonSerializer.fromTextGradeValue",{
+    toJsObj("textGradeValue",List(
+      JField("gradeId",JString(input.gradeId)),
+      JField("gradedUser",JString(input.gradedUser)),
+      JField("gradeValue",JString(input.gradeValue))
+    ) ::: input.gradeComment.toList.map(s => {
+      JField("gradeComment",JString(s))
+    }) ::: input.gradePrivateComment.toList.map(s => {
+      JField("gradePrivateComment",JString(s))
+    }) ::: parseMeTLContent(input))
   })
 }

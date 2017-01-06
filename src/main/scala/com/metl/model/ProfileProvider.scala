@@ -29,11 +29,11 @@ trait UserProfileProvider extends Logger {
       case Left(e) => Left(e)
       case Right(p :: _) => {
         var newP = p
-        authState.informationGroups.find(_._1 == firstNameKey).foreach(fn => newP = newP.copy(firstName = Some(fn._2)))
-        authState.informationGroups.find(_._1 == surnameKey).foreach(fn => newP = newP.copy(surname = Some(fn._2)))
-        authState.informationGroups.find(_._1 == emailKey).foreach(fn => newP = newP.copy(emailAddress = Some(fn._2)))
+        authState.informationGroups.find(_.key == firstNameKey).foreach(fn => newP = newP.copy(firstName = Some(fn.value)))
+        authState.informationGroups.find(_.key == surnameKey).foreach(fn => newP = newP.copy(surname = Some(fn.value)))
+        authState.informationGroups.find(_.key == emailKey).foreach(fn => newP = newP.copy(emailAddress = Some(fn.value)))
         frKeys.foreach(frk => {
-          authState.informationGroups.find(_._1 == frk).foreach(fn => newP = newP.copy(foreignRelationships = p.foreignRelationships.updated(frk,fn._2)))
+          authState.informationGroups.find(_.key == frk).foreach(fn => newP = newP.copy(foreignRelationships = p.foreignRelationships.updated(frk,fn.value)))
         })
         updateProfile(newP)
       }

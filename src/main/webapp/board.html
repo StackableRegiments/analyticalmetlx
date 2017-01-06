@@ -13,49 +13,44 @@
   <script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
   <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
   <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
+  <script data-lift="with-resource-id" src="static/js/stable/moment.min.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/collections.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/healthCheck.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Bench.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/defaults.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Progress.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/DeviceConfiguration.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/conversations.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/historyReader.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/board.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/toolbar.js"></script>
+  <script data-lift="with-resource-id" src="static/js/DeviceConfiguration.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/sparkline.js"></script>
+  <script data-lift="with-resource-id" src="static/js/conversations.js"></script>
+  <script data-lift="with-resource-id" src="static/js/historyReader.js"></script>
+  <script data-lift="with-resource-id" src="static/js/board.js"></script>
+  <script data-lift="with-resource-id" src="static/js/toolbar.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/userSettings.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/scroll.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/Canvas.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/onLoad.js"></script>
+  <script data-lift="with-resource-id" src="static/js/onLoad.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/test.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/quizzes.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/submissions.js"></script>
+  <script data-lift="with-resource-id" src="static/js/submissions.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/blacklist.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/attachments.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/participants.js"></script>
+  <script data-lift="with-resource-id" src="static/js/participants.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/privacy.js"></script>
-  <script data-lift="with-resource-id" src="static/js/min/carota-debug.js"></script>
+  <script data-lift="with-resource-id" src="static/js/carota-debug.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/hotkeys.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/contentFilter.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/typo.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/word-cloud.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/Chart.bundle.min.js"></script>
   <script data-lift="with-resource-id" src="static/js/min/analysis.js"></script>
-  <!--
-      <script data-lift="with-resource-id" src="static/js/stable/kurento/adapter.js"></script>
-      <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
-      <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
-      <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
-      -->
   <script data-lift="with-resource-id" src="static/js/min/recycleBin.js"></script>
-  <!--
-      <script data-lift="with-resource-id" src="static/js/stable/kurento/adapter.js"></script>
-      <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
-      <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
-      <script data-lift="with-resource-id" src="static/js/youtube.js"></script>
-      -->
-  <script src="static/js/stable/Chart.bundle.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/grades.js"></script>
+  <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/videoStreaming.js"></script>
+  <script data-lift="with-resource-id" src="static/js/min/youtube.js"></script>
   <script src="static/js/stable/nlp_compromise.min.js"></script>
+  <script src="static/js/groupBuilder.js"></script>
+  <script src="static/js/plugins.js"></script>
   <link rel="stylesheet" href="static/css/board.css"></link>
   <style>
     @media screen {
@@ -64,8 +59,7 @@
     }
     }
     #masterLayout {
-    height:100% !important;
-    width:100% !important;
+    flex-grow:1;
     }
     #boardColumn {
     order:2;
@@ -85,58 +79,26 @@
     flex-shrink:0;
     flex-basis:content;
     }
-    /*
-    #boardContainer {
-    height:100% !important;
-    width:100% !important;
-    }
-    */
-    .headerRow1 {
-    position:static !important;
-    margin:0;
-    }
-    #slideControls {
-    float:none !important;
-    flex-shrink:0;
-    flex-grow:0;
-    flex-wrap:nowrap;
-    }
-    .main-menu {
-    position:static !important;
-    top: 0px;
-    left: 0px;
-    z-index: 3;
-    }
-    #masterHeaderFlexContainer {
-    display:flex;
-    }
-    .subscribedStream {
-    background:red;
-    }
-    .publisherVideoElem, .subscriberVideoElem {
-    display:inline-block;
-    }
-
 
   </style>
-  <div>
-    <div id="loadingSpinner" class="loading-spinner" style="display:none;">
-      <span class="icon-spinner">
-        <i class="fa fa-cog fa-spin fa-3x fa-fw"></i>
+  <div id="loadingSpinner" class="loading-spinner">
+    <span class="icon-spinner">
+      <i class="fa fa-cog fa-spin fa-3x fa-fw"></i>
+    </span>
+  </div>
+  <div id="pasteDialogTemplate">
+    <span class="dialogContent">
+      Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
+    </span>
+    <span class="dialogOptions">
+      <span class="dialogOption">
+        <button class="fa btn-icon">
+          <div class="icon-txt"></div>
+        </button>
       </span>
-    </div>
-    <div id="pasteDialogTemplate">
-      <span class="dialogContent">
-        Multiple types of data were found on the clipboard.  Please select the type you wish to paste.
-      </span>
-      <span class="dialogOptions">
-        <span class="dialogOption">
-          <button class="fa btn-icon">
-            <div class="icon-txt"></div>
-          </button>
-        </span>
-      </span>
-    </div>
+    </span>
+  </div>
+  <div id="masterRows" class="flex-container-column">
     <div id="masterHeader">
       <div id="masterHeaderFlexContainer">
         <span id="floatingToggleContainer" class="main-menu">
@@ -144,23 +106,16 @@
             <div class="icon-txt">Options</div>
           </button>
         </span>
-        <!--
-            <span id="videoConfStartButtonContainer" class="main-menu">
-              <button class="floatingToolbar btn-menu fa fa-video-camera btn-icon" id="videoConfStartButton">
-                <div class="icon-txt">Send video</div>
-              </button>
-            </span>
-            <span id="broadcastContainer" class="main-menu">
-              <a class="floatingToolbar btn-menu fa fa-television btn-icon" id="broadcastLink">
-                <div class="icon-txt">Watch class</div>
-              </a>
-            </span>
-            -->
-        <div class="headerRow1">
+        <div class="meters">
           <meter id="healthStatus"></meter>
+          <meter id="attendanceStatus"></meter>
+          <div id="conversationActivity" style="overflow:hidden"></div>
+        </div>
+        <div class="heading translucent">
           <span id="username" ></span>
           <span id="currentConversationTitleContainer" >
             <span> working in </span>
+            <span id="currentGroupTitle"></span>
             <span id="currentConversationTitle"></span>
             <span> Page </span>
           </span>
@@ -168,29 +123,22 @@
         </div>
         <div id="slideControls"></div>
       </div>
-      <!--
-          <div id="videoSubsciptionsContainer"></div>
-          <div id="videoConfContainer">
-            <span class="videoContainer">
-              <button class="floatingToolbar btn-menu fa fa-television btn-icon videoConfSubscribeButton">
-                <div class="icon-txt">Receive</div>
-              </button>
-            </span>
-          </div>
-          -->
       <span class="lift:embed?what=_backstage-menu"></span>
     </div>
     <div id="masterLayout" class="flex-container-responsive">
       <div class="shrinkWrappedColumn" id="toolsColumn">
         <div class="lift:embed?what=_ribbon" ></div>
       </div>
-      <div class="expandoColumn expandoRow main-board mrh mlh flex-container-column np" id="boardColumn">
+      <div class="main-board mrh mlh flex-container-column np" id="boardColumn">
         <div class="lift:embed?what=_presentationSpace grow" ></div>
         <div id="notices" class="body-bg"></div>
       </div>
       <div class="shrinkWrappedColumn expandoRow npt nmb" id="thumbsColumn">
         <div class="lift:embed?what=_thumbs"></div>
       </div>
+    </div>
+    <div id="masterFooter">
+      <div id="pluginBar"></div>
     </div>
   </div>
   <div class="lift:embed?what=_dedicatedPopups"></div>

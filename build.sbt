@@ -4,7 +4,7 @@ import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "0.13.5"
+version := "1.0.22"
 
 val scalaVersionString = "2.11.5"
 
@@ -112,15 +112,17 @@ libraryDependencies ++= {
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
-//    "org.scalactic" %% "scalactic" % "3.0.0",
-//    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+    //    "org.scalactic" %% "scalactic" % "3.0.0",
+    //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
-    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1"
+    "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
+    //for AWS API Gateway interaction
+	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
-javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
+javacOptions ++= Seq("-source", "8", "-target", "8")
 
 // append -deprecation to the options passed to the Scala compiler
 scalacOptions += "-deprecation"

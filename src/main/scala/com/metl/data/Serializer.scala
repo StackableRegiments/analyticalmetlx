@@ -80,6 +80,16 @@ abstract class Serializer {
   def fromMeTLUnhandledCanvasContent(input:MeTLUnhandledCanvasContent):T = throw new SerializationNotImplementedException
   def toTheme(input:T):MeTLTheme = throw new SerializationNotImplementedException
   def fromTheme(input:MeTLTheme):T = throw new SerializationNotImplementedException
+  def toGrade(input:T):MeTLGrade = throw new SerializationNotImplementedException
+  def fromGrade(input:MeTLGrade):T = throw new SerializationNotImplementedException
+  def toNumericGradeValue(input:T):MeTLNumericGradeValue = throw new SerializationNotImplementedException
+  def fromNumericGradeValue(input:MeTLNumericGradeValue):T = throw new SerializationNotImplementedException
+  def toBooleanGradeValue(input:T):MeTLBooleanGradeValue = throw new SerializationNotImplementedException
+  def fromBooleanGradeValue(input:MeTLBooleanGradeValue):T = throw new SerializationNotImplementedException
+  def toTextGradeValue(input:T):MeTLTextGradeValue = throw new SerializationNotImplementedException
+  def fromTextGradeValue(input:MeTLTextGradeValue):T = throw new SerializationNotImplementedException
+  def toChatMessage(input:T):MeTLChatMessage = throw new SerializationNotImplementedException
+  def fromChatMessage(input:MeTLChatMessage):T = throw new SerializationNotImplementedException
   def fromMeTLData(input:MeTLData):T = input match {
     case i:MeTLInk => fromMeTLInk(i)
     case t:MeTLText => fromMeTLText(t)
@@ -99,6 +109,11 @@ abstract class Serializer {
     case f:MeTLFile => fromMeTLFile(f)
     case v:MeTLVideoStream => fromMeTLVideoStream(v)
     case t:MeTLTheme => fromTheme(t)
+    case g:MeTLGrade => fromGrade(g)
+    case g:MeTLNumericGradeValue => fromNumericGradeValue(g)
+    case g:MeTLBooleanGradeValue => fromBooleanGradeValue(g)
+    case g:MeTLTextGradeValue => fromTextGradeValue(g)
+    case cm:MeTLChatMessage => fromChatMessage(cm)
     case uc:MeTLUndeletedCanvasContent => fromMeTLUndeletedCanvasContent(uc)
     case cc:MeTLUnhandledCanvasContent => fromMeTLUnhandledCanvasContent(cc)
     case ms:MeTLUnhandledStanza => fromMeTLUnhandledStanza(ms)
@@ -143,6 +158,8 @@ class PassthroughSerializer extends Serializer {
   override def fromMeTLQuiz(input:MeTLQuiz):Object = input.asInstanceOf[Object]
   override def fromTheme(input:MeTLTheme):Object = input.asInstanceOf[Object]
   override def toTheme(input:Object):MeTLTheme = input.asInstanceOf[MeTLTheme]
+  override def fromChatMessage(input:MeTLChatMessage):Object = input.asInstanceOf[Object]
+  override def toChatMessage(input:Object):MeTLChatMessage = input.asInstanceOf[MeTLChatMessage]
   override def toMeTLQuizResponse(input:Object):MeTLQuizResponse = input.asInstanceOf[MeTLQuizResponse]
   override def fromMeTLQuizResponse(input:MeTLQuizResponse):Object = input.asInstanceOf[Object]
   override def toMeTLFile(input:T):MeTLFile = input.asInstanceOf[MeTLFile]
@@ -176,4 +193,12 @@ class PassthroughSerializer extends Serializer {
   override def fromMeTLUnhandledCanvasContent(input:MeTLUnhandledCanvasContent):T = input.asInstanceOf[Object]
   override def toMeTLUndeletedCanvasContent(input:T):MeTLUndeletedCanvasContent = input.asInstanceOf[MeTLUndeletedCanvasContent]
   override def fromMeTLUndeletedCanvasContent(input:MeTLUndeletedCanvasContent):T = input.asInstanceOf[Object]
+  override def toGrade(input:Object):MeTLGrade = input.asInstanceOf[MeTLGrade]
+  override def fromGrade(input:MeTLGrade):Object = input.asInstanceOf[Object]
+  override def toNumericGradeValue(input:Object):MeTLNumericGradeValue = input.asInstanceOf[MeTLNumericGradeValue]
+  override def fromNumericGradeValue(input:MeTLNumericGradeValue):Object = input.asInstanceOf[Object]
+  override def toBooleanGradeValue(input:Object):MeTLBooleanGradeValue = input.asInstanceOf[MeTLBooleanGradeValue]
+  override def fromBooleanGradeValue(input:MeTLBooleanGradeValue):Object = input.asInstanceOf[Object]
+  override def toTextGradeValue(input:Object):MeTLTextGradeValue = input.asInstanceOf[MeTLTextGradeValue]
+  override def fromTextGradeValue(input:MeTLTextGradeValue):Object = input.asInstanceOf[Object]
 }

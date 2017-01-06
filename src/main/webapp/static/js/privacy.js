@@ -1,14 +1,16 @@
 var Privacy = (function(){
     var privacy = "PUBLIC";
     var setPrivacyIndicators = function(){
-        $.each({privateMode:"PRIVATE",publicMode:"PUBLIC"},function(id,p){
+        $.each(privacyButtons,function(id,p){
             if (p == privacy){
                 $("#"+id).addClass("activePrivacy active");
             } else {
                 $("#"+id).removeClass("activePrivacy active");
             }
         });
-        $("#currentlyBanned").text(Conversations.getIsBanned() == true ? "(banned because of inappropriate content)" : "");
+	var banned = Conversations.getIsBanned();
+	$("#publicize").toggleClass("disabled",banned);
+        $("#currentlyBanned").text(banned == true ? "(banned because of inappropriate content)" : "");
         $("#currentPrivacyStatus").text(privacy == "PUBLIC"? "publicly" : "privately");
     };
     var attemptToSetPrivacy = function(p){
@@ -54,11 +56,11 @@ var Privacy = (function(){
                         button.removeClass("disabledButton");
                     }
                 }
-								if ("multiWordTexts" in selection){
+                if ("multiWordTexts" in selection){
                     if (_.some(selection.multiWordTexts,function(item){return item.privacy != p;})){
                         button.removeClass("disabledButton");
                     }
-								}
+                }
                 if ("texts" in selection){
                     if (_.some(selection.texts,function(item){return item.privacy != p;})){
                         button.removeClass("disabledButton");

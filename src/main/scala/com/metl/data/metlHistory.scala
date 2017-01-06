@@ -244,6 +244,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var outputHook:MeTLStanza => Unit = (s) => {}
   protected val stanzas:HistoryCollection[MeTLStanza] = emptyColl[MeTLStanza]
   protected val themes:HistoryCollection[MeTLTheme] = emptyColl[MeTLTheme]
+  protected val chatMessages:HistoryCollection[MeTLChatMessage] = emptyColl[MeTLChatMessage]
   protected val canvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
   protected val highlighters:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
   protected val inks:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
@@ -268,12 +269,15 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected var latestCommands:Map[String,MeTLCommand] = Map.empty[String,MeTLCommand]
   protected val undeletedCanvasContents:HistoryCollection[MeTLUndeletedCanvasContent] = emptyColl[MeTLUndeletedCanvasContent]
   protected val deletedCanvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
+  protected val grades:HistoryCollection[MeTLGrade] = emptyColl[MeTLGrade]
+  protected val gradeValues:HistoryCollection[MeTLGradeValue] = emptyColl[MeTLGradeValue]
 
   def getLatestCommands:Map[String,MeTLCommand] = latestCommands
 
   def getAll = stanzas.toList
   def getCanvasContents = canvasContents.toList
   def getThemes = themes.toList
+  def getChatMessages = chatMessages.toList
   def getHighlighters = highlighters.toList
   def getInks = inks.toList
   def getImages = images.toList
@@ -291,6 +295,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getUnhandledStanzas = unhandledStanzas.toList
   def getUndeletedCanvasContents = undeletedCanvasContents.toList
   def getDeletedCanvasContents = deletedCanvasContents.toList
+  def getGrades = grades.toList
+  def getGradeValues = gradeValues.toList
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -343,6 +349,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLVideo => addVideo(s)
     case s:MeTLText => addText(s)
     case s:MeTLTheme => addTheme(s)
+    case s:MeTLChatMessage => addChatMessage(s)
     case s:MeTLMultiWordText => addMultiWordText(s)
     case s:MeTLQuiz => addQuiz(s)
     case s:MeTLQuizResponse => addQuizResponse(s)
@@ -351,6 +358,8 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:Attendance => addAttendance(s)
     case s:MeTLFile => addFile(s)
     case s:MeTLVideoStream => addVideoStream(s)
+    case s:MeTLGrade => addGrade(s)
+    case s:MeTLGradeValue => addGradeValue(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
     case s:MeTLUndeletedCanvasContent => addMeTLUndeletedCanvasContent(s)
@@ -360,9 +369,28 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
   }
 
+  def addGrade(t:MeTLGrade) = {
+    grades += t
+    outputHook(t)
+    this
+  }
+  def addGradeValue(t:MeTLGradeValue) = {
+    gradeValues += t
+    t match {
+      case ms:MeTLStanza => outputHook(ms)
+      case _ => {}
+    }
+    this
+  }
+
   def addTheme(t:MeTLTheme) = {
     themes += t
     trace("Theme count: %s".format(themes.length))
+    outputHook(t)
+    this
+  }
+  def addChatMessage(t:MeTLChatMessage) = {
+    chatMessages += t
     outputHook(t)
     this
   }
@@ -888,6 +916,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     getAllWithMdsAtEnd().foreach(i => newHistory.addStanza(i))
     newHistory
   })
+  /*
   def getUserSpecificHistory(user:String, isTeacher:Boolean = false) = Stopwatch.time("History.getUserSpecificHistory(%s)".format(user),{
     val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
     getAllWithMdsAtEnd().foreach(i => i match {
@@ -901,6 +930,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     })
     newHistory
   })
+  */
   protected def shouldAdjust:Boolean = (xScale != 1.0 || yScale != 1.0 || xOffset != 0 || yOffset != 0)
   def shouldRender:Boolean = ((getLeft < 0 || getRight > 0 || getTop < 0 || getBottom > 0) && getCanvasContents.length > 0)
 }

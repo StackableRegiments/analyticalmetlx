@@ -1,4 +1,5 @@
 var ContentFilter = (function(){
+    var audiences = [];
     var owner = {
         id:"owner",
         name:"owner",
@@ -37,16 +38,25 @@ var ContentFilter = (function(){
             name:group.name,
             filterStanza:function(stanza){
                 var members = "members" in group ? group.members : [];
-                return "author" in stanza && _.contains(members,stanza.author);
+                return "author" in stanza && _.includes(members,stanza.author);
             },
+            type:"group",
             enabled:true
         };
     };
     var applyFilters = function(stanza){
-	var observed = Participants.getParticipants()[stanza.author];
-	if(observed && !observed.following) return false;
+        var observed = Participants.getParticipants()[stanza.author];
+        if(observed && !observed.following) return false;
+        var isolated = audiences.length &&
+                stanza.audiences &&
+                stanza.audiences.length && !(_.some(stanza.audiences,function(audience){
+                    return _.includes(audiences,audience.name);
+                }));
+        if(isolated){
+            return false;
+        }
         return _.some(filters,function(filter){
-            return ("enabled" in filter && filter.enabled == true) ? filter.filterStanza(stanza) : false ;
+            return filter.enabled && filter.filterStanza(stanza);
         });
     };
     var filtered = function(func){
@@ -85,7 +95,21 @@ var ContentFilter = (function(){
         var label = root.find(".contentFilterCheckboxLabel");
         var labelText = root.find(".contentFilterCheckboxLabelText");
         var id = sprintf("contentFilter_%s",filter.id);
-        labelText.text(filter.name);
+        var currentSlide = Conversations.getCurrentSlide();
+        if(currentSlide){
+            var referencedGroup = _.find(Conversations.getCurrentGroups(),function(group){
+                return group.id == filter.id;
+            });
+            if(referencedGroup){
+                labelText.text(sprintf("Group %s: %s",referencedGroup.title,_.join(referencedGroup.members,",")));
+            }
+            else {
+                labelText.text(filter.name);
+            }
+        }
+        else{
+            labelText.text(filter.name);
+        }
         label.attr("for",id);
         cb.prop("checked",filter.enabled);
         cb.attr("id",id);
@@ -102,32 +126,26 @@ var ContentFilter = (function(){
     var getFiltersFunction = function(){
         return filters;
     };
-    var setFiltersFromGroups = function(groups){
-        if (Conversations.isAuthor()){
-            filters = _.concat([myPrivate,myPublic],_.map(groups,generateGroupFilter));
-        } else {
-            filters = _.concat([owner,myPrivate,myPublic],_.map(_.filter(groups,function(g){
-                return _.contains(g.members,UserSettings.getUsername());
-            }),generateGroupFilter));
-        }
-        blit();
+    var getFiltersFromGroups = function(groups){
+        return _.map(Conversations.isAuthor() ? Conversations.getCurrentGroups() : Conversations.getCurrentGroup(),generateGroupFilter);
     };
-    var setDefaultFilters = function(){
-        if (Conversations.isAuthor()){
-            filters = [myPrivate,myPublic,myPeers];
-        } else {
-            filters = [owner,myPrivate,myPublic,myPeers];
+    var getDefaultFilters = function(){
+        var fs = [myPrivate,myPublic];
+        if(Conversations.isAuthor()){
         }
-        blit();
+        else{
+            fs = fs.concat(owner);
+        }
+        if(! Conversations.getCurrentGroups().length){
+            fs = fs.concat(myPeers);
+        }
+        return fs;
     };
-    var conversationJoined = function(){
+    var generateFilters = function(){
         var cs = Conversations.getCurrentSlide();
-        if (cs != undefined && "groupSet" in cs){
-            setFiltersFromGroups(cs.groupSet.groups);
-        } else {
-            setDefaultFilters();
-        }
+        filters = getDefaultFilters().concat(cs ? getFiltersFromGroups() : []);
         renderContentFilters();
+        blit();
     };
     var setFilterFunction = function(id,enabled){
         _.each(getFiltersFunction(),function(fil){
@@ -135,13 +153,37 @@ var ContentFilter = (function(){
                 fil.enabled = enabled;
             }
         });
+	console.log("Settting filter",id,enabled,"yields",filters);
         renderContentFilters();
         blit();
     };
-    Progress.conversationDetailsReceived["ContentFilter"] = conversationJoined;
-    Progress.onConversationJoin["ContentFilter"] = conversationJoined;
+    var getAudiencesFunction = function(){
+        return audiences;
+    };
+    var setAudienceFunction = function(audience){
+        audiences = [audience];
+    };
+    var clearAudiencesFunction = function(){
+        audiences = [];
+    }
+    Progress.currentSlideJidReceived["ContentFilter"] = function(){
+        audiences = [];
+        generateFilters();
+    }
+    Progress.onConversationJoin["ContentFilter"] = function(){
+        audiences = [];
+        generateFilters();
+    };
+    Progress.afterJoiningSlide["ContentFilter"] = function(){
+        audiences = [];
+        generateFilters();
+    };
+    Progress.conversationDetailsReceived["ContentFilter"] = generateFilters;
     return {
         getFilters:getFiltersFunction,
-        setFilter:setFilterFunction
+        setFilter:setFilterFunction,
+        getAudiences:getAudiencesFunction,
+        setAudience:setAudienceFunction,
+        clearAudiences:clearAudiencesFunction
     };
 })();

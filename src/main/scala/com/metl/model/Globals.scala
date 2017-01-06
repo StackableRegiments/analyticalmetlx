@@ -110,6 +110,7 @@ object Globals extends PropertyReader with Logger {
   })
 
   val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
+  var metlingPots:List[MeTLingPotAdaptor] = Nil
   val brightSpaceValenceIntegrations = {
     val bsvin = readNode(propFile,"brightSpaceValence")
     (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
@@ -135,6 +136,13 @@ object Globals extends PropertyReader with Logger {
 
   var groupsProviders:List[GroupsProvider] = Nil
 
+  var gradebookProviders:List[ExternalGradebook] = Nil
+  def getGradebookProvider(providerName:String):Option[ExternalGradebook] = gradebookProviders.find(_.name == providerName)
+  def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
+
+  def getGroupsProvider(providerName:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerName)
+  def getGroupsProviders:List[GroupsProvider] = groupsProviders
+
   object casState {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
@@ -153,7 +161,7 @@ object Globals extends PropertyReader with Logger {
     def authenticatedUsername:String = actualUsername.is
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
-        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)))) 
+        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes.map(pa => Detail(pa._1,pa._2)) ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)).map(pa => Detail(pa._1,pa._2))))
         val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
         val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
         val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
@@ -168,9 +176,9 @@ object Globals extends PropertyReader with Logger {
       S.containerSession.map(s => {
         val username = s.attribute("user").asInstanceOf[String]
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(username),Nil))
+        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(Member(username,Nil,None)),Nil))
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes)
+        val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes.map(ua => Detail(ua._1,ua._2)))
         if (authenticated){
           actualUsername(username)
           val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))

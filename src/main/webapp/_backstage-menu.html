@@ -23,13 +23,13 @@
           <div class="flex-container-col">
             <div>
               <h2>Currently banned users</h2>
-              <div id="unbanAll" class="with-border fa-border">
+              <div id="unbanAll" class="with-border fa-border" style="cursor:pointer;">
                 <span class="fa fa-users" style="display:inline-block">
                   <div class="icon-txt">Unban</div>
                 </span>
                 <span style="display:inline-block">All</span>
               </div>
-              <div class="flex-container-responsive" id="currentBlacklistAuthorList">
+              <div class="flex-container-responsive" id="currentBlacklistAuthorList" style="cursor:pointer;">
                 <div class="blacklistAuthorContainer ml">
                   <div class="blacklistAuthor with-border fa-border unbanContainer blacklistAuthorUnbanButton">
                     <span class="fa fa-user-plus" style="display:inline-block">
@@ -133,6 +133,163 @@
           <div id="attachmentsDatagrid">
             <span class="deleteButtonContainer">
               <button class="deleteButton toolbar fa fa-trash nm btn-icon" type="button"><span class="hidden">Delete</span></button>
+            </span>
+          </div>
+        </section>
+        <section id="groupsPopup" class="backstage box-model-block">
+          <h2>Group editor</h2>
+          <div class="flex-container-responsive ml">
+            <div style="flex-grow:1;margin-left:1em;margin-top:-1em;">
+              <h3>Groups on this page</h3>
+              <div>You may move students by dragging them between groups</div>
+              <div>Please be aware of the impact on students if an already formed group is modified</div>
+              <div class="groups"></div>
+            </div>
+          </div>
+          <div id="groupSlideDialog" style="display:none">
+            <div class="flex-container-responsive ml groupSlideDialog">
+              <div>
+                <h3>Fill groups until</h3>
+                <div class="flex-container-responsive">
+                  <select class="strategySelect"></select>
+                  <select class="parameterSelect"></select>
+                </div>
+                <div class="importContainer" style="height:100%;position:relative;">
+                  <h3>Copying from
+                    <select class="ouSelector"></select>
+                  </h3>
+                  <div class="importGroups"></div>
+                  <div class="groupsOu blocker" style="display:none;min-height:70%;padding-top:20%;text-align:center;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>
+                </div>
+              </div>
+              <div style="width:100%">
+                <div class="mlr">
+                  <select class="groupScope" style="width:100%"></select>
+                </div>
+                <div class="groups"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="helpPopup" class="backstage box-model-block">
+          <h2 class="mrh nmt">Help</h2>
+          <div class="nmt">
+            <a href="https://stackableregiments.github.io/analyticalmetlx/guide.html">User Guide</a>
+          </div>
+        </section>
+        <section id="gradesPopup" class="backstage box-model-block">
+          <h2 class="align-left mrh nmt">Grades</h2>
+          <div id="createGradeButtonContainer" class="align-left">
+            <button id="createGradeButton" class="gradeCreationButton button-transparent-border mth">
+              <span>Create grade</span>
+            </button>
+          </div>
+          <div id="gradesDatagrid">
+            <span class="gradeAssessContainer">
+              <div class="gradeSyncActions">
+                <button class="getRemoteData button-transparent-border mth"><span>Refresh remote data</span></button>
+                <button class="sendGradesToRemote button-transparent-border mth"><span>Send grades</span></button>
+              </div>
+              <div class="gradebookDatagrid">
+                <span class="gradeValueEditPopup">
+                  <div class="changeGradeContainer">
+                    <label class="gradeValueCommentTextboxLabel">Score</label>
+                    <input class="numericScore" type="number"></input>
+                    <input class="textScore" type="text"></input>
+                    <div class="permission-states">
+                      <input class="booleanScore" type="checkbox"></input>
+                      <label class="booleanScoreLabel">Pass?</label>
+                    </div>
+                  </div>
+                  <div class="changeCommentContainer">
+                    <label class="gradeValueCommentTextboxLabel">Comment</label>
+                    <input class="gradeValueCommentTextbox" type="text"></input>
+                  </div>
+                  <div class="changePrivateCommentContainer">
+                    <label class="gradeValuePrivateCommentTextboxLabel">Private comment</label>
+                    <input class="gradeValuePrivateCommentTextbox" type="text"></input>
+                  </div>
+                  <div class="flex-container-responsive">
+                    <button class="submitGradeValueChange" style="border:1px solid black;margin-right:1em;">Submit</button>
+                    <button class="cancelGradeValueChange" style="border:1px solid black">Cancel</button>
+                  </div>
+                </span>
+                <span class="gradeUserContainer">
+                  <input class="numericScore" type="number"></input>
+                  <input class="textScore" type="text"></input>
+                  <div class="permission-states">
+                    <input class="booleanScore" type="checkbox"></input>
+                    <label class="booleanScoreLabel">Pass?</label>
+                  </div>
+                </span>
+              </div>
+            </span>
+            <span class="gradeEditContainer">
+              <fieldSet>
+                <div>
+                  <label class="gradeNameLabel">Name<label>
+                      <input type="text" name="gradeName" class="gradeNameInputBox"></input>
+                </div>
+                <div>
+                  <label class="gradeDescriptionLabel">Description<label>
+                      <input type="text" name="gradeDescription" class="gradeDescriptionInputBox"></input>
+                </div>
+                <div>
+                  <label class="gradeTypeLabel">Type<label>
+                      <select name="gradeType" class="gradeTypeSelect">
+                        <option value="numeric">Numeric</option>
+                        <option value="boolean">Boolean</option>
+                        <option value="text">Text</option>
+                      </select>
+                </div>
+                <div class="numericOptions">
+                  <label class="numericMinLabel">Minimum</label>
+                  <input type="number" class="numericMinTextbox"></input>
+                  <label class="numericMaxLabel">Maximum</label>
+                  <input type="number" class="numericMaxTextbox"></input>
+                </div>
+                <div class="permission-states mb">
+                  <input type="checkbox" class="gradeVisibleCheckbox"></input>
+                  <label class="gradeVisibleLabel"><span class="icon-txt">Visible to students</span></label>
+                </div>
+                <div class="associateController" style="position:relative;min-height:150px;width:100%;">
+                  <span class="refreshAssociation">
+		    <label>Associated grade</label>
+                    <span class="associationSystem"></span> :
+                    <span class="associationOrgUnit"></span> :
+                    <span class="associationGradeId"></span>
+                    <span class="association"></span>
+                    <button class="requestRefreshAssociation button-transparent-border mth"><span>Refresh from remote</span></button>
+                  </span>
+                  <span class="createAssociation">
+                    <span class="requestAssocPhase1 associationPhase">
+                      <button class="requestAssociation button-transparent-border mth"><span>Associate this grade with a remote grade</span></button>
+                    </span>
+                    <span class="requestAssocPhase2 associationPhase">
+                      <label for="chooseGradebookForGradeSelectBox">Choose a gradebook</label>
+                      <select id="chooseGradebookForGradeSelectBox" class="chooseGradebook"></select>
+                      <button class="commitGradebook button-transparent-border mth"><span>Associate with this gradebook</span></button>
+                    </span>
+                    <span class="requestAssocPhase3 associationPhase">
+                      <label for="chooseOrgUnitForGradeSelectBox">Courses</label>
+                      <select id="chooseOrgUnitForGradeSelectBox" class="chooseOrgUnit"></select>
+                      <button class="commitOrgUnit button-transparent-border mth"><span>Associate within this course</span></button>
+                    </span>
+                    <span class="requestAssocPhase4 associationPhase">
+                      <button class="createGrade button-transparent-border mth"><span>Associate this grade</span></button>
+                    </span>
+                  </span>
+                  <div class="grades blocker" style="display:none;height:100%;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>
+                </div>
+                <div class="flex-container-responsive">
+                  <button class="cancelGradeEdit button-transparent-border mth mr"><span>Cancel</span></button>
+                  <button class="submitGradeEdit button-transparent-border mth"><span>Submit</span></button>
+                </div>
+              </fieldSet>
+            </span>
+            <span class="gradeActionsContainer">
+              <button class="editGradeButton toolbar fa fa-edit nm btn-icon" type="button"><span class="hidden">Edit</span></button>
+              <button class="assessGradeButton toolbar fa fa-bar-chart nm btn-icon" type="button"><span class="hidden">Assess</span></button>
             </span>
           </div>
         </section>
@@ -248,18 +405,21 @@
             <div class="currentQuizItem">
               <div class="voting-block block img-resp">
                 <h3 class="nmt mbh resultsTitle">Results for <span class="quizQuestion"></span></h3>
-                <span class="quizResultsGraph"></span>
-                <h3 class="quizQuestion"></h3>
-                <img class="quizImagePreview"></img>
-                <div class="quizOptionContainer flex-container-column">
-                  <!-- many ".quizOption"s are cloned from JS -->
-                  <div class="quizOption flex-container-row space-between">
-                    <span class="quizOptionName mrh"></span>
-                    <span class="quizOptionText"></span>
-                    <span class="quizOptionCountContainer">
-                      <span class="quizOptionAnswerCount"></span>
-                    </span>
-                    <meter class="quizOptionMeter"></meter>
+                <div class="flex-container-responsive" style="width:100%">
+                  <span class="quizResultsGraph"></span>
+                  <div>
+                    <img class="quizImagePreview"></img>
+                    <div class="quizOptionContainer" style="display:table;">
+                      <!-- many ".quizOption"s are cloned from JS -->
+                      <div class="quizOption" style="display:table-row;">
+                        <span class="quizOptionName" style="display:table-cell;"></span>
+                        <span class="quizOptionText" style="display:table-cell;padding-left:1em;"></span>
+                        <span class="quizOptionCountContainer" style="display:table-cell;padding-left:1em;">
+                          <span class="quizOptionAnswerCount"></span>
+                        </span>
+                        <meter class="quizOptionMeter" style="display:table-cell;padding-left:1em;"></meter>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

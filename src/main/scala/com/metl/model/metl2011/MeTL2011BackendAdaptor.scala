@@ -40,6 +40,7 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversations.changePermissions(jid,newPermissions)
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = conversations.updateSubjectOfConversation(jid,newSubject)
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = conversations.addSlideAtIndexOfConversation(jid,index)
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = conversations.addGroupSlideAtIndexOfConversation(jid,index,grouping)
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = conversations.reorderSlidesOfConversation(jid,newSlides)
   override def updateConversation(jid:String,conversation:Conversation):Conversation = conversations.updateConversation(jid,conversation)
   override def getImage(jid:String,identity:String) = history.getMeTLHistory(jid).getImageByIdentity(identity).getOrElse(MeTLImage.empty)
@@ -142,6 +143,7 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
+  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = Conversation.empty
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
   override def getImage(jid:String,identity:String) = history.getMeTLHistory(jid).getImageByIdentity(identity).getOrElse(MeTLImage.empty)
