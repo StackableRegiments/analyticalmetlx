@@ -1,3 +1,8 @@
+1.1.2
+Improvement: METL-324: Filter API endpoints for grades/other secure content.
+Improvement: METL-295: User profile.
+Bugfix: METL-466: Remove non-orgUnits from the d2l getGroups system.
+
 1.1.1
 Story: METL-419: Teacher submits all groups in one action.
 Improvement: METL-456: Move Help to main banner.
@@ -5,11 +10,11 @@ Improvement: METL-453: Stacktraces for all failed clientSideFunctions.
 Bugfix: METL-458: Ink lines drawn to the boundaries of the banner and plugin disappear on panning.
 Bugfix: METL-460: Autofit now puts a large image up into the translucent space under the banner and the move control is not usable.
 Bugfix: METL-417: Teacher text to a specific group disappears from teacher screen.
-Bugfix: METL-439: Forming Groups sometimes includes the teacher in a group.
 Bugfix: METL-457: Group Editor appears in multiple Start menus.
 Bugfix: METL-465: Translucent header and footer obscure similarly colored content.
-Bugfix: METL-316: Teacher failed to restore student content from recycle bin.
+Bugfix: METL-439: Forming Groups sometimes includes the teacher in a group.
 Bugfix: METL-448: Launching Participants or Grades from Controls does not select their button.
+Bugfix: METL-316: Teacher failed to restore student content from recycle bin.
 
 1.0.22
 Bugfix: METL-438: Disable Force Follow when the teacher ends their session.
