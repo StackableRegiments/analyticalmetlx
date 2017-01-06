@@ -94,28 +94,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case r@Req(Nil,_,_) => () => {
       Full(RedirectResponse("/conversationSearch"))
     }
-    //yaws endpoints 1188
-    case r@Req(List("upload_nested"),"yaws",PostRequest) => () => {
-      for (
-        path <- r.param("path");
-        filename <- r.param("filename");
-        overwrite <- r.param("overwrite").map(_.toBoolean);
-        bytes <- r.body;
-        resp <- StatelessHtml.yawsUploadNested(path,filename,overwrite,bytes)
-      ) yield {
-        resp
-      }
-    }
-    case Req(List("primarykey"),"yaws",GetRequest) => () => {
-      StatelessHtml.yawsPrimaryKey
-    }
-    case Req(List(rootElem,stemmedRoom,room,item),itemSuffix,GetRequest) if List("Structure","Resource").contains(rootElem) && stem(room)._1 == stemmedRoom => () => {
-      StatelessHtml.yawsResource(rootElem,room,item,itemSuffix)
-    }
-    //yaws endpoints 1749
-    case Req(List(stemmedRoom,room,"all"),"zip",GetRequest) if stem(room)._1 == stemmedRoom => () => {
-      StatelessHtml.yawsHistory(room)
-    }
     //metlx endpoints 8080
     case Req("verifyUserCredentialsForm" :: Nil,_,_) => () => {
       Full(InMemoryResponse(
@@ -166,19 +144,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.summaries", StatelessHtml.summaries(r))
     case r @ Req(List("appcache"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.appcache", StatelessHtml.appCache(r))
-    case r @ Req(List("history"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))
-    case r @ Req(List("mergedHistory"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.mergedHistory", for(
-        source <- r.param("source");
-        user <- r.param("username");
-        resp <- StatelessHtml.mergedHistory(source,user)) yield resp)
-    case r @ Req(List("fullHistory"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.fullHistory", r.param("source").flatMap(jid => StatelessHtml.fullHistory(jid)))
-    case r @ Req(List("fullClientHistory"),_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
-    case r @ Req("describeHistory" :: _,_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
     case r @ Req(List("details",jid),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.details", StatelessHtml.details(jid))
     case r @ Req(List("setUserOptions"),_,_) =>
@@ -234,7 +199,7 @@ object WebMeTLRestHelper extends RestHelper with Logger{
     }
   }
 }
-object MeTLStatefulRestHelper extends RestHelper with Logger {
+object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
   import java.io._
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
@@ -245,6 +210,42 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
       //S.containerSession.foreach(s => s.terminate)
       Full(RedirectResponse("/conversationSearch"))
     })
+    case r @ Req(List("history"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))
+    case r @ Req(List("mergedHistory"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.mergedHistory", for(
+        source <- r.param("source");
+        user <- r.param("username");
+        resp <- StatelessHtml.mergedHistory(source,user)) yield resp)
+    case r @ Req(List("fullHistory"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.fullHistory", r.param("source").flatMap(jid => StatelessHtml.fullHistory(jid)))
+    case r @ Req(List("fullClientHistory"),_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
+    case r @ Req("describeHistory" :: _,_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
+    //yaws endpoints 1188
+    case r@Req(List("upload_nested"),"yaws",PostRequest) => () => {
+      for (
+        path <- r.param("path");
+        filename <- r.param("filename");
+        overwrite <- r.param("overwrite").map(_.toBoolean);
+        bytes <- r.body;
+        resp <- StatelessHtml.yawsUploadNested(path,filename,overwrite,bytes)
+      ) yield {
+        resp
+      }
+    }
+    case Req(List("primarykey"),"yaws",GetRequest) => () => {
+      StatelessHtml.yawsPrimaryKey
+    }
+    case Req(List(rootElem,stemmedRoom,room,item),itemSuffix,GetRequest) if List("Structure","Resource").contains(rootElem) && stem(room)._1 == stemmedRoom => () => {
+      StatelessHtml.yawsResource(rootElem,room,item,itemSuffix)
+    }
+    //yaws endpoints 1749
+    case Req(List(stemmedRoom,room,"all"),"zip",GetRequest) if stem(room)._1 == stemmedRoom => () => {
+      StatelessHtml.yawsHistory(room)
+    }
+    //end yaws endpoints
     case req@Req("videoProxy" :: slideJidB64 :: identity :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.videoProxy", {
       val config = ServerConfiguration.default
       val slideJid = new String(base64Decode(slideJidB64))
@@ -441,7 +442,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger {
     case Req(List("listSessions"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions",StatelessHtml.listSessions)
     case r@Req(List("impersonate",newUsername),_,_) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.impersonate",StatelessHtml.impersonate(newUsername,r.params.flatMap(p => p._2.map(i => (p._1,i))).toList))
     case Req(List("deImpersonate"),_,_) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.deImpersonate",StatelessHtml.deImpersonate)
-    case Req(List("conversationExport",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
+    case Req(List("conversationExport",conversation),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportConversation(Globals.currentUser.is,conversation))
     case Req(List("conversationExportForMe",conversation),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation",StatelessHtml.exportMyConversation(Globals.currentUser.is,conversation))
     case r@Req(List("conversationImport"),_,_) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversation(r))
     case r@Req(List("powerpointImport"),_,_) => () => {
