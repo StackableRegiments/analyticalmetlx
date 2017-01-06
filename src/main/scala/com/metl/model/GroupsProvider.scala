@@ -271,14 +271,30 @@ trait GroupStoreProvider extends Logger {
   def getPersonalDetails:Map[String,List[Detail]] = getData.detailsForMembers
 
   def getOrgUnit(name:String):Option[OrgUnit] = getData.orgUnitsByName.get(name)
+  
   def getGroupSet(orgUnit:OrgUnit,name:String):Option[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil).find(_.name == name)
+  
   def getGroup(orgUnit:OrgUnit,groupSet:GroupSet,name:String):Option[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil).find(_.name == name)
 
-  def getMembersFor(orgUnit:OrgUnit):List[Member] = getOrgUnit(orgUnit.name).toList.flatMap(_.members)
+  def getMembersFor(orgUnit:OrgUnit):List[Member] = {
+    val res = getOrgUnit(orgUnit.name).toList.flatMap(_.members)
+    trace("getMembersFor(%s) => %s".format(orgUnit,res))
+    res
+  }
   def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil)
-  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = getGroupSet(orgUnit,groupSet.name).toList.flatMap(_.members)
+
+  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = {
+    val res = getGroupSet(orgUnit,groupSet.name).toList.flatMap(_.members)
+    trace("getMembersFor(%s,%s) => %s".format(orgUnit,groupSet,res))
+    res
+  }
   def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil)
-  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = getGroup(orgUnit,groupSet,group.name).toList.flatMap(_.members)
+  
+  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = {
+    val res = getGroup(orgUnit,groupSet,group.name).toList.flatMap(_.members)
+    trace("getMembersFor(%s,%s,%s) => %s".format(orgUnit,groupSet,group,res))
+    res
+  }
 }
 class PassThroughGroupStoreProvider(gp:GroupStoreProvider) extends GroupStoreProvider {
   override val canQuery:Boolean = gp.canQuery
@@ -383,19 +399,19 @@ trait GroupStoreDataSerializers {
       g.groupsForMembers.values.toList.flatten.distinct.map(orgUnit => {
         <orgUnit name={orgUnit.name} type={orgUnit.ouType}>{
           orgUnit.members.map(ouMember => {
-            <member>{ouMember}</member>
+            <member>{ouMember.name}</member>
           })
         }{
           orgUnit.groupSets.map(groupSet => {
             <groupSet name={groupSet.name} type={groupSet.groupSetType}>{
               groupSet.members.map(gsMember => {
-                <member>{gsMember}</member>
+                <member>{gsMember.name}</member>
               })
             }{
               groupSet.groups.map(group => {
                 <group name={group.name} type={group.groupType}>{
                   group.members.map(gMember => {
-                    <member>{gMember}</member>
+                    <member>{gMember.name}</member>
                   })
                 }</group>
               })
@@ -460,9 +476,9 @@ trait GroupStoreDataSerializers {
         }).toList
         val ou = OrgUnit(ouType,ouName,(ouMembers ::: groupSets.flatMap(_.members)).distinct,groupSets,Some(ForeignRelationship(storeId,ouName)))
         intermediaryOrgUnits += ((ouName,ou))
-        intermediaryGroupSets += ((ou,ou.groupSets))
+        intermediaryGroupSets += ((ou.copy(groupSets = Nil,members = Nil),ou.groupSets))
         ou.groupSets.foreach(gs => {
-          intermediaryGroups += (((ou,gs),gs.groups))
+          intermediaryGroups += (((ou.copy(groupSets = Nil,members = Nil),gs.copy(groups = Nil,members = Nil)),gs.groups))
         })
         ou
       }
