@@ -2771,8 +2771,7 @@ var Modes = (function(){
                 if (Conversations.shouldModifyConversation()){
                     console.log("showing participants button");
                     $("#participantsButton").unbind("click").on("click",function(){
-                        showBackstage("participants");
-                        Participants.reRender();
+											Participants.openMenu();
                     }).show();
                 } else {
                     console.log("hiding participants button");

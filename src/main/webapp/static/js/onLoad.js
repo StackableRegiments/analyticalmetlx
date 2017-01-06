@@ -662,15 +662,18 @@ $(function(){
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
         Submissions.reRender();
+				updateActiveMenu($("#menuSubmissions"));
     });
 		$("#gradesButton").on("click",function(){
         showBackstage("grades");
         Grades.reRender();
+				updateActiveMenu($("#menuGrades"));
 		});
 
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
         Quizzes.reRender();
+				updateActiveMenu($("#menuPolls"));
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
