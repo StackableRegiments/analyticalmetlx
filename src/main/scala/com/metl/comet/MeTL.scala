@@ -826,6 +826,60 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       sendStanzaToServer(stanza)
       JNull
     },Empty),
+    ClientSideFunction("undeleteStanza",List("stanza"),(args) => {
+      val stanza = getArgAsJValue(args(0))
+      trace("undeleteStanza: %s".format(stanza.toString))
+      val metlData = serializer.toMeTLData(stanza)
+      metlData match {
+        case m:MeTLCanvasContent => {
+          if (m.author == username || shouldModifyConversation()){
+            currentConversation.map(cc => {
+              val t = m match {
+                case i:MeTLInk => "ink"
+                case i:MeTLImage => "img"
+                case i:MeTLMultiWordText => "txt"
+                case _ => "_"
+              }
+              val p = m.privacy match {
+                case Privacy.PRIVATE => "private"
+                case Privacy.PUBLIC => "public"
+                case _ => "_"
+              }
+              emit(p,m.identity,t)
+              val roomId = m.privacy match {
+                case Privacy.PRIVATE => {
+                  m.slide+username
+                }
+                case Privacy.PUBLIC => {
+                    m.slide
+                }
+                case other => {
+                  warn("unexpected privacy found in: %s".format(m))
+                  m.slide
+                }
+              }
+              rooms.get((server,roomId)).foreach(targetRoom => {
+                val room = targetRoom() 
+                room.getHistory.getDeletedCanvasContents.find(dc => {
+                  dc.identity == m.identity && dc.author == m.author
+                }).foreach(dc => {
+                  val newIdentitySeed = "%s_%s".format(new Date().getTime(),dc.identity).take(64)
+                  val newM = dc.generateNewIdentity(newIdentitySeed)
+                  val newIdentity = newM.identity
+                  val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
+                  println("created newUDM: %s".format(newUDM))
+                  room ! LocalToServerMeTLStanza(newUDM)
+                  
+                  room ! LocalToServerMeTLStanza(newM)
+                })
+              })
+            })
+          }
+        }
+        case notAStanza => error("Not a stanza at undeleteStanza %s".format(notAStanza))
+      }
+      JNull
+    },Empty),
     ClientSideFunction("sendTransientStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
       sendStanzaToServer(stanza,"loopback")
@@ -834,20 +888,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
-      try {
-        val jid = getArgAsString(args(0))
-        val newPermissions = getArgAsJValue(args(1))
-        val c = serverConfig.detailsOfConversation(jid)
-        serializer.fromConversation(shouldModifyConversation(c) match {
-          case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
-          case _ => c
-        })
-      } catch {
-        case e:Exception => {
-          error("exception while updating permissions: %s".format(args.toString),e)
-          throw e
-        }
-      }
+      val jid = getArgAsString(args(0))
+      val newPermissions = getArgAsJValue(args(1))
+      val c = serverConfig.detailsOfConversation(jid)
+      serializer.fromConversation(shouldModifyConversation(c) match {
+        case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
+        case _ => c
+      })
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
       val jid = getArgAsString(args(0))
@@ -1161,7 +1208,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       ))
     },Full("receiveOrgUnitsFromGroupsProviders")),
     ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
-      try {
       val sid = getArgAsString(args(0))
       val orgUnitJValue = getArgAsJValue(args(1))
       val orgUnit = orgUnitJValue.extract[OrgUnit]
@@ -1180,12 +1226,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
       ))
-      } catch {
-        case e:Exception => {
-          error("exception in getGroupSetsForOrgUnit: %s".format(args),e)
-          throw e
-        }
-      }
     },Full("receiveGroupSetsForOrgUnit")),
     ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
       val sid = getArgAsString(args(0))

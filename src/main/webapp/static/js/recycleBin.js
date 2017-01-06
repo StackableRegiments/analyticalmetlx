@@ -110,26 +110,10 @@ var RecycleBin = (function(){
                 itemTemplate:function(identity,stanza){
                     var rootElem = actionButtonsTemplate.clone();
                     var button = rootElem.find(".restoreContent");
-                    button.on("click",function(){
-                        var newStanza = _.cloneDeep(stanza);
-                        var newIdentity = sprintf("%s_%s",new Date().getTime(),stanza.identity).substr(0,64);
-                        newStanza.identity = newIdentity;
-                        var newUndeletedContentItem = {
-                            type:"undeletedCanvasContent",
-                            author:UserSettings.getUsername(),
-                            identity:sprintf("%s_%s_%s",new Date().getTime(),stanza.slide,UserSettings.getUsername()).substr(0,64),
-                            timestamp:new Date().getTime(),
-                            slide:stanza.slide,
-                            privacy:stanza.privacy,
-                            target:stanza.target,
-                            elementType:stanza.type,
-                            oldIdentity:stanza.identity,
-                            newIdentity:newIdentity
-                        };
-                        sendStanza(newStanza);
-                        sendStanza(newUndeletedContentItem);
-                    });
-		    rootElem.find(".rowIdentity").text(identity);
+										button.on("click",function(){
+											undeleteStanza(stanza);
+										});
+										rootElem.find(".rowIdentity").text(identity);
                     return rootElem;
                 }
             }
@@ -189,6 +173,7 @@ var RecycleBin = (function(){
         try {
             if ("type" in history && history.type == "history"){
                 clearState();
+								console.log("history",history);
                 _.forEach(history.deletedCanvasContents,function(stanza){
                     onCanvasContentDeleted(stanza,true);
                 });
