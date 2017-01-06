@@ -415,7 +415,29 @@ var GroupBuilder = (function(){
             var choice = $(this).val();
             if(choice != "NONE"){
                 blockGroups(true);
-                getOrgUnitsFromGroupProviders(choice);
+								var conv = Conversations.getCurrentConversation();
+								console.log("finding specific groups",conv);
+								if ("foreignRelationship" in conv && "system" in conv.foreignRelationship && "key" in conv.foreignRelationship){
+									var gp = conv.foreignRelationship.system;
+									var k = conv.foreignRelationship.key;
+									console.log("finding specific groups from foreignRelationship",conv.foreignRelationship,gp,k);
+									if (gp == choice){
+										getGroupSetsForOrgUnit(gp,{
+											ouType:"orgUnit",
+											name:conv.foreignRelationship.key,
+											members:[],
+											groupSets:[],
+											foreignRelationship:{
+												system:gp,
+												key:k
+											}
+										});
+									} else {
+										getOrgUnitsFromGroupProviders(choice);
+									}
+								} else {
+									getOrgUnitsFromGroupProviders(choice);
+								}
             }
         });
     };

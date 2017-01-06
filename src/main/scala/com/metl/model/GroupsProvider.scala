@@ -274,12 +274,11 @@ trait GroupStoreProvider extends Logger {
   def getGroupSet(orgUnit:OrgUnit,name:String):Option[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil).find(_.name == name)
   def getGroup(orgUnit:OrgUnit,groupSet:GroupSet,name:String):Option[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil).find(_.name == name)
 
-  def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
+  def getMembersFor(orgUnit:OrgUnit):List[Member] = getOrgUnit(orgUnit.name).toList.flatMap(_.members)
   def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = getData.groupSetsByOrgUnit.get(orgUnit).getOrElse(Nil)
-  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = groupSet.members
+  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = getGroupSet(orgUnit,groupSet.name).toList.flatMap(_.members)
   def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = getData.groupsByGroupSet.get((orgUnit,groupSet)).getOrElse(Nil)
-  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
-
+  def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = getGroup(orgUnit,groupSet,group.name).toList.flatMap(_.members)
 }
 class PassThroughGroupStoreProvider(gp:GroupStoreProvider) extends GroupStoreProvider {
   override val canQuery:Boolean = gp.canQuery
