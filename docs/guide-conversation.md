@@ -5,7 +5,7 @@ title: Conversation
 
 A conversation is a collection of pages where teachers and students share content. 
 
-![Conversation](images/guide-conversation.png)
+![Conversation](images/guide-conversation.jpg)
 
 ## Controls
 
