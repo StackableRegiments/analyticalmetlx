@@ -1,6 +1,7 @@
 /*******************************************************************************
 Slate Theme for GitHub Pages
 by Jason Costello, @jsncostello
+Modified by Doug Hagan, @dougecko
 *******************************************************************************/
 @import url(github-light.css);
 
@@ -301,6 +302,32 @@ body {
     margin: 0 auto;
 }
 
+#main_content_wrap {
+    background: #f2f2f2;
+}
+
+#main_content {
+    padding-top: 0;
+    min-height: 700px; /* Update this when the length of the sidebar changes. */
+}
+
+.text-image {
+    margin-left: 10px;
+    float: right;
+}
+
+.escalation {
+    text-align: right;
+    font-style: italic;
+    font-weight: bold;
+    margin-right: 20px;
+    clear: right;
+}
+
+/*******************************************************************************
+Full-Width Styles - Header
+*******************************************************************************/
+
 #searchBar {
     display: block;
     position: absolute;
@@ -364,6 +391,10 @@ body {
     text-shadow: #111 0px 0px 0px;
 }
 
+/*******************************************************************************
+Full-Width Styles - Navigation
+*******************************************************************************/
+
 #nav {
     margin: 0 0 0 20px;
 }
@@ -402,15 +433,19 @@ body {
     background-color: #494949;
 }
 
-.pure-menu-active>.pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
+.pure-menu-active > .pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
     background-color: transparent;
     text-decoration: none;
 }
 
-.pure-menu-active>.nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
+.pure-menu-active > .nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
     background-color: #494949;
     text-decoration: none;
 }
+
+/*******************************************************************************
+Full-Width Styles - Sidebar
+*******************************************************************************/
 
 #sidebar {
     display: block;
@@ -422,20 +457,75 @@ body {
 }
 
 #sidebar ul {
-    list-style: none;
-    padding:0;
-    margin:0;
+    /*list-style: none;*/
+    padding: 0;
+    margin: 0;
 }
 
 #sidebar li {
-    padding-left: 1em;
+    padding-left: 2em;
     text-indent: -.7em;
+    display: block;
 }
 
 #sidebar li:before {
+    /*
     content: " ";
     padding-right: 0.2em;
     color: #eee;
+    */
+}
+
+#sidebar li input {
+    position: absolute;
+    left: 0;
+    margin-left: 0;
+    opacity: 0;
+    z-index: 2;
+    cursor: pointer;
+    height: 1em;
+    width: 1em;
+    top: 0;
+}
+
+#sidebar li label {
+    /*background: url(../images/folder-horizontal.png) 15px 1px no-repeat;*/
+    /*content: "F";*/
+    /*color: #DDDDDD;*/
+    cursor: pointer;
+    display: block;
+    padding-left: 37px;
+}
+
+#sidebar li input + ul {
+    background: url(../images/toggle-small-expand.png) 40px 0 no-repeat;
+    /*content: "+";*/
+    /*color: #DDDDDD;*/
+    margin: -0.938em 0 0 -44px; /* 15px */
+    display: block;
+    height: 1em;
+}
+
+#sidebar li input + ul > li {
+    display: none;
+    margin-left: -14px !important;
+    padding-left: 1px;
+}
+
+li input:checked + ul {
+    background: url(../images/toggle-small.png) 40px 5px no-repeat;
+    margin: -1.25em 0 0 -44px; /* 20px */
+    padding: 1.563em 0 0 80px;
+    height: auto;
+}
+
+li input:checked + ul > li {
+    display: block;
+    margin: 0 0 0.125em; /* 2px */
+}
+
+li input:checked + ul > li:last-child {
+    margin: 0 0 0.063em; /* 1px */
 }
 
 #sidebar a {
@@ -445,14 +535,9 @@ body {
     font-family: 'Advent Pro', sans-serif;
 }
 
-#main_content_wrap {
-    background: #f2f2f2;
-}
-
-#main_content {
-    padding-top: 0;
-    min-height: 700px; /* Update this when the length of the sidebar changes. */
-}
+/*******************************************************************************
+Full-Width Styles - Footer
+*******************************************************************************/
 
 #footer_wrap {
     background: #373737;
@@ -492,19 +577,6 @@ body {
     font-weight: 200;
     font-family: 'Advent Pro', sans-serif;
     text-shadow: #111 0px 0px 10px;
-}
-
-.text-image {
-    margin-left: 10px;
-    float: right;
-}
-
-.escalation {
-    text-align: right;
-    font-style: italic;
-    font-weight: bold;
-    margin-right: 20px;
-    clear: right;
 }
 
 /*******************************************************************************
