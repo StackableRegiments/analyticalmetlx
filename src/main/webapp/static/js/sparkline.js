@@ -48,6 +48,9 @@ var SparkLine = (function(){
                 .attr("d", function(d,i){
                     return (i == 0 ? line : underLine)(d);
                 })
+                .attr("stroke",function(d,i){
+                    return ["green","red"][i];
+                })
                 .attr("fill",function(d,i){
                     return ["green","red"][i];
                 })

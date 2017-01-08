@@ -213,6 +213,7 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 var masterFooter = comp("#masterFooter");
+		var headerHeight = masterHeader.height();
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -221,7 +222,7 @@ var DeviceConfiguration = (function(){
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
                     bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-                    bheight = height - masterHeader.height() - marginsFor([masterHeader,boardColumn]).y - gutterHeight - masterFooter.height();
+                    bheight = height -  marginsFor([masterHeader,boardColumn]).y - gutterHeight;
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bwidth - gutterHeight;
@@ -250,13 +251,13 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 6).css({
-		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 3)
+		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 10).css({
+		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 4.5)
 		});
                 board.width(bwidth);
                 board.height(bheight);
-                toolsColumn.height(bheight);
-                thumbsColumn.height(bheight);
+                toolsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight + gutterWidth)});
+                thumbsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight)});
                 boardColumn.height(bheight);
 
                 boardContext.canvas.width = bwidth;
@@ -286,17 +287,15 @@ var DeviceConfiguration = (function(){
     Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
         try{
             if("UserSettings" in window && UserSettings.getIsInteractive()){
-                //console.log("enabling tools and slides");
                 DeviceConfiguration.setSlides(true);
                 DeviceConfiguration.setTools(true);
                 if(!initialized && "Modes" in window){
-                    Modes.draw.activate();
+                    Modes.select.activate();
                     if(DeviceConfiguration.getCurrentDevice() == "iPad"){
                         $("#panMode").remove();
                     }
                 }
             } else {
-                //console.log("disabling because it's not interactive");
                 DeviceConfiguration.setSlides(false);
                 DeviceConfiguration.setTools(false);
                 if(!initialized){

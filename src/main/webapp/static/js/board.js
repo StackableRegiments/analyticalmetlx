@@ -796,7 +796,6 @@ function multiStageRescale(incCanvas,w,h,stanza){
         var save = true;
 
         var iwSize = Math.floor(iw);
-
         if (w >= 1 && iw >= 1 && w < iw){ //shrinking
             var sdw = iw * sf;
             var sdh = ih * sf;
@@ -862,7 +861,7 @@ function drawInk(ink,incCanvasContext){
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
     if(!c){
-        c = ink.canvas = prerenderInk(ink,incCanvasContext);
+        c = ink.canvas = prerenderInk(ink,canvasContext);
     }
     var cWidth = c.width;
     var cHeight = c.height;

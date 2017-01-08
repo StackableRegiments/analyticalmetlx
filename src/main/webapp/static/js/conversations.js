@@ -66,7 +66,7 @@ var Conversations = (function(){
             if(!(audience in groupActivity)){
                 groupActivity[audience] = {
                     bucket:0,
-                    line:_.map(_.range(50),function(){return 0})
+                    line:_.map(_.range(SIGNAL_HISTORY),function(){return 0})
                 }
             }
         }
@@ -97,7 +97,7 @@ var Conversations = (function(){
                 if(conversationActivity.find("svg").length == 0){
                     groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
                                                                  [groupActivity.anyPublic.line,
-                                                                  groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                                                                  groupActivity.anyPrivate.line],50,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
                 if (groupTraces && "anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
                     groupTraces.anyPublic.update([
@@ -130,6 +130,7 @@ var Conversations = (function(){
         }
         var SENSOR_INTERVAL = 500;
         var DISPLAY_INTERVAL = 1000;
+        var SIGNAL_HISTORY = (1000 /*milis*/ / SENSOR_INTERVAL) * 60 * 15;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(displayAudiences,DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
@@ -319,7 +320,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":publishingAllowed,
-            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced,
+						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -333,7 +336,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":oldPerms.studentCanPublish,
-            "usersAreCompulsorilySynced":mustFollowTeacher
+            "usersAreCompulsorilySynced":mustFollowTeacher,
+						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -542,6 +547,17 @@ var Conversations = (function(){
                 text:"Export this conversation"
             }));
         }
+				if (Conversations.shouldModifyConversation()){
+					$("#editConversation").unbind("click").click(function(){
+						$.jAlert({
+							title:"edit Conversation",
+							iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+							width:"100%" 
+						});
+					}).show();
+				} else {
+					$("#editConversation").unbind("click").hide();
+				}
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
@@ -1051,7 +1067,10 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
-            getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
+					var ou = _.cloneDeep(orgUnit);
+					delete ou.groupSets;
+					delete ou.members;
+					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou);
         });
     }
 }
@@ -1059,7 +1078,13 @@ function receiveGroupSetsForOrgUnit(groupSets){
     Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
-            getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+					var ou = _.cloneDeep(groupSets.orgUnit);
+					delete ou.members;
+					delete ou.groupSets;
+					var gs = _.cloneDeep(groupSet);
+					delete gs.members;
+					delete gs.groups;
+					getGroupsForGroupSet(groupSets.groupsProvider,ou,gs);
         });
     }
 }
@@ -1075,7 +1100,7 @@ function receiveGroupsForGroupSet(groups){
 //function createConversation(title)
 //function deleteConversation(jid)
 //function renameConversation(jid,newTitle)
-//function changePermissions(jid,newPermissions)
+//function changePermissionsOfConversation(jid,newPermissions)
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)

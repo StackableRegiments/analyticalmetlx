@@ -477,6 +477,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  private lazy val RECEIVE_SHOW_LINKS = "receiveShowLinks"
   implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))
   override lazy val functionDefinitions = List(
@@ -586,11 +587,13 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
   protected val username = Globals.currentUser.is
+  protected var showLinks = true
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
       conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => serverConfig.detailsOfConversation(jid.toString))
+      showLinks = com.metl.snippet.Metl.getLinksFromName(nameString).getOrElse(true)
     })
   }
 
@@ -598,7 +601,8 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
-      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
+      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c)) &
+      Call(RECEIVE_SHOW_LINKS,showLinks)
     }).getOrElse(RedirectTo(conversationSearch())))
   }
   override def lowPriority = {
@@ -830,13 +834,20 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
-      val jid = getArgAsString(args(0))
-      val newPermissions = getArgAsJValue(args(1))
-      val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(shouldModifyConversation(c) match {
-        case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
-        case _ => c
-      })
+      try {
+        val jid = getArgAsString(args(0))
+        val newPermissions = getArgAsJValue(args(1))
+        val c = serverConfig.detailsOfConversation(jid)
+        serializer.fromConversation(shouldModifyConversation(c) match {
+          case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
+          case _ => c
+        })
+      } catch {
+        case e:Exception => {
+          error("exception while updating permissions: %s".format(args.toString),e)
+          throw e
+        }
+      }
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
       val jid = getArgAsString(args(0))
@@ -1150,6 +1161,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       ))
     },Full("receiveOrgUnitsFromGroupsProviders")),
     ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
+      try {
       val sid = getArgAsString(args(0))
       val orgUnitJValue = getArgAsJValue(args(1))
       val orgUnit = orgUnitJValue.extract[OrgUnit]
@@ -1168,6 +1180,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
       ))
+      } catch {
+        case e:Exception => {
+          error("exception in getGroupSetsForOrgUnit: %s".format(args),e)
+          throw e
+        }
+      }
     },Full("receiveGroupSetsForOrgUnit")),
     ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
       val sid = getArgAsString(args(0))

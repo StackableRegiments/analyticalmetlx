@@ -807,13 +807,9 @@
                             }
                         },
                         notifySelectionChanged: function(canMoveViewport) {
-                            var cachedFormatting = null;
                             var self = this;
                             var getFormatting = function() {
-                                if (!cachedFormatting) {
-                                    cachedFormatting = self.selectedRange().getFormatting();
-                                }
-                                return cachedFormatting;
+                                return self.selectedRange().getFormatting();
                             };
                             this.selectionChanged.fire(getFormatting, canMoveViewport);
                         },
@@ -2238,7 +2234,7 @@
                     exports.formattingKeys = [ 'bold', 'italic', 'underline', 'strikeout', 'color', 'font', 'size', 'align', 'script' ];
 
                     exports.defaultFormatting = {
-                        size: 30,
+                        size: 14,
                         font: 'sans-serif',
                         color: ['#000000',255],
                         bold: false,

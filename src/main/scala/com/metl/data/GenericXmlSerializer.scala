@@ -727,13 +727,21 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   })
 
   override def toPermissions(input:NodeSeq):Permissions = Stopwatch.time("GenericXmlSerializer.toPermissions",{
-    val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
-    val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
-    val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-    Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced)
+    try {
+      val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
+      val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
+      val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
+      val studentsMayBroadcast = tryo(getValueOfNode(input,"studentsMayBroadcast").toBoolean).openOr(true)
+      val studentsMayChatPublicly = tryo(getValueOfNode(input,"studentsMayChatPublicly").toBoolean).openOr(true)
+      Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
+    } catch {
+      case e:Exception => {
+        Permissions.default(config)
+      }
+    }
   })
   override def fromPermissions(input:Permissions):Node = Stopwatch.time("GenericXmlSerializer.fromPermissions",{
-    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced></permissions>
+    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced><studentsMayBroadcast>{input.studentsMayBroadcast}</studentsMayBroadcast><studentsMayChatPublicly>{input.studentsMayChatPublicly}</studentsMayChatPublicly></permissions>
   })
   override def toColor(input:AnyRef):Color = Stopwatch.time("GenericXmlSerializer.toColor",{
     Color.empty
