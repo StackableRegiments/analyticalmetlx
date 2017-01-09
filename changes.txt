@@ -1,3 +1,16 @@
+1.1.5
+
+SLU Only
+--------
+
+Update config:
+	<flatFileGroups format="globalOverrides"
+		<filter>
+			<group valuePrefix="SG-"/>
+			<group valuePrefix="SG_"/>
+			<group valuePrefix="Prod_"/>
+		</filter>
+
 1.1.3
 
 SLU Only

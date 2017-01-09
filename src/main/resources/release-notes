@@ -1,3 +1,6 @@
+1.1.5
+Bugfix: METL-490: d2lProvider constructs on xml incorrectly
+
 1.1.4
 Bugfix: METL-488: D2L groups not shown on Add Group page.
 Bugfix: METL-473: Updated wording "Students may broadcast" to "Students may stream".
