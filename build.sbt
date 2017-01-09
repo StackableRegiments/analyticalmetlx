@@ -123,12 +123,8 @@ libraryDependencies ++= {
     "commons-codec" % "commons-codec" % "1.7",
     "commons-fileupload" % "commons-fileupload" % "1.3.2",
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
-    //for videoconferencing
-    "org.kurento" % "kurento-client" % "6.5.0",
-    "org.kurento" % "kurento-utils-js" % "6.5.0",
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
-    //"com.opentok.android" % "opentok-android-sdk" % "2.10.0-REL-2706",
     "com.google.android" % "android-test" % "4.1.1.4",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
     //    "org.scalactic" %% "scalactic" % "3.0.0",

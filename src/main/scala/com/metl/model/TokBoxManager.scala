@@ -1,6 +1,6 @@
 package com.metl.model
 
-import com.opentok.android.{OpentokError,Session,Stream,Connection}
+//import com.opentok.android.{OpentokError,Session,Stream,Connection}
 import net.liftweb.common._
 
 object TokBoxHelper extends Logger {
@@ -29,84 +29,53 @@ object TokBoxHelper extends Logger {
   }
 }
 
-class TokBoxMonitor(tokboxSession:TokBoxSession) extends Session.SessionListener with Session.ArchiveListener with Session.ConnectionListener with Session.ReconnectionListener with Logger {
-    protected val mSession:Session = {
-      val session = new Session(new android.test.mock.MockContext(), tokboxSession.apiKey.toString,tokboxSession.sessionId)
-      session.setSessionListener(this)
-      session.setArchiveListener(this)
-      session.setConnectionListener(this)
-      session
-    }
-    // from ArchiveListener 
-    protected val archiveList = new scala.collection.mutable.ListBuffer[String]()
-    override def onArchiveStarted(session:Session,archiveId:String,name:String):Unit = {
-      info("archive started: %s %s".format(session.getSessionId,archiveId))
-      archiveList += archiveId
-    }
-    override def onArchiveStopped(session:Session,archiveId:String):Unit = {
-      info("archive stopped: %s %s".format(session.getSessionId,archiveId))
-      archiveList -= archiveId
-    }
-    // from ReconnectionListener 
-    override def onReconnected(session:Session):Unit = {
-      info("reconnected to tokbox: %s".format(session.getSessionId))
-    }
-    override def onReconnecting(session:Session):Unit = {
-      warn("reconnecting to tokbox: %s".format(session.getSessionId))
-    }
-    // from ConnectionListener
-    protected val connectionList = new scala.collection.mutable.ListBuffer[String]()
-    override def onConnectionCreated(session:Session,connection:Connection):Unit = {
-      info("connection created: %s %s".format(session.getSessionId,connection.getConnectionId)) 
-      connectionList += connection.getConnectionId
-    }
-    override def onConnectionDestroyed(session:Session,connection:Connection):Unit = {
-      info("connection destroyed: %s %s".format(session.getSessionId,connection.getConnectionId)) 
-      connectionList -= connection.getConnectionId
-    }
-    // from SessionListener
-    override def onConnected(session:Session):Unit = {
-      info("connected: %s".format(session.getSessionId))
-    }
-    override def onDisconnected(session:Session):Unit = {
-      warn("disconnected: %s".format(session.getSessionId))
-      if (keepAlive){
-        mSession.connect(tokboxSession.token)
+class TokBoxMonitor(tokboxSession:TokBoxSession) extends Logger {
+    protected val oldArchives:scala.collection.mutable.ListBuffer[TokBoxArchive] = new scala.collection.mutable.ListBuffer[TokBoxArchive]()
+    protected var archive:Option[TokBoxArchive] = None
+    protected var broadcast:Option[TokBoxBroadcast] = None
+    def init:Unit = {
+      for {
+        tb <- Globals.tokBox.toList
+      } yield {
+        startArchive(tb)
+        startBroadcast(tb)
       }
     }
-    override def onError(session:Session,e:OpentokError):Unit = {
-      error("error: %s %s".format(session.getSessionId(),e.getMessage()))
-    }
-    protected val streamList = new scala.collection.mutable.ListBuffer[String]()
-    override def onStreamDropped(session:Session,stream:Stream):Unit = {
-      // this should fire whenever a client stops publishing
-      info("stream dropped: %s %s".format(session.getSessionId,stream.getStreamId)) 
-      streamList -= stream.getStreamId()
-    }
-    override def onStreamReceived(session:Session,stream:Stream):Unit = {
-      // this should fire whenever a client starts publishing
-      info("stream created: %s %s".format(session.getSessionId,stream.getStreamId)) 
-      streamList += stream.getStreamId()
-    }
-
-    protected var keepAlive = false
-    def init:Unit = {
-      keepAlive = true
-      mSession.connect(tokboxSession.token)
-    }
     def shutdown:Unit = {
-      keepAlive = false
-      mSession.disconnect()
+      for {
+        tb <- Globals.tokBox.toList
+      } yield {
+        stopBroadcast(tb)
+        stopArchive(tb)
+      }
     }
+    def rollArchive:Unit = {
+      for {
+        tb <- Globals.tokBox.toList
+      } yield {
+        oldArchives ++= archive.toList
+        stopArchive(tb)
+        startArchive(tb)
+      }
+    }
+    def getArchives:List[TokBoxArchive] = oldArchives.toList ::: archive.toList
+    def getCurrentArchive:Option[TokBoxArchive] = archive
+    def getBroadcasts:Option[TokBoxBroadcast] = broadcast
 
-    def getArchives:List[String] = {
-      archiveList.toList
+    protected def startArchive(tb:TokBox) = {
+      archive = Some(tb.startArchive(
+        session = tokboxSession,
+        compositedVideo = false
+      ))
     }
-    def getConnections:List[String] = {
-      connectionList.toList
+    protected def stopArchive(tb:TokBox) = {
+      archive.foreach(a => tb.stopArchive(tokboxSession,a))
     }
-    def getStreams:List[String] = {
-      streamList.toList
+    protected def startBroadcast(tb:TokBox) = {
+      broadcast = Some(tb.startBroadcast(tokboxSession,""))
+    }
+    protected def stopBroadcast(tb:TokBox) = {
+      broadcast.foreach(b => tb.stopBroadcast(tokboxSession,b.id))
     }
 }
 

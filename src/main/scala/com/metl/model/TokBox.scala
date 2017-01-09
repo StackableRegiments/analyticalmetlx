@@ -39,7 +39,7 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
           new SessionProperties.Builder()
             .mediaMode(MediaMode.ROUTED)
     //        .location(description)
-            .archiveMode(ArchiveMode.ALWAYS)
+//            .archiveMode(ArchiveMode.ALWAYS)
             .build()
           )
   //      startBroadcast(newSession,TokBroadcastLayout.bestFit)
@@ -63,9 +63,15 @@ class TokBox(apiKey:Int,secret:String) extends Logger {
       case e:Exception => Left(e)
     }
   }
-  def startArchive(session:TokBoxSession):TokBoxArchive = {
-    val archiveName = "%s_%s_%s".format(session.description,session.username,new java.util.Date().getTime().toString())
-    val outputMode = Archive.OutputMode.COMPOSED // Archive.OutputMode.INDIVIDUAL
+  def startArchive(
+    session:TokBoxSession,
+    incArchiveName:Option[String] = None,
+    compositedVideo:Boolean = true):TokBoxArchive = {
+    val outputMode = compositedVideo match {
+      case true => Archive.OutputMode.COMPOSED
+      case false => Archive.OutputMode.INDIVIDUAL
+    }
+    val archiveName = incArchiveName.getOrElse("%s_%s_%s".format(session.description,session.username,new java.util.Date().getTime().toString()))
     val hasAudio = true
     val hasVideo = true
     val archive = openTok.startArchive(session.sessionId,new ArchiveProperties.Builder().name(archiveName).hasAudio(hasAudio).hasVideo(hasVideo).outputMode(outputMode).build())
