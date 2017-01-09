@@ -1,3 +1,9 @@
+1.1.4
+Bugfix: METL-488: D2L groups not shown on Add Group page.
+Bugfix: METL-473: Updated wording "Students may broadcast" to "Students may stream".
+Bugfix: METL-480: Restrict conversation while students aren't in does not refresh list.
+Bugfix: METL-481: Rename conversation does not push new name.
+
 1.1.3
 Improvement: METL-487: Alternate D2L fetch behaviour.
 Bugfix: METL-382: Clicking on current page does not drag followers.
