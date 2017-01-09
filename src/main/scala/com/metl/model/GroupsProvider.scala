@@ -87,9 +87,12 @@ object GroupsProvider {
       userId <- (dNodes \ "@userId").headOption.map(_.text)
       userKey <- (dNodes \ "@userKey").headOption.map(_.text)
     } yield {
+      val acceptableRoleList:List[Int] = (dNodes \\ "acceptableRoleId").map(_.text.toInt).toList
       val name = (dNodes \\ "@name").headOption.map(_.text)
       val n = name.getOrElse("d2lInteface_to_%s".format(host))
-      possiblyFilter(outerNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion))
+      possiblyFilter(outerNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+        override protected val acceptableRoleIds = acceptableRoleList
+      })
     }).toList ::: 
     (for {
       in <- (outerNodes \\ "flatFileGroups")
@@ -154,10 +157,13 @@ object GroupsProvider {
           refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
         } yield {
           val n = name.getOrElse("d2lGroups_from_%s".format(host))
+          val acceptableRoleList:List[Int] = (in \\ "acceptableRoleId").map(_.text.toInt).toList
           val diskCache = new XmlGroupStoreDataFile(n,diskStore)
           new StoreBackedGroupsProvider(n,
             new PeriodicallyRefreshingGroupStoreProvider(
-              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion),
+              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+                override protected val acceptableRoleIds = acceptableRoleList
+              },
               refreshPeriod,
               diskCache.read,
               Some(g => {
