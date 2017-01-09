@@ -20,10 +20,10 @@ object ExternalGradebooks {
         userKey <- (n \ "@userKey").headOption.map(_.text)
         leApiVersion <- (n \ "@leApiVersion").headOption.map(_.text)
         lpApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
-        acceptableRoleList = (n \ "acceptableRole").toList.map(_.text)
+        acceptableRoleList = (n \\ "acceptableRoleId").toList.map(_.text.toInt)
       } yield {
         new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
-          override protected val acceptableRoles = acceptableRoleList
+          override protected val acceptableRoleIds = acceptableRoleList
         }
       }
     }) ::: Nil
@@ -57,7 +57,13 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
   import com.d2lvalence.idkeyauth.implementation._
 
   val config = ServerConfiguration.default
-  protected val acceptableRoles = List("teacher","instructor")
+
+  protected val acceptableRoleIds = List(
+    113, //Instructor_1
+    109, //Instructor_2
+    114, //Instructor_3
+    110 //Student
+  )
 
   protected def lookupD2LUserId(uc:ID2LUserContext,username:String):String = {
     val rawUser = interface.getUserByUsername(uc,username)
@@ -162,8 +168,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     trye({
       val uc = interface.getUserContext
       val d2lUser = lookupD2LUserId(uc,username)
-      val enrollments = interface.getEnrollments(uc,d2lUser)
-      enrollments.filter(en => acceptableRoles.contains(en.Role.Name)).map(en => {
+      val enrollments = interface.getEnrollments(uc,d2lUser,acceptableRoleIds)
+      enrollments.filter(en => acceptableRoleIds.contains(en.Role.Id)).map(en => {
         OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(name,en.OrgUnit.Id.toString)))
       }).toList
     })
@@ -172,8 +178,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     try {
       val uc = interface.getUserContext
       val d2lId = lookupD2LUserId(uc,username)
-      val enrollments = interface.getEnrollments(uc,d2lId)
-      if (enrollments.exists(en => en.OrgUnit.Id.toString == orgUnitId && acceptableRoles.contains(en.Role.Name))){
+      val enrollments = interface.getEnrollments(uc,d2lId,acceptableRoleIds)
+      if (enrollments.exists(en => en.OrgUnit.Id.toString == orgUnitId && acceptableRoleIds.contains(en.Role.Id))){
         trye(action((uc,d2lId)))
       } else {
         Left(new Exception("not authorized to assess orgUnit: %s".format(orgUnitId)))
