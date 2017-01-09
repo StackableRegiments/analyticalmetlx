@@ -850,7 +850,18 @@ var Conversations = (function(){
                 catch(e){
                     console.log(e);
                 }
-            }
+            } else if (Conversations.isAuthor()){
+							var newStanza = {
+								type:"command",
+								author:UserSettings.getUsername(),
+								audiences:[],
+								timestamp:0,
+								command:"/SYNC_MOVE",
+								parameters:[slideId]
+							};
+							console.log("sending:",newStanza);
+							sendStanza(newStanza);
+						}
         }
         else{
             alert("You must remain on the current page");
