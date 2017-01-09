@@ -268,16 +268,6 @@ var GroupBuilder = (function(){
                         var validMembers = _.filter(group.members,function(m) {
                             return m.name != author;
                         });
-                        _.each(validMembers,function(obj){
-                            var name = obj.name;
-                            if(!(name in participants)){
-                                participants[name] = {
-                                    name:name,
-                                    enrolled:false
-                                };
-                            }
-                            renderMember(participants[name]).appendTo(groupV);
-                        });
                         if(validMembers.length > 0){
                             groupSetV.appendTo(ouV);
                             _.each(validMembers,function(obj){
@@ -302,7 +292,7 @@ var GroupBuilder = (function(){
             return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
         });
         var groups = allocationsFor(renderable);
-				console.log("rendering allocations:",participants,renderable,groups);
+        console.log("rendering allocations:",participants,renderable,groups);
         var groupsV = container.find(".groups");
         groupsV.empty();
         _.each(groups,function(group){
@@ -412,7 +402,9 @@ var GroupBuilder = (function(){
     }
     var statusReport = function(msg){
         console.log(msg);
-        $("#groupSlideDialog .importGroups").text(msg);
+        $("#groupSlideDialog .importGroups").prepend("<div />",{
+            text:msg
+        });
     }
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
         var select = $(".jAlert .ouSelector").empty();
@@ -480,9 +472,11 @@ var GroupBuilder = (function(){
             availableGroupSets[args.orgUnit.name] = byOrgUnit;
         }
         var author = Conversations.getCurrentConversation().author;
-        if(_.filter(args.orgUnit.members,function(m){
-            return m.name != author;
-        }).length > 1){
+        if(_.some(args.groups,function(group){
+            return _.some(group.members,function(member){
+                return member.name != author;
+            });
+        })){
             byOrgUnit[args.groupSet.name] = args;
             renderAvailableGroupSets();
         }
