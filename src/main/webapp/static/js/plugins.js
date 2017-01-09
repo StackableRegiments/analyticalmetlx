@@ -221,10 +221,10 @@ var Plugins = (function(){
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
                                      '</button>'+
-                                     '<span class="context mr" style="margin-top:0.3em"></span>'+
+                                     '<span class="context mr" style="margin-top:0.5em"></span>'+
                                      '<span style="margin-top:0.4em">'+
                                      '<input type="checkbox" id="canBroadcast">'+
-                                     '<label for="canBroadcast" class="icon-txt checkbox-sim">Students can stream</label>'+
+                                     '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
                                      '</span>'+
                                      '</div>'+
                                      '<div class="viewscreen"></div>'+
