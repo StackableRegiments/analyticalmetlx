@@ -1,3 +1,24 @@
+1.1.3
+
+SLU Only
+--------
+
+Update config:
+	<d2lGradebook>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+		<acceptableRoleId name="Instructor_1">113</acceptableRoleId>
+		<acceptableRoleId name="Instructor_2">109</acceptableRoleId>
+		<acceptableRoleId name="Instructor_3">114</acceptableRoleId>
+	</d2lGradebook>
+
+Update config:
+	<d2lGroupsProvider>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+		<acceptableRoleId name="Instructor_1">113</acceptableRoleId>
+		<acceptableRoleId name="Instructor_2">109</acceptableRoleId>
+		<acceptableRoleId name="Instructor_3">114</acceptableRoleId>
+	</d2lGroupsProvider>
+
 1.0.20
 
 SLU Only
