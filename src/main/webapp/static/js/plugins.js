@@ -224,7 +224,7 @@ var Plugins = (function(){
                                      '<span class="context mr" style="margin-top:0.3em"></span>'+
                                      '<span style="margin-top:0.4em">'+
                                      '<input type="checkbox" id="canBroadcast">'+
-                                     '<label for="canBroadcast">Students can broadcast</label>'+
+                                     '<label for="canBroadcast" class="icon-txt checkbox-sim">Students can stream</label>'+
                                      '</span>'+
                                      '</div>'+
                                      '<div class="viewscreen"></div>'+
