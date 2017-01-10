@@ -78,105 +78,11 @@ trait ConversationFilter {
   }
 }
 
-class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
-  import com.metl.snippet.Metl._
-  override def registerWith = MeTLSlideDisplayActorManager
-  protected var currentConversation:Option[Conversation] = None
-  protected var currentSlide:Option[Int] = None
-  override def lifespan = Full(2 minutes)
-  override def localSetup = {
-    super.localSetup
-    name.foreach(nameString => {
-      trace("localSetup for [%s]".format(name))
-      com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
-        currentConversation = Some(serverConfig.detailsOfConversation(convJid.toString))
-      })
-      com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
-        currentSlide = Some(slideJid)
-        slideJid
-      }).getOrElse({
-        currentConversation.foreach(cc => {
-          cc.slides.sortWith((a,b) => a.index < b.index).headOption.map(firstSlide => {
-            currentSlide = Some(firstSlide.id)
-          })
-        })
-      })
-    })
-    trace("setup slideDisplay: %s %s".format(currentConversation,currentSlide))
-  }
-  protected var username = Globals.currentUser.is
-  protected lazy val serverConfig = ServerConfiguration.default
-  override def render = {
-    "#slidesContainer2 *" #> {
-      ".slideContainer2" #> currentConversation.map(_.slides).getOrElse(Nil).map(slide => {
-        currentConversation.map(cc => {
-          ".slideAnchor [href]" #> boardFor(cc.jid,slide.id) &
-          ".slideIndex *" #> slide.index &
-          ".slideId *" #> slide.id &
-          ".slideActive *" #> currentSlide.exists(_ == slide.id)
-        }).getOrElse({
-          ".slideAnchor" #> NodeSeq.Empty
-        })
-      })
-    } &
-    "#addSlideButtonContainer" #> currentConversation.filter(cc => shouldModifyConversation(username,cc)).map(cc => {
-      "#addSlideButtonContainer [onclick]" #> {
-        ajaxCall(Jq("#this"),(j:String) => {
-          trace("add slide button clicked: %s".format(j))
-          val index = currentSlide.flatMap(cs => cc.slides.find(_.id == cs).map(_.index)).getOrElse(0)
-          serverConfig.addSlideAtIndexOfConversation(cc.jid.toString,index)
-          reRender
-          Noop
-        })
-      }
-    }).getOrElse({
-      "#addSlideButtonContainer" #> NodeSeq.Empty
-    })
-  }
-  override def lowPriority = {
-    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
-      val newJid = c.commandParameters(0).toInt
-      val newConv = serverConfig.detailsOfConversation(newJid.toString)
-      if (currentConversation.exists(_.jid == newConv.jid)){
-        if (!shouldDisplayConversation(newConv)){
-          trace("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
-          currentConversation = Empty
-          currentSlide = Empty
-          reRender
-          partialUpdate(RedirectTo(noBoard))
-        } else {
-          currentConversation = Some(newConv)
-          trace("updating conversation to: %s".format(newConv))
-          reRender
-        }
-      }
-    }
-    case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
-      trace("incoming syncMove: %s".format(c))
-      val newJid = c.commandParameters(0).toInt
-      val signature = c.commandParameters(1)
-      if(signature != uniqueId){
-        currentConversation.filter(cc => currentSlide.exists(_ != newJid)).map(cc => {
-          cc.slides.find(_.id == newJid).foreach(slide => {
-            trace("moving to: %s".format(slide))
-            currentSlide = Some(slide.id)
-            reRender
-            partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
-          })
-        })
-      }
-    }
-    case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
-      //not relaying teacherInConversation to page
-    }
-    case _ => warn("MeTLSlideDisplayActor received unknown message")
-  }
-}
-
 class RemotePluginConversationChooserActor extends MeTLConversationChooserActor {
   protected val ltiIntegration:BrightSparkIntegration = RemotePluginIntegration
   protected var ltiToken:Option[String] = None
   protected var ltiSession:Option[RemotePluginSession] = None
+  override def lifespan = Globals.remotePluginConversationChooserActorLifespan
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
@@ -287,7 +193,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   protected var imports:List[ImportDescription] = Nil
 
   override def registerWith = MeTLConversationSearchActorManager
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Globals.searchActorLifespan
   protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
 
@@ -377,7 +283,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   )
 
   override def registerWith = MeTLConversationSearchActorManager
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Globals.conversationChooserActorLifespan
   protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
   protected var query:Option[String] = None
@@ -583,7 +489,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     },Full(RECEIVE_CONVERSATION_DETAILS))
   )
   override def registerWith = MeTLEditConversationActorManager
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Globals.editConversationActorLifespan
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
   protected val username = Globals.currentUser.is
@@ -1580,7 +1486,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     })
   }
-  override def lifespan = Full(2 minutes)
+  override def lifespan = Globals.metlActorLifespan
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
     trace("roomInfo received: %s".format(roomInfo))

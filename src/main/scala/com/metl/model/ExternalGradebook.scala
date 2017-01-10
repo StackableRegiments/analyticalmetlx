@@ -7,6 +7,7 @@ import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.util.Date
 import scala.xml._
+import com.metl.utils._
 
 object ExternalGradebooks {
   def configureFromXml(in:NodeSeq):List[ExternalGradebook] = {
@@ -22,7 +23,8 @@ object ExternalGradebooks {
         lpApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
         acceptableRoleList = (n \\ "acceptableRoleId").toList.map(_.text.toInt)
       } yield {
-        new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+        val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(n)
+        new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
           override protected val acceptableRoleIds = acceptableRoleList
         }
       }
@@ -52,11 +54,13 @@ trait TryE {
   }
 }
 
-class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends ExternalGradebook(name){
+class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends ExternalGradebook(name){
   import com.d2lvalence.idkeyauth._
   import com.d2lvalence.idkeyauth.implementation._
 
   val config = ServerConfiguration.default
+
+  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider)
 
   protected val acceptableRoleIds = List(
     113, //Instructor_1
@@ -163,7 +167,6 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     }
   }
 
-  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion)
   override def getGradeContexts(username:String = Globals.currentUser.is):Either[Exception,List[OrgUnit]] = {
     trye({
       val uc = interface.getUserContext

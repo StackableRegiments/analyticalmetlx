@@ -315,15 +315,9 @@ case class D2LDescriptionInput(
   Type:Option[String]
 )
 
-class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
+class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpProvider:HttpClientProvider) extends Logger {
   protected val pageSize = 200
-  protected val httpConnectionTimeout = 3 // 3 seconds
-  protected val httpReadTimeout = 10 * 1000 // 10 seconds
-  protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
-    override val connectionTimeout = httpConnectionTimeout
-    override val readTimeout = httpReadTimeout
-    override val maxRetries = 1
-  }
+  protected val client = httpProvider.getClient
 
   protected implicit def formats = net.liftweb.json.DefaultFormats
 
@@ -658,8 +652,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
 }
 
-class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends GroupsProvider(storeId){
-  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) 
+class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends GroupsProvider(storeId){
+  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) 
   override val canQuery:Boolean = true
  
   protected val acceptableRoleIds = List(
@@ -826,7 +820,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
   } 
 }
 
-class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
+class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) with GroupStoreProvider {
   protected val acceptableRoleIds = List(
     113, //Instructor_1
     109, //Instructor_2

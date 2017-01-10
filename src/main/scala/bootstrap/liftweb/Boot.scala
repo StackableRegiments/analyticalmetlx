@@ -69,7 +69,7 @@ class Boot extends Logger {
         debug("staticResource uriNotFound: %s".format(rest))
         DefaultNotFound
       }
-      case _ => NotFoundAsResponse(RedirectResponse("/conversationSearch"))
+      case _ => NotFoundAsResponse(RedirectResponse(com.metl.snippet.conversationSearch()))
     }
 
     LiftRules.noCometSessionCmd.default.set(() => Reload:JsCmd)
