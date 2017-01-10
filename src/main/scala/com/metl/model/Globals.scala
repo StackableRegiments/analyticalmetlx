@@ -108,10 +108,20 @@ object Globals extends PropertyReader with Logger {
     LiftRules.maxConcurrentRequests.session.set((r:net.liftweb.http.Req)=>maxRequests)
   })
   readInt(liftConfig,"cometRequestTimeout").foreach(cometTimeout => {
-    LiftRules.cometRequestTimeout = Full(cometTimeout)
+    LiftRules.cometRequestTimeout = Full(cometTimeout) //defaults to Empty, which results in 120000
   })
+  readLong(liftConfig,"cometRenderTimeout").foreach(cometTimeout => {
+    LiftRules.cometRenderTimeout = cometTimeout //defaults to 30000
+  })
+  readLong(liftConfig,"cometFailureRetryTimeout").foreach(cometTimeout => {
+    LiftRules.cometFailureRetryTimeout = cometTimeout //defaults to 10000
+  })
+  readLong(liftConfig,"cometProcessingTimeout").foreach(cometTimeout => {
+    LiftRules.cometProcessingTimeout = cometTimeout //defaults to 5000
+  })
+  
   readInt(liftConfig,"cometGetTimeout").foreach(cometTimeout => {
-    LiftRules.cometGetTimeout = cometTimeout
+    LiftRules.cometGetTimeout = cometTimeout // this defaults to 140000
   })
   readLong(liftConfig,"maxMimeFileSize").foreach(maxUploadSize => {
     LiftRules.maxMimeFileSize = maxUploadSize
@@ -122,11 +132,11 @@ object Globals extends PropertyReader with Logger {
   readBool(liftConfig,"bufferUploadsOnDisk").filter(_ == true).foreach(y => {
     LiftRules.handleMimeFile = net.liftweb.http.OnDiskFileParamHolder.apply
   })
-  readInt(liftConfig,"ajaxTimeout").foreach(ajaxTimeout => {
-    LiftRules.ajaxPostTimeout = ajaxTimeout
+  readInt(liftConfig,"ajaxPostTimeout").foreach(ajaxTimeout => {
+    LiftRules.ajaxPostTimeout = ajaxTimeout // this defaults to 5000
   })
   readInt(liftConfig,"ajaxRetryCount").foreach(retryCount => {
-    LiftRules.ajaxRetryCount = Full(retryCount)
+    LiftRules.ajaxRetryCount = Full(retryCount) // this defaults to empty, which means keep retrying forever
   })
   readBool(liftConfig,"enableLiftGC").foreach(gc => {
     LiftRules.enableLiftGC = gc
