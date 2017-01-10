@@ -34,20 +34,24 @@ class TokBoxMonitor(tokboxSession:TokBoxSession) extends Logger {
     protected var archive:Option[TokBoxArchive] = None
     protected var broadcast:Option[TokBoxBroadcast] = None
     def init:Unit = {
+      /*
       for {
         tb <- Globals.tokBox.toList
       } yield {
         startArchive(tb)
         startBroadcast(tb)
       }
+      */
     }
     def shutdown:Unit = {
+      /*
       for {
         tb <- Globals.tokBox.toList
       } yield {
         stopBroadcast(tb)
         stopArchive(tb)
       }
+      */
     }
     def rollArchive:Unit = {
       for {
@@ -63,19 +67,26 @@ class TokBoxMonitor(tokboxSession:TokBoxSession) extends Logger {
     def getBroadcasts:Option[TokBoxBroadcast] = broadcast
 
     protected def startArchive(tb:TokBox) = {
+      // this won't work exactly - it can't start the archive until the session exists, which means somebody has connected to it.
       archive = Some(tb.startArchive(
         session = tokboxSession,
         compositedVideo = false
       ))
+      warn("started archive %s".format(archive))
     }
     protected def stopArchive(tb:TokBox) = {
+      warn("stopping archive %s".format(archive))
       archive.foreach(a => tb.stopArchive(tokboxSession,a))
+      archive = None
     }
     protected def startBroadcast(tb:TokBox) = {
       broadcast = Some(tb.startBroadcast(tokboxSession,""))
+      warn("started broadcast %s".format(broadcast))
     }
     protected def stopBroadcast(tb:TokBox) = {
+      warn("stopping broadcast %s".format(broadcast))
       broadcast.foreach(b => tb.stopBroadcast(tokboxSession,b.id))
+      broadcast = None
     }
 }
 
