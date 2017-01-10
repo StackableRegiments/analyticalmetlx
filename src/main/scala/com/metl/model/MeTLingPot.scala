@@ -46,7 +46,7 @@ class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecr
   }
 }
 
-trait MeTLingPotAdaptor {
+trait MeTLingPotAdaptor extends Logger {
   def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] 
   def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] 
   def init:Unit = {}
@@ -60,7 +60,7 @@ class PassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor) extends MeTLingPotAdapto
   override def shutdown:Unit = a.shutdown
 }
 
-class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 20,delay:TimeSpan = new TimeSpan(0L)) extends PassThroughMeTLingPotAdaptor(a) with LiftActor with Logger {
+class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 20,delay:TimeSpan = new TimeSpan(0L)) extends PassThroughMeTLingPotAdaptor(a) with LiftActor {
   case object RequestSend
   protected val buffer = new scala.collection.mutable.ListBuffer[MeTLingPotItem]()
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
@@ -264,7 +264,7 @@ class MockMeTLingPotAdaptor extends MeTLingPotAdaptor {
   }
 }
 
-object MeTLingPot {
+object MeTLingPot extends Logger {
   import scala.xml._
   protected def wrapWith(in:NodeSeq,mpa:MeTLingPotAdaptor):MeTLingPotAdaptor = {
     List((n:NodeSeq,a:MeTLingPotAdaptor) => {

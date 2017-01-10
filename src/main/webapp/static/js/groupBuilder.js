@@ -439,12 +439,12 @@ var GroupBuilder = (function(){
                                 system:gp,
                                 key:k
                             }
-                        });
+                        },"async");
                     } else {
-                        getOrgUnitsFromGroupProviders(choice);
+                        getOrgUnitsFromGroupProviders(choice,"async");
                     }
                 } else {
-                    getOrgUnitsFromGroupProviders(choice);
+                    getOrgUnitsFromGroupProviders(choice,"async");
                 }
             }
         });
