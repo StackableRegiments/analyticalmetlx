@@ -402,8 +402,8 @@ body {
 #sidebar {
     display: block;
     position: absolute;
-    left: -160px;
-    width: 160px;
+    left: -200px;
+    width: 200px;
     background-color: transparent;
     border-right: 1px solid #999999;
 }
