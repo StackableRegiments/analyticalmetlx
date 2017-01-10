@@ -301,7 +301,8 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var pointerOut = function(x,y){
+            var pointerOut = function(x,y,e){
+                var point = releasePoint(e);
                 trackedTouches = {};
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
@@ -315,13 +316,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                        }
+                    }
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -331,7 +331,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    pointerOut(e.offsetX,e.offsetY);
+                    pointerOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -339,7 +339,6 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
             context.bind("pointercancel",pointerClose);
-
         } else {
             context.bind("mousedown",function(e){
                 WorkQueue.pause();
@@ -383,11 +382,13 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var mouseOut = function(x,y){
+            var mouseOut = function(x,y,e){
+                console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
                 var worldY = worldPos.y;
+                var z = 0.5;
                 if(worldX < viewboxX){
                     takeControlOfViewbox();
                     Extend.left();
@@ -396,13 +397,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(x,y,z,worldPos,modifiers(e,false));
+                        }
+                    }
                 }
                 isDown = false;
             }
@@ -410,7 +410,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    mouseOut(e.offsetX,e.offsetY);
+                    mouseOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -1365,7 +1365,7 @@ var Modes = (function(){
                     $(sprintf("#%sText",color)).click(function(){
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
-			Modes.text.refocussing = true;
+                        Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
                         console.log("Clicked",subject);
                     });
@@ -1450,7 +1450,7 @@ var Modes = (function(){
                         }
                     }
                 },
-		refocussing:false,
+                refocussing:false,
                 editorFor: function(t){
                     var textColors = [
                         $("#blackText"),
@@ -1476,10 +1476,15 @@ var Modes = (function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
+				source.audiences = ContentFilter.getAudiences();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+                            Progress.beforeChangingAudience[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeChangingAudience[t.identity];
+                            };
                             Progress.beforeLeavingSlide[t.identity] = function(){
                                 onChange.flush();
                                 delete Progress.beforeLeavingSlide[t.identity];
@@ -1499,7 +1504,6 @@ var Modes = (function(){
                                         }
                                         selector.toggleClass("active",isToggled);
                                     };
-                                    console.log("SelectionChanged",format);
                                     var setIf = function(selector,prop,value){
                                         var equal = _.isEqual(format[prop],value);
                                         if(prop in format){
@@ -1820,7 +1824,7 @@ var Modes = (function(){
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
                                 y:currentVideo.y,
-                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(permitStudentsToPublishCheckbox)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2111,6 +2115,7 @@ var Modes = (function(){
                             sendStanza(imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
+                            zoomToFit();
                         },
                         error: function(e){
                             console.log(e);
@@ -2766,8 +2771,7 @@ var Modes = (function(){
                 if (Conversations.shouldModifyConversation()){
                     console.log("showing participants button");
                     $("#participantsButton").unbind("click").on("click",function(){
-                        showBackstage("participants");
-                        Participants.reRender();
+											Participants.openMenu();
                     }).show();
                 } else {
                     console.log("hiding participants button");

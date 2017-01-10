@@ -222,7 +222,7 @@ var GroupBuilder = (function(){
                     }).appendTo(importV);
                     var groupSet = groupCat.groupSet;
                     var groupSetV = $("<div />",{
-                    }).appendTo(ouV);
+                    });
                     var groupSetHeader = $("<div />",{
                         class:"flex-container-responsive"
                     }).appendTo(groupSetV);
@@ -238,7 +238,6 @@ var GroupBuilder = (function(){
                             _.each(groupCat.groups,function(group,zi){
                                 var i = zi + 1;
                                 if(_.includes(_.map(group.members,"name"),p.name)){
-                                    console.log("Checking",p.name,"against",_.map(group.members,"name"));
                                     p.group = {
                                         groupSet:groupSet.name,
                                         name:i,
@@ -261,33 +260,39 @@ var GroupBuilder = (function(){
                         text:sprintf("Copy %s from %s",groupSet.name,ou.name)
                     })).appendTo(groupSetHeader);
 
+                    var author = Conversations.getCurrentConversation().author;
                     _.each(groupCat.groups,function(group){
                         var groupV = $("<div />",{
                             class:"groupBuilderGroup"
                         }).appendTo(groupSetV);
-												console.log("rendering members:",group,group.members);
-                        _.each(group.members,function(obj){
-                            var name = obj.name;
-                            if(!(name in participants)){
-                                participants[name] = {
-                                    name:name,
-                                    enrolled:false
-                                };
-                            }
-                            renderMember(participants[name]).appendTo(groupV);
+                        var validMembers = _.filter(group.members,function(m) {
+                            return m.name != author;
                         });
+                        if(validMembers.length > 0){
+                            groupSetV.appendTo(ouV);
+                            _.each(validMembers,function(obj){
+                                var name = obj.name;
+                                if(!(name in participants)){
+                                    participants[name] = {
+                                        name:name,
+                                        enrolled:false
+                                    };
+                                }
+                                renderMember(participants[name]).appendTo(groupV);
+                            });
+                        }
                     });
                 }
             });
         });
-    }
+    };
     var renderAllocations = function(){
         var container = $(".jAlert .groupSlideDialog");
         var renderable = _.filter(participants,function(p){
             return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
         });
         var groups = allocationsFor(renderable);
-				console.log("rendering allocations:",participants,renderable,groups);
+        console.log("rendering allocations:",participants,renderable,groups);
         var groupsV = container.find(".groups");
         groupsV.empty();
         _.each(groups,function(group){
@@ -332,7 +337,8 @@ var GroupBuilder = (function(){
                 closeAlert:true,
                 onClick:function(){
                     var sendable = _.filter(participants,function(p){
-                        return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
+                        return p.name != Conversations.getCurrentConversation().author &&
+                            ((groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating));
                     });
                     var calculatedGroups = allocationsFor(sendable);
                     var sendableGroups = _.map(_.values(calculatedGroups),function(members){
@@ -396,7 +402,9 @@ var GroupBuilder = (function(){
     }
     var statusReport = function(msg){
         console.log(msg);
-        $("#groupSlideDialog .importGroups").text(msg);
+        $("#groupSlideDialog .importGroups").prepend("<div />",{
+            text:msg
+        });
     }
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
         var select = $(".jAlert .ouSelector").empty();
@@ -415,29 +423,29 @@ var GroupBuilder = (function(){
             var choice = $(this).val();
             if(choice != "NONE"){
                 blockGroups(true);
-								var conv = Conversations.getCurrentConversation();
-								console.log("finding specific groups",conv);
-								if ("foreignRelationship" in conv && "system" in conv.foreignRelationship && "key" in conv.foreignRelationship){
-									var gp = conv.foreignRelationship.system;
-									var k = conv.foreignRelationship.key;
-									console.log("finding specific groups from foreignRelationship",conv.foreignRelationship,gp,k);
-									if (gp == choice){
-										getGroupSetsForOrgUnit(gp,{
-											ouType:"orgUnit",
-											name:conv.foreignRelationship.key,
-											members:[],
-											groupSets:[],
-											foreignRelationship:{
-												system:gp,
-												key:k
-											}
-										});
-									} else {
-										getOrgUnitsFromGroupProviders(choice);
-									}
-								} else {
-									getOrgUnitsFromGroupProviders(choice);
-								}
+                var conv = Conversations.getCurrentConversation();
+                console.log("finding specific groups",conv);
+                if ("foreignRelationship" in conv && "system" in conv.foreignRelationship && "key" in conv.foreignRelationship){
+                    var gp = conv.foreignRelationship.system;
+                    var k = conv.foreignRelationship.key;
+                    console.log("finding specific groups from foreignRelationship",conv.foreignRelationship,gp,k);
+                    if (gp == choice){
+                        getGroupSetsForOrgUnit(gp,{
+                            ouType:"orgUnit",
+                            name:conv.foreignRelationship.key,
+                            members:[],
+                            groupSets:[],
+                            foreignRelationship:{
+                                system:gp,
+                                key:k
+                            }
+                        });
+                    } else {
+                        getOrgUnitsFromGroupProviders(choice);
+                    }
+                } else {
+                    getOrgUnitsFromGroupProviders(choice);
+                }
             }
         });
     };
@@ -463,12 +471,15 @@ var GroupBuilder = (function(){
             byOrgUnit = {};
             availableGroupSets[args.orgUnit.name] = byOrgUnit;
         }
-				console.log("found members:",byOrgUnit,args.groupSet.name,_.map(args.groups,function(g){
-					console.log("found group:",g);
-					return _.size(g);
-				}));
-        byOrgUnit[args.groupSet.name] = args;
-        renderAvailableGroupSets();
+        var author = Conversations.getCurrentConversation().author;
+        if(_.some(args.groups,function(group){
+            return _.some(group.members,function(member){
+                return member.name != author;
+            });
+        })){
+            byOrgUnit[args.groupSet.name] = args;
+            renderAvailableGroupSets();
+        }
         blockGroups(false);
     };
     Progress.onBackstageShow["GroupBuilder"] = function(backstage){
@@ -489,7 +500,7 @@ var GroupBuilder = (function(){
     };
     var refreshToolState = function(){
         var menuButton = $("#menuGroups");
-        if(Conversations.shouldModifyConversation()){
+        if($("#roomToolbar.active").length && Conversations.shouldModifyConversation()){
             menuButton.parent().show();
         }
         else{

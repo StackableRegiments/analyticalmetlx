@@ -431,6 +431,7 @@ var categoryMapping = _.fromPairs(_.flatMap({
 var active = "activeBackstageTab active";
 function showBackstage(id){
     $("html").css("overflow-y","auto");
+    $("#masterFooter").hide();
     window.currentBackstage = id;
     $(".backstage").hide();
     if ("HealthCheckViewer" in window){
@@ -475,6 +476,7 @@ function showBackstage(id){
 }
 function hideBackstage(){
     $("html").css("overflow-y","hidden");
+    $("#masterFooter").show();
     window.currentBackstage = noActiveBackstage;
     $(".backstage-menu").removeClass('active');
     $(".backstage").hide();
@@ -660,15 +662,18 @@ $(function(){
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
         Submissions.reRender();
+				updateActiveMenu($("#menuSubmissions"));
     });
 		$("#gradesButton").on("click",function(){
         showBackstage("grades");
         Grades.reRender();
+				updateActiveMenu($("#menuGrades"));
 		});
 
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
         Quizzes.reRender();
+				updateActiveMenu($("#menuPolls"));
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){

@@ -314,9 +314,9 @@ var Conversations = (function(){
             return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
         });
         var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
-	var candidates = _.clone(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)));
-	console.log("candidates",candidates);
-        dataGridItems = _.uniqBy(_.map(candidates,function(conv){
+				var candidates = _.clone(_.concat(mutatedImports,_.filter(_.uniqBy(_.reverse(_.orderBy(currentSearchResults,"lastAccessed")),"jid"),shouldDisplayConversation)));
+				console.log("candidates",candidates);
+        dataGridItems = _.uniqBy(_.reverse(_.orderBy(_.map(candidates,function(conv){
             if (conv.subject == "deleted"){
                 conv.lifecycle = "deleted";
             } else if (conv.creation > newThreshold){
@@ -325,8 +325,8 @@ var Conversations = (function(){
                 conv.lifecycle = "available";
             }
             return conv;
-        }),"jid");
-	console.log("rendering",dataGridItems);
+        }),"lastAccessed")),"jid");
+				console.log("rendering",dataGridItems);
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");

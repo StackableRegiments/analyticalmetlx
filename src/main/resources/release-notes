@@ -1,3 +1,30 @@
+1.1.4
+Bugfix: METL-488: D2L groups not shown on Add Group page.
+Bugfix: METL-473: Updated wording "Students may broadcast" to "Students may stream".
+Bugfix: METL-480: Restrict conversation while students aren't in does not refresh list.
+Bugfix: METL-481: Rename conversation does not push new name.
+
+1.1.3
+Improvement: METL-487: Alternate D2L fetch behaviour.
+Bugfix: METL-382: Clicking on current page does not drag followers.
+
+1.1.2
+Improvement: METL-324: Filter API endpoints for grades/other secure content.
+Improvement: METL-295: User profile.
+
+1.1.1
+Story: METL-419: Teacher submits all groups in one action.
+Improvement: METL-456: Move Help to main banner.
+Improvement: METL-453: Stacktraces for all failed clientSideFunctions.
+Bugfix: METL-458: Ink lines drawn to the boundaries of the banner and plugin disappear on panning.
+Bugfix: METL-460: Autofit now puts a large image up into the translucent space under the banner and the move control is not usable.
+Bugfix: METL-417: Teacher text to a specific group disappears from teacher screen.
+Bugfix: METL-457: Group Editor appears in multiple Start menus.
+Bugfix: METL-465: Translucent header and footer obscure similarly colored content.
+Bugfix: METL-439: Forming Groups sometimes includes the teacher in a group.
+Bugfix: METL-448: Launching Participants or Grades from Controls does not select their button.
+Bugfix: METL-316: Teacher failed to restore student content from recycle bin.
+
 1.1.0
 Bugfix: METL-466: Remove non-orgUnits from the d2l getGroups system.
 

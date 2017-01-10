@@ -302,6 +302,7 @@ var Conversations = (function(){
         constructNextSlideButton(slideControls),
         constructAddSlideButton(slideControls)
         constructAddGroupSlideButton(slideControls)
+        constructHelpButton(slideControls)
         indicateActiveSlide(currentSlide);
         $(".thumbnail:not(.groupSlide)").map(function(){
             var t = $(this);
@@ -765,6 +766,9 @@ var Conversations = (function(){
             };
         }
     };
+    var helpFunction = function(){
+	showBackstage("help");
+    }
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
@@ -792,6 +796,9 @@ var Conversations = (function(){
     }
     var constructAddGroupSlideButton = function(container){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
+    }
+    var constructHelpButton = function(container){
+	constructSlideButton("helpButton","Help","fa-question-circle",always,container);
     }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
@@ -843,7 +850,18 @@ var Conversations = (function(){
                 catch(e){
                     console.log(e);
                 }
-            }
+            } else if (Conversations.isAuthor()){
+							var newStanza = {
+								type:"command",
+								author:UserSettings.getUsername(),
+								audiences:[],
+								timestamp:0,
+								command:"/SYNC_MOVE",
+								parameters:[slideId]
+							};
+							console.log("sending:",newStanza);
+							sendStanza(newStanza);
+						}
         }
         else{
             alert("You must remain on the current page");
@@ -937,7 +955,8 @@ var Conversations = (function(){
             .on("click","#addGroupSlideButton",function(){
                 GroupBuilder.showAddGroupSlideDialog()
             })
-            .on("click","#addSlideButton",addSlideFunction);
+            .on("click","#addSlideButton",addSlideFunction)
+	    .on("click","#helpButton",helpFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");

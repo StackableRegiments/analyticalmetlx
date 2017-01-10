@@ -50,7 +50,7 @@ var ContentFilter = (function(){
         var isolated = audiences.length &&
                 stanza.audiences &&
                 stanza.audiences.length && !(_.some(stanza.audiences,function(audience){
-                    return _.includes(audiences,audience.name);
+                    return _.includes(audiences,audience.name) || _.includes(audiences,audience);
                 }));
         if(isolated){
             return false;
@@ -153,7 +153,6 @@ var ContentFilter = (function(){
                 fil.enabled = enabled;
             }
         });
-	console.log("Settting filter",id,enabled,"yields",filters);
         renderContentFilters();
         blit();
     };

@@ -244,7 +244,7 @@ object StatelessHtml extends Stemmer with Logger {
   def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), {
     val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
-  })
+  }) 
   def attachmentProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.attachmentProxy(%s)".format(identity), {
     MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getFiles.find(_.id == identity).map(file => {
       val headers = List(
@@ -270,13 +270,47 @@ object StatelessHtml extends Stemmer with Logger {
   })
 
   def loadHistory(jid:String):Node= Stopwatch.time("StatelessHtml.loadHistory(%s)".format(jid), {
-    <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory)}</history>
+    <history>{serializer.fromRenderableHistory(getSecureHistoryForRoom(jid,Globals.currentUser.is))}</history>
   })
   def loadMergedHistory(jid:String,username:String):Node = Stopwatch.time("StatelessHtml.loadMergedHistory(%s)".format(jid),{
-    <history>{serializer.fromRenderableHistory(MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.merge(MeTLXConfiguration.getRoom(jid+username,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory))}</history>
+    <history>{serializer.fromRenderableHistory(getSecureHistoryForRoom(jid,username).merge(getSecureHistoryForRoom(jid+username,username)))}</history>
   })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
-  def fullHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>)))
+
+  protected def getSecureHistoryForRoom(jid:String,username:String):History = {
+    val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
+    val history = room.getHistory
+    val (convHistory,isTeacher) = {
+      room match {
+        case cr:ConversationRoom => {
+          val isT = Globals.isSuperUser || config.detailsOfConversation(cr.jid.toString).author == username
+          val h = history
+          (h,isT)
+        }
+        case s:SlideRoom => {
+          val isT = Globals.isSuperUser || config.detailsOfConversation(s.jid.toString).author == username
+          val h = MeTLXConfiguration.getRoom(s.jid.toString,config.name).getHistory
+          (h,isT)
+        }
+        case _ => (History.empty,false)
+      }
+    }
+    lazy val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+    val finalHistory = history.filter{
+      case gv:MeTLGradeValue if isTeacher => true
+      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
+      case gv:MeTLGradeValue => false
+      case qr:MeTLQuizResponse if isTeacher || qr.author == username => true
+      case s:MeTLSubmission if isTeacher || s.author == username => true
+      case qr:MeTLQuizResponse  => false
+      case s:MeTLSubmission => false
+      case _ => true
+    }
+    finalHistory
+  }
+  def fullHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{
+    getSecureHistoryForRoom(jid,Globals.currentUser.is).getAll.map(s => serializer.fromMeTLData(s))
+  }</history>)))
 
 
   def byteArrayHeaders(filename:String):List[Tuple2[String,String]] = {
@@ -317,7 +351,7 @@ object StatelessHtml extends Stemmer with Logger {
     zipBytes
   }
   def yawsHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.yawsHistory(%s)".format(jid),{
-    val xml = <history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => serializer.fromMeTLData(s))}</history>
+    val xml = <history>{getSecureHistoryForRoom(jid,Globals.currentUser.is).getAll.map(s => serializer.fromMeTLData(s))}</history>
     val filename = "combined.xml"
     val xmlBytes = xml.toString.getBytes("UTF-8")
     Full(InMemoryResponse(constructZip(List((filename,xml.toString.getBytes("UTF-8")))),byteArrayHeaders("all.zip"),Nil,200))
@@ -344,13 +378,13 @@ object StatelessHtml extends Stemmer with Logger {
     Full(XmlResponse(<resource url={identity}/>))
   })
 
-  def fullClientHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid)).getHistory.getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>)))
+  def fullClientHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{getSecureHistoryForRoom(jid,Globals.currentUser.is).getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>)))
 
   def mergedHistory(jid:String,onBehalfOf:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.mergedHistory(%s)".format(jid), Full(XmlResponse(loadMergedHistory(jid,onBehalfOf))))
 
   def describeHistory(jid:String,format:String="xml")():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(jid),{
     val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
-    val history = room.getHistory
+    val history = getSecureHistoryForRoom(jid,Globals.currentUser.is)
     val stanzas = history.getAll
     val allContent = stanzas.length
     val publishers = stanzas.groupBy(_.author)
@@ -697,11 +731,20 @@ object StatelessHtml extends Stemmer with Logger {
     }
   }
   protected def exportHistories(conversation:Conversation,restrictToPrivateUsers:Option[List[String]]):List[History] = {
-    val convHistory = config.getHistory(conversation.jid.toString).filter(m => {
+    val cHistory = config.getHistory(conversation.jid.toString)
+    val allGrades = Map(cHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+    val convHistory = cHistory.filter(m => {
       restrictToPrivateUsers.map(users => {
         m match {
           case q:MeTLQuiz => true
           case mcc:MeTLCanvasContent => mcc.privacy == Privacy.PUBLIC || users.contains(mcc.author)
+          case g:MeTLGrade => true
+          case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && users.contains(gv.getGradedUser) => true
+          case gv:MeTLGradeValue => false
+          case qr:MeTLQuizResponse if users.contains(qr.author) => true
+          case s:MeTLSubmission if users.contains(s.author) => true
+          case qr:MeTLQuizResponse => false
+          case s:MeTLSubmission  => false
           case ms:MeTLStanza => users.contains(ms.author)
         }
       }).getOrElse(true)
