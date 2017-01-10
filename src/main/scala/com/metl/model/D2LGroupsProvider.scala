@@ -341,7 +341,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       val jValueString = compactRender(json)
       val headers = List(("Content-Type","application/json"))
       val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,headers)
-      //println("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
+      //trace("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
       None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -523,7 +523,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
-      //println("found remote grades: %s".format(firstGet))
+      //trace("found remote grades: %s".format(firstGet))
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
       var continuing = firstResp.Next
@@ -532,7 +532,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           continuing.foreach(apiUrl => {
             val u = userContext.createAuthenticatedUri(apiUrl,"GET")
             val respString = client.get(u.toString)
-            //println("found remote grades: %s".format(respString))
+            //trace("found remote grades: %s".format(respString))
             val respObj = parse(respString)
             val resp = respObj.extract[D2LGradeValueResponse]
             items = items ::: resp.Objects
@@ -556,7 +556,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
     val gv = Extraction.decompose(gradeValue)
-    //println("sending new gradeValue: %s".format(compactRender(gv)))
+    //trace("sending new gradeValue: %s".format(compactRender(gv)))
     putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
   }
 

@@ -71,7 +71,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     // this starts our pool in advance
     Range(0,Math.min(Math.max(startingPool,0),maxPoolSize)).toList.flatMap(ci => {
       val c = vendor.newConnection(DefaultConnectionIdentifier)
-      println("starting connection: %s => %s".format(ci,c))
+      debug("starting connection: %s => %s".format(ci,c))
       c
     }).foreach(c => {
       vendor.releaseConnection(c)

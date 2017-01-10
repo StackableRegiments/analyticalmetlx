@@ -175,7 +175,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       query = Some(q)
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
-      debug(listing.toString())
+      //debug(listing.toString())
       trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
@@ -185,7 +185,13 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       val newConv = serverConfig.createConversation(title,username)
       listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
-    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
+    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))/*,
+    ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
+      val delay = getArgAsInt(args(0))
+      val message = getArgAsString(args(1))
+      Thread.sleep(delay)
+      JString(message)
+    },Full("alert"))*/
   )
 
   protected var query:Option[String] = None
@@ -773,7 +779,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                   val newM = dc.generateNewIdentity(newIdentitySeed)
                   val newIdentity = newM.identity
                   val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
-                  println("created newUDM: %s".format(newUDM))
+                  trace("created newUDM: %s".format(newUDM))
                   room ! LocalToServerMeTLStanza(newUDM)
                   
                   room ! LocalToServerMeTLStanza(newM)
@@ -1209,7 +1215,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
     case HealthyWelcomeFromRoom => {}
     case cp@ConversationParticipation(jid,currentMembers,possibleMembers) if shouldModifyConversation() => {
-      println("CONVERSATION PARTICIPATION: %s".format(cp))
+      trace("CONVERSATION PARTICIPATION: %s".format(cp))
       partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
         JField("location",JString(jid)),
         JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
@@ -1405,7 +1411,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }).openOr(History.empty)
     trace("priv %s".format(jid))
     val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
-    println("conv found %s".format(convHistory.getGradeValues))
+    trace("conv found %s".format(convHistory.getGradeValues))
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
       case g:MeTLGrade => true
       case gv:MeTLGradeValue if shouldModifyConversation() => true
@@ -1416,7 +1422,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case _ => true
     }
     debug("final %s".format(jid))
-    println("final found %s".format(finalHistory.getGradeValues))
+    trace("final found %s".format(finalHistory.getGradeValues))
     serializer.fromHistory(finalHistory)
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)

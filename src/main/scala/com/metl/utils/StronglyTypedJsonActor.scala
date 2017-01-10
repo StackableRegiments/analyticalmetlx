@@ -28,11 +28,54 @@ object JNum{
 
 abstract class StronglyTypedJsonActor extends CometActor with CometListener with Logger {
 	protected val functionDefinitions:List[ClientSideFunction]
+  case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>JValue,returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long)
+  object backendActor extends LiftActor {
+    override def messageHandler = {
+      case afr@AsyncFunctionRequest(funcName,funcArgs,func,resultFunc,returnArguments,params,bonusParams,start) => {
+        val exceptionOrResult = try {
+          val output = func(params)
+          Right((output,params,bonusParams))
+        } catch {
+          case e:Exception => {
+            Left(e)
+          }
+        }
+        val end = new java.util.Date().getTime()
+        resultFunc.foreach(rrf => {
+          val returnCall:JsCmd = Call("serverResponse",JObject({
+            exceptionOrResult match {
+              case Right((response,params,bonusParams)) => {
+                JField("bonusArguments",JArray(bonusParams)) :: bonusParams.reverse.headOption.toList.map(ins => JField("instant",ins)) ::: {
+                  returnArguments match {
+                    case true => List(JField("arguments",JArray(params)))
+                    case false => Nil
+                  }
+                }
+              }
+              case Left(e) => {
+                error("exception in ClientSideFunc : %s(%s)".format(name,funcArgs),e)
+                List(JField("error",JString(e.getMessage)))
+              }
+            }
+          } ::: List(
+            JField("command",JString(funcName)),
+            JField("duration",JInt(end - start)),
+            JField("serverStart",JInt(start)),
+            JField("serverEnd",JInt(end)),
+            JField("success",JBool(exceptionOrResult.isRight))
+          ))) & exceptionOrResult.right.toOption.map(res => Call(rrf,res._1):JsCmd).getOrElse(Noop)
+          partialUpdate(returnCall)
+        })
+      }
+      case _ => {}
+    }
+  }
   case class ClientSideFunction(val name:String,val args:List[String],val serverSideFunc:List[JValue]=>JValue,val returnResultFunction:Box[String],val returnResponse:Boolean = false,val returnArguments:Boolean = false){
     import net.liftweb.json.Extraction._
     import net.liftweb.json._
     val jsCreationFunc = Script(JsCrVar(name,AnonFunc(ajaxCall(JsRaw("JSON.stringify(augmentArguments(arguments))"),(s:String) => {
       val start = new java.util.Date().getTime()
+      var async = false
       try {
         val exceptionOrResult = {
           try {
@@ -44,8 +87,14 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
                 }
                 val params = allParams.take(args.length)
                 val bonusParams = allParams.drop(args.length)
-                val output = serverSideFunc(params)
-                Right((output,params,bonusParams))
+                if (bonusParams.exists(_ == JString("async"))){
+                  async = true
+                  backendActor ! AsyncFunctionRequest(name,args,serverSideFunc,returnResultFunction,returnArguments,params,bonusParams,start)
+                  Right((JString("asynchronous function started"),params,bonusParams))
+                } else {
+                  val output = serverSideFunc(params)
+                  Right((output,params,bonusParams))
+                }
               }
               case unknown => Left(new Exception("unknown object: %s".format(unknown)))
             }
@@ -86,6 +135,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
         (for {
           rrf <- returnResultFunction
           res <- exceptionOrResult.right.toOption
+          if !async
         } yield {
           returnCall & Call(rrf,res._1)
         }).getOrElse(returnCall)
