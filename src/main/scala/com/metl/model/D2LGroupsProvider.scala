@@ -317,11 +317,12 @@ case class D2LDescriptionInput(
 
 class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
   protected val pageSize = 200
-  protected val httpConnectionTimeout = 10 // 10 seconds
-  protected val httpReadTimeout = 60 * 1000 // 60 seconds
+  protected val httpConnectionTimeout = 3 // 3 seconds
+  protected val httpReadTimeout = 10 * 1000 // 10 seconds
   protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
     override val connectionTimeout = httpConnectionTimeout
     override val readTimeout = httpReadTimeout
+    override val maxRetries = 1
   }
 
   protected implicit def formats = net.liftweb.json.DefaultFormats
@@ -565,8 +566,16 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
   }
 
-  def getEnrollments(userContext:ID2LUserContext,userId:String):List[D2LEnrollment] = {
-    val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/?pagesize=%s".format(lpApiVersion,userId,pageSize),"GET")
+
+  def getEnrollments(userContext:ID2LUserContext,userId:String,roleIds:List[Int] = Nil):List[D2LEnrollment] = {
+    roleIds match {
+      case Nil => internalGetEnrollments(userContext,userId)
+      case roles => roles.par.map(r => internalGetEnrollments(userContext,userId,Some(r))).toList.flatten
+    }
+  }
+  protected def internalGetEnrollments(userContext:ID2LUserContext,userId:String,roleId:Option[Int] = None):List[D2LEnrollment] = {
+    val baseUrl = "/d2l/api/lp/%s/enrollments/users/%s/orgUnits/?pagesize=%s%s".format(lpApiVersion,userId,pageSize,roleId.map(r => "&roleId=%s".format(r)).getOrElse(""))
+    val url = userContext.createAuthenticatedUri(baseUrl,"GET")
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
@@ -574,7 +583,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       var items = firstResp.Items
       var continuing = firstResp.PagingInfo.HasMoreItems
       var bookmark:Option[String] = firstResp.PagingInfo.Bookmark
-      trace("bookmark: %s, items: %s".format(bookmark,items.length))
+      warn("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
           val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/%s".format(lpApiVersion,userId,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
@@ -584,7 +593,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           items = items ::: resp.Items
           continuing = resp.PagingInfo.HasMoreItems
           bookmark = resp.PagingInfo.Bookmark
-          trace("bookmark: %s, items: %s".format(bookmark,items.length))
+          warn("bookmark: %s, items: %s".format(bookmark,items.length))
         } catch {
           case e:Exception => {
             warn("exception while paging: %s =>\r\n%s".format(bookmark,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
@@ -595,6 +604,10 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       }
       items
     } catch {
+      case e:RetryException => {
+        warn("webExceptions when accessing: %s => %s".format(url.toString,e.exceptions.map(_.getMessage).mkString("\r\n")))
+        List.empty[D2LEnrollment]
+      }
       case e:Exception => {
         warn("exception when accessing: %s => %s\r\n%s".format(url.toString,e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
         List.empty[D2LEnrollment]
@@ -602,10 +615,10 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     }
   }
   def getUserByOrgDefinedId(userContext:ID2LUserContext,orgDefinedId:String):List[D2LUser] = {
-    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,orgDefinedId),"GET"))
+    fetchListFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?orgDefinedId=%s".format(lpApiVersion,urlEncode(orgDefinedId)),"GET"))
   }
   def getUserByUsername(userContext:ID2LUserContext,username:String):Option[D2LUser] = {
-    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?userName=%s".format(lpApiVersion,username),"GET"))
+    fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?userName=%s".format(lpApiVersion,urlEncode(username)),"GET"))
   }
   def getUsers(userContext:ID2LUserContext):List[D2LUser] = {
     val url = userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/?pagesize=%s".format(lpApiVersion,pageSize),"GET")
@@ -648,15 +661,33 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
 class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends GroupsProvider(storeId){
   val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) 
   override val canQuery:Boolean = true
-  
+ 
+  protected val acceptableRoleIds = List(
+    113, //Instructor_1
+    109, //Instructor_2
+    114, //Instructor_3
+    110 //Student
+  )
+
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = {
+    val start = new java.util.Date().getTime
+    warn("starting D2L auth %s".format(userData.username))
     val uc = interface.getUserContext
-    interface.getUserByUsername(uc,userData.username).toList.flatMap(user => {
-      val enrollments = interface.getEnrollments(uc,user.UserId.toString)  
-      enrollments.map(en => {
+    val ucDone = new java.util.Date().getTime
+    warn("got userContext: %s %s".format(userData.username,ucDone - start))
+    val res = interface.getUserByUsername(uc,userData.username).toList.flatMap(user => {
+      val userDone = new java.util.Date().getTime
+      warn("got username: %s %s %s"format(userData.username,user.UserId,userDone - ucDone))
+      val enrollments = interface.getEnrollments(uc,user.UserId.toString,acceptableRoleIds)  
+      val enrollmentsDone = new java.util.Date().getTime
+      warn("got enrollments: %s %s".format(userData.username,enrollmentsDone - userDone))
+      enrollments.filter(_.OrgUnit.Type.Id == 3).map(en => {
         OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
       })
     })
+    val groupsComplete = new java.util.Date().getTime
+    warn("completed D2L auth %s %s".format(userData.username,groupsComplete - start))
+    res
   }
   override def getOrgUnit(orgUnitId:String):Option[OrgUnit] = {
     val uc = interface.getUserContext
@@ -796,6 +827,12 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
 }
 
 class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
+  protected val acceptableRoleIds = List(
+    113, //Instructor_1
+    109, //Instructor_2
+    114, //Instructor_3
+    110 //Student
+  )
   override val canQuery = true
   def parFlatMap[A,B](coll:List[A],func:A => List[B],threadCount:Int = 1,forkJoinPoolName:String = "default"):List[B] = {
     if (threadCount > 1){
@@ -870,7 +907,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     val personalDetails:Map[String,List[Detail]] = personalInformation.flatten.groupBy(_._1).map(t => (t._1,t._2.map(m => Detail(m._3,m._2)).distinct))
     val personalRoles:Map[String,List[D2LEnrollment]] = Map(personalDetails.toList.flatMap(tup => {
       tup._2.find(_.key == "D2L_Identifier").map(d2lId => {
-        (tup._1,getEnrollments(userContext,d2lId.value))
+        (tup._1,getEnrollments(userContext,d2lId.value,acceptableRoleIds))
       })
     }):_*)
     val groupData = compoundItems.flatMap(_._2)

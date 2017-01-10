@@ -18,8 +18,8 @@
 }
 .chatMessageContent{
     a{
-	color:white;
-	text-decoration:underline;
+        color:white;
+        text-decoration:underline;
     }
 }
 .findExisting{
@@ -65,7 +65,7 @@
     padding:0;
     position:absolute;
     width:200px;
-    height:5px;
+    height:2px;
     right:0;
     z-index:99;
     transform:scaleX(-1);
@@ -82,11 +82,16 @@
     display:table-row;
     background-color:transparent;
     height:140px;
+    bottom:0;
+}
+#pluginBar * {
+    color:darkgray;
 }
 .plugin{
-    color:white;
     padding:0 2px;
     display:table-cell;
+    vertical-align:top;
+    font-size:1rem;
     .pluginName{
         background-color:@body-bg;
         color:white;
@@ -95,11 +100,26 @@
     }
 }
 #masterFooter{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    z-index:99;
     overflow-x:scroll;
 }
 #masterHeader{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    z-index:99;
     margin-top:2px;
     margin-left:2px;
+}
+#masterFooter{
+}
+#masterHeaderFlexContainer .heading{
+    mix-blend-mode:difference;
 }
 #optionBlocks{
     flex-wrap:wrap;
@@ -137,14 +157,17 @@ html{
     z-index:3;
     background-color:@body-bg;
 }
-.headerRow1{
-    width:100%;
-    font-weight:800;
-    color:white;
-    padding-left:2px;
-    display:inline-block;
-    position:fixed;
-    pointer-events:none;
+.healthCheckCanvas{
+    background-image:@body-backgroundimage;
+    background-size:100% 100%;
+    background-opacity:0.5;
+}
+.translucent{
+    color:@text-std;
+    background-color:rgba(1,1,1,0.05);
+}
+#masterHeaderFlexContainer{
+    display:flex;
     meter,svg{
         height:10px;
         width:50px;
@@ -164,12 +187,15 @@ html{
         display:inline-block;
     }
     .meters{
-        margin-left:2px;
+        margin-left:4px;
     }
     .heading{
+	text-align:center;
         vertical-align:top;
-        position:absolute;
-        margin-left:10px;
+	margin-top:-2px;
+        padding-left:1em;
+        flex-grow:1;
+        color:darkgray;
     }
 }
 .groupBuilderGroup{
@@ -204,10 +230,13 @@ body{
     flex-grow:0;
     flex-wrap:nowrap;
     float:right;
+    margin-top:-3px;
+    margin-right:2px;
 }
 #slideContainer {
     max-width:10000px;
     margin-right:2px;
+    overflow-x:hidden;
     img{
         background-color:white;
     }
@@ -398,11 +427,12 @@ td.conversationSharing{
         height:auto;
     }
 }
+#healthCheckListing{
+    background-image:@body-backgroundimage;
+}
 .dots{
     flex-wrap:wrap;
 }
-/* fix this jodi! */
-
 .navigationNext, .navigationPrevious {
     a {
         .fa;

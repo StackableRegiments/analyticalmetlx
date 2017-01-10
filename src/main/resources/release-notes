@@ -1,3 +1,147 @@
+1.1.4
+Bugfix: METL-488: D2L groups not shown on Add Group page.
+Bugfix: METL-473: Updated wording "Students may broadcast" to "Students may stream".
+Bugfix: METL-480: Restrict conversation while students aren't in does not refresh list.
+Bugfix: METL-481: Rename conversation does not push new name.
+
+1.1.3
+Improvement: METL-487: Alternate D2L fetch behaviour.
+Bugfix: METL-382: Clicking on current page does not drag followers.
+
+1.1.2
+Improvement: METL-324: Filter API endpoints for grades/other secure content.
+Improvement: METL-295: User profile.
+
+1.1.1
+Story: METL-419: Teacher submits all groups in one action.
+Improvement: METL-456: Move Help to main banner.
+Improvement: METL-453: Stacktraces for all failed clientSideFunctions.
+Bugfix: METL-458: Ink lines drawn to the boundaries of the banner and plugin disappear on panning.
+Bugfix: METL-460: Autofit now puts a large image up into the translucent space under the banner and the move control is not usable.
+Bugfix: METL-417: Teacher text to a specific group disappears from teacher screen.
+Bugfix: METL-457: Group Editor appears in multiple Start menus.
+Bugfix: METL-465: Translucent header and footer obscure similarly colored content.
+Bugfix: METL-439: Forming Groups sometimes includes the teacher in a group.
+Bugfix: METL-448: Launching Participants or Grades from Controls does not select their button.
+Bugfix: METL-316: Teacher failed to restore student content from recycle bin.
+
+1.1.0
+Bugfix: METL-466: Remove non-orgUnits from the d2l getGroups system.
+
+1.0.22
+Bugfix: METL-438: Disable Force Follow when the teacher ends their session.
+Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.
+Bugfix: METL-447: Banning doesn't show student confirm or prevent student publish.
+Bugfix: METL-449: Restyle plugins now that Permit button has pushed things out of line.
+Bugfix: METL-445: Chat doesn't sit right on the scrollbar.
+Bugfix: METL-415: Default Groups is to have neither Show All or Isolate buttons checked.
+Bugfix: METL-413: Groups - toggling between Enrolled and present students does not refresh the simulation.
+Bugfix: METL-439: Forming Groups sometimes includes the teacher in the group.
+Bugfix: METL-444: Groups plugin radios are too high.
+Bugfix: METL-449: Restyle plugins now that Permit button has pushed things out of line.
+Bugfix: METL-452: Commas inside usernames.
+Bugfix: METL-450: Error creating group page.
+Bugfix: METL-451: Selecting a new color while writing in a color has strange behaviour.
+Bugfix: METL-351: Insert text cannot change color of new text box without exiting Text control.
+
+1.0.21
+Story: METL-32: Bold, italic, underline before text selected.
+Story: METL-115: Provide more colors for Text.
+Story: METL-421: Reduce font size of text in plugins.
+Story: METL-98: More subcontrols in a vertical column so that they do not overlay text.
+Story: METL-430: Teacher restricts student video.
+Story: METL-235: Add Participants and Grades buttons to the Feedback subcontrols.
+Story: METL-329: Teacher edits conversation in popup.
+Story: METL-424: Remember selected video streams after disconnnect/reconnect.
+
+Bugfix: METL-435: Plugins should only be one row tall.
+Bugfix: METL-434: First selected mode should be first in the column.
+Bugfix: METL-416: Using Group Slider position to see other groups is not retained.
+Bugfix: METL-415: Default Groups is to have neither Show All or Isolate radio buttons checked.
+Bugfix: METL-444: Groups plugin radios are too high.
+Bugfix: METL-414: Error message when attempting to copy from Smart Groups.
+Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.
+
+Improvement: METL-427: Shrink large square video buttons to small rectangles.
+Improvement: METL-428: Move group name to above group members in Student view.
+Improvement: METL-353: Reduce default text font size.
+Improvement: METL-440: Increase domain of activity meter.
+Improvement: METL-441: Header and footer should be translucent and the board should extend under them.
+Improvement: METL-394: Add spaces between banned student names on teacher ban confirmation dialog.
+Improvement: METL-330: Restyle edit conversation for popup.
+Improvement: METL-85: Remove Actions column from Submissions for non-author.
+Improvement: METL-438: Disable Force Follow when the teacher ends their session.
+Improvement: METL-394: Add spaces betwen banned student names on teacher ban confirmation dialog.
+
+1.0.20
+Bugfix: METL-411: Urlencode usernames passed to d2l.
+
+1.0.19
+Bugfix: METL-408: groupsProviders all share the same name if any have a name specified.
+Bugfix: METL-360: Groups don't resort after bringing in an external provider properly.
+
+1.0.18
+Bugfix: METL-402: Isolate on Group 1 is visible to Group 2.
+Bugfix: METL-403: Group member name is represented as "true" mid simulation.
+Bugfix: METL-404: Students in Group Builder are identified by index, not name.
+Bugfix: METL-405: Dropdown in Group Builder has reversed options.
+
+1.0.17
+Bugfix: METL-397: Health check chart styling.
+Bugfix: METL-122: Ban submission overflows screen.
+Bugfix: METL-400: Can't click anything in the MeTL conversation header.
+
+1.0.16
+Bugfix: METL-215: When banned, the "Public" and "Show" buttons should be greyed to indicate they are disabled.
+Bugfix: METL-355: In Future the Reset and Auto fit controls do not work properly.
+Bugfix: METL-378: IE not displaying health bars properly.
+Bugfix: METL-379: Conversation title hides behind buttons.
+
+1.0.15
+Bugfix: METL-360: Groups don't resort after bringing in an external provider properly.
+Bugfix: METL-300: Autofit Zoom goes to boundary of image and does not show resize handles.
+Bugfix: METL-124: New pages zoom in undesirably.
+Bugfix: METL-123: Autofit not shrinking to current content size.
+Bugfix: METL-356: Some elements are predjudiced towards displaying with a neutral theme.
+Bugfix: METL-377: Thumbnails do not appear until interacted with.
+Bugfix: METL-133: Selection line thickness follows most recently used ink thickness.
+Bugfix: METL-383: Scroll bars within thumbnail panel.
+Bugfix: METL-381: Page numbering not adjusted on add page or reorder pages.
+Bugfix: METL-392: Conversation level actions should have white text.
+Bugfix: METL-372: Visual bugs in Grades.
+Bugfix: METL-391: Can't insert image in Edge, Firefox or IE.
+
+1.0.14
+Story: METL-234: User clicks help button.
+Bugfix: METL-371: Students can see Group Editor.
+Bugfix: METL-320: Health bar not visible on top left of Whiteboard.
+Bugfix: METL-354: Activity bar should be reversed (left for right).
+Bugfix: METL-365: No blocker on groups provider selection.
+Bugfix: METL-367: Reduce precision of stats in Health Check.
+Bugfix: METL-369: No text around or within health check graphs.
+Bugfix: METL-370: Banned content grid does not render.
+Bugfix: METL-372: Visual bugs in Grades.
+Improvement: METL-368: Health check improvements.
+
+1.0.13
+Bugfix: METL-361: Rename "manage banned content" to "banned content" and "Group Builder" to "Group editor".
+Bugfix: METL-363: There is blank space between the plugins and the canvas.
+Bugfix: METL-364: Grade listings next to member names in groups plugin are sloppy looking.
+Improvement: METL-350: Improve styling of loading spinners.
+
+1.0.12
+Bugfix: METL-362: D2L server can't connect to API gateway.
+Bugfix: METL-349: "Submitted to instructor" dialog text is all lowercased.
+Bugfix: METL-359: Chat box is prejudiced towards displaying with a neutral theme.
+
+1.0.11
+Bugfix: METL-300: Autofit Zoom goes to boundary of image and does not show resize handles.
+Bugfix: METL-217: Conversation table | Created column should be in "19 Oct 2016" format.
+Bugfix: METL-310: Videoconf disabled dialog incorrectly suggests latest IE.
+Bugfix: METL-317: Public/Private button selection (orange) went missing.
+Bugfix: METL-318: Hovering over Unban All button does not change mouse cursor.
+Improvement: METL-334: Additional work on spinners and button disables.
+
 1.0.10
 Bugfix: METL-345: Display Poll behaviour differs from description.
 
@@ -59,6 +203,7 @@ Improvement: METL-252: Plugin framework.
 Improvement: METL-271: Enhance D2L API.
 Improvement: METL-292: Explicit groupProvider fetch mechanism.
 Improvement: METL-297: Schemify indices automatically.
+Improvement: METL-274: Update crocodile skin image in neutral theme.
 
 0.15.1
 Improvement: METL-282: Upgraded jsGrid to 1.5.3 to fix bug.

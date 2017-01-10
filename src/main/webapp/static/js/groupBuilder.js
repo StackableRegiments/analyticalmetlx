@@ -1,158 +1,120 @@
 var GroupBuilder = (function(){
-    var initialGroups = {};
-    var externalGroups = {};
-    var iteratedGroups = [];
-    var _strategy = "byMaximumSize";
-    var _presentStudentsOnly = false;
-    var _parameters = {
+    var strategy = "byTotalGroups";
+    var groupScope = "allPresent";
+    var parameters = {
         byTotalGroups:5,
         byMaximumSize:4
     };
+    var availableGroupSets = {};
+    /*Name -> {name,enrolled,group@{name,groupSet,type}}*/
+    var participants = {};
     var renderMember = function(member){
-        return $("<div />",{
+        var view =  $("<div />",{
             class:"groupBuilderMember",
-            text:member
+            text:member.name
         });
+        if(member.group && member.group.type == "external"){
+            view.css({
+                "color":"red"
+            });
+        }
+        return view;
     };
-    var groupSetKey = function(groupSet){
-        var rel = groupSet.foreignRelationship;
-        if(rel){
-            return sprintf("%s@%s",rel.key,rel.system);
+    var seedParticipants = function(){
+        console.log("Clearing %s participants",_.keys(participants).length);
+        participants = {};
+        console.log("Cleared participants: %s",_.keys(participants).length);
+        var seed = function(name,enrolled){
+            if(name != Conversations.getCurrentConversation().author){
+                participants[name] = {
+                    name:name,
+                    enrolled:enrolled,
+                    participating:false
+                }
+                console.log(sprintf("%s seeding as enrolled: %s (%s)",name,enrolled,_.keys(participants).length));
+            }
+            else{
+                console.log(sprintf("%s not seeding because AUTHOR DOES NOT GROUP",name));
+            }
         }
-        return groupSet.name;
-    }
-    var flatInitialGroups = function(){
-        return _.flatMap(initialGroups,function(groupSet){
-            return _.map(groupSet.groups,function(group){
-                var r = {};
-                _.each(group.members,function(m){
-                    r[m.name] = true;
-                });
-                return r;
-            });
+        _.each(Participants.getPossibleParticipants(),function(name){
+            seed(name,true);
         });
+        _.each(_.map(Participants.getParticipants(),"name"),function(name){
+            if(!(name in participants)){
+                seed(name,false);
+            }
+            if(name != Conversations.getCurrentConversation().author){
+                participants[name].participating = true;
+            }
+        });
+        console.log("Seeded %s participants",_.keys(participants).length);
     };
-    var renderExternalGroups = function(){
-        var container = $(".jAlert .groupSlideDialog");
-        var importV = container.find(".importGroups").empty();
-
-        $("<input />",{
-            type:"radio",
-            name:"groupSetSelector",
-            id:"clearGroups"
-        }).on("click",function(){
-            initialGroups = {};
-            doSimulation();
-        }).appendTo(importV).prop("checked",true);
-        $("<label />",{
-            for:"clearGroups"
-                }).append($("<span />",{
-                    class:"icon-txt",
-                    text:"No long-term groups"
-                })).appendTo(importV);
-
-        var groupId = 0;
-        console.log(externalGroups);
-        _.each(externalGroups,function(orgUnit){
-            _.each(orgUnit,function(groupCat){
-                var ou = groupCat.orgUnit;
-                if(ou){
-                    var ouV = $("<div />",{
-                    }).appendTo(importV);
-                    var groupSet = groupCat.groupSet;
-                    var groupSetV = $("<div />",{
-                    }).appendTo(ouV);
-                    var groupSetHeader = $("<div />",{
-                        class:"flex-container-responsive"
-                    }).appendTo(groupSetV);
-                    var inputId = sprintf("structuralGroup_%s",groupId);
-                    var cacheKey = groupSetKey(groupSet);
-                    var inputV = $("<input />",{
-                        type:"radio",
-                        name:"groupSetSelector",
-                        id:inputId
-                    }).on("click",function(){
-                        if(cacheKey in initialGroups){
-                            delete initialGroups[cacheKey];
-                        }
-                        else{
-                            initialGroups = {cacheKey:groupSet};
-                        }
-                        doSimulation();
-                    }).appendTo(groupSetHeader);
-                    inputV.prop("checked",cacheKey in initialGroups);
-                    $("<label />",{
-                        for:inputId
-                    }).append($("<span />",{
-                        class:"icon-txt",
-                        text:sprintf("Copy %s from %s",groupSet.name,ou.name)
-                    })).appendTo(groupSetHeader);
-
-                    _.each(groupCat.groups,function(group){
-                        var groupV = $("<div />",{
-                            class:"groupBuilderGroup"
-                        }).appendTo(groupSetV);
-                        _.each(group.members,function(member){
-                            renderMember(member.name).appendTo(groupV);
-                        });
-                    });
-                    groupId++;
-                }
-            });
-        });
+    var allocationsFor = function(cohort){
+        return _.values(_.groupBy(cohort,function(p){
+            return p.group ? p.group.name : "unallocated";
+        }));
     }
-    var simulate = function(strategy,parameter,presentStudentsOnly){
-        console.log(strategy,parameter,presentStudentsOnly);
-        var groups = flatInitialGroups();
-        var participants;
-        switch(presentStudentsOnly){
-        case "allPresent": participants = Participants.getParticipants();
-            break;
-        default: participants = Participants.getPossibleParticipants();
-            break;
-        }
-        var attendees = _.without(participants, Conversations.getCurrentConversation().author);
-        attendees = _.omitBy(attendees,function(k){
-            return _.some(groups,function(g){
-                return k in g;
-            });
+    var allocate = function(){
+        var allocatable = _.filter(participants,function(p){
+            return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
         });
-        var filler;
-        switch(strategy){
-        case "byTotalGroups":
-            for(var i = groups.length; i < parseInt(parameter);i++){
-                groups.push({});
-            }
-            filler = function(p){
-                var targetG = _.sortBy(groups,function(g){return _.keys(g).length})
-                targetG[0][p] = true;
-            }
-            break;
-        case "byMaximumSize":
-            filler = function(p){
-                var targetG = _.find(groups,function(g){
-                    return _.keys(g).length < parseInt(parameter);
-                });
-                if(!targetG){
-                    targetG = {};
-                    groups.push(targetG);
+        var byAllocated = _.partition(allocatable,function(p){
+            return "group" in p;
+        });
+        var allocated = byAllocated[0];
+        var unallocated = byAllocated[1];
+        if(unallocated && unallocated.length > 0){
+            var allocatee = unallocated[0];
+            var allocations = allocationsFor(allocated);
+            var spareGroup = {
+                name:sprintf("random_%s",allocations.length),
+                type:"random"
+            };
+            switch(strategy){
+            case "byTotalGroups":
+                var targetCount = parseInt(parameters[strategy]);
+                if(allocations.length < targetCount){
+                    allocatee.group = spareGroup;
+                    console.log(sprintf("%s started a new group: %s",allocatee.name,allocatee.group.name));
                 }
-                targetG[p] = true;
+                else {
+                    var leastPopulousGroup = _.sortBy(allocations,"length");
+                    allocatee.group = _.clone(leastPopulousGroup[0][0].group);
+                    allocatee.group.type = "random";
+                    console.log(sprintf("%s allocated to group %s of length %s",allocatee.name,allocatee.group.name,leastPopulousGroup[0].length));
+                }
+                break;
+            case "byMaximumSize":
+                var targetSize = parseInt(parameters[strategy]);
+                var leastFullValidGroup = _.find(allocations,function(group){
+                    return group.length < targetSize;
+                });
+                if(leastFullValidGroup){
+                    allocatee.group = _.clone(leastFullValidGroup[0].group);
+                    allocatee.group.type = "random";
+                    console.log("%s allocated to group %s of length %s",allocatee.name,allocatee.group.name,leastFullValidGroup.length);
+                }
+                else{
+                    allocatee.group = spareGroup;
+                    console.log(sprintf("%s started a new group: %s",allocatee.name,allocatee.group.name));
+                }
+                break;
             }
-            break;
+            allocate();
         }
-        _.each(attendees,filler);
-        console.log(groups);
-        return _.map(groups,_.keys);
+        else {
+            console.log("No more unallocated members");
+        }
     }
     var renderGroupScopes = function(container){
         _.each([
             ["Show me all my enrolled students","allEnrolled"],
-            ["Only show me students who are here right now","allPresent"]],function(params){
+            ["Only show me my participating students","allPresent"]],function(params){
                 $("<option />",{
                     text:params[0],
                     value:params[1]
-                }).appendTo(container);
+                }).prop("selected",params[1] == groupScope).appendTo(container);
             });
     }
     var renderStrategies = function(container){
@@ -162,7 +124,7 @@ var GroupBuilder = (function(){
                 $("<option />",{
                     text:params[0],
                     value:params[1]
-                }).appendTo(container);
+                }).prop("selected",params[1] == strategy).appendTo(container);
             });
     }
     var render = function(){
@@ -200,44 +162,169 @@ var GroupBuilder = (function(){
                         text:sprintf("Group %s",group.title)
                     }).appendTo(g);
                     _.each(group.members,function(member){
-                        renderMember(member).appendTo(g).draggable();
+                        renderMember({
+                            name:member
+                        }).appendTo(g).draggable();
                     });
                 });
             });
         }
     };
-    var doSimulation = function(simulated){
+    var groupSetKey = function(groupSet){
+        var rel = groupSet.foreignRelationship;
+        if(rel){
+            return sprintf("%s@%s",rel.key,rel.system);
+        }
+        return groupSet.name;
+    }
+    var clearExternalGroups = function(){
+        _.each(participants,clearExternalGroup);
+    }
+    var clearRandomGroups = function(){
+        _.each(participants,clearRandomGroup);
+    }
+    var clearExternalGroup = function(p){
+        if(("group" in p) && p.group.type == "external"){
+            delete p.group;
+        }
+    }
+    var clearRandomGroup = function(p){
+        if(("group" in p) && p.group.type == "random"){
+            delete p.group;
+        }
+    }
+    var renderAvailableGroupSets = function(){
         var container = $(".jAlert .groupSlideDialog");
+        var importV = container.find(".importGroups").empty();
+
+        $("<input />",{
+            type:"radio",
+            name:"groupSetSelector",
+            id:"clearGroups"
+        }).on("click",function(){
+            clearExternalGroups();
+            clearRandomGroups();
+            allocate();
+            renderAllocations();
+        }).prop("checked",true).appendTo(importV);
+        $("<label />",{
+            for:"clearGroups"
+                }).append($("<span />",{
+                    class:"icon-txt",
+                    text:"No long-term groups"
+                })).appendTo(importV);
+
+        _.each(availableGroupSets,function(orgUnit){
+            _.each(orgUnit,function(groupCat,groupSetId){
+                var ou = groupCat.orgUnit;
+                if(ou){
+                    var ouV = $("<div />",{
+                    }).appendTo(importV);
+                    var groupSet = groupCat.groupSet;
+                    var groupSetV = $("<div />",{
+                    });
+                    var groupSetHeader = $("<div />",{
+                        class:"flex-container-responsive"
+                    }).appendTo(groupSetV);
+                    var inputId = sprintf("structuralGroup_%s",groupSetId);
+                    var cacheKey = groupSetKey(groupSet);
+                    var inputV = $("<input />",{
+                        type:"radio",
+                        name:"groupSetSelector",
+                        id:inputId
+                    }).on("click",function(){
+                        clearExternalGroups();
+                        _.each(participants,function(p){
+                            _.each(groupCat.groups,function(group,zi){
+                                var i = zi + 1;
+                                if(_.includes(_.map(group.members,"name"),p.name)){
+                                    p.group = {
+                                        groupSet:groupSet.name,
+                                        name:i,
+                                        type:"external"
+                                    };
+                                }
+                            });
+                        });
+                        clearRandomGroups();
+                        allocate();
+                        renderAllocations();
+                    }).appendTo(groupSetHeader);
+                    inputV.prop("checked",typeof(_.find(participants,function(p){
+                        return p.group && p.group.type == "external" && p.group.groupSet == groupSet.name
+                    })) != "undefined");
+                    $("<label />",{
+                        for:inputId
+                    }).append($("<span />",{
+                        class:"icon-txt",
+                        text:sprintf("Copy %s from %s",groupSet.name,ou.name)
+                    })).appendTo(groupSetHeader);
+
+                    var author = Conversations.getCurrentConversation().author;
+                    _.each(groupCat.groups,function(group){
+                        var groupV = $("<div />",{
+                            class:"groupBuilderGroup"
+                        }).appendTo(groupSetV);
+                        var validMembers = _.filter(group.members,function(m) {
+                            return m.name != author;
+                        });
+                        if(validMembers.length > 0){
+                            groupSetV.appendTo(ouV);
+                            _.each(validMembers,function(obj){
+                                var name = obj.name;
+                                if(!(name in participants)){
+                                    participants[name] = {
+                                        name:name,
+                                        enrolled:false
+                                    };
+                                }
+                                renderMember(participants[name]).appendTo(groupV);
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    };
+    var renderAllocations = function(){
+        var container = $(".jAlert .groupSlideDialog");
+        var renderable = _.filter(participants,function(p){
+            return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
+        });
+        var groups = allocationsFor(renderable);
+        console.log("rendering allocations:",participants,renderable,groups);
         var groupsV = container.find(".groups");
-        simulated = simulated || simulate(_strategy,_parameters[_strategy],_presentStudentsOnly);
         groupsV.empty();
-        _.each(simulated,function(group){
-            console.log(group);
+        _.each(groups,function(group){
             var g = $("<div />",{
                 class:"groupBuilderGroup ghost"
             });
             _.each(group,function(member){
-                renderMember(member).draggable().appendTo(g);
+                var memberV = renderMember(member).draggable();
+                if(member.group && member.group.type == "external"){
+                    memberV.prependTo(g);
+                }
+                else{
+                    memberV.appendTo(g);
+                }
             });
             g.droppable({
                 drop:function(e,ui){
-                    var member = $(ui.draggable).text();
-                    _.each(simulated,function(gr){
-                        if(_.includes(gr,member)){
-                            gr.splice(gr.indexOf(member),1);
-                        }
-                    });
-                    group.push(member);
-                    iteratedGroups = simulated;
-                    doSimulation(simulated);
                     e.preventDefault();
+                    var name = $(ui.draggable).text();
+                    var member = participants[name];
+                    member.group = {
+                        type:"random",
+                        name:group[0].group.name
+                    };
+                    renderAllocations();
                 }
             });
             g.appendTo(groupsV);
         });
-	iteratedGroups = simulated;
     };
     var showAddGroupSlideDialogFunc = function(){
+        seedParticipants();
         getGroupsProviders();
         var container = $("#groupSlideDialog").clone().show();
         var jAlert = $.jAlert({
@@ -249,32 +336,38 @@ var GroupBuilder = (function(){
                 theme:'green',
                 closeAlert:true,
                 onClick:function(){
-                    var seed = iteratedGroups.length > 0 ? iteratedGroups : _.map(flatInitialGroups(),_.keys);
-                    Conversations.addGroupSlide(_strategy, parseInt(_parameters[_strategy]), seed);
-                    initialGroups = {};
-                    iteratedGroups = [];
-                    externalGroups = {};
+                    var sendable = _.filter(participants,function(p){
+                        return p.name != Conversations.getCurrentConversation().author &&
+                            ((groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating));
+                    });
+                    var calculatedGroups = allocationsFor(sendable);
+                    var sendableGroups = _.map(_.values(calculatedGroups),function(members){
+                        return _.map(members,"name");
+                    });
+                    Conversations.addGroupSlide(strategy, parseInt(parameters[strategy]), sendableGroups);
                 }
             }]
         });
         container = $(".jAlert .groupSlideDialog");
         var strategySelect = container.find(".strategySelect");
         var parameterSelect = container.find(".parameterSelect");
-        var groupScope = container.find(".presentStudentsOnly");
+        var groupScopeV = container.find(".groupScope");
         var groupsV = container.find(".groups");
         renderStrategies(strategySelect);
-        renderGroupScopes(groupScope);
+        renderGroupScopes(groupScopeV);
 
-        container.on("change",".presentStudentsOnly",function(){
-            _presentStudentsOnly = $(this).val();
-            console.log(_presentStudentsOnly);
-            doSimulation();
+        container.on("change",".groupScope",function(){
+            groupScope = $(this).val();
+            console.log("Changing group scope",groupScope);
+            clearRandomGroups();
+            allocate();
+            renderAllocations();
         });
         container.on("change",".strategySelect",function(){
-            _strategy = $(this).val();
-            console.log("Strategy set:",_strategy);
+            strategy = $(this).val();
+            console.log("Strategy set:",strategy);
             parameterSelect.empty();
-            switch(_strategy){
+            switch(strategy){
             case "byTotalGroups":
                 _.each(_.range(2,10),function(i){
                     $("<option />",{
@@ -282,7 +375,7 @@ var GroupBuilder = (function(){
                         value:i.toString()
                     }).appendTo(parameterSelect);
                 });
-                parameterSelect.val(_parameters[_strategy]).change();
+                parameterSelect.val(parameters[strategy]).change();
                 break;
             case "byMaximumSize":
                 _.each(_.range(1,10),function(i){
@@ -291,17 +384,28 @@ var GroupBuilder = (function(){
                         value:i.toString()
                     }).appendTo(parameterSelect);
                 });
-                parameterSelect.val(_parameters[_strategy]).change();
+                parameterSelect.val(parameters[strategy]).change();
                 break;
             }
         });
         container.on("change",".parameterSelect",function(){
-            console.log("change parameter",_parameters);
-            _parameters[_strategy] = $(this).val();
-            doSimulation();
+            parameters[strategy] = $(this).val();
+            clearRandomGroups();
+            allocate();
+            renderAllocations();
         });
-        strategySelect.val(_strategy).change();
+        strategySelect.val(strategy).change();
     };
+
+    var blockGroups = function(blocked){
+        $(".groupsOu.blocker").toggle(blocked);
+    }
+    var statusReport = function(msg){
+        console.log(msg);
+        $("#groupSlideDialog .importGroups").prepend("<div />",{
+            text:msg
+        });
+    }
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
         var select = $(".jAlert .ouSelector").empty();
         $("<option />",{
@@ -318,23 +422,71 @@ var GroupBuilder = (function(){
         select.on("change",function(){
             var choice = $(this).val();
             if(choice != "NONE"){
-                getOrgUnitsFromGroupProviders(choice);
+                blockGroups(true);
+                var conv = Conversations.getCurrentConversation();
+                console.log("finding specific groups",conv);
+                if ("foreignRelationship" in conv && "system" in conv.foreignRelationship && "key" in conv.foreignRelationship){
+                    var gp = conv.foreignRelationship.system;
+                    var k = conv.foreignRelationship.key;
+                    console.log("finding specific groups from foreignRelationship",conv.foreignRelationship,gp,k);
+                    if (gp == choice){
+                        getGroupSetsForOrgUnit(gp,{
+                            ouType:"orgUnit",
+                            name:conv.foreignRelationship.key,
+                            members:[],
+                            groupSets:[],
+                            foreignRelationship:{
+                                system:gp,
+                                key:k
+                            }
+                        });
+                    } else {
+                        getOrgUnitsFromGroupProviders(choice);
+                    }
+                } else {
+                    getOrgUnitsFromGroupProviders(choice);
+                }
             }
         });
     };
+    Progress.orgUnitsReceived["GroupBuilder"] = function(orgUnits){
+        if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+        }
+        else{
+            blockGroups(false);
+            statusReport(sprintf("No Org Units found for user %s",UserSettings.getUsername()));
+        }
+    };
+    Progress.groupSetsReceived["GroupBuilder"] = function(groupSets){
+        if ("groupSets" in groupSets && groupSets.groupSets.length){
+        }
+        else{
+            blockGroups(false);
+            statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.orgUnit.name));
+        }
+    };
     Progress.groupsReceived["GroupBuilder"] = function(args){
-        var byOrgUnit = externalGroups[args.orgUnit.name];
+        var byOrgUnit = availableGroupSets[args.orgUnit.name];
         if (byOrgUnit === undefined){
             byOrgUnit = {};
-            externalGroups[args.orgUnit.name] = byOrgUnit;
+            availableGroupSets[args.orgUnit.name] = byOrgUnit;
         }
-        byOrgUnit[args.groupSet.name] = args;
-        renderExternalGroups();
+        var author = Conversations.getCurrentConversation().author;
+        if(_.some(args.groups,function(group){
+            return _.some(group.members,function(member){
+                return member.name != author;
+            });
+        })){
+            byOrgUnit[args.groupSet.name] = args;
+            renderAvailableGroupSets();
+        }
+        blockGroups(false);
     };
     Progress.onBackstageShow["GroupBuilder"] = function(backstage){
         if(backstage == "groups"){
             render();
         }
+        refreshToolState();
     };
     Progress.currentSlideJidReceived["GroupBuilder"] = function(){
         if(currentBackstage == "groups"){
@@ -346,10 +498,22 @@ var GroupBuilder = (function(){
             render();
         }
     };
+    var refreshToolState = function(){
+        var menuButton = $("#menuGroups");
+        if($("#roomToolbar.active").length && Conversations.shouldModifyConversation()){
+            menuButton.parent().show();
+        }
+        else{
+            menuButton.parent().hide();
+        }
+    }
     return {
         showAddGroupSlideDialog:showAddGroupSlideDialogFunc,
-        getExternalGroups:function(){
-            return externalGroups;
+        allocate:allocate,
+        seedParticipants:seedParticipants,
+        renderAllocations:renderAllocations,
+        getParticipants:function(){
+            return participants;
         }
     };
 })();

@@ -40,7 +40,6 @@ var HealthChecker = (function(){
 
                 var serverSideTime = timeObj.serverTime;
                 var timeDiff = nowTime.getTime() - (serverSideTime + latency);
-                console.log("calculating time offset:",nowTime.getTime(),serverSideTime,latency);
                 clockOffset = timeDiff;
                 addMeasureFunc("serverResponse",true,serverWorkTime);
                 addMeasureFunc("latency",true,latency);
@@ -224,14 +223,18 @@ var HealthCheckViewer = (function(){
         if (!(categoryName in charts)){
             var category = adjustTimeFunc(rawCategory);
             var rootElem = healthCheckItemTemplate.clone();
-            var canvas = $("<canvas />").addClass("healthCheckCanvas");
+            var canvas = $("<canvas />").addClass("healthCheckCanvas").css({"margin-top":"-20px"});
             rootElem.html(canvas);
             healthCheckContainer.append(rootElem);
             var options = {
                 title: {
                     display: true,
-                    text: categoryName
+                    text: categoryName,
+		    padding:20
                 },
+		legend:{
+		    display:false
+		},
                 scales: {
                     yAxes: [
                         {
@@ -245,9 +248,6 @@ var HealthCheckViewer = (function(){
                             display:true,
                             position:"left",
                             ticks: {
-                            },
-                            labels: {
-                                show: true
                             }
                         },
                         {
@@ -264,9 +264,6 @@ var HealthCheckViewer = (function(){
                                 beginAtZero:true,
                                 min:0,
                                 stepSize:1
-                            },
-                            labels: {
-                                show: true
                             }
                         }
                     ],
@@ -278,7 +275,7 @@ var HealthCheckViewer = (function(){
                             labelString:"time (seconds)"
                         },
                         ticks: {
-                            beginAtZero:true,
+                            beginAtZero:true
                         }
                     }]
                 },
@@ -292,12 +289,8 @@ var HealthCheckViewer = (function(){
                     bar: {
                         fill:true
                     }
-                },
-                legend:{
-                    display:true
                 }
             };
-
             var data = {
                 labels: _.map(category,"instant"),
                 datasets:[
@@ -413,10 +406,10 @@ var HealthCheckViewer = (function(){
             var overallLatencyData = descriptionData["latency"];
             if (overallLatencyData != undefined){
                 c(".healthCheckSummaryLatencyContainer").show();
-                c(".latencyAverage").text(overallLatencyData.average);
-                c(".worstLatency").text(overallLatencyData.min);
-                c(".bestLatency").text(overallLatencyData.max);
-                c(".successRate").text(overallLatencyData.successRate * 100);
+                c(".latencyAverage").text(parseInt(overallLatencyData.average));
+                c(".worstLatency").text(parseInt(overallLatencyData.min));
+                c(".bestLatency").text(parseInt(overallLatencyData.max));
+                c(".successRate").text(parseInt(overallLatencyData.successRate * 100));
                 if (overallLatencyData.average > 200){
                     c(".latencyHumanReadable").text("poor");
                 } else if (overallLatencyData.average > 50){
@@ -431,7 +424,7 @@ var HealthCheckViewer = (function(){
             if (overallServerResponseData != undefined){
                 c(".heathCheckSummaryServerResponseContainer").show();
                 var serverHealthData = overallServerResponseData.average;
-                c(".serverResponseAverage").text(serverHealthData);
+                c(".serverResponseAverage").text(parseInt(serverHealthData));
                 var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
                 c(".serverResponseHumanReadable").text(humanReadableServerHealthData);
             } else {

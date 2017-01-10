@@ -3,7 +3,7 @@ import SbtStartScript.StartScriptKeys._
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "1.0.10"
+version := "1.1.4"
 
 val scalaVersionString = "2.11.5"
 
@@ -31,29 +31,9 @@ containerLibs in Jetty := Seq("org.eclipse.jetty" % "jetty-runner" % jettyVersio
 
 containerPort := 8080
 
-javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.local.xml", "-Dlogback.configurationFile=config/logback.xml", "-Drun.mode=development", "-Dmetl.stopwatch.enabled=true", "-Dmetl.stopwatch.minimumLog=2")
+javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.local.xml", "-Dlogback.configurationFile=config/logback.xml", "-Drun.mode=development", "-Dmetl.stopwatch.enabled=true", "-Dmetl.stopwatch.minimumLog=1000")
 
 fork in Jetty := true
-/*
-
-libraryDependencies ++= Seq("net.java.dev.jna" % "jna-platform" % "4.1.0")
-
-unmanagedResourceDirectories in Compile += baseDirectory.value / "lib"
-
-includeFilter in (Compile, unmanagedResourceDirectories):= ".dll,.so"
-*/
-/*
-libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
-
-containerLibs in Container := Seq(
-  "org.eclipse.jetty" % "jetty-webapp" % jettyVersion,
-  "org.eclipse.jetty" % "jetty-plus" % jettyVersion,
-  //"test"              %% "runner"       % "0.1.0-SNAPSHOT"
-  "org.eclipse.jetty"              % "jetty-runner"       % jettyVersion
-)
-
-//containerLaunchCmd in Container := Seq("runner.Run", "8080",(target in webappPrepare).value.absolutePath)
-*/
 
 target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
 
@@ -68,9 +48,6 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
   Seq(
-    //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-    //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
-    //"org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
     "org.eclipse.jetty" % "jetty-webapp"  % jettyVersion % "container,test",
     "org.eclipse.jetty" %  "jetty-server"   % jettyVersion % "container,test", // _for _jetty _config
     "org.eclipse.jetty" %  "jetty-util"   % jettyVersion % "container,test", // _for _jetty _config
@@ -100,18 +77,9 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "net.sf.ehcache" % "ehcache" % "2.10.1",
-    //"io.github.stackableregiments" %% "metldata" % "3.20.+",
-    //"io.github.stackableregiments" %% "metl2011" % "3.12.+",
-    //"io.github.stackableregiments" %% "metl-h2" % "3.28.+",
-    //"io.github.stackableregiments" %% "common-utils" % "0.4.+",
-    //"io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
-    //"io.github.stackableregiments" %% "form-authentication" % "0.4.+",
-    //"io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
-    //"io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "xmpp" % "3.5.+" ,
     "com.h2database" % "h2" % "1.4.192",
     "mysql" % "mysql-connector-java" % "5.1.38",
-    //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "org.apache.shiro" % "shiro-core" % "1.2.4",
     "org.apache.shiro" % "shiro-web" % "1.2.4",
     "org.apache.commons" % "commons-compress" % "1.1",
@@ -127,18 +95,15 @@ libraryDependencies ++= {
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
     "com.google.android" % "android-test" % "4.1.1.4",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
-    //    "org.scalactic" %% "scalactic" % "3.0.0",
-    //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
     //for AWS API Gateway interaction
-    "com.amazonaws" % "aws-android-sdk-apigateway-core" % "2.3.1",
-    "com.google.code.gson" % "gson" % "2.2.4"
+	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
-javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
+javacOptions ++= Seq("-source", "8", "-target", "8")
 
 // append -deprecation to the options passed to the Scala compiler
 scalacOptions += "-deprecation"

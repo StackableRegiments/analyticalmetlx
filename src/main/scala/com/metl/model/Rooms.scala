@@ -386,6 +386,16 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     j.actor ! RoomJoinAcknowledged(configName,location)
     roomMetaData match {
       case cr:ConversationRoom => {
+        conversationCache.foreach(conv => {
+          if (joinedUsers.exists(_._1 == conv.author)){
+            // the author's in the room, so don't perform any automatic action. 
+          } else {
+            // the author's not in the room, so check whether the conv's permissions include the mustFollowTeacher behaviour, and disable it if it is.
+            if (conv.permissions.usersAreCompulsorilySynced){
+              config.changePermissions(conv.jid.toString,conv.permissions.copy(usersAreCompulsorilySynced = false))
+            }
+          }
+        })
         if (!oldMembers.contains(j.username)){
           updatePossibleAttendance
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
@@ -409,6 +419,16 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     l.actor ! RoomLeaveAcknowledged(configName,location)
     roomMetaData match {
       case cr:ConversationRoom => {
+        conversationCache.foreach(conv => {
+          if (joinedUsers.exists(_._1 == conv.author)){
+            // the author's still in the room 
+          } else {
+            // the author's left, so check whether the conv's permissions include the mustFollowTeacher behaviour.
+            if (conv.permissions.usersAreCompulsorilySynced){
+              config.changePermissions(conv.jid.toString,conv.permissions.copy(usersAreCompulsorilySynced = false))
+            }
+          }
+        })
         if (oldMembers.contains(l.username) && !newMembers.contains(l.username)){
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)

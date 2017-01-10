@@ -301,7 +301,8 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var pointerOut = function(x,y){
+            var pointerOut = function(x,y,e){
+                var point = releasePoint(e);
                 trackedTouches = {};
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
@@ -315,13 +316,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                        }
+                    }
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -331,7 +331,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    pointerOut(e.offsetX,e.offsetY);
+                    pointerOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -339,7 +339,6 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
             context.bind("pointercancel",pointerClose);
-
         } else {
             context.bind("mousedown",function(e){
                 WorkQueue.pause();
@@ -383,11 +382,13 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var mouseOut = function(x,y){
+            var mouseOut = function(x,y,e){
+                console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
                 var worldY = worldPos.y;
+                var z = 0.5;
                 if(worldX < viewboxX){
                     takeControlOfViewbox();
                     Extend.left();
@@ -396,13 +397,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(x,y,z,worldPos,modifiers(e,false));
+                        }
+                    }
                 }
                 isDown = false;
             }
@@ -410,7 +410,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    mouseOut(e.offsetX,e.offsetY);
+                    mouseOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -820,7 +820,6 @@ var Modes = (function(){
             Modes.canvasInteractables[category] = [];
         }
         Modes.canvasInteractables[category].push(interaction);
-        //console.log("Pushing",category);
     }
     $(function(){
         var attrs = {opacity:1};
@@ -1073,7 +1072,6 @@ var Modes = (function(){
                     Modes.select.offset = {x:root.x2,y:root.y2};
                     blit();
 
-                    console.log("Free transform down");
                     return false;
                 },
                 move:function(worldPos){
@@ -1124,7 +1122,6 @@ var Modes = (function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
-                    console.log("Free transform up");
                     sendStanza(resized);
                     blit();
                     return false;
@@ -1269,6 +1266,9 @@ var Modes = (function(){
                             /*General would interfere with specific during setFormatting*/
                             carota.runs.nextInsertFormatting = {};
                             t.doc.selectedRange().setFormatting(prop,newValue);
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            carota.runs.nextInsertFormatting[prop] = newValue;
+                            t.doc.claimFocus();/*Focus might have left when a control was clicked*/
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1347,41 +1347,6 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
-
-                var adoptPresetWidth = function(preset){
-                    return function(){
-                        _.each(boardContent.multiWordTexts,function(t){
-                            if(t.doc.isActive){
-                                switch(preset){
-                                case "runToEdge":
-                                    var logicalBoardWidth = screenToWorld(boardWidth,0);
-                                    t.doc.width((logicalBoardWidth.x + viewboxX - t.x));
-                                    break;
-                                case "fitToText":
-                                    t.doc.width(t.doc.frame.actualWidth());
-                                    break;
-                                case "widen":
-                                    t.doc.width(t.doc.frame.actualWidth() * 1.6);
-                                    break;
-                                case "narrow":
-                                    t.doc.width(t.doc.frame.actualWidth() * 0.6);
-                                    break;
-                                case "centerOnScreen":
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
-                                    t.doc.selectedRange().setFormatting("align","center");
-                                    t.doc.position.x = viewboxX;
-                                    break;
-                                case "fullscreen":
-                                    t.doc.position.x = viewboxX;
-                                    t.doc.position.y = viewboxY;
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
-                                    break;
-                                }
-                                t.doc.contentChanged.fire();
-                            }
-                        });
-                    };
-                }
                 fontLargerSelector.on("click",scaleCurrentSelection(1.2));
                 fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
@@ -1391,24 +1356,19 @@ var Modes = (function(){
                     red:"#ff0000",
                     blue:"#0000ff",
                     black:"#000000",
-                    yellow:"#ffff00"
+                    yellow:"#ffff00",
+                    green:"#00ff00"
                 };
-                var colors = ["red","blue","black","yellow"];
+                var colors = ["red","blue","black","yellow","green"];
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
+                        Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
+                        console.log("Clicked",subject);
                     });
-                });
-                presetFullscreen.click(adoptPresetWidth("fullscreen"));
-                fontOptionsToggle.click(function(){fontOptions.toggle()});
-                $("#closeTextDialog").click(function(){
-                    fontOptions.hide();
-                });
-                $("#exitTextEditing").click(function(){
-                    Modes.select.activate();
                 });
             });
             var mapSelected = function(f){
@@ -1446,7 +1406,6 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
-                        console.log("Textbox",t.identity,t.doc.width());
                         t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
                             return l.positionedWords.length;
@@ -1491,7 +1450,15 @@ var Modes = (function(){
                         }
                     }
                 },
-                editorFor:function(t){
+                refocussing:false,
+                editorFor: function(t){
+                    var textColors = [
+                        $("#blackText"),
+                        $("#redText"),
+                        $("#blueText"),
+                        $("#yellowText"),
+                        $("#greenText")
+                    ];
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
                         editor = boardContent.multiWordTexts[t.identity] = t;
@@ -1509,26 +1476,27 @@ var Modes = (function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
+				source.audiences = ContentFilter.getAudiences();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+                            Progress.beforeChangingAudience[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeChangingAudience[t.identity];
+                            };
                             Progress.beforeLeavingSlide[t.identity] = function(){
                                 onChange.flush();
                                 delete Progress.beforeLeavingSlide[t.identity];
                             };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
-                                /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
-                                if(editor.doc.save().length > 0){
+                                if(Modes.text.refocussing){
+                                    Modes.text.refocussing = false;
+                                }
+                                else{
                                     var format = formatReport();
                                     carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                                    var textColors = [
-                                        $("#blackText"),
-                                        $("#redText"),
-                                        $("#blueText"),
-                                        $("#yellowText")
-                                    ];
                                     var setV = function(selector,prop){
                                         var isToggled = (format[prop] == true);
                                         if(isToggled){
@@ -1552,6 +1520,7 @@ var Modes = (function(){
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
                                     setIf(textColors[3],"color",["#ffff00",255]);
+                                    setIf(textColors[4],"color",["#00ff00",255]);
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
@@ -1658,7 +1627,6 @@ var Modes = (function(){
                                 color: oldEditor.color,
                                 size: oldEditor.size
                             }]);
-                            console.log("found oldText, converting to newText:",oldEditor,newEditor);
                             var newDoc = newEditor.doc;
                             newDoc.select(0,1);
                             boardContent.multiWordTexts[newEditor.identity] = newEditor;
@@ -1728,7 +1696,6 @@ var Modes = (function(){
                 handleDrop:function(html,x,y){
                     if (html.length > 0){
                         var newRuns = carota.html.parse(html,{});
-                        console.log("newRuns:",newRuns);
                         var worldPos = screenToWorld(x,y);
                         Modes.text.activate();
                         var clickTime = Date.now();
@@ -1771,7 +1738,6 @@ var Modes = (function(){
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
-                    fontOptions.hide();
                     unregisterPositionHandlers(board);
                     _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
@@ -1858,7 +1824,7 @@ var Modes = (function(){
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
                                 y:currentVideo.y,
-                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(audienceToStanza)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(permitStudentsToPublishCheckbox)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -1881,7 +1847,7 @@ var Modes = (function(){
                             WorkQueue.gracefullyResume();
                         },
                         error: function(e){
-                            console.log(e);
+                            console.log("Image upload ex",e);
                             resetImageUpload();
                             errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
@@ -1930,7 +1896,7 @@ var Modes = (function(){
                     $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
                     $(".active").removeClass("active");
                     $("#videoMode").addClass("active");
-                    $(".insetColumn").hide();
+                    $("#insertTools .insetColumn").hide();
                     $("#videoTools").show();
                     var x = 10;
                     var y = 10;
@@ -2053,7 +2019,7 @@ var Modes = (function(){
                 var img = new Image();
                 img.setAttribute("crossOrigin","Anonymous");
                 img.onerror = function(e){
-                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
+                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly.  You may need to download the image first and then upload it.");
                 };
                 img.onload = function(e){
                     var width = img.width;
@@ -2149,6 +2115,7 @@ var Modes = (function(){
                             sendStanza(imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
+                            zoomToFit();
                         },
                         error: function(e){
                             console.log(e);
@@ -2190,7 +2157,7 @@ var Modes = (function(){
                     $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
                     $(".active").removeClass("active");
                     $("#imageMode").addClass("active");
-                    $(".insetColumn").hide();
+                    $("#insertTools .insetColumn").hide();
                     $("#imageTools").show();
                     var x = 10;
                     var y = 10;
@@ -2232,7 +2199,6 @@ var Modes = (function(){
                                 "y":worldPos.y
                             };
                             thisCurrentImage.fileUpload = file;
-                            console.log("handlingDrop",file,sender,thisCurrentImage);
                             processed.push(file);
                             clientSideProcessImage(sendImageToServer,thisCurrentImage);
                             yOffset += 50;
@@ -2383,7 +2349,7 @@ var Modes = (function(){
                     $("#administerContent").removeClass("activeBrush");
                 }
                 clearSelectionFunction();
-		blit();
+                blit();
             };
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
@@ -2495,9 +2461,9 @@ var Modes = (function(){
                                 deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
                             }
                             sendStanza(deleteTransform);
-														_.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
-															Progress.call("onCanvasContentDeleted",[stanza]);
-														});
+                            _.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
+                                Progress.call("onCanvasContentDeleted",[stanza]);
+                            });
                             clearSelectionFunction();
                         }
                     });
@@ -2512,7 +2478,6 @@ var Modes = (function(){
                         func("videos");
                     }
                     var down = function(x,y,z,worldPos,modifiers){
-                        console.log("DOWN",worldPos);
                         Modes.select.resizing = false;
                         Modes.select.dragging = false;
                         originPoint = {x:x,y:y};
@@ -2541,7 +2506,6 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
-                        console.log("SELECT DOWN",x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
@@ -2705,7 +2669,7 @@ var Modes = (function(){
                             blit();
                         }
                         catch(e){
-                            console.log("Selection up",e);
+                            console.log("Selection up ex",e);
                         }
                     }
                     Modes.select.dragging = false;
@@ -2804,10 +2768,21 @@ var Modes = (function(){
         },
         feedback:(function(){
             var applyStateStyling = function(){
+                if (Conversations.shouldModifyConversation()){
+                    console.log("showing participants button");
+                    $("#participantsButton").unbind("click").on("click",function(){
+											Participants.openMenu();
+                    }).show();
+                } else {
+                    console.log("hiding participants button");
+                    $("#participantsButton").unbind("click").hide();
+                }
                 switch(currentBackstage){
-                case "quizzes":$("#quizzesButton").addClass(active);
+                case "quizzes":
+                    $("#quizzesButton").addClass(active);
                     break;
-                case "submissions":$("#submissionButton").addClass(active);
+                case "submissions":
+                    $("#submissionButton").addClass(active);
                     break;
                 default:
                     break;
@@ -3050,9 +3025,9 @@ var Modes = (function(){
                         var deleteTransform = batchTransform();
                         deleteTransform.isDeleted = true;
                         deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
-												_.forEach(deleted,function(stanza){
-													Progress.call("onCanvasContentDeleted",[stanza]);
-												});
+                        _.forEach(deleted,function(stanza){
+                            Progress.call("onCanvasContentDeleted",[stanza]);
+                        });
                         sendStanza(deleteTransform);
                     } else {
                         var newWidth = Modes.draw.drawingAttributes.width * z;

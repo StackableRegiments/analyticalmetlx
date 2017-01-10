@@ -24,14 +24,25 @@ case class KVP(`type`:String,name:String)
 case class MeTLingPotItem(source:String,timestamp:Long,actor:KVP,action:KVP,context:Option[KVP],target:Option[KVP],value:Option[String])
 
 class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
-  def client[B: ClassTag]:B = {
-    var factory = {
-      apiGatewayApiKey match {
-        case Some(agak) => new com.amazonaws.mobileconnectors.apigateway.ApiClientFactory().credentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey))).endpoint(endpoint).apiKey(agak)
-        case None => new com.amazonaws.mobileconnectors.apigateway.ApiClientFactory().credentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey))).endpoint(endpoint)
-      }
+  import com.amazonaws.opensdk.config.{ConnectionConfiguration,TimeoutConfiguration}
+  def client:MetlingPotInputItem = {
+    def attachApiKey(in:MetlingPotInputItemClientBuilder):MetlingPotInputItemClientBuilder = {
+      apiGatewayApiKey.map(agak => in.apiKey(agak)).getOrElse(in)
     }
-    factory.build(classTag[B].runtimeClass).asInstanceOf[B]
+    attachApiKey(
+      MetlingPotInputItem.builder().connectionConfiguration(
+        new ConnectionConfiguration()
+          .maxConnections(100)
+          .connectionMaxIdleMillis(1000) // 1 second
+       ).timeoutConfiguration(
+        new TimeoutConfiguration()
+          .httpRequestTimeout(20 * 1000) // 20 seconds
+          .totalExecutionTimeout(60 * 1000) // 30 seconds
+          .socketTimeout(30 * 1000) // 2 seconds
+      ).iamCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(iamAccessKey,iamSecretAccessKey)))
+      .iamRegion(region)
+      .endpoint(endpoint)
+    ).build()
   }
 }
 
@@ -97,35 +108,36 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
 
 class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) extends MeTLingPotAdaptor {
   val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
-  def client:MetlingPotInputItemClient = clientFactory.client[MetlingPotInputItemClient]
+  def client:MetlingPotInputItem = clientFactory.client
 
   def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
     try {
+      val outerReq = new PutInputItemRequest()
       val req = new InputItemsPutRequest()
       req.setItems(items.map(i => {
-        val item = new InputItemsPutRequestItemsItem()
+        val item = new InputItem()
         item.setSource(i.source)
-        item.setTimestamp(new java.math.BigDecimal(i.timestamp))
+        item.setTimestamp(i.timestamp)
         item.setActor({
-          val a = new InputItemsPutRequestItemsItemActor()
+          val a = new TypedValue()
           a.setName(i.actor.name)
           a.setType(i.actor.`type`)
           a
         })
         item.setAction({
-          val a = new InputItemsPutRequestItemsItemActor()
+          val a = new TypedValue()
           a.setName(i.action.name)
           a.setType(i.action.`type`)
           a
         })
         item.setTarget({
-          val a = new InputItemsPutRequestItemsItemActor()
+          val a = new TypedValue()
           a.setName(i.target.map(_.name).getOrElse(""))
           a.setType(i.target.map(_.`type`).getOrElse(""))
           a
         })
         item.setContext({
-          val a = new InputItemsPutRequestItemsItemActor()
+          val a = new TypedValue()
           a.setName(i.context.map(_.name).getOrElse(""))
           a.setType(i.context.map(_.`type`).getOrElse(""))
           a
@@ -133,7 +145,8 @@ class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:S
         item.setValue(i.value.getOrElse(""))
         item
       }).toList.asJava)
-      val response = client.inputItemPut(req)
+      outerReq.setInputItemsPutRequest(req)
+      val response = client.putInputItem(outerReq)
       Right(true)
     } catch {
       case e:Exception => Left(e)
@@ -141,11 +154,12 @@ class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:S
   }
   def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] = {
     try {
+      val outerReq = new PutSearchRequest()
       val req = new SearchItemsPutRequest()
-      req.setBefore(new java.math.BigDecimal(before))
-      req.setAfter(new java.math.BigDecimal(after))
+      req.setBefore(before)
+      req.setAfter(after)
       req.setQuery({
-        val q = new SearchItemsPutRequestQuery()
+        val q = new Query()
         queries.get("source").foreach(s => {
           q.setSource(s.asJava)
         })
@@ -175,9 +189,9 @@ class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:S
         })
         q
       })
-
-      val response = client.searchPut(req)
-      Right(response.asScala.flatMap(r => {
+      outerReq.setSearchItemsPutRequest(req)
+      val response = client.putSearch(outerReq)
+      Right(response.getSearchItemsResponse().asScala.flatMap(r => {
         r.getItems.asScala.flatMap(i => {
           for {
             source <- Some(i.getSource)
@@ -290,7 +304,7 @@ class SmartGroupsProvider(override val storeId:String, endpoint:String,region:St
   import com.metl.liftAuthenticator._
   override val canQuery:Boolean = true
   protected val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
-  def client:MetlingPotInputItemClient = clientFactory.client[MetlingPotInputItemClient]
+  def client:MetlingPotInputItem = clientFactory.client
 
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = List(OrgUnit("smart","Smart Groups",Nil,Nil,None))
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
@@ -303,11 +317,13 @@ class SmartGroupsProvider(override val storeId:String, endpoint:String,region:St
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
 
   protected def getGroupCategoriesForMembers(members:List[Member]):List[GroupSet] = {
+    val outerReq = new PutSmartgroupsRequest()
     val req = new SmartGroupsRequest()
-    req.setGroupCount(new java.math.BigDecimal(Math.max(2,members.length / Math.max(1,groupSize))))
+    req.setGroupCount(Math.max(2,members.length / Math.max(1,groupSize)))
     req.setMembers(members.map(_.name).asJava)
-    val resp = client.smartgroupsPut(req)
-    resp.getGroupSets.asScala.map(gs => {
+    outerReq.setSmartGroupsRequest(req)
+    val resp = client.putSmartgroups(outerReq)
+    resp.getSmartGroupsResponse().getGroupSets.asScala.map(gs => {
       val groups = gs.getGroups.asScala.map(g => {
         val members = g.getMembers.asScala.map(m => {
           Member(m,Nil,None)

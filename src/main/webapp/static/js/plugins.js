@@ -1,7 +1,7 @@
 var Plugins = (function(){
     return {
         "Chat":(function(){
-						var chatMessages = {};
+            var chatMessages = {};
             var outer = {};
             var cmHost = {};
             var cmTemplate = {};
@@ -48,43 +48,43 @@ var Plugins = (function(){
             };
             var actOnStanzaReceived = function(stanza){
                 if (stanza && "type" in stanza && stanza.type == "chatMessage" && "identity" in stanza){
-									if (stanza.identity in chatMessages){
-										//ignore this one, I've already got it.
-									} else {
-										chatMessages[stanza.identity] = stanza;
-                    var username = UserSettings.getUsername();
-                    var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
-                        return _.map(slide.groupSets,function(groupSet){
-                            return groupSet.groups;
-                        });
-                    })));
-                    boardContent.chatMessages.push(stanza);
-                    if (!stanza.audiences.length){ //it's a public message
-                        cmHost.append(renderChatMessage(stanza));
-                        cmHost.scrollTop(cmHost[0].scrollHeight);
-                    } else { // it's targetted
-                        var relAud = _.find(stanza.audiences,function(aud){
-                            return aud.type == "user" || aud.type == "group";
-                        });
-                        if (stanza.author == username){ //it's from me
-                            if (relAud && relAud.type == "user"){
-                                cmHost.append(renderChatMessage(stanza,"whisperTo",relAud.name));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
-                            } else if (relAud && relAud.type == "group"){
-                                cmHost.append(renderChatMessage(stanza,"groupChatTo",relAud.name));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
-                            }
-                        } else { // it's possibly targetted to me
-                            if (relAud && relAud.type == "user" && relAud.name == username){
-                                cmHost.append(renderChatMessage(stanza,"whisperFrom",stanza.author));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
-                            } else if (relAud && relAud.type == "group" && _.some(convGroups,function(g){ return g.name == relAud.name && _.some(g.members,function(m){ return m.name == username; });})){
-                                cmHost.append(renderChatMessage(stanza,"groupChatFrom",stanza.author,relAud.name));
-                                cmHost.scrollTop(cmHost[0].scrollHeight);
+                    if (stanza.identity in chatMessages){
+                        //ignore this one, I've already got it.
+                    } else {
+                        chatMessages[stanza.identity] = stanza;
+                        var username = UserSettings.getUsername();
+                        var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
+                            return _.map(slide.groupSets,function(groupSet){
+                                return groupSet.groups;
+                            });
+                        })));
+                        boardContent.chatMessages.push(stanza);
+                        if (!stanza.audiences.length){ //it's a public message
+                            cmHost.append(renderChatMessage(stanza));
+                            cmHost.scrollTop(cmHost[0].scrollHeight);
+                        } else { // it's targetted
+                            var relAud = _.find(stanza.audiences,function(aud){
+                                return aud.type == "user" || aud.type == "group";
+                            });
+                            if (stanza.author == username){ //it's from me
+                                if (relAud && relAud.type == "user"){
+                                    cmHost.append(renderChatMessage(stanza,"whisperTo",relAud.name));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                } else if (relAud && relAud.type == "group"){
+                                    cmHost.append(renderChatMessage(stanza,"groupChatTo",relAud.name));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                }
+                            } else { // it's possibly targetted to me
+                                if (relAud && relAud.type == "user" && relAud.name == username){
+                                    cmHost.append(renderChatMessage(stanza,"whisperFrom",stanza.author));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                } else if (relAud && relAud.type == "group" && _.some(convGroups,function(g){ return g.name == relAud.name && _.some(g.members,function(m){ return m.name == username; });})){
+                                    cmHost.append(renderChatMessage(stanza,"groupChatFrom",stanza.author,relAud.name));
+                                    cmHost.scrollTop(cmHost[0].scrollHeight);
+                                }
                             }
                         }
                     }
-									}
                 }
             };
             var actOnHistoryReceived = function(history){
@@ -150,17 +150,17 @@ var Plugins = (function(){
             };
 
             return {
-                style:".chatMessage {color:white}"+
-                    ".chatMessageContainer {background:black; overflow-y:auto; height:110px;}"+
-                    ".chatContainer {width:320px;height:140px;}"+
-                    ".chatMessageAuthor {color:gray; background:black;margin-right:1em;}"+
-                    ".chatMessageTimestamp {color:red; background:black; font-size:small;display:none;}"+
-                    ".chatMessageContent {background:black}"+
-                    ".chatboxContainer {background:black}"+
-                    ".chatbox {background:white; color:black; display:inline-block; padding:0px; margin:0px;}"+
-                    ".chatboxSend {display:inline-block; background:white; color:black; padding:0px; margin:0px;}"+
-                    ".groupChat {color:orange}"+
-                    ".whisper {color:pink}",
+                style:".chatMessage {color:darkgray;}"+
+                    ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
+                    ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
+                    ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
+                    ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
+                    ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
+                    ".chatboxContainer input{flex-grow:1;}"+
+                    ".chatbox {background-color:white;color:darkgray; display:inline-block; padding:0px; margin:0px;}"+
+                    ".chatboxSend {display:inline-block; background:white; color:darkgray; padding:0px; margin:0px;}"+
+                    ".groupChat {color:darkorange}"+
+                    ".whisper {color:darkblue}",
                 load:function(bus,params){
                     bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
                     bus.historyReceived["Chatbox"] = actOnHistoryReceived;
@@ -204,24 +204,31 @@ var Plugins = (function(){
             var container = $("<div />");
             return {
                 style:".publishedStream {background:green;} .subscribedStream {background:red;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton {background:white;margin:1px;}"+
-                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer{display:flex;}"+
-                    " .videoConfStartButtonContainer{flex-direction:row;}"+
-                    " .videoConfStartButton{padding:0 1em;font-size:1rem;}"+
+                    " .videoConfStartButton, .videoConfSubscribeButton, .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
+                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer, .videoConfPermitStudentBroadcastContainer{display:flex;}"+
+                    " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
+                    " .videoConfStartButton, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
                     " #videoConfSessionsContainer{display:flex;}"+
-                    " .videoConfSessionContainer{width:160px;flex-direction:column;}"+
-                    " .context{font-size:1rem;}"+
+                    " .videoContainer{display:flex;}"+
+                    " .context, .publisherName{font-size:1rem;}"+
+                    " .thumbWide{width:160px;}"+
                     " .broadcastContainer{display:none;}",
                 load:function(bus,params){
                     container.append('<span id="videoConfSessionsContainer">'+
                                      '<div class="videoConfSessionContainer">'+
-                                     '<div class="videoConfStartButtonContainer">'+
+                                     '<div>'+
+                                     '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
                                      '</button>'+
-                                     '<span class="context"></span>'+
+                                     '<span class="context mr" style="margin-top:0.5em"></span>'+
+                                     '<span style="margin-top:0.4em">'+
+                                     '<input type="checkbox" id="canBroadcast">'+
+                                     '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
+                                     '</span>'+
                                      '</div>'+
                                      '<div class="viewscreen"></div>'+
+                                     '</div>'+
                                      '<div class="broadcastContainer">'+
                                      '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
                                      '<div class="icon-txt">Watch class</div>'+
@@ -229,10 +236,11 @@ var Plugins = (function(){
                                      '</div>'+
                                      '<div class="videoSubscriptionsContainer"></div>'+
                                      '<div class="videoConfContainer">'+
-                                     '<span class="videoContainer">'+
-                                     '<button class="floatingToolbar btn-menu fa fa-television btn-icon videoConfSubscribeButton">'+
-                                     '<div class="icon-txt">Receive</div>'+
+                                     '<span class="videoContainer thumbWide">'+
+                                     '<button class="videoConfSubscribeButton">'+
+                                     '<div>Toggle</div>'+
                                      '</button>'+
+                                     '<span class="publisherName"></span>'+
                                      '</span>'+
                                      '</div>'+
                                      '</div>'+
@@ -256,17 +264,16 @@ var Plugins = (function(){
                 return b;
             };
             return {
-                style:".groupsPluginMember{margin-left:0.5em;}"+
+                style:".groupsPluginMember{margin-left:0.5em;display:flex;}"+
                     " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
-                    " .groupsPluginGroupContainer .icon-txt, .groupsPluginAllGroupsControls .icon-txt, .groupsPluginAllGroupsControls .fa{color:white;}"+
                     " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
-                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;color:white;margin-top:0;}"+
-                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;color:white;margin-top:0;}"+
+                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;margin-top:0;}"+
+                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
                     " .isolateGroup{margin-top:0.8em;}"+
-                    " .memberCurrentGrade{color:black;background-color:white;margin-right:0.5em;padding:0 .5em;}"+
+                    " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
                     " .groupsPluginGroupControls{display:flex;}"+
-                    " .groupsPluginGroupGrade{background-color:white;color:black;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
+                    " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
                     " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
                 load:function(bus,params) {
                     var render = function(){
@@ -284,18 +291,22 @@ var Plugins = (function(){
                                         if(linkedGrade){
                                             var linkedGrades = Grades.getGradeValues()[linkedGrade.id];
                                         }
+                                        var xOffset = 0;
                                         var allControls = $("<div />",{
                                             class:"groupsPluginAllGroupsControls"
+                                        }).on("mousedown",function(){
+                                            xOffset = $("#masterFooter").scrollLeft();
                                         }).append($("<input />",{
                                             type:"radio",
                                             name:"groupView",
                                             id:"showAll"
-                                        }).click(function(){
+                                        }).prop("checked",true).click(function(){
                                             _.each(groups,function(g){
                                                 ContentFilter.setFilter(g.id,true);
                                             });
                                             ContentFilter.clearAudiences();
                                             blit();
+                                            $("#masterFooter").scrollLeft(xOffset);
                                         })).append($("<label />",{
                                             for:"showAll"
                                                 }).css({
@@ -303,9 +314,53 @@ var Plugins = (function(){
                                                 }).append($("<span />",{
                                                     class:"icon-txt",
                                                     text:"Show all"
-                                                }).css({
-                                                    "margin-top":"3px"
-                                                }))).appendTo(overContainer);
+                                                }))).append(
+                                                    button("fa-share-square","Share all",function(){
+                                                        var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
+                                                        var audiences = ContentFilter.getAudiences();
+                                                        _.forEach(groups,function(g){
+                                                            ContentFilter.setFilter(g.id,false);
+                                                        });
+                                                        blit();
+                                                        var sendSubs = function(listOfGroups,afterFunc){
+                                                            var group = listOfGroups[0];
+                                                            if (group){
+                                                                ContentFilter.setFilter(group.id,true);
+                                                                ContentFilter.setAudience(group.id);
+                                                                blit();
+                                                                _.defer(function(){
+                                                                    Submissions.sendSubmission(function(succeeded){
+                                                                        if (succeeded){
+                                                                            ContentFilter.setFilter(group.id,false);
+                                                                            blit();
+                                                                            _.defer(function(){
+                                                                                sendSubs(_.drop(listOfGroups,1),afterFunc);
+                                                                            });
+                                                                        } else {
+                                                                            errorAlert("Submission failed","Storing this submission failed.");
+                                                                        }
+                                                                    });
+                                                                });
+                                                            } else {
+                                                                successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
+                                                                afterFunc();
+                                                            }
+                                                        };
+                                                        _.defer(function(){
+                                                            sendSubs(groups,function(){
+                                                                _.forEach(origFilters,function(filter){
+                                                                    ContentFilter.setFilter(filter.id,filter.enabled);
+                                                                });
+                                                                if (audiences.length){
+                                                                    ContentFilter.setAudience(audiences[0]);
+                                                                } else {
+                                                                    ContentFilter.clearAudiences();
+                                                                }
+                                                                blit();
+                                                            });
+                                                        });
+                                                    }).css({"margin-top":0})
+                                                ).appendTo(overContainer);
                                         var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                         _.each(groups,function(group){
                                             var gc = $("<div />",{
@@ -338,39 +393,43 @@ var Plugins = (function(){
                                             });
 
                                             var right = $("<div />").appendTo(gc);
+                                            var controls = $("<div />",{
+                                                class:"groupsPluginGroupControls"
+                                            }).appendTo(right);
                                             $("<span />",{
                                                 text:sprintf("Group %s",group.title),
                                                 class:"ml"
                                             }).appendTo(right);
-                                            var controls = $("<div />",{
-                                                class:"groupsPluginGroupControls"
-                                            }).appendTo(right);
-                                            button("fa-share-square","",function(){
+                                            button("fa-share-square","Share",function(){
                                                 isolate.find("input").prop("checked",true).change();
-                                                console.log("Isolating and screenshotting",isolate);
                                                 _.defer(Submissions.sendSubmission);
                                             }).appendTo(controls);
                                             var id = sprintf("isolateGroup_%s",group.title);
                                             var isolate = $("<div />",{
                                                 class:"isolateGroup"
+                                            }).on("mousedown",function(){
+                                                xOffset = $("#masterFooter").scrollLeft();
                                             }).append($("<input />",{
                                                 type:"radio",
                                                 name:"groupView",
                                                 id:id
                                             }).change(function(){
+                                                Progress.call("beforeChangingAudience",[group.id]);
                                                 _.each(groups,function(g){
                                                     ContentFilter.setFilter(g.id,false);
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
+						Modes.select.activate();
                                                 blit();
+                                                $("#masterFooter").scrollLeft(xOffset);
                                             })).append($("<label />",{
                                                 for:id
                                             }).append($("<span />",{
                                                 class:"icon-txt",
                                                 text:"Isolate"
                                             }).css({
-                                                "margin-top":"5px"
+                                                "margin-top":"2px"
                                             }))).appendTo(controls);
                                             var members = $("<div />",{
                                                 class:"groupsPluginGroup"
@@ -394,31 +453,21 @@ var Plugins = (function(){
                             }
                             else {
                                 var studentContainer = $("<div />").css({display:"flex"}).appendTo(overContainer);
-                                console.log("Rendering student");
                                 _.each(groups,function(group){
-                                    console.log(group,Conversations.getCurrentGroup());
                                     if(_.find(Conversations.getCurrentGroup(),group)){
                                         var gc = $("<div />",{
                                             class:"groupsPluginGroupContainer"
                                         }).appendTo(studentContainer);
-                                        var right = $("<div />").appendTo(gc);
-                                        $("<span />",{
-                                            text:sprintf("Group %s",group.title),
-                                            class:"ml"
-                                        }).appendTo(right);
-                                        var controls = $("<div />",{
-                                            class:"groupsPluginGroupControls"
-                                        }).appendTo(right);
                                         var id = sprintf("isolateGroup_%s",group.title);
-                                        var members = $("<div />",{
-                                            class:"groupsPluginGroup"
-                                        }).prependTo(gc);
+                                        var members = $("<div />").appendTo(gc);
                                         _.each(group.members,function(member){
                                             var mV = $("<div />",{
-                                                text:member,
-                                                class:"groupsPluginMember"
+                                                text:member
                                             }).appendTo(members);
                                         });
+                                        $("<div />",{
+                                            text:sprintf("Group %s",group.title)
+                                        }).prependTo(members);
                                     }
                                 });
                             }
@@ -446,12 +495,13 @@ var Plugins = (function(){
         })()
     };
 })();
+
 $(function(){
     var pluginBar = $("#pluginBar");
     var styleContainer = $("<style></style>").appendTo($("body"));
     _.each(Plugins,function(plugin,label){
         var container = $("<div />",{
-            class:"plugin"
+            class:"plugin translucent"
         });
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);

@@ -28,7 +28,7 @@ var Blacklist = (function(){
                 return new Date(a) - new Date(b);
             },
             itemTemplate: function(i){
-                return new Date(i).toLocaleString();
+                return moment(i).format('MMM Do YYYY, h:mm a');
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
@@ -65,7 +65,7 @@ var Blacklist = (function(){
                                 }
                             });
                         }
-                        rootElem.find(".blacklistImage").attr("src",url);
+                        rootElem.find(".blacklistImage").attr("src",url).css({"max-width":"100%"});
                         $.jAlert({
                             title:title,
                             closeOnClick:true,
@@ -79,7 +79,7 @@ var Blacklist = (function(){
             {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
-                return _.map(o.blacklist,"username").join(",");
+                return _.map(o.blacklist,"username");
             }}
         ];
         blacklistDatagrid.jsGrid({
@@ -139,7 +139,6 @@ var Blacklist = (function(){
                 unbanAllButton.show();
                 unbanAllButton.unbind("click");
                 unbanAllButton.on("click",function(){
-                    console.log("unbanall click");
                     changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
                 });
             } else {
@@ -150,7 +149,6 @@ var Blacklist = (function(){
                 var rootElem = blacklistAuthorTemplate.clone();
                 rootElem.find(".blacklistAuthorName").text(author);
                 rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
-                    console.log(sprintf("unban %s click",author));
                     blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
                     changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
                 });
@@ -224,7 +222,7 @@ var Blacklist = (function(){
     };
     var clientSideBanSelectionFunc = function(conversationJid,slideId,inks,texts,multiWordTexts,images){
         WorkQueue.pause();
-        var bannedAuthors = _.uniq(_.map(_.flatMap([inks,texts,multiWordTexts,images],_.values),"author"));
+        var bannedAuthors = _.uniq(_.map(_.flatMap([inks,texts,multiWordTexts,images],_.values),"author")).join(", ");
 
         var cc = Conversations.getCurrentConversation();
         changeBlacklistOfConversation(cc.jid.toString(),_.uniq(_.flatten([cc.blacklist,bannedAuthors])));
@@ -255,12 +253,11 @@ var Blacklist = (function(){
                 highlight:nextColour(author)
             };
         });
-
         _.forEach(_.values(inks),function(ink){
-
             var inkShadow = _.cloneDeep(ink);
             inkShadow.thickness = inkShadow.thickness * 3;
-            inkShadow.color = _.find(colouredAuthors,{username:ink.author}).highlight;
+	    var highlight = _.find(colouredAuthors,{username:ink.author});
+            inkShadow.color = highlight ? highlight.highlight : "red";
             inkShadow.isHighlighter = true;
             var tempIdentity = inkShadow.identity + "_banning";
             inkShadow.identity = tempIdentity;
@@ -299,7 +296,6 @@ var Blacklist = (function(){
         });
 
         var imageData = tempCanvas[0].toDataURL("image/jpeg",submissionQuality);
-        //successAlert("alert","<img src="+imageData+"></img>");
         var t = new Date().getTime();
         var username = UserSettings.getUsername();
         var currentSlide = Conversations.getCurrentSlide().id;
@@ -307,7 +303,6 @@ var Blacklist = (function(){
         var title = sprintf("submission%s%s.jpg",username,t.toString());
         var identity = sprintf("%s:%s:%s",currentConversation,title,t);
         var url = sprintf("/uploadDataUri?jid=%s&filename=%s",currentConversation.toString(),encodeURI(identity));
-
 
         $.ajax({
             url: url,
@@ -327,7 +322,6 @@ var Blacklist = (function(){
                     type:"submission",
                     url:newIdentity
                 };
-                console.log(submissionStanza);
                 sendStanza(submissionStanza);
 
                 var deleter = batchTransform();
@@ -335,9 +329,7 @@ var Blacklist = (function(){
                 deleter.textIds = _.map(_.values(texts),"identity");
                 deleter.multiWordTextIds = _.map(_.values(multiWordTexts),"identity");
                 deleter.imageIds = _.map(_.values(images),"identity");
-                //                                      deleter.isDeleted = true;
                 deleter.newPrivacy = "private";
-                console.log(deleter);
                 sendStanza(deleter);
 
                 WorkQueue.gracefullyResume();
@@ -363,7 +355,6 @@ var Blacklist = (function(){
         getCurrentBlacklist:function(){return Conversations.shouldModifyConversation() ? currentBlacklist : {};},
         processBlacklist:onBlacklistReceived,
         getBlacklistedAuthors:function(){return Conversations.shouldModifyConversation() ? blacklistAuthors : [];},
-        //banSelection:serverSideBanSelectionFunc
         banSelection:clientSideBanSelectionFunc,
         reRender:renderBlacklistsInPlace
     };

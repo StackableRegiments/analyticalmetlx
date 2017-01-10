@@ -292,7 +292,9 @@ trait MeTLDataGenerators {
     studentsCanOptionFriends <- arbitrary[Boolean]
     studentsCanPublish <- arbitrary[Boolean]
     usersAreCompulsorilySynced <- arbitrary[Boolean]
-  } yield Permissions(ServerConfiguration.empty, studentsCanOptionFriends, studentsCanPublish, usersAreCompulsorilySynced)
+    studentsMayBroadcast <- arbitrary[Boolean]
+    studentsMayChatPublicly <- arbitrary[Boolean]
+  } yield Permissions(ServerConfiguration.empty, studentsCanOptionFriends, studentsCanPublish, usersAreCompulsorilySynced, studentsMayBroadcast, studentsMayChatPublicly)
   def genForeignRelationship = for {
     sys <- genString(32)
     key <- genString(32)

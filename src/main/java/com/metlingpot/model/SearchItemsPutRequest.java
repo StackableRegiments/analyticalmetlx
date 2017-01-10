@@ -1,83 +1,162 @@
-/*
- * Copyright 2010-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * apache2
  */
-
 package com.metlingpot.model;
 
-import java.math.BigDecimal;
-import com.metlingpot.model.SearchItemsPutRequestQuery;
+import java.io.Serializable;
 
-public class SearchItemsPutRequest {
-    @com.google.gson.annotations.SerializedName("before")
-    private BigDecimal before = null;
-    @com.google.gson.annotations.SerializedName("after")
-    private BigDecimal after = null;
-    @com.google.gson.annotations.SerializedName("query")
-    private SearchItemsPutRequestQuery query = null;
+/**
+ * 
+ */
+public class SearchItemsPutRequest implements Serializable, Cloneable {
 
-    /**
-     * Gets before
-     *
-     * @return before
-     **/
-    public BigDecimal getBefore() {
-        return before;
-    }
+    private Double after;
+
+    private Double before;
+
+    private Query query;
 
     /**
-     * Sets the value of before.
-     *
-     * @param before the new value
+     * @param after
      */
-    public void setBefore(BigDecimal before) {
-        this.before = before;
-    }
 
-    /**
-     * Gets after
-     *
-     * @return after
-     **/
-    public BigDecimal getAfter() {
-        return after;
-    }
-
-    /**
-     * Sets the value of after.
-     *
-     * @param after the new value
-     */
-    public void setAfter(BigDecimal after) {
+    public void setAfter(Double after) {
         this.after = after;
     }
 
     /**
-     * Gets query
-     *
-     * @return query
-     **/
-    public SearchItemsPutRequestQuery getQuery() {
-        return query;
+     * @return
+     */
+
+    public Double getAfter() {
+        return this.after;
     }
 
     /**
-     * Sets the value of query.
-     *
-     * @param query the new value
+     * @param after
+     * @return Returns a reference to this object so that method calls can be chained together.
      */
-    public void setQuery(SearchItemsPutRequestQuery query) {
+
+    public SearchItemsPutRequest after(Double after) {
+        setAfter(after);
+        return this;
+    }
+
+    /**
+     * @param before
+     */
+
+    public void setBefore(Double before) {
+        this.before = before;
+    }
+
+    /**
+     * @return
+     */
+
+    public Double getBefore() {
+        return this.before;
+    }
+
+    /**
+     * @param before
+     * @return Returns a reference to this object so that method calls can be chained together.
+     */
+
+    public SearchItemsPutRequest before(Double before) {
+        setBefore(before);
+        return this;
+    }
+
+    /**
+     * @param query
+     */
+
+    public void setQuery(Query query) {
         this.query = query;
     }
 
+    /**
+     * @return
+     */
+
+    public Query getQuery() {
+        return this.query;
+    }
+
+    /**
+     * @param query
+     * @return Returns a reference to this object so that method calls can be chained together.
+     */
+
+    public SearchItemsPutRequest query(Query query) {
+        setQuery(query);
+        return this;
+    }
+
+    /**
+     * Returns a string representation of this object; useful for testing and debugging.
+     *
+     * @return A string representation of this object.
+     *
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        if (getAfter() != null)
+            sb.append("After: ").append(getAfter()).append(",");
+        if (getBefore() != null)
+            sb.append("Before: ").append(getBefore()).append(",");
+        if (getQuery() != null)
+            sb.append("Query: ").append(getQuery());
+        sb.append("}");
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+
+        if (obj instanceof SearchItemsPutRequest == false)
+            return false;
+        SearchItemsPutRequest other = (SearchItemsPutRequest) obj;
+        if (other.getAfter() == null ^ this.getAfter() == null)
+            return false;
+        if (other.getAfter() != null && other.getAfter().equals(this.getAfter()) == false)
+            return false;
+        if (other.getBefore() == null ^ this.getBefore() == null)
+            return false;
+        if (other.getBefore() != null && other.getBefore().equals(this.getBefore()) == false)
+            return false;
+        if (other.getQuery() == null ^ this.getQuery() == null)
+            return false;
+        if (other.getQuery() != null && other.getQuery().equals(this.getQuery()) == false)
+            return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int hashCode = 1;
+
+        hashCode = prime * hashCode + ((getAfter() == null) ? 0 : getAfter().hashCode());
+        hashCode = prime * hashCode + ((getBefore() == null) ? 0 : getBefore().hashCode());
+        hashCode = prime * hashCode + ((getQuery() == null) ? 0 : getQuery().hashCode());
+        return hashCode;
+    }
+
+    @Override
+    public SearchItemsPutRequest clone() {
+        try {
+            return (SearchItemsPutRequest) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException("Got a CloneNotSupportedException from Object.clone() " + "even though we're Cloneable!", e);
+        }
+    }
 }

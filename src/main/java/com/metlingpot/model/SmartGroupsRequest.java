@@ -1,63 +1,153 @@
-/*
- * Copyright 2010-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * apache2
  */
-
 package com.metlingpot.model;
 
-import java.math.BigDecimal;
-import java.util.*;
+import java.io.Serializable;
 
-public class SmartGroupsRequest {
-    @com.google.gson.annotations.SerializedName("groupCount")
-    private BigDecimal groupCount = null;
-    @com.google.gson.annotations.SerializedName("members")
-    private List<String> members = null;
+/**
+ * 
+ */
+public class SmartGroupsRequest implements Serializable, Cloneable {
 
-    /**
-     * Gets groupCount
-     *
-     * @return groupCount
-     **/
-    public BigDecimal getGroupCount() {
-        return groupCount;
-    }
+    private Double groupCount;
+
+    private java.util.List<String> members;
 
     /**
-     * Sets the value of groupCount.
-     *
-     * @param groupCount the new value
+     * @param groupCount
      */
-    public void setGroupCount(BigDecimal groupCount) {
+
+    public void setGroupCount(Double groupCount) {
         this.groupCount = groupCount;
     }
 
     /**
-     * Gets members
-     *
-     * @return members
-     **/
-    public List<String> getMembers() {
+     * @return
+     */
+
+    public Double getGroupCount() {
+        return this.groupCount;
+    }
+
+    /**
+     * @param groupCount
+     * @return Returns a reference to this object so that method calls can be chained together.
+     */
+
+    public SmartGroupsRequest groupCount(Double groupCount) {
+        setGroupCount(groupCount);
+        return this;
+    }
+
+    /**
+     * @return
+     */
+
+    public java.util.List<String> getMembers() {
         return members;
     }
 
     /**
-     * Sets the value of members.
-     *
-     * @param members the new value
+     * @param members
      */
-    public void setMembers(List<String> members) {
-        this.members = members;
+
+    public void setMembers(java.util.Collection<String> members) {
+        if (members == null) {
+            this.members = null;
+            return;
+        }
+
+        this.members = new java.util.ArrayList<String>(members);
     }
 
+    /**
+     * <p>
+     * <b>NOTE:</b> This method appends the values to the existing list (if any). Use
+     * {@link #setMembers(java.util.Collection)} or {@link #withMembers(java.util.Collection)} if you want to override
+     * the existing values.
+     * </p>
+     * 
+     * @param members
+     * @return Returns a reference to this object so that method calls can be chained together.
+     */
+
+    public SmartGroupsRequest members(String... members) {
+        if (this.members == null) {
+            setMembers(new java.util.ArrayList<String>(members.length));
+        }
+        for (String ele : members) {
+            this.members.add(ele);
+        }
+        return this;
+    }
+
+    /**
+     * @param members
+     * @return Returns a reference to this object so that method calls can be chained together.
+     */
+
+    public SmartGroupsRequest members(java.util.Collection<String> members) {
+        setMembers(members);
+        return this;
+    }
+
+    /**
+     * Returns a string representation of this object; useful for testing and debugging.
+     *
+     * @return A string representation of this object.
+     *
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        if (getGroupCount() != null)
+            sb.append("GroupCount: ").append(getGroupCount()).append(",");
+        if (getMembers() != null)
+            sb.append("Members: ").append(getMembers());
+        sb.append("}");
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+
+        if (obj instanceof SmartGroupsRequest == false)
+            return false;
+        SmartGroupsRequest other = (SmartGroupsRequest) obj;
+        if (other.getGroupCount() == null ^ this.getGroupCount() == null)
+            return false;
+        if (other.getGroupCount() != null && other.getGroupCount().equals(this.getGroupCount()) == false)
+            return false;
+        if (other.getMembers() == null ^ this.getMembers() == null)
+            return false;
+        if (other.getMembers() != null && other.getMembers().equals(this.getMembers()) == false)
+            return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int hashCode = 1;
+
+        hashCode = prime * hashCode + ((getGroupCount() == null) ? 0 : getGroupCount().hashCode());
+        hashCode = prime * hashCode + ((getMembers() == null) ? 0 : getMembers().hashCode());
+        return hashCode;
+    }
+
+    @Override
+    public SmartGroupsRequest clone() {
+        try {
+            return (SmartGroupsRequest) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException("Got a CloneNotSupportedException from Object.clone() " + "even though we're Cloneable!", e);
+        }
+    }
 }

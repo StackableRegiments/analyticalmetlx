@@ -477,6 +477,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  private lazy val RECEIVE_SHOW_LINKS = "receiveShowLinks"
   implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))
   override lazy val functionDefinitions = List(
@@ -586,11 +587,13 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
   protected val username = Globals.currentUser.is
+  protected var showLinks = true
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
       conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => serverConfig.detailsOfConversation(jid.toString))
+      showLinks = com.metl.snippet.Metl.getLinksFromName(nameString).getOrElse(true)
     })
   }
 
@@ -598,7 +601,8 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
-      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
+      Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c)) &
+      Call(RECEIVE_SHOW_LINKS,showLinks)
     }).getOrElse(RedirectTo(conversationSearch())))
   }
   override def lowPriority = {
@@ -820,6 +824,60 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val stanza = getArgAsJValue(args(0))
       trace("sendStanza: %s".format(stanza.toString))
       sendStanzaToServer(stanza)
+      JNull
+    },Empty),
+    ClientSideFunction("undeleteStanza",List("stanza"),(args) => {
+      val stanza = getArgAsJValue(args(0))
+      trace("undeleteStanza: %s".format(stanza.toString))
+      val metlData = serializer.toMeTLData(stanza)
+      metlData match {
+        case m:MeTLCanvasContent => {
+          if (m.author == username || shouldModifyConversation()){
+            currentConversation.map(cc => {
+              val t = m match {
+                case i:MeTLInk => "ink"
+                case i:MeTLImage => "img"
+                case i:MeTLMultiWordText => "txt"
+                case _ => "_"
+              }
+              val p = m.privacy match {
+                case Privacy.PRIVATE => "private"
+                case Privacy.PUBLIC => "public"
+                case _ => "_"
+              }
+              emit(p,m.identity,t)
+              val roomId = m.privacy match {
+                case Privacy.PRIVATE => {
+                  m.slide+username
+                }
+                case Privacy.PUBLIC => {
+                    m.slide
+                }
+                case other => {
+                  warn("unexpected privacy found in: %s".format(m))
+                  m.slide
+                }
+              }
+              rooms.get((server,roomId)).foreach(targetRoom => {
+                val room = targetRoom() 
+                room.getHistory.getDeletedCanvasContents.find(dc => {
+                  dc.identity == m.identity && dc.author == m.author
+                }).foreach(dc => {
+                  val newIdentitySeed = "%s_%s".format(new Date().getTime(),dc.identity).take(64)
+                  val newM = dc.generateNewIdentity(newIdentitySeed)
+                  val newIdentity = newM.identity
+                  val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
+                  println("created newUDM: %s".format(newUDM))
+                  room ! LocalToServerMeTLStanza(newUDM)
+                  
+                  room ! LocalToServerMeTLStanza(newM)
+                })
+              })
+            })
+          }
+        }
+        case notAStanza => error("Not a stanza at undeleteStanza %s".format(notAStanza))
+      }
       JNull
     },Empty),
     ClientSideFunction("sendTransientStanza",List("stanza"),(args) => {
@@ -1706,7 +1764,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         } else warn("attemped to send a stanza to the server which wasn't yours: %s".format(c))
       }
       case c:MeTLCommand => {
-        if (c.author == username){
+        if (c.author == username && shouldModifyConversation()){
           val conversationSpecificCommands = List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION")
           val slideSpecificCommands = List("/TEACHER_VIEW_MOVED")
           val roomTarget = c.command match {
@@ -1714,9 +1772,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             case s:String if (slideSpecificCommands.contains(s)) => currentSlide.getOrElse("global")
             case _ => "global"
           }
+          val alteredCommand = c match {
+            case MeTLCommand(config,author,timestamp,"/SYNC_MOVE",List(jid),audiences) => MeTLCommand(config,author,timestamp,"/SYNC_MOVE",List(jid,uniqueId),audiences)
+            case other => other
+          }
           rooms.get((serverName,roomTarget)).map(r => {
-            trace("sending MeTLStanza to room: %s <- %s".format(r,c))
-            r() ! LocalToServerMeTLStanza(c)
+            trace("sending MeTLStanza to room: %s <- %s".format(r,alteredCommand))
+            r() ! LocalToServerMeTLStanza(alteredCommand)
           })
         }
       }

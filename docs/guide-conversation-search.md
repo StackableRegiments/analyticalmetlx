@@ -36,7 +36,7 @@ The user or group who can see and join the conversation (see [sharing]({{site.ba
 ## Join a Conversation
  
 Search for and click on the conversation you want to join and you will be taken to the 
-[Whiteboard]({{site.baseurl}}/guide-whiteboard.html) for that conversation.
+[Conversation]({{site.baseurl}}/guide-conversation.html).
 
 ### Only my conversations
 

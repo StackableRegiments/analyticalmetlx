@@ -3,8 +3,88 @@ layout: guide
 title: Conversation
 ---
 
-A MeTL conversation is one or more pages with content created by teachers and students.
+A conversation is a collection of pages where teachers and students share content. 
 
-After logging into MeTL, users are directed to the [Conversation Search]({{site.baseurl}}/guide-conversation-search.html) page.
+![Conversation](images/guide-conversation.jpg)
 
-After finding a conversation, the creator can [Edit]({{site.baseurl}}/guide-edit-conversation.html) its details. 
+## Controls
+
+Buttons for adding content and modifying conversation settings.
+ 
+[More...]({{site.baseurl}}/guide-canvas.html#controls)
+
+## Options
+
+Conversation level options and additional features. 
+
+[More...]({{site.baseurl}}/guide-options.html)
+
+## Monitoring
+
+This section measures three conversation / page metrics.  
+
+### Health
+
+This indicates how well the MeTL experience is running.
+
+When the bar is green, it indicates a healthy internet connection and capable device.  When the bar is yellow, it indicates a poor internet connection and/or a device that is less capable of MeTL conversation.  The bar may occasionally become yellow for a moment before becoming green again - this is normal.
+
+### Attendance
+
+This indicates the population of the conversation.
+
+If the page is associated with an external unit, the length of this bar shows `number of actual participants / number of enrolled participants`. If not, this will always be green.
+
+### Activity
+
+This indicates the most recent 30 seconds of activity on the current page.
+
+Public content is displayed above the horizontal divider, and private content is displayed below.
+ 
+## Banner
+
+Displays the current user, name of the conversation and `current page number / total number of pages`.
+
+## Canvas
+ 
+Canvas content includes:
+ 
+- Ink: freehand pen strokes (using finger, stylus or mouse as supported by the device)
+- Text: rich text including color, size and style (e.g. bold, underline, italic)  
+- Image / Video: from camera or via upload (as supported by the device and browser)
+
+[More...]({{site.baseurl}}/guide-canvas.html)
+
+## Navigation
+
+Use the navigation arrow buttons to go to the next or previous page.
+
+## Add Page
+
+Add a blank page immediately after the currently displayed page.
+
+## Add Group Page
+
+Add a page that observes content restriction by groups of users. 
+Each member of a group can only see content from the other group members and the teacher. 
+The teacher can see content from all users. 
+
+[More...]({{site.baseurl}}/guide-groups.html)
+
+## Thumbnails
+
+Each page in the conversation is represented by a thumbnail preview. The thumbnail size is controlled with the slider above.
+
+Select a thumbnail to move to that page.
+
+## Chat
+
+All users can send messages to the conversation, unless they have been [banned](guide-learning.html#banned-content).
+
+<img src="images/guide-chat.png" alt="Chat" width="350px"/>
+ 
+## Face to Face over Video
+
+The `Stream To` button allows users to stream video to other users in the conversation. 
+
+<!-- [More...]({{site.baseurl}}/guide-video.html) -->

@@ -22,6 +22,7 @@ var Conversations = (function(){
             successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
         };
         var updateBannedVisualState = function(){
+	    $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
         };
         return {
             checkIsBanned:function(conversation,freshCheck){
@@ -65,7 +66,7 @@ var Conversations = (function(){
             if(!(audience in groupActivity)){
                 groupActivity[audience] = {
                     bucket:0,
-                    line:_.map(_.range(50),function(){return 0})
+                    line:_.map(_.range(SIGNAL_HISTORY),function(){return 0})
                 }
             }
         }
@@ -82,18 +83,21 @@ var Conversations = (function(){
         var rollAudiences = function(){
             _.each(groupActivity,rollAudience);
         }
+        var conversationActivity;
         var displayAudiences = function(){
             ensureTracking("anyPrivate");
             ensureTracking("anyPublic");
             groupTraces.anyPrivate = groupTraces.anyPrivate || {};
             groupTraces.anyPublic = groupTraces.anyPublic || {};
-            conversationActivity = conversationActivity || $("#conversationActivity");
+            if(!conversationActivity || !conversationActivity.length){
+                conversationActivity = $("#conversationActivity");
+            }
             WorkQueue.enqueue(function(){
                 _.each(currentConversation.slides,updateSlide);
                 if(conversationActivity.find("svg").length == 0){
                     groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
                                                                  [groupActivity.anyPublic.line,
-                                                                  groupActivity.anyPrivate.line],100,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                                                                  groupActivity.anyPrivate.line],50,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
                 }
                 if (groupTraces && "anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
                     groupTraces.anyPublic.update([
@@ -107,15 +111,14 @@ var Conversations = (function(){
             return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
         }
         var scrollContainer;
-        var conversationActivity;
         var updateSlide = function(slide){
             var gs = Conversations.getGroupsFor(slide);
+            scrollContainer = scrollContainer || $("#thumbScrollContainer");
+            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+            if(slideContainer){
+                slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
+            }
             if(! _.every(gs,groupTraceIsAccurate)){
-                scrollContainer = scrollContainer || $("#thumbScrollContainer");
-                var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
-                if(slideContainer){
-                    slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
-                }
                 paintGroups(slide,slideContainer);
             }
             _.each(gs,function(group){
@@ -127,6 +130,7 @@ var Conversations = (function(){
         }
         var SENSOR_INTERVAL = 500;
         var DISPLAY_INTERVAL = 1000;
+        var SIGNAL_HISTORY = (1000 /*milis*/ / SENSOR_INTERVAL) * 60 * 15;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(displayAudiences,DISPLAY_INTERVAL);
         Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
@@ -241,7 +245,7 @@ var Conversations = (function(){
             }
         }));
     }
-    var isVisible = function(slide,thumbScroller){
+    var doIfVisible = function(slide,thumbScroller,func){
         var slidesTop = 0;
         var slidesBottom = thumbScroller.height();
         var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
@@ -250,12 +254,14 @@ var Conversations = (function(){
         var slideBottom = slideTop + slideContainer.height();
         var visible =  (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
         if(slidesTop + slidesBottom + slideTop + slideBottom == 0){
-            _.defer(function(){
-                isVisible(slide,thumbScroller);
-            });
+            _.delay(function(){
+                doIfVisible(slide,thumbScroller,func);
+            },1000);
             visible = false;
         }
-        return visible;
+	else if(visible){
+	    func();
+	}
     }
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
@@ -285,9 +291,9 @@ var Conversations = (function(){
             return positions[ia] - positions[ib];
         }).detach().appendTo(slideContainer);
         _.each(ss,function(slide){
-            if(isVisible(slide,scrollContainer)){
+            doIfVisible(slide,scrollContainer,function(){
                 updateThumbnailFor(slide.id);
-            }
+            });
         });
         //Build the UI
         var slideControls = $("#slideControls");
@@ -296,6 +302,7 @@ var Conversations = (function(){
         constructNextSlideButton(slideControls),
         constructAddSlideButton(slideControls)
         constructAddGroupSlideButton(slideControls)
+        constructHelpButton(slideControls)
         indicateActiveSlide(currentSlide);
         $(".thumbnail:not(.groupSlide)").map(function(){
             var t = $(this);
@@ -314,7 +321,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":publishingAllowed,
-            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced,
+						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -328,7 +337,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":oldPerms.studentCanPublish,
-            "usersAreCompulsorilySynced":mustFollowTeacher
+            "usersAreCompulsorilySynced":mustFollowTeacher,
+						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -486,7 +497,6 @@ var Conversations = (function(){
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
-        refreshSlideDisplay();
         loadCurrentGroup(currentConversation);
     };
     var updateLinks = function(){
@@ -538,6 +548,17 @@ var Conversations = (function(){
                 text:"Export this conversation"
             }));
         }
+				if (Conversations.shouldModifyConversation()){
+					$("#editConversation").unbind("click").click(function(){
+						$.jAlert({
+							title:"edit Conversation",
+							iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+							width:"100%" 
+						});
+					}).show();
+				} else {
+					$("#editConversation").unbind("click").hide();
+				}
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
@@ -594,7 +615,6 @@ var Conversations = (function(){
             redrawSyncState();
             var myLocation = _.find(details.slides,function(s){ return s.id == currentSlide; });
             var teacherLocation = _.find(details.slides,function(s){ return sprintf("%s",s.id) == currentTeacherSlide; });
-            console.log("Location",myLocation,currentTeacherSlide,teacherLocation);
             var relocate = false;
             if(myLocation){
                 relocate = !myLocation.exposed;
@@ -604,7 +624,6 @@ var Conversations = (function(){
             }
             if(relocate){
                 var possibleLocation = teacherLocation || _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
-                console.log("Relocation",teacherLocation,possibleLocation);
                 if (possibleLocation){
                     doMoveToSlide(possibleLocation.id.toString());
                 } else {
@@ -747,6 +766,9 @@ var Conversations = (function(){
             };
         }
     };
+    var helpFunction = function(){
+	showBackstage("help");
+    }
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
@@ -775,12 +797,14 @@ var Conversations = (function(){
     var constructAddGroupSlideButton = function(container){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
     }
+    var constructHelpButton = function(container){
+	constructSlideButton("helpButton","Help","fa-question-circle",always,container);
+    }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
-        console.log("updating queryparams:",currentConversation,currentSlide,window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
@@ -799,7 +823,6 @@ var Conversations = (function(){
         }
     };
     var doMoveToSlide = function(slideId){
-        console.log("Requesting moveToSlide",slideId);
         var move = false;
         if(Conversations.isAuthor()){
             move = true;
@@ -827,7 +850,18 @@ var Conversations = (function(){
                 catch(e){
                     console.log(e);
                 }
-            }
+            } else if (Conversations.isAuthor()){
+							var newStanza = {
+								type:"command",
+								author:UserSettings.getUsername(),
+								audiences:[],
+								timestamp:0,
+								command:"/SYNC_MOVE",
+								parameters:[slideId]
+							};
+							console.log("sending:",newStanza);
+							sendStanza(newStanza);
+						}
         }
         else{
             alert("You must remain on the current page");
@@ -921,7 +955,8 @@ var Conversations = (function(){
             .on("click","#addGroupSlideButton",function(){
                 GroupBuilder.showAddGroupSlideDialog()
             })
-            .on("click","#addSlideButton",addSlideFunction);
+            .on("click","#addSlideButton",addSlideFunction)
+	    .on("click","#helpButton",helpFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
@@ -1028,11 +1063,9 @@ function receiveCurrentConversation(jid){
     Progress.call("currentConversationJidReceived",[jid]);
 }
 function receiveConversationDetails(details){
-    console.log("receiveConversationDetails");
     Progress.call("conversationDetailsReceived",[details]);
 }
 function receiveSyncMove(jid){
-    console.log("receiveSyncMove",jid)
     if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
         Progress.call("syncMoveReceived",[jid]);
     }
@@ -1050,18 +1083,27 @@ function receiveGroupsProviders(providers){
     Progress.call("groupProvidersReceived",[providers]);
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
-    console.log("receiveOrgUnitsFromGroupsProviders",orgUnits);
+    Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
-            getGroupSetsForOrgUnit(orgUnits.groupsProvider,orgUnit);
+					var ou = _.cloneDeep(orgUnit);
+					delete ou.groupSets;
+					delete ou.members;
+					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou);
         });
     }
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-    console.log("receiveGroupSetsForOrgUnit",groupSets);
+    Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
-            getGroupsForGroupSet(groupSets.groupsProvider,groupSets.orgUnit,groupSet);
+					var ou = _.cloneDeep(groupSets.orgUnit);
+					delete ou.members;
+					delete ou.groupSets;
+					var gs = _.cloneDeep(groupSet);
+					delete gs.members;
+					delete gs.groups;
+					getGroupsForGroupSet(groupSets.groupsProvider,ou,gs);
         });
     }
 }
@@ -1077,7 +1119,7 @@ function receiveGroupsForGroupSet(groups){
 //function createConversation(title)
 //function deleteConversation(jid)
 //function renameConversation(jid,newTitle)
-//function changePermissions(jid,newPermissions)
+//function changePermissionsOfConversation(jid,newPermissions)
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)

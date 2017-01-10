@@ -419,7 +419,7 @@ var subcategoryMapping = {
     optsToolbar:".applicationGroup"
 };
 var categoryMapping = _.fromPairs(_.flatMap({
-    metaToolbar:"integrations print recycleBin",
+    metaToolbar:"integrations print recycleBin help",
     optsToolbar:"settings healthCheck",
     roomToolbar:"grades blacklist submissions attachments participants groups quizzes contentFilter"
 },function(v,k){
@@ -431,6 +431,7 @@ var categoryMapping = _.fromPairs(_.flatMap({
 var active = "activeBackstageTab active";
 function showBackstage(id){
     $("html").css("overflow-y","auto");
+    $("#masterFooter").hide();
     window.currentBackstage = id;
     $(".backstage").hide();
     if ("HealthCheckViewer" in window){
@@ -475,6 +476,7 @@ function showBackstage(id){
 }
 function hideBackstage(){
     $("html").css("overflow-y","hidden");
+    $("#masterFooter").show();
     window.currentBackstage = noActiveBackstage;
     $(".backstage-menu").removeClass('active');
     $(".backstage").hide();
@@ -507,7 +509,6 @@ function toggleSubOptions(selector){
 }
 $(function(){
     var heading = $("#heading");
-    heading.text("Loading MeTLX...");
     var p = progress().max(8);
     p.element.prependTo($("#progress"));
     var setLoadProgress = function(value){
@@ -660,10 +661,19 @@ $(function(){
     setLoadProgress(3);
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
+        Submissions.reRender();
+				updateActiveMenu($("#menuSubmissions"));
     });
+		$("#gradesButton").on("click",function(){
+        showBackstage("grades");
+        Grades.reRender();
+				updateActiveMenu($("#menuGrades"));
+		});
+
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
-	Quizzes.reRender();
+        Quizzes.reRender();
+				updateActiveMenu($("#menuPolls"));
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
@@ -681,7 +691,7 @@ $(function(){
     setLoadProgress(7);
     Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
 
-    Modes.draw.activate();
+    Modes.select.activate();
 
     $("#progress").hide();
     setLoadProgress(8);
@@ -798,6 +808,10 @@ $(function(){
         showBackstage("integrations");
         updateActiveMenu(this);
     });
+    $('#menuHelp').click(function(){
+	showBackstage("help");
+	updateActiveMenu(this);
+    });
     $("#menuHealthCheck").click(function(){
         showBackstage("healthCheck");
         updateActiveMenu(this);
@@ -860,7 +874,7 @@ $(function(){
                                     Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                     yOffset += Math.max(imgNode.height,50);
                                 } catch (e){
-                                    errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+                                    errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                                 }
                             });
                             if (htmlElem.text().trim().length > 1){
@@ -938,7 +952,7 @@ $(function(){
                                 Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                 yOffset += Math.max(imgNode.height,50);
                             } catch (e){
-                                errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.  " + e);
+                                errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                             }
                         });
                         if (htmlElem.text().trim().length > 1){

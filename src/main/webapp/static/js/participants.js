@@ -184,9 +184,9 @@ var Participants = (function(){
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");
-        updateActiveMenu(this);
         updateFilters();
         updateParticipantsListing();
+				updateActiveMenu($("#menuParticipants"));
     };
     var updateButtons = function(){
         if (Conversations.shouldModifyConversation()){
@@ -199,6 +199,7 @@ var Participants = (function(){
     };
     var onDetailsReceived = function(){
         updateButtons();
+				reRenderParticipants();
     };
     var updateFilters = function(){
         _.each(contextFilters,function(val,filter){
@@ -324,6 +325,9 @@ var Participants = (function(){
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
+		$(function(){
+			reRenderParticipants();
+		});
     return {
         getCurrentParticipants:function(){
             return Conversations.shouldModifyConversation() ? currentParticipants : [];
@@ -337,6 +341,7 @@ var Participants = (function(){
         },
         code:function(author){
             return _.keys(participants).indexOf(author);
-        }
+        },
+				openMenu:openParticipantsMenuFunction
     };
 })();
