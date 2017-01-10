@@ -1296,7 +1296,6 @@ var Modes = (function(){
                     refStart = newEnd;
                     refSize = size;
                 },d.range(0,originalRange.end));
-                sizes = sizes.reverse();
                 refStart = originalRange.start;
                 d.runs(function(runToAlter){
                     var refEnd = refStart + runToAlter.text.length;
