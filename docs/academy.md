@@ -14,6 +14,8 @@ title: Academy
 
 - read the [User Guide](guide.html)
 - check the [Frequently Asked Questions](academy-faq.html)
+- explore the [Teaching Examples](academy-examples.html)
+- engage with relevant [Pedagogy](academy-pedagogy.html)
 <!--- view the [Tutorials](academy-tutorials.html)-->
 
 ## Why do I teach with MeTL?
@@ -30,7 +32,7 @@ The more informed the teacher is about their class's progress, the more effectiv
 
 By engaging students in the learning journey from the beginning, rather than presenting them with the end of the journey, which is too often a characteristic of a pre-prepared presentation, learning and teaching is more rewarding, enjoyable and effective.
 
-<a href="http://innovation.saintleo.edu/wp-content/uploads/2016/08/MeTL-Promo-2.mp4" target="_blank">Watch MeTL in action at Saint Leo University</a>
+<strong><a href="http://innovation.saintleo.edu/wp-content/uploads/2016/08/MeTL-Promo-2.mp4" target="_blank">Watch MeTL in action</a> at Saint Leo University.</strong>
 
 <!--
 ## How do I know MeTL works?
