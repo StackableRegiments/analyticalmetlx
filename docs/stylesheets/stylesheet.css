@@ -221,8 +221,12 @@ ul {
 }
 
 ol {
-    list-style: decimal inside;
-    padding-left: 20px;
+    list-style: decimal outside;
+    padding-left: 2em;
+}
+
+ol li {
+    margin-bottom: 10px;
 }
 
 dl dt {
@@ -490,6 +494,13 @@ body {
     text-align: right;
     font-style: italic;
     font-weight: bold;
+    margin-right: 20px;
+    clear: right;
+}
+
+.attribution {
+    text-align: right;
+    font-style: italic;
     margin-right: 20px;
     clear: right;
 }
