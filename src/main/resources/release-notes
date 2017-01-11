@@ -1,3 +1,6 @@
+1.1.6
+Bugfix: METL-496: As a teacher, clicking on the same slide you're already on can cause your projector to start flickering.
+
 1.1.5
 Bugfix: METL-490: d2lProvider constructs on xml incorrectly
 
