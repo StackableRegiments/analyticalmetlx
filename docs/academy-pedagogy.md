@@ -12,10 +12,10 @@ title: Pedagogy
 ## Content
 
 - [Learning in Groups](#learning-in-groups)
-  - [Self-selection](#self-selection) 
-  - [Teacher Selection](#teacher-selection)
-  - [Random Selection](#random-selection)
-  - [Smart Selection](#smart-selection)
+  - [Self-Selection](#self-selection) 
+  - [Teacher-Selection](#teacher-selection)
+  - [Random-Selection](#random-selection)
+  - [Smart-Selection](#smart-selection)
 
 ### Learning in Groups
 
@@ -27,15 +27,15 @@ There are a number of issues associated with cooperative learning, that include 
 
 The second issue is complex and Johnson and Johnson (*op. cit.*) are major contributors to the field. Their work highlights a significant deficiency in group teaching and learning where, too often, students are placed in groups and their cooperative, or non-cooperative work, is assessed by a summative group project. Rarely are the projects structured to develop in students the skills necessary to work cooperatively, even though this is a highly sought after attribute by employers. One problem has been the difficulty of monitoring group work in order to be able to provide effective contextual feedback. By working in MeTL, where the teacher can observe content directly by visiting the individual group work pages during the project, and by monitoring group analytics, the progress of group work becomes more transparent to the teacher.
 
-The third issue relates to the way students are placed in groups, all of which have different consequences. Groups can self-select, or be assigned by the teacher. However, since friends tend to sit together in classes if the teacher groups by neighbouring students, this may have similar outcomes to students self-selecting. Alternatively teachers could randomly assign students to groups, but this can be a little involved as a random number generator should be used, which can be tedious especially for an ad hoc group task. Another grouping method available to the teacher would be to group students together with similar abilities or other demographic attributes (homogeneous grouping). Conversely the teacher could group by dissimilar abilities or other attributes (heterogeneous grouping). Grouping students homogeneously or heterogeneously has advantages and disadvantages<a href="#footnote6"><sup>6</sup></a>.  (The 2nd Edition of this work<a href="#footnote7"><sup>7</sup></a> omits the research findings reported in the first edition). Homogeneous grouping on ability has a positive effect on achievement when compared to no grouping.  However, students of low ability perform worse when placed in homogeneous groups with other students of low ability as opposed to students of low ability placed in heterogeneous groups. There is a small positive effect of homogeneous grouping on high-ability students. Medium ability students benefit most from homogeneous grouping on ability compared to heterogeneous grouping<a href="#footnote6"><sup>6</sup></a>. 
+The third issue relates to the way students are placed in groups, all of which have different consequences. Groups can self-select, or be assigned by the teacher. However, since friends tend to sit together in classes if the teacher groups by neighbouring students, this may have similar outcomes to students self-selecting. Alternatively teachers could use [Random-Selection](#random-selection) to assign students to groups, but this can be a little involved as a random number generator should be used which can be tedious especially for an ad-hoc group task. Another grouping method available to the teacher would be to group students together with similar abilities or other demographic attributes (homogeneous grouping). Conversely the teacher could group by dissimilar abilities or other attributes (heterogeneous grouping). Grouping students homogeneously or heterogeneously has advantages and disadvantages<a href="#footnote6"><sup>6</sup></a>.  (The 2nd Edition of this work<a href="#footnote7"><sup>7</sup></a> omits the research findings reported in the first edition). Homogeneous grouping on ability has a positive effect on achievement when compared to no grouping.  However, students of low ability perform worse when placed in homogeneous groups with other students of low ability as opposed to students of low ability placed in heterogeneous groups. There is a small positive effect of homogeneous grouping on high-ability students. Medium ability students benefit most from homogeneous grouping on ability compared to heterogeneous grouping<a href="#footnote6"><sup>6</sup></a>. 
 
 Some authors contend there are ethical issues in placing high-ability students in heterogeneous groups as their achievement will be adversely affected. Conversely ability grouping has been criticized because of the implications for minority groups who may disproportionally originate from disadvantaged backgrounds<a href="#footnote8"><sup>8</sup></a>.
 
-At this stage there is no clear consensus about the best way to group students in a class. Groups of friends tend to be less productive than groups of strangers as they may be more distracted. The consequences of self-selection or grouping by students sitting together should be considered. Using homogeneous or heterogeneous groups have different consequences. MeTL provides the teacher with various automatic methods of grouping that are designed to help the teacher manage the competing interests of ease of making groups, fairness, or purpose.
+At this stage there is no clear consensus about the best way to group students in a class. Groups of friends tend to be less productive than groups of strangers as they may be more distracted. The consequences of [Self-Selection](#self-selection) or grouping by students sitting together should be considered. Using homogeneous or heterogeneous groups have different consequences. MeTL provides the teacher with various automatic methods of grouping that are designed to help the teacher manage the competing interests of ease of making groups, fairness, or purpose.
 
 A final consideration is the scope and longevity of group projects which have been characterised as Informal, Formal and Base<a href="#footnote5"><sup>5</sup></a>. Informal cooperative learning projects last from a few minutes to one class and can, among other things, focus student attention, facilitate cognitive processing through rehearsal, and summarize. There is a distinct purpose in such a group activity. Teachers should use the MeTL grouping facility of <code>Only show me my participating students</code> since there is no point in grouping absent students and by attempting to do so some groups maybe suboptimal. Formal Cooperative Learning Groups and Cooperative Base Groups both have the requirement of group work that are longer term and therefore students who are absent when the group was established should be assigned so that they have an effective group when they rejoin the class. In this case teachers should use the facility of <code>Show me all my enrolled students</code>. 
 
-At this stage, since there is no definitive research supported protocol for the best way to establish groups, MeTL gives the teacher some options but in the absence of the necessary information will randomly assign students to groups. This brief discussion of groups and cooperative learning does not provide any solutions to some very complex issues. However, hopefully, it does alert the teacher to some of the issues associated with groups and provides some methods that the teacher can utilise. The teacher can override the groups suggested by MeTL, or imported from the LMS, if MeTL is integrated with the LMS. However, students often have concerns about the grouping strategy the teacher employs and there are arguments for making grouping transparent and equitable. Teacher selection, without being transparent, runs the risk of bias.
+At this stage, since there is no definitive research supported protocol for the best way to establish groups, MeTL gives the teacher some options but in the absence of the necessary information will randomly assign students to groups. This brief discussion of groups and cooperative learning does not provide any solutions to some very complex issues. However, hopefully, it does alert the teacher to some of the issues associated with groups and provides some methods that the teacher can utilise. The teacher can override the groups suggested by MeTL, or imported from the LMS, if MeTL is integrated with the LMS. However, students often have concerns about the grouping strategy the teacher employs and there are arguments for making grouping transparent and equitable. [Teacher-Selection](#teacher-selection), without being transparent, runs the risk of bias.
 
 <hr/>
 
@@ -55,18 +55,18 @@ At this stage, since there is no definitive research supported protocol for the 
 
 <a name="footnote8"><sup>8</sup></a> Adodo SO & Agbayewa JO (2011) Effect of homogenous and heterogeneous ability grouping class teaching on student’s interest, attitude and achievement in integrated science. International Journal of Psychology and Counselling 3(3), 48-54.
 
-#### Self Selection
+#### Self-Selection
 
 Content coming soon.
 
-#### Teacher Selection
+#### Teacher-Selection
 
 Content coming soon.
 
-#### Random Selection
+#### Random-Selection
 
 Content coming soon.
 
-#### Smart Selection 
+#### Smart-Selection 
 
 Content coming soon.
