@@ -20,7 +20,7 @@ Log in as the teacher on both the class PC (that controls the projector) and on 
 
 <ol>
 <li><a href="guide-conversation-search.html#join-a-conversation">Join</a> the class conversation on the class PC.</li> 
-<li>Select <code class="highlighter-rouge">Options</code> and <code class="highlighter-rouge">Project this conversation</code>. This will project only public content on the projector screen.</li>
+<li>Select <code>Options</code> and <code>Project this conversation</code>. This will project only public content on the projector screen.</li>
 <li><a href="guide-conversation-search.html#join-a-conversation">Join</a> the same conversation on your portable device.
 This allows you to see your own private content as well as any information that should not be displayed to the students (such as student names on submissions).</li>
 <li>The class PC will follow any navigation performed on your portable device.</li>

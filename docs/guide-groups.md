@@ -5,7 +5,7 @@ title: Groups
 
 The members of a conversation (students) can be organized into groups by the conversation owner (teacher).  If MeTL is integrated with a third-party system that provides class information then the groups can be based on student enrollment into the class to which the conversation is restricted.
 
-<div class="tip">Use <code class="highlighter-rouge">show me all my enrolled students</code> for group projects that extend over days or weeks so that temporarily absent students may participate.  Use <code class="highlighter-rouge">Only show me my participating students</code> for group work that is to be done immediately by the students actually present.</div>
+<div class="tip">Use <code>show me all my enrolled students</code> for group projects that extend over days or weeks so that temporarily absent students may participate.  Use <code>Only show me my participating students</code> for group work that is to be done immediately by the students actually present.</div>
 
 A group page is created after the teacher's current page, and the students are assigned to groups according to rules selected by the teacher.  Each member of the class will be allocated into one and only one group.  The teacher will not be in any group but will be able to see all the content from all of them.
 
@@ -51,7 +51,7 @@ As these groups are toggled for inclusion, they appear on the right hand side of
 
 Only groups from the teacher's Org Units will be made available for inclusion.
 
-Once the teacher has selected the priority for automatic filling and optionally included existing groups, they press "Fill".  A new page is then constructed, in which groups will always apply.  The teacher is taken to that new page.  The conversation is automatically set to "Students must follow" and the students are also automatically taken to the page.  As they arrive, they are allocated unless they already appeared in an external group.
+Once the teacher has selected the priority for automatic filling and optionally included existing groups, they press <code>Fill</code>.  A new page is then constructed, in which groups will always apply.  The teacher is taken to that new page.  The conversation is automatically set to "Students must follow" and the students are also automatically taken to the page.  As they arrive, they are allocated unless they already appeared in an external group.
 
 ## View Groups
 
