@@ -15,10 +15,10 @@ A single conversation can organize the participants into different groups by cre
 
 <div class="pedagogy">
   <a href="academy-pedagogy.html#learning-in-groups">Learning in Groups</a>,
-  <a href="academy-pedagogy.html#self-selection">Self-selection</a>,
-  <a href="academy-pedagogy.html#teacher-selection">Teacher Selection</a>,
-  <a href="academy-pedagogy.html#random-selection">Random Selection</a>,
-  <a href="academy-pedagogy.html#smart-selection">Smart Selection</a>
+  <a href="academy-pedagogy.html#self-selection">Self-Selection</a>,
+  <a href="academy-pedagogy.html#teacher-selection">Teacher-Selection</a>,
+  <a href="academy-pedagogy.html#random-selection">Random-Selection</a>,
+  <a href="academy-pedagogy.html#smart-selection">Smart-Selection</a>
 </div>
 
 <div class="example">
