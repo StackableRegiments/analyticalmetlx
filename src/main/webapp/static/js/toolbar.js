@@ -1296,7 +1296,6 @@ var Modes = (function(){
                     refStart = newEnd;
                     refSize = size;
                 },d.range(0,originalRange.end));
-                sizes = sizes.reverse();
                 refStart = originalRange.start;
                 d.runs(function(runToAlter){
                     var refEnd = refStart + runToAlter.text.length;
@@ -1305,13 +1304,20 @@ var Modes = (function(){
                     refStart = refEnd;
                 },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
+                return sizes;
             };
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            scaleEditor(d,factor);
+                            var sizes = scaleEditor(d,factor);
+                            if(factor > 1){
+                                carota.runs.defaultFormatting.newBoxSize = _.max(sizes);
+                            }
+                            else{
+                                carota.runs.defaultFormatting.newBoxSize = _.min(sizes);
+                            }
                         }
                     });
                 };
@@ -1476,7 +1482,7 @@ var Modes = (function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
-				source.audiences = ContentFilter.getAudiences();
+                                source.audiences = ContentFilter.getAudiences();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
@@ -1670,7 +1676,7 @@ var Modes = (function(){
                                 bold:carota.runs.nextInsertFormatting.bold == true,
                                 underline:carota.runs.nextInsertFormatting.underline == true,
                                 color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                                size:carota.runs.defaultFormatting.size / scale()
+                                size:carota.runs.defaultFormatting.newBoxSize / scale()
                             }]);
                             var newDoc = newEditor.doc;
                             newDoc.select(0,1);
@@ -1708,7 +1714,7 @@ var Modes = (function(){
                             bold:carota.runs.nextInsertFormatting.bold == true,
                             underline:carota.runs.nextInsertFormatting.underline == true,
                             color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                            size:carota.runs.defaultFormatting.size / scale()
+                            size:carota.runs.defaultFormatting.newBoxSize / scale()
                         }]);
                         var newDoc = newEditor.doc;
                         newDoc.select(0,1);
@@ -2771,7 +2777,7 @@ var Modes = (function(){
                 if (Conversations.shouldModifyConversation()){
                     console.log("showing participants button");
                     $("#participantsButton").unbind("click").on("click",function(){
-											Participants.openMenu();
+                        Participants.openMenu();
                     }).show();
                 } else {
                     console.log("hiding participants button");
