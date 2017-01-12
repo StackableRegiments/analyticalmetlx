@@ -90,7 +90,7 @@ object GroupsProvider {
       val acceptableRoleList:List[Int] = (dNodes \\ "acceptableRoleId").map(_.text.toInt).toList
       val name = (dNodes \\ "@name").headOption.map(_.text)
       val n = name.getOrElse("d2lInteface_to_%s".format(host))
-      possiblyFilter(outerNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+      possiblyFilter(dNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
         override protected val acceptableRoleIds = acceptableRoleList
       })
     }).toList ::: 
