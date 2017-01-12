@@ -1,3 +1,9 @@
+1.2.1
+Story: METL-442: Default fontsize applies to new textboxes.
+Bugfix: METL-311: Single word can only be rescaled bigger or smaller by one step.
+Bugfix: METL-472: Reword "show me all my enrolled students" in add group when conversation not restricted to a LMS group.
+Bugfix: METL-491: Client-side timeout trying to read groups.
+
 1.1.6
 Bugfix: METL-496: As a teacher, clicking on the same slide you're already on can cause your projector to start flickering.
 
