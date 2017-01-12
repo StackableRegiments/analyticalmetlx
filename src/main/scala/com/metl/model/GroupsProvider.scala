@@ -87,10 +87,11 @@ object GroupsProvider {
       userId <- (dNodes \ "@userId").headOption.map(_.text)
       userKey <- (dNodes \ "@userKey").headOption.map(_.text)
     } yield {
+      val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(dNodes)
       val acceptableRoleList:List[Int] = (dNodes \\ "acceptableRoleId").map(_.text.toInt).toList
       val name = (dNodes \\ "@name").headOption.map(_.text)
       val n = name.getOrElse("d2lInteface_to_%s".format(host))
-      possiblyFilter(dNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+      possiblyFilter(dNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
         override protected val acceptableRoleIds = acceptableRoleList
       })
     }).toList ::: 
@@ -158,10 +159,11 @@ object GroupsProvider {
         } yield {
           val n = name.getOrElse("d2lGroups_from_%s".format(host))
           val acceptableRoleList:List[Int] = (in \\ "acceptableRoleId").map(_.text.toInt).toList
+          val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(in)
           val diskCache = new XmlGroupStoreDataFile(n,diskStore)
           new StoreBackedGroupsProvider(n,
             new PeriodicallyRefreshingGroupStoreProvider(
-              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
                 override protected val acceptableRoleIds = acceptableRoleList
               },
               refreshPeriod,

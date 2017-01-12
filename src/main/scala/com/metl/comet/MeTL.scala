@@ -78,105 +78,11 @@ trait ConversationFilter {
   }
 }
 
-class MeTLSlideDisplayActor extends CometActor with CometListener with Logger {
-  import com.metl.snippet.Metl._
-  override def registerWith = MeTLSlideDisplayActorManager
-  protected var currentConversation:Option[Conversation] = None
-  protected var currentSlide:Option[Int] = None
-  override def lifespan = Full(2 minutes)
-  override def localSetup = {
-    super.localSetup
-    name.foreach(nameString => {
-      trace("localSetup for [%s]".format(name))
-      com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
-        currentConversation = Some(serverConfig.detailsOfConversation(convJid.toString))
-      })
-      com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
-        currentSlide = Some(slideJid)
-        slideJid
-      }).getOrElse({
-        currentConversation.foreach(cc => {
-          cc.slides.sortWith((a,b) => a.index < b.index).headOption.map(firstSlide => {
-            currentSlide = Some(firstSlide.id)
-          })
-        })
-      })
-    })
-    trace("setup slideDisplay: %s %s".format(currentConversation,currentSlide))
-  }
-  protected var username = Globals.currentUser.is
-  protected lazy val serverConfig = ServerConfiguration.default
-  override def render = {
-    "#slidesContainer2 *" #> {
-      ".slideContainer2" #> currentConversation.map(_.slides).getOrElse(Nil).map(slide => {
-        currentConversation.map(cc => {
-          ".slideAnchor [href]" #> boardFor(cc.jid,slide.id) &
-          ".slideIndex *" #> slide.index &
-          ".slideId *" #> slide.id &
-          ".slideActive *" #> currentSlide.exists(_ == slide.id)
-        }).getOrElse({
-          ".slideAnchor" #> NodeSeq.Empty
-        })
-      })
-    } &
-    "#addSlideButtonContainer" #> currentConversation.filter(cc => shouldModifyConversation(username,cc)).map(cc => {
-      "#addSlideButtonContainer [onclick]" #> {
-        ajaxCall(Jq("#this"),(j:String) => {
-          trace("add slide button clicked: %s".format(j))
-          val index = currentSlide.flatMap(cs => cc.slides.find(_.id == cs).map(_.index)).getOrElse(0)
-          serverConfig.addSlideAtIndexOfConversation(cc.jid.toString,index)
-          reRender
-          Noop
-        })
-      }
-    }).getOrElse({
-      "#addSlideButtonContainer" #> NodeSeq.Empty
-    })
-  }
-  override def lowPriority = {
-    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
-      val newJid = c.commandParameters(0).toInt
-      val newConv = serverConfig.detailsOfConversation(newJid.toString)
-      if (currentConversation.exists(_.jid == newConv.jid)){
-        if (!shouldDisplayConversation(newConv)){
-          trace("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
-          currentConversation = Empty
-          currentSlide = Empty
-          reRender
-          partialUpdate(RedirectTo(noBoard))
-        } else {
-          currentConversation = Some(newConv)
-          trace("updating conversation to: %s".format(newConv))
-          reRender
-        }
-      }
-    }
-    case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
-      trace("incoming syncMove: %s".format(c))
-      val newJid = c.commandParameters(0).toInt
-      val signature = c.commandParameters(1)
-      if(signature != uniqueId){
-        currentConversation.filter(cc => currentSlide.exists(_ != newJid)).map(cc => {
-          cc.slides.find(_.id == newJid).foreach(slide => {
-            trace("moving to: %s".format(slide))
-            currentSlide = Some(slide.id)
-            reRender
-            partialUpdate(RedirectTo(boardFor(cc.jid,slide.id)))
-          })
-        })
-      }
-    }
-    case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
-      //not relaying teacherInConversation to page
-    }
-    case _ => warn("MeTLSlideDisplayActor received unknown message")
-  }
-}
-
 class RemotePluginConversationChooserActor extends MeTLConversationChooserActor {
   protected val ltiIntegration:BrightSparkIntegration = RemotePluginIntegration
   protected var ltiToken:Option[String] = None
   protected var ltiSession:Option[RemotePluginSession] = None
+  override def lifespan = Globals.remotePluginConversationChooserActorLifespan
   override def localSetup = {
     super.localSetup
     name.foreach(nameString => {
@@ -269,7 +175,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       query = Some(q)
       val foundConversations = serverConfig.searchForConversation(q)
       listing = filterConversations(foundConversations,true)
-      debug(listing.toString())
+      //debug(listing.toString())
       trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
       serializer.fromConversationList(listing)
     },Full(RECEIVE_CONVERSATIONS)),
@@ -279,7 +185,13 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       val newConv = serverConfig.createConversation(title,username)
       listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
-    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))
+    },Full(RECEIVE_NEW_CONVERSATION_DETAILS))/*,
+    ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
+      val delay = getArgAsInt(args(0))
+      val message = getArgAsString(args(1))
+      Thread.sleep(delay)
+      JString(message)
+    },Full("alert"))*/
   )
 
   protected var query:Option[String] = None
@@ -287,7 +199,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   protected var imports:List[ImportDescription] = Nil
 
   override def registerWith = MeTLConversationSearchActorManager
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Globals.searchActorLifespan
   protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
 
@@ -377,7 +289,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   )
 
   override def registerWith = MeTLConversationSearchActorManager
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Globals.conversationChooserActorLifespan
   protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
   protected var query:Option[String] = None
@@ -583,7 +495,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     },Full(RECEIVE_CONVERSATION_DETAILS))
   )
   override def registerWith = MeTLEditConversationActorManager
-  override def lifespan = Full(5 minutes)
+  override def lifespan = Globals.editConversationActorLifespan
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
   protected val username = Globals.currentUser.is
@@ -867,7 +779,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                   val newM = dc.generateNewIdentity(newIdentitySeed)
                   val newIdentity = newM.identity
                   val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
-                  println("created newUDM: %s".format(newUDM))
+                  trace("created newUDM: %s".format(newUDM))
                   room ! LocalToServerMeTLStanza(newUDM)
                   
                   room ! LocalToServerMeTLStanza(newM)
@@ -1303,7 +1215,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }
     case HealthyWelcomeFromRoom => {}
     case cp@ConversationParticipation(jid,currentMembers,possibleMembers) if shouldModifyConversation() => {
-      println("CONVERSATION PARTICIPATION: %s".format(cp))
+      trace("CONVERSATION PARTICIPATION: %s".format(cp))
       partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
         JField("location",JString(jid)),
         JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
@@ -1499,7 +1411,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     }).openOr(History.empty)
     trace("priv %s".format(jid))
     val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
-    println("conv found %s".format(convHistory.getGradeValues))
+    trace("conv found %s".format(convHistory.getGradeValues))
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
       case g:MeTLGrade => true
       case gv:MeTLGradeValue if shouldModifyConversation() => true
@@ -1510,7 +1422,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case _ => true
     }
     debug("final %s".format(jid))
-    println("final found %s".format(finalHistory.getGradeValues))
+    trace("final found %s".format(finalHistory.getGradeValues))
     serializer.fromHistory(finalHistory)
   }
   private def conversationContainsSlideId(c:Conversation,slideId:Int):Boolean = c.slides.exists((s:Slide) => s.id == slideId)
@@ -1580,7 +1492,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     })
   }
-  override def lifespan = Full(2 minutes)
+  override def lifespan = Globals.metlActorLifespan
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
     trace("roomInfo received: %s".format(roomInfo))

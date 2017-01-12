@@ -92,7 +92,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       Full(RedirectResponse(transformed,r))
     }
     case r@Req(Nil,_,_) => () => {
-      Full(RedirectResponse("/conversationSearch"))
+      Full(RedirectResponse(com.metl.snippet.Metl.conversationSearch()))
     }
     //metlx endpoints 8080
     case Req("verifyUserCredentialsForm" :: Nil,_,_) => () => {
@@ -208,7 +208,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
       S.session.foreach(_.destroySession())
       //S.containerSession.foreach(s => s.terminate)
-      Full(RedirectResponse("/conversationSearch"))
+      Full(RedirectResponse(com.metl.snippet.Metl.conversationSearch()))
     })
     case r @ Req(List("history"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))

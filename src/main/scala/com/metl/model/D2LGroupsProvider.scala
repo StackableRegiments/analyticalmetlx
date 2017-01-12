@@ -315,15 +315,9 @@ case class D2LDescriptionInput(
   Type:Option[String]
 )
 
-class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
+class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpProvider:HttpClientProvider) extends Logger {
   protected val pageSize = 200
-  protected val httpConnectionTimeout = 3 // 3 seconds
-  protected val httpReadTimeout = 10 * 1000 // 10 seconds
-  protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
-    override val connectionTimeout = httpConnectionTimeout
-    override val readTimeout = httpReadTimeout
-    override val maxRetries = 1
-  }
+  protected val client = httpProvider.getClient
 
   protected implicit def formats = net.liftweb.json.DefaultFormats
 
@@ -347,7 +341,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       val jValueString = compactRender(json)
       val headers = List(("Content-Type","application/json"))
       val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,headers)
-      //println("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
+      //trace("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
       None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -529,7 +523,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
-      //println("found remote grades: %s".format(firstGet))
+      //trace("found remote grades: %s".format(firstGet))
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
       var continuing = firstResp.Next
@@ -538,7 +532,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           continuing.foreach(apiUrl => {
             val u = userContext.createAuthenticatedUri(apiUrl,"GET")
             val respString = client.get(u.toString)
-            //println("found remote grades: %s".format(respString))
+            //trace("found remote grades: %s".format(respString))
             val respObj = parse(respString)
             val resp = respObj.extract[D2LGradeValueResponse]
             items = items ::: resp.Objects
@@ -562,7 +556,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
     val gv = Extraction.decompose(gradeValue)
-    //println("sending new gradeValue: %s".format(compactRender(gv)))
+    //trace("sending new gradeValue: %s".format(compactRender(gv)))
     putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
   }
 
@@ -658,8 +652,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
 }
 
-class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends GroupsProvider(storeId){
-  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) 
+class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends GroupsProvider(storeId){
+  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) 
   override val canQuery:Boolean = true
  
   protected val acceptableRoleIds = List(
@@ -826,7 +820,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
   } 
 }
 
-class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
+class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) with GroupStoreProvider {
   protected val acceptableRoleIds = List(
     113, //Instructor_1
     109, //Instructor_2

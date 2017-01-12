@@ -197,7 +197,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       }
       case _ => (getAttendances.map(_.author) ::: getAttendance).distinct
     }
-    println("UPDATED POSSIBLE ATTENDANCE!; %s => %s".format(startingAttendanceCache,attendanceCache))
+    trace("UPDATED POSSIBLE ATTENDANCE!; %s => %s".format(startingAttendanceCache,attendanceCache))
   }
   def getPossibleAttendance:List[String] = attendanceCache.toList
   def getAttendance:List[String] = joinedUsers.map(_._1).distinct
