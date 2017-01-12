@@ -51,7 +51,7 @@ var GroupBuilder = (function(){
         });
         _.each(Participants.getCurrentParticipants(),function(name){
             if(name != Conversations.getCurrentConversation().author){
-                if(!name in participants){
+                if(!(name in participants)){
                     seed(name,false);
                 }
                 participants[name].present = true;
