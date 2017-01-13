@@ -181,7 +181,7 @@ object Globals extends PropertyReader with Logger {
         val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes.map(ua => Detail(ua._1,ua._2)))
         if (authenticated){
           actualUsername(username)
-          val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+          val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
           actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
           val lasd = LiftAuthStateData(true,username,groups,personalDetails)
