@@ -38,21 +38,21 @@ object GroupsProvider {
         (gn \\ "@suffix").headOption.map(_.text)
       ))
     } yield {
-      val groupsFilter = (g:OrgUnit) => blacklistedGroups.exists(bg => {
-        !bg._1.exists(kp => !g.ouType.startsWith(kp)) &&
-        !bg._2.exists(ks => !g.ouType.endsWith(ks)) &&
-        !bg._3.exists(vp => !g.name.startsWith(vp)) &&
-        !bg._4.exists(vs => !g.name.endsWith(vs))
+      val groupsFilter = (g:OrgUnit) => !blacklistedGroups.exists(bg => {
+        bg._1.exists(kp => g.ouType.startsWith(kp)) ||
+        bg._2.exists(ks => g.ouType.endsWith(ks)) ||
+        bg._3.exists(vp => g.name.startsWith(vp)) ||
+        bg._4.exists(vs => g.name.endsWith(vs))
       })
-      val personalDetailsFilter = (g:Detail) => blacklistedInfos.exists(bg => {
-        !bg._1.exists(kp => !g.key.startsWith(kp)) &&
-        !bg._2.exists(ks => !g.key.endsWith(ks)) &&
-        !bg._3.exists(vp => !g.value.startsWith(vp)) &&
-        !bg._4.exists(vs => !g.value.endsWith(vs))
+      val personalDetailsFilter = (g:Detail) => !blacklistedInfos.exists(bg => {
+        bg._1.exists(kp => g.key.startsWith(kp)) ||
+        bg._2.exists(ks => g.key.endsWith(ks)) ||
+        bg._3.exists(vp => g.value.startsWith(vp)) ||
+        bg._4.exists(vs => g.value.endsWith(vs))
       })
-      val membersFilter = (g:Member) => blacklistedMembers.exists(bg => {
-        !bg._1.exists(kp => !g.name.startsWith(kp)) &&
-        !bg._2.exists(ks => !g.name.endsWith(ks)) 
+      val membersFilter = (g:Member) => !blacklistedMembers.exists(bg => {
+        bg._1.exists(kp => g.name.startsWith(kp)) ||
+        bg._2.exists(ks => g.name.endsWith(ks)) 
       })
       new FilteringGroupsProvider(gp.storeId,gp,groupsFilter,membersFilter,personalDetailsFilter)
     }).getOrElse(gp)
