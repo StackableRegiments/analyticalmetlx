@@ -61,10 +61,25 @@
           <div>
             <div>
               <h3>Direct links to this location</h3>
-              <div class="conversationLinks">
-                <div id="projectorViewLink"></div>
-                <div id="conversationDeepLink"></div>
-                <div id="slideDeepLink"></div>
+              <div class="conversationLinks" class="flex-container-column">
+                <div class="flex-container-row">
+                  <button class="deeplink fa fa-border btn-icon fa-clipboard mr" style="height:1.5em;margin-top:0;">
+                    <span class="icon-txt">Copy</span>
+                  </button>
+                  <span id="projectorViewLink"></span>
+                </div>
+                <div class="flex-container-row">
+                  <button class="deeplink fa fa-border btn-icon fa-clipboard mr" style="height:1.5em;margin-top:0;">
+                    <span class="icon-txt">Copy</span>
+                  </button>
+                  <span id="conversationDeepLink"></span>
+                </div>
+                <div class="flex-container-row">
+                  <button class="deeplink fa fa-border btn-icon fa-clipboard mr" style="height:1.5em;margin-top:0;">
+                    <span class="icon-txt">Copy</span>
+                  </button>
+                  <span id="slideDeepLink"></span>
+                </div>
               </div>
             </div>
             <!--
@@ -164,7 +179,7 @@
               </div>
               <div class="mlr" style="width:100%">
                 <div class="flex-container-responsive">
-		  <h3>Show me</h3>
+                  <h3>Show me</h3>
                   <select class="groupScope" style="flex-grow:1"></select>
                 </div>
                 <div class="groups"></div>
