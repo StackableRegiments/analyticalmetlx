@@ -22,6 +22,51 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       groupsForMembers = groupsByMember
     )))
   }
+  test("filter members out by name") {
+    val gp = fixture(Map("testUser" -> List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    )))
+    val filterXml = 
+      <filterNot>
+        <group key="testKind"/>
+      </filterNot>
+    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
+    actual should equal(List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None)
+    ))
+  }
+  test("filter members out by namePrefix") {
+    val gp = fixture(Map("testUser" -> List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    )))
+    val filterXml = 
+      <filterNot>
+        <group key="testKind"/>
+      </filterNot>
+    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
+    actual should equal(List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None)
+    ))
+  }
+  test("filter members out by nameSuffix") {
+    val gp = fixture(Map("testUser" -> List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    )))
+    val filterXml = 
+      <filterNot>
+        <group key="testKind"/>
+      </filterNot>
+    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
+    actual should equal(List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None)
+    ))
+  }
   test("filter groups out by key") {
     val gp = fixture(Map("testUser" -> List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None),
