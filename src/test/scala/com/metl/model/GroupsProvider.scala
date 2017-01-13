@@ -22,6 +22,50 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       groupsForMembers = groupsByMember
     )))
   }
+  test("not filter anything out when the filterBehaviour configuration isn't valid") {
+    val gp = fixture(Map("testUser" -> List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    )))
+    val filterXml = NodeSeq.Empty
+    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
+    actual should equal(List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    ))
+  }
+  test("not filter anything out when the filterBehaviour doesn't declare a filter") {
+    val gp = fixture(Map("testUser" -> List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    )))
+    val filterXml = 
+      <filterNot>
+      </filterNot>
+    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
+    actual should equal(List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    ))
+  }
+  test("not filter anything out when it doesn't match") {
+    val gp = fixture(Map("testUser" -> List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    )))
+    val filterXml = 
+      <filterNot>
+        <group key="elephant"/>
+      </filterNot>
+    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
+    actual should equal(List(
+      OrgUnit("mockType","mockCourse1",Nil,Nil,None),
+      OrgUnit("testKind","testCourse3",Nil,Nil,None)
+    ))
+  }
   test("filter members out by name") {
     val gp = fixture(Map("testUser" -> List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None),
