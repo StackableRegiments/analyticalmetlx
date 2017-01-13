@@ -202,7 +202,8 @@ object GroupKeys {
 
 abstract class GroupsProvider(val storeId:String) extends Logger {
   val canQuery:Boolean = false
-  
+  val canRestrictConversations:Boolean = true
+
   def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = userData.eligibleGroups.toList
   def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
   def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = orgUnit.groupSets
@@ -222,6 +223,7 @@ class ADFSGroupsExtractor(override val storeId:String) extends GroupsProvider(st
 
 class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) extends GroupsProvider(storeId) {
   override val canQuery:Boolean = gp.canQuery
+  override val canRestrictConversations:Boolean = gp.canRestrictConversations
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData)
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit)
   override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gp.getGroupSetsFor(orgUnit,members)
@@ -234,6 +236,7 @@ class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) e
 
 class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean,membersFilter:Member=>Boolean,personalDetailsFilter:Detail=>Boolean) extends PassThroughGroupsProvider(storeId,gp) {
   override val canQuery:Boolean = gp.canQuery
+  override val canRestrictConversations:Boolean = gp.canRestrictConversations
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData).filter(groupsFilter)
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit).filter(membersFilter)
   override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gp.getGroupSetsFor(orgUnit,members)

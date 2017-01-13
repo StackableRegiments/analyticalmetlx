@@ -162,7 +162,7 @@ object Globals extends PropertyReader with Logger {
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
         val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes.map(pa => Detail(pa._1,pa._2)) ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)).map(pa => Detail(pa._1,pa._2))))
-        val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+        val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
         val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
         val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
         validState(Some(impersonatedState))
