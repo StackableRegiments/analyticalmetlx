@@ -18,41 +18,68 @@ object GroupsProvider {
   def sanityCheck(g:GroupStoreData):Boolean = {
     g.groupsForMembers.keys.toList.length > 0
   }
+  def existsDefaultTrue[A](in:Option[A],pred:A=>Boolean):Boolean = {
+    in match {
+      case None => true
+      case items@Some(_item) => items.exists(pred)
+    }
+  }
+  def allDefaultTrue[A](in:Seq[A],pred:A=>Boolean):Boolean = {
+    in match {
+      case Nil => true
+      case items => !items.exists(i => !pred(i))
+    }
+  }
+
   def possiblyFilter(in:NodeSeq,gp:GroupsProvider):GroupsProvider = {
     (for {
-      fNodes <- (in \\ "filter").headOption
-      blacklistedGroups = (fNodes \\ "group").map(gn => (
-        (gn \\ "@keyPrefix").headOption.map(_.text),
-        (gn \\ "@keySuffix").headOption.map(_.text),
-        (gn \\ "@valuePrefix").headOption.map(_.text),
-        (gn \\ "@valueSuffix").headOption.map(_.text)
+      fNodes <- (in \\ "filterNot").headOption
+      blacklistedGroups = (fNodes \ "group").map(gn => (
+        (gn \ "@keyPrefix").headOption.map(_.text),
+        (gn \ "@keySuffix").headOption.map(_.text),
+        (gn \ "@valuePrefix").headOption.map(_.text),
+        (gn \ "@valueSuffix").headOption.map(_.text),
+        (gn \ "@key").headOption.map(_.text),
+        (gn \ "@value").headOption.map(_.text)
       ))
-      blacklistedInfos = (fNodes \\ "personalDetails").map(gn => (
-        (gn \\ "@keyPrefix").headOption.map(_.text),
-        (gn \\ "@keySuffix").headOption.map(_.text),
-        (gn \\ "@valuePrefix").headOption.map(_.text),
-        (gn \\ "@valueSuffix").headOption.map(_.text)
+      blacklistedInfos = (fNodes \ "personalDetails").map(gn => (
+        (gn \ "@keyPrefix").headOption.map(_.text),
+        (gn \ "@keySuffix").headOption.map(_.text),
+        (gn \ "@valuePrefix").headOption.map(_.text),
+        (gn \ "@valueSuffix").headOption.map(_.text),
+        (gn \ "@key").headOption.map(_.text),
+        (gn \ "@value").headOption.map(_.text)
       ))
-      blacklistedMembers = (fNodes \\ "member").map(gn => (
-        (gn \\ "@prefix").headOption.map(_.text),
-        (gn \\ "@suffix").headOption.map(_.text)
+      blacklistedMembers = (fNodes \ "member").map(gn => (
+        (gn \ "@namePrefix").headOption.map(_.text),
+        (gn \ "@nameSuffix").headOption.map(_.text),
+        (gn \ "@name").headOption.map(_.text)
       ))
     } yield {
-      val groupsFilter = (g:OrgUnit) => !blacklistedGroups.exists(bg => {
-        bg._1.exists(kp => g.ouType.startsWith(kp)) ||
-        bg._2.exists(ks => g.ouType.endsWith(ks)) ||
-        bg._3.exists(vp => g.name.startsWith(vp)) ||
-        bg._4.exists(vs => g.name.endsWith(vs))
+      val groupsFilter = (g:OrgUnit) => allDefaultTrue(blacklistedGroups,(bg:Tuple6[Option[String],Option[String],Option[String],Option[String],Option[String],Option[String]]) => {
+        !(
+          existsDefaultTrue(bg._1,(kp:String) => g.ouType.startsWith(kp)) && 
+          existsDefaultTrue(bg._2,(ks:String) => g.ouType.endsWith(ks)) && 
+          existsDefaultTrue(bg._3,(vp:String) => g.name.startsWith(vp)) && 
+          existsDefaultTrue(bg._4,(vs:String) => g.name.endsWith(vs)) && 
+          existsDefaultTrue(bg._5,(k:String) => g.ouType.startsWith(k)) && 
+          existsDefaultTrue(bg._6,(v:String) => g.name.startsWith(v))
+        )
       })
-      val personalDetailsFilter = (g:Detail) => !blacklistedInfos.exists(bg => {
-        bg._1.exists(kp => g.key.startsWith(kp)) ||
-        bg._2.exists(ks => g.key.endsWith(ks)) ||
-        bg._3.exists(vp => g.value.startsWith(vp)) ||
-        bg._4.exists(vs => g.value.endsWith(vs))
+      val personalDetailsFilter = (g:Detail) => allDefaultTrue(blacklistedInfos,(bg:Tuple6[Option[String],Option[String],Option[String],Option[String],Option[String],Option[String]]) => {
+        !(
+          existsDefaultTrue(bg._1,(kp:String) => g.key.startsWith(kp)) && 
+          existsDefaultTrue(bg._2,(ks:String) => g.key.endsWith(ks)) && 
+          existsDefaultTrue(bg._3,(vp:String) => g.value.startsWith(vp)) && 
+          existsDefaultTrue(bg._4,(vs:String) => g.value.endsWith(vs)) && 
+          existsDefaultTrue(bg._5,(k:String) => g.key.startsWith(k)) && 
+          existsDefaultTrue(bg._6,(v:String) => g.value.startsWith(v))
+        )
       })
-      val membersFilter = (g:Member) => !blacklistedMembers.exists(bg => {
-        bg._1.exists(kp => g.name.startsWith(kp)) ||
-        bg._2.exists(ks => g.name.endsWith(ks)) 
+      val membersFilter = (g:Member) => allDefaultTrue(blacklistedMembers,(bg:Tuple3[Option[String],Option[String],Option[String]]) => {
+        existsDefaultTrue(bg._1,(kp:String) => g.name.startsWith(kp)) &&
+        existsDefaultTrue(bg._2,(ks:String) => g.name.endsWith(ks)) &&
+        existsDefaultTrue(bg._3,(k:String) => g.name == k)
       })
       new FilteringGroupsProvider(gp.storeId,gp,groupsFilter,membersFilter,personalDetailsFilter)
     }).getOrElse(gp)
