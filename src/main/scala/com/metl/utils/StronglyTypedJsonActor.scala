@@ -28,7 +28,7 @@ object JNum{
 
 abstract class StronglyTypedJsonActor extends CometActor with CometListener with Logger {
 	protected val functionDefinitions:List[ClientSideFunction]
-  case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>JValue,returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long)
+  case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>JValue,returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long){}
   object backendActor extends LiftActor {
     override def messageHandler = {
       case afr@AsyncFunctionRequest(funcName,funcArgs,func,resultFunc,returnArguments,params,bonusParams,start) => {
@@ -37,6 +37,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
           Right((output,params,bonusParams))
         } catch {
           case e:Exception => {
+            error("exception in ClientSideFunc : %s(%s)".format(funcName,funcArgs),e)
             Left(e)
           }
         }
@@ -53,7 +54,6 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
                 }
               }
               case Left(e) => {
-                error("exception in ClientSideFunc : %s(%s)".format(name,funcArgs),e)
                 List(JField("error",JString(e.getMessage)))
               }
             }
