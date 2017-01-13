@@ -151,7 +151,9 @@ var Conversation = (function(){
         $(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
         console.log("usergroups",userGroups);
-        sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"ouType":"special","name":conversation.subject}]),"name"),function(item){return item.ouType;}),function(categoryGroups){
+        sharingContainer.html(_.map(_.groupBy(_.uniqBy(_.concat(userGroups,[{"ouType":"special","name":conversation.subject}]),function(g){
+					return "foreignRelationship" in g && "key" in g.foreignRelationship ? sprintf("%s (%s)",g.name,g.foreignRelationship.key) : g.name;
+				}),function(item){return item.ouType;}),function(categoryGroups){
             var rootElem = sharingCategoryTemplate.clone();
 
             var sharingChoiceTemplate = rootElem.find(".conversationSharingChoiceContainer").clone();
@@ -170,8 +172,9 @@ var Conversation = (function(){
                         changeSubjectOfConversation(conversation.jid.toString(),categoryGroup.name);
                     }
                     reRender();
-                }).prop("checked",conversation.subject == categoryGroup.name);
-                choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(categoryGroup.name);
+                }).prop("checked","foreignRelationship" in categoryGroup && "foreignRelationship" in conversation ? conversation.foreignRelationship.key == categoryGroup.foreignRelationship.key && conversation.subject == categoryGroup.name : conversation.subject == categoryGroup.name);
+								var itemName = "foreignRelationship" in categoryGroup && "key" in categoryGroup.foreignRelationship ? sprintf("%s (%s)",categoryGroup.name,categoryGroup.foreignRelationship.key) : categoryGroup.name;
+                choiceRoot.find(".conversationSharingChoiceLabel").attr("for",choiceId).text(itemName);
                 return choiceRoot;
             }));
             var sectionVisible = false;

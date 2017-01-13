@@ -586,7 +586,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       warn("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
-          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/%s".format(lpApiVersion,userId,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
+          val u = userContext.createAuthenticatedUri(baseUrl + bookmark.map(b => "&%s=%s".format(bookMarkTag,b)).getOrElse(""),"GET")
           val url = u.toString
           val respObj = parse(client.get(url))
           val resp = respObj.extract[D2LEnrollmentResponse]
@@ -602,6 +602,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           }
         }
       }
+      trace("found enrolments: %s => %s".format(userId, items)) 
       items
     } catch {
       case e:RetryException => {
