@@ -1,4 +1,5 @@
 MEMBER,TYPE,GROUP
+doug,special,impersonator
 david.hagen,special,superuser
 david.hagen,ou,PHY-222_CA01
 david.hagen,ou,PHY-222_CAO1
