@@ -17,7 +17,7 @@ var Conversations = (function(){
             successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
         };
         var updateBannedVisualState = function(){
-	    $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
+            $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
         };
         return {
             checkIsBanned:function(conversation,freshCheck){
@@ -248,9 +248,9 @@ var Conversations = (function(){
             },1000);
             visible = false;
         }
-	else if(visible){
-	    func();
-	}
+        else if(visible){
+            func();
+        }
     }
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
@@ -311,8 +311,8 @@ var Conversations = (function(){
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":publishingAllowed,
             "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced,
-						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
-						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
+            "studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+            "studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -327,8 +327,8 @@ var Conversations = (function(){
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":oldPerms.studentCanPublish,
             "usersAreCompulsorilySynced":mustFollowTeacher,
-						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
-						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
+            "studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+            "studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -522,17 +522,17 @@ var Conversations = (function(){
                 text:"Export this conversation"
             }));
         }
-				if (Conversations.shouldModifyConversation()){
-					$("#editConversation").unbind("click").click(function(){
-						$.jAlert({
-							title:"edit Conversation",
-							iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
-							width:"100%" 
-						});
-					}).show();
-				} else {
-					$("#editConversation").unbind("click").hide();
-				}
+        if (Conversations.shouldModifyConversation()){
+            $("#editConversation").unbind("click").click(function(){
+                $.jAlert({
+                    title:"Edit Conversation",
+                    iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+                    width:"100%"
+                });
+            }).show();
+        } else {
+            $("#editConversation").unbind("click").hide();
+        }
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
@@ -710,7 +710,7 @@ var Conversations = (function(){
         }
     };
     var helpFunction = function(){
-	showBackstage("help");
+        showBackstage("help");
     }
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
@@ -741,7 +741,7 @@ var Conversations = (function(){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
     }
     var constructHelpButton = function(container){
-	constructSlideButton("helpButton","Help","fa-question-circle",always,container);
+        constructSlideButton("helpButton","Help","fa-question-circle",always,container);
     }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
@@ -794,17 +794,17 @@ var Conversations = (function(){
                     console.log(e);
                 }
             } else if (Conversations.isAuthor() && !suppressSyncMove){
-							var newStanza = {
-								type:"command",
-								author:UserSettings.getUsername(),
-								audiences:[],
-								timestamp:0,
-								command:"/SYNC_MOVE",
-								parameters:[slideId]
-							};
-							console.log("sending:",newStanza);
-							sendStanza(newStanza);
-						}
+                var newStanza = {
+                    type:"command",
+                    author:UserSettings.getUsername(),
+                    audiences:[],
+                    timestamp:0,
+                    command:"/SYNC_MOVE",
+                    parameters:[slideId]
+                };
+                console.log("sending:",newStanza);
+                sendStanza(newStanza);
+            }
         }
         else{
             alert("You must remain on the current page");
@@ -858,7 +858,7 @@ var Conversations = (function(){
                 GroupBuilder.showAddGroupSlideDialog()
             })
             .on("click","#addSlideButton",addSlideFunction)
-						.on("click","#helpButton",helpFunction);
+            .on("click","#helpButton",helpFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
@@ -965,10 +965,10 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
-					var ou = _.cloneDeep(orgUnit);
-					delete ou.groupSets;
-					delete ou.members;
-					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou,"async");
+            var ou = _.cloneDeep(orgUnit);
+            delete ou.groupSets;
+            delete ou.members;
+            getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou,"async");
         });
     }
 }
