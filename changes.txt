@@ -1,6 +1,6 @@
 1.2.3
 
-SLU Only
+SLU Prod Only
 --------
 
 Update config:
@@ -8,6 +8,12 @@ Update config:
 to:
 	<filterNot>
 
+SLU Only
+--------
+
+Remove from config:
+	<d2lGradebook>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
 
 1.1.6
 
