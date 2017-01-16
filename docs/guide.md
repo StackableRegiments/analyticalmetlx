@@ -21,9 +21,9 @@ Throughout the guide there appear breakout boxes of various types:
 
 <div class="warning">Warnings about potential bad practices.</div>
 
-<div class="pedagogy">Links to documented pedagogical support for MeTL activities in the relevant section of <a href="academy-pedagogy.html">Pedagogy</a>.</div>
-
 <div class="example">Links to real-world teaching examples submitted by MeTL users in the relevant section of <a href="academy-examples.html">Teaching Examples</a>.</div>
+
+<div class="pedagogy">Links to documented pedagogical support for MeTL activities in the relevant section of <a href="academy-pedagogy.html">Pedagogy</a>.</div>
 
 ## Conversation Interface
 
