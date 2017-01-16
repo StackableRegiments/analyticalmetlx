@@ -1,3 +1,14 @@
+1.2.3
+
+SLU Only
+--------
+
+Update config:
+	<filter>
+to:
+	<filterNot>
+
+
 1.1.6
 
 SLU Test Only

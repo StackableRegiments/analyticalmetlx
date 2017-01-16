@@ -1,3 +1,14 @@
+1.2.3
+Story: METL-293: "Deeplink this..." buttons should copy link to clipboard.
+Bugfix: METL-489: Deimpersonate endpoint is broken.
+Bugfix: METL-491: Client-side timeout trying to read groups.
+Bugfix: METL-494: Projector should not show chat.
+Bugfix: METL-502: Check filter logic.
+Bugfix: METL-506: Restrict gradeContexts to only courseOfferings.
+Bugfix: METL-507: Smart groups shouldn't show up in editConversation.
+Bugfix: METL-508: groupsProvider shortCircuit if groups returns data in the groupSets call.
+Bugfix: METL-509: Fix the deduplication behaviour on conversations.
+
 1.2.1
 Story: METL-442: Default fontsize applies to new textboxes.
 Bugfix: METL-311: Single word can only be rescaled bigger or smaller by one step.
