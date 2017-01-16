@@ -976,13 +976,21 @@ function receiveGroupSetsForOrgUnit(groupSets){
     Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
-					var ou = _.cloneDeep(groupSets.orgUnit);
-					delete ou.members;
-					delete ou.groupSets;
-					var gs = _.cloneDeep(groupSet);
-					delete gs.members;
-					delete gs.groups;
-					getGroupsForGroupSet(groupSets.groupsProvider,ou,gs,"async");
+            if ("groups" in groupSet && groupSet.groups.length){
+                receiveGroupsForGroupSet({
+                    orgUnit:groupSets.orgUnit,
+                    groupSet:groupSet,
+                    groups:groupSet.groups
+                });
+            } else {
+                var ou = _.cloneDeep(groupSets.orgUnit);
+                delete ou.members;
+                delete ou.groupSets;
+                var gs = _.cloneDeep(groupSet);
+                delete gs.members;
+                delete gs.groups;
+                getGroupsForGroupSet(groupSets.groupsProvider,ou,gs,"async");
+            }
         });
     }
 }

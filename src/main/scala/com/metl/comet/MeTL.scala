@@ -1300,11 +1300,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         trace("receiveLastSyncMove: %s".format(room))
         val history = room.getHistory
         trace("receiveLastSyncMove: %s".format(history))
-        history.getLatestCommands.get("/SYNC_MOVE") match{
+        history.getLatestCommands.get("/SYNC_MOVE") match {
           case Some(lastSyncMove) =>{
             trace("receiveLastSyncMove found move: %s".format(lastSyncMove))
-            val cp = lastSyncMove.commandParameters
-            Call(RECEIVE_SYNC_MOVE,JInt(cp(0).toInt),JString(cp(1).toString))
+            lastSyncMove.commandParameters match {
+              case List(cp0) => Call(RECEIVE_SYNC_MOVE,JInt(cp0.toInt))
+              case List(cp0,cp1) => Call(RECEIVE_SYNC_MOVE,JInt(cp0.toInt),JString(cp1.toString))
+              case _ => Noop
+            }
           }
           case _ =>{
             trace("receiveLastSyncMove no move found")
