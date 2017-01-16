@@ -303,6 +303,7 @@ object MeTLingPot extends Logger {
 class SmartGroupsProvider(override val storeId:String, endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String],groupSize:Int) extends GroupsProvider(storeId) {
   import com.metl.liftAuthenticator._
   override val canQuery:Boolean = true
+  override val canRestrictConversations:Boolean = false
   protected val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
   def client:MetlingPotInputItem = clientFactory.client
 
