@@ -303,7 +303,7 @@ var Grades = (function(){
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
                                                 console(sprintf("error: %s \r\n %s",textStatus,error));
-                                                alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
+																								alert(sprintf("error: %s \r\n %s",textStatus,error));
                                             });
                                         } else {
                                             aNodes.find(".requestAssocPhase4").show();
@@ -327,7 +327,7 @@ var Grades = (function(){
                                                     dataType:'json'
                                                 }).fail(function(jqxhr,textStatus,error){
                                                     spin(aNodes,false);
-                                                    alert(sprintf("error: %s \r\n %s",textStatus,error));
+																										alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
                                                 });
                                             });
                                         }
