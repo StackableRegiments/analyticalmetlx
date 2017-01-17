@@ -501,7 +501,7 @@ $(function(){
     var styleContainer = $("<style></style>").appendTo($("body"));
     _.each(Plugins,function(plugin,label){
         var container = $("<div />",{
-            class:"plugin"
+            class:"plugin translucent"
         });
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);
