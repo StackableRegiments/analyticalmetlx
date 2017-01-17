@@ -2023,6 +2023,7 @@ var Modes = (function(){
                 var thisCurrentImage = state != undefined ? state : currentImage;
                 var renderCanvas = $("<canvas/>");
                 var img = new Image();
+								alert("imageSrc : " + originalSrc.substr(0,40));
 								if (originalSrc.indexOf("data") == 0){
 									// if it's a dataUrl, then don't set crossOrigin of anonymous
 								} else {
