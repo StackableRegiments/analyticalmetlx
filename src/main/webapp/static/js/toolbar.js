@@ -2195,7 +2195,8 @@ var Modes = (function(){
                     var yOffset = 0;
                     var processed = [];
                     var processFile = function(file,sender){
-                        if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+											try {
+                        if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
                             var worldPos = screenToWorld(x,y + yOffset);
                             var thisCurrentImage = {
                                 "type":"imageDefinition",
@@ -2209,11 +2210,20 @@ var Modes = (function(){
                             clientSideProcessImage(sendImageToServer,thisCurrentImage);
                             yOffset += 50;
                         }
+											} catch(e){
+												console.log("could not processFile:",file,sender);
+												alert(sprintf("could not processFile: %s\r\n%s",file,sender));
+											}
                     };
                     _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
                     _.forEach(dataTransfer.items,function(item){
+											try {
                         var file = item.getAsFile(0);
                         processFile(file,"item");
+											} catch(e){
+												console.log("could not get item as file:",e);
+												alert(sprintf("could not get item as file: %s",e));
+											}
                     });
 
                 },
