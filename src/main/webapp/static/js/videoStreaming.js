@@ -36,12 +36,16 @@ var TokBox = (function(){
     };
     var sessionsContainer = undefined;
     var sessionContainer = undefined;
+    var teacherControls = undefined;
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
             sessionsContainer = $("#videoConfSessionsContainer");
+            teacherControls = sessionsContainer.find(".teacherControls").clone();
             sessionContainer = sessionsContainer.find(".videoConfSessionContainer").clone();
             sessionsContainer.empty();
+	    sessionsContainer.append(teacherControls.show());
+	    console.log(teacherControls);
             initialized = true;
         },
         receiveTokBoxSession:receiveTokBoxSessionFunc,
@@ -111,7 +115,7 @@ var TokBoxSession = function(desc,sessionContainer){
         if (Conversations.shouldModifyConversation()){
             permitStudentsToPublishContainer.show();
             permitStudentsToPublishCheckbox.prop("checked",publishingPermitted).unbind("click").on("click",function(){
-		var mayBroadcast = $(this).prop("checked");
+                var mayBroadcast = $(this).prop("checked");
                 if ("Conversations" in window){
                     var conv = Conversations.getCurrentConversation();
                     var perms = conv.permissions;

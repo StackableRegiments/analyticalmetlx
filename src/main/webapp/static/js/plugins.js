@@ -150,15 +150,14 @@ var Plugins = (function(){
             };
 
             return {
-                style:".chatMessage {color:darkgray;}"+
-                    ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
+                style:".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
                     ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
                     ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
                     ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
                     ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
                     ".chatboxContainer input{flex-grow:1;}"+
-                    ".chatbox {background-color:white;color:darkgray; display:inline-block; padding:0px; margin:0px;}"+
-                    ".chatboxSend {display:inline-block; background:white; color:darkgray; padding:0px; margin:0px;}"+
+                    ".chatbox {background-color:white;display:inline-block; padding:0px; margin:0px;}"+
+                    ".chatboxSend {display:inline-block; background:white;padding:0px; margin:0px;}"+
                     ".groupChat {color:darkorange}"+
                     ".whisper {color:darkblue}",
                 load:function(bus,params){
@@ -221,8 +220,8 @@ var Plugins = (function(){
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
                                      '</button>'+
-                                     '<span class="context mr" style="margin-top:0.5em"></span>'+
-                                     '<span style="margin-top:0.4em">'+
+                                     '<span class="context mr"></span>'+
+                                     '<span style="display:none;" class="teacherControls mr">'+
                                      '<input type="checkbox" id="canBroadcast">'+
                                      '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
                                      '</span>'+
@@ -420,7 +419,7 @@ var Plugins = (function(){
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
-						Modes.select.activate();
+                                                Modes.select.activate();
                                                 blit();
                                                 $("#masterFooter").scrollLeft(xOffset);
                                             })).append($("<label />",{
