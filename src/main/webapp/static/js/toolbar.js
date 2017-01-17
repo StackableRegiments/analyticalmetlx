@@ -2144,12 +2144,19 @@ var Modes = (function(){
                     insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
+											console.log("imageFileChoice changed:",e);
+											alert(sprintf("imageFileChoice changed: %s %s %s %s",JSON.stringify(e),JSON.stringify(e.target),JSON.stringify(e.dataTransfer)));
+											try {
                         var files = e.target.files || e.dataTransfer.files;
                         var file = files[0];
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
                         }
                         clientSideProcessImage(sendImageToServer);
+											} catch(ex) {
+												console.log("imageFileChoiceHandleChanged exception:",ex);
+												alert(sprintf("imageFileChoiceHandledChanged exception: %s",JSON.stringify(ex)));
+											}
                     },false);
                     resetImageUpload();
                 }
@@ -2180,6 +2187,8 @@ var Modes = (function(){
                     insertOptions.show();
                 },
                 handleDroppedSrc:function(src,x,y){
+									console.log("handleDroppedSrc:",src,x,y);
+									alert(sprintf("handling dropped src: %s",src,x,y));
                     var worldPos = screenToWorld(x,y);
                     var thisCurrentImage = {
                         "type":"imageDefinition",
@@ -2194,6 +2203,8 @@ var Modes = (function(){
                 handleDrop:function(dataTransfer,x,y){
                     var yOffset = 0;
                     var processed = [];
+										console.log("handling drop:",dataTransfer,x,y);
+										alert(sprintf("handling drop: %s",JSON.stringify(dataTransfer)));
                     var processFile = function(file,sender){
 											try {
                         if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
