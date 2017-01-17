@@ -2023,7 +2023,12 @@ var Modes = (function(){
                 var thisCurrentImage = state != undefined ? state : currentImage;
                 var renderCanvas = $("<canvas/>");
                 var img = new Image();
-                img.setAttribute("crossOrigin","Anonymous");
+								if (originalSrc.indexOf("data") == 0){
+									// if it's a dataUrl, then don't set crossOrigin of anonymous
+								} else {
+									// set cross origin if it's not a dataUrl
+									img.setAttribute("crossOrigin","Anonymous");
+								}
                 img.onerror = function(e){
                     errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly.  You may need to download the image first and then upload it.");
                 };
