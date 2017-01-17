@@ -370,6 +370,12 @@ var GroupBuilder = (function(){
         var groupsV = container.find(".groups");
         renderStrategies(strategySelect);
         renderGroupScopes(groupScopeV);
+	container.find("#randomizeGroups").off("click").on("click",function(){
+	    participants = _.shuffle(participants);
+            clearRandomGroups();
+	    allocate();
+            renderAllocations();
+	});
 
         container.on("change",".groupScope",function(){
             groupScope = $(this).val();
