@@ -2023,7 +2023,6 @@ var Modes = (function(){
                 var thisCurrentImage = state != undefined ? state : currentImage;
                 var renderCanvas = $("<canvas/>");
                 var img = new Image();
-								alert("imageSrc : " + originalSrc.substr(0,40));
 								if (originalSrc.indexOf("data") == 0){
 									// if it's a dataUrl, then don't set crossOrigin of anonymous
 								} else {
@@ -2150,8 +2149,6 @@ var Modes = (function(){
                     insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
-											console.log("imageFileChoice changed:",e);
-											alert(sprintf("imageFileChoice changed: %s %s %s %s",JSON.stringify(e),JSON.stringify(e.target),JSON.stringify(e.dataTransfer)));
 											try {
                         var files = e.target.files || e.dataTransfer.files;
                         var file = files[0];
@@ -2161,7 +2158,6 @@ var Modes = (function(){
                         clientSideProcessImage(sendImageToServer);
 											} catch(ex) {
 												console.log("imageFileChoiceHandleChanged exception:",ex);
-												alert(sprintf("imageFileChoiceHandledChanged exception: %s",JSON.stringify(ex)));
 											}
                     },false);
                     resetImageUpload();
@@ -2194,7 +2190,6 @@ var Modes = (function(){
                 },
                 handleDroppedSrc:function(src,x,y){
 									console.log("handleDroppedSrc:",src,x,y);
-									alert(sprintf("handling dropped src: %s",src,x,y));
                     var worldPos = screenToWorld(x,y);
                     var thisCurrentImage = {
                         "type":"imageDefinition",
@@ -2210,7 +2205,6 @@ var Modes = (function(){
                     var yOffset = 0;
                     var processed = [];
 										console.log("handling drop:",dataTransfer,x,y);
-										alert(sprintf("handling drop: %s",JSON.stringify(dataTransfer)));
                     var processFile = function(file,sender){
 											try {
                         if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
@@ -2229,7 +2223,6 @@ var Modes = (function(){
                         }
 											} catch(e){
 												console.log("could not processFile:",file,sender);
-												alert(sprintf("could not processFile: %s\r\n%s",file,sender));
 											}
                     };
                     _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
@@ -2239,7 +2232,6 @@ var Modes = (function(){
                         processFile(file,"item");
 											} catch(e){
 												console.log("could not get item as file:",e);
-												alert(sprintf("could not get item as file: %s",e));
 											}
                     });
 

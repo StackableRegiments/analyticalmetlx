@@ -825,13 +825,22 @@ $(function(){
     var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
     $("#pasteDialogTemplate").remove();
     var func = function(ev){
+			//console.log("ev",ev,ev.clipboardData,ev.clipboardData.files[0],ev.clipboardData.items[0]);
         var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
         if ("types" in df){
             var x = ev.offsetX || 10;
             var y = ev.offsetY || 10;
-            var availableTypes = df.types;
-            var items = df.items;
-            var files = df.files;
+            var availableTypes = _.filter(df.types,function(t){
+							return t.toLowerCase().startsWith("text") || t.toLowerCase().startsWith("image") || t.toLowerCase().startsWith("file");
+						});
+            var items = _.toArray(df.items);
+            var files = _.toArray(df.files);
+						var newDf = {
+							items:items,
+							files:files,
+							types:availableTypes
+						};
+						console.log("newDf",newDf);
             var dataSets = _.map(availableTypes,function(type){
                 return {
                     key:type,
@@ -844,6 +853,7 @@ $(function(){
                     action(elem,df.getData(elem));
                 };
             };
+						console.log("availableTypes:",availableTypes,items,files);
             if (_.size(availableTypes) > 1){
                 var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
                 var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
@@ -898,7 +908,7 @@ $(function(){
                         name:"files or images",
                         faClass:"fa-file-o",
                         onClick:function(type){
-                            Modes.image.handleDrop(df,x,y);
+                            Modes.image.handleDrop(newDf,x,y);
                         }
                     },
                     {
@@ -906,7 +916,7 @@ $(function(){
                         name:"images",
                         faClass:"fa-file-image-o",
                         onClick:function(type){
-                            Modes.image.handleDrop(df,x,y);
+                            Modes.image.handleDrop(newDf,x,y);
                         }
                     }
                 ];
