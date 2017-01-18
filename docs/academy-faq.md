@@ -126,7 +126,7 @@ Conversations can also be imported from PDFs and Word documents.
 2. Click **Conversations**.
 
 ## How do I select a single item?
-When you click on the [canvas](guide-canvas.html), all content that you own and that intersects the point you clicked will be selected. 
+When you click on the [canvas](guide.html#conversation-interface), all content that you own and that intersects the point you clicked will be selected. 
 To deselect unwanted content, click on the unwanted content in an area where only that content occurs. 
 You may have to do this several times to isolate a single piece of content from other content 
 that has been selected because they overlapped the area that was selected. 

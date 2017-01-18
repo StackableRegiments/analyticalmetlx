@@ -3,7 +3,7 @@ layout: guide
 title: Copy and Paste
 ---
 
-Content may be pasted or drag-and-dropped from the clipboard onto the [canvas](guide-canvas.html).  
+Content may be pasted or drag-and-dropped from the clipboard onto the [canvas](guide.html#conversation-interface).  
 
 ### Limitations
 

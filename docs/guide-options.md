@@ -59,3 +59,9 @@ Send the entire conversation, or specific pages, to a printer.
 
 Deleted text, ink and images are stored in the recycle bin, and can be restored to their original location.
 The conversation owner can see content deleted by all users.
+
+## Help
+
+Provides links to:
+- [Frequently Asked Questions](academy-faq.html)
+- [User Guide](guide.html)
