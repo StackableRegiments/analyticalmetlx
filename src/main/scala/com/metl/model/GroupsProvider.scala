@@ -53,7 +53,7 @@ object GroupsProvider {
           existsDefaultTrue(bg._6,(v:String) => g.name.startsWith(v))
         )
       })
-      new FilteringGroupsProvider(gp.storeId,gp,groupsFilter)
+      new FilteringGroupsProvider(gp.storeId,gp.name,gp,groupsFilter)
     }).getOrElse(gp)
   }
   def constructFromXml(outerNodes:NodeSeq):List[GroupsProvider] = {
@@ -68,13 +68,16 @@ object GroupsProvider {
     } yield {
       val name = (x \ "@name").headOption.map(_.text)
       val n = name.getOrElse("smartGroups_from_%s".format(endpoint))
-      new SmartGroupsProvider(n,endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayKey,groupSize)
+      val id = (x \ "@id").headOption.map(_.text).getOrElse(n)
+      new SmartGroupsProvider(id,n,endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayKey,groupSize)
     }).toList :::
     (for {
       in <- (outerNodes \\ "selfGroups")
     } yield {
       val name = (in \ "@name").headOption.map(_.text)
-      new SelfGroupsProvider(name.getOrElse("selfGroups"))
+      val n = name.getOrElse("selfGroups")
+      val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
+      new SelfGroupsProvider(id,n)
     }).toList ::: 
     (for {
       dNodes <- (outerNodes \\ "d2lGroupsProvider")
@@ -90,7 +93,8 @@ object GroupsProvider {
       val acceptableRoleList:List[Int] = (dNodes \\ "acceptableRoleId").map(_.text.toInt).toList
       val name = (dNodes \\ "@name").headOption.map(_.text)
       val n = name.getOrElse("d2lInteface_to_%s".format(host))
-      possiblyFilter(dNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
+      val id = (dNodes \ "@id").headOption.map(_.text).getOrElse(n)
+      possiblyFilter(dNodes,new D2LGroupsProvider(id,n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
         override protected val acceptableRoleIds = acceptableRoleList
       })
     }).toList ::: 
@@ -101,16 +105,22 @@ object GroupsProvider {
       (in \\ "@format").headOption.toList.flatMap(ho => ho.text match {
         case "stLeo" => {
           (in \\ "@location").headOption.map(_.text).map(loc => {
-            new StLeoFlatFileGroupsProvider(name.getOrElse("SLU_from_%s".format(loc)),loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
+            val n = name.getOrElse("SLU_from_%s".format(loc))
+            val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
+            new StLeoFlatFileGroupsProvider(id,n,loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text),(in \\ "wantsSubgroups").flatMap(n => (n \\ "@username").map(_.text)).toList)
           }).toList
         }
         case "globalOverrides" => {
           (in \\ "@location").headOption.map(_.text).map(loc => {
-            new GlobalOverridesGroupsProvider(name.getOrElse("Globals_from_%s".format(loc)),loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
+            val n = name.getOrElse("Globals_from_%s".format(loc))
+            val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
+            new GlobalOverridesGroupsProvider(id,n,loc,TimeSpanParser.parse((in \\ "@refreshPeriod").text))
           }).toList
         }
         case "adfsGroups" => {
-          List(new ADFSGroupsExtractor(name.getOrElse("ADFS groups")))
+          val n = name.getOrElse("ADFS groups")
+          val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
+          List(new ADFSGroupsExtractor(id,n))
         }
         case "xmlSpecificOverrides" => {
           (for {
@@ -118,7 +128,8 @@ object GroupsProvider {
             period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
           } yield {
             val n = name.getOrElse("xmlUserOverrides_from_%s".format(path))
-            new StoreBackedGroupsProvider(n,
+            val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
+            new StoreBackedGroupsProvider(id,n,
               new PeriodicallyRefreshingGroupStoreProvider(
                 new FileWatchingCachingGroupStoreProvider(
                   new XmlSpecificOverridesGroupStoreProvider(n,path),
@@ -134,7 +145,8 @@ object GroupsProvider {
             period <- (in \\ "@refreshPeriod").headOption.map(p => TimeSpanParser.parse(p.text))
           } yield {
             val n = name.getOrElse("csvUserOverrides_from_%s".format(path))
-            new StoreBackedGroupsProvider(n,
+            val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
+            new StoreBackedGroupsProvider(id,n,
               new PeriodicallyRefreshingGroupStoreProvider(
                 new FileWatchingCachingGroupStoreProvider(
                   new SpecificOverridesGroupStoreProvider(path),
@@ -157,10 +169,11 @@ object GroupsProvider {
           refreshPeriod <- (in \\ "@refreshPeriod").headOption.map(s => TimeSpanParser.parse(s.text))
         } yield {
           val n = name.getOrElse("d2lGroups_from_%s".format(host))
+          val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
           val acceptableRoleList:List[Int] = (in \\ "acceptableRoleId").map(_.text.toInt).toList
           val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(in)
-          val diskCache = new XmlGroupStoreDataFile(n,diskStore)
-          new StoreBackedGroupsProvider(n,
+          val diskCache = new XmlGroupStoreDataFile(id,n,diskStore)
+          new StoreBackedGroupsProvider(id,n,
             new PeriodicallyRefreshingGroupStoreProvider(
               new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
                 override protected val acceptableRoleIds = acceptableRoleList
@@ -201,7 +214,7 @@ object GroupKeys {
 
 
 
-abstract class GroupsProvider(val storeId:String) extends Logger {
+abstract class GroupsProvider(val storeId:String,val name:String) extends Logger {
   val canQuery:Boolean = false
   val canRestrictConversations:Boolean = true
 
@@ -216,13 +229,13 @@ abstract class GroupsProvider(val storeId:String) extends Logger {
   def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
 }
 
-class ADFSGroupsExtractor(override val storeId:String) extends GroupsProvider(storeId) {
+class ADFSGroupsExtractor(override val storeId:String,override val name:String) extends GroupsProvider(storeId,name) {
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = userData.eligibleGroups.toList
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
-class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) extends GroupsProvider(storeId) {
+class PassThroughGroupsProvider(override val storeId:String,override val name:String,gp:GroupsProvider) extends GroupsProvider(storeId,name) {
   override val canQuery:Boolean = gp.canQuery
   override val canRestrictConversations:Boolean = gp.canRestrictConversations
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData)
@@ -235,7 +248,7 @@ class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) e
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
-class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean) extends PassThroughGroupsProvider(storeId,gp) {
+class FilteringGroupsProvider(override val storeId:String,override val name:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean) extends PassThroughGroupsProvider(storeId,name,gp) {
   protected def filterOrgUnit(in:OrgUnit):Boolean = groupsFilter(in)
   override val canQuery:Boolean = gp.canQuery
   override val canRestrictConversations:Boolean = gp.canRestrictConversations
@@ -249,7 +262,7 @@ class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,grou
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
-class StoreBackedGroupsProvider(override val storeId:String,gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider(storeId) {
+class StoreBackedGroupsProvider(override val storeId:String,override val name:String,gs:GroupStoreProvider,usernameOverride:Option[String] = None) extends GroupsProvider(storeId,name) {
   override val canQuery:Boolean = gs.canQuery
   protected def resolveUser(userData:LiftAuthStateData):String = usernameOverride.flatMap(uo => userData.informationGroups.find(_.key == uo).map(_.value)).getOrElse(userData.username)
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)
@@ -588,7 +601,7 @@ class GroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers
   }
 }
 
-class XmlGroupStoreDataFile(storeId:String,diskStorePath:String) extends GroupStoreDataSerializers {
+class XmlGroupStoreDataFile(storeId:String,name:String,diskStorePath:String) extends GroupStoreDataSerializers {
   import scala.xml._
   def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
@@ -612,14 +625,14 @@ class XmlGroupStoreDataFile(storeId:String,diskStorePath:String) extends GroupSt
 
 // original stuff
 
-class SelfGroupsProvider(override val storeId:String) extends GroupsProvider(storeId) {
+class SelfGroupsProvider(override val storeId:String,override val name:String) extends GroupsProvider(storeId,name) {
   override val canQuery:Boolean = false
   override def getGroupsFor(userData:LiftAuthStateData) = List(OrgUnit("special",userData.username))
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
 
-abstract class PeriodicallyRefreshingGroupsProvider[T](override val storeId:String,refreshPeriod:TimeSpan) extends GroupsProvider(storeId) { 
+abstract class PeriodicallyRefreshingGroupsProvider[T](override val storeId:String,override val name:String,refreshPeriod:TimeSpan) extends GroupsProvider(storeId,name) { 
   protected val timespan = refreshPeriod
   protected var lastModified:Long = 0
   protected def startingValue:T
@@ -637,19 +650,19 @@ abstract class PeriodicallyRefreshingGroupsProvider[T](override val storeId:Stri
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = parseStore(userData.username,lastCache)
 }
 
-abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](override val storeId:String,path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[T](storeId,refreshPeriod) { 
+abstract class PeriodicallyRefreshingFileReadingGroupsProvider[T](override val storeId:String,override val name:String,path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingGroupsProvider[T](storeId,name,refreshPeriod) { 
   override def shouldCheck = {
     val newCheck = new java.io.File(path).lastModified()
     newCheck > lastModified
   }
 }
 
-abstract class PerUserFlatFileGroupsProvider(override val storeId:String,path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[Map[String,List[OrgUnit]]](storeId,path,refreshPeriod) {
+abstract class PerUserFlatFileGroupsProvider(override val storeId:String,override val name:String,path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[Map[String,List[OrgUnit]]](storeId,name,path,refreshPeriod) {
   override def startingValue = Map.empty[String,List[OrgUnit]]
   override protected def parseStore(username:String,store:Map[String,List[OrgUnit]]):List[OrgUnit] = store.get(username).getOrElse(Nil)
 }
 
-class GlobalOverridesGroupsProvider(override val storeId:String,path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[List[Tuple2[String,String]]](storeId,path,refreshPeriod) with Logger {
+class GlobalOverridesGroupsProvider(override val storeId:String,override val name:String,path:String,refreshPeriod:TimeSpan) extends PeriodicallyRefreshingFileReadingGroupsProvider[List[Tuple2[String,String]]](storeId,name,path,refreshPeriod) with Logger {
   override val canQuery:Boolean = false
   info("created new globalGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override protected def startingValue = Nil
@@ -669,7 +682,7 @@ class GlobalOverridesGroupsProvider(override val storeId:String,path:String,refr
   }
 }
 
-class StLeoFlatFileGroupsProvider(override val storeId:String,path:String,refreshPeriod:TimeSpan, facultyWhoWantSubgroups:List[String] = List.empty[String]) extends PerUserFlatFileGroupsProvider(storeId,path,refreshPeriod) with Logger {
+class StLeoFlatFileGroupsProvider(override val storeId:String,override val name:String,path:String,refreshPeriod:TimeSpan, facultyWhoWantSubgroups:List[String] = List.empty[String]) extends PerUserFlatFileGroupsProvider(storeId,name,path,refreshPeriod) with Logger {
   info("created new stLeoFlatFileGroupsProvider(%s,%s)".format(path,refreshPeriod))
   override val canQuery:Boolean = false
   override def getOrgUnit(name:String):Option[OrgUnit] = None

@@ -430,8 +430,8 @@ var GroupBuilder = (function(){
         }).appendTo(select);
         _.each(args.groupsProviders,function(provider){
             $("<option />",{
-                text:provider,
-                value:provider
+                text:provider.displayName,
+                value:provider.storeId
             }).appendTo(select);
         });
         select.on("change",function(){

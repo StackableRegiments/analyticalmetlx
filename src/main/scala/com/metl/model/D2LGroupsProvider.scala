@@ -653,7 +653,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
 }
 
-class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends GroupsProvider(storeId){
+class D2LGroupsProvider(override val storeId:String,override val name:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends GroupsProvider(storeId,name){
   val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) 
   override val canQuery:Boolean = true
  

@@ -979,7 +979,7 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
 					var ou = _.cloneDeep(orgUnit);
 					delete ou.groupSets;
 					delete ou.members;
-					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou,"async");
+					getGroupSetsForOrgUnit(orgUnits.groupsProvider.storeId,ou,"async");
         });
     }
 }
@@ -1000,7 +1000,7 @@ function receiveGroupSetsForOrgUnit(groupSets){
                 var gs = _.cloneDeep(groupSet);
                 delete gs.members;
                 delete gs.groups;
-                getGroupsForGroupSet(groupSets.groupsProvider,ou,gs,"async");
+                getGroupsForGroupSet(groupSets.groupsProvider.storeId,ou,gs,"async");
             }
         });
     }

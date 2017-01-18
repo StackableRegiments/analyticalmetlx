@@ -1119,13 +1119,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     },Empty),
     ClientSideFunction("getGroupsProviders",Nil,(args) => {
       JObject(List(
-        JField("groupsProviders",JArray(Globals.getGroupsProviders.filter(_.canQuery).map(gp => JString(gp.storeId))))
+        JField("groupsProviders",JArray(Globals.getGroupsProviders.filter(_.canQuery).map(gp => JObject(List(JField("storeId",JString(gp.storeId)),JField("displayName",JString(gp.name)))))))
       ))
     },Full("receiveGroupsProviders")),
     ClientSideFunction("getOrgUnitsFromGroupProviders",List("storeId"),(args) => {
       val sid = getArgAsString(args(0))
+      val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
       JObject(List(
-        JField("groupsProvider",JString(sid)),
+        JField("groupsProvider",gp),
         JField("orgUnits",JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
           gp.getGroupsFor(Globals.casState.is).map(g => Extraction.decompose(g))
         }).toList))
@@ -1145,8 +1146,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val groupSets = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
         gp.getGroupSetsFor(orgUnit,members).map(gs => Extraction.decompose(gs))
       }).toList)
+      val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
       JObject(List(
-        JField("groupsProvider",JString(sid)),
+        JField("groupsProvider",gp),
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
       ))
@@ -1167,8 +1169,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val groups = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
         gp.getGroupsFor(orgUnit,groupSet,members).map(gs => Extraction.decompose(gs))
       }).toList)
+      val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
       JObject(List(
-        JField("groupsProvider",JString(sid)),
+        JField("groupsProvider",gp),
         JField("orgUnit",orgUnitJValue),
         JField("groupSet",groupSetJValue),
         JField("groups",groups)
