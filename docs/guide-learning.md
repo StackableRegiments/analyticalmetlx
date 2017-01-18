@@ -19,15 +19,15 @@ The teacher can assess students and assign grades.
 
 The conversation owner can attach files to the conversation that users can then download to their own devices.
 
-> This can be used to pass content to students such that they can add it to the [Canvas](guide-canvas.html) as themselves, 
-which gives the user control over the content location (and whether it is private or public).
+<div class="tip">This can be used to pass content to students such that they can add it to the <a href="guide-canvas.html">Canvas</a> as themselves, 
+which gives the user control over the content location (and whether it is private or public).</div>
 
 ## Submissions
 
 The submissions view shows the conversation owner content that users have submitted (including user name). 
 The conversation owner can also choose to display the submission on the next page (without user name).
 
-## Group Builder
+## Group Editor
 
 The teacher can use this screen to move students between [Groups](guide-groups.html).  
 
@@ -42,7 +42,7 @@ This screen also contains the [Word Cloud](guide-word-cloud.html) analysis.
 The content filter allows the conversation owner to hide their own private or public content or that of other users. 
 This action only hides content on the user screen, it does not delete it. 
 
-> Using the content filter while projecting MeTL to the class can temporarily hide student content to focus on instructor content (or vice versa).
+<div class="tip">Using the content filter while projecting MeTL to the class can temporarily hide student content to focus on instructor content (or vice versa).</div>
 
 ## Banned Content
 

@@ -3,11 +3,27 @@ layout: guide
 title: Groups
 ---
 
-A conversation can be split into groups.  This can only be done by the author of the conversation (the teacher).
+The members of a conversation (students) can be organized into groups by the conversation owner (teacher).  If MeTL is integrated with a third-party system that provides class information then the groups can be based on student enrollment into the class to which the conversation is restricted.
 
-The groups will come into existence on a new page, which will appear in the conversation after the teacher's current page.  Each member of the class will be allocated into one and only one group.  The teacher will not be in any group but will be able to see all the content from all of them.
+<div class="tip">Use <code>show me all my enrolled students</code> for group projects that extend over days or weeks so that temporarily absent students may participate.  Use <code>Only show me my participating students</code> for group work that is to be done immediately by the students actually present.</div>
 
-A member of a group can only see content from the other group members and the teacher.
+A group page is created after the teacher's current page, and the students are assigned to groups according to rules selected by the teacher.  Each member of the class will be allocated into one and only one group.  The teacher will not be in any group but will be able to see all the content from all of them.
+
+A member of a group (student) can only see content from the other group members (students) and the teacher.
+
+A single conversation can organize the participants into different groups by creating different group pages.
+
+<div class="pedagogy">
+  <a href="academy-pedagogy.html#learning-in-groups">Learning in Groups</a>,
+  <a href="academy-pedagogy.html#self-selection">Self-Selection</a>,
+  <a href="academy-pedagogy.html#teacher-selection">Teacher-Selection</a>,
+  <a href="academy-pedagogy.html#random-selection">Random-Selection</a>,
+  <a href="academy-pedagogy.html#smart-selection">Smart-Selection</a>
+</div>
+
+<div class="example">
+  <a href="academy-examples.html#prioritizing-the-unit-objectives">Prioritizing the Unit Objectives</a>
+</div>
 
 ## Create Groups
 
@@ -35,7 +51,7 @@ As these groups are toggled for inclusion, they appear on the right hand side of
 
 Only groups from the teacher's Org Units will be made available for inclusion.
 
-Once the teacher has selected the priority for automatic filling and optionally included existing groups, they press "Fill".  A new page is then constructed, in which groups will always apply.  The teacher is taken to that new page.  The conversation is automatically set to "Students must follow" and the students are also automatically taken to the page.  As they arrive, they are allocated unless they already appeared in an external group.
+Once the teacher has selected the priority for automatic filling and optionally included existing groups, they press <code>Fill</code>.  A new page is then constructed, in which groups will always apply.  The teacher is taken to that new page.  The conversation is automatically set to "Students must follow" and the students are also automatically taken to the page.  As they arrive, they are allocated unless they already appeared in an external group.
 
 ## View Groups
 

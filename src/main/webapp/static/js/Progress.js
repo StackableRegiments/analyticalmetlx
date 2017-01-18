@@ -23,6 +23,7 @@ var Progress = (function(){
         onBackstageHide:{},
         onPrivacyChanged:{},
         beforeLeavingSlide:{},
+        beforeChangingAudience:{},
         afterJoiningSlide:{},
         onConversationJoin:{},
         onSelectionChanged:{},

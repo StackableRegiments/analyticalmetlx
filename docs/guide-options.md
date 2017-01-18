@@ -15,20 +15,23 @@ This hides most controls and uses the [content filter](guide-learning.html#conte
 To leave this mode, exit and rejoin the conversation (select `Options` and `Conversations`, 
 then [Join](guide-conversation-search.html#join-a-conversation) the current conversation). 
 
-> Log in as the teacher on both the class PC (that controls the projector) and on your portable device.
->
-> 1. [Join](guide-conversation-search.html#join-a-conversation) the class conversation on the class PC. 
-> 2. Select `Options` and `Project this conversation`. This will project only public content on the projector screen. 
-> 3. [Join](guide-conversation-search.html#join-a-conversation) the same conversation on your portable device.
-This allows you to see your own private content as well as any information that should not be displayed to the students
-(such as student names on submissions).
-> 4. The class PC will follow any navigation performed on your portable device. 
+<div class="tip">
+Log in as the teacher on both the class PC (that controls the projector) and on your portable device.
+
+<ol>
+<li><a href="guide-conversation-search.html#join-a-conversation">Join</a> the class conversation on the class PC.</li> 
+<li>Select <code>Options</code> and <code>Project this conversation</code>. This will project only public content on the projector screen.</li>
+<li><a href="guide-conversation-search.html#join-a-conversation">Join</a> the same conversation on your portable device.
+This allows you to see your own private content as well as any information that should not be displayed to the students (such as student names on submissions).</li>
+<li>The class PC will follow any navigation performed on your portable device.</li>
+</ol>
+</div>
 
 ### Deeplink this conversation 
 
 Update the browser URL bar with a deeplink which, when followed, will join the conversation.
  
-> Deeplink URLs can be copied and sent to students.
+<div class="tip">Deeplink URLs can be copied and sent to students.</div>
 
 ### Deeplink this page
 
@@ -38,7 +41,7 @@ Update the browser URL bar with a deeplink which, when followed, will join the c
 
 Export the conversation to Microsoft OneNote.
  
-> ![Saint Leo University](images/slu-32.png) First set up a OneNote account in Microsoft Office 365 (provided by Saint Leo University).
+<div class="tip"><img src="images/slu-32.png" alt="Saint Leo University"/> First set up a OneNote account in Microsoft Office 365 (provided by Saint Leo University).</div>
 
 ## Conversations
 

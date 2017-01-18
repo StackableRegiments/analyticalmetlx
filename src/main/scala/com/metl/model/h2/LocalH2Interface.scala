@@ -71,7 +71,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     // this starts our pool in advance
     Range(0,Math.min(Math.max(startingPool,0),maxPoolSize)).toList.flatMap(ci => {
       val c = vendor.newConnection(DefaultConnectionIdentifier)
-      println("starting connection: %s => %s".format(ci,c))
+      debug("starting connection: %s => %s".format(ci,c))
       c
     }).foreach(c => {
       vendor.releaseConnection(c)
@@ -285,6 +285,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     val textGradeValues = Stopwatch.time("h2.fetch.textGradeValues",H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)))
     val comms = Stopwatch.time("h2.fetch.commands",H2Command.findAll(By(H2Command.room,jid)))
     val ccs = Stopwatch.time("h2.fetch.ccs",H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)))
+    val undeletedCanvasContents = Stopwatch.time("h2.fetch.undeletedCanvasContents", H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)))
     val unhandled = Stopwatch.time("h2.fetch.stanzas",H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)))
 
     videos.foreach(s => newHistory.addStanza(serializer.toMeTLVideo(s._2,resources.get(s._1).getOrElse(Array.empty[Byte]))))
@@ -316,6 +317,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     numericGradeValues.foreach(s => newHistory.addStanza(serializer.toNumericGradeValue(s)))
     booleanGradeValues.foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s)))
     textGradeValues.foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
+
+    undeletedCanvasContents.foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s)))
 
     newHistory
   })
@@ -383,6 +386,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
       () => H2ChatMessage.findAll(By(H2ChatMessage.room,jid)).foreach(s => newHistory.addStanza(serializer.toChatMessage(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
+      () => H2UndeletedCanvasContent.findAll(By(H2UndeletedCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUndeletedCanvasContent(s))),
       () => H2UnhandledCanvasContent.findAll(By(H2UnhandledCanvasContent.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledCanvasContent(s))),
       () => H2UnhandledStanza.findAll(By(H2UnhandledStanza.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLUnhandledStanza(s))),
       () => H2Grade.findAll(By(H2Grade.room,jid)).foreach(s => newHistory.addStanza(serializer.toGrade(s))),

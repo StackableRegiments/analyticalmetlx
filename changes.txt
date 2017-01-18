@@ -1,3 +1,75 @@
+1.2.3
+
+SLU Prod Only
+--------
+
+Update config:
+	<filter>
+to:
+	<filterNot>
+
+SLU Only
+--------
+
+Remove from config:
+	<d2lGradebook>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+
+1.1.6
+
+SLU Test Only
+-------------
+
+Update config:
+	<d2lGradebook>
+		<acceptableRoleId name="Instructor_Essentials">109</acceptableRoleId>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+		<acceptableRoleId name="Instructor_Savvy">114</acceptableRoleId>
+		<acceptableRoleId name="Instructor_Master">115</acceptableRoleId>
+	</d2lGradebook>
+
+Update config:
+	<d2lGroupsProvider>
+		<acceptableRoleId name="Instructor_Essentials">109</acceptableRoleId>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+		<acceptableRoleId name="Instructor_Savvy">114</acceptableRoleId>
+		<acceptableRoleId name="Instructor_Master">115</acceptableRoleId>
+	</d2lGroupsProvider>
+
+1.1.5
+
+SLU Only
+--------
+
+Update config:
+	<flatFileGroups format="globalOverrides"
+		<filter>
+			<group valuePrefix="SG-"/>
+			<group valuePrefix="SG_"/>
+			<group valuePrefix="Prod_"/>
+		</filter>
+
+1.1.3
+
+SLU Only
+--------
+
+Update config:
+	<d2lGradebook>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+		<acceptableRoleId name="Instructor_1">113</acceptableRoleId>
+		<acceptableRoleId name="Instructor_2">109</acceptableRoleId>
+		<acceptableRoleId name="Instructor_3">114</acceptableRoleId>
+	</d2lGradebook>
+
+Update config:
+	<d2lGroupsProvider>
+		<acceptableRoleId name="Student">110</acceptableRoleId>
+		<acceptableRoleId name="Instructor_1">113</acceptableRoleId>
+		<acceptableRoleId name="Instructor_2">109</acceptableRoleId>
+		<acceptableRoleId name="Instructor_3">114</acceptableRoleId>
+	</d2lGroupsProvider>
+
 1.0.20
 
 SLU Only

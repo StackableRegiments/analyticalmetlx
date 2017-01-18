@@ -85,12 +85,14 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
   protected def httpContext = createHttpContext
   protected val maxRedirects = 20
   protected val maxRetries = 2
+  protected val keepAliveEnabled = true
   private var authorizations:Map[String,(String,String)] = Map.empty[String,(String,String)].withDefault((location) => ("anonymous","unauthorized"))
   protected var cookies = Map.empty[String,Header]
   protected var httpHeaders = {
-    Array[Header](
-      new BasicHeader("Connection","keep-alive")
-    )
+    keepAliveEnabled match {
+      case true => Array[Header](new BasicHeader("Connection","keep-alive"))
+      case false => Array.empty[Header]
+    }
   }
 
   override def setCookies(cook:Map[String,Header]):Unit = cookies = cook
@@ -433,7 +435,34 @@ class CleanHttpClient(connMgr:ClientConnectionManager) extends DefaultHttpClient
   }
 }
 
-object Http{
+object HttpClientProviderConfigurator {
+  import scala.xml._
+  def configureFromXml(in:NodeSeq):HttpClientProvider = {
+    val nodes = (in \\ "httpClientConfiguration").headOption.getOrElse(NodeSeq.Empty)
+    val connectionTimeout = (nodes \\ "@connectionTimeout").headOption.map(_.text.toInt).getOrElse(3600)
+    val keepAliveTimeout = (nodes \\ "@keepAliveTimeout").headOption.map(_.text.toInt).getOrElse(5400)
+    val readTimeout = (nodes \\ "@readTimeout").headOption.map(_.text.toInt).getOrElse(7200000)
+    val maxRedirects = (nodes \\ "@maxRedirects").headOption.map(_.text.toInt).getOrElse(20)
+    val maxRetries = (nodes \\ "@maxRetries").headOption.map(_.text.toInt).getOrElse(2)
+    val keepAliveEnabled = (nodes \\ "@keepAliveEnabled").headOption.map(_.text.toBoolean).getOrElse(true)
+    val maxConnectionsPerRoute = (nodes \\ "@maxConnectionsPerRoute").headOption.map(_.text.toInt).getOrElse(500)
+    val maxConnectionsTotal = (nodes \\ "@maxConnectionsTotal").headOption.map(_.text.toInt).getOrElse(1000)
+    val trustAllHosts = (nodes \\ "@trustAllHosts").headOption.map(_.text.toBoolean).getOrElse(true)
+    new HttpClientProvider(connectionTimeout,keepAliveTimeout,readTimeout,maxRedirects,maxRetries,keepAliveEnabled,maxConnectionsPerRoute,maxConnectionsTotal,trustAllHosts) 
+  }
+}
+
+class HttpClientProvider(
+  connectionTimeout:Int = 3600,
+  keepAliveTimeout:Int = 5400,
+  readTimeout:Int = 7200000,
+  maxRedirects:Int = 20,
+  maxRetries:Int = 2,
+  keepAliveEnabled:Boolean = true,
+  maxConnectionsPerRoute:Int = 500,
+  maxConnectionsTotal:Int = 1000,
+  trustAllHosts:Boolean = true
+){
   private object TrustAllHosts extends HostnameVerifier{
     override def verify(_host:String,_session:SSLSession)= true
   }
@@ -442,6 +471,7 @@ object Http{
     override def checkClientTrusted(certs:Array[X509Certificate], t:String) = ()
     override def checkServerTrusted(certs:Array[X509Certificate], t:String) = ()
   }
+  
   private val getSchemeRegistry = {
     val ssl_ctx = SSLContext.getInstance("TLS")
     val managers = Array[TrustManager](TrustingTrustManager)
@@ -452,33 +482,54 @@ object Http{
     schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory,80))
     schemeRegistry
   }
-  def getConnectionManager = {
-    val connMgr = new ThreadSafeClientConnManager(getSchemeRegistry)
-    connMgr.setDefaultMaxPerRoute(500)
-    connMgr.setMaxTotal(1000)
-    connMgr
-  }
+  protected lazy val trustingDefaultClient = new DefaultHttpClient()
   def getClient = Stopwatch.time("Http.getClient", {
-    new CleanHttpClient(getConnectionManager)
+    val ct = connectionTimeout
+    val kat = keepAliveTimeout
+    val rt = readTimeout
+    val maxRed = maxRedirects
+    val maxRet = maxRetries
+    val kae = keepAliveEnabled
+    val connMgr = trustAllHosts match {
+      case true => {
+        val connMgr = new ThreadSafeClientConnManager(getSchemeRegistry)
+        connMgr.setDefaultMaxPerRoute(maxConnectionsPerRoute)
+        connMgr.setMaxTotal(maxConnectionsTotal)
+        connMgr
+      }
+      case false => {
+        val mgr = trustingDefaultClient.getConnectionManager()
+        //val params = trustingDefaultClient.getParams()
+        //val connMgr = new ThreadSafeClientConnManager(params,mgr.getSchemeRegistry())
+        val connMgr = new ThreadSafeClientConnManager(mgr.getSchemeRegistry())
+        connMgr.setDefaultMaxPerRoute(maxConnectionsPerRoute)
+        connMgr.setMaxTotal(maxConnectionsTotal)
+        connMgr
+      }
+    }
+    new CleanHttpClient(connMgr){
+      override val connectionTimeout = ct
+      override val keepAliveTimeout = kat
+      override val readTimeout = rt
+      override val maxRedirects = maxRed
+      override val maxRetries = maxRet
+      override val keepAliveEnabled = kae
+    }
   })
   def getAuthedClient(username:String,password:String,domain:String = "*") = Stopwatch.time("Http.getAuthedClient", {
-    val client = new CleanHttpClient(getConnectionManager)
+    val client = getClient
     client.addAuthorization(domain,username,password)
     client
   })
   def cloneClient(incoming:CleanHttpClient):CleanHttpClient = Stopwatch.time("Http.cloneClient", {
-    val client = new CleanHttpClient(getConnectionManager)
+    val client = getClient
     client.setCookies(incoming.getCookies)
     client.setHttpHeaders(incoming.getHttpHeaders)
     client
   })
   def getClient(headers:List[(String,String)]):CleanHttpClient = Stopwatch.time("Http.getClient(headers)", {
     val newHeaders = headers.map(tup => new BasicHeader(tup._1,tup._2)).toList
-    val client = new CleanHttpClient(getConnectionManager){
-      override val connectionTimeout = 3600
-      override val keepAliveTimeout = 5400
-      override val readTimeout = 7200000
-    }
+    val client = getClient
     client.setHttpHeaders(newHeaders)
     client
   })

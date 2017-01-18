@@ -431,6 +431,7 @@ var categoryMapping = _.fromPairs(_.flatMap({
 var active = "activeBackstageTab active";
 function showBackstage(id){
     $("html").css("overflow-y","auto");
+    $("#masterFooter").hide();
     window.currentBackstage = id;
     $(".backstage").hide();
     if ("HealthCheckViewer" in window){
@@ -475,6 +476,7 @@ function showBackstage(id){
 }
 function hideBackstage(){
     $("html").css("overflow-y","hidden");
+    $("#masterFooter").show();
     window.currentBackstage = noActiveBackstage;
     $(".backstage-menu").removeClass('active');
     $(".backstage").hide();
@@ -660,15 +662,18 @@ $(function(){
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
         Submissions.reRender();
+        updateActiveMenu($("#menuSubmissions"));
     });
-		$("#gradesButton").on("click",function(){
+    $("#gradesButton").on("click",function(){
         showBackstage("grades");
         Grades.reRender();
-		});
+        updateActiveMenu($("#menuGrades"));
+    });
 
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
         Quizzes.reRender();
+        updateActiveMenu($("#menuPolls"));
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
@@ -804,8 +809,8 @@ $(function(){
         updateActiveMenu(this);
     });
     $('#menuHelp').click(function(){
-	showBackstage("help");
-	updateActiveMenu(this);
+        showBackstage("help");
+        updateActiveMenu(this);
     });
     $("#menuHealthCheck").click(function(){
         showBackstage("healthCheck");
@@ -985,6 +990,19 @@ $(function(){
         } else {
             return false;
         }
+    });
+    new Clipboard('.deeplink', {
+        text: function(trigger) {
+	    /*The native browser will absolutize all hrefs where JQuery would not.  Don't convert this into $.attr*/
+	    var t = $(trigger.nextElementSibling).find("a")[0].href;
+            return t;
+        }
+    }).on("success",function(e){
+        console.log(e);
+        alert("Link copied to clipboard");
+    }).on('error', function(e) {
+        console.error('Action:', e.action);
+        console.error('Trigger:', e.trigger);
     });
     var deadFunc = function(deadEvent){
         deadEvent.preventDefault();

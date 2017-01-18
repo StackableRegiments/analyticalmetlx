@@ -200,24 +200,11 @@ pre code {
     box-shadow: none;
 }
 
-blockquote:before {
-    content: "Tip";
-    font-weight: bold;
-    margin: 0;
-    padding: 0;
-}
-
 blockquote {
-    color: #000;
-    background-color: #F7C85B;
-    margin: 0 0 0 5%;
-    padding: 0 10px 0 10px;
-    border: 1px solid #666;
-    max-width: 55%;
-    /*font-size: 15px;*/
-    /*font-weight: 500;*/
-    /*font-family: 'Advent Pro', sans-serif;*/
-    /*text-shadow: #111 0 0 10px;*/
+    font-size: 15px;
+    font-weight: 500;
+    font-family: 'Advent Pro', sans-serif;
+    text-shadow: #111 0 0 10px;
 }
 
 blockquote p {
@@ -235,8 +222,12 @@ ul {
 }
 
 ol {
-    list-style: decimal inside;
-    padding-left: 20px;
+    list-style: decimal outside;
+    padding-left: 2em;
+}
+
+ol li {
+    margin-bottom: 10px;
 }
 
 dl dt {
@@ -450,8 +441,8 @@ Full-Width Styles - Sidebar
 #sidebar {
     display: block;
     position: absolute;
-    left: -160px;
-    width: 160px;
+    left: -200px;
+    width: 200px;
     background-color: transparent;
     border-right: 1px solid #999999;
 }
@@ -577,6 +568,134 @@ Full-Width Styles - Footer
     font-weight: 200;
     font-family: 'Advent Pro', sans-serif;
     text-shadow: #111 0px 0px 10px;
+}
+
+.text-image {
+    margin-left: 10px;
+    float: right;
+}
+
+.escalation {
+    text-align: right;
+    font-style: italic;
+    font-weight: bold;
+    margin-right: 20px;
+    clear: right;
+}
+
+.attribution {
+    text-align: right;
+    font-style: italic;
+    margin-right: 20px;
+    clear: right;
+}
+
+sup {
+    font-size: 0.75em;
+}
+
+/*******************************************************************************
+Breakout boxes
+*******************************************************************************/
+
+.tip:before {
+    content: "Tip";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.tip {
+    color: #000;
+    background-color: #FFD51D;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.tip img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
+}
+
+.warning:before {
+    content: "Warning!";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.warning {
+    color: #000;
+    background-color: #F7B84B;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.warning img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
+}
+
+.pedagogy:before {
+    content: "Pedagogy";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.pedagogy {
+    color: #000;
+    background-color: #B1B0F0;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.pedagogy img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
+}
+
+.example:before {
+    content: "Example";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.example {
+    color: #000;
+    background-color: #71C090;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.example img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
 }
 
 /*******************************************************************************

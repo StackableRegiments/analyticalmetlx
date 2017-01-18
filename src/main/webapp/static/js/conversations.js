@@ -1,6 +1,4 @@
 var Conversations = (function(){
-    var currentSearchTerm = "";
-    var currentlyDisplayedConversations = [];
     var currentConversation = {};
     var currentServerConfigName = "external";
     var currentSlide = 0;
@@ -8,9 +6,6 @@ var Conversations = (function(){
     var currentTeacherSlide = 0;
     var isSyncedToTeacher = false;
     var currentGroup = [];
-
-    var conversationTemplate = undefined;
-    var conversationSearchListing = undefined;
 
     var BannedState = (function(){
         var haveCheckedBanned = false;
@@ -50,12 +45,6 @@ var Conversations = (function(){
             }
         };
     })();
-    $(function(){
-        //take a template of the html for the searchResultItem
-        conversationSearchListing = $("#searchResults");
-        conversationTemplate = conversationSearchListing.find(".searchResultItem").clone();
-        conversationSearchListing.empty();
-    });
     var ThumbCache = (function(){
         var cacheRefreshTime = 0
         var cache = {};
@@ -302,6 +291,7 @@ var Conversations = (function(){
         constructNextSlideButton(slideControls),
         constructAddSlideButton(slideControls)
         constructAddGroupSlideButton(slideControls)
+        constructHelpButton(slideControls)
         indicateActiveSlide(currentSlide);
         $(".thumbnail:not(.groupSlide)").map(function(){
             var t = $(this);
@@ -428,20 +418,12 @@ var Conversations = (function(){
             }
             updateCurrentConversation(details);
             BannedState.checkIsBanned(details);
-            if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
-                currentlyDisplayedConversations.push(details);
-                refreshConversationSearchResults();
-            }
         }
         catch(e){
             console.log("exception in actOnConversationDetails",e);
             updateStatus(sprintf("FAILED: ReceiveConversationDetails exception: %s",e));
         }
         Progress.call("onLayoutUpdated");
-    };
-    var actOnConversations = function(listOfConversations){
-        currentlyDisplayedConversations = listOfConversations;
-        refreshConversationSearchResults();
     };
     var actOnSyncMove = function(jid){
         console.log("actOn",jid);
@@ -450,7 +432,7 @@ var Conversations = (function(){
                 WorkQueue.enqueue(function(){
                     if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
                         currentTeacherSlide = jid;
-                        doMoveToSlide(jid);
+                        doMoveToSlide(jid,true);
                     }
                     return false;
                 });
@@ -477,13 +459,6 @@ var Conversations = (function(){
             if (next != undefined && "id" in next){
                 doMoveToSlide(next.id.toString());
             }
-        }
-    };
-    var actOnNewConversationDetailsReceived = function(details){
-        if (details.title.indexOf(currentSearchTerm) > -1 || details.author.indexOf(currentSearchTerm) > -1){
-            currentlyDisplayedConversations = _.filter(currentlyDisplayedConversations,function(c){return c.jid != details.jid});
-            currentlyDisplayedConversations.push(details);
-            refreshConversationSearchResults();
         }
     };
     var actOnCurrentConversationJidReceived = function(jid){
@@ -633,21 +608,7 @@ var Conversations = (function(){
                 refreshSlideDisplay();
             }
         }
-        updateCurrentlyDisplayedConversations(details);
     };
-    var updateCurrentlyDisplayedConversations = function(details){
-        currentlyDisplayedConversations = currentlyDisplayedConversations.map(
-            function(conv){
-                if (conv.jid == details.jid){
-                    return details;
-                } else {
-                    return conv;
-                }
-            }
-        )
-        refreshConversationSearchResults();
-    };
-
     var shouldModifyConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
@@ -694,23 +655,6 @@ var Conversations = (function(){
             return true;
         } else {
             return false;
-        }
-    };
-    var refreshConversationSearchResults = function(){
-        try {
-            var convs = _.sortBy(currentlyDisplayedConversations.filter(function(conv){
-                return shouldDisplayConversationFunction(conv);
-            }),function(conv){return new Date(conv.creation);}).reverse().map(constructConversation);
-            var searchResults = $("#searchResults");
-            if (_.size(convs) > 0){
-                searchResults.html(unwrap(convs));
-            }   else {
-                searchResults.html($("<div/>",{
-                    text:"No search results found"
-                }));
-            }
-        } catch(e){
-            console.log("refreshConversationSearchResults",e);
         }
     };
     var constructSlideButton = function(name,label,icon,teacherOnlyFunction,container){
@@ -765,6 +709,9 @@ var Conversations = (function(){
             };
         }
     };
+    var helpFunction = function(){
+	showBackstage("help");
+    }
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
@@ -793,6 +740,9 @@ var Conversations = (function(){
     var constructAddGroupSlideButton = function(container){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
     }
+    var constructHelpButton = function(container){
+	constructSlideButton("helpButton","Help","fa-question-circle",always,container);
+    }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
     }
@@ -815,7 +765,7 @@ var Conversations = (function(){
             document.title = sprintf("MeTL - %s",s.id.toString());
         }
     };
-    var doMoveToSlide = function(slideId){
+    var doMoveToSlide = function(slideId,suppressSyncMove){
         var move = false;
         if(Conversations.isAuthor()){
             move = true;
@@ -843,7 +793,18 @@ var Conversations = (function(){
                 catch(e){
                     console.log(e);
                 }
-            }
+            } else if (Conversations.isAuthor() && !suppressSyncMove){
+							var newStanza = {
+								type:"command",
+								author:UserSettings.getUsername(),
+								audiences:[],
+								timestamp:0,
+								command:"/SYNC_MOVE",
+								parameters:[slideId]
+							};
+							console.log("sending:",newStanza);
+							sendStanza(newStanza);
+						}
         }
         else{
             alert("You must remain on the current page");
@@ -883,50 +844,9 @@ var Conversations = (function(){
         }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
     }
-    var constructConversation = function(conversation){
-        var uniq = function(name){
-            return sprintf("%s_%s",name,conversation.jid);
-        };
-        var jidString = conversation.jid.toString();
-        var newConv = conversationTemplate.clone();
-        newConv.attr("id",uniq("conversation")).on("click",bounceAnd(function(e){
-            var id1 = e.target.parentElement.id;
-            var id2 = e.target.parentElement.parentElement.id;
-            if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
-            targetConversationJid = jidString;
-            var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-            BannedState.reset();
-            hideBackstage();
-            Progress.call("onConversationJoin",[conversation]);
-            doMoveToSlide(firstSlide.id.toString());
-        }));
-        var row1 = newConv.find(".searchResultTopRow");
-        var row2 = newConv.find(".searchResultMiddleRow");
-        var row3 = newConv.find(".teacherConversationTools");
-        row3.attr("id",uniq("extraConversationTools"));
-        newConv.find(".conversationTitle").attr("id",uniq("conversationTitle")).text(conversation.title);
-        newConv.find(".conversationAuthor").text(conversation.author);
-        newConv.find(".conversationSubject").text(conversation.subject);
-        newConv.find(".conversationCreated").text(conversation.created);
-
-        if (shouldModifyConversationFunction(conversation)){
-            newConv.find(".conversationEditButton").attr("id",uniq("conversationEditLink")).attr("href",sprintf("/editConversation?conversationJid=%s",conversation.jid));
-            newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
-            newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
-            newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
-        } else {
-            newConv.find(".teacherConversationTools").remove()
-        }
-        if ("jid" in conversation && targetConversationJid.trim().toLowerCase() == conversation.jid.toString().trim().toLowerCase()){
-            newConv.addClass("activeConversation");
-        }
-        return newConv;
-    }
     var getCurrentGroupFunction = function(){
         return _.clone(currentGroup);
     };
-    Progress.newConversationDetailsReceived["Conversations"] = actOnNewConversationDetailsReceived;
-    Progress.conversationsReceived["Conversations"] = actOnConversations;
     Progress.syncMoveReceived["Conversations"] = actOnSyncMove;
     Progress.conversationDetailsReceived["Conversations"] = actOnConversationDetails;
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
@@ -937,33 +857,11 @@ var Conversations = (function(){
             .on("click","#addGroupSlideButton",function(){
                 GroupBuilder.showAddGroupSlideDialog()
             })
-            .on("click","#addSlideButton",addSlideFunction);
+            .on("click","#addSlideButton",addSlideFunction)
+						.on("click","#helpButton",helpFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
-        });
-        $("#importConversationButton").on("click",bounceAnd(function(){
-            importConversation();
-        }));
-        $("#createConversationButton").on("click",bounceAnd(function(){
-            createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
-        }));
-        $("#myConversationsButton").on("click",bounceAnd(function(){
-            getSearchResult(UserSettings.getUsername());
-        }));
-        $("#searchButton").on("click",bounceAnd(function(){
-            getSearchResult(currentSearchTerm);
-        }));
-        var updateSearchTerm = function(e){
-            currentSearchTerm = this.value;
-            if (e.which == 13){
-                e.stopPropagation();
-                getSearchResult(currentSearchTerm);
-            }
-        };
-        var sfcb = $("#searchForConversationBox");
-        _.forEach(["blur","change","focus","keydown","select"],function(item){
-            sfcb.on(item,updateSearchTerm)
         });
         $("<div />",{
             text:"share",
@@ -1070,7 +968,7 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
 					var ou = _.cloneDeep(orgUnit);
 					delete ou.groupSets;
 					delete ou.members;
-					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou);
+					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou,"async");
         });
     }
 }
@@ -1078,13 +976,21 @@ function receiveGroupSetsForOrgUnit(groupSets){
     Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
-					var ou = _.cloneDeep(groupSets.orgUnit);
-					delete ou.members;
-					delete ou.groupSets;
-					var gs = _.cloneDeep(groupSet);
-					delete gs.members;
-					delete gs.groups;
-					getGroupsForGroupSet(groupSets.groupsProvider,ou,gs);
+            if ("groups" in groupSet && groupSet.groups.length){
+                receiveGroupsForGroupSet({
+                    orgUnit:groupSets.orgUnit,
+                    groupSet:groupSet,
+                    groups:groupSet.groups
+                });
+            } else {
+                var ou = _.cloneDeep(groupSets.orgUnit);
+                delete ou.members;
+                delete ou.groupSets;
+                var gs = _.cloneDeep(groupSet);
+                delete gs.members;
+                delete gs.groups;
+                getGroupsForGroupSet(groupSets.groupsProvider,ou,gs,"async");
+            }
         });
     }
 }
