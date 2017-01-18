@@ -1376,9 +1376,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private def joinConversation(jid:String):Box[Conversation] = {
     val details = serverConfig.detailsOfConversation(jid)
     leaveAllRooms()
-    trace("joinConversation: %s".format(details))
+    debug("joinConversation: %s".format(details))
     if (shouldDisplayConversation(details)){
-      trace("conversation available")
+      debug("conversation available")
       currentConversation = Full(details)
       val conversationJid = details.jid.toString
       tokSessions += ((conversationJid,None))
@@ -1392,7 +1392,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       //joinRoomByJid(conversationJid,"loopback")
       currentConversation
     } else {
-      trace("conversation denied: %s, %s.".format(jid,details.subject))
+      debug("conversation denied: %s, %s.".format(jid,details.subject))
       trace("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty

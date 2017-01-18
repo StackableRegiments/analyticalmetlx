@@ -633,15 +633,16 @@ var Conversations = (function(){
         return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
     };
 		var shouldDisplayConversationFunction = function(details){
-			if (!conversation){
-				conversation = currentConversation;
+			if (!details){
+				details = currentConversation;
 			}
+			var userGroups = UserSettings.getUserGroups();
+			var username = UserSettings.getUsername();
         var subject = details.subject.toLowerCase().trim();
         var title = details.title.toLowerCase().trim();
         var author = details.author;
-        var q = getQueryFunc();
 				var cfr = details.foreignRelationship;
-        return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+        return ((subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
 						var fr = g.foreignRelationship;
             var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
