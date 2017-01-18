@@ -499,13 +499,13 @@ ul.tree {
     float: left;
     margin: 0;
     left: -1.5em;
-    content: "\f055";
+    content: "\f196";
     font-size: 15px;
     font-weight: lighter;
     font-family: FontAwesome;
 }
 
-:checked ~ .tree_label:before { content: "\f056"; }
+:checked ~ .tree_label:before { content: "\f147"; }
 
 /* Bottom left curve */
 .tree_link:before {
@@ -515,8 +515,8 @@ ul.tree {
     display: block;
     height: 0.25em;
     width: 0.5em;
-    border-bottom: 1px solid #777;
-    border-left: 1px solid #777;
+    border-bottom: 1px solid #999999;
+    border-left: 1px solid #999999;
     border-radius: 0 0 0 .3em;
     content: '';
 }
