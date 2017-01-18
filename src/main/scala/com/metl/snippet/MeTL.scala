@@ -29,7 +29,8 @@ class Metl extends Logger {
   }
   def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
     val subject = c.subject.trim.toLowerCase
-    Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:OrgUnit) => ug.name.toLowerCase.trim == subject)) && c != Conversation.empty)
+    var fr = c.foreignRelationship
+    Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:OrgUnit) => ug.name.toLowerCase.trim == subject || fr.exists(fri => ug.foreignRelationship.exists(ufr => ufr.key == fri.key && ufr.system == fri.system)))) && c != Conversation.empty)
   }
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
     (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty

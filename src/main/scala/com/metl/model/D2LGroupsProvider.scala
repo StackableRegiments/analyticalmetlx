@@ -677,7 +677,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
       val enrollmentsDone = new java.util.Date().getTime
       warn("got enrollments: %s %s".format(userData.username,enrollmentsDone - userDone))
       enrollments.filter(_.OrgUnit.Type.Id == 3).map(en => {
-        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
+        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString,en.OrgUnit.Code)))
       })
     })
     val groupsComplete = new java.util.Date().getTime
@@ -687,7 +687,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
   override def getOrgUnit(orgUnitId:String):Option[OrgUnit] = {
     val uc = interface.getUserContext
     interface.getOrgUnit(uc,orgUnitId).map(en => {
-      OrgUnit(en.Type.Name,en.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.Identifier.toString)))
+      OrgUnit(en.Type.Name,en.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.Identifier.toString,en.Code)))
     })
   }
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = {
@@ -718,7 +718,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
           cm.Email.toList.map(un => "Email" -> un) :::
           cm.FirstName.toList.map(un => "FirstName" -> un) :::
           cm.LastName.toList.map(un => "LastName" -> un)).map(t => Detail(t._1,t._2)),
-          foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,cm.Identifier)))
+          foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,cm.Identifier),Some(cm.DisplayName)))
         )
       })
     })
@@ -738,7 +738,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
             name = gs.Name,
             members = members, //I think groupSets always have all the members available in them.  It's groups which have a subset, I think, from D2L.
             groups = Nil,
-            foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,gs.GroupCategoryId.toString)))
+            foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,gs.GroupCategoryId.toString),Some(gs.Name)))
           )
         })
       })
@@ -778,7 +778,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
         groups.map(g => {
           Group("D2L_Group",g.Name,g.Enrollments.flatMap(en => {
             members.find(_.foreignRelationship.exists(fr => fr.system == storeId && fr.key == "%s_%s".format(orgUnitId,en.toString)))
-          }),Some(ForeignRelationship(storeId,"%s_%s_%s".format(orgUnitId,groupSetCategoryId,g.GroupId))))
+          }),Some(ForeignRelationship(storeId,"%s_%s_%s".format(orgUnitId,groupSetCategoryId,g.GroupId),Some(g.Name))))
         })
       })
     })

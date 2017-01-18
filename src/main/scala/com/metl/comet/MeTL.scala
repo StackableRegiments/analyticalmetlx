@@ -446,8 +446,9 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
           key <- newRelationshipKey
           if (sys != null && sys != "")
           if (key != null && key != "")
-            } yield {
-          com.metl.liftAuthenticator.ForeignRelationship(sys,key)
+          newFr <- Globals.casState.is.eligibleGroups.find(g => g.foreignRelationship.exists(fr => fr.key == key && fr.system == sys)).flatMap(_.foreignRelationship)
+        } yield {
+          newFr
         }
         var newC = c.replaceSubject(newSubject).setForeignRelationship(newRelationship)
         serverConfig.updateConversation(c.jid.toString,newC)

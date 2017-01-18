@@ -601,7 +601,7 @@ var Conversations = (function(){
                 if (possibleLocation){
                     doMoveToSlide(possibleLocation.id.toString());
                 } else {
-                    window.location = sprintf("/conversationSearch?q=%s",encodeURIComponent(details.title)); // redirect to the conversation search
+                    window.location = sprintf("/conversationSearch?q=%s&unique=true",encodeURIComponent(details.title)); // redirect to the conversation search
                 }
             }
             if (shouldRefreshSlideDisplay(details)){
@@ -632,26 +632,36 @@ var Conversations = (function(){
         }
         return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
     };
-    var shouldDisplayConversationFunction = function(conversation){
-        if (!conversation){
-            conversation = currentConversation;
-        }
-        var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
-        if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
-            var key = g.key ? g.key : g.type;
+		var shouldDisplayConversationFunction = function(details){
+			if (!conversation){
+				conversation = currentConversation;
+			}
+        var subject = details.subject.toLowerCase().trim();
+        var title = details.title.toLowerCase().trim();
+        var author = details.author;
+        var q = getQueryFunc();
+				var cfr = details.foreignRelationship;
+        return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+						var fr = g.foreignRelationship;
+            var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
-        }))) {
-            return true;
-        } else {
-            return false;
-        }
+						var matches = key == "special" && name == "superuser";
+						if (!matches){
+							if (cfr !== undefined && "key" in cfr && "system" in cfr && fr !== undefined){
+								matches = cfr.key == fr.key && cfr.system == fr.system;
+							}
+						}
+						if (!matches){
+							matches = name.toLowerCase().trim() == subject;
+						}
+						return matches;
+        })));
     };
     var shouldPublishInConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
         }
-        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
+        if(shouldModifyConversationFunction(conversation) || ("permissions" in conversation && "studentCanPublish" in conversation.permissions && conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
             return true;
         } else {
             return false;
