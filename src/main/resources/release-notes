@@ -1,3 +1,12 @@
+1.3.1
+Story: METL-504: Provide a SmartGroups option to force randomization of groups.
+Improvement: METL-518: Enhance GroupBuilder wording.
+Bugfix: METL-462: Format of Students can stream is not quite right.
+Bugfix: METL-483: Edit conversation dialog starts with lowercase e.
+Bugfix: METL-477: When deform handle is to the right of the chat bar it is ungrabbable.
+Bugfix: METL-249: iPads unable to insert image.
+Bugfix: METL-516: Associating a grade with no name gives no warning.
+
 1.2.3
 Story: METL-293: "Deeplink this..." buttons should copy link to clipboard.
 Bugfix: METL-489: Deimpersonate endpoint is broken.
