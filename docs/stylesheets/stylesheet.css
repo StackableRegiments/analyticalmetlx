@@ -447,8 +447,131 @@ Full-Width Styles - Sidebar
     border-right: 1px solid #999999;
 }
 
+/* Tree core styles */
+
+ul.tree {
+    margin: 0.5em 0.5em 0 0;
+    padding: 0;
+}
+
+.tree ul { margin-bottom: 0; }
+
+.tree input {
+    position: absolute;
+    clip: rect(0, 0, 0, 0);
+}
+
+.tree input ~ ul { display: none; }
+
+.tree input:checked ~ ul { display: block; }
+
+/* Tree rows */
+
+.tree li {
+    line-height: 1;
+    position: relative;
+    padding: 0 0 0.5em 0;
+    list-style-type: none;
+}
+
+.tree ul li { padding: 0.5em 0 0 0; }
+
+.tree > li:last-child { padding-bottom: 0; }
+
+/* Tree labels */
+
+.tree_link {
+    position: relative;
+    display: inline-block;
+    background: transparent;
+    color: #212121;
+    font-size: 16px;
+    font-weight: normal;
+    font-family: 'Advent Pro', sans-serif;
+}
+
+.tree_label {
+    cursor: pointer;
+    padding: 0;
+    margin: 0 0 0 -0.8em;
+}
+
+.tree_label:hover { color: #666; }
+
+/* Tree expanded icon */
+
+.tree_label:before {
+    color: #999999;
+    position: relative;
+    z-index: 1;
+    float: left;
+    margin: 0;
+    left: -1.5em;
+    content: "\f055";
+    font-size: 15px;
+    font-weight: lighter;
+    font-family: FontAwesome;
+}
+
+:checked ~ .tree_label:before { content: "\f056"; }
+
+/* Tree branches */
+
+/* Vertical line between peers */
+/*
+.tree li:before {
+    position: absolute;
+    top: -0.2em;
+    bottom: 0;
+    left: -0.5em;
+    display: block;
+    width: 0;
+    border-left: 1px solid #777;
+    content: "";
+}
+*/
+
+/* Bottom left curve */
+/*
+.tree_label:after {
+    position: absolute;
+    top: 0;
+    left: -1.5em;
+    display: block;
+    height: 0.5em;
+    width: 0.5em;
+    border-bottom: 1px solid #777;
+    border-left: 1px solid #777;
+    border-radius: 0 0 0 .3em;
+    content: '';
+}
+
+label.tree_label:after { border-bottom: 0; }
+*/
+/* Top right curve */
+/*
+:checked ~ label.tree_label:after {
+    border-radius: 0 .3em 0 0;
+    border-top: 1px solid #777;
+    border-right: 1px solid #777;
+    border-bottom: 0;
+    border-left: 0;
+    bottom: 0;
+    top: 0.5em;
+    right: 0;
+    height: auto;
+}
+
+.tree li:last-child:before {
+    height: 1em;
+    bottom: auto;
+}
+*/
+.tree > li:last-child:before { display: none; }
+
+
+/*
 #sidebar ul {
-    /*list-style: none;*/
     padding: 0;
     margin: 0;
 }
@@ -457,14 +580,6 @@ Full-Width Styles - Sidebar
     padding-left: 2em;
     text-indent: -.7em;
     display: block;
-}
-
-#sidebar li:before {
-    /*
-    content: " ";
-    padding-right: 0.2em;
-    color: #eee;
-    */
 }
 
 #sidebar li input {
@@ -480,9 +595,6 @@ Full-Width Styles - Sidebar
 }
 
 #sidebar li label {
-    /*background: url(../images/folder-horizontal.png) 15px 1px no-repeat;*/
-    /*content: "F";*/
-    /*color: #DDDDDD;*/
     cursor: pointer;
     display: block;
     padding-left: 37px;
@@ -490,9 +602,7 @@ Full-Width Styles - Sidebar
 
 #sidebar li input + ul {
     background: url(../images/toggle-small-expand.png) 40px 0 no-repeat;
-    /*content: "+";*/
-    /*color: #DDDDDD;*/
-    margin: -0.938em 0 0 -44px; /* 15px */
+    margin: -0.938em 0 0 -44px;
     display: block;
     height: 1em;
 }
@@ -505,27 +615,21 @@ Full-Width Styles - Sidebar
 
 li input:checked + ul {
     background: url(../images/toggle-small.png) 40px 5px no-repeat;
-    margin: -1.25em 0 0 -44px; /* 20px */
+    margin: -1.25em 0 0 -44px;
     padding: 1.563em 0 0 80px;
     height: auto;
 }
 
 li input:checked + ul > li {
     display: block;
-    margin: 0 0 0.125em; /* 2px */
+    margin: 0 0 0.125em;
 }
 
 li input:checked + ul > li:last-child {
-    margin: 0 0 0.063em; /* 1px */
+    margin: 0 0 0.063em;
 }
 
-#sidebar a {
-    color: #212121;
-    font-size: 18px;
-    font-weight: normal;
-    font-family: 'Advent Pro', sans-serif;
-}
-
+*/
 /*******************************************************************************
 Full-Width Styles - Footer
 *******************************************************************************/
