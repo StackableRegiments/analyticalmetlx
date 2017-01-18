@@ -447,8 +447,6 @@ Full-Width Styles - Sidebar
     border-right: 1px solid #999999;
 }
 
-/* Tree core styles */
-
 ul.tree {
     margin: 0.5em 0.5em 0 0;
     padding: 0;
@@ -465,8 +463,6 @@ ul.tree {
 
 .tree input:checked ~ ul { display: block; }
 
-/* Tree rows */
-
 .tree li {
     line-height: 1;
     position: relative;
@@ -477,8 +473,6 @@ ul.tree {
 .tree ul li { padding: 0.5em 0 0 0; }
 
 .tree > li:last-child { padding-bottom: 0; }
-
-/* Tree labels */
 
 .tree_link {
     position: relative;
@@ -498,8 +492,6 @@ ul.tree {
 
 .tree_label:hover { color: #666; }
 
-/* Tree expanded icon */
-
 .tree_label:before {
     color: #999999;
     position: relative;
@@ -515,30 +507,13 @@ ul.tree {
 
 :checked ~ .tree_label:before { content: "\f056"; }
 
-/* Tree branches */
-
-/* Vertical line between peers */
-/*
-.tree li:before {
-    position: absolute;
-    top: -0.2em;
-    bottom: 0;
-    left: -0.5em;
-    display: block;
-    width: 0;
-    border-left: 1px solid #777;
-    content: "";
-}
-*/
-
 /* Bottom left curve */
-/*
-.tree_label:after {
+.tree_link:before {
     position: absolute;
-    top: 0;
-    left: -1.5em;
+    top: 0.25em;
+    left: -1em;
     display: block;
-    height: 0.5em;
+    height: 0.25em;
     width: 0.5em;
     border-bottom: 1px solid #777;
     border-left: 1px solid #777;
@@ -546,90 +521,18 @@ ul.tree {
     content: '';
 }
 
-label.tree_label:after { border-bottom: 0; }
-*/
-/* Top right curve */
-/*
-:checked ~ label.tree_label:after {
-    border-radius: 0 .3em 0 0;
-    border-top: 1px solid #777;
-    border-right: 1px solid #777;
-    border-bottom: 0;
-    border-left: 0;
-    bottom: 0;
-    top: 0.5em;
-    right: 0;
-    height: auto;
+.tree_label .tree_link:before {
+    border: none;
 }
 
-.tree li:last-child:before {
-    height: 1em;
-    bottom: auto;
+.tree > li > .tree_link:before {
+    border: none;
 }
-*/
+
+label.tree_label:after { border-bottom: 0; }
+
 .tree > li:last-child:before { display: none; }
 
-
-/*
-#sidebar ul {
-    padding: 0;
-    margin: 0;
-}
-
-#sidebar li {
-    padding-left: 2em;
-    text-indent: -.7em;
-    display: block;
-}
-
-#sidebar li input {
-    position: absolute;
-    left: 0;
-    margin-left: 0;
-    opacity: 0;
-    z-index: 2;
-    cursor: pointer;
-    height: 1em;
-    width: 1em;
-    top: 0;
-}
-
-#sidebar li label {
-    cursor: pointer;
-    display: block;
-    padding-left: 37px;
-}
-
-#sidebar li input + ul {
-    background: url(../images/toggle-small-expand.png) 40px 0 no-repeat;
-    margin: -0.938em 0 0 -44px;
-    display: block;
-    height: 1em;
-}
-
-#sidebar li input + ul > li {
-    display: none;
-    margin-left: -14px !important;
-    padding-left: 1px;
-}
-
-li input:checked + ul {
-    background: url(../images/toggle-small.png) 40px 5px no-repeat;
-    margin: -1.25em 0 0 -44px;
-    padding: 1.563em 0 0 80px;
-    height: auto;
-}
-
-li input:checked + ul > li {
-    display: block;
-    margin: 0 0 0.125em;
-}
-
-li input:checked + ul > li:last-child {
-    margin: 0 0 0.063em;
-}
-
-*/
 /*******************************************************************************
 Full-Width Styles - Footer
 *******************************************************************************/
