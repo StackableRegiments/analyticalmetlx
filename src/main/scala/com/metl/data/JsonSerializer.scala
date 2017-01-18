@@ -870,8 +870,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
               for {
                 sys <- getOptionalStringByName(jo,"system")
                 key <- getOptionalStringByName(jo,"key")
+                displayName = getOptionalStringByName(jo,"displayName")
               } yield {
-                ForeignRelationship(sys,key)
+                ForeignRelationship(sys,key,displayName)
               }
             }
             case _ => None
@@ -901,7 +902,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("foreignRelationship",JObject(List(
         JField("system",JString(fr.system)),
         JField("key",JString(fr.key))
-      )))
+      ) ::: fr.displayName.toList.map(dn => JField("displayName",JString(dn)))))
     }) ::: parseAudiences(input))
   })
   override def toSlide(i:JValue):Slide = Stopwatch.time("JsonSerializer.toSlide",{
