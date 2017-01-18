@@ -27,7 +27,7 @@ which gives the user control over the content location (and whether it is privat
 The submissions view shows the conversation owner content that users have submitted (including user name). 
 The conversation owner can also choose to display the submission on the next page (without user name).
 
-## Group Builder
+## Group Editor
 
 The teacher can use this screen to move students between [Groups](guide-groups.html).  
 
