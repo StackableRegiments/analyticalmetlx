@@ -443,38 +443,85 @@ Full-Width Styles - Sidebar
     position: absolute;
     left: -200px;
     width: 200px;
-    background-color: transparent;
+    background-color: #f2f2f2;
     border-right: 1px solid #999999;
 }
 
+/* Top level ul */
 ul.tree {
     margin: 0.5em 0.5em 0 0;
     padding: 0;
 }
 
-.tree ul { margin-bottom: 0; }
+/* All other uls */
+.tree ul {
+    margin-bottom: 0;
+    list-style: none;
+    /*padding-left: 1em;*/
+}
 
 .tree input {
     position: absolute;
     clip: rect(0, 0, 0, 0);
 }
 
-.tree input ~ ul { display: none; }
+.tree input ~ ul {
+    display: none;
+}
 
-.tree input:checked ~ ul { display: block; }
+.tree input:checked ~ ul {
+    display: block;
+}
 
 .tree li {
     line-height: 1;
     position: relative;
-    padding: 0 0 0.5em 0;
     list-style-type: none;
 }
 
-.tree ul li { padding: 0.5em 0 0 0; }
+/* Top level links only */
+.tree > li {
+    padding: 0 0 0.5em 1em;
+}
 
-.tree > li:last-child { padding-bottom: 0; }
+.tree ul li {
+    padding: 0.5em 0 0 0;
+    margin: 0 0 0 -0.5em;
+}
 
-.tree_link {
+.tree > li:last-child {
+    padding-bottom: 0;
+}
+
+.tree_label {
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.tree_label:hover {
+    color: #666;
+}
+
+/* Expand / collapse icon */
+.tree_label:before {
+    color: #999999;
+    position: relative;
+    z-index: 1;
+    float: left;
+    margin: 0 0 0 -1em;
+    content: "\f196";
+    font-size: 15px;
+    font-weight: lighter;
+    font-family: FontAwesome;
+}
+
+:checked ~ .tree_label:before {
+    content: "\f147";
+}
+
+/* Visible text formatting */
+.tree_link, .tree_label a {
     position: relative;
     display: inline-block;
     background: transparent;
@@ -484,34 +531,32 @@ ul.tree {
     font-family: 'Advent Pro', sans-serif;
 }
 
-.tree_label {
-    cursor: pointer;
-    padding: 0;
-    margin: 0 0 0 -0.8em;
+li > .tree_link {
+    /*margin: 0 0 0 1em;*/
 }
 
-.tree_label:hover { color: #666; }
-
-.tree_label:before {
+/* Dot */
+/*
+li > .tree_link:before {
     color: #999999;
     position: relative;
     z-index: 1;
     float: left;
-    margin: 0;
-    left: -1.5em;
-    content: "\f196";
-    font-size: 15px;
+    margin: 0 0 0 -1.5em;
+    top: .5em;
+    content: "\f111";
+    font-size: 8px;
     font-weight: lighter;
     font-family: FontAwesome;
 }
-
-:checked ~ .tree_label:before { content: "\f147"; }
+*/
 
 /* Bottom left curve */
+/*
 .tree_link:before {
     position: absolute;
     top: 0.25em;
-    left: -1em;
+    margin: 0 0 0 -1em;
     display: block;
     height: 0.25em;
     width: 0.5em;
@@ -528,10 +573,15 @@ ul.tree {
 .tree > li > .tree_link:before {
     border: none;
 }
+*/
 
-label.tree_label:after { border-bottom: 0; }
+label.tree_label:after {
+    border-bottom: 0;
+}
 
-.tree > li:last-child:before { display: none; }
+.tree > li:last-child:before {
+    display: none;
+}
 
 /*******************************************************************************
 Full-Width Styles - Footer
