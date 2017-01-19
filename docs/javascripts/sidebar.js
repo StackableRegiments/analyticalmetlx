@@ -3,11 +3,12 @@
     var defaultState = {a0: true};
     var sidebar = function () {
         var json = Cookies.getJSON(cookieName);
-        if (!_.isObject(json)) {
+        if (_.isObject(json)) {
+            return json;
+        } else {
             Cookies.set(cookieName, defaultState);
             return defaultState;
         }
-        return json;
     }();
 
     function cookieToCheckbox(checkbox) {
