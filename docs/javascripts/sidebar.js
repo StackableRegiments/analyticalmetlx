@@ -8,7 +8,8 @@
     }();
 
     function clearSidebar() {
-        Cookies.set(cookieName, []);
+        sidebar = [];
+        Cookies.set(cookieName, sidebar);
     }
 
     function cookieToCheckbox(checkbox) {
