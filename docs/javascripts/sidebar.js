@@ -41,4 +41,11 @@ function setExpanded(checkbox) {
     Cookies.set('sidebar', checkedArray);
 }
 
+function checkAllBoxes(container) {
+    $(container).find("input").each(function () {
+        $(this).prop("checked", isExpanded(this));
+        $(this).on("click", setExpanded(this));
+    });
+}
+
 // alert(Cookies.get('sidebar'));
