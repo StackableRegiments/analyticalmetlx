@@ -17,10 +17,12 @@
 
     function checkboxToCookie(checkbox) {
         var id = checkbox.attr('id');
-        if (checkbox.is(':checked'))
+        if (checkbox.is(':checked')) {
             sidebar[id] = true;
-        else
+        }
+        else {
             delete sidebar[id];
+        }
         Cookies.set('sidebar', sidebar);
     }
 
