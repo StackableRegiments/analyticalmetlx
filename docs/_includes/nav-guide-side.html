@@ -1,7 +1,7 @@
 <div id="sidebar">
     <ul class="tree">
         <li>
-            <input type="checkbox" checked="checked" id="a0"/>
+            <input type="checkbox" checked="checked" id="a0" onclick="setExpanded(this);"/>
             <label class="tree_label" for="a0"><a href="{{ site.baseurl }}/guide.html">Introduction</a></label>
             <ul>
                 <li><a class="tree_link" href="{{ site.baseurl }}/guide.html#how-to-use-this-guide">How To Use This Guide</a></li>
@@ -9,7 +9,7 @@
             </ul>
         </li>
         <li>
-            <input type="checkbox" id="a1"/>
+            <input type="checkbox" id="a1" onclick="setExpanded(this);"/>
             <label class="tree_label" for="a1">
                 <a href="{{ site.baseurl }}/guide-conversation-search.html">Conversation Search</a>
             </label>
@@ -21,13 +21,13 @@
             </ul>
         </li>
         <li>
-            <input type="checkbox" id="a2"/>
+            <input type="checkbox" id="a2" onclick="setExpanded(this);"/>
             <label class="tree_label" for="a2">
                 <a href="{{ site.baseurl }}/guide-conversation.html">Conversation</a>
             </label>
             <ul>
                 <li>
-                    <input type="checkbox" id="b1"/>
+                    <input type="checkbox" id="b1" onclick="setExpanded(this);"/>
                     <label class="tree_label" for="b1">
                         <a href="{{ site.baseurl }}/guide-controls.html">Controls</a>
                     </label>
@@ -38,7 +38,7 @@
                         <li><a class="tree_link" href="{{ site.baseurl }}/guide-controls.html#text">Text</a></li>
                         <li><a class="tree_link" href="{{ site.baseurl }}/guide-controls.html#insert">Insert</a></li>
                         <li>
-                            <input type="checkbox" id="c0"/>
+                            <input type="checkbox" id="c0" onclick="setExpanded(this);"/>
                             <label class="tree_label" for="c0">
                                 <a href="{{ site.baseurl }}/guide-controls.html#feedback">Feedback</a>
                             </label>
@@ -57,13 +57,13 @@
                 <li><a class="tree_link" href="{{ site.baseurl }}/guide-word-cloud.html">Word Cloud</a></li>
                 <li><a class="tree_link" href="{{ site.baseurl }}/guide-groups.html">Groups</a></li>
                 <li>
-                    <input type="checkbox" id="b2"/>
+                    <input type="checkbox" id="b2" onclick="setExpanded(this);"/>
                     <label class="tree_label" for="b2">
                         <a href="{{ site.baseurl }}/guide-options.html">Options</a>
                     </label>
                     <ul>
                         <li>
-                            <input type="checkbox" id="c1"/>
+                            <input type="checkbox" id="c1" onclick="setExpanded(this);"/>
                             <label class="tree_label" for="c1">
                                 <a href="{{ site.baseurl }}/guide-options.html">Home</a>
                             </label>
@@ -77,7 +77,7 @@
                             </ul>
                         </li>
                         <li>
-                            <input type="checkbox" id="c2"/>
+                            <input type="checkbox" id="c2" onclick="setExpanded(this);"/>
                             <label class="tree_label" for="c2">
                                 <a href="{{ site.baseurl }}/guide-learning.html">Learning</a>
                             </label>
@@ -93,7 +93,7 @@
                             </ul>
                         </li>
                         <li>
-                            <input type="checkbox" id="c3"/>
+                            <input type="checkbox" id="c3" onclick="setExpanded(this);"/>
                             <label class="tree_label" for="c3">
                                 <a href="{{ site.baseurl }}/guide-settings.html">Settings</a>
                             </label>
@@ -108,3 +108,10 @@
         </li>
     </ul>
 </div>
+
+<script type="application/javascript">
+    $("#sidebar").find("input").each(function()
+    {
+        $(this).prop("checked", isExpanded(this));
+    });
+</script>
