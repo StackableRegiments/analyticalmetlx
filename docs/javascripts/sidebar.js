@@ -12,7 +12,7 @@
     }();
 
     var cookieToCheckbox = function(checkbox) {
-        checkbox.prop("checked", sidebar[checkbox.attr('id')]);
+        checkbox.prop('checked', sidebar[checkbox.attr('id')]);
         return checkbox;
     };
 
@@ -30,13 +30,13 @@
     var checkAllBoxes = function(selector) {
         $(selector).each(function (index, elem) {
             var checkbox = $(elem);
-            cookieToCheckbox(checkbox).on("click", function () {
+            cookieToCheckbox(checkbox).on('click', function () {
                 checkboxToCookie(checkbox);
             });
         });
     };
 
     $(function () {
-        checkAllBoxes("#sidebar input[type=checkbox]")
+        checkAllBoxes('#sidebar input[type=checkbox]')
     });
 })();
