@@ -48,6 +48,4 @@
     $(function () {
         checkAllBoxes("#sidebar input[type=checkbox]")
     });
-
-    // return {clear: clearSidebar};
 })();
