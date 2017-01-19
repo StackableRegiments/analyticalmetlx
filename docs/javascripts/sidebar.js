@@ -6,7 +6,7 @@
     }
 
     function getSidebar() {
-        if (!Array.isArray(Cookies.getJSON(cookieName))) {
+        if (!$.isArray(Cookies.getJSON(cookieName))) {
             clearSidebar();
         }
         return Cookies.getJSON(cookieName);
