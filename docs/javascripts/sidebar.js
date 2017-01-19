@@ -1,39 +1,29 @@
 (function () {
     var cookieName = 'sidebar';
-    var sidebar = function(){
-        if (!$.isArray(Cookies.getJSON(cookieName))) {
-            clearSidebar();
+    var defaultState = {a0: true};
+    var sidebar = function () {
+        var json = Cookies.getJSON(cookieName);
+        if (!_.isObject(json)) {
+            Cookies.set(cookieName, defaultState);
+            return defaultState;
         }
-        return Cookies.getJSON(cookieName);
+        return json;
     }();
 
-    function clearSidebar() {
-        sidebar = [];
-        Cookies.set(cookieName, sidebar);
-    }
-
     function cookieToCheckbox(checkbox) {
-        var id = $(checkbox).attr('id');
-        checkbox.prop("checked", _.find(sidebar, function (item) {
-                return item.name == id && item.value
-            }) != undefined);
+        checkbox.prop("checked", sidebar[checkbox.attr('id')]);
+        console.log( "sidebar", sidebar );
         return checkbox;
     }
 
     function checkboxToCookie(checkbox) {
-        var id = $(checkbox).attr('id');
-        var checked = $(checkbox).is(':checked');
-        var checkedArray = sidebar;
-        var cookie = _.find(checkedArray, function (item) {
-            return item.name == id
-        });
-        if (cookie != undefined) {
-            cookie.value = checked;
-        }
-        else {
-            checkedArray.push({name: id, value: checked});
-        }
-        Cookies.set('sidebar', checkedArray);
+        var id = checkbox.attr('id');
+        if (checkbox.is(':checked'))
+            sidebar[id] = true;
+        else
+            delete sidebar[id];
+        Cookies.set('sidebar', sidebar);
+        console.log( "sidebar", sidebar );
     }
 
     function checkAllBoxes(selector) {
