@@ -3,7 +3,7 @@ function clearSidebar() {
 }
 
 function getSidebar() {
-    if (!Array.isArray(Cookies.getJSON('sidebar'))) {
+    if (!$.isArray(Cookies.getJSON('sidebar'))) {
         clearSidebar();
     }
     return Cookies.getJSON('sidebar');
