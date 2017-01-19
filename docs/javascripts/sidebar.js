@@ -42,9 +42,10 @@ function setExpanded(checkbox) {
 }
 
 function checkAllBoxes(selector) {
-    $(selector).each(function () {
-        $(this).prop("checked", isExpanded(this));
-        $(this).on("click", setExpanded(this));
+    $(selector).each(function (index, elem) {
+        var checkbox = $(elem);
+        checkbox.prop("checked", isExpanded(checkbox));
+        checkbox.on("click", function(){setExpanded(checkbox);});
     });
 }
 
