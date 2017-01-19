@@ -69,8 +69,8 @@ trait ConversationFilter {
     com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted)
   }
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
-    lazy val me = Globals.currentUser.is.toLowerCase.trim
-    lazy val myGroups = Globals.casState.is.eligibleGroups.toList
+    val me = Globals.currentUser.is.toLowerCase.trim
+    val myGroups = Globals.casState.is.eligibleGroups.toList
     in.groupBy(_.jid).flatMap{
       case (jid,result :: _) => Some(result)
       case _ => None
@@ -690,24 +690,18 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
   protected lazy val RECEIVE_ATTENDANCE = "receiveAttendance"
   protected lazy val UPDATE_THUMB = "updateThumb"
-  protected lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
-  protected lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
-  protected lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
-  protected lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
-  protected lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+  
   protected lazy val RECEIVE_KURENTO_ANSWER = "receiveKurentoAnswer"		
   protected lazy val RECEIVE_KURENTO_ICE_CANDIDATE = "receiveKurentoIceCandidate"		
   protected lazy val RECEIVE_KURENTO_CHANNEL_DEFINITION = "receiveKurentoChannelDefinition"
-//  protected val tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
-//  protected val tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
 
   protected var kurentoSessions:List[KurentoUserSession] = Nil
   def kurentoShutdown:Unit = {
   }
   def kurentoStartup:Unit = {
-    KurentoManager.client
+    //KurentoManager.client
   }
-  protected val kurentoClientSideFunctionDefinitions = List(
+  protected lazy val kurentoClientSideFunctionDefinitions = List(
     ClientSideFunction("initiateVideoStream",List("videoType","offer","id"),(args) => {		
        val videoType = getArgAsString(args(0))		
        val offer = getArgAsString(args(1))		
@@ -717,7 +711,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
        matching.foreach(_.shutdown)		
        kurentoSessions = (for {		
          conv <- currentConversation		
-         pipelineName = id//"%s_%s".format(conv.jid,videoType)		
+         pipelineName = id
          pipeline <- getPipeline(pipelineName,videoType)		
        } yield { 		
          val newSession = KurentoUserSession(userUniqueId,this,KurentoOffer(userUniqueId,id,offer))		
@@ -783,92 +777,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   }
 
   override lazy val functionDefinitions = List(
-    /*
-    ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
-      JArray(for {
-        tb <- Globals.tokBox.toList
-        s <- tokSessions.toList.flatMap(_._2)
-        a <- tb.getArchives(s)
-      } yield {
-        JObject(
-          List(
-            JField("id",JString(a.id)),
-            JField("name",JString(a.name))
-          ) :::
-            a.url.toList.map(u => JField("url",JString(u))) :::
-            a.size.toList.map(s => JField("size",JInt(s))) :::
-            a.duration.toList.map(d => JField("size",JInt(d))) :::
-            a.createdAt.toList.map(c => JField("created",JInt(c)))
-        )
-      })
-    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-    ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
-        tb <- Globals.tokBox
-        s <- tokSessions.toList.flatMap(_._2).headOption
-        a <- tb.getArchive(s,id)
-      } yield {
-        Extraction.decompose(a)
-      }).toList)
-    },Full(RECEIVE_TOK_BOX_ARCHIVES)),
-    ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
-      val id = getArgAsString(args(0))
-      JArray((for {
-        tb <- Globals.tokBox
-        s <- tokSessions.toList.flatMap(_._2).headOption
-      } yield {
-        val a = tb.removeArchive(s,id)
-        JObject(List(
-          JField("session",Extraction.decompose(s)),
-          JField("success",JBool(a))
-        ))
-      }).toList)
-    },None),
-    ClientSideFunction("startBroadcast",List("layout"),(args) => {
-      val layout = getArgAsString(args(0))
-        (for {
-          tb <- Globals.tokBox
-          if (shouldModifyConversation())
-          s <- tokSessions.toList.flatMap(_._2).headOption
-          b = tb.startBroadcast(s,layout)
-        } yield {
-          Extraction.decompose(b)
-        }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
-      val id = getArgAsString(args(0))
-      val layout = getArgAsString(args(1))
-        (for {
-          tb <- Globals.tokBox
-          if (shouldModifyConversation())
-          s <- tokSessions.toList.flatMap(_._2).headOption
-          a = tb.updateBroadcast(s,id,layout)
-        } yield {
-          Extraction.decompose(a)
-        }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
-      (for {
-        tb <- Globals.tokBox
-        if (shouldModifyConversation())
-        s <- tokSessions.toList.flatMap(_._2).headOption
-        b <- tb.getBroadcast(s)
-        a = tb.stopBroadcast(s,b.id)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-    ClientSideFunction("getBroadcast",List.empty[String],(args) => {
-      (for {
-        tb <- Globals.tokBox
-        s <- tokSessions.toList.flatMap(_._2).headOption
-        a <- tb.getBroadcast(s)
-      } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
-    },Full(RECEIVE_TOK_BOX_BROADCAST)),
-  */
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs(true))
       JNull
@@ -1363,16 +1271,17 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     })
   }
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
-  private lazy val serverConfig = ServerConfiguration.default
-  private lazy val server = serverConfig.name
+  protected val serverConfig = ServerConfiguration.default
+  protected val server = serverConfig.name
   trace("serverConfig: %s -> %s".format(server,serverConfig))
-  private def username = (for (
+  protected def username = (for (
     nameString <- name;
     user <- com.metl.snippet.Metl.getUserFromName(nameString)
   ) yield {
     user
   }).getOrElse(Globals.currentUser.is)
-  private val serializer = new JsonSerializer(ServerConfiguration.default)
+
+  protected val serializer = new JsonSerializer(ServerConfiguration.default)
   def registerWith = MeTLActorManager
   val scriptContainerId = "scriptContainer_%s".format(nextFuncName)
   override def render = {
@@ -1380,7 +1289,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   }
   def hideLoader:JsCmd = Hide("loadingSpinner")
 
-  override def lowPriority = super.lowPriority orElse metlLowPriority orElse kurentoLowPriority orElse lowPriorityCatchAll
+  override def lowPriority = metlLowPriority orElse kurentoLowPriority orElse super.lowPriority orElse lowPriorityCatchAll
   protected def metlLowPriority:PartialFunction[Any,Unit] = {
     case roomInfo:RoomStateInformation => Stopwatch.time("MeTLActor.lowPriority.RoomStateInformation", updateRooms(roomInfo))
     case metlStanza:MeTLStanza => Stopwatch.time("MeTLActor.lowPriority.MeTLStanza", sendMeTLStanzaToPage(metlStanza))
@@ -1412,6 +1321,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected var isInteractiveUser:Box[Boolean] = Empty
 
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
+    println("localSetup starts: %s".format(name))
     super.localSetup()
     debug("created metlactor: %s => %s".format(name,S.session))
     joinRoomByJid("global")
@@ -1433,6 +1343,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
     })
     kurentoStartup
+    println("localSetup ends: %s".format(name))
     debug("completedWorker: %s".format(name))
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
@@ -1449,6 +1360,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   })
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
   private def refreshClientSideStateJs(refreshDetails:Boolean) = {
+    println("start refreshClientSideState: %s".format(name))
     currentConversation.map(cc => {
       if (!shouldDisplayConversation(cc)){
         warn("refreshClientSideState kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
@@ -1496,47 +1408,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       })
     }
-    /*
-    val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
-    def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
-      val sessionName = tokSessionTup._1
-      val tokSession = tokSessionTup._2
-      (for {
-        cc <- currentConversation
-        tb <- Globals.tokBox
-        role = shouldModifyConversation() match {
-          case true => TokRole.Moderator
-          case false => TokRole.Publisher
-        }
-        session <- synchronized { tokSession.map(s => Some(s)).getOrElse({
-          val newSession = tb.getSessionToken(sessionName,role).left.map(e => {
-            error("exception initializing tokboxSession:",e)
-          }).right.toOption
-          trace("generating tokBox session in %s for: %s %s".format(name,sessionName,newSession))
-          tokSessionCol += ((sessionName,newSession))
-          newSession
-        })
-        }
-      } yield {
-        val j:JsCmd = Call(RECEIVE_TOK_BOX_SESSION_TOKEN,JObject(List(
-          JField("sessionId",JString(session.sessionId)),
-          JField("token",JString(session.token)),
-          JField("apiKey",JInt(session.apiKey))
-        )))
-        j
-      })
-    })
-    val receiveTokBoxSessions:List[Box[JsCmd]] = receiveTokBoxSessionsFunc(tokSessions)
-    val receiveTokBoxSlideSpecificSessions:List[Box[JsCmd]] = receiveTokBoxSessionsFunc(tokSlideSpecificSessions)
-    val receiveTokBoxBroadcast:Box[JsCmd] = (for {
-      tb <- Globals.tokBox
-      s <- tokSessions.toList.flatMap(_._2).headOption
-      a <- tb.getBroadcast(s)
-    } yield {
-      val j:JsCmd = Call(RECEIVE_TOK_BOX_BROADCAST,Extraction.decompose(a))
-      j
-    })
-    */
     trace(receiveLastSyncMove)
     val receiveHistory:Box[JsCmd] = currentSlide.map(cc => Call(RECEIVE_HISTORY,getSlideHistory(cc)))
     val receiveInteractiveUser:Box[JsCmd] = isInteractiveUser.map(iu => Call(RECEIVE_IS_INTERACTIVE_USER,JBool(iu)))
@@ -1551,8 +1422,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     } yield {
       hideLoader
     }
-//    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
     val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,loadComplete)
+    println("end refreshClientSideState: %s".format(name))
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
@@ -1563,22 +1434,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       trace("conversation available")
       currentConversation = Full(details)
       val conversationJid = details.jid.toString
-      //tokSessions += ((conversationJid,None))
       joinRoomByJid(conversationJid)
-      /*
-       if (shouldModifyConversation(username,details)){
-       MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
-       }
-       */
-      //      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
-      //joinRoomByJid(conversationJid,"loopback")
       currentConversation
     } else {
       trace("conversation denied: %s, %s.".format(jid,details.subject))
       trace("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
-      //tokSessions -= details.jid.toString
       reRender
       partialUpdate(RedirectTo(noBoard))
       Empty
@@ -1643,31 +1505,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
         joinRoomByJid(jid)
         joinRoomByJid(jid+username)
-        /*
-        val sessionsToClose = for {
-          sessionTup <- tokSlideSpecificSessions.toList
-          tokSess <- sessionTup._2
-        } yield {
-          tokSess
-        }
-        sessionsToClose.map(tokSess => JString(tokSess.sessionId)) match {
-          case Nil => {}
-          case toClose => {
-            trace("shutting down tokSessions: %s".format(toClose))
-            partialUpdate(Call(REMOVE_TOK_BOX_SESSIONS,JArray(toClose)))
-          }
-        }
-        tokSlideSpecificSessions.clear()
-        tokSlideSpecificSessions ++= (for {
-          slide <- cc.slides
-          if slide.id == slideId
-          groupSet <- slide.groupSet
-          group <- groupSet.groups
-          if (group.members.contains(username) || shouldModifyConversation(cc))
-            } yield {
-          (group.id,None)
-        })
-      */
       }
     })
   }
@@ -2004,32 +1841,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       }
     }
   })
-  /*
-   protected var expectedAttendanceCache:Option[List[Member]] = None
-   def getAttendance = {
-   val expectedAttendance = expectedAttendanceCache.getOrElse({
-   val calced = (for(
-   c <- currentConversation.toList;
-   gp <- Globals.groupsProviders.filter(_.canQuery);
-   ou <- gp.getOrgUnit(c.subject).toList) yield gp.getMembersFor(ou)).flatten
-   expectedAttendanceCache = Some(calced)
-   calced
-   })
-   val actualAttendance = (for(
-   conversation <- currentConversation;
-   room <- rooms.get(server,conversation.jid.toString)) yield {
-   room().getAttendances
-   .filter(_.present)
-   .map(_.author)
-   .distinct
-   .map(JString(_))
-   }).getOrElse(Nil)
-   trace("actualAttendance: %s".format(actualAttendance.toString))
-   currentSlide.map(slideJid => JObject(List(
-   JField("val",JInt(actualAttendance.length)),
-   JField("max",JInt(expectedAttendance.length)))))
-   }
-   */
   private def shouldModifyConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
   private def shouldDisplayConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
   private def shouldPublishInConversation(c:Conversation = currentConversation.getOrElse(Conversation.empty)):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)

@@ -247,7 +247,7 @@ var Plugins = (function(){
                                      '</span>');
                     return container;
                 },
-                initialize:TokBox.initialize
+                initialize:function(){}//TokBox.initialize
             }
         })(),
         "Groups":(function(){
