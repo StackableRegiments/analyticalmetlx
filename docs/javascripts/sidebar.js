@@ -12,7 +12,6 @@
 
     function cookieToCheckbox(checkbox) {
         checkbox.prop("checked", sidebar[checkbox.attr('id')]);
-        console.log( "sidebar", sidebar );
         return checkbox;
     }
 
@@ -23,7 +22,6 @@
         else
             delete sidebar[id];
         Cookies.set('sidebar', sidebar);
-        console.log( "sidebar", sidebar );
     }
 
     function checkAllBoxes(selector) {
