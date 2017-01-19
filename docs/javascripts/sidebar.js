@@ -3,7 +3,7 @@
     var defaultState = {a0: true};
     var sidebar = function () {
         var json = Cookies.getJSON(cookieName);
-        if (_.isObject(json)) {
+        if (json != undefined) {
             return json;
         } else {
             Cookies.set(cookieName, defaultState);
@@ -11,12 +11,12 @@
         }
     }();
 
-    var cookieToCheckbox = function(checkbox) {
+    var cookieToCheckbox = function (checkbox) {
         checkbox.prop('checked', sidebar[checkbox.attr('id')]);
         return checkbox;
     };
 
-    var checkboxToCookie = function(checkbox) {
+    var checkboxToCookie = function (checkbox) {
         var id = checkbox.attr('id');
         if (checkbox.is(':checked')) {
             sidebar[id] = true;
@@ -27,7 +27,7 @@
         Cookies.set(cookieName, sidebar);
     };
 
-    var checkAllBoxes = function(selector) {
+    var checkAllBoxes = function (selector) {
         $(selector).each(function (index, elem) {
             var checkbox = $(elem);
             cookieToCheckbox(checkbox).on('click', function () {
