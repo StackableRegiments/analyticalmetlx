@@ -1,4 +1,4 @@
-(function() {
+(function () {
     var cookieName = 'sidebar';
 
     function clearSidebar() {
@@ -12,21 +12,22 @@
         return Cookies.getJSON(cookieName);
     }
 
-    function isExpanded(checkbox) {
+    function cookieToCheckbox(checkbox) {
         var id = $(checkbox).attr('id');
-
         var sidebar = getSidebar();
         for (var i = 0; i < sidebar.length; i++) {
-            if (sidebar[i].name == id && sidebar[i].value == true)
-                return 'checked';
+            if (sidebar[i].name == id && sidebar[i].value) {
+                checkbox.prop("checked", true);
+                return checkbox;
+            }
         }
-        return '';
+        checkbox.prop("checked", false);
+        return checkbox;
     }
 
-    function setExpanded(checkbox) {
+    function checkboxToCookie(checkbox) {
         var id = $(checkbox).attr('id');
         var checked = $(checkbox).is(':checked');
-
         var found = false;
         var checkedArray = getSidebar();
         for (var i = 0; i < checkedArray.length; i++) {
@@ -46,13 +47,15 @@
     function checkAllBoxes(selector) {
         $(selector).each(function (index, elem) {
             var checkbox = $(elem);
-            checkbox.prop("checked", isExpanded(checkbox)).on("click", function () {
-                setExpanded(checkbox);
+            cookieToCheckbox(checkbox).on("click", function () {
+                checkboxToCookie(checkbox);
             });
         });
     }
 
-    $(function(){checkAllBoxes("#sidebar input[type=checkbox]")});
+    $(function () {
+        checkAllBoxes("#sidebar input[type=checkbox]")
+    });
 
     // return {clear: clearSidebar};
 })();
