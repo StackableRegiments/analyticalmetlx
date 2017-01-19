@@ -1,46 +1,37 @@
 (function () {
     var cookieName = 'sidebar';
+    var sidebar = function(){
+        if (!$.isArray(Cookies.getJSON(cookieName))) {
+            clearSidebar();
+        }
+        return Cookies.getJSON(cookieName);
+    }();
 
     function clearSidebar() {
         Cookies.set(cookieName, []);
     }
 
-    function getSidebar() {
-        if (!$.isArray(Cookies.getJSON(cookieName))) {
-            clearSidebar();
-        }
-        return Cookies.getJSON(cookieName);
-    }
-
     function cookieToCheckbox(checkbox) {
         var id = $(checkbox).attr('id');
-        var sidebar = getSidebar();
-        for (var i = 0; i < sidebar.length; i++) {
-            if (sidebar[i].name == id && sidebar[i].value) {
-                checkbox.prop("checked", true);
-                return checkbox;
-            }
-        }
-        checkbox.prop("checked", false);
+        checkbox.prop("checked", _.find(sidebar, function (item) {
+                return item.name == id && item.value
+            }) != undefined);
         return checkbox;
     }
 
     function checkboxToCookie(checkbox) {
         var id = $(checkbox).attr('id');
         var checked = $(checkbox).is(':checked');
-        var found = false;
-        var checkedArray = getSidebar();
-        for (var i = 0; i < checkedArray.length; i++) {
-            if (checkedArray[i].name == id) {
-                checkedArray[i].value = checked;
-                found = true;
-                break;
-            }
+        var checkedArray = sidebar;
+        var cookie = _.find(checkedArray, function (item) {
+            return item.name == id
+        });
+        if (cookie != undefined) {
+            cookie.value = checked;
         }
-        if (!found) {
+        else {
             checkedArray.push({name: id, value: checked});
         }
-
         Cookies.set('sidebar', checkedArray);
     }
 
