@@ -1,13 +1,15 @@
 (function() {
+    var cookieName = 'sidebar';
+
     function clearSidebar() {
-        Cookies.set('sidebar', []);
+        Cookies.set(cookieName, []);
     }
 
     function getSidebar() {
-        if (!Array.isArray(Cookies.getJSON('sidebar'))) {
+        if (!Array.isArray(Cookies.getJSON(cookieName))) {
             clearSidebar();
         }
-        return Cookies.getJSON('sidebar');
+        return Cookies.getJSON(cookieName);
     }
 
     function isExpanded(checkbox) {
@@ -51,4 +53,6 @@
     }
 
     $(function(){checkAllBoxes("#sidebar input[type=checkbox]")});
+
+    // return {clear: clearSidebar};
 })();
