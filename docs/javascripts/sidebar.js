@@ -24,7 +24,7 @@
         else {
             delete sidebar[id];
         }
-        Cookies.set('sidebar', sidebar);
+        Cookies.set(cookieName, sidebar);
     };
 
     var checkAllBoxes = function(selector) {
