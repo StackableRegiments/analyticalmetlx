@@ -184,23 +184,28 @@ var Grades = (function(){
                                 minTextbox.on("blur",changeMinFunction).attr("id",minId);
                                 maxTextbox.on("blur",changeMaxFunction).attr("id",maxId);
                                 var reRenderGradeTypeOptions = function(){
-																		typeSelect.val(newGrade.gradeType);
-                                    switch (newGrade.gradeType){
-                                    case "numeric":
-                                        innerRoot.find(".numericOptions").show();
-                                        if (newGrade.numericMinimum === undefined){
-                                            newGrade.numericMinimum = 0;
-                                        };
-                                        if (newGrade.numericMaximum === undefined){
-                                            newGrade.numericMaximum = 100;
-                                        };
-                                        minTextbox.val(newGrade.numericMinimum);
-                                        maxTextbox.val(newGrade.numericMaximum);
-                                        break;
-                                    default:
-                                        innerRoot.find(".numericOptions").hide();
-                                        break;
-                                    }
+																	if ("foreignRelationship" in newGrade){
+																		minTextbox.prop("disabled",true);
+																		maxTextbox.prop("disabled",true);
+																		typeSelect.prop("disabled",true);
+																	} 
+																	typeSelect.val(newGrade.gradeType);
+																	switch (newGrade.gradeType){
+																	case "numeric":
+																			innerRoot.find(".numericOptions").show();
+																			if (newGrade.numericMinimum === undefined){
+																					newGrade.numericMinimum = 0;
+																			};
+																			if (newGrade.numericMaximum === undefined){
+																					newGrade.numericMaximum = 100;
+																			};
+																			minTextbox.val(newGrade.numericMinimum);
+																			maxTextbox.val(newGrade.numericMaximum);
+																			break;
+																	default:
+																			innerRoot.find(".numericOptions").hide();
+																			break;
+																	}
                                 };
                                 typeSelect.attr("id",selectId).on("change",function(){
                                     newGrade.gradeType = typeSelect.val();
