@@ -120,11 +120,11 @@ var GroupBuilder = (function(){
     var renderGroupScopes = function(container){
         var subject = Conversations.getCurrentConversation().subject;
         var scopes = [
-            ["all publishers in this conversation","allInHistory"],
-            ["all students here right now","allPresent"]
+            ["anyone who has ever been here","allInHistory"],
+            ["anyone here right now","allPresent"]
         ];
         if(subject != "unrestricted"){
-            scopes.push([sprintf("all students enrolled in %s",subject),"allEnrolled"]);
+            scopes.push([sprintf("anyone enrolled in %s",subject),"allEnrolled"]);
         }
         _.each(scopes,function(params){
             $("<option />",{
@@ -430,7 +430,7 @@ var GroupBuilder = (function(){
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
         var select = $(".jAlert .ouSelector").empty();
         $("<option />",{
-            text:"no starting groups",
+            text:"no groups",
             value:"NONE",
             selected:true
         }).appendTo(select);
