@@ -617,6 +617,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       for {
         sys <- (n \ "@system").headOption.map(_.text)
         key <- (n \ "@key").headOption.map(_.text)
+        displayName = (n \ "@displayName").headOption.map(_.text)
       } yield {
         ForeignRelationship(sys,key)
       }
@@ -640,7 +641,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       //                        <configName>{input.server.name}</configName>,
       fromPermissions(input.permissions)
     ) ::: input.foreignRelationship.toList.map(t => {
-      <foreignRelationship system={t.system} key={t.key} />
+      <foreignRelationship system={t.system} key={t.key} displayName={t.displayName.map(dn => Text(dn))} />
     }))
   })
   override def fromConversationList(input:List[Conversation]):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversationList",{

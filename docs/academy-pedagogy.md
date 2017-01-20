@@ -5,6 +5,8 @@ title: Pedagogy
 
 *"Pedagogy is the discipline that deals with the theory and practice of education; it thus concerns the study of how best to teach."<sup>1</sup>*
 
+Stackable Regiments welcomes submissions of pedagogical research to <a href="mailto:academy@stackableregiments.com">academy@stackableregiments.com</a>, which will be attributed to the provider and their institution (unless they wish to remain anonymous). We reserve the right to not include the submission.
+
 <hr/>
 
 <sup>1</sup> <a href="https://en.wikipedia.org/wiki/Pedagogy" target="_blank">https://en.wikipedia.org/wiki/Pedagogy</a>.
@@ -113,4 +115,18 @@ The observation that teachers who randomly assign students to groups are lazy an
 
 #### Smart-Selection 
 
-Content coming soon.
+Ideally there would be a perfect way to organize students into groups. However, research does not provide a clear answer to how to do that, at least at this time, and there may not be one solution for all occasions.
+
+Grouping students by their similar attributes (homogeneous grouping) or distributing similar students across groups (heterogeneous grouping) are choices the teacher must make (see [Learning in Groups](#learning-in-groups)). If there is no obvious reason to select one over the other then it might be safer to use a random selection procedure.
+
+MeTL can suggest and characterize sets of grouped students to the teacher. It is likely that these suggestions will be more robust for students in more senior years, when the student's strengths and weaknesses are more apparent. It is possible that in the senior years students will be grouped according to inferred high level attributes. For junior students, where less information is available, random selection is not only safer but possibly the fairest and most productive choice.
+
+![Saint Leo University](images/slu-16.png) SLU users can generate random groups in D2L Brightspace and MeTL can import those groups.
+
+Smart-Selection is structured so that teachers will always have some overriding controls, to the point that students can be moved between groups by drag-and-drop at the time of group creation, or any time after using the [Group Editor](guide-learning.html#group-editor).
+
+A common attribute for grouping is by ability, which is usually identified as the grade the students have achieved to date. MeTL intentionally does not provide the option of grouping by grade. Assessing a student's ability is the focus of a vast literature, which might include conceptual understanding, capacity to summarize a process, apply a theory, solve a problem, work collaboratively, etc.
+ 
+Effective characterization of ability is likely to be a composite of all of these kinds of factors. The ultimate goal of Smart-Selection is to employ artificial intelligence to extract the best group allocations so that the teacher does not have to make potentially arbitrary decisions.
+
+In its simplest form MeTL's Smart-Selection engine presents three grouping criteria, which can be applied homogenously or heterogeneously. These are activity level, class enrolment congruence, and response level. These have been deliberately chosen as attributes indicative of process rather than product, and can be derived from very small datasets, bridging the space between the beginning of a new semester and post multiple assessments, when traditional grade based recommendation engines begin to apply.

@@ -180,7 +180,22 @@ var Conversations = (function(){
                 { name:"title", type:"text", title:"Title", readOnly:true },
                 {name:"creation",type:"dateField",title:"Created"},
                 {name:"author",type:"text",title:"Author",readOnly:true},
-                {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true},
+                {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true,itemTemplate:function(subject,conv){
+									var elem = $("<span/>");
+									var ufr = _.find(userGroups,function(g){
+										var gfr = g.foreignRelationship;
+										return "foreignRelationship" in conv && "key" in conv.foreignRelationship && gfr != undefined && "key" in gfr && "system" in gfr && conv.foreignRelationship.key == gfr.key && conv.foreignRelationship.system == gfr.system;
+									});
+									console.log("conv:",conv,ufr);
+									if ("foreignRelationship" in conv && "displayName" in conv.foreignRelationship){
+										elem.text(conv.foreignRelationship.displayName);
+									}	else if (ufr !== undefined && "foreignRelationship" in ufr && "displayName" in ufr.foreignRelationship){
+										elem.text(ufr.foreignRelationship.displayName);
+									} else {
+										elem.text(subject);
+									}
+									return elem;
+								}},
                 {name:"edit",type:"editConversationField",title:"Edit",sorting:false,width:30,css:"gridAction"}
             ]
         });
@@ -257,10 +272,21 @@ var Conversations = (function(){
         var title = details.title.toLowerCase().trim();
         var author = details.author;
         var q = getQueryFunc();
+				var cfr = details.foreignRelationship;
         return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+						var fr = g.foreignRelationship;
             var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
+						var matches = key == "special" && name == "superuser";
+						if (!matches){
+							if (cfr !== undefined && "key" in cfr && "system" in cfr && fr !== undefined){
+								matches = cfr.key == fr.key && cfr.system == fr.system;
+							}
+						}
+						if (!matches){
+							matches = name.toLowerCase().trim() == subject;
+						}
+						return matches;
         })));
     };
 

@@ -300,7 +300,7 @@ object MeTLingPot extends Logger {
   }
 }
 
-class SmartGroupsProvider(override val storeId:String, endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String],groupSize:Int) extends GroupsProvider(storeId) {
+class SmartGroupsProvider(override val storeId:String, override val name:String, endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String],groupSize:Int) extends GroupsProvider(storeId,name) {
   import com.metl.liftAuthenticator._
   override val canQuery:Boolean = true
   override val canRestrictConversations:Boolean = false

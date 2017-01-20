@@ -14,6 +14,7 @@ object ExternalGradebooks {
     (in \\ "d2lGradebook").toList.flatMap(n => {
       for {
         name <- (n \ "@name").headOption.map(_.text)
+        id <- (n \ "@id").headOption.map(_.text)
         d2lBaseUrl <- (n \ "@host").headOption.map(_.text)
         appId <- (n \ "@appId").headOption.map(_.text)
         appKey <- (n \ "@appKey").headOption.map(_.text)
@@ -24,7 +25,7 @@ object ExternalGradebooks {
         acceptableRoleList = (n \\ "acceptableRoleId").toList.map(_.text.toInt)
       } yield {
         val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(n)
-        new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
+        new D2LGradebook(id,name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
           override protected val acceptableRoleIds = acceptableRoleList
         }
       }
@@ -32,7 +33,7 @@ object ExternalGradebooks {
   }
 }
 
-abstract class ExternalGradebook(val name:String) extends TryE with Logger {
+abstract class ExternalGradebook(val id:String,val name:String) extends TryE with Logger {
   def getGradeContexts(username:String = Globals.currentUser.is):Either[Exception,List[OrgUnit]] = Left(notImplemented)
   def getGradeContextClasslist(orgUnitId:String):Either[Exception,List[Map[String,String]]] = Left(notImplemented)
   def getGradesFromContext(context:String):Either[Exception,List[MeTLGrade]] = Left(notImplemented)
@@ -54,7 +55,7 @@ trait TryE {
   }
 }
 
-class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends ExternalGradebook(name){
+class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends ExternalGradebook(id,name){
   import com.d2lvalence.idkeyauth._
   import com.d2lvalence.idkeyauth.implementation._
 
@@ -114,7 +115,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
   }
   protected def toGrade(uc:ID2LUserContext,ctx:String,d2lGos:D2LGradeObject):MeTLGrade = {
     val id = "D2L_%s".format(nextFuncName)
-    val location = "D2L_%s_%s".format(name,ctx)
+    val location = "D2L_%s_%s".format(id,ctx)
     val author = "D2L"
     val visible = false
     val gradeType = d2lGos.GradeType.toLowerCase.trim match {
@@ -122,7 +123,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       case "passfail" => MeTLGradeValueType.Boolean
       case _ => MeTLGradeValueType.Text
     }
-    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (name,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
+    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
   }
   protected def fromGradeValue(uc:ID2LUserContext,in:MeTLGradeValue):D2LIncomingGradeValue = {
     val gradeObjectType = in.getType match {
@@ -173,7 +174,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val d2lUser = lookupD2LUserId(uc,username)
       val enrollments = interface.getEnrollments(uc,d2lUser,acceptableRoleIds)
       enrollments.filter(en => en.OrgUnit.Type.Id == 3 && acceptableRoleIds.contains(en.Role.Id)).map(en => {
-        OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(name,en.OrgUnit.Id.toString)))
+        OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(id,en.OrgUnit.Id.toString)))
       }).toList
     })
   }
@@ -239,7 +240,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = tup._1
       val d2lId = tup._2
       val (orgUnitId:String,gradeId:String) = {
-        val gradeObj = grade.foreignRelationship.filter(_._1 == name).head
+        val gradeObj = grade.foreignRelationship.filter(_._1 == id).head
         val parts = gradeObj._2.split("_").toList
         (parts.head,parts.drop(1).head)
       }

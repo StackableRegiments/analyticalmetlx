@@ -257,16 +257,16 @@ var Grades = (function(){
                                             aNodes.find(".requestAssociation").unbind("click").on("click",function(){
                                                 wantsToAssociate = true;
                                                 if (gradebooks.length == 1){
-                                                    chosenGradebook = gradebooks[0];
+                                                    chosenGradebook = gradebooks[0].id;
                                                 }
                                                 reRenderAssociations();
                                             });
                                         } else if (chosenGradebook == undefined){
-                                            chosenGradebook = gradebooks[0];
+                                            chosenGradebook = gradebooks[0].id;
                                             aNodes.find(".chooseGradebook").html(_.map(gradebooks,function(gb){
                                                 return $("<option/>",{
-                                                    value:gb,
-                                                    text:gb
+                                                    value:gb.id,
+                                                    text:gb.name
                                                 });
                                             })).unbind("change").on("change",function(ev){
                                                 chosenGradebook = $(this).val();
