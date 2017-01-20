@@ -453,8 +453,7 @@ var GroupBuilder = (function(){
                     if (gp == choice){
                         getGroupSetsForOrgUnit(gp,{
                             ouType:"orgUnit",
-                            //name:"displayName" in conv.foreignRelationship ? conv.foreignRelationship.displayName : conv.foreignRelationship.key,
-                            name:conv.foreignRelationship.key,
+                            name:"displayName" in conv.foreignRelationship ? conv.foreignRelationship.displayName : conv.foreignRelationship.key,
                             members:[],
                             groupSets:[],
                             foreignRelationship:{
