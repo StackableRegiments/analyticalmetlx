@@ -1,3 +1,8 @@
+1.3.2
+Improvement: METL-515: Separate displayName to name in groupsProviders and externalGradebook.
+Improvement: METL-520: D2L integration for restrictions should show the D2LOrgUnit.Code in the parens, not the D2LId.
+Bugfix: METL-467: When displaying d2l groups for a restricted conversation, id not group name shown.
+
 1.3.1
 Story: METL-504: Provide a SmartGroups option to force randomization of groups.
 Improvement: METL-518: Enhance GroupBuilder wording.
