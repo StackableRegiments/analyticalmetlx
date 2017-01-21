@@ -113,7 +113,7 @@ var Plugins = (function(){
                     var audiences = [];
                     var context = "";
                     var message = "";
-                    if (text.startsWith("/w")){
+                    if (_.startsWith(text,"/w")){
                         var parts = text.split(" ");
                         if (parts.length && parts.length >= 2){
                             audiences.push({
@@ -126,7 +126,7 @@ var Plugins = (function(){
                         } else {
                             return text;
                         }
-                    } else if (text.startsWith("/g")){
+                    } else if (_.startsWith(text,"/g")){
                         var parts = text.split(" ");
                         if (parts.length && parts.length >= 2){
                             audiences.push({
