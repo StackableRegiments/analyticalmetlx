@@ -9,6 +9,7 @@ var TokBox = (function(){
     var sessions = {}
     var receiveTokBoxSessionFunc = function(desc){
         if (initialized){
+            sessionsContainer.css({display:"flex"});
             var support = OT.checkSystemRequirements();
             if (support == 0){
                 if (!shownError){
@@ -37,52 +38,53 @@ var TokBox = (function(){
     var sessionsContainer = undefined;
     var sessionContainer = undefined;
     var teacherControls = undefined;
-		var permitStudentsToPublishCheckbox = undefined;
-		var publishingPermitted = false;
-		var actOnConversationDetails = function(c){
-			console.log("TokBox conv",c);
-			if (c){
-				publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast);
-				if (teacherControls){
-					if (Conversations.shouldModifyConversation(c)){
-						teacherControls.show();
-						permitStudentsToPublishCheckbox.prop("checked",publishingPermitted).unbind("click").on("click",function(){
-								var mayBroadcast = $(this).prop("checked");
-								if ("Conversations" in window){
-										var conv = Conversations.getCurrentConversation();
-										var perms = conv.permissions;
-										perms.studentsMayBroadcast = mayBroadcast;
-										changePermissionsOfConversation(conv.jid.toString(),perms);
-								}
-						});
-					} else {
-						permitStudentsToPublishCheckbox.unbind("click");
-						teacherControls.hide();
-					}
-				}
-			}
-			_.forEach(sessions,function(s){
-				s.refreshVisualState();
-			});
-		};
+    var permitStudentsToPublishCheckbox = undefined;
+    var publishingPermitted = false;
+    var actOnConversationDetails = function(c){
+        console.log("TokBox conv",c);
+        if (c){
+            publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast);
+            if (teacherControls){
+                if (Conversations.shouldModifyConversation(c)){
+                    teacherControls.show();
+                    permitStudentsToPublishCheckbox.prop("checked",publishingPermitted).unbind("click").on("click",function(){
+                        var mayBroadcast = $(this).prop("checked");
+                        if ("Conversations" in window){
+                            var conv = Conversations.getCurrentConversation();
+                            var perms = conv.permissions;
+                            perms.studentsMayBroadcast = mayBroadcast;
+                            changePermissionsOfConversation(conv.jid.toString(),perms);
+                        }
+                    });
+                } else {
+                    permitStudentsToPublishCheckbox.unbind("click");
+                    teacherControls.hide();
+                }
+            }
+        }
+        _.forEach(sessions,function(s){
+            s.refreshVisualState();
+        });
+    };
 
-		Progress.conversationDetailsReceived["TokBox"] = actOnConversationDetails;
+    Progress.conversationDetailsReceived["TokBox"] = actOnConversationDetails;
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
             sessionsContainer = $("#videoConfSessionsContainer");
             teacherControls = sessionsContainer.find(".teacherControls").clone();
-						permitStudentsToPublishCheckbox = teacherControls.find("#canBroadcast");
+            permitStudentsToPublishCheckbox = teacherControls.find("#canBroadcast");
             sessionContainer = sessionsContainer.find(".videoConfSessionContainer").clone();
             sessionsContainer.empty();
-						sessionsContainer.append(teacherControls);
-						actOnConversationDetails(Conversations.getCurrentConversation());
+            sessionsContainer.append(teacherControls);
+            actOnConversationDetails(Conversations.getCurrentConversation());
             initialized = true;
         },
         receiveTokBoxSession:receiveTokBoxSessionFunc,
+        getTokBoxEnabledState:function(){return enabled},
         setTokBoxEnabledState:setTokBoxEnabledStateFunc,
         removeSessions:removeSessionsFunc,
-				canPublish:function(){ return Conversations.shouldModifyConversation() || publishingPermitted; }
+        canPublish:function(){ return Conversations.shouldModifyConversation() || publishingPermitted; }
     }
 })();
 var TokBoxSession = function(desc,sessionContainer){
@@ -142,7 +144,7 @@ var TokBoxSession = function(desc,sessionContainer){
     var refreshVisualState = function(){
         streamButton.unbind("click");
 
-				console.log("refreshing visual state:",TokBox.canPublish());
+        console.log("refreshing visual state:",TokBox.canPublish());
         if (isConnected() && TokBox.canPublish()){
             streamContainer.show();
             if ("capabilities" in session && "publish" in session.capabilities && session.capabilities.publish == 1){
@@ -448,6 +450,7 @@ function removeTokBoxSessions(sessionIds){
     TokBox.removeSessions(sessionIds);
 }
 function receiveTokBoxEnabled(isEnabled){
+    console.log("TokBox enabled",isEnabled);
     TokBox.setTokBoxEnabledState(isEnabled);
 }
 function receiveTokBoxArchives(archives){

@@ -207,7 +207,7 @@ var Plugins = (function(){
                     " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer, .videoConfPermitStudentBroadcastContainer{display:flex;}"+
                     " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
                     " .videoConfStartButton, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
-                    " #videoConfSessionsContainer{display:flex;}"+
+                    " #videoConfSessionsContainer{display:none;}"+
                     " .videoContainer{display:flex;}"+
                     " .context, .publisherName{font-size:1rem;}"+
                     " .thumbWide{width:160px;}"+

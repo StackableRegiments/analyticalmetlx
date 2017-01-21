@@ -91,13 +91,13 @@ object Globals extends PropertyReader with Logger {
   val importerParallelism = (propFile \\ "importerPerformance").headOption.map(ipn => readAttribute(ipn,"parallelism").toInt).filter(_ > 0).getOrElse(1)
   var isDevMode:Boolean = true
 
-  var tokBox = for {
+  var tokBox = if(liveIntegration) for {
     tbNode <- (propFile \\ "tokBox").headOption
     apiKey <- (tbNode \\ "@apiKey").headOption.map(_.text.toInt)
     secret <- (tbNode \\ "@secret").headOption.map(_.text)
   } yield {
     new TokBox(apiKey,secret)
-  }
+  } else None
 
 
   val liftConfig = (propFile \\ "liftConfiguration")
@@ -119,7 +119,7 @@ object Globals extends PropertyReader with Logger {
   readLong(liftConfig,"cometProcessingTimeout").foreach(cometTimeout => {
     LiftRules.cometProcessingTimeout = cometTimeout //defaults to 5000
   })
-  
+
   readInt(liftConfig,"cometGetTimeout").foreach(cometTimeout => {
     LiftRules.cometGetTimeout = cometTimeout // this defaults to 140000
   })
