@@ -2378,11 +2378,13 @@ var Modes = (function(){
             };
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
+		    console.log("Showing administer");
                     $("#ban").show();
                     $("#ban").removeClass("disabledButton");
                     $("#administerContent").show();
                     $("#administerContent").removeClass("disabledButton");
                 } else {
+		    console.log("Hiding administer");
                     $("#ban").addClass("disabledButton");
                     $("#ban").hide();
                     $("#administerContent").addClass("disabledButton");
@@ -2399,21 +2401,25 @@ var Modes = (function(){
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
             Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+		console.log("Conversation details received in ModesSelect",conversation);
                 if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
                 if (Conversations.shouldModifyConversation(conversation)){
-                    $("#administerContent").unbind("click").bind("click",administerContentFunction);
-                    $("#ban").unbind("click").bind("click",banContentFunction);
+		    console.log("Showing administer");
+                    $("#administerContent").show().unbind("click").bind("click",administerContentFunction);
+                    $("#ban").unbind("click").show().bind("click",banContentFunction);
                 } else {
-                    $("#administerContent").unbind("click");
-                    $("#ban").unbind("click");
+		    console.log("Hiding administer");
+                    $("#administerContent").hide().unbind("click");
+                    $("#ban").hide().unbind("click");
                 }
                 updateAdministerContentVisualState(conversation);
             };
             return {
                 name:"select",
                 isAdministeringContent:function(){return isAdministeringContent;},
+		updateAdministerContentVisualState:updateAdministerContentVisualState,
                 selected:{
                     images:{},
                     texts:{},
@@ -2493,7 +2499,7 @@ var Modes = (function(){
                         }
                     });
                     var threshold = 30;
-                    //$("#administerContent").unbind("click").bind("click",administerContentFunction);
+                    //$("#Administercontent").unbind("click").bind("click",administerContentFunction);
                     //$("#ban").bind("click",banContentFunction);
                     var categories = function(func){
                         func("images");
