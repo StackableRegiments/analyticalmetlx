@@ -11,7 +11,7 @@ A conversation is a collection of pages where teachers and students share conten
 
 Buttons for adding content and modifying conversation settings.
  
-[More...]({{site.baseurl}}/guide-canvas.html#controls)
+[More...]({{site.baseurl}}/guide-controls.html)
 
 ## Options
 
@@ -49,11 +49,11 @@ Displays the current user, name of the conversation and `current page number / t
  
 Canvas content includes:
  
-- Ink: freehand pen strokes (using finger, stylus or mouse as supported by the device)
-- Text: rich text including color, size and style (e.g. bold, underline, italic)  
-- Image / Video: from camera or via upload (as supported by the device and browser)
+- [Ink](guide-controls.html#ink): freehand pen strokes (using finger, stylus or mouse as supported by the device)
+- [Text](guide-controls.html#text): rich text including color, size and style (e.g. bold, underline, italic)  
+- [Image](guide-controls.html#insert) / Video: from camera or via upload (as supported by the device and browser)
 
-[More...]({{site.baseurl}}/guide-canvas.html)
+[More...]({{site.baseurl}}/guide-controls.html)
 
 ## Navigation
 

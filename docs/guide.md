@@ -30,3 +30,4 @@ Throughout the guide there appear breakout boxes of various types:
 ![Conversation](images/guide-conversation.jpg)
 
 This image shows controls available to the conversation owner (teacher).
+
