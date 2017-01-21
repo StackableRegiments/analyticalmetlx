@@ -19,7 +19,7 @@ The teacher can assess students and assign grades.
 
 The conversation owner can attach files to the conversation that users can then download to their own devices.
 
-<div class="tip">This can be used to pass content to students such that they can add it to the <a href="guide-canvas.html">Canvas</a> as themselves, 
+<div class="tip">This can be used to pass content to students such that they can add it to the <a href="guide.html#conversation-interface">Canvas</a> as themselves, 
 which gives the user control over the content location (and whether it is private or public).</div>
 
 ## Submissions

@@ -165,7 +165,7 @@ var Grades = (function(){
                                 var maxTextbox = innerRoot.find(".numericMaxTextbox");
                                 var changeMinFunction = function(ev){
                                     if (newGrade.gradeType == "numeric"){
-                                        newGrade.numericMinimum = parseFloat(maxTextbox.val());
+                                        newGrade.numericMinimum = parseFloat(minTextbox.val());
                                     } else {
                                         delete newGrade.numericMinimum;
                                     }
