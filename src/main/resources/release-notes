@@ -1,3 +1,11 @@
+1.3.4
+Story: METL-524: Associate MeTL grade with existing grade in D2L.
+Improvement: METL-526: Group plugin should support other grade types.
+Bugfix: METL-534: IE can't create a chat message.
+Bugfix: METL-529: Administer Content and Ban buttons initially displayed to students.
+Bugfix: METL-527: "Students can stream" is accessible to students, and has no effect when used by teachers.
+Bugfix: METL-528: Flag stackable.spending does not remove "students can stream" checkbox.
+
 1.3.2
 Improvement: METL-515: Separate displayName to name in groupsProviders and externalGradebook.
 Improvement: METL-520: D2L integration for restrictions should show the D2LOrgUnit.Code in the parens, not the D2LId.
