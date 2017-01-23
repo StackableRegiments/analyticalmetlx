@@ -423,6 +423,20 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val id = getStringByName(input,"id")
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
+        val foreignRelationship = getOptionalObjectByName(input,"foreignRelationship").flatMap(n => {
+          n.value match {
+            case jo:JObject => {
+              for {
+                sys <- getOptionalStringByName(jo,"system")
+                key <- getOptionalStringByName(jo,"key")
+                displayName = getOptionalStringByName(jo,"displayName")
+              } yield {
+                ForeignRelationship(sys,key,displayName)
+              }
+            }
+            case _ => None
+          }
+        })
         MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences)
       }
       case _ => MeTLVideoStream.empty

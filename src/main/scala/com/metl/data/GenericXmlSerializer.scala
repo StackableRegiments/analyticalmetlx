@@ -550,14 +550,27 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val id = getStringByName(input,"identity")
     val deleted = getBooleanByName(input,"deleted")
     val url = (input \ "url").headOption.map(_.text)
-    MeTLVideoStream(config,m.author,id,m.timestamp,url,deleted)
+    val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
+      for {
+        sys <- (n \ "@system").headOption.map(_.text)
+        key <- (n \ "@key").headOption.map(_.text)
+        displayName = (n \ "@displayName").headOption.map(_.text)
+      } yield {
+        ForeignRelationship(sys,key)
+      }
+    })
+    MeTLVideoStream(config,m.author,id,m.timestamp,url,deleted,m.audiences,foreignRelationship)
   })
   override def fromMeTLVideoStream(input:MeTLVideoStream):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLVideoStream",{
     metlContentToXml("videoStream",input,List(
       <identity>{input.id}</identity>,
       <deleted>{input.isDeleted}</deleted>
     ) :::
-      input.url.map(u => List(<url>{u}</url>)).getOrElse(List.empty[Node]))
+      input.url.map(u => List(<url>{u}</url>)).getOrElse(List.empty[Node]) ::: 
+      input.foreignRelationship.toList.map(t => {
+        <foreignRelationship system={t.system} key={t.key} displayName={t.displayName.map(dn => Text(dn))}/>
+      })
+    )
   })
 
   def toQuizOption(input:NodeSeq):QuizOption = Stopwatch.time("GenericXmlSerializer.toMeTLQuizOption",{

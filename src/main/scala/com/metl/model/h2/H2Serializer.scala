@@ -314,10 +314,18 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
       case null | "" => None
       case other => Some(other)
     }
-    MeTLVideoStream(config,c.author,i.identity.get,c.timestamp,url,i.deleted.get,c.audiences)
+    val fr = for {
+      sys <- Some(i.foreignRelationshipSystem.get)
+      if (sys != null && sys != "")
+      key <- Some(i.foreignRelationshipKey.get)
+      if (key != null && key != "")
+    } yield {
+      ForeignRelationship(sys,key)
+    }
+    MeTLVideoStream(config,c.author,i.identity.get,c.timestamp,url,i.deleted.get,c.audiences,fr)
   }
   override def fromMeTLVideoStream(i:MeTLVideoStream):H2VideoStream = {
-    incStanza(H2VideoStream.create,i,"videoStream").partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.isDeleted)
+    incStanza(H2VideoStream.create,i,"videoStream").partialIdentity(i.id.take(H2Constants.identity)).identity(i.id).url(i.url.getOrElse("")).deleted(i.isDeleted).foreignRelationshipSystem(i.foreignRelationship.map(_.system).getOrElse("")).foreignRelationshipKey(i.foreignRelationship.map(_.key).getOrElse(""))
   }
 
   def toSubmission(i:H2Submission):MeTLSubmission = {

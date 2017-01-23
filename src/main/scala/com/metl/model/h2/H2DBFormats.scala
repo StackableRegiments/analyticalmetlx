@@ -276,6 +276,8 @@ class H2VideoStream extends H2MeTLStanza[H2VideoStream]{
   object identity extends MappedMeTLString(this,H2Constants.fullIdentity)
   object url extends MappedMeTLString(this,H2Constants.url)
   object deleted extends MappedBoolean(this)
+  object foreignRelationshipSystem extends MappedMeTLString(this,1024)
+  object foreignRelationshipKey extends MappedMeTLString(this,H2Constants.url)
 }
 object H2VideoStream extends H2VideoStream with LongKeyedMetaMapper[H2VideoStream]{
 }

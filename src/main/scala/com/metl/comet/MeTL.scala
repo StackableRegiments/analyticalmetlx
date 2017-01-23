@@ -613,9 +613,41 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+  protected lazy val RECEIVE_PUBLISH_STARTED = "receivePublishStarted"
   protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
+  protected var runningBroadcasts:scala.collection.mutable.HashMap[String,TokBoxBroadcast] = new scala.collection.mutable.HashMap[String,TokBoxBroadcast]()
+  protected var runningArchives:scala.collection.mutable.HashMap[String,TokBoxArchive] = new scala.collection.mutable.HashMap[String,TokBoxArchive]()
   override lazy val functionDefinitions = List(
+    ClientSideFunction("publishingStarted",List("sessionId"),(args) => {
+      val sessionId = getArgAsString(args(0))
+      (for {
+        tb <- Globals.tokBox
+        s <- tokSessions.find(_.sessionId == sessionId)
+      } yield {
+        try {
+        val a = tb.startArchive(s,None,true)
+        runningArchives += a
+        //val defaultLayout = ""
+        //val b = tb.startBroadcast(s,defaultLayout)
+        //runningBroadcasts += b
+        JObject(
+          List(
+            JField("session",Extraction.decompose(s)),
+//            JField("broadcast",Extraction.decompose(b)),
+            JField("archive",Extraction.decompose(a))
+          )
+        )
+        } catch {
+          case e:Exception => {
+            error("exception while establishing archiving and broadcast: %s".format(sessionId),e)
+            JObject(Nil)  // give a better response to this
+          }
+        }
+      }).getOrElse({
+        JObject(Nil) // give a better response to this
+      })
+    },Full(RECEIVE_PUBLISH_STARTED)),
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
         tb <- Globals.tokBox.toList

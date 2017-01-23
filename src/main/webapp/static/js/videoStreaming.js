@@ -459,6 +459,9 @@ function receiveTokBoxArchives(archives){
 function receiveTokBoxBroadcast(broadcast){
     //TokBox.receiveBroadcast(broadcast);
 }
+function receivePublishStarted(publishInfo){
+	console.log("publish started",publishInfo);
+}
 //injected by lift
 //function getTokBoxToken(id){}
 //function getTokBoxArchives(){}
