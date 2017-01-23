@@ -120,11 +120,11 @@ var GroupBuilder = (function(){
     var renderGroupScopes = function(container){
         var subject = Conversations.getCurrentConversation().subject;
         var scopes = [
-            ["all publishers in this conversation","allInHistory"],
-            ["all students here right now","allPresent"]
+            ["anyone who has ever been here","allInHistory"],
+            ["anyone here right now","allPresent"]
         ];
         if(subject != "unrestricted"){
-            scopes.push([sprintf("all students enrolled in %s",subject),"allEnrolled"]);
+            scopes.push([sprintf("anyone enrolled in %s",subject),"allEnrolled"]);
         }
         _.each(scopes,function(params){
             $("<option />",{
@@ -370,6 +370,12 @@ var GroupBuilder = (function(){
         var groupsV = container.find(".groups");
         renderStrategies(strategySelect);
         renderGroupScopes(groupScopeV);
+	container.find("#randomizeGroups").off("click").on("click",function(){
+	    participants = _.shuffle(participants);
+            clearRandomGroups();
+	    allocate();
+            renderAllocations();
+	});
 
         container.on("change",".groupScope",function(){
             groupScope = $(this).val();
@@ -424,14 +430,14 @@ var GroupBuilder = (function(){
     Progress.groupProvidersReceived["GroupBuilder"] = function(args){
         var select = $(".jAlert .ouSelector").empty();
         $("<option />",{
-            text:"no starting groups",
+            text:"no groups",
             value:"NONE",
             selected:true
         }).appendTo(select);
         _.each(args.groupsProviders,function(provider){
             $("<option />",{
-                text:provider,
-                value:provider
+                text:provider.displayName,
+                value:provider.storeId
             }).appendTo(select);
         });
         select.on("change",function(){
@@ -447,7 +453,7 @@ var GroupBuilder = (function(){
                     if (gp == choice){
                         getGroupSetsForOrgUnit(gp,{
                             ouType:"orgUnit",
-                            name:conv.foreignRelationship.key,
+                            name:"displayName" in conv.foreignRelationship ? conv.foreignRelationship.displayName : conv.foreignRelationship.key,
                             members:[],
                             groupSets:[],
                             foreignRelationship:{

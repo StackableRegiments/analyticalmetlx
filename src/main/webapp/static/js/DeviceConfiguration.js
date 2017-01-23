@@ -25,7 +25,7 @@ var DeviceConfiguration = (function(){
         slides:false,
         header:false,
         keyboard:false,
-				footer:false
+        footer:false
     };
     var setSectionVisibility = function(section,visible){
         if (allowShowingChrome){
@@ -187,7 +187,7 @@ var DeviceConfiguration = (function(){
             var thumbs = $(".thumbnail");
             var slideControls = comp("#slideControls");
 
-						var masterFooter = comp("#masterFooter");
+            var masterFooter = comp("#masterFooter");
 
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
@@ -209,6 +209,9 @@ var DeviceConfiguration = (function(){
                     tools.hide();
                     toolsColumn.hide();
                 }
+                if(Modes.currentMode == Modes.select){
+                    Modes.select.updateAdministerContentVisualState(Conversations.getCurrentConversation());
+                }
                 if (showSlides == true){
                     thumbsColumn.show();
                     slideControls.show()
@@ -216,15 +219,15 @@ var DeviceConfiguration = (function(){
                     thumbsColumn.hide();
                     slideControls.hide();
                 }
-								if (showFooter == true){
-									masterFooter.show();
-								} else {
-									masterFooter.hide();
-								}
+                if (showFooter == true){
+                    masterFooter.show();
+                } else {
+                    masterFooter.hide();
+                }
                 var boardContainer = comp("#boardContainer");
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
-		var headerHeight = masterHeader.height();
+                var headerHeight = masterHeader.height();
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -262,9 +265,9 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 10).css({
-		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 4.5)
-		});
+                masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 10).css({
+                    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 4.5)
+                });
                 board.width(bwidth);
                 board.height(bheight);
                 toolsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight + gutterWidth)});
@@ -361,11 +364,11 @@ var DeviceConfiguration = (function(){
             .val(DeviceConfiguration.preferredSizes.thumbColumn.width)
             .on("input change",function(){
                 var newValue = comp("#thumbColumnWidth").val();
-		$(".thumbnail:not(.groupSlide)")
-		    .width(newValue)
-		    .height(newValue * 0.75);
-		fitFunction();
-		Conversations.refreshSlideDisplay();
+                $(".thumbnail:not(.groupSlide)")
+                    .width(newValue)
+                    .height(newValue * 0.75);
+                fitFunction();
+                Conversations.refreshSlideDisplay();
             });
     });
     var actOnCurrentDevice = function(){

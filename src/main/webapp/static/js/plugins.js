@@ -113,7 +113,7 @@ var Plugins = (function(){
                     var audiences = [];
                     var context = "";
                     var message = "";
-                    if (text.startsWith("/w")){
+                    if (_.startsWith(text,"/w")){
                         var parts = text.split(" ");
                         if (parts.length && parts.length >= 2){
                             audiences.push({
@@ -126,7 +126,7 @@ var Plugins = (function(){
                         } else {
                             return text;
                         }
-                    } else if (text.startsWith("/g")){
+                    } else if (_.startsWith(text,"/g")){
                         var parts = text.split(" ");
                         if (parts.length && parts.length >= 2){
                             audiences.push({
@@ -150,15 +150,14 @@ var Plugins = (function(){
             };
 
             return {
-                style:".chatMessage {color:darkgray;}"+
-                    ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
+                style:".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
                     ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
                     ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
                     ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
                     ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
                     ".chatboxContainer input{flex-grow:1;}"+
-                    ".chatbox {background-color:white;color:darkgray; display:inline-block; padding:0px; margin:0px;}"+
-                    ".chatboxSend {display:inline-block; background:white; color:darkgray; padding:0px; margin:0px;}"+
+                    ".chatbox {background-color:white;display:inline-block; padding:0px; margin:0px;}"+
+                    ".chatboxSend {display:inline-block; background:white;padding:0px; margin:0px;}"+
                     ".groupChat {color:darkorange}"+
                     ".whisper {color:darkblue}",
                 load:function(bus,params){
@@ -208,7 +207,7 @@ var Plugins = (function(){
                     " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer, .videoConfPermitStudentBroadcastContainer{display:flex;}"+
                     " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
                     " .videoConfStartButton, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
-                    " #videoConfSessionsContainer{display:flex;}"+
+                    " #videoConfSessionsContainer{display:none;}"+
                     " .videoContainer{display:flex;}"+
                     " .context, .publisherName{font-size:1rem;}"+
                     " .thumbWide{width:160px;}"+
@@ -221,8 +220,8 @@ var Plugins = (function(){
                                      '<button class="videoConfStartButton">'+
                                      '<div>Start sending</div>'+
                                      '</button>'+
-                                     '<span class="context mr" style="margin-top:0.5em"></span>'+
-                                     '<span style="margin-top:0.4em">'+
+                                     '<span class="context mr"></span>'+
+                                     '<span style="display:none;" class="teacherControls mr">'+
                                      '<input type="checkbox" id="canBroadcast">'+
                                      '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
                                      '</span>'+
@@ -271,6 +270,10 @@ var Plugins = (function(){
                     " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
                     " .isolateGroup label{margin-top:1px;}"+
                     " .isolateGroup{margin-top:0.8em;}"+
+                    " .rowT{display:table;width:100%;}"+
+                    " .rowC{display:table-row;}"+
+                    " .rowC *{display:table-cell;}"+
+                    " .rowC label{text-align:left;vertical-align:middle;font-weight:bold;}"+
                     " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
                     " .groupsPluginGroupControls{display:flex;}"+
                     " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
@@ -366,36 +369,140 @@ var Plugins = (function(){
                                             var gc = $("<div />",{
                                                 class:"groupsPluginGroupContainer"
                                             }).appendTo(container);
-
-                                            var grades = $("<div />",{
-                                                class:"groupsPluginGroup"
-                                            }).css({display:"block"});
-                                            _.each("A B C D F".split(" "),function(gradeLetter){
-                                                $("<div />",{
-                                                    text:gradeLetter,
-                                                    class:"groupsPluginGroupGrade"
-                                                }).appendTo(grades).on("click",function(){
-                                                    if (linkedGrade != undefined){
-                                                        _.each(group.members,function(member){
-                                                            var groupMemberGrade = {
-                                                                type:"textGradeValue",
-                                                                gradeId:linkedGrade.id,
-                                                                gradeValue:gradeLetter,
-                                                                gradedUser:member,
-                                                                author:UserSettings.getUsername(),
-                                                                timestamp:0,
-                                                                audiences:[]
-                                                            };
-                                                            sendStanza(groupMemberGrade);
-                                                        });
-                                                    }
-                                                });
-                                            });
-
                                             var right = $("<div />").appendTo(gc);
                                             var controls = $("<div />",{
                                                 class:"groupsPluginGroupControls"
                                             }).appendTo(right);
+                                            var assess = button("fa-book","Assess",function(){
+                                                linkedGrade = _.find(Grades.getGrades(),function(grade){
+                                                    return grade.location == linkedGradeLoc;
+                                                });
+                                                if (linkedGrade !== undefined){
+                                                    var uniqId = sprintf("assessGroupDialog_%s",_.uniqueId());
+                                                    var outer = $("<div/>",{
+                                                        id:uniqId
+                                                    });
+                                                    var assessAlert = $.jAlert({
+                                                        title:"Assess group",
+                                                        width:"80%",
+                                                        content:outer[0].outerHTML,
+                                                        btns:[{
+                                                            text:"Save",
+                                                            theme:'green',
+                                                            closeAlert:true,
+                                                            onClick:function(){
+                                                                linkedGrade = _.find(Grades.getGrades(),function(grade){
+                                                                    return grade.location == linkedGradeLoc;
+                                                                });
+                                                                if (gradeValue != undefined){
+                                                                    _.each(group.members,function(member){
+                                                                        var groupMemberGrade = {
+                                                                            type:sprintf("%sGradeValue",linkedGrade.gradeType),
+                                                                            gradeId:linkedGrade.id,
+                                                                            gradeValue:gradeValue,
+                                                                            gradedUser:member,
+                                                                            author:UserSettings.getUsername(),
+                                                                            gradeComment:comment,
+                                                                            gradePrivateComment:privateComment,
+                                                                            timestamp:0,
+                                                                            audiences:[]
+                                                                        };
+                                                                        sendStanza(groupMemberGrade);
+                                                                    });
+                                                                    assessAlert.closeAlert();
+                                                                } else {
+                                                                    alert("you cannot submit without a gradeValue");
+                                                                }
+                                                            }
+                                                        }]
+                                                    });
+                                                    var outerElem = $("#"+uniqId);
+                                                    var grades = $("<div />",{
+                                                        class:"groupsPluginGroup rowT"
+                                                    });
+                                                    var gradeValue = undefined;
+                                                    var gradeValueId = sprintf("gradeValueInput_%s",_.uniqueId());
+                                                    var rowC = function(){
+                                                        return $("<div />",{
+                                                            class:"rowC"
+                                                        }).appendTo(grades);
+                                                    }
+                                                    var gradeC = rowC();
+                                                    switch (linkedGrade.gradeType) {
+                                                    case "numeric" :
+                                                        $("<label/>",{
+                                                            text:"Score",
+                                                            "for":gradeValueId
+                                                        }).appendTo(gradeC);
+                                                        $("<input/>",{
+                                                            id:gradeValueId,
+                                                            type:"number",
+                                                            max:linkedGrade.numericMaximum,
+                                                            min:linkedGrade.numericMinimum
+                                                        }).on("change",function(ev){
+                                                            gradeValue = parseFloat($(this).val());
+                                                        }).appendTo(gradeC);
+                                                        break;
+                                                    case "text":
+                                                        $("<label/>",{
+                                                            text:"Score",
+                                                            "for":gradeValueId
+                                                        }).appendTo(gradeC);
+                                                        $("<input/>",{
+                                                            id:gradeValueId,
+                                                            type:"text"
+                                                        }).on("change",function(ev){
+                                                            gradeValue = $(this).val();
+                                                        }).appendTo(gradeC);
+                                                        break;
+                                                    case "boolean":
+                                                        gradeValue = false;
+                                                        $("<input/>",{
+                                                            type:"checkbox",
+                                                            id:gradeValueId
+                                                        }).on("change",function(ev){
+                                                            gradeValue = $(this).prop("checked");
+                                                        }).appendTo(gradeC);
+                                                        $("<label/>",{
+                                                            text:"Score",
+                                                            "for":gradeValueId
+                                                        }).appendTo(gradeC);
+                                                        break;
+                                                    default:
+                                                        break;
+                                                    }
+                                                    var commentC = rowC();
+                                                    var commentId = sprintf("gradeValueComment_%s",_.uniqueId());
+                                                    var comment = "";
+                                                    var commentLabel = $("<label/>",{
+                                                        "for":commentId,
+                                                        text:"Comment"
+                                                    }).appendTo(commentC);
+                                                    var commentBox = $("<input />",{
+                                                        id:commentId,
+                                                        type:"text"
+                                                    }).on("change",function(ev){
+                                                        comment = $(this).val();
+                                                    }).appendTo(commentC);
+                                                    var pCommentC = rowC();
+                                                    var privateCommentId = sprintf("gradeValuePrivateComment_%s",_.uniqueId());
+                                                    var privateComment = "";
+                                                    var privateCommentLabel = $("<label/>",{
+                                                        "for":privateCommentId,
+                                                        text:"Private comment"
+                                                    }).appendTo(pCommentC);
+                                                    var privateCommentBox = $("<input/>",{
+                                                        id:privateCommentId,
+                                                        type:"text"
+                                                    }).on("change",function(ev){
+                                                        privateComment = $(this).val();
+                                                    }).appendTo(pCommentC);
+                                                    grades.appendTo(outerElem);
+                                                } else {
+                                                    alert("no linked grade");
+                                                }
+                                            });
+                                            assess.appendTo(controls);
                                             $("<span />",{
                                                 text:sprintf("Group %s",group.title),
                                                 class:"ml"
@@ -420,7 +527,7 @@ var Plugins = (function(){
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
-						Modes.select.activate();
+                                                Modes.select.activate();
                                                 blit();
                                                 $("#masterFooter").scrollLeft(xOffset);
                                             })).append($("<label />",{
@@ -446,7 +553,6 @@ var Plugins = (function(){
                                                     }).prependTo(mV);
                                                 }
                                             });
-                                            grades.appendTo(right);
                                         });
                                     }
                                 }
@@ -501,7 +607,7 @@ $(function(){
     var styleContainer = $("<style></style>").appendTo($("body"));
     _.each(Plugins,function(plugin,label){
         var container = $("<div />",{
-            class:"plugin translucent"
+            class:"plugin"
         });
         plugin.load(Progress).appendTo(container);
         styleContainer.append(plugin.style);

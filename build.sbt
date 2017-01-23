@@ -3,7 +3,7 @@ import SbtStartScript.StartScriptKeys._
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "1.2.3"
+version := "1.3.4"
 
 val scalaVersionString = "2.11.5"
 

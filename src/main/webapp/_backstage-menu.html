@@ -170,7 +170,7 @@
                   <select class="parameterSelect"></select>
                 </div>
                 <div class="importContainer" style="height:100%;position:relative;">
-                  <h3>Copying from
+                  <h3>Starting from
                     <select class="ouSelector"></select>
                   </h3>
                   <div class="importGroups"></div>
@@ -181,6 +181,11 @@
                 <div class="flex-container-responsive">
                   <h3>Show me</h3>
                   <select class="groupScope" style="flex-grow:1"></select>
+                </div>
+                <div style="float:right">
+                  <button class="fa fa-icon fa-random" style="border:1px solid black;background-color:white;margin-top:0;" id="randomizeGroups">
+                    <span class="icon-txt">Randomize</span>
+                  </button>
                 </div>
                 <div class="groups"></div>
               </div>
@@ -295,7 +300,10 @@
                       <button class="commitOrgUnit button-transparent-border mth"><span>Associate within this course</span></button>
                     </span>
                     <span class="requestAssocPhase4 associationPhase">
-                      <button class="createGrade button-transparent-border mth"><span>Associate this grade</span></button>
+											<label for="chooseExistingGradeSelectBox">Choose an existing grade</label>
+											<select id="chooseExistingGradeSelectBox" class="linkGradeChoices"></select>
+											<button class="linkGrade button-transparent-border mth"><span>Link this grade to an existing grade in the course</span></button>
+                      <button class="createGrade button-transparent-border mth"><span>Create a new grade in the course</span></button>
                     </span>
                   </span>
                   <div class="grades blocker" style="display:none;height:100%;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>

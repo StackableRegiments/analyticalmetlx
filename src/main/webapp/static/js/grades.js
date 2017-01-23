@@ -165,7 +165,7 @@ var Grades = (function(){
                                 var maxTextbox = innerRoot.find(".numericMaxTextbox");
                                 var changeMinFunction = function(ev){
                                     if (newGrade.gradeType == "numeric"){
-                                        newGrade.numericMinimum = parseFloat(maxTextbox.val());
+                                        newGrade.numericMinimum = parseFloat(minTextbox.val());
                                     } else {
                                         delete newGrade.numericMinimum;
                                     }
@@ -184,22 +184,28 @@ var Grades = (function(){
                                 minTextbox.on("blur",changeMinFunction).attr("id",minId);
                                 maxTextbox.on("blur",changeMaxFunction).attr("id",maxId);
                                 var reRenderGradeTypeOptions = function(){
-                                    switch (newGrade.gradeType){
-                                    case "numeric":
-                                        innerRoot.find(".numericOptions").show();
-                                        if (newGrade.numericMinimum === undefined){
-                                            newGrade.numericMinimum = 0;
-                                        };
-                                        if (newGrade.numericMaximum === undefined){
-                                            newGrade.numericMaximum = 100;
-                                        };
-                                        minTextbox.val(newGrade.numericMinimum);
-                                        maxTextbox.val(newGrade.numericMaximum);
-                                        break;
-                                    default:
-                                        innerRoot.find(".numericOptions").hide();
-                                        break;
-                                    }
+																	if ("foreignRelationship" in newGrade){
+																		minTextbox.prop("disabled",true);
+																		maxTextbox.prop("disabled",true);
+																		typeSelect.prop("disabled",true);
+																	} 
+																	typeSelect.val(newGrade.gradeType);
+																	switch (newGrade.gradeType){
+																	case "numeric":
+																			innerRoot.find(".numericOptions").show();
+																			if (newGrade.numericMinimum === undefined){
+																					newGrade.numericMinimum = 0;
+																			};
+																			if (newGrade.numericMaximum === undefined){
+																					newGrade.numericMaximum = 100;
+																			};
+																			minTextbox.val(newGrade.numericMinimum);
+																			maxTextbox.val(newGrade.numericMaximum);
+																			break;
+																	default:
+																			innerRoot.find(".numericOptions").hide();
+																			break;
+																	}
                                 };
                                 typeSelect.attr("id",selectId).on("change",function(){
                                     newGrade.gradeType = typeSelect.val();
@@ -257,16 +263,16 @@ var Grades = (function(){
                                             aNodes.find(".requestAssociation").unbind("click").on("click",function(){
                                                 wantsToAssociate = true;
                                                 if (gradebooks.length == 1){
-                                                    chosenGradebook = gradebooks[0];
+                                                    chosenGradebook = gradebooks[0].id;
                                                 }
                                                 reRenderAssociations();
                                             });
                                         } else if (chosenGradebook == undefined){
-                                            chosenGradebook = gradebooks[0];
+                                            chosenGradebook = gradebooks[0].id;
                                             aNodes.find(".chooseGradebook").html(_.map(gradebooks,function(gb){
                                                 return $("<option/>",{
-                                                    value:gb,
-                                                    text:gb
+                                                    value:gb.id,
+                                                    text:gb.name
                                                 });
                                             })).unbind("change").on("change",function(ev){
                                                 chosenGradebook = $(this).val();
@@ -303,10 +309,86 @@ var Grades = (function(){
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
                                                 console(sprintf("error: %s \r\n %s",textStatus,error));
-                                                alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
+																								alert(sprintf("error: %s \r\n %s",textStatus,error));
                                             });
                                         } else {
                                             aNodes.find(".requestAssocPhase4").show();
+																						spin(aNodes,true);
+																						var linkGradeButton = aNodes.find(".linkGrade");
+																						var preExistingGrades = [];
+																						var existingGradesSelectBox = aNodes.find("#chooseExistingGradeSelectBox");
+																						var chosenPreExistingGrade = undefined;
+																						linkGradeButton.unbind("click").on("click",function(){
+																							if (chosenPreExistingGrade !== undefined && "foreignRelationship" in chosenPreExistingGrade && "sys" in chosenPreExistingGrade.foreignRelationship && "key" in chosenPreExistingGrade.foreignRelationship){
+																								newGrade.foreignRelationship = {
+																									sys:chosenPreExistingGrade.foreignRelationship.sys,
+																									key:chosenPreExistingGrade.foreignRelationship.key
+																								}
+
+																								//clone the values from the remote system
+																								newGrade.gradeType = chosenPreExistingGrade.gradeType;
+																								newGrade.numericMinimum = chosenPreExistingGrade.numericMinimum;	
+																								newGrade.numericMaximum = chosenPreExistingGrade.numericMaximum;	
+																								newGrade.name = chosenPreExistingGrade.name;
+																								nameInputBox.val(newGrade.name);
+																								newGrade.description = chosenPreExistingGrade.description;
+																								descInputBox.val(newGrade.description);
+
+																								sendStanza(newGrade);
+																								reRenderAssociations();
+																								reRenderGradeTypeOptions();
+																							} else {
+																								alert("no pre-existing grade chosen");
+																							}
+																						}).prop("disabled",true);
+																						existingGradesSelectBox.unbind("change").on("change",function(ev){
+																							var chosenGrade = $(this).val();
+																							if (chosenGrade !== undefined && chosenGrade !== "no-choice"){
+																								chosenPreExistingGrade = _.find(preExistingGrades,function(peg){
+																									return "foreignRelationship" in peg && "key" in peg.foreignRelationship && peg.foreignRelationship.key == chosenGrade;
+																								});
+																								if (chosenPreExistingGrade !== undefined){
+																									linkGradeButton.prop("disabled",false);
+																								} else {
+																									linkGradeButton.prop("disabled",true);
+																								}
+																							} else {
+																								chosenPreExistingGrade = undefined;
+																								linkGradeButton.prop("disabled",true);
+																							}
+																						});
+																						$.ajax({
+																							type:"GET",
+																							url:sprintf("/getExternalGrades/%s/%s",chosenGradebook,chosenOrgUnit),
+																							success:function(data){
+																								console.log("found external grades:",data);
+																								preExistingGrades = data;
+																								if (data.length){
+																									existingGradesSelectBox.html(_.map([
+																											{
+																												text:"",
+																												foreignRelationship:{
+																													system:"no-system",
+																													key:"no-choice"
+																												}
+																											}].concat(data),function(eg){
+																										return $("<option/>",{
+																											text:eg.name,
+																											value:eg.foreignRelationship.key
+																										});
+																									}));
+																								} else {
+																									existingGradesSelectBox.hide();
+																									linkGradeButton.prop("disabled",true);
+																									linkGradeButton.hide();
+																								}
+																								spin(aNodes,false);
+																							},
+																							dataType:"json"
+																						}).fail(function(jqxhr,textStatus,error){
+																							spin(aNodes,false);
+																							alert(sprintf("error - could not fetch existing grades from remote gradebook: %s \r\n %s",textStatus,error));
+																						});
                                             aNodes.find(".createGrade").unbind("click").on("click",function(){
                                                 spin(aNodes,true);
                                                 $.ajax({
@@ -327,7 +409,7 @@ var Grades = (function(){
                                                     dataType:'json'
                                                 }).fail(function(jqxhr,textStatus,error){
                                                     spin(aNodes,false);
-                                                    alert(sprintf("error: %s \r\n %s",textStatus,error));
+																										alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
                                                 });
                                             });
                                         }

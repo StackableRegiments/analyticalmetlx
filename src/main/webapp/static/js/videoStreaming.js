@@ -9,6 +9,7 @@ var TokBox = (function(){
     var sessions = {}
     var receiveTokBoxSessionFunc = function(desc){
         if (initialized){
+            sessionsContainer.css({display:"flex"});
             var support = OT.checkSystemRequirements();
             if (support == 0){
                 if (!shownError){
@@ -36,17 +37,54 @@ var TokBox = (function(){
     };
     var sessionsContainer = undefined;
     var sessionContainer = undefined;
+    var teacherControls = undefined;
+    var permitStudentsToPublishCheckbox = undefined;
+    var publishingPermitted = false;
+    var actOnConversationDetails = function(c){
+        console.log("TokBox conv",c);
+        if (c){
+            publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast);
+            if (teacherControls){
+                if (Conversations.shouldModifyConversation(c)){
+                    teacherControls.show();
+                    permitStudentsToPublishCheckbox.prop("checked",publishingPermitted).unbind("click").on("click",function(){
+                        var mayBroadcast = $(this).prop("checked");
+                        if ("Conversations" in window){
+                            var conv = Conversations.getCurrentConversation();
+                            var perms = conv.permissions;
+                            perms.studentsMayBroadcast = mayBroadcast;
+                            changePermissionsOfConversation(conv.jid.toString(),perms);
+                        }
+                    });
+                } else {
+                    permitStudentsToPublishCheckbox.unbind("click");
+                    teacherControls.hide();
+                }
+            }
+        }
+        _.forEach(sessions,function(s){
+            s.refreshVisualState();
+        });
+    };
+
+    Progress.conversationDetailsReceived["TokBox"] = actOnConversationDetails;
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
             sessionsContainer = $("#videoConfSessionsContainer");
+            teacherControls = sessionsContainer.find(".teacherControls").clone();
+            permitStudentsToPublishCheckbox = teacherControls.find("#canBroadcast");
             sessionContainer = sessionsContainer.find(".videoConfSessionContainer").clone();
             sessionsContainer.empty();
+            sessionsContainer.append(teacherControls);
+            actOnConversationDetails(Conversations.getCurrentConversation());
             initialized = true;
         },
         receiveTokBoxSession:receiveTokBoxSessionFunc,
+        getTokBoxEnabledState:function(){return enabled},
         setTokBoxEnabledState:setTokBoxEnabledStateFunc,
-        removeSessions:removeSessionsFunc
+        removeSessions:removeSessionsFunc,
+        canPublish:function(){ return Conversations.shouldModifyConversation() || publishingPermitted; }
     }
 })();
 var TokBoxSession = function(desc,sessionContainer){
@@ -58,7 +96,6 @@ var TokBoxSession = function(desc,sessionContainer){
     var validWidths = [320,640,1280];
     var validHeights = [240,480,720];
     var validFpss = [1,7,15,30];
-    var publishingPermitted = Conversations.getCurrentConversation().permissions.studentsMayBroadcast;
 
     var safeFps = function(preferred){
         var coll = validFpss;
@@ -94,8 +131,6 @@ var TokBoxSession = function(desc,sessionContainer){
     var streamButton = sessionContainer.find(".videoConfStartButton");
     var streamContainer = sessionContainer.find(".videoConfContainer");
     var publishButtonContainer = sessionContainer.find(".videoConfStartButtonContainer");
-    var permitStudentsToPublishContainer = sessionContainer.find(".videoConfPermitStudentBroadcastContainer");
-    var permitStudentsToPublishCheckbox = permitStudentsToPublishContainer.find("#canBroadcast");
     var subscriptionsContainer = sessionContainer.find(".videoSubscriptionsContainer");
     var subscriberSection = sessionContainer.find(".videoContainer").clone();
     var broadcastContainer = sessionContainer.find(".broadcastContainer");
@@ -108,21 +143,9 @@ var TokBoxSession = function(desc,sessionContainer){
     var thisPublisher = undefined;
     var refreshVisualState = function(){
         streamButton.unbind("click");
-        if (Conversations.shouldModifyConversation()){
-            permitStudentsToPublishContainer.show();
-            permitStudentsToPublishCheckbox.prop("checked",publishingPermitted).unbind("click").on("click",function(){
-		var mayBroadcast = $(this).prop("checked");
-                if ("Conversations" in window){
-                    var conv = Conversations.getCurrentConversation();
-                    var perms = conv.permissions;
-                    perms.studentsMayBroadcast = mayBroadcast;
-                    changePermissionsOfConversation(conv.jid.toString(),perms);
-                }
-            });
-        } else {
-            permitStudentsToPublishContainer.hide();
-        }
-        if (isConnected() && (publishingPermitted || Conversations.shouldModifyConversation())){
+
+        console.log("refreshing visual state:",TokBox.canPublish());
+        if (isConnected() && TokBox.canPublish()){
             streamContainer.show();
             if ("capabilities" in session && "publish" in session.capabilities && session.capabilities.publish == 1){
                 publishButtonContainer.show();
@@ -256,7 +279,6 @@ var TokBoxSession = function(desc,sessionContainer){
     var onConversationDetailsReceived = function(conv){
         console.log("videoStreaming conversationDetails",conv);
         if ("jid" in conv && "Conversations" in window && "permissions" in conv && "studentsMayBroadcast" in conv.permissions){
-            publishingPermitted = conv.permissions.studentsMayBroadcast;
             refreshVisualState();
         }
     };
@@ -428,6 +450,7 @@ function removeTokBoxSessions(sessionIds){
     TokBox.removeSessions(sessionIds);
 }
 function receiveTokBoxEnabled(isEnabled){
+    console.log("TokBox enabled",isEnabled);
     TokBox.setTokBoxEnabledState(isEnabled);
 }
 function receiveTokBoxArchives(archives){
