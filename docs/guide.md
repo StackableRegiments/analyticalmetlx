@@ -5,36 +5,29 @@ title: User Guide
 
 This is for teachers, teaching assistants, student champions and all other MeTL users.
 
-Topics include:
-
-- [Conversation Search](guide-conversation-search.html) 
-- [Conversation](guide-conversation.html) Usage
-  - Conversation [Options](guide-options.html)
-  - [Learning](guide-learning.html) Tools
-  - User [Settings](guide-settings.html)
-
-## Conventions
+## How To Use This Guide
 
 Content that applies only to particular institutions is marked with a sticker, for example: 
 ![Saint Leo University](images/slu-32.png) Saint Leo University (SLU).
 
+- MeTL <code>controls</code> or <code>menu options</code> are distinctly formatted to show exactly what to look for in MeTL.
 - In a pedagogical (teaching) context: "Conversation owner" may be referred to as teacher, and "Other user" as student.
-- ![Saint Leo University](images/slu-16.png) SLU users may use the term *Whiteboard* to refer to a [Conversation](guide-conversation.html).
+- ![Saint Leo University](images/slu-16.png) SLU users may use the term *Whiteboard* to refer to the MeTL application.
+- The MeTL application can be themed for different institutions.  Most screenshots will use the "neutral" theme (dark background) but some use the Saint Leo University theme (green background), particularly where it is necessary to demonstrate integration with an external gradebook or Learning Management System (LMS).
 
-> Tips to support teaching activities will appear like this throughout the guide.
+Throughout the guide there appear breakout boxes of various types: 
 
-<!--
-## Content
+<div class="tip">Tips to support teaching activities.</div>
 
-- Conversations
-  - [Search](guide-conversation-search.html)
-  - [Edit](guide-edit-conversation.html)
-- [Conversation](guide-conversation.html)
-  - [Controls](guide-controls.html) 
-  - [Integrations](guide-integrations.html) 
-  - [Recycle Bin](guide-recycle-bin.html) 
-  - [Copy and Paste](guide-copypaste.html) 
-  - [Sharing](guide-sharing.html)
-  - [Word Cloud](guide-word-cloud.html)
-  - [Groups](guide-groups.html)
--->
+<div class="warning">Warnings about potential bad practices.</div>
+
+<div class="example">Links to real-world teaching examples submitted by MeTL users in the relevant section of <a href="academy-examples.html">Teaching Examples</a>.</div>
+
+<div class="pedagogy">Links to documented pedagogical support for MeTL activities in the relevant section of <a href="academy-pedagogy.html">Pedagogy</a>.</div>
+
+## Conversation Interface
+
+![Conversation](images/guide-conversation.jpg)
+
+This image shows controls available to the conversation owner (teacher).
+

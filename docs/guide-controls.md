@@ -1,12 +1,7 @@
 ---
 layout: guide
-title: Canvas
+title: Controls
 ---
-
-The canvas is the central area of a conversation where [Ink](#ink) is drawn, [Text](#text) is typed, 
-and Image or Video content may be [Insert](#insert)ed.
-
-# Controls
 
 <img src="images/guide-controls.png" alt="Controls" align="right" height="500"/>
 
@@ -41,7 +36,7 @@ Only available to the conversation owner.
 - Active: when the owner navigates to a page other users will follow the owner to that page. 
 - Inactive: when the owner navigates to a page other users will remain on their current page. 
 
-> Do **NOT** leave this active after class, or students will not be able to navigate to other pages for revision. 
+<div class="warning">Do <strong>NOT</strong> leave this active after class, or students will not be able to navigate to other pages for revision.</div> 
 
 When the current user is not the conversation owner, a `Follow teacher` control appears below this control. 
 This is used to choose to follow the conversation owner voluntarily.
@@ -86,7 +81,7 @@ The conversation owner can select content created by other users.
 Make the selected content private and ban the creator 
 (prevent them from creating any new public content or publishing existing private content).
 
-> Use this control if students create inappropriate content.
+<div class="tip">Use this control if students create inappropriate content.</div>
 
 Banned users can be unbanned in the [Banned Content](guide-learning#banned-content) screen.
 
@@ -152,7 +147,7 @@ canvas on all sides to become visible.
 
 When `Zoom` is selected, dragging a marquee within the canvas sets the zoom level to display only that area. 
 
-> A two-finger pinch gesture can be used to zoom on devices that support it.
+<div class="tip">A two-finger pinch gesture can be used to zoom on devices that support it.</div>
 
 ### Reset 
 
@@ -168,4 +163,4 @@ Set the zoom level to show all content that is visible to the current user on th
 
 Move the viewport to make different areas of the canvas visible. 
 
-> A two-finger drag gesture can be used to pan on devices that support it.
+<div class="tip">A two-finger drag gesture can be used to pan on devices that support it.</div>

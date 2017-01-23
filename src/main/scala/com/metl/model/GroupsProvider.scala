@@ -18,43 +18,42 @@ object GroupsProvider {
   def sanityCheck(g:GroupStoreData):Boolean = {
     g.groupsForMembers.keys.toList.length > 0
   }
+  def existsDefaultTrue[A](in:Option[A],pred:A=>Boolean):Boolean = {
+    in match {
+      case None => true
+      case items@Some(_item) => items.exists(pred)
+    }
+  }
+  def allDefaultTrue[A](in:Seq[A],pred:A=>Boolean):Boolean = {
+    in match {
+      case Nil => true
+      case items => !items.exists(i => !pred(i))
+    }
+  }
+
   def possiblyFilter(in:NodeSeq,gp:GroupsProvider):GroupsProvider = {
     (for {
-      fNodes <- (in \\ "filter").headOption
-      blacklistedGroups = (fNodes \\ "group").map(gn => (
-        (gn \\ "@keyPrefix").headOption.map(_.text),
-        (gn \\ "@keySuffix").headOption.map(_.text),
-        (gn \\ "@valuePrefix").headOption.map(_.text),
-        (gn \\ "@valueSuffix").headOption.map(_.text)
-      ))
-      blacklistedInfos = (fNodes \\ "personalDetails").map(gn => (
-        (gn \\ "@keyPrefix").headOption.map(_.text),
-        (gn \\ "@keySuffix").headOption.map(_.text),
-        (gn \\ "@valuePrefix").headOption.map(_.text),
-        (gn \\ "@valueSuffix").headOption.map(_.text)
-      ))
-      blacklistedMembers = (fNodes \\ "member").map(gn => (
-        (gn \\ "@prefix").headOption.map(_.text),
-        (gn \\ "@suffix").headOption.map(_.text)
+      fNodes <- (in \\ "filterNot").headOption
+      blacklistedGroups = (fNodes \ "group").map(gn => (
+        (gn \ "@keyPrefix").headOption.map(_.text),
+        (gn \ "@keySuffix").headOption.map(_.text),
+        (gn \ "@valuePrefix").headOption.map(_.text),
+        (gn \ "@valueSuffix").headOption.map(_.text),
+        (gn \ "@key").headOption.map(_.text),
+        (gn \ "@value").headOption.map(_.text)
       ))
     } yield {
-      val groupsFilter = (g:OrgUnit) => blacklistedGroups.exists(bg => {
-        !bg._1.exists(kp => !g.ouType.startsWith(kp)) &&
-        !bg._2.exists(ks => !g.ouType.endsWith(ks)) &&
-        !bg._3.exists(vp => !g.name.startsWith(vp)) &&
-        !bg._4.exists(vs => !g.name.endsWith(vs))
+      val groupsFilter = (g:OrgUnit) => allDefaultTrue(blacklistedGroups,(bg:Tuple6[Option[String],Option[String],Option[String],Option[String],Option[String],Option[String]]) => {
+        !(
+          existsDefaultTrue(bg._1,(kp:String) => g.ouType.startsWith(kp)) && 
+          existsDefaultTrue(bg._2,(ks:String) => g.ouType.endsWith(ks)) && 
+          existsDefaultTrue(bg._3,(vp:String) => g.name.startsWith(vp)) && 
+          existsDefaultTrue(bg._4,(vs:String) => g.name.endsWith(vs)) && 
+          existsDefaultTrue(bg._5,(k:String) => g.ouType.startsWith(k)) && 
+          existsDefaultTrue(bg._6,(v:String) => g.name.startsWith(v))
+        )
       })
-      val personalDetailsFilter = (g:Detail) => blacklistedInfos.exists(bg => {
-        !bg._1.exists(kp => !g.key.startsWith(kp)) &&
-        !bg._2.exists(ks => !g.key.endsWith(ks)) &&
-        !bg._3.exists(vp => !g.value.startsWith(vp)) &&
-        !bg._4.exists(vs => !g.value.endsWith(vs))
-      })
-      val membersFilter = (g:Member) => blacklistedMembers.exists(bg => {
-        !bg._1.exists(kp => !g.name.startsWith(kp)) &&
-        !bg._2.exists(ks => !g.name.endsWith(ks)) 
-      })
-      new FilteringGroupsProvider(gp.storeId,gp,groupsFilter,membersFilter,personalDetailsFilter)
+      new FilteringGroupsProvider(gp.storeId,gp,groupsFilter)
     }).getOrElse(gp)
   }
   def constructFromXml(outerNodes:NodeSeq):List[GroupsProvider] = {
@@ -87,10 +86,11 @@ object GroupsProvider {
       userId <- (dNodes \ "@userId").headOption.map(_.text)
       userKey <- (dNodes \ "@userKey").headOption.map(_.text)
     } yield {
+      val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(dNodes)
       val acceptableRoleList:List[Int] = (dNodes \\ "acceptableRoleId").map(_.text.toInt).toList
       val name = (dNodes \\ "@name").headOption.map(_.text)
       val n = name.getOrElse("d2lInteface_to_%s".format(host))
-      possiblyFilter(outerNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+      possiblyFilter(dNodes,new D2LGroupsProvider(n,host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
         override protected val acceptableRoleIds = acceptableRoleList
       })
     }).toList ::: 
@@ -158,10 +158,11 @@ object GroupsProvider {
         } yield {
           val n = name.getOrElse("d2lGroups_from_%s".format(host))
           val acceptableRoleList:List[Int] = (in \\ "acceptableRoleId").map(_.text.toInt).toList
+          val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(in)
           val diskCache = new XmlGroupStoreDataFile(n,diskStore)
           new StoreBackedGroupsProvider(n,
             new PeriodicallyRefreshingGroupStoreProvider(
-              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+              new D2LGroupStoreProvider(host,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
                 override protected val acceptableRoleIds = acceptableRoleList
               },
               refreshPeriod,
@@ -202,7 +203,8 @@ object GroupKeys {
 
 abstract class GroupsProvider(val storeId:String) extends Logger {
   val canQuery:Boolean = false
-  
+  val canRestrictConversations:Boolean = true
+
   def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = userData.eligibleGroups.toList
   def getMembersFor(orgUnit:OrgUnit):List[Member] = orgUnit.members
   def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = orgUnit.groupSets
@@ -222,6 +224,7 @@ class ADFSGroupsExtractor(override val storeId:String) extends GroupsProvider(st
 
 class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) extends GroupsProvider(storeId) {
   override val canQuery:Boolean = gp.canQuery
+  override val canRestrictConversations:Boolean = gp.canRestrictConversations
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData)
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit)
   override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gp.getGroupSetsFor(orgUnit,members)
@@ -232,15 +235,17 @@ class PassThroughGroupsProvider(override val storeId:String,gp:GroupsProvider) e
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 
-class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean,membersFilter:Member=>Boolean,personalDetailsFilter:Detail=>Boolean) extends PassThroughGroupsProvider(storeId,gp) {
+class FilteringGroupsProvider(override val storeId:String,gp:GroupsProvider,groupsFilter:OrgUnit => Boolean) extends PassThroughGroupsProvider(storeId,gp) {
+  protected def filterOrgUnit(in:OrgUnit):Boolean = groupsFilter(in)
   override val canQuery:Boolean = gp.canQuery
-  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData).filter(groupsFilter)
-  override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit).filter(membersFilter)
+  override val canRestrictConversations:Boolean = gp.canRestrictConversations
+  override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gp.getGroupsFor(userData).filter(filterOrgUnit _)
+  override def getMembersFor(orgUnit:OrgUnit):List[Member] = gp.getMembersFor(orgUnit)
   override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gp.getGroupSetsFor(orgUnit,members)
-  override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gp.getMembersFor(orgUnit,groupSet).filter(membersFilter)
+  override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gp.getMembersFor(orgUnit,groupSet)
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = gp.getGroupsFor(orgUnit,groupSet,members)
-  override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group).filter(membersFilter)
-  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData).filter(personalDetailsFilter)
+  override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = gp.getMembersFor(orgUnit,groupSet,group)
+  override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = gp.getPersonalDetailsFor(userData)
   override def getOrgUnit(name:String):Option[OrgUnit] = None
 }
 

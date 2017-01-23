@@ -7,11 +7,11 @@ title: Settings
 
 ### Show page list
 
-Uncheck this box to hide the page [thumbnails](guide-canvas.html#thumbnails) to the right of the canvas. 
+Uncheck this box to hide the page [thumbnails](guide-controls.html#thumbnails) to the right of the canvas. 
 
 ### Show tools
 
-Uncheck this box to hide the [controls](guide-canvas.html#controls) to the left of the canvas. 
+Uncheck this box to hide the [controls](guide-controls.html) to the left of the canvas. 
 
 ## Health Check
 
@@ -34,4 +34,4 @@ This shows how long the server takes to respond, which is related to network and
 
 This shows how long it takes for a message to reach the server, which is related to your network.
 
-> If you are having trouble with MeTL performance, the support team may ask for a screenshot of the Health Check screen. 
+<div class="tip">If you are having trouble with MeTL performance, the support team may ask for a screenshot of the Health Check screen.</div> 

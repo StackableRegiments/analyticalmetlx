@@ -1,6 +1,6 @@
 var GroupBuilder = (function(){
     var strategy = "byTotalGroups";
-    var groupScope = "allPresent";
+    var groupScope = "allInHistory";
     var parameters = {
         byTotalGroups:5,
         byMaximumSize:4
@@ -29,6 +29,7 @@ var GroupBuilder = (function(){
                 participants[name] = {
                     name:name,
                     enrolled:enrolled,
+                    present:false,
                     participating:false
                 }
                 console.log(sprintf("%s seeding as enrolled: %s (%s)",name,enrolled,_.keys(participants).length));
@@ -41,11 +42,19 @@ var GroupBuilder = (function(){
             seed(name,true);
         });
         _.each(_.map(Participants.getParticipants(),"name"),function(name){
-            if(!(name in participants)){
-                seed(name,false);
-            }
             if(name != Conversations.getCurrentConversation().author){
+                if(!(name in participants)){
+                    seed(name,false);
+                }
                 participants[name].participating = true;
+            }
+        });
+        _.each(Participants.getCurrentParticipants(),function(name){
+            if(name != Conversations.getCurrentConversation().author){
+                if(!(name in participants)){
+                    seed(name,false);
+                }
+                participants[name].present = true;
             }
         });
         console.log("Seeded %s participants",_.keys(participants).length);
@@ -55,10 +64,11 @@ var GroupBuilder = (function(){
             return p.group ? p.group.name : "unallocated";
         }));
     }
+    var inScope = function(p){
+        return (groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allInHistory" && p.participating) || (groupScope == "allPresent" && p.present);
+    }
     var allocate = function(){
-        var allocatable = _.filter(participants,function(p){
-            return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
-        });
+        var allocatable = _.filter(participants,inScope);
         var byAllocated = _.partition(allocatable,function(p){
             return "group" in p;
         });
@@ -108,14 +118,20 @@ var GroupBuilder = (function(){
         }
     }
     var renderGroupScopes = function(container){
-        _.each([
-            ["Show me all my enrolled students","allEnrolled"],
-            ["Only show me my participating students","allPresent"]],function(params){
-                $("<option />",{
-                    text:params[0],
-                    value:params[1]
-                }).prop("selected",params[1] == groupScope).appendTo(container);
-            });
+        var subject = Conversations.getCurrentConversation().subject;
+        var scopes = [
+            ["all publishers in this conversation","allInHistory"],
+            ["all students here right now","allPresent"]
+        ];
+        if(subject != "unrestricted"){
+            scopes.push([sprintf("all students enrolled in %s",subject),"allEnrolled"]);
+        }
+        _.each(scopes,function(params){
+            $("<option />",{
+                text:params[0],
+                value:params[1]
+            }).prop("selected",params[1] == groupScope).appendTo(container);
+        });
     }
     var renderStrategies = function(container){
         _.each([
@@ -273,9 +289,11 @@ var GroupBuilder = (function(){
                             _.each(validMembers,function(obj){
                                 var name = obj.name;
                                 if(!(name in participants)){
+				    /*If this person were present, enrolled or had acted we would have registered them at seeding*/
                                     participants[name] = {
                                         name:name,
-                                        enrolled:false
+                                        enrolled:false,
+                                        present:false
                                     };
                                 }
                                 renderMember(participants[name]).appendTo(groupV);
@@ -288,9 +306,7 @@ var GroupBuilder = (function(){
     };
     var renderAllocations = function(){
         var container = $(".jAlert .groupSlideDialog");
-        var renderable = _.filter(participants,function(p){
-            return(groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating);
-        });
+        var renderable = _.filter(participants,inScope);
         var groups = allocationsFor(renderable);
         console.log("rendering allocations:",participants,renderable,groups);
         var groupsV = container.find(".groups");
@@ -337,8 +353,7 @@ var GroupBuilder = (function(){
                 closeAlert:true,
                 onClick:function(){
                     var sendable = _.filter(participants,function(p){
-                        return p.name != Conversations.getCurrentConversation().author &&
-                            ((groupScope == "allEnrolled" && p.enrolled) || (groupScope == "allPresent" && p.participating));
+                        return inScope(p) && p.name != Conversations.getCurrentConversation().author;
                     });
                     var calculatedGroups = allocationsFor(sendable);
                     var sendableGroups = _.map(_.values(calculatedGroups),function(members){
@@ -439,12 +454,12 @@ var GroupBuilder = (function(){
                                 system:gp,
                                 key:k
                             }
-                        });
+                        },"async");
                     } else {
-                        getOrgUnitsFromGroupProviders(choice);
+                        getOrgUnitsFromGroupProviders(choice,"async");
                     }
                 } else {
-                    getOrgUnitsFromGroupProviders(choice);
+                    getOrgUnitsFromGroupProviders(choice,"async");
                 }
             }
         });

@@ -1,6 +1,7 @@
 /*******************************************************************************
 Slate Theme for GitHub Pages
 by Jason Costello, @jsncostello
+Modified by Doug Hagan, @dougecko
 *******************************************************************************/
 @import url(github-light.css);
 
@@ -199,24 +200,11 @@ pre code {
     box-shadow: none;
 }
 
-blockquote:before {
-    content: "Tip";
-    font-weight: bold;
-    margin: 0;
-    padding: 0;
-}
-
 blockquote {
-    color: #000;
-    background-color: #F7C85B;
-    margin: 0 0 0 5%;
-    padding: 0 10px 0 10px;
-    border: 1px solid #666;
-    max-width: 55%;
-    /*font-size: 15px;*/
-    /*font-weight: 500;*/
-    /*font-family: 'Advent Pro', sans-serif;*/
-    /*text-shadow: #111 0 0 10px;*/
+    font-size: 15px;
+    font-weight: 500;
+    font-family: 'Advent Pro', sans-serif;
+    text-shadow: #111 0 0 10px;
 }
 
 blockquote p {
@@ -234,8 +222,12 @@ ul {
 }
 
 ol {
-    list-style: decimal inside;
-    padding-left: 20px;
+    list-style: decimal outside;
+    padding-left: 2em;
+}
+
+ol li {
+    margin-bottom: 10px;
 }
 
 dl dt {
@@ -301,6 +293,32 @@ body {
     margin: 0 auto;
 }
 
+#main_content_wrap {
+    background: #f2f2f2;
+}
+
+#main_content {
+    padding-top: 0;
+    min-height: 700px; /* Update this when the length of the sidebar changes. */
+}
+
+.text-image {
+    margin-left: 10px;
+    float: right;
+}
+
+.escalation {
+    text-align: right;
+    font-style: italic;
+    font-weight: bold;
+    margin-right: 20px;
+    clear: right;
+}
+
+/*******************************************************************************
+Full-Width Styles - Header
+*******************************************************************************/
+
 #searchBar {
     display: block;
     position: absolute;
@@ -364,6 +382,10 @@ body {
     text-shadow: #111 0px 0px 0px;
 }
 
+/*******************************************************************************
+Full-Width Styles - Navigation
+*******************************************************************************/
+
 #nav {
     margin: 0 0 0 20px;
 }
@@ -402,57 +424,168 @@ body {
     background-color: #494949;
 }
 
-.pure-menu-active>.pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
+.pure-menu-active > .pure-menu-link, .pure-menu-link:hover, .pure-menu-link:focus {
     background-color: transparent;
     text-decoration: none;
 }
 
-.pure-menu-active>.nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
+.pure-menu-active > .nav_sub_link .pure-menu-link, .nav_sub_link .pure-menu-link:hover, .nav_sub_link .pure-menu-link:focus {
     background-color: #494949;
     text-decoration: none;
 }
 
+/*******************************************************************************
+Full-Width Styles - Sidebar
+*******************************************************************************/
+
 #sidebar {
     display: block;
     position: absolute;
-    left: -160px;
-    width: 160px;
-    background-color: transparent;
+    left: -200px;
+    width: 200px;
+    background-color: #f2f2f2;
     border-right: 1px solid #999999;
 }
 
-#sidebar ul {
+/* Top level ul */
+ul.tree {
+    margin: 0.5em 0.5em 0 0;
+    padding: 0;
+}
+
+/* All other uls */
+.tree ul {
+    margin-bottom: 0;
     list-style: none;
-    padding:0;
-    margin:0;
+    /*padding-left: 1em;*/
 }
 
-#sidebar li {
-    padding-left: 1em;
-    text-indent: -.7em;
+.tree input {
+    position: absolute;
+    clip: rect(0, 0, 0, 0);
 }
 
-#sidebar li:before {
-    content: " ";
-    padding-right: 0.2em;
-    color: #eee;
+.tree input ~ ul {
+    display: none;
 }
 
-#sidebar a {
+.tree input:checked ~ ul {
+    display: block;
+}
+
+.tree li {
+    line-height: 1;
+    position: relative;
+    list-style-type: none;
+}
+
+/* Top level links only */
+.tree > li {
+    padding: 0 0 0.5em 1em;
+}
+
+.tree ul li {
+    padding: 0.5em 0 0 0;
+    margin: 0 0 0 -0.5em;
+}
+
+.tree > li:last-child {
+    padding-bottom: 0;
+}
+
+.tree_label {
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.tree_label:hover {
+    color: #666;
+}
+
+/* Expand / collapse icon */
+.tree_label:before {
+    color: #999999;
+    position: relative;
+    z-index: 1;
+    float: left;
+    margin: 0 0 0 -1em;
+    content: "\f196";
+    font-size: 15px;
+    font-weight: lighter;
+    font-family: FontAwesome;
+}
+
+:checked ~ .tree_label:before {
+    content: "\f147";
+}
+
+/* Visible text formatting */
+.tree_link, .tree_label a {
+    position: relative;
+    display: inline-block;
+    background: transparent;
     color: #212121;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: normal;
     font-family: 'Advent Pro', sans-serif;
 }
 
-#main_content_wrap {
-    background: #f2f2f2;
+li > .tree_link {
+    /*margin: 0 0 0 1em;*/
 }
 
-#main_content {
-    padding-top: 0;
-    min-height: 700px; /* Update this when the length of the sidebar changes. */
+/* Dot */
+/*
+li > .tree_link:before {
+    color: #999999;
+    position: relative;
+    z-index: 1;
+    float: left;
+    margin: 0 0 0 -1.5em;
+    top: .5em;
+    content: "\f111";
+    font-size: 8px;
+    font-weight: lighter;
+    font-family: FontAwesome;
 }
+*/
+
+/* Bottom left curve */
+/*
+.tree_link:before {
+    position: absolute;
+    top: 0.25em;
+    margin: 0 0 0 -1em;
+    display: block;
+    height: 0.25em;
+    width: 0.5em;
+    border-bottom: 1px solid #999999;
+    border-left: 1px solid #999999;
+    border-radius: 0 0 0 .3em;
+    content: '';
+}
+
+.tree_label .tree_link:before {
+    border: none;
+}
+
+.tree > li > .tree_link:before {
+    border: none;
+}
+*/
+
+label.tree_label:after {
+    border-bottom: 0;
+}
+
+.tree > li:last-child:before {
+    display: none;
+}
+
+/*******************************************************************************
+Full-Width Styles - Footer
+*******************************************************************************/
 
 #footer_wrap {
     background: #373737;
@@ -505,6 +638,121 @@ body {
     font-weight: bold;
     margin-right: 20px;
     clear: right;
+}
+
+.attribution {
+    text-align: right;
+    font-style: italic;
+    margin-right: 20px;
+    clear: right;
+}
+
+sup {
+    font-size: 0.75em;
+}
+
+/*******************************************************************************
+Breakout boxes
+*******************************************************************************/
+
+.tip:before {
+    content: "Tip";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.tip {
+    color: #000;
+    background-color: #FFD51D;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.tip img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
+}
+
+.warning:before {
+    content: "Warning!";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.warning {
+    color: #000;
+    background-color: #F7B84B;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.warning img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
+}
+
+.pedagogy:before {
+    content: "Pedagogy";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.pedagogy {
+    color: #000;
+    background-color: #B1B0F0;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.pedagogy img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
+}
+
+.example:before {
+    content: "Example";
+    font-weight: bold;
+    margin: 0 10px 0 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.example {
+    color: #000;
+    background-color: #71C090;
+    margin: 1em 0 1em 5%;
+    padding: 0 10px 0 10px;
+    border: 1px solid #666;
+    max-width: 90%;
+    overflow: hidden;
+}
+
+.example img {
+    display: block;
+    float: right;
+    margin: 10px 0 10px 10px;
+    padding: 0;
 }
 
 /*******************************************************************************

@@ -41,7 +41,7 @@ A grade has a type, that affects the way that the score is recorded:
 - Boolean: must be `True` or `False`.
 - Text: a description of the score.
 
-> *Warning:* Changing the grade type will hide any scores that have been assigned against the original grade type.
+<div class="warning">Changing the grade type will hide any scores that have been assigned against the original grade type.</div>
 
 ### Visible to Students
 
@@ -95,5 +95,5 @@ A comment that is visible to the student.
 
 A comment that is only be visible to the teacher.  
 
-> Once this has been sent to the external gradebook, 
-all other teachers who have access to the grade will be able to see the private comment.  
+<div class="tip">Once this has been sent to the external gradebook, 
+all other teachers who have access to the grade will be able to see the private comment.</div>  
