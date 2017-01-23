@@ -114,7 +114,7 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
     )
   }
   protected def toGrade(uc:ID2LUserContext,ctx:String,d2lGos:D2LGradeObject):MeTLGrade = {
-    val id = "D2L_%s".format(nextFuncName)
+    val gradeId = "D2L_%s".format(nextFuncName)
     val location = "D2L_%s_%s".format(id,ctx)
     val author = "D2L"
     val visible = false
@@ -123,7 +123,7 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
       case "passfail" => MeTLGradeValueType.Boolean
       case _ => MeTLGradeValueType.Text
     }
-    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
+    MeTLGrade(config,author,new Date().getTime(),gradeId,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
   }
   protected def fromGradeValue(uc:ID2LUserContext,in:MeTLGradeValue):D2LIncomingGradeValue = {
     val gradeObjectType = in.getType match {
