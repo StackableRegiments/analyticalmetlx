@@ -363,7 +363,7 @@ var Grades = (function(){
 																							type:"GET",
 																							url:sprintf("/getExternalGrades/%s/%s",chosenGradebook,chosenOrgUnit),
 																							success:function(data){
-																								console.log("found external grades:",data);
+																								//console.log("found external grades:",data);
 																								preExistingGrades = data;
 																								if (data.length){
 																									existingGradesSelectBox.html(_.map([
@@ -398,7 +398,7 @@ var Grades = (function(){
                                                     url:sprintf("/createExternalGrade/%s/%s",chosenGradebook,chosenOrgUnit),
                                                     data:JSON.stringify(newGrade),
                                                     success:function(data){
-                                                        console.log("createdGrades:",newGrade,data);
+                                                        //console.log("createdGrades:",newGrade,data);
                                                         newGrade.foreignRelationship = {
                                                             sys:data.foreignRelationship.sys,
                                                             key:data.foreignRelationship.key
@@ -485,7 +485,7 @@ var Grades = (function(){
                                                     };
                                                 }
                                             });
-                                            console.log("possibleParticipants:",possibleParticipants,data);
+                                            //console.log("possibleParticipants:",possibleParticipants,data);
                                             data = _.values(data);
                                             data = _.filter(data,function(d){
                                                 return d.type == gradeType;
@@ -524,7 +524,7 @@ var Grades = (function(){
                                         var changeGvContainer = $("<div/>",{
                                             id:changeGvId
                                         });
-                                        console.log("gvPopup",gv);
+                                        //console.log("gvPopup",gv);
                                         var changeGvAlert = $.jAlert({
                                             type:"modal",
                                             content:changeGvContainer[0].outerHTML,
@@ -596,7 +596,7 @@ var Grades = (function(){
                                             gv.gradeValue = newGv.gradeValue;
                                             gv.gradeComment = newGv.gradeComment;
                                             gv.gradePrivateComment = newGv.gradePrivateComment;
-                                            console.log("sending:",newGv);
+                                            //console.log("sending:",newGv);
                                             changeGvAlert.closeAlert();
                                             generateData(withData);
                                         });
