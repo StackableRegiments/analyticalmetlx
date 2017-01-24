@@ -680,9 +680,9 @@ var Grades = (function(){
                                             var b = this;
                                             spin(b,true);
                                             $.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
+																								remoteGradeValuesCache[grade.id] = remoteGrades;
                                                 generateData(function(data){
                                                     var modifiedData = data;
-																										remoteGradeValuesCache[grade.id] = data;
                                                     _.forEach(modifiedData,function(datum){
                                                         var thisRemoteGrade = _.find(remoteGrades,function(rg){
                                                             return rg.gradedUser == datum.gradedUser;
@@ -714,9 +714,9 @@ var Grades = (function(){
                                                 data:JSON.stringify(gradesToSend),
                                                 dataType:"json",
                                                 success:function(remoteGrades){
+																										remoteGradeValuesCache[grade.id] = remoteGrades;
                                                     generateData(function(data){
                                                         var modifiedData = data;
-																												remoteGradeValuesCache[grade.id] = data;
                                                         _.forEach(modifiedData,function(datum){
                                                             var thisRemoteGrade = _.find(remoteGrades,function(rg){
                                                                 return rg.gradedUser == datum.gradedUser;
