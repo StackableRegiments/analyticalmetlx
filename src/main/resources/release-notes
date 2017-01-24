@@ -1,4 +1,4 @@
-1.3.5
+1.3.7
 Bugfix: METL-539: Shadowing of id variable in d2lExternalGradebook resulted in broken grade sync.
 
 1.3.4
