@@ -114,7 +114,7 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
     )
   }
   protected def toGrade(uc:ID2LUserContext,ctx:String,d2lGos:D2LGradeObject):MeTLGrade = {
-    val id = "D2L_%s".format(nextFuncName)
+    val gradeId = "D2L_%s".format(nextFuncName)
     val location = "D2L_%s_%s".format(id,ctx)
     val author = "D2L"
     val visible = false
@@ -123,7 +123,7 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
       case "passfail" => MeTLGradeValueType.Boolean
       case _ => MeTLGradeValueType.Text
     }
-    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
+    MeTLGrade(config,author,new Date().getTime(),gradeId,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
   }
   protected def fromGradeValue(uc:ID2LUserContext,in:MeTLGradeValue):D2LIncomingGradeValue = {
     val gradeObjectType = in.getType match {
@@ -277,27 +277,34 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
       val uc = tup._1
       val d2lId = tup._2
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
+      //println("classlists: %s".format(classlists))
       //trace("incoming grades: %s".format(grades))
       if (grades.length > 1){
+        //println("grades being sent! %s".format(grades))
         val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))) 
-        grades.filterNot(gv => originalGrades.exists(og => {
+        //println("original grades! %s".format(originalGrades))
+        val gradesToSend = grades.filterNot(gv => originalGrades.exists(og => {
           og.getType == gv.getType &&
           og.getGradedUser == gv.getGradedUser && (
-            og.getNumericGrade == gv.getNumericGrade ||
-            og.getTextGrade == gv.getTextGrade ||
-            og.getBooleanGrade == gv.getBooleanGrade 
+            (gv.getNumericGrade.isDefined && og.getNumericGrade == gv.getNumericGrade) ||
+            (gv.getTextGrade.isDefined && og.getTextGrade == gv.getTextGrade) ||
+            (gv.getBooleanGrade.isDefined && og.getBooleanGrade == gv.getBooleanGrade) 
           ) &&
           og.getPrivateComment == gv.getPrivateComment &&
           og.getComment == gv.getComment
-        })).flatMap(gv => { //only update the ones which have a changed value
+        }))
+        //println("grades which are different: %s".format(gradesToSend))
+        gradesToSend.foreach(gv => { //only update the ones which have a changed value
           interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       } else {
-        grades.flatMap(gv => {
+        grades.foreach(gv => {
           interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       }
-      interface.getGradeValues(uc,ctx,gradeId).flatMap(ugv => {
+      val returnedGradeValues = interface.getGradeValues(uc,ctx,gradeId)
+      //println("d2lGrades which are returned: %s".format(returnedGradeValues))
+      val returnedGrades = returnedGradeValues.flatMap(ugv => {
         (for {
           gv <- ugv.GradeValue
           ufw = ugv.User
@@ -306,6 +313,8 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
           cgv
         }).map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))
       })
+      //println("grades which are returned: %s".format(returnedGrades))
+      returnedGrades
     })
   }
 }
