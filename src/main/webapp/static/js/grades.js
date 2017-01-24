@@ -588,7 +588,11 @@ var Grades = (function(){
                                         gvChangeElem.find(".gradeValuePrivateCommentTextboxLabel").attr("for",pvcbId);
                                         var gvChangeSubmit = gvChangeElem.find(".submitGradeValueChange");
                                         gvChangeSubmit.unbind("click").on("click",function(){
-                                            sendStanza(newGv);
+																						var stanzaToSend = _.cloneDeep(newGv);
+																						delete stanzaToSend.remoteGrade;
+																						delete stanzaToSend.remoteComment;
+																						delete stanzaToSend.remotePrivateComment;
+                                            sendStanza(stanzaToSend);
                                             gv.gradeValue = newGv.gradeValue;
                                             gv.gradeComment = newGv.gradeComment;
                                             gv.gradePrivateComment = newGv.gradePrivateComment;
@@ -634,22 +638,27 @@ var Grades = (function(){
                                         noDataContent: "No gradeable users",
                                         controller: {
                                             loadData: function(filter){
-																								var enriched = _.map(data,function(d){
+																								var enriched = data;
+																								_.forEach(data,function(d){
 																									if ("foreignRelationship" in grade && grade.id in remoteGradeValuesCache){
 																										var remoteGradeValues = remoteGradeValuesCache[grade.id];
-																										if (!("remoteGrade" in d)){
-																											var rgv = _.find(remoteGradeValues,function(rgval){
-																												return rgval.gradedUser == d.gradedUser;
-																											});
-																											if (rgv != undefined){
+																										var rgv = _.find(remoteGradeValues,function(rgval){
+																											return rgval.gradedUser == d.gradedUser;
+																										});
+																										if (rgv != undefined){
+																											if ("gradeValue" in rgv && !("remoteGradeValue" in d)){
 																												d.remoteGrade = rgv.gradeValue;
+																											}
+																											if ("gradeComment" in rgv && !("remoteComment" in d)){
 																												d.remoteComment = rgv.gradeComment;
+																											}
+																											if ("gradePrivateComment" in rgv && !("remotePrivateComment" in d)){
 																												d.remotePrivateComment = rgv.gradePrivateComment;
 																											}
 																										}
 																									}
-																									return d;
 																								});
+																								//console.log("loading data",grade,remoteGradeValuesCache,data,enriched);
                                                 if ("sortField" in filter){
                                                     var sorted = _.sortBy(enriched,function(gv){
                                                         return gv[filter.sortField];
@@ -688,9 +697,15 @@ var Grades = (function(){
                                                             return rg.gradedUser == datum.gradedUser;
                                                         });
                                                         if (thisRemoteGrade !== undefined){
+																													if ("gradeValue" in thisRemoteGrade){
                                                             datum.remoteGrade = thisRemoteGrade.gradeValue;
+																													}
+																													if ("gradeComment" in thisRemoteGrade){
                                                             datum.remoteComment = thisRemoteGrade.gradeComment;
+																													}
+																													if ("gradePrivateComment" in thisRemoteGrade){
                                                             datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
+																													}
                                                         }
                                                         spin(b,false);
                                                     });
@@ -722,9 +737,15 @@ var Grades = (function(){
                                                                 return rg.gradedUser == datum.gradedUser;
                                                             });
                                                             if (thisRemoteGrade !== undefined){
+																															if ("gradeValue" in thisRemoteGrade){
                                                                 datum.remoteGrade = thisRemoteGrade.gradeValue;
+																															}
+																															if ("gradeComment" in thisRemoteGrade){
                                                                 datum.remoteComment = thisRemoteGrade.gradeComment;
+																															}
+																															if ("gradePrivateComment" in thisRemoteGrade){
                                                                 datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
+																															}
                                                             }
                                                         });
                                                         spin(b,false);
