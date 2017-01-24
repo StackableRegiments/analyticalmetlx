@@ -2,6 +2,7 @@ var Grades = (function(){
     var gradesDatagrid = {};
     var grades = {};
     var gradeValues = {};
+		var remoteGradeValuesCache = {};
     var gradeCreateButton = {};
     var gradeActionButtonsTemplate = {};
     var gradeEditTemplate = {};
@@ -15,6 +16,7 @@ var Grades = (function(){
     var clearState = function(){
         grades = {};
         gradeValues = {};
+				remoteGradeValuesCache = {};
         reRenderFunc();
     };
     var historyReceivedFunc = function(history){
@@ -632,8 +634,24 @@ var Grades = (function(){
                                         noDataContent: "No gradeable users",
                                         controller: {
                                             loadData: function(filter){
+																								var enriched = _.map(data,function(d){
+																									if ("foreignRelationship" in grade && grade.id in remoteGradeValuesCache){
+																										var remoteGradeValues = remoteGradeValuesCache[grade.id];
+																										if (!("remoteGrade" in d)){
+																											var rgv = _.find(remoteGradeValues,function(rgval){
+																												return rgval.gradedUser == d.gradedUser;
+																											});
+																											if (rgv != undefined){
+																												d.remoteGrade = rgv.gradeValue;
+																												d.remoteComment = rgv.gradeComment;
+																												d.remotePrivateComment = rgv.gradePrivateComment;
+																											}
+																										}
+																									}
+																									return d;
+																								});
                                                 if ("sortField" in filter){
-                                                    var sorted = _.sortBy(data,function(gv){
+                                                    var sorted = _.sortBy(enriched,function(gv){
                                                         return gv[filter.sortField];
                                                     });
                                                     if ("sortOrder" in filter && filter.sortOrder == "desc"){
@@ -641,7 +659,7 @@ var Grades = (function(){
                                                     }
                                                     return sorted
                                                 } else {
-                                                    return data;
+                                                    return enriched;
                                                 }
                                             }
                                         },
@@ -664,6 +682,7 @@ var Grades = (function(){
                                             $.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
                                                 generateData(function(data){
                                                     var modifiedData = data;
+																										remoteGradeValuesCache[grade.id] = data;
                                                     _.forEach(modifiedData,function(datum){
                                                         var thisRemoteGrade = _.find(remoteGrades,function(rg){
                                                             return rg.gradedUser == datum.gradedUser;
@@ -697,6 +716,7 @@ var Grades = (function(){
                                                 success:function(remoteGrades){
                                                     generateData(function(data){
                                                         var modifiedData = data;
+																												remoteGradeValuesCache[grade.id] = data;
                                                         _.forEach(modifiedData,function(datum){
                                                             var thisRemoteGrade = _.find(remoteGrades,function(rg){
                                                                 return rg.gradedUser == datum.gradedUser;
