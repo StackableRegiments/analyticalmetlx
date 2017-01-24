@@ -730,6 +730,17 @@ var Grades = (function(){
                                                 dataType:"json",
                                                 success:function(remoteGrades){
 																										remoteGradeValuesCache[grade.id] = remoteGrades;
+																										var failedGrades = _.filter(gradesToSend,function(gts){
+																											var matchingGrade = _.find(remoteGrades,function(rg){
+																												return rg.gradedUser == gts.gradedUser && rg.gradeValue == gts.gradeValue && rg.gradeComment == gts.gradeComment && rg.gradePrivateComment == gts.gradePrivateComment;
+																											});
+																											return matchingGrade ? false : true;
+																										});
+																										if (failedGrades.length){
+																											errorAlert("external grade synchronization failed",sprintf("<div><div>Some grades failed to synchronize to the external gradebook:</div><div><ul>%s</ul></div><div>This might be because these users aren't available in the external gradebook to be assessed.</div><div>These grades are still available in this gradebook, but may not be available in the external gradebook.</div>",_.map(failedGrades,function(fg){
+																												return sprintf("<li>%s</li>",fg.gradedUser);
+																											}).join("")));
+																										}
                                                     generateData(function(data){
                                                         var modifiedData = data;
                                                         _.forEach(modifiedData,function(datum){
