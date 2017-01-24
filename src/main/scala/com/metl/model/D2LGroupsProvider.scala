@@ -342,6 +342,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       val headers = List(("Content-Type","application/json"))
       val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,headers)
       //trace("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
+      //println("response from putToD2L(%s): %s\r\n%s".format(url.toString,jValueString,response))
       None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -556,10 +557,12 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
     val gv = Extraction.decompose(gradeValue)
+    //println("Attempting to update this gradeValue(%s,%s,%s): %s".format(orgUnitId,gradeObjectId,userId,gv))
     //trace("sending new gradeValue: %s".format(compactRender(gv)))
-    putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
+    val result = putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,false)
+    //println("updated this gradeValue(%s,%s,%s): %s".format(orgUnitId,gradeObjectId,userId,result))
+    result
   }
-
 
   def getEnrollments(userContext:ID2LUserContext,userId:String,roleIds:List[Int] = Nil):List[D2LEnrollment] = {
     roleIds match {
