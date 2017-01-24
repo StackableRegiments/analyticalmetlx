@@ -283,9 +283,9 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
         grades.filterNot(gv => originalGrades.exists(og => {
           og.getType == gv.getType &&
           og.getGradedUser == gv.getGradedUser && (
-            og.getNumericGrade == gv.getNumericGrade ||
-            og.getTextGrade == gv.getTextGrade ||
-            og.getBooleanGrade == gv.getBooleanGrade 
+            (gv.getNumericGrade.isDefined && og.getNumericGrade == gv.getNumericGrade) ||
+            (gv.getTextGrade.isDefined && og.getTextGrade == gv.getTextGrade) ||
+            (gv.getBooleanGrade.isDefined && og.getBooleanGrade == gv.getBooleanGrade) 
           ) &&
           og.getPrivateComment == gv.getPrivateComment &&
           og.getComment == gv.getComment
