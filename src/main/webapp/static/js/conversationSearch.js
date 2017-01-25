@@ -38,7 +38,8 @@ var Conversations = (function(){
                 return new Date(a) - new Date(b);
             },
             itemTemplate: function(i){
-                return new Date(i).toLocaleString();
+		console.log("New date",i);
+                return moment(i).format('MMM Do YYYY, h:mm a');
             },
             insertTemplate: function(i){return ""},
             editTemplate: function(i){return ""},
@@ -72,7 +73,7 @@ var Conversations = (function(){
                 } else {
                     if (shouldModifyConversation(details)){
                         return $("<a/>",{
-                            href:sprintf("/editConversation?conversationJid=%s",details.jid),
+                            href:sprintf("/editConversation?conversationJid=%s&unique=true",details.jid),
                             text:"Edit"
                         });
                     } else {
@@ -179,7 +180,22 @@ var Conversations = (function(){
                 { name:"title", type:"text", title:"Title", readOnly:true },
                 {name:"creation",type:"dateField",title:"Created"},
                 {name:"author",type:"text",title:"Author",readOnly:true},
-                {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true},
+                {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true,itemTemplate:function(subject,conv){
+									var elem = $("<span/>");
+									var ufr = _.find(userGroups,function(g){
+										var gfr = g.foreignRelationship;
+										return "foreignRelationship" in conv && "key" in conv.foreignRelationship && gfr != undefined && "key" in gfr && "system" in gfr && conv.foreignRelationship.key == gfr.key && conv.foreignRelationship.system == gfr.system;
+									});
+									console.log("conv:",conv,ufr);
+									if ("foreignRelationship" in conv && "displayName" in conv.foreignRelationship){
+										elem.text(conv.foreignRelationship.displayName);
+									}	else if (ufr !== undefined && "foreignRelationship" in ufr && "displayName" in ufr.foreignRelationship){
+										elem.text(ufr.foreignRelationship.displayName);
+									} else {
+										elem.text(subject);
+									}
+									return elem;
+								}},
                 {name:"edit",type:"editConversationField",title:"Edit",sorting:false,width:30,css:"gridAction"}
             ]
         });
@@ -256,10 +272,21 @@ var Conversations = (function(){
         var title = details.title.toLowerCase().trim();
         var author = details.author;
         var q = getQueryFunc();
+				var cfr = details.foreignRelationship;
         return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+						var fr = g.foreignRelationship;
             var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
+						var matches = key == "special" && name == "superuser";
+						if (!matches){
+							if (cfr !== undefined && "key" in cfr && "system" in cfr && fr !== undefined){
+								matches = cfr.key == fr.key && cfr.system == fr.system;
+							}
+						}
+						if (!matches){
+							matches = name.toLowerCase().trim() == subject;
+						}
+						return matches;
         })));
     };
 
@@ -313,7 +340,9 @@ var Conversations = (function(){
             return (("importing" in cid && cid.importing == true) || !_.some(currentSearchResults,function(conv){return conv.jid == cid.jid;}));
         });
         var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
-        dataGridItems = _.map(_.concat(mutatedImports,_.filter(currentSearchResults,shouldDisplayConversation)),function(conv){
+				var candidates = _.clone(_.concat(mutatedImports,_.filter(_.uniqBy(_.reverse(_.orderBy(currentSearchResults,"lastAccessed")),"jid"),shouldDisplayConversation)));
+				console.log("candidates",candidates);
+        dataGridItems = _.uniqBy(_.reverse(_.orderBy(_.map(candidates,function(conv){
             if (conv.subject == "deleted"){
                 conv.lifecycle = "deleted";
             } else if (conv.creation > newThreshold){
@@ -322,7 +351,8 @@ var Conversations = (function(){
                 conv.lifecycle = "available";
             }
             return conv;
-        });
+        }),"lastAccessed")),"jid");
+				console.log("rendering",dataGridItems);
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");
@@ -357,10 +387,11 @@ var Conversations = (function(){
         return userGroups
     };
     var receiveConversationDetailsFunc = function(details){
-        currentSearchResults = _.uniq(_.concat([details],_.filter(currentSearchResults,function(conv){return conv.jid != details.jid;})));
+        currentSearchResults.push(details);
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
+        console.log("receiveSearchResults",results);
         currentSearchResults = results;
         permitOneSearch();
         updateQueryParams();
@@ -381,7 +412,7 @@ var Conversations = (function(){
         reRender();
     };
     var updateQueryParams = function(){
-			console.log("updating queryparams:",getQueryFunc(),window.location);
+        console.log("updating queryparams:",getQueryFunc(),window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var q = getQueryFunc();
@@ -445,6 +476,7 @@ function receiveUsername(username){ //invoked by Lift
 function receiveUserGroups(userGroups){ //invoked by Lift
     Conversations.receiveUserGroups(userGroups);
 }
+
 function receiveConversationDetails(details){ //invoked by Lift
     Conversations.receiveConversationDetails(details);
 }

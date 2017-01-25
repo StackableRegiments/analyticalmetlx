@@ -807,13 +807,9 @@
                             }
                         },
                         notifySelectionChanged: function(canMoveViewport) {
-                            var cachedFormatting = null;
                             var self = this;
                             var getFormatting = function() {
-                                if (!cachedFormatting) {
-                                    cachedFormatting = self.selectedRange().getFormatting();
-                                }
-                                return cachedFormatting;
+                                return self.selectedRange().getFormatting();
                             };
                             this.selectionChanged.fire(getFormatting, canMoveViewport);
                         },
@@ -1376,7 +1372,7 @@
                                     var first = this.lines[0].bounds();
                                     left = first.l;
                                     top = first.t;
-                                    this.lines.forEach(function(line) {
+                                    this.lines.forEach(function(line,i) {
                                         var b = line.bounds();
                                         right = Math.max(right, b.l + b.w);
                                         bottom = Math.max(bottom, b.t + b.h);
@@ -1609,37 +1605,37 @@
                             if (node.nodeType == 3) {
                                 dealWithSpaces(node.nodeValue, formatting);
                             } else {
-															if (node == undefined){
-																return;
-															} else {
-                                formatting = Object.create(formatting);
+                                if (node == undefined){
+                                    return;
+                                } else {
+                                    formatting = Object.create(formatting);
 
-                                var classNames = node.attributes['class'];
-                                if (classNames) {
-                                    classNames.value.split(' ').forEach(function(cls) {
-                                        cls = classes[cls];
-                                        if (cls) {
-                                            Object.keys(cls).forEach(function(key) {
-                                                formatting[key] = cls[key];
-                                            });
+                                    var classNames = node.attributes['class'];
+                                    if (classNames) {
+                                        classNames.value.split(' ').forEach(function(cls) {
+                                            cls = classes[cls];
+                                            if (cls) {
+                                                Object.keys(cls).forEach(function(key) {
+                                                    formatting[key] = cls[key];
+                                                });
+                                            }
+                                        })
+                                    }
+
+                                    handlers.forEach(function(handler) {
+                                        handler(node, formatting);
+                                    });
+                                    if (node.childNodes) {
+                                        for (var n = 0; n < node.childNodes.length; n++) {
+                                            recurse(node.childNodes[n], formatting);
                                         }
-                                    })
-                                }
-
-                                handlers.forEach(function(handler) {
-                                    handler(node, formatting);
-                                });
-                                if (node.childNodes) {
-                                    for (var n = 0; n < node.childNodes.length; n++) {
-                                        recurse(node.childNodes[n], formatting);
+                                    }
+                                    if (isNewLine[node.nodeName]) {
+                                        emit('\n', formatting);
+                                        inSpace = true;
                                     }
                                 }
-                                if (isNewLine[node.nodeName]) {
-                                    emit('\n', formatting);
-                                    inSpace = true;
-                                }
                             }
-														}
                         }
                         recurse(root, {});
                         return result;
@@ -2238,7 +2234,8 @@
                     exports.formattingKeys = [ 'bold', 'italic', 'underline', 'strikeout', 'color', 'font', 'size', 'align', 'script' ];
 
                     exports.defaultFormatting = {
-                        size: 30,
+                        size: 14,
+                        newBoxSize:14,
                         font: 'sans-serif',
                         color: ['#000000',255],
                         bold: false,

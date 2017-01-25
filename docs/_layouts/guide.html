@@ -1,13 +1,15 @@
 {% include head.html %}
 {% include content-start.html %}
 
-{% include nav-guide.html %}
+<!--<script src="{{site.baseurl}}/javascripts/lodash.js" type="application/javascript"></script>-->
+<script src="{{site.baseurl}}/javascripts/jquery-3.1.1.slim.min.js" type="application/javascript"></script>
+<script src="{{site.baseurl}}/javascripts/js.cookie.js" type="application/javascript"></script>
+<script src="{{site.baseurl}}/javascripts/sidebar.js" type="application/javascript"></script>
+
+{% include nav-guide-side.html %}
 
 <h1>{{ page.title }}</h1>
 {{ content }}
-
-<hr/>
-Return to the <a href="guide.html">User Guide</a>.
 
 {% include content-end.html %}
 {% include foot.html %}

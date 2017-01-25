@@ -1,15 +1,11 @@
 var Conversations = (function(){
-    var currentSearchTerm = "";
-    var currentlyDisplayedConversations = [];
     var currentConversation = {};
     var currentServerConfigName = "external";
     var currentSlide = 0;
     var targetConversationJid = "";
     var currentTeacherSlide = 0;
     var isSyncedToTeacher = false;
-
-    var conversationTemplate = undefined;
-    var conversationSearchListing = undefined;
+    var currentGroup = [];
 
     var BannedState = (function(){
         var haveCheckedBanned = false;
@@ -21,6 +17,7 @@ var Conversations = (function(){
             successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
         };
         var updateBannedVisualState = function(){
+            $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
         };
         return {
             checkIsBanned:function(conversation,freshCheck){
@@ -48,45 +45,152 @@ var Conversations = (function(){
             }
         };
     })();
-    $(function(){
-        //take a template of the html for the searchResultItem
-        conversationSearchListing = $("#searchResults");
-        conversationTemplate = conversationSearchListing.find(".searchResultItem").clone();
-        conversationSearchListing.empty();
-    });
     var ThumbCache = (function(){
-        var cacheRefreshTime = 10 * 1000; // 10 seconds
+        var cacheRefreshTime = 0
         var cache = {};
+        var groupActivity = {};
+        var groupTraces = {};
+
+        var ensureTracking = function(audience){
+            if(!(audience in groupActivity)){
+                groupActivity[audience] = {
+                    bucket:0,
+                    line:_.map(_.range(SIGNAL_HISTORY),function(){return 0})
+                }
+            }
+        }
+        var audienceAction = function(audienceO){
+            var audience = audienceO.name;
+            ensureTracking(audience);
+            groupActivity[audience].bucket += 1;
+        }
+        var rollAudience = function(meter){
+            meter.line.pop();
+            meter.line.unshift(meter.bucket);
+            meter.bucket = 0;
+        };
+        var rollAudiences = function(){
+            _.each(groupActivity,rollAudience);
+        }
+        var conversationActivity;
+        var displayAudiences = function(){
+            ensureTracking("anyPrivate");
+            ensureTracking("anyPublic");
+            groupTraces.anyPrivate = groupTraces.anyPrivate || {};
+            groupTraces.anyPublic = groupTraces.anyPublic || {};
+            if(!conversationActivity || !conversationActivity.length){
+                conversationActivity = $("#conversationActivity");
+            }
+            WorkQueue.enqueue(function(){
+                _.each(currentConversation.slides,updateSlide);
+                if(conversationActivity.find("svg").length == 0){
+                    groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
+                                                                 [groupActivity.anyPublic.line,
+                                                                  groupActivity.anyPrivate.line],50,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                }
+                if (groupTraces && "anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
+                    groupTraces.anyPublic.update([
+                        groupActivity.anyPublic.line,
+                        groupActivity.anyPrivate.line
+                    ]);
+                }
+            });
+        }
+        var groupTraceIsAccurate = function(group){
+            return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
+        }
+        var scrollContainer;
+        var updateSlide = function(slide){
+            var gs = Conversations.getGroupsFor(slide);
+            scrollContainer = scrollContainer || $("#thumbScrollContainer");
+            var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+            if(slideContainer){
+                slideContainer.find(".slideThumbnailNumber").text(slideLabel(slide));
+            }
+            if(! _.every(gs,groupTraceIsAccurate)){
+                paintGroups(slide,slideContainer);
+            }
+            _.each(gs,function(group){
+                var trace = groupTraces[group.id];
+                if(trace){//It won't exist if they haven't painted yet
+                    trace.update([groupActivity[group.id].line]);
+                }
+            });
+        }
+        var SENSOR_INTERVAL = 500;
+        var DISPLAY_INTERVAL = 1000;
+        var SIGNAL_HISTORY = (1000 /*milis*/ / SENSOR_INTERVAL) * 60 * 15;
+        setInterval(rollAudiences,SENSOR_INTERVAL);
+        setInterval(displayAudiences,DISPLAY_INTERVAL);
+        Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
+            if(stanza.type == "theme"){
+                switch(stanza.author){
+                case "private":audienceAction({name:"anyPrivate"});
+                    break;
+                case "public":audienceAction({name:"anyPublic"});
+                    break;
+                }
+                audienceAction({name:stanza.author});
+            }
+            _.each(stanza.audiences,audienceAction);
+        }
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
         var fetchAndPaintThumb = function(slide,slideContainer,slideImage){
-            var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
-            var storeThumb = function(data){
-                cache[slide.id] = {
-                    data:data,
-                    when:Date.now()
+            if(slide.groupSets.length){
+            }
+            else{
+                var thumbUrl = sprintf("/thumbnailDataUri/%s",slide.id);
+                var storeThumb = function(data){
+                    cache[slide.id] = {
+                        data:data,
+                        when:Date.now()
+                    };
+                    WorkQueue.enqueue(function(){
+                        slideImage.attr("src",data);
+                    });
                 };
-                //Use the data straight away instead of recursing
-                slideImage.attr("src",data);
-            };
-            $.ajax({
-                url:thumbUrl,
-                beforeSend: function ( xhr ) {
-                    xhr.overrideMimeType("text/plain; charset=x-user-defined");
-                },
-                dataType: "text"
-            }).done(storeThumb);
-        };
-        var paintThumb = function(slide,slideContainer){
-            var slideImage = slideContainer.find("img");
-            if (slide.id in cache && cache[slide.id].when > (Date.now() - cacheRefreshTime)){
-                slideImage.attr("src",cache[slide.id].data);
-            } else {
-                fetchAndPaintThumb(slide,slideContainer,slideImage);
+                $.ajax({
+                    url:thumbUrl,
+                    beforeSend: function ( xhr ) {
+                        xhr.overrideMimeType("text/plain; charset=x-user-defined");
+                    },
+                    dataType: "text"
+                }).done(storeThumb);
             }
         };
-        var makeBlankCanvas = function(w,h){
+        var paintGroups = function(slide,slideContainer){
+            var groupsContainer = slideContainer.find(".groupSlideContainer")
+            if(groupsContainer.length == 0){
+                groupsContainer = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
+                slideContainer
+                    .addClass("groupSlide")
+                    .find("img")
+                    .attr("src",blank4to3Canvas);
+            }
+            _.each(Conversations.getCurrentGroups(),function(group){
+                ensureTracking(group.id);
+                var label = sprintf("group_%s",group.id);
+                var groupContainer = groupsContainer.find("#"+label);
+                if(groupContainer.length == 0){
+                    groupContainer = $("<div />",{
+                        id:label,
+                        class:"thumbGroup"
+                    }).append($("<span />",{
+                        text:group.members.length,
+                        class:"count"
+                    })).appendTo(groupsContainer);
+                    if(!(group.id in groupTraces)){
+                        groupTraces[group.id] = {};
+                    }
+                    groupTraces[group.id].update = SparkLine.svg(groupContainer,[groupActivity[group.id].line],80,15,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
+                }
+                groupTraces[group.id].group = group;
+                groupContainer.find('.count').text(group.members.length);
+            });
+        }
+        var blank4to3Canvas = (function(w,h){
             var c = $("<canvas />");
             c.width = w;
             c.height = h;
@@ -97,51 +201,26 @@ var Conversations = (function(){
             ctx.fillStyle="white";
             ctx.fill();
             return c[0].toDataURL();
-        }
-        var blank4to3Canvas = makeBlankCanvas(320,240);
-        var possiblyUpdateThumbnail = function(slide){
-            var thumbScroller = $("#thumbScrollContainer");
-            var slidesTop = 0;
-            var slidesBottom = thumbScroller.height();
-            var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
-            try {
-                var slideImage = slideContainer.find("img");
-                var slideTop = slideContainer.position().top;
-                var slideBottom = slideTop + slideContainer.height();
-                if (slideTop == slideBottom){
-                    slideImage.attr("src",blank4to3Canvas);
-                    return;
-                }
-                var isVisible = (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-                if (isVisible){
-                    paintThumb(slide,slideContainer);
-                }
-            } catch(e) {
-                console.log("exception while painting thumb: ",e);
-                //couldn't find the slideContainer at this time.
-            }
-        }
-        var clearCacheFunction = function(){
-            cache = {};
-        };
-        var paintAllThumbsFunc = function(){
-            _.forEach(currentConversation.slides,function(slide){
-                var img = $(sprintf("#slideContainer_%s img",slide.id));
-                if (img.height() == 0 || img.height() == undefined){
-                    img.on("load",function(){
-                        img.off("load");
-                        possiblyUpdateThumbnail(slide);
-                    });
-                    img.attr("src",blank4to3Canvas);
-                } else {
-                    possiblyUpdateThumbnail(slide);
-                }
-            });
-        };
+        })(320,240);
+
         return {
-            paintThumb:possiblyUpdateThumbnail,
-            paintAllThumbs:_.debounce(paintAllThumbsFunc,500),
-            clearCache:clearCacheFunction
+            paint:function(slide,scrollContainer){
+                if(slide){
+                    scrollContainer = scrollContainer || $("#thumbScrollContainer");
+                    var slideContainer = scrollContainer.find(sprintf("#slideContainer_%s",slide.id));
+                    if(slide.groupSets.length){
+                    }
+                    else{
+                        var slideImage = slideContainer.find("img");
+                        fetchAndPaintThumb(slide,slideContainer,slideImage);
+                    }
+                }
+            },
+            clearCache:function(){
+                cache = {};
+                groupActivity = {};
+                groupTraces = {};
+            }
         };
     })();
 
@@ -155,27 +234,73 @@ var Conversations = (function(){
             }
         }));
     }
-    var paintThumbs = function(){
-        try {
-            ThumbCache.paintAllThumbs();
+    var doIfVisible = function(slide,thumbScroller,func){
+        var slidesTop = 0;
+        var slidesBottom = thumbScroller.height();
+        var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
+        var slideImage = slideContainer.find("img");
+        var slideTop = slideContainer.position().top;
+        var slideBottom = slideTop + slideContainer.height();
+        var visible =  (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
+        if(slidesTop + slidesBottom + slideTop + slideBottom == 0){
+            _.delay(function(){
+                doIfVisible(slide,thumbScroller,func);
+            },1000);
+            visible = false;
         }
-        catch(e){
-            console.log("exception while painting thumbs",e);
+        else if(visible){
+            func();
         }
-        updateQueryParams();
     }
     var refreshSlideDisplay = function(){
-        updateStatus("Refreshing page display");
         var slideContainer = $("#slideContainer")
-        slideContainer.html(unwrap(currentConversation.slides.sort(function(a,b){return a.index - b.index;}).map(constructSlide)))
+        var scrollContainer = $("#thumbScrollContainer");
+        var ss = _.filter(currentConversation.slides,"exposed");
+        //Add the new slides
+        _.each(_.filter(ss,function(slide){
+            return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
+        }),function(slide){
+            slideContainer.append(constructSlide(slide)[0]);
+        });
+        //Remove the deleted slides
+        _.each(_.filter(ss,function(slide){
+            var keep = _.map(ss,constructSlideId);
+            $(".slideButtonContainer").filter(function(i,el){
+                var id = $(el).attr("id");
+                return ! _.includes(keep,id);
+            }).remove();
+        }));
+        //Apply the new index positions
+        var positions = _.fromPairs(_.map(currentConversation.slides,function(slide){
+            return [constructSlideId(slide),slide.index];
+        }));
+        $(".slideButtonContainer").sort(function(ja,jb){
+            var ia = $(ja).attr("id");
+            var ib = $(jb).attr("id");
+            return positions[ia] - positions[ib];
+        }).detach().appendTo(slideContainer);
+        _.each(ss,function(slide){
+            doIfVisible(slide,scrollContainer,function(){
+                updateThumbnailFor(slide.id);
+            });
+        });
+        //Build the UI
         var slideControls = $("#slideControls");
         slideControls.empty();
         constructPrevSlideButton(slideControls),
         constructNextSlideButton(slideControls),
         constructAddSlideButton(slideControls)
-        slideContainer.off("scroll");
-        slideContainer.on("scroll",paintThumbs);
+        constructAddGroupSlideButton(slideControls)
+        constructHelpButton(slideControls)
         indicateActiveSlide(currentSlide);
+        $(".thumbnail:not(.groupSlide)").map(function(){
+            var t = $(this);
+            if(t.width() <= 0){
+                t.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
+                t.css({width:sprintf("%spx",t.width())});
+            }
+            t.height(t.width() * 0.75);
+        });
         Progress.call("onLayoutUpdated");
     }
 
@@ -185,7 +310,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":publishingAllowed,
-            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced
+            "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced,
+            "studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+            "studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -199,7 +326,9 @@ var Conversations = (function(){
         var newPermissions = {
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":oldPerms.studentCanPublish,
-            "usersAreCompulsorilySynced":mustFollowTeacher
+            "usersAreCompulsorilySynced":mustFollowTeacher,
+            "studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+            "studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -249,14 +378,26 @@ var Conversations = (function(){
             return "collaboration disabled";
         }
     };
+    var loadCurrentGroup = function(details){
+        var currentSlideDetails = _.find(details.slides,function(slide){
+            return slide.id == currentSlide;
+        });
+        if(currentSlideDetails){
+            currentGroup = [];
+            _.each(Conversations.getCurrentGroups(),function(group){
+                if(_.includes(group.members,UserSettings.getUsername())){
+                    currentGroup.push(group);
+                }
+            });
+        }
+    }
     var actOnConversationDetails = function(details){
         try{
-					console.log("received conversation:",details);
+            console.log("received conversation:",details);
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
             };
-            //updateStatus(sprintf("Updating to conversation %s",details.jid));
             if ("jid" in details && targetConversationJid && details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
                 if (shouldDisplayConversationFunction(details)){
                     currentConversation = details;
@@ -268,6 +409,7 @@ var Conversations = (function(){
                         BannedState.checkIsBanned(details,true);
                         ThumbCache.clearCache();
                     }
+                    loadCurrentGroup(details);
                 }
                 else {
                     currentConversation = {};
@@ -276,10 +418,6 @@ var Conversations = (function(){
             }
             updateCurrentConversation(details);
             BannedState.checkIsBanned(details);
-            if (!(_.some(currentlyDisplayedConversations,function(c){return c.jid == details.jid;})) && shouldModifyConversationFunction(details)){
-                currentlyDisplayedConversations.push(details);
-                refreshConversationSearchResults();
-            }
         }
         catch(e){
             console.log("exception in actOnConversationDetails",e);
@@ -287,68 +425,23 @@ var Conversations = (function(){
         }
         Progress.call("onLayoutUpdated");
     };
-    var actOnConversations = function(listOfConversations){
-        currentlyDisplayedConversations = listOfConversations;
-        refreshConversationSearchResults();
-    };
-    //var onSyncMoveTimerElapsed = undefined;
     var actOnSyncMove = function(jid){
-        if ((Conversations.getIsSyncedToTeacher() && !shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
+        console.log("actOn",jid);
+        if ((Conversations.getIsSyncedToTeacher() || shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
             if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
                 WorkQueue.enqueue(function(){
-                    performSyncMoveTo(jid);
+                    if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
+                        currentTeacherSlide = jid;
+                        doMoveToSlide(jid,true);
+                    }
                     return false;
                 });
             }
         }
-        /*
-         if ((!shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
-         if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
-         var syncMoveDelay = 3000;
-         onSyncMoveTimerElapsed = function(){
-         onSyncMoveTimerElapsed = undefined;
-         console.log("syncMove moving to",jid,new Date());
-         performSyncMoveTo(jid);
-         };
-         var whenAble = function(){
-         console.log("syncMove polling for",jid,new Date());
-         if (onSyncMoveTimerElapsed){
-         if (WorkQueue.isAbleToWork){
-         onSyncMoveTimerElapsed();
-         } else {
-         WorkQueue.enqueue(function(){
-         console.log("syncMove re-establishing for",jid,new Date());
-         setTimeout(whenAble,syncMoveDelay);
-         });
-         }
-         }
-         };
-         WorkQueue.enqueue(function(){
-         console.log("syncMove establishing for",jid,new Date());
-         setTimeout(whenAble,syncMoveDelay);
-         });
-         }
-         }
-         */
     }
-    var performSyncMoveTo = function(jid){
-        if ((!shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
-            if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
-                currentTeacherSlide = jid;
-                if (Conversations.getIsSyncedToTeacher()){
-                    if (currentSlide != jid){
-                        currentSlide = jid;
-                        doMoveToSlide(jid);
-                    }
-                }
-            }
-        }
-    };
     var updateThumbnailFor = function(slideId) {
-        //setting index to zero because this isn't necessary.
-        var slidesContainer = $("#slideContainer");
-        var containerHeight = slidesContainer.height();
-        ThumbCache.paintThumb({id:slideId,index:0},slidesContainer,containerHeight);
+        var slide = _.find(currentConversation.slides, ['id',parseInt(slideId)]);
+        ThumbCache.paint(slide);
     }
     var goToNextSlideFunction = function(){
         if ("slides" in currentConversation && currentSlide > 0){
@@ -368,23 +461,17 @@ var Conversations = (function(){
             }
         }
     };
-    var actOnNewConversationDetailsReceived = function(details){
-        if (details.title.indexOf(currentSearchTerm) > -1 || details.author.indexOf(currentSearchTerm) > -1){
-            currentlyDisplayedConversations = _.filter(currentlyDisplayedConversations,function(c){return c.jid != details.jid});
-            currentlyDisplayedConversations.push(details);
-            refreshConversationSearchResults();
-        }
-    };
     var actOnCurrentConversationJidReceived = function(jid){
-				console.log("currentConversationJid received:",jid);
+        console.log("currentConversationJid received:",jid);
         targetConversationJid = jid;
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
-				console.log("currentSlideJid received:",jid);
+        console.log("currentSlideJid received:",jid);
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
+        loadCurrentGroup(currentConversation);
     };
     var updateLinks = function(){
         var serviceUrlRoot = window.location.origin;
@@ -434,6 +521,17 @@ var Conversations = (function(){
                 href:sprintf("/saveToOneNote/%s",targetConversationJid),
                 text:"Export this conversation"
             }));
+        }
+        if (Conversations.shouldModifyConversation()){
+            $("#editConversation").unbind("click").click(function(){
+                $.jAlert({
+                    title:"Edit Conversation",
+                    iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+                    width:"100%"
+                });
+            }).show();
+        } else {
+            $("#editConversation").unbind("click").hide();
         }
     };
     var updatePermissionButtons = function(details){
@@ -489,25 +587,28 @@ var Conversations = (function(){
             updateConversationHeader();
             updateLinks();
             redrawSyncState();
+            var myLocation = _.find(details.slides,function(s){ return s.id == currentSlide; });
+            var teacherLocation = _.find(details.slides,function(s){ return sprintf("%s",s.id) == currentTeacherSlide; });
+            var relocate = false;
+            if(myLocation){
+                relocate = !myLocation.exposed;
+            }
+            else {
+                relocate = true;
+            }
+            if(relocate){
+                var possibleLocation = teacherLocation || _.find(_.orderBy(details.slides,'index'),function(s){ return s.exposed; });
+                if (possibleLocation){
+                    doMoveToSlide(possibleLocation.id.toString());
+                } else {
+                    window.location = sprintf("/conversationSearch?q=%s&unique=true",encodeURIComponent(details.title)); // redirect to the conversation search
+                }
+            }
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
         }
-        updateCurrentlyDisplayedConversations(details);
     };
-    var updateCurrentlyDisplayedConversations = function(details){
-        currentlyDisplayedConversations = currentlyDisplayedConversations.map(
-            function(conv){
-                if (conv.jid == details.jid){
-                    return details;
-                } else {
-                    return conv;
-                }
-            }
-        )
-        refreshConversationSearchResults();
-    };
-
     var shouldModifyConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
@@ -531,46 +632,40 @@ var Conversations = (function(){
         }
         return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
     };
-    var shouldDisplayConversationFunction = function(conversation){
-        if (!conversation){
-            conversation = currentConversation;
-        }
-        var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
-        if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
-            var key = g.key ? g.key : g.type;
+		var shouldDisplayConversationFunction = function(details){
+			if (!details){
+				details = currentConversation;
+			}
+			var userGroups = UserSettings.getUserGroups();
+			var username = UserSettings.getUsername();
+        var subject = details.subject.toLowerCase().trim();
+        var title = details.title.toLowerCase().trim();
+        var author = details.author;
+				var cfr = details.foreignRelationship;
+        return ((subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+						var fr = g.foreignRelationship;
+            var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
-        }))) {
-            return true;
-        } else {
-            return false;
-        }
+						var matches = key == "special" && name == "superuser";
+						if (!matches){
+							if (cfr !== undefined && "key" in cfr && "system" in cfr && fr !== undefined){
+								matches = cfr.key == fr.key && cfr.system == fr.system;
+							}
+						}
+						if (!matches){
+							matches = name.toLowerCase().trim() == subject;
+						}
+						return matches;
+        })));
     };
     var shouldPublishInConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
         }
-        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
+        if(shouldModifyConversationFunction(conversation) || ("permissions" in conversation && "studentCanPublish" in conversation.permissions && conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
             return true;
         } else {
             return false;
-        }
-    };
-    var refreshConversationSearchResults = function(){
-        try {
-            var convs = _.sortBy(currentlyDisplayedConversations.filter(function(conv){
-                return shouldDisplayConversationFunction(conv);
-            }),function(conv){return new Date(conv.creation);}).reverse().map(constructConversation);
-            var searchResults = $("#searchResults");
-            if (_.size(convs) > 0){
-                searchResults.html(unwrap(convs));
-            }   else {
-                searchResults.html($("<div/>",{
-                    text:"No search results found"
-                }));
-            }
-        } catch(e){
-            console.log("refreshConversationSearchResults",e);
         }
     };
     var constructSlideButton = function(name,label,icon,teacherOnlyFunction,container){
@@ -584,6 +679,49 @@ var Conversations = (function(){
                 text:label
             })));
         }
+    }
+    var overrideAllocationFunction = function(slide){
+        if(shouldModifyConversationFunction()){
+            overrideAllocation(Conversations.getCurrentConversationJid(),slide);
+        }
+    };
+    var addGroupSlideFunction = function(strategy,parameter,initialGroups){
+        if(shouldModifyConversationFunction()){
+            initialGroups = initialGroups || [];
+            var currentJid = currentConversation.jid;
+            var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
+            var newIndex = currentSlideIndex + 1;
+            addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex,strategy,initialGroups,parameter);
+            Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+                if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
+                    if ("slides" in incomingDetails){
+                        var newSlide = _.find(incomingDetails.slides,function(s){
+                            return s.index == newIndex && s.id != currentSlide;
+                        });
+                        var linkedGradeLoc = sprintf("groupWork_%s",newSlide.id);
+                        var user = UserSettings.getUsername();
+                        var newLinkedGrade = {
+                            type:"grade",
+                            name:sprintf("GroupSlide %s",newSlide.id),
+                            description:"Auto generated grade for group work on group slide.",
+                            audiences:[],
+                            author:user,
+                            location:linkedGradeLoc,
+                            id:sprintf("%s_%s_%s",linkedGradeLoc,user,new Date().getTime().toString()),
+                            gradeType:"text",
+                            visible:false,
+                            timestamp:0
+                        };
+                        sendStanza(newLinkedGrade);
+                        setStudentsMustFollowTeacherFunction(true);
+                        doMoveToSlide(newSlide.id.toString());
+                    }
+                }
+            };
+        }
+    };
+    var helpFunction = function(){
+        showBackstage("help");
     }
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
@@ -610,12 +748,17 @@ var Conversations = (function(){
     var constructAddSlideButton = function(container){
         constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
     }
+    var constructAddGroupSlideButton = function(container){
+        constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
+    }
+    var constructHelpButton = function(container){
+        constructSlideButton("helpButton","Help","fa-question-circle",always,container);
+    }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
     }
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
-			console.log("updating queryparams:",currentConversation,currentSlide,window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var c = currentConversation;
@@ -633,15 +776,51 @@ var Conversations = (function(){
             document.title = sprintf("MeTL - %s",s.id.toString());
         }
     };
-    var doMoveToSlide = function(slideId){
-        indicateActiveSlide(slideId);
-        delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
-        WorkQueue.enqueue(function(){
-            loadSlide(slideId);
-            updateQueryParams();
-            return true;
-        });
-    };
+    var doMoveToSlide = function(slideId,suppressSyncMove){
+        var move = false;
+        if(Conversations.isAuthor()){
+            move = true;
+        }
+        else if(getStudentsMustFollowTeacherFunction()){
+            if(slideId == currentTeacherSlide){
+                move = true;
+            }
+        }
+        else {
+            move = true;
+        }
+        if(move){
+            if(slideId != currentSlide){
+                try{
+                    Progress.call("beforeLeavingSlide",[slideId]);
+                    currentSlide = slideId;
+                    indicateActiveSlide(slideId);
+                    delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                    loadSlide(slideId);
+                    updateQueryParams();
+                    loadCurrentGroup(currentConversation);
+                    Progress.call("afterJoiningSlide",[slideId]);
+                }
+                catch(e){
+                    console.log(e);
+                }
+            } else if (Conversations.isAuthor() && !suppressSyncMove){
+                var newStanza = {
+                    type:"command",
+                    author:UserSettings.getUsername(),
+                    audiences:[],
+                    timestamp:0,
+                    command:"/SYNC_MOVE",
+                    parameters:[slideId]
+                };
+                console.log("sending:",newStanza);
+                sendStanza(newStanza);
+            }
+        }
+        else{
+            alert("You must remain on the current page");
+        }
+    }
     var indicateActiveSlide = function(slideId){
         $(".slideButtonContainer").removeClass("activeSlide");
         var activeSlide = $(sprintf("#slideContainer_%s",slideId));
@@ -649,10 +828,16 @@ var Conversations = (function(){
         var position = activeSlide.find(".slideThumbnailNumber").text();
         $("#currentSlide").text(position);
     };
+    var constructSlideId = function(slide){
+        return sprintf("slideContainer_%s",slide.id);
+    }
+    var slideLabel = function(slide){
+        return sprintf("%s/%s",slide.index+1,currentConversation.slides.length);
+    }
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
         var newSlide = $("<div/>",{
-            id: sprintf("slideContainer_%s",slide.id),
+            id: constructSlideId(slide),
             class:"slideButtonContainer"
         });
         $("<img/>",{
@@ -665,90 +850,29 @@ var Conversations = (function(){
             doMoveToSlide(slide.id.toString());
         }).appendTo(newSlide);
         $("<span/>",{
-            text: sprintf("%s/%s",slideIndex,currentConversation.slides.length),
+            text: slideLabel(slide),
             class: "slideThumbnailNumber"
         }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
     }
-    var constructConversation = function(conversation){
-        var uniq = function(name){
-            return sprintf("%s_%s",name,conversation.jid);
-        };
-        var jidString = conversation.jid.toString();
-        var newConv = conversationTemplate.clone();
-        newConv.attr("id",uniq("conversation")).on("click",bounceAnd(function(e){
-            var id1 = e.target.parentElement.id;
-            var id2 = e.target.parentElement.parentElement.id;
-            if(id1 ==uniq("extraConversationTools") || id2==uniq("extraConversationTools")) return;
-            targetConversationJid = jidString;
-            var firstSlide = conversation.slides.filter(function(slide){return slide.index == 0;})[0];
-            BannedState.reset();
-            hideBackstage();
-            Progress.call("onConversationJoin",[conversation]);
-            doMoveToSlide(firstSlide.id.toString());
-        }));
-        var jidString = conversation.jid.toString();
-        var row1 = newConv.find(".searchResultTopRow");
-        var row2 = newConv.find(".searchResultMiddleRow");
-        var row3 = newConv.find(".teacherConversationTools");
-        row3.attr("id",uniq("extraConversationTools"));
-        newConv.find(".conversationTitle").attr("id",uniq("conversationTitle")).text(conversation.title);
-        newConv.find(".conversationAuthor").text(conversation.author);
-        newConv.find(".conversationSubject").text(conversation.subject);
-        newConv.find(".conversationCreated").text(conversation.created);
-
-        if (shouldModifyConversationFunction(conversation)){
-            newConv.find(".conversationEditButton").attr("id",uniq("conversationEditLink")).attr("href",sprintf("/editConversation?conversationJid=%s",conversation.jid));
-            newConv.find(".conversationRename").attr("id",uniq("conversationRenameSubmit")).attr("name",uniq("conversationRenameSubmit")).on("click",function(){requestRenameConversationDialogue(jidString);});
-            newConv.find(".conversationShare").attr("id",uniq("conversationChangeSubjectSubmit")).attr("name",uniq("conversationChangeSubjectSubmit")).on("click",function(){requestChangeSubjectOfConversationDialogue(jidString);});
-            newConv.find(".conversationDelete").attr("id",uniq("conversationDelete")).attr("name",uniq("conversationDelete")).on("click",function(){ requestDeleteConversationDialogue(jidString); });
-        } else {
-            newConv.find(".teacherConversationTools").remove()
-        }
-        if ("jid" in conversation && targetConversationJid.trim().toLowerCase() == conversation.jid.toString().trim().toLowerCase()){
-            newConv.addClass("activeConversation");
-        }
-        return newConv;
-    }
-    Progress.newConversationDetailsReceived["Conversations"] = actOnNewConversationDetailsReceived;
-    Progress.conversationsReceived["Conversations"] = actOnConversations;
+    var getCurrentGroupFunction = function(){
+        return _.clone(currentGroup);
+    };
     Progress.syncMoveReceived["Conversations"] = actOnSyncMove;
     Progress.conversationDetailsReceived["Conversations"] = actOnConversationDetails;
-    //    Progress.onConversationJoin["Conversations"] = refreshSlideDisplay;
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
-    Progress.onLayoutUpdated["Conversations"] = paintThumbs;
-    Progress.historyReceived["Conversations"] = paintThumbs;
     $(function(){
-        $("#thumbScrollContainer").on("scroll",paintThumbs);
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
-            .on("click","#addSlideButton",addSlideFunction);
+            .on("click","#addGroupSlideButton",function(){
+                GroupBuilder.showAddGroupSlideDialog()
+            })
+            .on("click","#addSlideButton",addSlideFunction)
+            .on("click","#helpButton",helpFunction);
+        $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
-        });
-        $("#importConversationButton").on("click",bounceAnd(function(){
-            importConversation();
-        }));
-        $("#createConversationButton").on("click",bounceAnd(function(){
-            createConversation(sprintf("%s created on %s",UserSettings.getUsername(),Date()));
-        }));
-        $("#myConversationsButton").on("click",bounceAnd(function(){
-            getSearchResult(UserSettings.getUsername());
-        }));
-        $("#searchButton").on("click",bounceAnd(function(){
-            getSearchResult(currentSearchTerm);
-        }));
-        var updateSearchTerm = function(e){
-            currentSearchTerm = this.value;
-            if (e.which == 13){
-                e.stopPropagation();
-                getSearchResult(currentSearchTerm);
-            }
-        };
-        var sfcb = $("#searchForConversationBox");
-        _.forEach(["blur","change","focus","keydown","select"],function(item){
-            sfcb.on(item,updateSearchTerm)
         });
         $("<div />",{
             text:"share",
@@ -772,6 +896,17 @@ var Conversations = (function(){
             }
             return UserSettings.getUsername() == Conversations.getCurrentConversation().author;
         },
+        getCurrentGroup : getCurrentGroupFunction,
+        getGroupsFor : function(slide){
+            return slide ? _.map(_.sortBy(_.flatMap(slide.groupSets,function(gs){return gs.groups}),'timestamp'),function(v,k){
+                v.title = k + 1;
+                return v;
+            }) : [];
+        },
+        getCurrentGroups : function(){
+            return Conversations.getGroupsFor(getCurrentSlideFunc());
+        },
+        addGroupSlide : addGroupSlideFunction,
         getCurrentTeacherSlide : function(){return currentTeacherSlide;},
         getCurrentSlideJid : function(){return currentSlide;},
         getCurrentSlide : getCurrentSlideFunc,
@@ -794,12 +929,19 @@ var Conversations = (function(){
         shouldDisplayConversation : shouldDisplayConversationFunction,
         shouldPublishInConversation : shouldPublishInConversationFunction,
         shouldModifyConversation : shouldModifyConversationFunction,
+        overrideAllocation : overrideAllocationFunction,
         goToNextSlide : goToNextSlideFunction,
         goToPrevSlide : goToPrevSlideFunction,
+        goToSlide : doMoveToSlide,
         updateThumbnail :updateThumbnailFor,
-        getIsBanned : getIsBannedFunction
+        getIsBanned : getIsBannedFunction,
+        refreshSlideDisplay : refreshSlideDisplay
     };
 })();
+
+function updateThumb(jid){
+    Conversations.updateThumbnail(jid);
+}
 
 function unwrap(jqs){
     return _.map(jqs,"0");
@@ -814,7 +956,7 @@ function receiveConversationDetails(details){
     Progress.call("conversationDetailsReceived",[details]);
 }
 function receiveSyncMove(jid){
-    if(Conversations.getIsSyncedToTeacher()){
+    if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
         Progress.call("syncMoveReceived",[jid]);
     }
 }
@@ -823,6 +965,48 @@ function receiveNewConversationDetails(details){
 }
 function receiveConversations(listOfConversations){
     Progress.call("conversationsReceived",[listOfConversations]);
+}
+function receiveAttendance(attendances){
+    Progress.call("attendanceReceived",[attendances])
+}
+function receiveGroupsProviders(providers){
+    Progress.call("groupProvidersReceived",[providers]);
+}
+function receiveOrgUnitsFromGroupsProviders(orgUnits){
+    Progress.call("orgUnitsReceived",[orgUnits]);
+    if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+        _.forEach(orgUnits.orgUnits,function(orgUnit){
+            var ou = _.cloneDeep(orgUnit);
+            delete ou.groupSets;
+            delete ou.members;
+            getGroupSetsForOrgUnit(orgUnits.groupsProvider.storeId,ou,"async");
+        });
+    }
+}
+function receiveGroupSetsForOrgUnit(groupSets){
+    Progress.call("groupSetsReceived",[groupSets]);
+    if ("groupSets" in groupSets && groupSets.groupSets.length){
+        _.forEach(groupSets.groupSets,function(groupSet){
+            if ("groups" in groupSet && groupSet.groups.length){
+                receiveGroupsForGroupSet({
+                    orgUnit:groupSets.orgUnit,
+                    groupSet:groupSet,
+                    groups:groupSet.groups
+                });
+            } else {
+                var ou = _.cloneDeep(groupSets.orgUnit);
+                delete ou.members;
+                delete ou.groupSets;
+                var gs = _.cloneDeep(groupSet);
+                delete gs.members;
+                delete gs.groups;
+                getGroupsForGroupSet(groupSets.groupsProvider.storeId,ou,gs,"async");
+            }
+        });
+    }
+}
+function receiveGroupsForGroupSet(groups){
+    Progress.call("groupsReceived",[groups]);
 }
 // these will be injected by lift
 //function moveToSlide(jid)
@@ -833,7 +1017,11 @@ function receiveConversations(listOfConversations){
 //function createConversation(title)
 //function deleteConversation(jid)
 //function renameConversation(jid,newTitle)
-//function changePermissions(jid,newPermissions)
+//function changePermissionsOfConversation(jid,newPermissions)
 //function changeSubject(jid,newSubject)
 //function addSlide(jid,indexOfNewSlide)
 //function reorderSlides(jid,alteredSlides)
+//function getGroupsProviders()
+//function getOrgUnitsFromGroupProviders(storeId)
+//function getGroupSetsForOrgUnit(storeId,orgUnit)
+//function getGroupsForGroupSet(storeId,orgUnit,groupSet)

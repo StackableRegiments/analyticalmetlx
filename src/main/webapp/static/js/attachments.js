@@ -106,7 +106,6 @@ var Attachments = (function(){
             attachmentFileChoice.unbind("change").on("change",function(eventArgs){
                 WorkQueue.pause();
                 var jid = Conversations.getCurrentConversationJid();
-                //var filename = $(this).val();
                 var filename = $(this).val().replace(/.*(\/|\\)/, '');
                 var reader = new FileReader();
                 var files = eventArgs.target.files || eventArgs.dataTransfer.files;
@@ -166,13 +165,13 @@ var Attachments = (function(){
         reRenderAttachments();
     };
     var reRenderAttachments = function(){
-			WorkQueue.enqueue(function(){
-        attachmentsDatagrid.jsGrid("loadData");
-        var sortObj = attachmentsDatagrid.jsGrid("getSorting");
-        if ("field" in sortObj){
-            attachmentsDatagrid.jsGrid("sort",sortObj);
-        }
-			});
+        WorkQueue.enqueue(function(){
+            attachmentsDatagrid.jsGrid("loadData");
+            var sortObj = attachmentsDatagrid.jsGrid("getSorting");
+            if ("field" in sortObj){
+                attachmentsDatagrid.jsGrid("sort",sortObj);
+            }
+        });
     };
     var actOnAttachment = function(newAttachment){
         var partitioned = _.partition(attachments,function(attachment){

@@ -68,13 +68,13 @@ function strokeCollected(points){
         for(var p = 0; p < points.length; p += 3){
             x = points[p];
             y = points[p+1];
-            worldPos = screenToWorld(x,y);
-            scaledPoints = scaledPoints.concat([worldPos.x,worldPos.y,points[p+2]]);
+            scaledPoints = scaledPoints.concat([x,y,points[p+2]]);
         }
         ink.points = scaledPoints;
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
+        ink.audiences = _.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences()).map(audienceToStanza);
 
         calculateInkBounds(ink);
         prerenderInk(ink);
@@ -141,6 +141,14 @@ function hexToRgb(hex) {
         return Colors.getDefaultColorObj();
     }
 }
+function audienceToStanza(a){
+    return {
+        domain:"slide",
+        'type':"groupWork",
+        action:"whitelist",
+        name:a
+    };
+}
 function partToStanza(p){
     var defaults = carota.runs.defaultFormatting;
     var color = hexToRgb(p.color || defaults.color);
@@ -158,6 +166,7 @@ function partToStanza(p){
 
 function richTextEditorToStanza(t){
     if(!t.bounds) t.doc.invalidateBounds();
+    t.audiences = _.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences());
     var bounds = t.bounds;
     var text = t.doc.save();
     if (t.slide == undefined){
@@ -184,18 +193,18 @@ function richTextEditorToStanza(t){
         type:t.type,
         x:bounds[0],
         y:bounds[1],
-        requestedWidth:bounds[2]-bounds[0],
+        requestedWidth:t.doc.width(),
         width:t.doc.width(),
         height:bounds[3]-bounds[1],
-        words:text.map(partToStanza)
-    }
+        words:text.map(partToStanza),
+        audiences:t.audiences.map(audienceToStanza)
+    };
 }
 function sendRichText(t){
     Modes.text.echoesToDisregard[t.identity] = true;
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
-//sendRichText = _.debounce(sendRichText,1000);
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -238,7 +247,6 @@ function commandReceived(c){
             return;
         }
         if(Conversations.getIsSyncedToTeacher()){
-            console.log("teacherViewMoved",c);
             var f = function(){
                 var controllerIdentity = c.parameters[4];
                 var slide = ps[5];
@@ -306,6 +314,9 @@ function actOnReceivedStanza(stanza){
     try{
         if(stanza.type in stanzaHandlers){
             stanzaHandlers[stanza.type](stanza);
+            if(Progress.onBoardContentChanged.autoZooming){
+                measureBoardContent(stanza.type == "multiWordText");
+            }
             Progress.call("onBoardContentChanged");
         }
         else{
@@ -628,20 +639,16 @@ function transformReceived(transform){
         });
         $.each(transform.videoIds,function(i,id){
             var video = boardContent.videos[id];
-            console.log("Shifting video",video.x,video.y);
             video.x += transform.xTranslate;
             video.y += transform.yTranslate;
             calculateVideoBounds(video);
-            console.log("Shifting video",video.x,video.y);
             transformBounds.incorporateBounds(video.bounds);
         });
         $.each(transform.imageIds,function(i,id){
             var image = boardContent.images[id];
-            console.log("Shifting image",image.x,image.y);
             image.x += transform.xTranslate;
             image.y += transform.yTranslate;
             calculateImageBounds(image);
-            console.log("Shifting image",image.x,image.y);
             transformBounds.incorporateBounds(image.bounds);
         });
         $.each(transform.textIds,function(i,id){
@@ -659,6 +666,7 @@ function transformReceived(transform){
             doc.position.y += transform.yTranslate;
             text.x = doc.position.x;
             text.y = doc.position.y;
+            text.doc.invalidateBounds();
             transformBounds.incorporateBounds(text.bounds);
         });
     }
@@ -768,12 +776,6 @@ function scaleCanvas(incCanvas,w,h,disableImageSmoothing){
             height:px(h)
         });
         var ctx = canvas[0].getContext("2d");
-        /*
-         ctx.mozImageSmoothingEnabled = !disableImageSmoothing;
-         ctx.webkitImageSmoothingEnabled = !disableImageSmoothing;
-         ctx.msImageSmoothingEnabled = !disableImageSmoothing;
-         ctx.imageSmoothingEnabled = !disableImageSmoothing;
-         */
         ctx.drawImage(incCanvas,0,0,w,h);
         return canvas[0];
     } else {
@@ -794,7 +796,6 @@ function multiStageRescale(incCanvas,w,h,stanza){
         var save = true;
 
         var iwSize = Math.floor(iw);
-
         if (w >= 1 && iw >= 1 && w < iw){ //shrinking
             var sdw = iw * sf;
             var sdh = ih * sf;
@@ -811,51 +812,6 @@ function multiStageRescale(incCanvas,w,h,stanza){
         } else {
             return incCanvas;
         }
-
-        /*
-         if (w >= 1 && h >= 1 && iw != w && ih != h && w < iw && h < ih){
-         var sdw = iw;
-         var sdh = ih;
-         if (w > sdw){ // growing x
-         sdw = w;
-         } else if (w < sdw){ // shrinking x
-         sdw = sdw * sf;
-         if (w > sdw){
-         save = false;
-         sdw = w;
-         }
-         }
-         if (h > sdh){ // growing y
-         sdh = h;
-         } else if (h < sdh){ // shrinking y
-         sdh = sdh * sf;
-         if (h > sdh){
-         save = false;
-         sdh = h;
-         }
-         }
-         var key = Math.floor(sdw);
-         console.log("rescaling:",w,h,iw,ih,sdw,sdh,key,iwSize);
-         if (key == iwSize){
-         return incCanvas;
-         } else {
-         if (key in mm){
-         console.log("returning cached value:",key);
-         return multiStageRescale(mm[key],w,h,stanza);
-         } else {
-         var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
-         if (save){
-         mm[key] = newCanvas;
-         }
-         console.log("generating mipmap:",w,h,sdw,sdh,key);
-         return multiStageRescale(newCanvas,w,h,stanza);
-         }
-         }
-         } else {
-         console.log("returning:",w,h,iwSize);
-         return incCanvas;
-         }
-         */
     } else {
         return incCanvas;
     }
@@ -904,26 +860,35 @@ function drawInk(ink,incCanvasContext){
     var sBounds = screenBounds(ink.bounds);
     visibleBounds.push(ink.bounds);
     var c = ink.canvas;
+    if(!c){
+        c = ink.canvas = prerenderInk(ink,canvasContext);
+    }
     var cWidth = c.width;
     var cHeight = c.height;
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
         var img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
-        try{
-            var inset = ink.thickness / 2;
-	    var sW = img.width;
-	    var sH = img.height;
-	    var xFactor = img.width / cWidth;
-	    var yFactor = img.height / cHeight;
-	    var iX = inset * xFactor;
-	    var iY = inset * yFactor;
-            canvasContext.drawImage(img,
-                                    0, 0,
-                                    sW, sH,
-                                    sBounds.screenPos.x - iX,sBounds.screenPos.y - iY,
-                                    sBounds.screenWidth + 2 * iX,sBounds.screenHeight + 2 * iY);
+        if(img){
+            try{
+                var inset = ink.thickness / 2;
+                var sW = img.width;
+                var sH = img.height;
+                var xFactor = img.width / cWidth;
+                var yFactor = img.height / cHeight;
+                var iX = inset * xFactor;
+                var iY = inset * yFactor;
+                canvasContext.drawImage(img,
+                                        0, 0,
+                                        sW, sH,
+                                        sBounds.screenPos.x - iX,sBounds.screenPos.y - iY,
+                                        sBounds.screenWidth + 2 * iX,sBounds.screenHeight + 2 * iY);
+            }
+            catch(e){
+                console.log("Exception in drawInk",e);
+            }
         }
-        catch(e){
-            console.log("Exception in drawInk",e);
+        else{
+            c = ink.canvas = prerenderInk(ink,incCanvasContext);
+            img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
         }
     }
 }
@@ -938,89 +903,123 @@ function drawVideo(video,incCanvasContext){
     }
 }
 function videoReceived(video){
-    calculateVideoBounds(video);
-    incorporateBoardBounds(video.bounds);
-    boardContent.videos[video.identity] = video;
-    prerenderVideo(video);
-    WorkQueue.enqueue(function(){
-        if(isInClearSpace(video.bounds)){
-            try {
-                drawVideo(video);
-                Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-            } catch(e){
-                console.log("drawVideo exception",e);
-            }
-            return false;
-        }
-        else{
-            console.log("Rerendering video in contested space");
-            return true;
-        }
-    });
-}
-function imageReceived(image){
-    var dataImage = new Image();
-    image.imageData = dataImage;
-    dataImage.onload = function(){
-        if(image.width == 0){
-            image.width = dataImage.naturalWidth;
-        }
-        if(image.height == 0){
-            image.height = dataImage.naturalHeight;
-        }
-        image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
-        incorporateBoardBounds(image.bounds);
-        boardContent.images[image.identity]  = image;
-        updateTracking(image.identity);
-        prerenderImage(image);
+    if(isUsable(video)){
+        calculateVideoBounds(video);
+        incorporateBoardBounds(video.bounds);
+        boardContent.videos[video.identity] = video;
+        prerenderVideo(video);
         WorkQueue.enqueue(function(){
-            if(isInClearSpace(image.bounds)){
+            if(isInClearSpace(video.bounds)){
                 try {
-                    drawImage(image);
+                    drawVideo(video);
+                    Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
                 } catch(e){
-                    console.log("drawImage exception",e);
+                    console.log("drawVideo exception",e);
                 }
                 return false;
             }
             else{
-                console.log("Rerendering image in contested space");
+                console.log("Rerendering video in contested space");
                 return true;
             }
         });
     }
-    dataImage.src = calculateImageSource(image);
+}
+function imageReceived(image){
+    if(isUsable(image)){
+        var dataImage = new Image();
+        image.imageData = dataImage;
+        dataImage.onload = function(){
+            if(image.width == 0){
+                image.width = dataImage.naturalWidth;
+            }
+            if(image.height == 0){
+                image.height = dataImage.naturalHeight;
+            }
+            image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
+            incorporateBoardBounds(image.bounds);
+            boardContent.images[image.identity]  = image;
+            updateTracking(image.identity);
+            prerenderImage(image);
+            WorkQueue.enqueue(function(){
+                if(isInClearSpace(image.bounds)){
+                    try {
+                        drawImage(image);
+                    } catch(e){
+                        console.log("drawImage exception",e);
+                    }
+                    return false;
+                }
+                else{
+                    console.log("Rerendering image in contested space");
+                    return true;
+                }
+            });
+        }
+        dataImage.src = calculateImageSource(image);
+    }
 }
 function inkReceived(ink){
-    calculateInkBounds(ink);
-    updateStrokesPending(-1,ink.identity);
-    if(prerenderInk(ink)){
-        incorporateBoardBounds(ink.bounds);
-        if(ink.isHighlighter){
-            boardContent.highlighters[ink.identity] = ink;
-        }
-        else{
-            boardContent.inks[ink.identity] = ink;
-        }
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(ink.bounds)){
-                drawInk(ink);
-                return false;
+    if(isUsable(ink)){
+        calculateInkBounds(ink);
+        updateStrokesPending(-1,ink.identity);
+        if(prerenderInk(ink)){
+            incorporateBoardBounds(ink.bounds);
+            if(ink.isHighlighter){
+                boardContent.highlighters[ink.identity] = ink;
             }
             else{
-                return true;
+                boardContent.inks[ink.identity] = ink;
             }
-        });
+            WorkQueue.enqueue(function(){
+                if(isInClearSpace(ink.bounds)){
+                    drawInk(ink);
+                    return false;
+                }
+                else{
+                    return true;
+                }
+            });
+        }
     }
 }
 function takeControlOfViewbox(){
     delete Progress.onBoardContentChanged.autoZooming;
     UserSettings.setUserPref("followingTeacherViewbox",true);
 }
+function measureBoardContent(includingText){
+    if(includingText){
+        _.each(boardContent.multiWordTexts,function(t){
+            t.doc.invalidateBounds();
+        });
+    }
+    var content = _.flatMap([boardContent.multiWordTexts,boardContent.inks,boardContent.images,boardContent.videos],_.values);
+    if(content.length == 0){
+        boardContent.height = boardHeight;
+        boardContent.width = boardWidth;
+    }
+    else{
+        var bs = _.map(content,"bounds")
+        bs.push([0,0,0,0]);/*Ensure origin is included*/
+        var bounds = _.reduce(bs,mergeBounds);
+        boardContent.width = bounds.width;
+        boardContent.height = bounds.height;
+	boardContent.minX = bounds.minX;
+	boardContent.minY = bounds.minY;
+    }
+}
 function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
-    requestedViewboxWidth = boardContent.width;
-    requestedViewboxHeight = boardContent.height;
-    IncludeView.specific(boardContent.minX,boardContent.minY,boardContent.width,boardContent.height,followable);
+    if(Modes.currentMode.name != "text"){
+	var headerHeight = scaleScreenToWorld($("#masterHeader .heading").height());
+        var s = Modes.select.handlesAtZoom();
+        requestedViewboxWidth = boardContent.width + s * 2;
+        requestedViewboxHeight = boardContent.height + headerHeight + s * 2;
+        IncludeView.specific(boardContent.minX,
+			     boardContent.minY - (headerHeight + s /2),
+			     requestedViewboxWidth,
+			     requestedViewboxHeight,followable);
+    }
 }
 function zoomToOriginal(followable){
     takeControlOfViewbox();

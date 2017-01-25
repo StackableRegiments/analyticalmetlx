@@ -33,6 +33,7 @@ var RecycleBin = (function(){
         });
         jsGrid.fields.dateField = DateField;
 
+	var cellStyle = "max-height:50px;max-width:100%;cursor:zoom-in";
         var gridFields = [
             {
                 name:"url",
@@ -47,7 +48,7 @@ var RecycleBin = (function(){
                         if (stanza.type == "ink"){
                             if ("canvas" in stanza){
                                 var imgSrc = stanza.canvas.toDataURL("image/png");
-                                var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+                                var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:cellStyle},function(){
                                     $.jAlert({
                                         title:popupTitle,
                                         closeOnClick:true,
@@ -61,7 +62,7 @@ var RecycleBin = (function(){
                             }
                         } else if (stanza.type == "image"){
                             var imgSrc = calculateImageSource(stanza);
-                            var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:"width:100%;cursor:zoom-in"}).on("click",function(){
+                            var img = $("<img/>",{src:imgSrc,class:"stanzaThumbnail",style:cellStyle}).on("click",function(){
                                 $.jAlert({
                                     title:popupTitle,
                                     closeOnClick:true,
@@ -96,7 +97,7 @@ var RecycleBin = (function(){
                     } else return defaultElem;
                 }
             },
-            {name:"slide",type:"number",title:"Page",readOnly:true},
+            //{name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"author",type:"text",title:"Who",readOnly:true},
             {name:"privacy",type:"text",title:"Privacy",readOnly:true},
@@ -109,26 +110,10 @@ var RecycleBin = (function(){
                 itemTemplate:function(identity,stanza){
                     var rootElem = actionButtonsTemplate.clone();
                     var button = rootElem.find(".restoreContent");
-                    button.on("click",function(){
-                        var newStanza = _.cloneDeep(stanza);
-                        var newIdentity = sprintf("%s_%s",new Date().getTime(),stanza.identity).substr(0,64);
-                        newStanza.identity = newIdentity;
-                        var newUndeletedContentItem = {
-                            type:"undeletedCanvasContent",
-                            author:UserSettings.getUsername(),
-                            identity:sprintf("%s_%s_%s",new Date().getTime(),stanza.slide,UserSettings.getUsername()).substr(0,64),
-                            timestamp:new Date().getTime(),
-                            slide:stanza.slide,
-                            privacy:stanza.privacy,
-                            target:stanza.target,
-                            elementType:stanza.type,
-                            oldIdentity:stanza.identity,
-                            newIdentity:newIdentity
-                        };
-                        sendStanza(newStanza);
-                        sendStanza(newUndeletedContentItem);
-                    });
-		    rootElem.find(".rowIdentity").text(identity);
+										button.on("click",function(){
+											undeleteStanza(stanza);
+										});
+										rootElem.find(".rowIdentity").text(identity);
                     return rootElem;
                 }
             }
@@ -188,6 +173,7 @@ var RecycleBin = (function(){
         try {
             if ("type" in history && history.type == "history"){
                 clearState();
+								console.log("history",history);
                 _.forEach(history.deletedCanvasContents,function(stanza){
                     onCanvasContentDeleted(stanza,true);
                 });

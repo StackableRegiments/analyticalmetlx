@@ -21,6 +21,7 @@ abstract class ConversationRetriever(config:ServerConfiguration,onConversationDe
 	def changePermissions(jid:String,newPermissions:Permissions):Conversation
 	def updateSubjectOfConversation(jid:String,newSubject:String):Conversation
 	def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation
 	def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation
   def updateConversation(jid:String,conversation:Conversation):Conversation
 }
@@ -35,6 +36,7 @@ object EmptyConversations extends ConversationRetriever(EmptyBackendAdaptor,(c) 
 	override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
 	override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
 	override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = Conversation.empty
 	override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
 }

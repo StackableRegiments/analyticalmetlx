@@ -6,6 +6,8 @@ var HealthChecker = (function(){
     var catLength = 50; //keep a rolling window of the last n items of each category
     var healthChecking = true;
 
+    var clockOffset = 0;
+
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
             store[category] = timedQueue(storeLifetime);
@@ -20,37 +22,48 @@ var HealthChecker = (function(){
     };
     var check = function(){
         var clientStart = new Date().getTime();
-				var reportableHealthObj = describeHealthFunction();
-				var url = "/reportLatency"
-				if ("latency" in reportableHealthObj){
-					var reportableHealth = reportableHealthObj.latency;
-					url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
-				}
-				$.ajax(url,{
-						method:"GET",
-						success:function(time){
-								var serverWorkTime = parseInt(time);
-								var totalTime = new Date().getTime() - clientStart;
-								var latency = (totalTime - serverWorkTime) / 2;
-								addMeasureFunc("serverResponse",true,serverWorkTime);
-								addMeasureFunc("latency",true,latency);
-								_.delay(check,serverStatusInterval);
-						},
-						dataType:"text",
-						error:function(){
-								addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
-								_.delay(check,serverStatusInterval);
-						}
-				});
+        var reportableHealthObj = describeHealthFunction();
+        var url = "/reportLatency"
+        if ("latency" in reportableHealthObj){
+            var reportableHealth = reportableHealthObj.latency;
+            url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
+        }
+        $.ajax(url,{
+            method:"GET",
+            success:function(jsonTime){
+                var nowTime = new Date();
+                var timeObj = JSON.parse(jsonTime);
+                var time = timeObj.serverWorkTime;
+                var serverWorkTime = parseInt(time);
+                var totalTime = new Date().getTime() - clientStart;
+                var latency = (totalTime - serverWorkTime) / 2;
+
+                var serverSideTime = timeObj.serverTime;
+                var timeDiff = nowTime.getTime() - (serverSideTime + latency);
+                clockOffset = timeDiff;
+                addMeasureFunc("serverResponse",true,serverWorkTime);
+                addMeasureFunc("latency",true,latency);
+                _.delay(check,serverStatusInterval);
+            },
+            dataType:"text",
+            error:function(){
+                addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
+                _.delay(check,serverStatusInterval);
+            }
+        });
     };
     var updateGraph = _.throttle(function(){
         var checkData = getAggregatedMeasuresFunc(1000);
         var describedData = describeHealthFunction();
         HealthCheckViewer.refreshDisplays(checkData,describedData);
     },500);
-    var resumeHealthCheckFunc = function(){
+    var resumeHealthCheckFunc = function(immediate){
         healthChecking = true;
-        _.delay(check,serverStatusInterval);
+        if (immediate){
+            check();
+        } else {
+            _.delay(check,serverStatusInterval);
+        }
     };
     var pauseHealthCheckFunc = function(){
         healthChecking = false;
@@ -93,7 +106,7 @@ var HealthChecker = (function(){
         });
     };
     var describeHealthFunction = function(){
-			return _.mapValues(store,function(catStore,k){
+        return _.mapValues(store,function(catStore,k){
             var v = catStore.items();
             var count = v.length;
             var durations = _.map(v,"duration");
@@ -111,9 +124,15 @@ var HealthChecker = (function(){
         });
     };
     $(function(){
-        resumeHealthCheckFunc();
+        resumeHealthCheckFunc(true);
     });
     return {
+        getTimeOffset:function(){
+            return clockOffset;
+        },
+        getServerTime:function(){
+            return new Date(new Date().getTime() + clockOffset);
+        },
         check:check,
         resumeHealthCheck:resumeHealthCheckFunc,
         pauseHealthCheck:pauseHealthCheckFunc,
@@ -125,8 +144,8 @@ var HealthChecker = (function(){
 })();
 
 var augmentArguments = function(args){
-	args[_.size(args)] = new Date().getTime();
-	return args;
+    args[_.size(args)] = new Date().getTime();
+    return args;
 };
 
 var serverResponse = function(responseObj){
@@ -138,7 +157,8 @@ var serverResponse = function(responseObj){
         HealthChecker.addMeasure("latency",responseObj.success,latency);
     }
     if ("success" in responseObj && responseObj.success == false){
-        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "error encountered");
+        console.log(responseObj);
+        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
     }
 }
 
@@ -203,14 +223,18 @@ var HealthCheckViewer = (function(){
         if (!(categoryName in charts)){
             var category = adjustTimeFunc(rawCategory);
             var rootElem = healthCheckItemTemplate.clone();
-            var canvas = $("<canvas />").addClass("healthCheckCanvas");
+            var canvas = $("<canvas />").addClass("healthCheckCanvas").css({"margin-top":"-20px"});
             rootElem.html(canvas);
             healthCheckContainer.append(rootElem);
             var options = {
                 title: {
                     display: true,
-                    text: categoryName
+                    text: categoryName,
+		    padding:20
                 },
+		legend:{
+		    display:false
+		},
                 scales: {
                     yAxes: [
                         {
@@ -224,9 +248,6 @@ var HealthCheckViewer = (function(){
                             display:true,
                             position:"left",
                             ticks: {
-                            },
-                            labels: {
-                                show: true
                             }
                         },
                         {
@@ -243,9 +264,6 @@ var HealthCheckViewer = (function(){
                                 beginAtZero:true,
                                 min:0,
                                 stepSize:1
-                            },
-                            labels: {
-                                show: true
                             }
                         }
                     ],
@@ -257,7 +275,7 @@ var HealthCheckViewer = (function(){
                             labelString:"time (seconds)"
                         },
                         ticks: {
-                            beginAtZero:true,
+                            beginAtZero:true
                         }
                     }]
                 },
@@ -271,12 +289,8 @@ var HealthCheckViewer = (function(){
                     bar: {
                         fill:true
                     }
-                },
-                legend:{
-                    display:true
                 }
             };
-
             var data = {
                 labels: _.map(category,"instant"),
                 datasets:[
@@ -346,6 +360,7 @@ var HealthCheckViewer = (function(){
                 options: options
             };
             var chart = new Chart(canvas[0].getContext("2d"),chartDesc);
+            console.log("New chart",categoryName);
             charts[categoryName] = chart;
         }
     };
@@ -375,52 +390,59 @@ var HealthCheckViewer = (function(){
             high:6
         });
     }
+    var cells = {};
+    var c = function(selector){
+        if(selector in cells){
+            return cells[selector];
+        }
+        return cells[selector] = $(selector);
+    }
     var refreshFunc = function(checkData,descriptionData){
-			WorkQueue.enqueue(function(){
-        var start = new Date().getTime();
-        var overallLatencyData = descriptionData["latency"];
-        if (overallLatencyData != undefined){
+        WorkQueue.enqueue(function(){
             summarizeHealth(descriptionData);
-            $(".healthCheckSummaryLatencyContainer").show();
-            $(".latencyAverage").text(overallLatencyData.average);
-            $(".worstLatency").text(overallLatencyData.min);
-            $(".bestLatency").text(overallLatencyData.max);
-            $(".successRate").text(overallLatencyData.successRate * 100);
-            if (overallLatencyData.average > 200){
-                $(".latencyHumanReadable").text("poor");
-            } else if (overallLatencyData.average > 50){
-                $(".latencyHumanReadable").text("moderate");
-            } else if (overallLatencyData.average > 20){
-                $(".latencyHumanReadable").text("good");
+        });
+        if(viewing){
+            var start = new Date().getTime();
+            var overallLatencyData = descriptionData["latency"];
+            if (overallLatencyData != undefined){
+                c(".healthCheckSummaryLatencyContainer").show();
+                c(".latencyAverage").text(parseInt(overallLatencyData.average));
+                c(".worstLatency").text(parseInt(overallLatencyData.min));
+                c(".bestLatency").text(parseInt(overallLatencyData.max));
+                c(".successRate").text(parseInt(overallLatencyData.successRate * 100));
+                if (overallLatencyData.average > 200){
+                    c(".latencyHumanReadable").text("poor");
+                } else if (overallLatencyData.average > 50){
+                    c(".latencyHumanReadable").text("moderate");
+                } else if (overallLatencyData.average > 20){
+                    c(".latencyHumanReadable").text("good");
+                }
+            } else {
+                c(".healthCheckSummaryLatencyContainer").hide();
             }
-        } else {
-            $(".healthCheckSummaryLatencyContainer").hide();
-        }
-        var overallServerResponseData = descriptionData["serverResponse"];
-        if (overallServerResponseData != undefined){
-            $(".heathCheckSummaryServerResponseContainer").show();
-            var serverHealthData = overallServerResponseData.average;
-            $(".serverResponseAverage").text(serverHealthData);
-            var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
-            $(".serverResponseHumanReadable").text(humanReadableServerHealthData);
-        } else {
-            $(".heathCheckSummaryServerResponseContainer").hide();
-        }
-        _.forEach(checkData,function(rawCategory,categoryName){
-            var category = adjustTimeFunc(rawCategory);
-            if (!(categoryName in charts)){
-                generateGraphFromCategory(categoryName,rawCategory);
+            var overallServerResponseData = descriptionData["serverResponse"];
+            if (overallServerResponseData != undefined){
+                c(".heathCheckSummaryServerResponseContainer").show();
+                var serverHealthData = overallServerResponseData.average;
+                c(".serverResponseAverage").text(parseInt(serverHealthData));
+                var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
+                c(".serverResponseHumanReadable").text(humanReadableServerHealthData);
+            } else {
+                c(".heathCheckSummaryServerResponseContainer").hide();
             }
-            if (viewing == true){
+            _.forEach(checkData,function(rawCategory,categoryName){
+                var category = adjustTimeFunc(rawCategory);
+                if (!(categoryName in charts)){
+                    generateGraphFromCategory(categoryName,rawCategory);
+                }
                 var chart = charts[categoryName];
                 chart.data.datasets[0].data = errorDataFunc(category);
                 chart.data.datasets[1].data = minDataFunc(category);
                 chart.data.datasets[2].data = averageDataFunc(category);
                 chart.data.datasets[3].data = maxDataFunc(category);
                 chart.update();
-            }
-        });
-			});
+            });
+        }
     };
     return {
         resume:resumeFunc,

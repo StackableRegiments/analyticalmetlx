@@ -1,13 +1,75 @@
-#loadingSpinner {
+#loadingSpinner, .spinner{
     height:100%;
     width:100%;
     left:0;
     top:0;
     position:absolute;
     z-index:100;
+}
+#loadingSpinner{
     background-image:@body-backgroundimage;
-    background-size:100% 100%;
-    background-opacity:0.3;
+}
+.template{
+    display:none;
+}
+#allocationContainer{
+    margin:2em;
+    border:1px solid black;
+}
+.chatMessageContent{
+    a{
+        text-decoration:underline;
+    }
+}
+.findExisting{
+}
+#importContainer{
+    position:relative;
+}
+#groupsPopup{
+    .groups{
+        margin-left:1em;
+        min-height:400px;
+        flex-grow:1;
+        background-color:lightgray;
+    }
+}
+.groupSlideDialog{
+    .groups{
+        margin-left:1em;
+        min-height:400px;
+        flex-grow:1;
+        background-color:lightgray;
+    }
+    .strategy{
+        display:inline-block;
+        margin-right:1em;
+    }
+    .importGroups{
+        .groupBuilderGroup{
+            display:inline-block;
+        }
+    }
+    .ghost{
+        opacity:0.6;
+    }
+    select{
+        width:13em;
+    }
+    .ouSelector{
+        float:right;
+    }
+}
+#thumbColumnWidth{
+    padding:0;
+    position:absolute;
+    width:200px;
+    height:2px;
+    right:0;
+    z-index:99;
+    transform:scaleX(-1);
+    border:none;
+    background-color:@highlight;
 }
 #loadingSpinner i{
     width:100%;
@@ -15,16 +77,64 @@
     font-size:8em;
     margin-top:10%;
 }
+#pluginBar{
+    display:table-row;
+    background-color:transparent;
+    height:140px;
+    bottom:0;
+}
+.plugin{
+    padding:0 2px;
+    display:table-cell;
+    vertical-align:top;
+    font-size:1rem;
+    .pluginName{
+        background-color:@body-bg;
+        color:white;
+        text-align:center;
+        padding:0 1em;
+    }
+}
+#masterFooter{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    z-index:99;
+    overflow-x:scroll;
+}
+#masterHeader{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    z-index:99;
+    margin-top:2px;
+    margin-left:2px;
+}
+#masterFooter{
+}
+#masterHeaderFlexContainer .heading{
+    mix-blend-mode:difference;
+}
 #optionBlocks{
     flex-wrap:wrap;
 }
-@media(max-width:480px){
+@media(max-width:@width-mobile){
     #optionBlocks{
         flex-wrap:wrap-reverse;
         margin:0 1em !important;
     }
     .indent{
         margin:0 !important;
+    }
+    .button-toggle{
+        label, button{
+            flex-grow:1;
+        }
+    }
+    .btn-icon{
+        flex-grow:1;
     }
 }
 html{
@@ -36,19 +146,67 @@ html{
 #popupCategories{
     margin-right:4px;
 }
-.headerRow1{
-    width:100%;
-    font-weight:800;
-    color:white;
-    padding:0.5em;
-    position:fixed;
-    pointer-events:none;
-    margin-left:@toolbar-btn-width;
+.insetColumn{
+    position:absolute;
+    margin-left:54px;
+    margin-top:-54px;
+    z-index:3;
+    background-color:@body-bg;
 }
-body{
+.healthCheckCanvas{
     background-image:@body-backgroundimage;
     background-size:100% 100%;
     background-opacity:0.5;
+}
+.translucent{
+    color:@text-std;
+    background-color:rgba(1,1,1,0.05);
+}
+#masterHeaderFlexContainer{
+    display:flex;
+    meter,svg{
+        height:10px;
+        width:50px;
+        display:block;
+        margin-top:2px;
+    }
+    #healthStatus{
+        margin-top:0px;
+    }
+    svg{
+        stroke:@text-std;
+        background-color:white;
+        height:26px;
+        fill:@highlight;
+    }
+    .heading, .meters{
+        display:inline-block;
+    }
+    .meters{
+        margin-left:4px;
+    }
+    .heading{
+	text-align:center;
+        vertical-align:top;
+	margin-top:-2px;
+        padding-left:1em;
+        flex-grow:1;
+        color:darkgray;
+    }
+}
+.groupBuilderGroup{
+    margin:1em;
+    display:inline-block;
+    padding:1em;
+    border:1px solid black;
+    padding-top:0;
+    .title{
+        margin:0;
+        border-bottom:1px solid black;
+    }
+}
+body{
+    background-image:@body-backgroundimage;
 }
 #startAConversation button{
     width:100%;
@@ -62,21 +220,26 @@ body{
 }
 #backstageContainer{
     width:100%;
-/*position:absolute;
-top:0px;
-left:0px;
-background-color:@block-bg;
-.plr;
-.ptb;*/
+}
+#slideControls{
+    flex-shrink:0;
+    flex-grow:0;
+    flex-wrap:nowrap;
+    float:right;
+    margin-top:-3px;
+    margin-right:2px;
 }
 #slideContainer {
-    max-width: @slide-container-width;
+    max-width:10000px;
+    margin-right:2px;
+    overflow-x:hidden;
     img{
         background-color:white;
     }
 }
 .slideButtonContainer {
     width:100%;
+    position:relative;
 }
 .slide-count {
     text-align:right;
@@ -117,6 +280,12 @@ background-color:@block-bg;
 .bg-tools {
     background-color:@body-bg;
 }
+.groupSlideContainer{
+    position:absolute;
+    top:0;
+    left:0;
+    pointer-events:none;
+}
 .pen .icon-txt {
     color:@subtool-fg;
     text-shadow:none;
@@ -147,6 +316,10 @@ background-color:@block-bg;
         }
     }
 }
+.thumbGroup .sparkline{
+    stroke:@text-std;
+    fill:@highlight;
+}
 #s2cMessageContainer {
     .block;
     position: absolute;
@@ -159,7 +332,7 @@ background-color:@block-bg;
 }
 #thumbScrollContainer {
     top:40px;
-    height: calc(~"100vh - 40px");
+    max-height: calc(~"100vh - 40px");
     overflow-y: auto;
 }
 #shareContainer {
@@ -250,11 +423,12 @@ td.conversationSharing{
         height:auto;
     }
 }
+#healthCheckListing{
+    background-image:@body-backgroundimage;
+}
 .dots{
     flex-wrap:wrap;
 }
-/* fix this jodi! */
-
 .navigationNext, .navigationPrevious {
     a {
         .fa;

@@ -155,13 +155,13 @@ function registerPositionHandlers(contexts,down,move,up){
         context.css({"touch-action":"none"});
         var isGesture = false;
         var trackedTouches = {};
-				var checkIsGesture = function(pointerEvent){
-					if (pointerEvent !== undefined && pointerEvent.originalEvent.pointerType == "touch"){
-						return (_.size(trackedTouches) > 1);
-					} else {
-						return false;
-					}
-				}
+        var checkIsGesture = function(pointerEvent){
+            if (pointerEvent !== undefined && pointerEvent.originalEvent.pointerType == "touch"){
+                return (_.size(trackedTouches) > 1);
+            } else {
+                return false;
+            }
+        }
         var updatePoint = function(pointerEvent){
             var pointId = pointerEvent.originalEvent.pointerId;
             var isEraser = pointerEvent.originalEvent.pointerType == "pen" && pointerEvent.originalEvent.button == 5;
@@ -185,9 +185,9 @@ function registerPositionHandlers(contexts,down,move,up){
             };
             pointItem.points.push(newPoint);
             pointItem.eraser = pointItem.eraser || isEraser;
-						if (pointerEvent.originalEvent.pointerType == "touch"){
-							trackedTouches[pointId] = pointItem;
-						}
+            if (pointerEvent.originalEvent.pointerType == "touch"){
+                trackedTouches[pointId] = pointItem;
+            }
             if (checkIsGesture(pointerEvent)){
                 if (isGesture == false){
                     _.each(trackedTouches,function(series){
@@ -213,9 +213,9 @@ function registerPositionHandlers(contexts,down,move,up){
             var y = pointerEvent.pageY - o.top;
             var z = pointerEvent.originalEvent.pressure || 0.5;
             var worldPos = screenToWorld(x,y);
-						if (pointerEvent.originalEvent.pointerType == "touch"){
-							delete trackedTouches[pointId];
-						}
+            if (pointerEvent.originalEvent.pointerType == "touch"){
+                delete trackedTouches[pointId];
+            }
             if (isGesture && _.size(trackedTouches) == 0){
                 isGesture = false;
                 isDown = false;
@@ -231,41 +231,41 @@ function registerPositionHandlers(contexts,down,move,up){
         }
         if (detectPointerEvents()){
             var performGesture = _.throttle(function(){
-								takeControlOfViewbox();
+                takeControlOfViewbox();
 
-								var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
-										var first = _.first(item.points);
-										var last = _.last(item.points);
-										return [first,last];
-								});
-								trackedTouches = {};
-								var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
-								var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+                var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+                    var first = _.first(item.points);
+                    var last = _.last(item.points);
+                    return [first,last];
+                });
+                trackedTouches = {};
+                var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+                var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-								Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+                Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
 
-								var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
-								var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
-								var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
-								var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
-								var prevYScale = prevNorthMost - prevSouthMost;
-								var prevXScale = prevWestMost - prevEastMost;
+                var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
+                var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
+                var prevYScale = prevNorthMost - prevSouthMost;
+                var prevXScale = prevWestMost - prevEastMost;
 
-								var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
-								var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
-								var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
-								var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
-								var yScale = northMost - southMost;
-								var xScale = westMost - eastMost;
+                var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
+                var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
+                var yScale = northMost - southMost;
+                var xScale = westMost - eastMost;
 
-								var previousScale = (prevXScale + prevYScale)       / 2;
-								var currentScale = (xScale + yScale)        / 2;
-								Zoom.scale(previousScale / currentScale);
+                var previousScale = (prevXScale + prevYScale)       / 2;
+                var currentScale = (xScale + yScale)        / 2;
+                Zoom.scale(previousScale / currentScale);
             },25);
             context.bind("pointerdown",function(e){
                 if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
-									isGesture = true;
-								}
+                    isGesture = true;
+                }
                 var point = updatePoint(e);
                 e.preventDefault();
                 WorkQueue.pause();
@@ -301,7 +301,8 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var pointerOut = function(x,y){
+            var pointerOut = function(x,y,e){
+                var point = releasePoint(e);
                 trackedTouches = {};
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
@@ -315,13 +316,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+                        }
+                    }
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -331,7 +331,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    pointerOut(e.offsetX,e.offsetY);
+                    pointerOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -339,7 +339,6 @@ function registerPositionHandlers(contexts,down,move,up){
             context.bind("pointerout",pointerClose);
             context.bind("pointerleave",pointerClose);
             context.bind("pointercancel",pointerClose);
-
         } else {
             context.bind("mousedown",function(e){
                 WorkQueue.pause();
@@ -383,11 +382,13 @@ function registerPositionHandlers(contexts,down,move,up){
                 isDown = false;
                 Modes.finishInteractableStates();
             });
-            var mouseOut = function(x,y){
+            var mouseOut = function(x,y,e){
+                console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
                 var worldY = worldPos.y;
+                var z = 0.5;
                 if(worldX < viewboxX){
                     takeControlOfViewbox();
                     Extend.left();
@@ -396,13 +397,12 @@ function registerPositionHandlers(contexts,down,move,up){
                     takeControlOfViewbox();
                     Extend.right();
                 }
-                else if(worldY < viewboxY){
-                    takeControlOfViewbox();
-                    Extend.up();
-                }
-                else if(worldY >= (viewboxY + viewboxHeight)){
-                    takeControlOfViewbox();
-                    Extend.down();
+                else{
+                    if(noInteractableConsumed(worldPos,"up")){
+                        if(isDown && !isGesture){
+                            up(x,y,z,worldPos,modifiers(e,false));
+                        }
+                    }
                 }
                 isDown = false;
             }
@@ -410,7 +410,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 WorkQueue.gracefullyResume();
                 e.preventDefault();
                 if(isDown){
-                    mouseOut(e.offsetX,e.offsetY);
+                    mouseOut(e.offsetX,e.offsetY,e);
                 }
                 isDown = false;
                 Modes.finishInteractableStates();
@@ -1072,7 +1072,6 @@ var Modes = (function(){
                     Modes.select.offset = {x:root.x2,y:root.y2};
                     blit();
 
-                    console.log("Free transform down");
                     return false;
                 },
                 move:function(worldPos){
@@ -1123,7 +1122,6 @@ var Modes = (function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
-                    console.log("Free transform up");
                     sendStanza(resized);
                     blit();
                     return false;
@@ -1268,6 +1266,9 @@ var Modes = (function(){
                             /*General would interfere with specific during setFormatting*/
                             carota.runs.nextInsertFormatting = {};
                             t.doc.selectedRange().setFormatting(prop,newValue);
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            carota.runs.nextInsertFormatting[prop] = newValue;
+                            t.doc.claimFocus();/*Focus might have left when a control was clicked*/
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1295,7 +1296,6 @@ var Modes = (function(){
                     refStart = newEnd;
                     refSize = size;
                 },d.range(0,originalRange.end));
-                sizes = sizes.reverse();
                 refStart = originalRange.start;
                 d.runs(function(runToAlter){
                     var refEnd = refStart + runToAlter.text.length;
@@ -1304,13 +1304,20 @@ var Modes = (function(){
                     refStart = refEnd;
                 },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
+                return sizes;
             };
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            scaleEditor(d,factor);
+                            var sizes = scaleEditor(d,factor);
+                            if(factor > 1){
+                                carota.runs.defaultFormatting.newBoxSize = _.max(sizes);
+                            }
+                            else{
+                                carota.runs.defaultFormatting.newBoxSize = _.min(sizes);
+                            }
                         }
                     });
                 };
@@ -1346,41 +1353,6 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
-
-                var adoptPresetWidth = function(preset){
-                    return function(){
-                        _.each(boardContent.multiWordTexts,function(t){
-                            if(t.doc.isActive){
-                                switch(preset){
-                                case "runToEdge":
-                                    var logicalBoardWidth = screenToWorld(boardWidth,0);
-                                    t.doc.width((logicalBoardWidth.x + viewboxX - t.x));
-                                    break;
-                                case "fitToText":
-                                    t.doc.width(t.doc.frame.actualWidth());
-                                    break;
-                                case "widen":
-                                    t.doc.width(t.doc.frame.actualWidth() * 1.6);
-                                    break;
-                                case "narrow":
-                                    t.doc.width(t.doc.frame.actualWidth() * 0.6);
-                                    break;
-                                case "centerOnScreen":
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
-                                    t.doc.selectedRange().setFormatting("align","center");
-                                    t.doc.position.x = viewboxX;
-                                    break;
-                                case "fullscreen":
-                                    t.doc.position.x = viewboxX;
-                                    t.doc.position.y = viewboxY;
-                                    t.doc.width(screenToWorld(boardWidth,0).x);
-                                    break;
-                                }
-                                t.doc.contentChanged.fire();
-                            }
-                        });
-                    };
-                }
                 fontLargerSelector.on("click",scaleCurrentSelection(1.2));
                 fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
@@ -1390,24 +1362,19 @@ var Modes = (function(){
                     red:"#ff0000",
                     blue:"#0000ff",
                     black:"#000000",
-                    yellow:"#ffff00"
+                    yellow:"#ffff00",
+                    green:"#00ff00"
                 };
-                var colors = ["red","blue","black","yellow"];
+                var colors = ["red","blue","black","yellow","green"];
                 _.each(colors,function(color){
                     var subject = color;
                     $(sprintf("#%sText",color)).click(function(){
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
+                        Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
+                        console.log("Clicked",subject);
                     });
-                });
-                presetFullscreen.click(adoptPresetWidth("fullscreen"));
-                fontOptionsToggle.click(function(){fontOptions.toggle()});
-                $("#closeTextDialog").click(function(){
-                    fontOptions.hide();
-                });
-                $("#exitTextEditing").click(function(){
-                    Modes.select.activate();
                 });
             });
             var mapSelected = function(f){
@@ -1445,11 +1412,10 @@ var Modes = (function(){
                 },
                 getLinesets:function(){
                     return _.map(boardContent.multiWordTexts,function(t){
-			console.log("Textbox",t.identity,t.doc.width());
-			t.doc.layout();
+                        t.doc.layout();
                         return _.map(t.doc.frame.lines,function(l){
-			    return l.positionedWords.length;
-			});
+                            return l.positionedWords.length;
+                        });
                     });
                 },
                 mapSelected:mapSelected,
@@ -1490,7 +1456,15 @@ var Modes = (function(){
                         }
                     }
                 },
-                editorFor:function(t){
+                refocussing:false,
+                editorFor: function(t){
+                    var textColors = [
+                        $("#blackText"),
+                        $("#redText"),
+                        $("#blueText"),
+                        $("#yellowText"),
+                        $("#greenText")
+                    ];
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
                         editor = boardContent.multiWordTexts[t.identity] = t;
@@ -1506,25 +1480,29 @@ var Modes = (function(){
                             var onChange = _.debounce(function(){
                                 Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
-                                //source.privacy = Privacy.getCurrentPrivacy();
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
+                                source.audiences = ContentFilter.getAudiences();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
                             },1000);
+                            Progress.beforeChangingAudience[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeChangingAudience[t.identity];
+                            };
+                            Progress.beforeLeavingSlide[t.identity] = function(){
+                                onChange.flush();
+                                delete Progress.beforeLeavingSlide[t.identity];
+                            };
                             editor.doc.contentChanged(onChange);
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
-                                /*This enables us to force pre-existing format choices onto a new textbox without automatically overwriting them with blanks*/
-                                if(editor.doc.save().length > 0){
+                                if(Modes.text.refocussing){
+                                    Modes.text.refocussing = false;
+                                }
+                                else{
                                     var format = formatReport();
                                     carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                                    var textColors = [
-                                        $("#blackText"),
-                                        $("#redText"),
-                                        $("#blueText"),
-                                        $("#yellowText")
-                                    ];
                                     var setV = function(selector,prop){
                                         var isToggled = (format[prop] == true);
                                         if(isToggled){
@@ -1548,6 +1526,7 @@ var Modes = (function(){
                                     setIf(textColors[1],"color",["#ff0000",255]);
                                     setIf(textColors[2],"color",["#0000ff",255]);
                                     setIf(textColors[3],"color",["#ffff00",255]);
+                                    setIf(textColors[4],"color",["#00ff00",255]);
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
@@ -1562,6 +1541,21 @@ var Modes = (function(){
                 draw:function(t){
                     if(t && t.doc){
                         carota.editor.paint(board[0],t.doc,true);
+                    }
+                },
+                oldEditorAt : function(x,y,z,worldPos){
+                    var threshold = 10;
+                    var me = UserSettings.getUsername();
+                    var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+                    var texts = _.values(boardContent.texts).filter(function(text){
+                        var intersects = intersectRect(text.bounds,ray)
+                        return intersects && (text.author == me);
+                    });
+                    if(texts.length > 0){
+                        return texts[0];
+                    }
+                    else{
+                        return false;
                     }
                 },
                 editorAt : function(x,y,z,worldPos){
@@ -1611,17 +1605,55 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos){
                         var clickTime = Date.now();
+                        var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
                             if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
-				blit();
+                                blit();
                             }
                         });
                         var sel;
                         Modes.select.clearSelection();
-                        if (editor){
+                        if (oldEditor){
+                            var deleteTransform = batchTransform();
+                            deleteTransform.isDeleted = true;
+                            if ("texts" in Modes.select.selected){
+                                deleteTransform.textIds = [oldEditor.identity];
+                            }
+                            sendStanza(deleteTransform);
+
+                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                            var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
+                                text: oldEditor.text,
+                                italic: oldEditor.style == "italic",
+                                bold: oldEditor.weight == "bold",
+                                underline: oldEditor.decoration == "underline",
+                                color: oldEditor.color,
+                                size: oldEditor.size
+                            }]);
+                            var newDoc = newEditor.doc;
+                            newDoc.select(0,1);
+                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
+                            sel = {multiWordTexts:{}};
+                            sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+                            Modes.select.setSelection(sel);
+                            editor = newEditor;
+
+                            var source = newEditor;
+                            source.privacy = Privacy.getCurrentPrivacy();
+                            source.target = "presentationSpace";
+                            source.slide = Conversations.getCurrentSlideJid();
+                            sendRichText(source);
+                            /*This is important to the zoom strategy*/
+                            incorporateBoardBounds(editor.bounds);
+
+                            var node = newDoc.byOrdinal(0);
+                            newDoc.mousedownHandler(node);
+                            newDoc.mouseupHandler(node);
+
+                        } else if (editor){
                             var doc = editor.doc;
                             var context = Modes.text.contextFor(doc,worldPos);
                             if(clickTime - lastClick <= doubleClickThreshold){
@@ -1644,7 +1676,7 @@ var Modes = (function(){
                                 bold:carota.runs.nextInsertFormatting.bold == true,
                                 underline:carota.runs.nextInsertFormatting.underline == true,
                                 color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                                size:carota.runs.defaultFormatting.size / scale()
+                                size:carota.runs.defaultFormatting.newBoxSize / scale()
                             }]);
                             var newDoc = newEditor.doc;
                             newDoc.select(0,1);
@@ -1667,53 +1699,51 @@ var Modes = (function(){
                     };
                     registerPositionHandlers(board,down,move,up);
                 },
-								handleDrop:function(html,x,y){
-									if (html.length > 0){
-										var newRuns = carota.html.parse(html,{});
-										console.log("newRuns:",newRuns);
-										var worldPos = screenToWorld(x,y);
-										Modes.text.activate();
-										var clickTime = Date.now();
-										var sel;
-										Modes.select.clearSelection();
-										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-										var newEditor = createBlankText(worldPos,[{
-											text:" ",
-											italic:carota.runs.nextInsertFormatting.italic == true,
-											bold:carota.runs.nextInsertFormatting.bold == true,
-											underline:carota.runs.nextInsertFormatting.underline == true,
-											color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-											size:carota.runs.defaultFormatting.size / scale()
-										}]);
-										var newDoc = newEditor.doc;
-										newDoc.select(0,1);
-										boardContent.multiWordTexts[newEditor.identity] = newEditor;
-										sel = {multiWordTexts:{}};
-										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-										Modes.select.setSelection(sel);
-										editor = newEditor;
-										var node = newDoc.byOrdinal(0);
-										newDoc.mousedownHandler(node);
-										newDoc.mouseupHandler(node);
-										editor.doc.invalidateBounds();
-										editor.doc.isActive = true;
-										editor.doc.load(newRuns);
-										Progress.historyReceived["ClearMultiTextEchoes"] = function(){
-												Modes.text.echoesToDisregard = {};
-										};
-										Modes.text.scrollToCursor(editor);
-										var source = boardContent.multiWordTexts[editor.identity];
-										source.privacy = Privacy.getCurrentPrivacy();
-										source.target = "presentationSpace";
-										source.slide = Conversations.getCurrentSlideJid();
-										sendRichText(source);
-										Progress.call("onSelectionChanged",[Modes.select.selected]);
-									};
-								},
+                handleDrop:function(html,x,y){
+                    if (html.length > 0){
+                        var newRuns = carota.html.parse(html,{});
+                        var worldPos = screenToWorld(x,y);
+                        Modes.text.activate();
+                        var clickTime = Date.now();
+                        var sel;
+                        Modes.select.clearSelection();
+                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                        var newEditor = createBlankText(worldPos,[{
+                            text:" ",
+                            italic:carota.runs.nextInsertFormatting.italic == true,
+                            bold:carota.runs.nextInsertFormatting.bold == true,
+                            underline:carota.runs.nextInsertFormatting.underline == true,
+                            color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+                            size:carota.runs.defaultFormatting.newBoxSize / scale()
+                        }]);
+                        var newDoc = newEditor.doc;
+                        newDoc.select(0,1);
+                        boardContent.multiWordTexts[newEditor.identity] = newEditor;
+                        sel = {multiWordTexts:{}};
+                        sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
+                        Modes.select.setSelection(sel);
+                        editor = newEditor;
+                        var node = newDoc.byOrdinal(0);
+                        newDoc.mousedownHandler(node);
+                        newDoc.mouseupHandler(node);
+                        editor.doc.invalidateBounds();
+                        editor.doc.isActive = true;
+                        editor.doc.load(newRuns);
+                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                            Modes.text.echoesToDisregard = {};
+                        };
+                        Modes.text.scrollToCursor(editor);
+                        var source = boardContent.multiWordTexts[editor.identity];
+                        source.privacy = Privacy.getCurrentPrivacy();
+                        source.target = "presentationSpace";
+                        source.slide = Conversations.getCurrentSlideJid();
+                        sendRichText(source);
+                        Progress.call("onSelectionChanged",[Modes.select.selected]);
+                    };
+                },
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
                     removeActiveMode();
-                    fontOptions.hide();
                     unregisterPositionHandlers(board);
                     _.each(boardContent.multiWordTexts,function(t){
                         t.doc.isActive = false;
@@ -1799,7 +1829,8 @@ var Modes = (function(){
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
-                                y:currentVideo.y
+                                y:currentVideo.y,
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(permitStudentsToPublishCheckbox)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -1822,7 +1853,7 @@ var Modes = (function(){
                             WorkQueue.gracefullyResume();
                         },
                         error: function(e){
-                            console.log(e);
+                            console.log("Image upload ex",e);
                             resetImageUpload();
                             errorAlert("Upload failed.  This image cannot be processed, either because of image protocol issues or because it exceeds the maximum image size.");
                             WorkQueue.gracefullyResume();
@@ -1853,11 +1884,26 @@ var Modes = (function(){
                     resetVideoUpload();
                 }
             });
+            Progress.beforeLeavingSlide["videos"] = function(){
+                if ("videos" in boardContent){
+                    _.forEach(boardContent.videos,function(video){
+                        if (video != null && video != undefined && "destroy" in video){
+                            video.destroy();
+                        }
+                    });
+                }
+            };
             return {
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.video;
-                    setActiveMode("#videoTools","#videoMode");
+                    setActiveMode("#insertTools","#videoMode");
+                    $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+                    $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
+                    $(".active").removeClass("active");
+                    $("#videoMode").addClass("active");
+                    $("#insertTools .insetColumn").hide();
+                    $("#videoTools").show();
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);
@@ -1956,76 +2002,80 @@ var Modes = (function(){
                 }
             })();
             var clientSideProcessImage = function(onComplete,thisCurrentImage){
-								var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
+                var state = thisCurrentImage == undefined ? currentImage : thisCurrentImage;
                 if (state == undefined || state.fileUpload == undefined || onComplete == undefined){
-									console.log("returning because currentImage is empty",currentImage);
+                    console.log("returning because currentImage is empty",currentImage);
                     return;
                 }
                 $("#imageWorking").show();
                 $("#imageFileChoice").hide();
                 var reader = new FileReader();
                 reader.onload = function(readerE){
-									var originalSrc = readerE.target.result;
-									clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
-                    var originalSize = originalSrc.length;
-										return originalSize < img;
-									});
+                    var originalSrc = readerE.target.result;
+                    clientSideProcessImageSrc(originalSrc,state,onComplete,function(img){
+                        var originalSize = originalSrc.length;
+                        return originalSize < img;
+                    });
                 }
                 reader.readAsDataURL(state.fileUpload);
             };
-						var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
-							var thisCurrentImage = state != undefined ? state : currentImage;
-                    var renderCanvas = $("<canvas/>");
-                    var img = new Image();
-										img.setAttribute("crossOrigin","Anonymous");
-										img.onerror = function(e){
-											errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly across into MeTL.  You may need to download the image first and then upload it.");
-										};
-                    img.onload = function(e){
-                        var width = img.width;
-                        var height = img.height;
-                        var dims = imageModes.getResizeFunction()(width,height);
-                        var w = dims.w;
-                        var h = dims.h;
-                        var quality = dims.q;
-                        /*
-                         renderCanvas.width = w;
-                         renderCanvas.height = h;
-                         renderCanvas.attr("width",w);
-                         renderCanvas.attr("height",h);
-                         renderCanvas.css({
-                         width:px(w),
-                         height:px(h)
-                         });
-                         renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                         currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
-                         */
-                        renderCanvas.width = width;
-                        renderCanvas.height = height;
-                        renderCanvas.attr("width",width);
-                        renderCanvas.attr("height",height);
-                        renderCanvas.css({
-                            width:px(width),
-                            height:px(height)
-                        });
-												var ctx = renderCanvas[0].getContext("2d");
-												ctx.rect(0,0,width,height);
-												ctx.fillStyle = "white";
-												ctx.fill();
-                        ctx.drawImage(img,0,0,width,height);
-                        var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
-                        thisCurrentImage.width = w;
-                        thisCurrentImage.height = h;
-                        thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
-                        var newSize = thisCurrentImage.resizedImage.length;
-												if (ifBiggerPred(newSize)){
-													thisCurrentImage.resizedImage = originalSrc;
-												}
-                        onComplete(thisCurrentImage);
-                    };
-                    img.src = originalSrc;
-
-						};
+            var clientSideProcessImageSrc = function(originalSrc,state,onComplete,ifBiggerPred){
+                var thisCurrentImage = state != undefined ? state : currentImage;
+                var renderCanvas = $("<canvas/>");
+                var img = new Image();
+								if (originalSrc.indexOf("data") == 0){
+									// if it's a dataUrl, then don't set crossOrigin of anonymous
+								} else {
+									// set cross origin if it's not a dataUrl
+									img.setAttribute("crossOrigin","Anonymous");
+								}
+                img.onerror = function(e){
+                    errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly.  You may need to download the image first and then upload it.");
+                };
+                img.onload = function(e){
+                    var width = img.width;
+                    var height = img.height;
+                    var dims = imageModes.getResizeFunction()(width,height);
+                    var w = dims.w;
+                    var h = dims.h;
+                    var quality = dims.q;
+                    /*
+                     renderCanvas.width = w;
+                     renderCanvas.height = h;
+                     renderCanvas.attr("width",w);
+                     renderCanvas.attr("height",h);
+                     renderCanvas.css({
+                     width:px(w),
+                     height:px(h)
+                     });
+                     renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                     currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+                     */
+                    renderCanvas.width = width;
+                    renderCanvas.height = height;
+                    renderCanvas.attr("width",width);
+                    renderCanvas.attr("height",height);
+                    renderCanvas.css({
+                        width:px(width),
+                        height:px(height)
+                    });
+                    var ctx = renderCanvas[0].getContext("2d");
+                    ctx.rect(0,0,width,height);
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                    ctx.drawImage(img,0,0,width,height);
+                    var resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
+                    thisCurrentImage.width = w;
+                    thisCurrentImage.height = h;
+                    thisCurrentImage.resizedImage = resizedCanvas.toDataURL("image/jpeg",quality);
+                    var newSize = thisCurrentImage.resizedImage.length;
+                    if (ifBiggerPred(newSize)){
+                        thisCurrentImage.resizedImage = originalSrc;
+                    }
+                    onComplete(thisCurrentImage);
+                };
+                img.src = originalSrc;
+            };
             var sendImageToServer = function(imageDef){
                 if (imageDef.type == "imageDefinition"){
                     WorkQueue.pause();
@@ -2051,10 +2101,11 @@ var Modes = (function(){
                                 bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
                                 width:imageDef.width,
                                 height:imageDef.height,
+                                x:imageDef.x,
+                                y:imageDef.y,
                                 target:"presentationSpace",
                                 privacy:Privacy.getCurrentPrivacy(),
-                                x:imageDef.x,
-                                y:imageDef.y
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences()).map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
@@ -2075,6 +2126,7 @@ var Modes = (function(){
                             sendStanza(imageStanza);
                             resetImageUpload();
                             WorkQueue.gracefullyResume();
+                            zoomToFit();
                         },
                         error: function(e){
                             console.log(e);
@@ -2097,12 +2149,16 @@ var Modes = (function(){
                     insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
+											try {
                         var files = e.target.files || e.dataTransfer.files;
                         var file = files[0];
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
                         }
                         clientSideProcessImage(sendImageToServer);
+											} catch(ex) {
+												console.log("imageFileChoiceHandleChanged exception:",ex);
+											}
                     },false);
                     resetImageUpload();
                 }
@@ -2111,7 +2167,13 @@ var Modes = (function(){
                 activate:function(){
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
-                    setActiveMode("#imageTools","#imageMode");
+                    setActiveMode("#insertTools","#imageMode");
+                    $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
+                    $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
+                    $(".active").removeClass("active");
+                    $("#imageMode").addClass("active");
+                    $("#insertTools .insetColumn").hide();
+                    $("#imageTools").show();
                     var x = 10;
                     var y = 10;
                     var worldPos = screenToWorld(x,y);
@@ -2126,45 +2188,54 @@ var Modes = (function(){
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
-								handleDroppedSrc:function(src,x,y){
-									var worldPos = screenToWorld(x,y);
-									var thisCurrentImage = {
-											"type":"imageDefinition",
-											"screenX":x,
-											"screenY":y,
-											"x":worldPos.x,
-											"y":worldPos.y
-									};
-									clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
-								},	
+                handleDroppedSrc:function(src,x,y){
+									console.log("handleDroppedSrc:",src,x,y);
+                    var worldPos = screenToWorld(x,y);
+                    var thisCurrentImage = {
+                        "type":"imageDefinition",
+                        "screenX":x,
+                        "screenY":y,
+                        "x":worldPos.x,
+                        "y":worldPos.y
+                    };
+                    clientSideProcessImageSrc(src,thisCurrentImage,sendImageToServer,function(newSize){return false;});
+                },
 
-								handleDrop:function(dataTransfer,x,y){
-									var yOffset = 0;
-									var processed = [];
-									var processFile = function(file,sender){
-										if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
-											var worldPos = screenToWorld(x,y + yOffset);
-											var thisCurrentImage = {
-													"type":"imageDefinition",
-													"screenX":x,
-													"screenY":y + yOffset,
-													"x":worldPos.x,
-													"y":worldPos.y
-											};
-											thisCurrentImage.fileUpload = file;
-											console.log("handlingDrop",file,sender,thisCurrentImage);
-											processed.push(file);
-											clientSideProcessImage(sendImageToServer,thisCurrentImage);
-											yOffset += 50;
-										}
-									};
-									_.forEach(dataTransfer.files,function(f){processFile(f,"file");});
-									_.forEach(dataTransfer.items,function(item){
-										var file = item.getAsFile(0);
-										processFile(file,"item");
-									});
+                handleDrop:function(dataTransfer,x,y){
+                    var yOffset = 0;
+                    var processed = [];
+										console.log("handling drop:",dataTransfer,x,y);
+                    var processFile = function(file,sender){
+											try {
+                        if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+                            var worldPos = screenToWorld(x,y + yOffset);
+                            var thisCurrentImage = {
+                                "type":"imageDefinition",
+                                "screenX":x,
+                                "screenY":y + yOffset,
+                                "x":worldPos.x,
+                                "y":worldPos.y
+                            };
+                            thisCurrentImage.fileUpload = file;
+                            processed.push(file);
+                            clientSideProcessImage(sendImageToServer,thisCurrentImage);
+                            yOffset += 50;
+                        }
+											} catch(e){
+												console.log("could not processFile:",file,sender);
+											}
+                    };
+                    _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
+                    _.forEach(dataTransfer.items,function(item){
+											try {
+                        var file = item.getAsFile(0);
+                        processFile(file,"item");
+											} catch(e){
+												console.log("could not get item as file:",e);
+											}
+                    });
 
-								},	
+                },
                 deactivate:function(){
                     resetImageUpload();
                     removeActiveMode();
@@ -2246,7 +2317,7 @@ var Modes = (function(){
                 }
             };
             var clearSelectionFunction = function(){
-                Modes.select.selected = {images:{},text:{},inks:{},multiWordTexts:{},videos:{}};
+                Modes.select.selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             }
             var updateSelectionWhenBoardChanges = _.debounce(function(){
@@ -2303,15 +2374,17 @@ var Modes = (function(){
                     $("#administerContent").removeClass("activeBrush");
                 }
                 clearSelectionFunction();
+                blit();
             };
-
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
+		    console.log("Showing administer");
                     $("#ban").show();
                     $("#ban").removeClass("disabledButton");
                     $("#administerContent").show();
                     $("#administerContent").removeClass("disabledButton");
                 } else {
+		    console.log("Hiding administer");
                     $("#ban").addClass("disabledButton");
                     $("#ban").hide();
                     $("#administerContent").addClass("disabledButton");
@@ -2328,20 +2401,25 @@ var Modes = (function(){
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
             Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+		console.log("Conversation details received in ModesSelect",conversation);
                 if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
                 if (Conversations.shouldModifyConversation(conversation)){
-                    $("#administerContent").unbind("click").bind("click",administerContentFunction);
-                    $("#ban").unbind("click").bind("click",banContentFunction);
+		    console.log("Showing administer");
+                    $("#administerContent").show().unbind("click").bind("click",administerContentFunction);
+                    $("#ban").unbind("click").show().bind("click",banContentFunction);
                 } else {
-                    $("#administerContent").unbind("click");
-                    $("#ban").unbind("click");
+		    console.log("Hiding administer");
+                    $("#administerContent").hide().unbind("click");
+                    $("#ban").hide().unbind("click");
                 }
                 updateAdministerContentVisualState(conversation);
             };
             return {
                 name:"select",
+                isAdministeringContent:function(){return isAdministeringContent;},
+		updateAdministerContentVisualState:updateAdministerContentVisualState,
                 selected:{
                     images:{},
                     texts:{},
@@ -2414,11 +2492,14 @@ var Modes = (function(){
                                 deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
                             }
                             sendStanza(deleteTransform);
+                            _.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
+                                Progress.call("onCanvasContentDeleted",[stanza]);
+                            });
                             clearSelectionFunction();
                         }
                     });
                     var threshold = 30;
-                    //$("#administerContent").unbind("click").bind("click",administerContentFunction);
+                    //$("#Administercontent").unbind("click").bind("click",administerContentFunction);
                     //$("#ban").bind("click",banContentFunction);
                     var categories = function(func){
                         func("images");
@@ -2456,7 +2537,6 @@ var Modes = (function(){
                                 Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
                             }
                         }
-                        console.log(x,y,worldPos,Modes.select.dragging);
                         if(Modes.select.dragging){
                             Modes.select.offset = worldPos;
                             updateStatus("SELECT -> DRAG");
@@ -2620,7 +2700,7 @@ var Modes = (function(){
                             blit();
                         }
                         catch(e){
-                            console.log("Selection up",e);
+                            console.log("Selection up ex",e);
                         }
                     }
                     Modes.select.dragging = false;
@@ -2719,10 +2799,21 @@ var Modes = (function(){
         },
         feedback:(function(){
             var applyStateStyling = function(){
+                if (Conversations.shouldModifyConversation()){
+                    console.log("showing participants button");
+                    $("#participantsButton").unbind("click").on("click",function(){
+                        Participants.openMenu();
+                    }).show();
+                } else {
+                    console.log("hiding participants button");
+                    $("#participantsButton").unbind("click").hide();
+                }
                 switch(currentBackstage){
-                case "quizzes":$("#quizzesButton").addClass(active);
+                case "quizzes":
+                    $("#quizzesButton").addClass(active);
                     break;
-                case "submissions":$("#submissionButton").addClass(active);
+                case "submissions":
+                    $("#submissionButton").addClass(active);
                     break;
                 default:
                     break;
@@ -2768,6 +2859,8 @@ var Modes = (function(){
             var up = function(){};
             var down = function(){};
             var move = function(){};
+
+            var mousePressure = 256;
             $(function(){
                 $(".activeBrush").removeClass("activeBrush");
                 var drawTools = function(){
@@ -2894,7 +2987,6 @@ var Modes = (function(){
                 var currentStroke = [];
                 var isDown = false;
                 var resumeWork;
-                var mousePressure = 256;
                 down = function(x,y,z,worldPos,modifiers){
                     deleted = [];
                     isDown = true;
@@ -2906,17 +2998,22 @@ var Modes = (function(){
                         } else {
                             boardContext.globalAlpha = 1.0;
                         }
-                        currentStroke = [x, y, mousePressure * z];
-			boardContext.beginPath();
+                        currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
+                        trail.x = x;
+                        trail.y = y;
+                        boardContext.beginPath();
                         var newWidth = Modes.draw.drawingAttributes.width * z;
-			boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
-			boardContext.fill();
+                        boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
+                        boardContext.fill();
                     } else {
                     }
                 };
                 var raySpan = 10;
                 var deleted = [];
+                var trail = {};
                 move = function(x,y,z,worldPos,modifiers){
+                    x = Math.round(x);
+                    y = Math.round(y);
                     if(erasing || modifiers.eraser){
                         var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
                         var markAsDeleted = function(bounds){
@@ -2928,7 +3025,7 @@ var Modes = (function(){
                             $.each(coll,function(i,item){
                                 if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
                                     delete coll[item.identity];
-                                    deleted.push(item.identity);
+                                    deleted.push(item);
                                     markAsDeleted(item.bounds);
                                 }
                             })
@@ -2940,24 +3037,28 @@ var Modes = (function(){
                         boardContext.globalAlpha = 1.0;
                     }
                     else{
-                        var oldWidth = boardContext.lineWidth;
                         var newWidth = Modes.draw.drawingAttributes.width * z;
                         boardContext.beginPath();
                         boardContext.lineCap = "round";
                         boardContext.lineWidth = newWidth;
                         var lastPoint = _.takeRight(currentStroke,3);
-                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.moveTo(trail.x,trail.y);
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
-                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
                     }
+                    trail.x = x;
+                    trail.y = y;
                 };
                 up = function(x,y,z,worldPos,modifiers){
                     isDown = false;
                     if(erasing || modifiers.eraser){
                         var deleteTransform = batchTransform();
                         deleteTransform.isDeleted = true;
-                        deleteTransform.inkIds = deleted;
+                        deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
+                        _.forEach(deleted,function(stanza){
+                            Progress.call("onCanvasContentDeleted",[stanza]);
+                        });
                         sendStanza(deleteTransform);
                     } else {
                         var newWidth = Modes.draw.drawingAttributes.width * z;
@@ -2965,11 +3066,10 @@ var Modes = (function(){
                         boardContext.beginPath();
                         boardContext.lineWidth = newWidth;
                         boardContext.lineCap = "round";
-                        var lastPoint = _.takeRight(currentStroke,3);
-                        boardContext.moveTo(lastPoint[0],lastPoint[1]);
+                        boardContext.moveTo(trail.x,trail.y);
                         boardContext.lineTo(x,y);
                         boardContext.stroke();
-                        currentStroke = currentStroke.concat([x,y,mousePressure * z]);
+                        currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
                         strokeCollected(currentStroke);
                     }
                     boardContext.globalAlpha = 1.0;
@@ -2978,6 +3078,7 @@ var Modes = (function(){
             return {
                 name:"draw",
                 brushes:brushes,
+                mousePressure:mousePressure,
                 activate:function(){
                     boardContext.setLineDash([]);
                     if(Modes.currentMode == Modes.draw){
