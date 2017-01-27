@@ -227,7 +227,7 @@ var GroupBuilder = (function(){
             for:"clearGroups"
                 }).append($("<span />",{
                     class:"icon-txt",
-                    text:"No long-term groups"
+                    text:"No Smart Groups"
                 })).appendTo(importV);
 
         _.each(availableGroupSets,function(orgUnit){
