@@ -7,7 +7,7 @@ The members of a conversation (students) can be organized into groups by the con
 
 <div class="tip">Use <code>show me all my enrolled students</code> for group projects that extend over days or weeks so that temporarily absent students may participate.  Use <code>Only show me my participating students</code> for group work that is to be done immediately by the students actually present.</div>
 
-A group page is created after the teacher's current page, and the students are assigned to groups according to rules selected by the teacher.  Each member of the class will be allocated into one and only one group.  The teacher will not be in any group but will be able to see all the content from all of them.
+A group page is created after the teacher's current page, and the students are assigned to groups according to rules selected by the teacher.  Each member of the class will be assigned to one and only one group.  The teacher will not be in any group but will be able to see all the content from all of them.
 
 A member of a group (student) can only see content from the other group members (students) and the teacher.
 
@@ -45,7 +45,7 @@ There are three ways to select the student cohort when forming groups.
 
     <div class="tip">Use this for group work that is to be done immediately by the students actually present.</div>
 
-2. `Show me: anyone who has ever been here` includes all students who have ever joined the conversation (including those here right now). This allows the teacher to have visibility and control of the group to which a temporarily absent or disconnected student is allocated. It is useful when extending group work over a longer period of time.
+2. `Show me: anyone who has ever been here` includes all students who have ever joined the conversation (including those here right now). This allows the teacher to have visibility and control of the group to which a temporarily absent or disconnected student is assigned. It is useful when extending group work over a longer period of time.
 
     <div class="tip">Use this for group work that is to be done over days or weeks, where all students must be assigned to a group regardless of whether they are present at the time of group creation, and where the conversation is <strong>not restricted</strong> to a formal class enrolment.</div>
 
@@ -61,13 +61,13 @@ There are three ways to select the student cohort when forming groups.
 
 There are two ways to define groups limits:
 
-1. `Fill groups until: there are: <n> groups in total` keeps the number of groups constant, and fills each with as many students as necessary to allocate the selected student cohort.
+1. `Fill groups until: there are: <n> groups in total` keeps the number of groups constant, and fills each with as many students as necessary to assign the selected student cohort.
   
-2. `Fill groups until: each has: only one member / at most <n> members` creates as many groups as necessary to keep each at the specified maximum while allocating the selected student cohort.
+2. `Fill groups until: each has: only one member / at most <n> members` creates as many groups as necessary to keep each at the specified maximum while assigning the selected student cohort.
 
     <div class="tip">Selecting <code>only one member</code> creates one group per student, which is useful for individual student work that is visible only to the teacher, and can be annotated, commented on and graded (optionally with integration to the LMS gradebook).</div>
  
-Students who join the conversation after the group page has been created will randomly be added to existing groups to comply with the defined group limits.
+Students who join the conversation after the group page has been created will be added one at a time to existing or new groups (depending on the defined group limits).
 
 ### 3. Fill Groups
 
@@ -77,20 +77,22 @@ There are three ways to initially populate groups.
 
 2. `Starting from: SmartGroups` provides grouping rules based on information known to MeTL, currently including three homogenous and three heterogenous rules (Pedagogy [Learning in Groups](academy-pedagogy.html#learning-in-groups)): activity, classes and responses.
 
-    1. `No long-term groups` is the default, and does not form any groups.
+    1. `No SmartGroups` is the default, and does not form any groups.
     2. `Copy similar / different activity levels from SmartGroups` forms groups considering the level of activity in all conversations.
-    3. `Copy similar / different classes from SmartGroups` forms groups considering all classes that the student is currently or previously enrolled in.
+    3. `Copy similar / different classes from SmartGroups` forms groups considering all conversations that the student has ever joined.
     4. `Copy similar / different responsivity from SmartGroups` forms groups considering the responses to polls and submissions in all conversations.
 
 3. `Starting from: <D2L Courses>` uses groups formed in an integrated LMS (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
  
 ### 4. Simulation Window
 
-Students are allocated to groups and displayed here to allow the teacher to view the result of their selected options before creating the Group Page. 
+Students are assigned to groups and displayed here to allow the teacher to view the result of their selected options before creating the Group Page.
+
+Names displayed in red are assigned to predefined LMS groups (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
 
 ### 5. Randomize
 
-This control randomly assigns the selected student cohort to groups, using the defined group limits.
+This control randomly assigns the selected student cohort to groups, using the defined group limits.  Only names displayed in black will be randomized, as MeTL will preserve any predefined LMS groups (in red).
 
 ### 6. Add Page
 
