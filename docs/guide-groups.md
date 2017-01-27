@@ -75,24 +75,24 @@ There are three ways to initially populate groups.
 
 1. `Starting from: no groups` forms groups randomly.
 
-2. `Starting from: SmartGroups` provides grouping rules based on information known to MeTL, currently including three homogenous and three heterogenous rules (Pedagogy [Learning in Groups](academy-pedagogy.html#learning-in-groups)): activity, classes and responses.
+2. `Starting from: Smart Groups` imports groups using grouping rules based on information known to MeTL, currently including three homogenous and three heterogenous rules (Pedagogy [Learning in Groups](academy-pedagogy.html#learning-in-groups)): activity, classes and responses.
 
-    1. `No SmartGroups` is the default, and does not form any groups.
-    2. `Copy similar / different activity levels from SmartGroups` forms groups considering the level of activity in all conversations.
-    3. `Copy similar / different classes from SmartGroups` forms groups considering all conversations that the student has ever joined.
-    4. `Copy similar / different responsivity from SmartGroups` forms groups considering the responses to polls and submissions in all conversations.
+    1. `No Smart Groups` is the default, and does not form any groups.
+    2. `Copy similar / different activity levels from Smart Groups` forms groups considering the level of activity in all conversations.
+    3. `Copy similar / different classes from Smart Groups` forms groups considering all conversations that the student has ever joined.
+    4. `Copy similar / different responsivity from Smart Groups` forms groups considering the responses to polls and submissions in all conversations.
 
-3. `Starting from: <D2L Courses>` uses groups formed in an integrated LMS (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
+3. `Starting from: <D2L Courses>` imports groups formed in an integrated LMS (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
  
 ### 4. Simulation Window
 
 Students are assigned to groups and displayed here to allow the teacher to view the result of their selected options before creating the Group Page.
 
-Names displayed in red are assigned to predefined LMS groups (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
+Names displayed in red are assigned to groups created by Smart Groups or an integrated LMS (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
 
 ### 5. Randomize
 
-This control randomly assigns the selected student cohort to groups, using the defined group limits.  Only names displayed in black will be randomized, as MeTL will preserve any predefined LMS groups (in red).
+This control randomly assigns the selected student cohort to groups, using the defined group limits.  Only names displayed in black will be randomized, as MeTL will preserve any imported groups (in red).
 
 ### 6. Add Page
 
