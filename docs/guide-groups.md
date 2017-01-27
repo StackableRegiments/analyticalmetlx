@@ -77,10 +77,10 @@ There are three ways to initially populate groups.
 
 2. `Starting from: SmartGroups` provides grouping rules based on information known to MeTL, currently including three homogenous and three heterogenous rules (Pedagogy [Learning in Groups](academy-pedagogy.html#learning-in-groups)): activity, classes and responses.
 
-    1. `No long-term groups` is the default.
-    2. `Copy similar / different activity levels from SmartGroups` considers the level of activity in all conversations.
-    3. `Copy similar / different classes from SmartGroups` considers all classes that the student is currently or previously enrolled in.
-    4. `Copy similar / different responsivity from SmartGroups` considers the responses to polls and submissions in all conversations.
+    1. `No long-term groups` is the default, and does not form any groups.
+    2. `Copy similar / different activity levels from SmartGroups` forms groups considering the level of activity in all conversations.
+    3. `Copy similar / different classes from SmartGroups` forms groups considering all classes that the student is currently or previously enrolled in.
+    4. `Copy similar / different responsivity from SmartGroups` forms groups considering the responses to polls and submissions in all conversations.
 
 3. `Starting from: <D2L Courses>` uses groups formed in an integrated LMS (![Saint Leo University](images/slu-16.png) D2L at SaintLeo).
  
