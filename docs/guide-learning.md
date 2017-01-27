@@ -29,7 +29,7 @@ The conversation owner can also choose to display the submission on the next pag
 
 ## Group Editor
 
-The teacher can use this screen to move students between [Groups](guide-groups.html).  
+The group editor shows the teacher the [Groups](guide-groups.html) on the current group page.  Students can also be dragged and dropped into different groups.
 
 ## Participants
 
