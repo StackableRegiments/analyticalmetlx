@@ -10,6 +10,8 @@ import scala.xml._
 import collection._
 import net.liftweb.util.SecurityHelpers._
 import com.metl.renderer._
+import org.apache.commons.lang3.StringUtils
+
 
 case class Theme(author:String,text:String,origin:String)
 
@@ -230,4 +232,15 @@ object CanvasContentAnalysis extends Logger {
       }).getOrElse((Nil,Nil))
     }
   }
+  def effort(texts:List[MeTLMultiWordText]):Seq[RawEffort] = {
+    texts.groupBy(_.identity)
+      .map{case(_,revisions) => revisions.sortBy(_.timestamp)
+        .map(_.plainText)
+        .foldLeft((revisions(0).plainText,0)){
+        case ((t1,score),t0) => (t1, score + StringUtils.getLevenshteinDistance(t0,t1))
+      }
+    }
+  }
 }
+case class RawEffort(source:String,score:Int)
+case class WeightedEffort(score:Int,raw:RawEffort)

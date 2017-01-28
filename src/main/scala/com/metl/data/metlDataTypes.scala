@@ -383,6 +383,7 @@ case class MeTLMultiWordText(override val server:ServerConfiguration,override va
     case o:MeTLMultiWordText => super.matches(o)
     case _ => false
   }
+  def plainText = words.map(_.text).mkString("")
 }
 
 object MeTLMultiWordText{
