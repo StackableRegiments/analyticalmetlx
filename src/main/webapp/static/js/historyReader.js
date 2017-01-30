@@ -54,9 +54,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         prerenderTextMark = Date.now();
         _.each(boardContent.multiWordTexts,function(text){
             if(isUsable(text)){
-                var editor = Modes.text.editorFor(text).doc;
-                editor.load(text.words);
-                incorporateBoardBounds(text.bounds);
+                prerenderMultiwordText(text);
             }
             else{
                 console.log("Not usable",text);
@@ -261,14 +259,14 @@ function determineScaling(inX,inY){
     if (inX > maxX){
         outputScaleX = maxX / inX;
         outputX = inX * outputScaleX;
-				outputScaleY = outputScaleX;
-				outputY = inY * outputScaleX;
+        outputScaleY = outputScaleX;
+        outputY = inY * outputScaleX;
     }
     if (outputY > maxY){
         outputScaleY = maxY / outputY;
         outputY = outputY * outputScaleY;
-				outputScaleX = outputScaleY;
-				outputX = outputX * outputScaleY;
+        outputScaleX = outputScaleY;
+        outputX = outputX * outputScaleY;
     }
     return {
         width:outputX,
@@ -314,7 +312,7 @@ function prerenderInk(ink,onBoard){
     }
     var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleMeasurements.scaleX;
     var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleMeasurements.scaleY;
-		var scaledThickness = ink.thickness * scaleMeasurements.scaleX;
+    var scaledThickness = ink.thickness * scaleMeasurements.scaleX;
     if(isPrivate){
         x = points[0] + contentOffsetX;
         y = points[1] + contentOffsetY;
@@ -429,6 +427,12 @@ function calculateInkBounds(ink){
 }
 function scale(){
     return Math.min(boardWidth / viewboxWidth, boardHeight / viewboxHeight);
+}
+function prerenderMultiwordText(text){
+    var editor = Modes.text.editorFor(text).doc;
+    editor.load(text.words);
+    editor.updateCanvas();
+    incorporateBoardBounds(text.bounds);
 }
 function prerenderImage(image) {
     var canvas = $("<canvas/>")[0];

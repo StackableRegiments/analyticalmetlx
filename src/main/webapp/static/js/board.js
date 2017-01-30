@@ -835,8 +835,21 @@ function drawImage(image,incCanvasContext){
     }
 }
 
-function drawMultiwordText(item){
-    Modes.text.draw(item);
+function drawMultiwordText(item,incCanvasContext){
+    var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
+    try{
+        if(item.doc.canvas != undefined){
+            var sBounds = screenBounds(item.bounds);
+            visibleBounds.push(item.bounds);
+            if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+		console.log("drawMultiwordText");
+                canvasContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
+            }
+        }
+    }
+    catch(e){
+        console.log("drawMultiwordText exception",e);
+    }
 }
 function drawText(text,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
@@ -1004,21 +1017,21 @@ function measureBoardContent(includingText){
         var bounds = _.reduce(bs,mergeBounds);
         boardContent.width = bounds.width;
         boardContent.height = bounds.height;
-	boardContent.minX = bounds.minX;
-	boardContent.minY = bounds.minY;
+        boardContent.minX = bounds.minX;
+        boardContent.minY = bounds.minY;
     }
 }
 function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
     if(Modes.currentMode.name != "text"){
-	var headerHeight = scaleScreenToWorld($("#masterHeader .heading").height());
+        var headerHeight = scaleScreenToWorld($("#masterHeader .heading").height());
         var s = Modes.select.handlesAtZoom();
         requestedViewboxWidth = boardContent.width + s * 2;
         requestedViewboxHeight = boardContent.height + headerHeight + s * 2;
         IncludeView.specific(boardContent.minX,
-			     boardContent.minY - (headerHeight + s /2),
-			     requestedViewboxWidth,
-			     requestedViewboxHeight,followable);
+                             boardContent.minY - (headerHeight + s /2),
+                             requestedViewboxWidth,
+                             requestedViewboxHeight,followable);
     }
 }
 function zoomToOriginal(followable){

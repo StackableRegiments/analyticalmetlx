@@ -14,13 +14,13 @@ var carotaTest = (function(){
         var mean = _.mean(samples);
         console.log(sprintf("//Average %s milis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
     }
-    var wordCount = 2000;
+    var wordCount = 100;
     var prime = function(){
         var width = 2000;
         var height = 500;
         var x = 100;
         var y = 100;
-        var editor = Modes.text.editorFor({
+        var stanza = {
             bounds:[x,y,x+width,y+height],
             identity:"sim1",
             privacy:"PUBLIC",
@@ -33,19 +33,20 @@ var carotaTest = (function(){
             y:y,
             type:"multiWordText",
             author:UserSettings.getUsername(),
-            words:[]
-        });
-        editor.doc.load(_.map(_.range(0,wordCount),function(i){
-            return {
-                text: sprintf("primo %s secundo %s tertius %s quaternius %s quintum %s ",i,i,i,i,i),
-                italic: i % 2 == 0,
-                bold: i % 5 == 0,
-                underline: i % 20 == 0,
-                color: ['#00ff00',255],
-                size:25
-            };
-        }));
-        return editor.doc;
+            words:_.map(_.range(0,wordCount),function(i){
+                return {
+                    text: sprintf("primo %s secundo %s tertius %s quaternius %s quintum %s ",i,i,i,i,i),
+                    italic: i % 2 == 0,
+                    bold: i % 5 == 0,
+                    underline: i % 20 == 0,
+                    color: ['#00ff00',255],
+                    size:25
+                };
+            })
+        };
+        boardContent.multiWordTexts[stanza.identity] = stanza;
+        prerenderMultiwordText(stanza);
+	boardContent.multiWordTexts[stanza.identity].doc.invalidateBounds();
     };
     var paintCount = 0;
     return {
@@ -57,11 +58,9 @@ var carotaTest = (function(){
         },
         prime:prime,
         run:function(){
-            var doc = prime();
+            prime();
             carotaTest.sample = function(){
-                time(sprintf("Textbox sample render width %s words",wordCount * 5 * 2),function(){
-                    carota.editor.paint(board[0],doc,true);
-                });
+                time(sprintf("Textbox sample render width %s words",wordCount * 5 * 2),blit);
                 console.log(sprintf("Paint called %s times",carotaTest.getPaintCount()));
             }
             carotaTest.sample();
@@ -902,6 +901,7 @@ var carotaTest = (function(){
                                     toStack.push(newCommand);
                                 });
                                 this.layout();
+                                self.updateCanvas();
                                 this.contentChanged.fire();
                             }
                         },
@@ -929,6 +929,7 @@ var carotaTest = (function(){
                                 }));
                                 if (changed) {
                                     self.layout();
+                                    self.updateCanvas();
                                     self.contentChanged.fire();
                                 }
                             }
@@ -1007,18 +1008,12 @@ var carotaTest = (function(){
 
 
                     var currentTo = Date.now();
-
-                    var paint = exports.paint = function(canvas,doc,hasFocus){
-                        var screenPos = worldToScreen(doc.position.x,doc.position.y),
-                            logicalWidth = canvas.width,
-                            logicalHeight = canvas.height;
-
+                    var paint = function(canvas,doc,hasFocus){
+                        console.log("paint");
+                        carotaTest.paint();
                         var ctx = canvas.getContext('2d');
                         ctx.save();
-                        var output =  rect(0, 0, logicalWidth, logicalHeight);
-                        var s = scale();
-                        ctx.translate(screenPos.x,screenPos.y);
-                        ctx.scale(s,s);
+                        var output =  rect(0, 0, canvas.width, canvas.height);
                         if(doc.privacy == "PRIVATE"){
                             ctx.fillStyle = "red";
                             ctx.globalAlpha = 0.1;
@@ -1049,11 +1044,7 @@ var carotaTest = (function(){
                         }
                     }
 
-                    exports.create = function(host,externalCanvas,_requestPaintFunc,stanza) {
-                        var requestPaintFunc = function(){
-                            carotaTest.paint();
-                            _requestPaintFunc();
-                        };
+                    exports.create = function(host,externalCanvas,requestPaintFunc,stanza) {
                         host.innerHTML =
                             '<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
                             '<textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" ' +
@@ -1080,6 +1071,14 @@ var carotaTest = (function(){
 
                         var hasFocus = function(){
                             return document.focussedElement == textArea;
+                        }
+
+                        doc.updateCanvas = function(){
+                            console.log("updateCanvas");
+                            var c = this.canvas = $("<canvas/>")[0];
+                            c.width = this.bounds[2] - this.bounds[0];
+                            c.height = this.bounds[3] - this.bounds[1];
+                            paint(c,doc,hasFocus());
                         }
 
                         var toggles = {
