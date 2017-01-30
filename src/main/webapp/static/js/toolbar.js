@@ -1486,6 +1486,7 @@ var Modes = (function(){
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
+				console.log("Content changed.  Paint count %s",carotaTest.getPaintCount());
                             },1000);
                             Progress.beforeChangingAudience[t.identity] = function(){
                                 onChange.flush();

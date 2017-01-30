@@ -1,3 +1,73 @@
+var carotaTest = (function(){
+    //Pre-optimization
+    //Average 88.45 milis over 20 runs of Textbox sample render width 20000 words in 1769 milis
+    var time = function(label,f){
+        var samples = [];
+        var testCount = 1;
+        for(var i = 0; i < testCount; i++){
+            var start = new Date();
+            f();
+            var end = new Date();
+            samples.push(end - start);
+        }
+        var elapsed = _.sum(samples);
+        var mean = _.mean(samples);
+        console.log(sprintf("//Average %s milis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
+    }
+    var wordCount = 2000;
+    var prime = function(){
+        var width = 2000;
+        var height = 500;
+        var x = 100;
+        var y = 100;
+        var editor = Modes.text.editorFor({
+            bounds:[x,y,x+width,y+height],
+            identity:"sim1",
+            privacy:"PUBLIC",
+            slide:1001,
+            target:"presentationSpace",
+            requestedWidth:width,
+            width:width,
+            height:height,
+            x:x,
+            y:y,
+            type:"multiWordText",
+            author:UserSettings.getUsername(),
+            words:[]
+        });
+        editor.doc.load(_.map(_.range(0,wordCount),function(i){
+            return {
+                text: sprintf("primo %s secundo %s tertius %s quaternius %s quintum %s ",i,i,i,i,i),
+                italic: i % 2 == 0,
+                bold: i % 5 == 0,
+                underline: i % 20 == 0,
+                color: ['#00ff00',255],
+                size:25
+            };
+        }));
+        return editor.doc;
+    };
+    var paintCount = 0;
+    return {
+        paint:function(){
+            paintCount++;
+        },
+        getPaintCount:function(){
+            return paintCount;
+        },
+        prime:prime,
+        run:function(){
+            var doc = prime();
+            carotaTest.sample = function(){
+                time(sprintf("Textbox sample render width %s words",wordCount * 5 * 2),function(){
+                    carota.editor.paint(board[0],doc,true);
+                });
+                console.log(sprintf("Paint called %s times",carotaTest.getPaintCount()));
+            }
+            carotaTest.sample();
+        }
+    };
+})();
 (function(){
     (function (modules) {
         'use strict';
@@ -786,17 +856,6 @@
                         },
                         drawSelection: function(ctx, hasFocus) {
                             if (this.selection.end === this.selection.start) {
-                                var drawCaret = this.selectionJustChanged || this.caretVisible;
-                                if (drawCaret) {
-                                    var caret = this.getCaretCoords(this.selection.start);
-                                    if (caret) {
-                                        ctx.save();
-                                        ctx.globalAlpha = 1;
-                                        ctx.fillStyle = 'black';
-                                        caret.fill(ctx);
-                                        ctx.restore();
-                                    }
-                                }
                             } else {
                                 ctx.save();
                                 ctx.fillStyle = hasFocus ? 'rgba(0, 100, 200, 0.3)' : 'rgba(160, 160, 160, 0.3)';
@@ -973,8 +1032,28 @@
                         ctx.restore();
                     };
 
-                    exports.create = function(host,externalCanvas,requestPaintFunc,stanza) {
+                    var repaintCursor = function(doc){
+                        var drawCaret = doc.selectionJustChanged || doc.caretVisible;
+                        var ctx = boardContext;
+                        var caret = doc.getCaretCoords(doc.selection.start);
+                        if (caret) {
+                            ctx.save();
+                            var screenPos = worldToScreen(doc.position.x,doc.position.y);
+                            var s = scale();
+                            ctx.translate(screenPos.x,screenPos.y);
+                            ctx.scale(s,s);
+                            ctx.globalAlpha = 1;
+                            ctx.fillStyle = drawCaret ? 'black' : 'white';
+                            caret.fill(ctx);
+                            ctx.restore();
+                        }
+                    }
 
+                    exports.create = function(host,externalCanvas,_requestPaintFunc,stanza) {
+                        var requestPaintFunc = function(){
+                            carotaTest.paint();
+                            _requestPaintFunc();
+                        };
                         host.innerHTML =
                             '<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
                             '<textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" ' +
@@ -1240,28 +1319,6 @@
                             }
                         });
 
-                        var verticalAlignment = 'top';
-
-                        doc.setVerticalAlignment = function(va) {
-                            verticalAlignment = va;
-                            requestPaintFunc();
-                        }
-
-                        function getVerticalOffset() {
-                            if(doc.frame.bounds){
-                                var docHeight = doc.frame.bounds().h;
-                                if (docHeight < host.clientHeight) {
-                                    switch (verticalAlignment) {
-                                    case 'middle':
-                                        return (host.clientHeight - docHeight) / 2;
-                                    case 'bottom':
-                                        return host.clientHeight - docHeight;
-                                    }
-                                }
-                            }
-                            return 0;
-                        }
-
                         dom.handleEvent(textArea, 'input', function() {
                             var newText = textArea.value;
                             if (textAreaContent != newText) {
@@ -1279,10 +1336,7 @@
                             textAreaContent = doc.selectedRange().plainText();
                             textArea.value = textAreaContent;
                             textArea.select();
-
-                            setTimeout(function() {
-                                textArea.focus();
-                            }, 10);
+                            textArea.focus();
                         };
 
                         doc.selectionChanged(function(getformatting, canMoveViewport) {
@@ -1337,7 +1391,7 @@
                                     if (now > nextCaretToggle) {
                                         nextCaretToggle = now + 500;
                                         if (doc.toggleCaret()) {
-                                            requestPaintFunc();
+                                            repaintCursor(doc);
                                         }
                                     }
                                     setTimeout(doc.update,500);
