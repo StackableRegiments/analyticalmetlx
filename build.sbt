@@ -205,7 +205,7 @@ lazy val library = (project in file("library")).
   )
 
 val minifyFiles = List("admin", "board", "clientSidePrintConversation", "conversationSearch", "conversations", "dashboard", "editConversation", "enterprise", "mobile", "remotePluginConversationChooser")
-excludeFilter in unmanagedResources := HiddenFileFilter || "admin.html" || "board.html" || "clientSidePrintConversation.html" || "conversationSearch.html" || "conversations.html" || "dashboard.html" || "editConversation.html" || "enterprise.html" || "mobile.html" || "remotePluginConversationChooser.html"
+excludeFilter in unmanagedResources := minifyFiles.map(fn => "%s.html".format(fn)).foldLeft(HiddenFileFilter:FileFilter)((acc, item) => acc || item)
 
 lazy val minify = taskKey[Unit]("Minify javascript referenced by html files")
 minify := {
