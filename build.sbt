@@ -1,6 +1,8 @@
 import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
+import collection.JavaConversions._
+import com.stackableregiments.Minifier
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
@@ -42,6 +44,7 @@ startScript in Compile <<= startScriptForWar in Compile
 seq(genericStartScriptSettings:_*)
 
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
+unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "target/extra-resources" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
@@ -200,3 +203,13 @@ lazy val library = (project in file("library")).
       Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
     }
   )
+
+val minifyFiles = List("admin", "board", "clientSidePrintConversation", "conversationSearch", "conversations", "dashboard", "editConversation", "enterprise", "mobile", "remotePluginConversationChooser")
+excludeFilter in unmanagedResources := HiddenFileFilter || "admin.html" || "board.html" || "clientSidePrintConversation.html" || "conversationSearch.html" || "conversations.html" || "dashboard.html" || "editConversation.html" || "enterprise.html" || "mobile.html" || "remotePluginConversationChooser.html"
+
+lazy val minify = taskKey[Unit]("Minify javascript referenced by html files")
+minify := {
+  Minifier.minify(minifyFiles)
+}
+
+(packageBin in Compile) <<= (packageBin in Compile) dependsOn (minify)
