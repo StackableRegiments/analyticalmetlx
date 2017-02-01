@@ -33,7 +33,7 @@ import com.metl.snippet.Metl._
 import java.io.IOException;		
 import java.util.concurrent.ConcurrentHashMap;		
 		
-import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany}		
+import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany,RecorderEndpoint}		
 import org.kurento.jsonrpc.JsonUtils;		
 /*		
  -import org.springframework.beans.factory.annotation.Autowired;		
@@ -223,7 +223,31 @@ case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(n
     }		
   }		
 }		
-		
+case class MeTLGroupRoomPipeline(override val name:String, val recorderUrl:String) extends KurentoPipeline(name) {		
+  protected var members:Map[WebRtcEndpoint,HubPort] = Map.empty[WebRtcEndpoint,HubPort]		
+  protected val hub = new Composite.Builder(pipeline).build()		
+  override def buildRtcEndpoint:WebRtcEndpoint = {		
+    val newEndpoint = super.buildRtcEndpoint		
+    val hubPort = new HubPort.Builder(hub).build()		
+    hubPort.connect(newEndpoint)		
+    newEndpoint.connect(hubPort)
+    val archiveEndpoint = new RecorderEndpoint.Builder(pipeline,recorderUrl).build()
+    newEndpoint.connect(archiveEndpoint)
+    members = members.updated(newEndpoint,hubPort)		
+    newEndpoint		
+  }		
+  override def shutdown(rtc:WebRtcEndpoint):Unit = {		
+    members.get(rtc).foreach(hubPort => {		
+      rtc.release		
+      hubPort.release		
+    })		
+    members = members - rtc		
+    if (members.keys.toList.length < 1){		
+      KurentoManager.removePipeline(name,GroupRoom)		
+      super.shutdown(rtc)		
+    }		
+  }		
+}		
 case class BroadcastPipeline(override val name:String) extends KurentoPipeline(name) {		
   protected var sender:Option[WebRtcEndpoint] = None		
 //  protected var dispatcher:Option[DispatcherOneToMany] = None		
@@ -278,7 +302,7 @@ case class BroadcastPipeline(override val name:String) extends KurentoPipeline(n
 object KurentoManager extends KurentoManager("ws://kurento.stackableregiments.com:8888/kurento")		
 //object KurentoManager extends KurentoManager("ws://52.20.87.206:8888/kurento")		
 class KurentoManager(kmsUrl:String) extends Logger {		
-  val client = {		
+  lazy val client = {		
     val kurento:KurentoClient = KurentoClient.create(kmsUrl, new KurentoConnectionListener() {		
       override def reconnected(sameServer:Boolean):Unit = {		
         println("kurento reconnected: %s".format(sameServer));		
@@ -311,7 +335,7 @@ class KurentoManager(kmsUrl:String) extends Logger {
  	
 trait KurentoUtils {		
   lazy implicit val kurentoFormats = Serialization.formats(NoTypeHints)		
-  protected val kurentoClient = KurentoManager.client		
+  protected def kurentoClient = KurentoManager.client		
   def candidateFromJValue(jObj:JValue):Option[IceCandidate] = {		
     try {		
       val candidateId = (jObj \ "candidate").extract[String]		

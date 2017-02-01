@@ -199,6 +199,7 @@ var Plugins = (function(){
                 }
             };
         })(),
+				/*
         "Face to face":(function(){
             var container = $("<div />");
             return {
@@ -249,6 +250,7 @@ var Plugins = (function(){
                 initialize:function(){}//TokBox.initialize
             }
         })(),
+				*/
         "Groups":(function(){
             var overContainer = $("<div />");
             var button = function(icon,content,behaviour){
