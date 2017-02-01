@@ -225,7 +225,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
     Globals.groupsProviders = GroupsProvider.constructFromXml(authorizationNodes)
-    println("groupsProviders: %s".format(Globals.getGroupsProviders.map(gp => "%s[%s](%s)".format(gp,gp.storeId,gp.canQuery))))
     info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {

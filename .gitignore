@@ -16,6 +16,9 @@ config/configuration.local.xml
 config/configuration.xml
 *.log
 docs/Gemfile.lock
+docs/_site
+docs/.sass-cache
+docs/.jekyll-metadata
 
 # emacs temp files
 *~

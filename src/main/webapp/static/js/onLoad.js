@@ -662,18 +662,18 @@ $(function(){
     $("#submissionsButton").on("click",function(){
         showBackstage("submissions");
         Submissions.reRender();
-				updateActiveMenu($("#menuSubmissions"));
+        updateActiveMenu($("#menuSubmissions"));
     });
-		$("#gradesButton").on("click",function(){
+    $("#gradesButton").on("click",function(){
         showBackstage("grades");
         Grades.reRender();
-				updateActiveMenu($("#menuGrades"));
-		});
+        updateActiveMenu($("#menuGrades"));
+    });
 
     $("#quizzesButton").on("click",function(){
         showBackstage("quizzes");
         Quizzes.reRender();
-				updateActiveMenu($("#menuPolls"));
+        updateActiveMenu($("#menuPolls"));
     });
     $("#submitScreenshotButton").on("click",function(){
         if ("Submissions" in window){
@@ -809,8 +809,8 @@ $(function(){
         updateActiveMenu(this);
     });
     $('#menuHelp').click(function(){
-	showBackstage("help");
-	updateActiveMenu(this);
+        showBackstage("help");
+        updateActiveMenu(this);
     });
     $("#menuHealthCheck").click(function(){
         showBackstage("healthCheck");
@@ -825,13 +825,22 @@ $(function(){
     var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
     $("#pasteDialogTemplate").remove();
     var func = function(ev){
+			//console.log("ev",ev,ev.clipboardData,ev.clipboardData.files[0],ev.clipboardData.items[0]);
         var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
         if ("types" in df){
             var x = ev.offsetX || 10;
             var y = ev.offsetY || 10;
-            var availableTypes = df.types;
-            var items = df.items;
-            var files = df.files;
+            var availableTypes = _.filter(df.types,function(t){
+							return t.toLowerCase().startsWith("text") || t.toLowerCase().startsWith("image") || t.toLowerCase().startsWith("file");
+						});
+            var items = _.toArray(df.items);
+            var files = _.toArray(df.files);
+						var newDf = {
+							items:items,
+							files:files,
+							types:availableTypes
+						};
+						console.log("newDf",newDf);
             var dataSets = _.map(availableTypes,function(type){
                 return {
                     key:type,
@@ -844,6 +853,7 @@ $(function(){
                     action(elem,df.getData(elem));
                 };
             };
+						console.log("availableTypes:",availableTypes,items,files);
             if (_.size(availableTypes) > 1){
                 var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
                 var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
@@ -898,7 +908,7 @@ $(function(){
                         name:"files or images",
                         faClass:"fa-file-o",
                         onClick:function(type){
-                            Modes.image.handleDrop(df,x,y);
+                            Modes.image.handleDrop(newDf,x,y);
                         }
                     },
                     {
@@ -906,7 +916,7 @@ $(function(){
                         name:"images",
                         faClass:"fa-file-image-o",
                         onClick:function(type){
-                            Modes.image.handleDrop(df,x,y);
+                            Modes.image.handleDrop(newDf,x,y);
                         }
                     }
                 ];
@@ -990,6 +1000,19 @@ $(function(){
         } else {
             return false;
         }
+    });
+    new Clipboard('.deeplink', {
+        text: function(trigger) {
+	    /*The native browser will absolutize all hrefs where JQuery would not.  Don't convert this into $.attr*/
+	    var t = $(trigger.nextElementSibling).find("a")[0].href;
+            return t;
+        }
+    }).on("success",function(e){
+        console.log(e);
+        alert("Link copied to clipboard");
+    }).on('error', function(e) {
+        console.error('Action:', e.action);
+        console.error('Trigger:', e.trigger);
     });
     var deadFunc = function(deadEvent){
         deadEvent.preventDefault();

@@ -24,7 +24,8 @@ var DeviceConfiguration = (function(){
         tools:false,
         slides:false,
         header:false,
-        keyboard:false
+        keyboard:false,
+        footer:false
     };
     var setSectionVisibility = function(section,visible){
         if (allowShowingChrome){
@@ -59,10 +60,12 @@ var DeviceConfiguration = (function(){
                     DeviceConfiguration.setHeader(true);
                     DeviceConfiguration.setTools(true);
                     DeviceConfiguration.setSlides(true);
+                    DeviceConfiguration.setFooter(true);
                 } else {
                     DeviceConfiguration.setHeader(false);
                     DeviceConfiguration.setTools(false);
                     DeviceConfiguration.setSlides(false);
+                    DeviceConfiguration.setFooter(false);
                 }
             }
         } catch(e){
@@ -78,6 +81,7 @@ var DeviceConfiguration = (function(){
         setSectionVisibility("tools",false);
         setSectionVisibility("slides",false);
         setSectionVisibility("header",false);
+        setSectionVisibility("footer",false);
         fitFunction = projectorFitFunction;
         zoomToFit(true);
         $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
@@ -166,6 +170,7 @@ var DeviceConfiguration = (function(){
             var showTools = sectionsVisible.tools;
             var showSlides = sectionsVisible.slides;
             var showKeyboard = sectionsVisible.keyboard;
+            var showFooter = sectionsVisible.footer;
             var toolsColumn = comp("#toolsColumn");
             var tools = comp("#ribbon").find(".toolbar");
             var subTools = comp(".modeSpecificTool");
@@ -181,6 +186,8 @@ var DeviceConfiguration = (function(){
             var thumbScrollContainer = comp("#thumbScrollContainer");
             var thumbs = $(".thumbnail");
             var slideControls = comp("#slideControls");
+
+            var masterFooter = comp("#masterFooter");
 
             var deviceDimensions = getDeviceDimensions();
             var width = deviceDimensions.width;
@@ -202,6 +209,9 @@ var DeviceConfiguration = (function(){
                     tools.hide();
                     toolsColumn.hide();
                 }
+                if(Modes.currentMode == Modes.select){
+                    Modes.select.updateAdministerContentVisualState(Conversations.getCurrentConversation());
+                }
                 if (showSlides == true){
                     thumbsColumn.show();
                     slideControls.show()
@@ -209,11 +219,15 @@ var DeviceConfiguration = (function(){
                     thumbsColumn.hide();
                     slideControls.hide();
                 }
+                if (showFooter == true){
+                    masterFooter.show();
+                } else {
+                    masterFooter.hide();
+                }
                 var boardContainer = comp("#boardContainer");
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
-                var masterFooter = comp("#masterFooter");
-		var headerHeight = masterHeader.height();
+                var headerHeight = masterHeader.height();
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -251,9 +265,9 @@ var DeviceConfiguration = (function(){
                 var marquee = comp("#marquee");
                 var textAdorner = comp("#textAdorner");
                 var imageAdorner = comp("#imageAdorner");
-		masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 10).css({
-		    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 4.5)
-		});
+                masterFooter.width(width - thumbsColumn.width() - toolsColumn.width() - gutterWidth * 10).css({
+                    "margin-left":sprintf("%spx",toolsColumn.width() + gutterWidth * 4.5)
+                });
                 board.width(bwidth);
                 board.height(bheight);
                 toolsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight + gutterWidth)});
@@ -350,11 +364,11 @@ var DeviceConfiguration = (function(){
             .val(DeviceConfiguration.preferredSizes.thumbColumn.width)
             .on("input change",function(){
                 var newValue = comp("#thumbColumnWidth").val();
-		$(".thumbnail:not(.groupSlide)")
-		    .width(newValue)
-		    .height(newValue * 0.75);
-		fitFunction();
-		Conversations.refreshSlideDisplay();
+                $(".thumbnail:not(.groupSlide)")
+                    .width(newValue)
+                    .height(newValue * 0.75);
+                fitFunction();
+                Conversations.refreshSlideDisplay();
             });
     });
     var actOnCurrentDevice = function(){
@@ -403,15 +417,17 @@ var DeviceConfiguration = (function(){
             defaultFitIfMissing();
             fitFunction();
         },
-        tempFit:function(showHeader,showTools,showSlides){
+        tempFit:function(showHeader,showTools,showSlides,showFooter){
             setSectionVisibility("header",showHeader);
             setSectionVisibility("tools",showTools);
             setSectionVisibility("slides",showSlides);
+            setSectionVisibility("footer",showFooter);
             defaultFitIfMissing();
             fitFunction();
         },
         setHeader:sectionSetter("header"),
         setTools:sectionSetter("tools"),
+        setFooter:sectionSetter("footer"),
         setSlides:sectionSetter("slides"),
         setKeyboard:function(visible){
             var chrome = !visible;
@@ -423,6 +439,7 @@ var DeviceConfiguration = (function(){
         },
         toggleHeader:sectionToggler("header"),
         toggleTools:sectionToggler("tools"),
+        toggleFooter:sectionToggler("footer"),
         toggleSlides:sectionToggler("slides"),
         getIdentity:function(){
             return identity;

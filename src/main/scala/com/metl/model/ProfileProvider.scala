@@ -27,6 +27,7 @@ trait UserProfileProvider extends Logger {
   def updateUserProfile(authState:LiftAuthStateData):Either[Exception,Boolean] = {
     getProfiles(authState.username) match {
       case Left(e) => Left(e)
+      case Right(Nil) => Left(new Exception("user profile not found"))
       case Right(p :: _) => {
         var newP = p
         authState.informationGroups.find(_.key == firstNameKey).foreach(fn => newP = newP.copy(firstName = Some(fn.value)))

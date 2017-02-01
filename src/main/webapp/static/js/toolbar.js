@@ -1296,7 +1296,6 @@ var Modes = (function(){
                     refStart = newEnd;
                     refSize = size;
                 },d.range(0,originalRange.end));
-                sizes = sizes.reverse();
                 refStart = originalRange.start;
                 d.runs(function(runToAlter){
                     var refEnd = refStart + runToAlter.text.length;
@@ -1305,13 +1304,20 @@ var Modes = (function(){
                     refStart = refEnd;
                 },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
+                return sizes;
             };
             var scaleCurrentSelection = function(factor){
                 return function(){
                     _.each(boardContent.multiWordTexts,function(t){
                         var d = t.doc;
                         if(d.isActive){
-                            scaleEditor(d,factor);
+                            var sizes = scaleEditor(d,factor);
+                            if(factor > 1){
+                                carota.runs.defaultFormatting.newBoxSize = _.max(sizes);
+                            }
+                            else{
+                                carota.runs.defaultFormatting.newBoxSize = _.min(sizes);
+                            }
                         }
                     });
                 };
@@ -1476,7 +1482,7 @@ var Modes = (function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
-				source.audiences = ContentFilter.getAudiences();
+                                source.audiences = ContentFilter.getAudiences();
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
@@ -1670,7 +1676,7 @@ var Modes = (function(){
                                 bold:carota.runs.nextInsertFormatting.bold == true,
                                 underline:carota.runs.nextInsertFormatting.underline == true,
                                 color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                                size:carota.runs.defaultFormatting.size / scale()
+                                size:carota.runs.defaultFormatting.newBoxSize / scale()
                             }]);
                             var newDoc = newEditor.doc;
                             newDoc.select(0,1);
@@ -1708,7 +1714,7 @@ var Modes = (function(){
                             bold:carota.runs.nextInsertFormatting.bold == true,
                             underline:carota.runs.nextInsertFormatting.underline == true,
                             color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                            size:carota.runs.defaultFormatting.size / scale()
+                            size:carota.runs.defaultFormatting.newBoxSize / scale()
                         }]);
                         var newDoc = newEditor.doc;
                         newDoc.select(0,1);
@@ -2017,7 +2023,12 @@ var Modes = (function(){
                 var thisCurrentImage = state != undefined ? state : currentImage;
                 var renderCanvas = $("<canvas/>");
                 var img = new Image();
-                img.setAttribute("crossOrigin","Anonymous");
+								if (originalSrc.indexOf("data") == 0){
+									// if it's a dataUrl, then don't set crossOrigin of anonymous
+								} else {
+									// set cross origin if it's not a dataUrl
+									img.setAttribute("crossOrigin","Anonymous");
+								}
                 img.onerror = function(e){
                     errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly.  You may need to download the image first and then upload it.");
                 };
@@ -2138,12 +2149,16 @@ var Modes = (function(){
                     insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
+											try {
                         var files = e.target.files || e.dataTransfer.files;
                         var file = files[0];
                         if (file.type.indexOf("image") == 0) {
                             currentImage.fileUpload = file;
                         }
                         clientSideProcessImage(sendImageToServer);
+											} catch(ex) {
+												console.log("imageFileChoiceHandleChanged exception:",ex);
+											}
                     },false);
                     resetImageUpload();
                 }
@@ -2174,6 +2189,7 @@ var Modes = (function(){
                     insertOptions.show();
                 },
                 handleDroppedSrc:function(src,x,y){
+									console.log("handleDroppedSrc:",src,x,y);
                     var worldPos = screenToWorld(x,y);
                     var thisCurrentImage = {
                         "type":"imageDefinition",
@@ -2188,8 +2204,10 @@ var Modes = (function(){
                 handleDrop:function(dataTransfer,x,y){
                     var yOffset = 0;
                     var processed = [];
+										console.log("handling drop:",dataTransfer,x,y);
                     var processFile = function(file,sender){
-                        if (file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+											try {
+                        if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
                             var worldPos = screenToWorld(x,y + yOffset);
                             var thisCurrentImage = {
                                 "type":"imageDefinition",
@@ -2203,11 +2221,18 @@ var Modes = (function(){
                             clientSideProcessImage(sendImageToServer,thisCurrentImage);
                             yOffset += 50;
                         }
+											} catch(e){
+												console.log("could not processFile:",file,sender);
+											}
                     };
                     _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
                     _.forEach(dataTransfer.items,function(item){
+											try {
                         var file = item.getAsFile(0);
                         processFile(file,"item");
+											} catch(e){
+												console.log("could not get item as file:",e);
+											}
                     });
 
                 },
@@ -2353,11 +2378,13 @@ var Modes = (function(){
             };
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
+		    console.log("Showing administer");
                     $("#ban").show();
                     $("#ban").removeClass("disabledButton");
                     $("#administerContent").show();
                     $("#administerContent").removeClass("disabledButton");
                 } else {
+		    console.log("Hiding administer");
                     $("#ban").addClass("disabledButton");
                     $("#ban").hide();
                     $("#administerContent").addClass("disabledButton");
@@ -2374,21 +2401,25 @@ var Modes = (function(){
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
             Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+		console.log("Conversation details received in ModesSelect",conversation);
                 if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
                 if (Conversations.shouldModifyConversation(conversation)){
-                    $("#administerContent").unbind("click").bind("click",administerContentFunction);
-                    $("#ban").unbind("click").bind("click",banContentFunction);
+		    console.log("Showing administer");
+                    $("#administerContent").show().unbind("click").bind("click",administerContentFunction);
+                    $("#ban").unbind("click").show().bind("click",banContentFunction);
                 } else {
-                    $("#administerContent").unbind("click");
-                    $("#ban").unbind("click");
+		    console.log("Hiding administer");
+                    $("#administerContent").hide().unbind("click");
+                    $("#ban").hide().unbind("click");
                 }
                 updateAdministerContentVisualState(conversation);
             };
             return {
                 name:"select",
                 isAdministeringContent:function(){return isAdministeringContent;},
+		updateAdministerContentVisualState:updateAdministerContentVisualState,
                 selected:{
                     images:{},
                     texts:{},
@@ -2468,7 +2499,7 @@ var Modes = (function(){
                         }
                     });
                     var threshold = 30;
-                    //$("#administerContent").unbind("click").bind("click",administerContentFunction);
+                    //$("#Administercontent").unbind("click").bind("click",administerContentFunction);
                     //$("#ban").bind("click",banContentFunction);
                     var categories = function(func){
                         func("images");
@@ -2771,7 +2802,7 @@ var Modes = (function(){
                 if (Conversations.shouldModifyConversation()){
                     console.log("showing participants button");
                     $("#participantsButton").unbind("click").on("click",function(){
-											Participants.openMenu();
+                        Participants.openMenu();
                     }).show();
                 } else {
                     console.log("hiding participants button");

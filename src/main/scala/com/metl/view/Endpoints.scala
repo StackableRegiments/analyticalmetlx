@@ -92,7 +92,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       Full(RedirectResponse(transformed,r))
     }
     case r@Req(Nil,_,_) => () => {
-      Full(RedirectResponse("/conversationSearch"))
+      Full(RedirectResponse(com.metl.snippet.Metl.conversationSearch()))
     }
     //metlx endpoints 8080
     case Req("verifyUserCredentialsForm" :: Nil,_,_) => () => {
@@ -208,7 +208,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
       S.session.foreach(_.destroySession())
       //S.containerSession.foreach(s => s.terminate)
-      Full(RedirectResponse("/conversationSearch"))
+      Full(RedirectResponse(com.metl.snippet.Metl.conversationSearch()))
     })
     case r @ Req(List("history"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))
@@ -334,10 +334,10 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       }
     })
     //gradebook integration
-    case Req("getExternalGradebooks" :: Nil,_,_) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JString(gb.name))),200))
-    case Req("getExternalGradebookOrgUnits" :: externalGradebookName :: Nil,_,_) => {
+    case Req("getExternalGradebooks" :: Nil,_,_) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JObject(List(JField("name",JString(gb.name)),JField("id",JString(gb.id)))))),200))
+    case Req("getExternalGradebookOrgUnits" :: externalGradebookId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
         gbp.getGradeContexts() match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
@@ -345,9 +345,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
     }
-    case Req("getExternalGradebookOrgUnitClasslist" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+    case Req("getExternalGradebookOrgUnitClasslist" :: externalGradebookId :: orgUnitId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
         gbp.getGradeContextClasslist(orgUnitId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
@@ -355,9 +355,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
     }
-    case Req("getExternalGrade" :: externalGradebookName :: orgUnitId :: gradeId :: Nil,_,_) => {
+    case Req("getExternalGrade" :: externalGradebookId :: orgUnitId :: gradeId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
         gbp.getGradeInContext(orgUnitId,gradeId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
@@ -365,9 +365,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
     }
-    case Req("getExternalGrades" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+    case Req("getExternalGrades" :: externalGradebookId :: orgUnitId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
         gbp.getGradesFromContext(orgUnitId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
@@ -375,9 +375,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
     }
-    case r@Req("createExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+    case r@Req("createExternalGrade" :: externalGradebookId :: orgUnitId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
         json <- r.json
       } yield {
         val grade = jsonSerializer.toGrade(json)
@@ -387,9 +387,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
   }
-    case r@Req("updateExternalGrade" :: externalGradebookName :: orgUnitId :: Nil,_,_) => {
+    case r@Req("updateExternalGrade" :: externalGradebookId :: orgUnitId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
         json <- r.json
       } yield {
         val grade = jsonSerializer.toGrade(json)
@@ -399,9 +399,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
   }
-    case Req("getExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => { 
+    case Req("getExternalGradeValues" :: externalGradebookId :: orgUnit :: gradeId :: Nil,_,_) => { 
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
         gbp.getGradeValuesForGrade(orgUnit,gradeId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error",JString(e.getMessage)))),500)
@@ -413,9 +413,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
   }
-    case r@Req("updateExternalGradeValues" :: externalGradebookName :: orgUnit :: gradeId :: Nil,_,_) => {
+    case r@Req("updateExternalGradeValues" :: externalGradebookId :: orgUnit :: gradeId :: Nil,_,_) => {
       for {
-        gbp <- Globals.getGradebookProvider(externalGradebookName)
+        gbp <- Globals.getGradebookProvider(externalGradebookId)
         json <- r.json
       } yield {
         val grades:List[MeTLGradeValue] = json match {

@@ -1,12 +1,7 @@
 ---
 layout: guide
-title: Canvas
+title: Controls
 ---
-
-The canvas is the central area of a conversation where [Ink](#ink) is drawn, [Text](#text) is typed, 
-and Image or Video content may be [Insert](#insert)ed.
-
-# Controls
 
 <img src="images/guide-controls.png" alt="Controls" align="right" height="500"/>
 

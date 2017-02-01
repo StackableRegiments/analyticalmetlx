@@ -35,14 +35,17 @@ trait PropertyReader extends Logger {
 
   def readNodes(node: NodeSeq, tag: String): Seq[NodeSeq] = traceIt("readNodes",tag,node \\ tag)
   def readNode(node: NodeSeq, tag: String): NodeSeq = traceIt("readNode",tag,readNodes(node, tag).headOption.getOrElse(NodeSeq.Empty))
-  def readText(node: NodeSeq, tag: String): String = traceIt("readText",tag,readNode(node, tag).text)
-  def readInt(node:NodeSeq,tag:String):Option[Int] = traceIt("readInt",tag,Option(readNode(node,tag).text.toInt))
-  def readLong(node:NodeSeq,tag:String):Option[Long] = traceIt("readLong",tag,Option(readNode(node,tag).text.toLong))
-  def readBool(node:NodeSeq,tag:String):Option[Boolean] = traceIt("readBool",tag,Option(readNode(node,tag).text.toBoolean))
-  def readMandatoryText(node: NodeSeq, tag: String): String = traceIt("readMandatoryText",tag,readNode(node, tag).text match {
+  def readText(node: NodeSeq, tag: String): Option[String] = traceIt("readText",tag,readNodes(node, tag).headOption.map(_.text))
+  def readInt(node:NodeSeq,tag:String):Option[Int] = traceIt("readInt",tag,readNodes(node,tag).headOption.map(_.text.toInt))
+  def readLong(node:NodeSeq,tag:String):Option[Long] = traceIt("readLong",tag,readNodes(node,tag).headOption.map(_.text.toLong))
+  def readBool(node:NodeSeq,tag:String):Option[Boolean] = traceIt("readBool",tag,readNodes(node,tag).headOption.map(_.text.toBoolean))
+  def readTimespan(node:NodeSeq,tag:String):Option[TimeSpan] = traceIt("readTimespan",tag,readNodes(node,tag).headOption.map(v => TimeSpanParser.parse(v.text)))
+  def readMandatoryText(node: NodeSeq, tag: String): String = traceIt("readMandatoryText",tag,readNodes(node, tag).headOption.map(_.text match {
     case s: String if s.trim.isEmpty => throw new Exception("mandatory field (%s) not supplied in expected node %s".format(tag, node))
     case other                       => other.trim
-  })
+  }).getOrElse({
+    throw new Exception("mandatory field (%s) not supplied in expected node %s".format(tag, node))
+  }))
   def readAttribute(node:NodeSeq,attrName:String):String = traceIt("readAttribute",attrName,node match {
     case e:Elem => e.attribute(attrName).map(a => a.text).getOrElse("")
     case _ => ""
@@ -82,32 +85,81 @@ object Globals extends PropertyReader with Logger {
     }
   }
   val propFile = XML.load(configurationFileLocation)
-  val scheme = Some(readText((propFile \\ "serverAddress"),"scheme")).filterNot(_ == "")
-  val host = Some(readText((propFile \\ "serverAddress"),"hostname")).filterNot(_ == "")
-  val port = Some(readText((propFile \\ "serverAddress"),"port")).filterNot(_ == "").map(_.toInt)
+  val scheme = readText((propFile \\ "serverAddress"),"scheme").filterNot(_ == "")
+  val host = readText((propFile \\ "serverAddress"),"hostname").filterNot(_ == "")
+  val port = readText((propFile \\ "serverAddress"),"port").filterNot(_ == "").map(_.toInt)
   val importerParallelism = (propFile \\ "importerPerformance").headOption.map(ipn => readAttribute(ipn,"parallelism").toInt).filter(_ > 0).getOrElse(1)
   var isDevMode:Boolean = true
 
-  var tokBox = for {
+  var tokBox = if(liveIntegration) for {
     tbNode <- (propFile \\ "tokBox").headOption
     apiKey <- (tbNode \\ "@apiKey").headOption.map(_.text.toInt)
     secret <- (tbNode \\ "@secret").headOption.map(_.text)
   } yield {
     new TokBox(apiKey,secret)
-  }
+  } else None
 
 
   val liftConfig = (propFile \\ "liftConfiguration")
-  val allowParallelSnippets:Boolean = readBool(liftConfig,"allowParallelSnippets").getOrElse(true)
-  LiftRules.allowParallelSnippets.session.set(allowParallelSnippets)
-  val maxRequests = readInt(liftConfig,"maxConcurrentRequestsPerSession").getOrElse(1000)
-  LiftRules.maxConcurrentRequests.session.set((r:net.liftweb.http.Req)=>maxRequests)
-  LiftRules.cometRequestTimeout = Full(readInt(liftConfig,"cometRequestTimeout").getOrElse(25))
-  LiftRules.maxMimeFileSize = readLong(liftConfig,"maxMimeFileSize").getOrElse(50L * 1024 * 1024) // 50MB file uploads allowed
-  LiftRules.maxMimeSize = readLong(liftConfig,"maxMimeSize").getOrElse(100L * 1024 * 1024) // 50MB file uploads allowed
+  readBool(liftConfig,"allowParallelSnippets").foreach(allowParallelSnippets => {
+    LiftRules.allowParallelSnippets.session.set(allowParallelSnippets)
+  })
+  readInt(liftConfig,"maxConcurrentRequestsPerSession").foreach(maxRequests => {
+    LiftRules.maxConcurrentRequests.session.set((r:net.liftweb.http.Req)=>maxRequests)
+  })
+  readInt(liftConfig,"cometRequestTimeout").foreach(cometTimeout => {
+    LiftRules.cometRequestTimeout = Full(cometTimeout) //defaults to Empty, which results in 120000
+  })
+  readLong(liftConfig,"cometRenderTimeout").foreach(cometTimeout => {
+    LiftRules.cometRenderTimeout = cometTimeout //defaults to 30000
+  })
+  readLong(liftConfig,"cometFailureRetryTimeout").foreach(cometTimeout => {
+    LiftRules.cometFailureRetryTimeout = cometTimeout //defaults to 10000
+  })
+  readLong(liftConfig,"cometProcessingTimeout").foreach(cometTimeout => {
+    LiftRules.cometProcessingTimeout = cometTimeout //defaults to 5000
+  })
+
+  readInt(liftConfig,"cometGetTimeout").foreach(cometTimeout => {
+    LiftRules.cometGetTimeout = cometTimeout // this defaults to 140000
+  })
+  readLong(liftConfig,"maxMimeFileSize").foreach(maxUploadSize => {
+    LiftRules.maxMimeFileSize = maxUploadSize
+  })
+  readLong(liftConfig,"maxMimeSize").foreach(maxMimeSize => {
+    LiftRules.maxMimeSize = maxMimeSize
+  })
   readBool(liftConfig,"bufferUploadsOnDisk").filter(_ == true).foreach(y => {
     LiftRules.handleMimeFile = net.liftweb.http.OnDiskFileParamHolder.apply
   })
+  readInt(liftConfig,"ajaxPostTimeout").foreach(ajaxTimeout => {
+    LiftRules.ajaxPostTimeout = ajaxTimeout // this defaults to 5000
+  })
+  readInt(liftConfig,"ajaxRetryCount").foreach(retryCount => {
+    LiftRules.ajaxRetryCount = Full(retryCount) // this defaults to empty, which means keep retrying forever
+  })
+  readBool(liftConfig,"enableLiftGC").foreach(gc => {
+    LiftRules.enableLiftGC = gc
+  })
+  readLong(liftConfig,"liftGCFailureRetryTimeout").foreach(value => {
+    LiftRules.liftGCFailureRetryTimeout = value
+  })
+  readLong(liftConfig,"liftGCPollingInterval").foreach(value => {
+    LiftRules.liftGCPollingInterval = value
+  })
+  readLong(liftConfig,"unusedFunctionsLifeTime").foreach(value => {
+    LiftRules.unusedFunctionsLifeTime = value
+  })
+  readInt(liftConfig,"stdRequestTimeout").foreach(value => {
+    LiftRules.stdRequestTimeout = Full(value)
+  })
+
+  val cometConfig = (propFile \\ "cometConfiguration")
+  val metlActorLifespan = Full(readTimespan(cometConfig,"metlActorLifespan").getOrElse(2 minutes))
+  val searchActorLifespan = Full(readTimespan(cometConfig,"conversationSearchActorLifespan").getOrElse(2 minutes))
+  val conversationChooserActorLifespan = Full(readTimespan(cometConfig,"remotePluginConversationChooserActorLifespan").getOrElse(2 minutes))
+  val remotePluginConversationChooserActorLifespan = Full(readTimespan(cometConfig,"remotePluginConversationChooserActorLifespan").getOrElse(2 minutes))
+  val editConversationActorLifespan = Full(readTimespan(cometConfig,"conversationEditActorLifespan").getOrElse(2 minutes))
 
   val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
   var metlingPots:List[MeTLingPotAdaptor] = Nil
@@ -116,8 +168,8 @@ object Globals extends PropertyReader with Logger {
     (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
   }
 
-  val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey")
-  val themeName = readText(propFile,"themeName")
+  val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey").getOrElse("")
+  val themeName = readText(propFile,"themeName").getOrElse("neutral")
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
@@ -137,7 +189,7 @@ object Globals extends PropertyReader with Logger {
   var groupsProviders:List[GroupsProvider] = Nil
 
   var gradebookProviders:List[ExternalGradebook] = Nil
-  def getGradebookProvider(providerName:String):Option[ExternalGradebook] = gradebookProviders.find(_.name == providerName)
+  def getGradebookProvider(providerId:String):Option[ExternalGradebook] = gradebookProviders.find(_.id == providerId)
   def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
 
   def getGroupsProvider(providerName:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerName)
@@ -162,7 +214,7 @@ object Globals extends PropertyReader with Logger {
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
         val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes.map(pa => Detail(pa._1,pa._2)) ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)).map(pa => Detail(pa._1,pa._2))))
-        val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+        val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
         val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
         val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
         validState(Some(impersonatedState))
@@ -181,7 +233,7 @@ object Globals extends PropertyReader with Logger {
         val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes.map(ua => Detail(ua._1,ua._2)))
         if (authenticated){
           actualUsername(username)
-          val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
+          val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
           actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
           val lasd = LiftAuthStateData(true,username,groups,personalDetails)

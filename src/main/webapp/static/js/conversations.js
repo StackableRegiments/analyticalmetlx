@@ -17,7 +17,7 @@ var Conversations = (function(){
             successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
         };
         var updateBannedVisualState = function(){
-	    $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
+            $("#publicMode").prop("disabled",bannedState).toggleClass("btn-raised disabled",bannedState);
         };
         return {
             checkIsBanned:function(conversation,freshCheck){
@@ -248,9 +248,9 @@ var Conversations = (function(){
             },1000);
             visible = false;
         }
-	else if(visible){
-	    func();
-	}
+        else if(visible){
+            func();
+        }
     }
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer")
@@ -311,8 +311,8 @@ var Conversations = (function(){
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":publishingAllowed,
             "usersAreCompulsorilySynced":oldPerms.usersAreCompulsorilySynced,
-						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
-						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
+            "studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+            "studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -327,8 +327,8 @@ var Conversations = (function(){
             "studentCanOpenFriends":oldPerms.studentCanOpenFriends,
             "studentCanPublish":oldPerms.studentCanPublish,
             "usersAreCompulsorilySynced":mustFollowTeacher,
-						"studentsMayBroadcast":oldPerms.studentsMayBroadcast,
-						"studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
+            "studentsMayBroadcast":oldPerms.studentsMayBroadcast,
+            "studentsMayChatPublicly":oldPerms.studentsMayChatPublicly
         };
         changePermissionsOfConversation(jid,newPermissions);
     };
@@ -522,17 +522,17 @@ var Conversations = (function(){
                 text:"Export this conversation"
             }));
         }
-				if (Conversations.shouldModifyConversation()){
-					$("#editConversation").unbind("click").click(function(){
-						$.jAlert({
-							title:"edit Conversation",
-							iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
-							width:"100%" 
-						});
-					}).show();
-				} else {
-					$("#editConversation").unbind("click").hide();
-				}
+        if (Conversations.shouldModifyConversation()){
+            $("#editConversation").unbind("click").click(function(){
+                $.jAlert({
+                    title:"Edit Conversation",
+                    iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
+                    width:"100%"
+                });
+            }).show();
+        } else {
+            $("#editConversation").unbind("click").hide();
+        }
     };
     var updatePermissionButtons = function(details){
         var isAuthor = shouldModifyConversationFunction(details);
@@ -601,7 +601,7 @@ var Conversations = (function(){
                 if (possibleLocation){
                     doMoveToSlide(possibleLocation.id.toString());
                 } else {
-                    window.location = sprintf("/conversationSearch?q=%s",encodeURIComponent(details.title)); // redirect to the conversation search
+                    window.location = sprintf("/conversationSearch?q=%s&unique=true",encodeURIComponent(details.title)); // redirect to the conversation search
                 }
             }
             if (shouldRefreshSlideDisplay(details)){
@@ -632,26 +632,37 @@ var Conversations = (function(){
         }
         return ("blacklist" in conversation && _.includes(conversation.blacklist,UserSettings.getUsername()));
     };
-    var shouldDisplayConversationFunction = function(conversation){
-        if (!conversation){
-            conversation = currentConversation;
-        }
-        var subject = "subject" in conversation ? conversation.subject.toLowerCase().trim() : "nosubject";
-        if ("subject" in conversation && subject != "deleted" && (("author" in conversation && conversation.author == UserSettings.getUsername()) || _.some(UserSettings.getUserGroups(), function(g){
-            var key = g.key ? g.key : g.type;
+		var shouldDisplayConversationFunction = function(details){
+			if (!details){
+				details = currentConversation;
+			}
+			var userGroups = UserSettings.getUserGroups();
+			var username = UserSettings.getUsername();
+        var subject = details.subject.toLowerCase().trim();
+        var title = details.title.toLowerCase().trim();
+        var author = details.author;
+				var cfr = details.foreignRelationship;
+        return ((subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+						var fr = g.foreignRelationship;
+            var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
-            return (key == "special" && name == "superuser") || name.toLowerCase().trim() == subject;
-        }))) {
-            return true;
-        } else {
-            return false;
-        }
+						var matches = key == "special" && name == "superuser";
+						if (!matches){
+							if (cfr !== undefined && "key" in cfr && "system" in cfr && fr !== undefined){
+								matches = cfr.key == fr.key && cfr.system == fr.system;
+							}
+						}
+						if (!matches){
+							matches = name.toLowerCase().trim() == subject;
+						}
+						return matches;
+        })));
     };
     var shouldPublishInConversationFunction = function(conversation){
         if (!conversation){
             conversation = currentConversation;
         }
-        if("permissions" in conversation && "studentCanPublish" in conversation.permissions && (shouldModifyConversationFunction(conversation) || conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
+        if(shouldModifyConversationFunction(conversation) || ("permissions" in conversation && "studentCanPublish" in conversation.permissions && conversation.permissions.studentCanPublish) && !getIsBannedFunction(conversation)){
             return true;
         } else {
             return false;
@@ -710,7 +721,7 @@ var Conversations = (function(){
         }
     };
     var helpFunction = function(){
-	showBackstage("help");
+        showBackstage("help");
     }
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
@@ -741,7 +752,7 @@ var Conversations = (function(){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
     }
     var constructHelpButton = function(container){
-	constructSlideButton("helpButton","Help","fa-question-circle",always,container);
+        constructSlideButton("helpButton","Help","fa-question-circle",always,container);
     }
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
@@ -794,17 +805,17 @@ var Conversations = (function(){
                     console.log(e);
                 }
             } else if (Conversations.isAuthor() && !suppressSyncMove){
-							var newStanza = {
-								type:"command",
-								author:UserSettings.getUsername(),
-								audiences:[],
-								timestamp:0,
-								command:"/SYNC_MOVE",
-								parameters:[slideId]
-							};
-							console.log("sending:",newStanza);
-							sendStanza(newStanza);
-						}
+                var newStanza = {
+                    type:"command",
+                    author:UserSettings.getUsername(),
+                    audiences:[],
+                    timestamp:0,
+                    command:"/SYNC_MOVE",
+                    parameters:[slideId]
+                };
+                console.log("sending:",newStanza);
+                sendStanza(newStanza);
+            }
         }
         else{
             alert("You must remain on the current page");
@@ -858,7 +869,7 @@ var Conversations = (function(){
                 GroupBuilder.showAddGroupSlideDialog()
             })
             .on("click","#addSlideButton",addSlideFunction)
-						.on("click","#helpButton",helpFunction);
+            .on("click","#helpButton",helpFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
@@ -965,10 +976,10 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     Progress.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
-					var ou = _.cloneDeep(orgUnit);
-					delete ou.groupSets;
-					delete ou.members;
-					getGroupSetsForOrgUnit(orgUnits.groupsProvider,ou);
+            var ou = _.cloneDeep(orgUnit);
+            delete ou.groupSets;
+            delete ou.members;
+            getGroupSetsForOrgUnit(orgUnits.groupsProvider.storeId,ou,"async");
         });
     }
 }
@@ -976,13 +987,21 @@ function receiveGroupSetsForOrgUnit(groupSets){
     Progress.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
-					var ou = _.cloneDeep(groupSets.orgUnit);
-					delete ou.members;
-					delete ou.groupSets;
-					var gs = _.cloneDeep(groupSet);
-					delete gs.members;
-					delete gs.groups;
-					getGroupsForGroupSet(groupSets.groupsProvider,ou,gs);
+            if ("groups" in groupSet && groupSet.groups.length){
+                receiveGroupsForGroupSet({
+                    orgUnit:groupSets.orgUnit,
+                    groupSet:groupSet,
+                    groups:groupSet.groups
+                });
+            } else {
+                var ou = _.cloneDeep(groupSets.orgUnit);
+                delete ou.members;
+                delete ou.groupSets;
+                var gs = _.cloneDeep(groupSet);
+                delete gs.members;
+                delete gs.groups;
+                getGroupsForGroupSet(groupSets.groupsProvider.storeId,ou,gs,"async");
+            }
         });
     }
 }

@@ -19,7 +19,7 @@ The teacher can assess students and assign grades.
 
 The conversation owner can attach files to the conversation that users can then download to their own devices.
 
-<div class="tip">This can be used to pass content to students such that they can add it to the <a href="guide-canvas.html">Canvas</a> as themselves, 
+<div class="tip">This can be used to pass content to students such that they can add it to the <a href="guide.html#conversation-interface">Canvas</a> as themselves, 
 which gives the user control over the content location (and whether it is private or public).</div>
 
 ## Submissions
@@ -27,9 +27,9 @@ which gives the user control over the content location (and whether it is privat
 The submissions view shows the conversation owner content that users have submitted (including user name). 
 The conversation owner can also choose to display the submission on the next page (without user name).
 
-## Group Builder
+## Group Editor
 
-The teacher can use this screen to move students between [Groups](guide-groups.html).  
+The group editor shows the teacher the [Groups](guide-groups.html) on the current group page.  Students can also be dragged and dropped into different groups.
 
 ## Participants
 

@@ -315,15 +315,9 @@ case class D2LDescriptionInput(
   Type:Option[String]
 )
 
-class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends Logger {
+class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpProvider:HttpClientProvider) extends Logger {
   protected val pageSize = 200
-  protected val httpConnectionTimeout = 3 // 3 seconds
-  protected val httpReadTimeout = 10 * 1000 // 10 seconds
-  protected val client = new com.metl.utils.CleanHttpClient(com.metl.utils.Http.getConnectionManager){
-    override val connectionTimeout = httpConnectionTimeout
-    override val readTimeout = httpReadTimeout
-    override val maxRetries = 1
-  }
+  protected val client = httpProvider.getClient
 
   protected implicit def formats = net.liftweb.json.DefaultFormats
 
@@ -347,7 +341,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       val jValueString = compactRender(json)
       val headers = List(("Content-Type","application/json"))
       val response = client.putStringExpectingHTTPResponse(url.toString,jValueString,headers)
-      //println("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
+      //trace("PUTing to %s [%s] : %s".format(url.toString,headers,jValueString))
+      //println("response from putToD2L(%s): %s\r\n%s".format(url.toString,jValueString,response))
       None//Some(parse(response).extract[T])
     } catch {
       case e:WebException if expectHttpFailure => {
@@ -529,7 +524,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
     try {
       val firstGet = client.get(url.toString)
       var first = parse(firstGet)
-      //println("found remote grades: %s".format(firstGet))
+      //trace("found remote grades: %s".format(firstGet))
       val firstResp = first.extract[D2LGradeValueResponse]
       items = items ::: firstResp.Objects
       var continuing = firstResp.Next
@@ -538,7 +533,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           continuing.foreach(apiUrl => {
             val u = userContext.createAuthenticatedUri(apiUrl,"GET")
             val respString = client.get(u.toString)
-            //println("found remote grades: %s".format(respString))
+            //trace("found remote grades: %s".format(respString))
             val respObj = parse(respString)
             val resp = respObj.extract[D2LGradeValueResponse]
             items = items ::: resp.Objects
@@ -562,10 +557,12 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
  
   def updateGradeValue(userContext:ID2LUserContext,orgUnitId:String,gradeObjectId:String,userId:String,gradeValue:D2LIncomingGradeValue):Option[D2LIncomingGradeValue] = {
     val gv = Extraction.decompose(gradeValue)
-    //println("sending new gradeValue: %s".format(compactRender(gv)))
-    putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,true)
+    //println("Attempting to update this gradeValue(%s,%s,%s): %s".format(orgUnitId,gradeObjectId,userId,gv))
+    //trace("sending new gradeValue: %s".format(compactRender(gv)))
+    val result = putToD2L[D2LIncomingGradeValue](userContext.createAuthenticatedUri("/d2l/api/le/%s/%s/grades/%s/values/%s".format(leApiVersion,orgUnitId,gradeObjectId,userId),"PUT"),gv,false)
+    //println("updated this gradeValue(%s,%s,%s): %s".format(orgUnitId,gradeObjectId,userId,result))
+    result
   }
-
 
   def getEnrollments(userContext:ID2LUserContext,userId:String,roleIds:List[Int] = Nil):List[D2LEnrollment] = {
     roleIds match {
@@ -586,7 +583,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
       warn("bookmark: %s, items: %s".format(bookmark,items.length))
       while (continuing){
         try {
-          val u = userContext.createAuthenticatedUri("/d2l/api/lp/%s/enrollments/users/%s/orgUnits/%s".format(lpApiVersion,userId,bookmark.map(b => "?%s=%s&pagesize=%s".format(bookMarkTag,b,pageSize)).getOrElse("?pagesize=%s".format(pageSize))),"GET")
+          val u = userContext.createAuthenticatedUri(baseUrl + bookmark.map(b => "&%s=%s".format(bookMarkTag,b)).getOrElse(""),"GET")
           val url = u.toString
           val respObj = parse(client.get(url))
           val resp = respObj.extract[D2LEnrollmentResponse]
@@ -602,6 +599,7 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
           }
         }
       }
+      trace("found enrolments: %s => %s".format(userId, items)) 
       items
     } catch {
       case e:RetryException => {
@@ -658,8 +656,8 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   }
 }
 
-class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends GroupsProvider(storeId){
-  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) 
+class D2LGroupsProvider(override val storeId:String,override val name:String, d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends GroupsProvider(storeId,name){
+  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) 
   override val canQuery:Boolean = true
  
   protected val acceptableRoleIds = List(
@@ -682,7 +680,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
       val enrollmentsDone = new java.util.Date().getTime
       warn("got enrollments: %s %s".format(userData.username,enrollmentsDone - userDone))
       enrollments.filter(_.OrgUnit.Type.Id == 3).map(en => {
-        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString)))
+        OrgUnit(en.OrgUnit.Type.Name,en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.OrgUnit.Id.toString,en.OrgUnit.Code)))
       })
     })
     val groupsComplete = new java.util.Date().getTime
@@ -692,7 +690,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
   override def getOrgUnit(orgUnitId:String):Option[OrgUnit] = {
     val uc = interface.getUserContext
     interface.getOrgUnit(uc,orgUnitId).map(en => {
-      OrgUnit(en.Type.Name,en.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.Identifier.toString)))
+      OrgUnit(en.Type.Name,en.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.Identifier.toString,en.Code)))
     })
   }
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = {
@@ -723,7 +721,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
           cm.Email.toList.map(un => "Email" -> un) :::
           cm.FirstName.toList.map(un => "FirstName" -> un) :::
           cm.LastName.toList.map(un => "LastName" -> un)).map(t => Detail(t._1,t._2)),
-          foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,cm.Identifier)))
+          foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,cm.Identifier),Some(cm.DisplayName)))
         )
       })
     })
@@ -743,7 +741,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
             name = gs.Name,
             members = members, //I think groupSets always have all the members available in them.  It's groups which have a subset, I think, from D2L.
             groups = Nil,
-            foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,gs.GroupCategoryId.toString)))
+            foreignRelationship = Some(ForeignRelationship(storeId,"%s_%s".format(orgUnitId,gs.GroupCategoryId.toString),Some(gs.Name)))
           )
         })
       })
@@ -783,7 +781,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
         groups.map(g => {
           Group("D2L_Group",g.Name,g.Enrollments.flatMap(en => {
             members.find(_.foreignRelationship.exists(fr => fr.system == storeId && fr.key == "%s_%s".format(orgUnitId,en.toString)))
-          }),Some(ForeignRelationship(storeId,"%s_%s_%s".format(orgUnitId,groupSetCategoryId,g.GroupId))))
+          }),Some(ForeignRelationship(storeId,"%s_%s_%s".format(orgUnitId,groupSetCategoryId,g.GroupId),Some(g.Name))))
         })
       })
     })
@@ -826,7 +824,7 @@ class D2LGroupsProvider(override val storeId:String, d2lBaseUrl:String,appId:Str
   } 
 }
 
-class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion) with GroupStoreProvider {
+class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider) with GroupStoreProvider {
   protected val acceptableRoleIds = List(
     113, //Instructor_1
     109, //Instructor_2

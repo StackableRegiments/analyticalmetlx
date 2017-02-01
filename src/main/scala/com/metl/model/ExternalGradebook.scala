@@ -7,12 +7,14 @@ import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.util.Date
 import scala.xml._
+import com.metl.utils._
 
 object ExternalGradebooks {
   def configureFromXml(in:NodeSeq):List[ExternalGradebook] = {
     (in \\ "d2lGradebook").toList.flatMap(n => {
       for {
         name <- (n \ "@name").headOption.map(_.text)
+        id <- (n \ "@id").headOption.map(_.text)
         d2lBaseUrl <- (n \ "@host").headOption.map(_.text)
         appId <- (n \ "@appId").headOption.map(_.text)
         appKey <- (n \ "@appKey").headOption.map(_.text)
@@ -22,7 +24,8 @@ object ExternalGradebooks {
         lpApiVersion <- (n \ "@lpApiVersion").headOption.map(_.text)
         acceptableRoleList = (n \\ "acceptableRoleId").toList.map(_.text.toInt)
       } yield {
-        new D2LGradebook(name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion){
+        val httpClientProvider = HttpClientProviderConfigurator.configureFromXml(n)
+        new D2LGradebook(id,name,d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider){
           override protected val acceptableRoleIds = acceptableRoleList
         }
       }
@@ -30,7 +33,7 @@ object ExternalGradebooks {
   }
 }
 
-abstract class ExternalGradebook(val name:String) extends TryE with Logger {
+abstract class ExternalGradebook(val id:String,val name:String) extends TryE with Logger {
   def getGradeContexts(username:String = Globals.currentUser.is):Either[Exception,List[OrgUnit]] = Left(notImplemented)
   def getGradeContextClasslist(orgUnitId:String):Either[Exception,List[Map[String,String]]] = Left(notImplemented)
   def getGradesFromContext(context:String):Either[Exception,List[MeTLGrade]] = Left(notImplemented)
@@ -52,11 +55,13 @@ trait TryE {
   }
 }
 
-class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String) extends ExternalGradebook(name){
+class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:String,appId:String,appKey:String,userId:String,userKey:String,leApiVersion:String,lpApiVersion:String,httpClientProvider:HttpClientProvider) extends ExternalGradebook(id,name){
   import com.d2lvalence.idkeyauth._
   import com.d2lvalence.idkeyauth.implementation._
 
   val config = ServerConfiguration.default
+
+  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion,httpClientProvider)
 
   protected val acceptableRoleIds = List(
     113, //Instructor_1
@@ -109,8 +114,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     )
   }
   protected def toGrade(uc:ID2LUserContext,ctx:String,d2lGos:D2LGradeObject):MeTLGrade = {
-    val id = "D2L_%s".format(nextFuncName)
-    val location = "D2L_%s_%s".format(name,ctx)
+    val gradeId = "D2L_%s".format(nextFuncName)
+    val location = "D2L_%s_%s".format(id,ctx)
     val author = "D2L"
     val visible = false
     val gradeType = d2lGos.GradeType.toLowerCase.trim match {
@@ -118,7 +123,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       case "passfail" => MeTLGradeValueType.Boolean
       case _ => MeTLGradeValueType.Text
     }
-    MeTLGrade(config,author,new Date().getTime(),id,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (name,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
+    MeTLGrade(config,author,new Date().getTime(),gradeId,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
   }
   protected def fromGradeValue(uc:ID2LUserContext,in:MeTLGradeValue):D2LIncomingGradeValue = {
     val gradeObjectType = in.getType match {
@@ -163,14 +168,13 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
     }
   }
 
-  val interface = new D2LInterface(d2lBaseUrl,appId,appKey,userId,userKey,leApiVersion,lpApiVersion)
   override def getGradeContexts(username:String = Globals.currentUser.is):Either[Exception,List[OrgUnit]] = {
     trye({
       val uc = interface.getUserContext
       val d2lUser = lookupD2LUserId(uc,username)
       val enrollments = interface.getEnrollments(uc,d2lUser,acceptableRoleIds)
-      enrollments.filter(en => acceptableRoleIds.contains(en.Role.Id)).map(en => {
-        OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(name,en.OrgUnit.Id.toString)))
+      enrollments.filter(en => en.OrgUnit.Type.Id == 3 && acceptableRoleIds.contains(en.Role.Id)).map(en => {
+        OrgUnit("course",en.OrgUnit.Name,Nil,Nil,Some(ForeignRelationship(id,en.OrgUnit.Id.toString)))
       }).toList
     })
   }
@@ -236,7 +240,7 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = tup._1
       val d2lId = tup._2
       val (orgUnitId:String,gradeId:String) = {
-        val gradeObj = grade.foreignRelationship.filter(_._1 == name).head
+        val gradeObj = grade.foreignRelationship.filter(_._1 == id).head
         val parts = gradeObj._2.split("_").toList
         (parts.head,parts.drop(1).head)
       }
@@ -273,27 +277,34 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
       val uc = tup._1
       val d2lId = tup._2
       val classlists = interface.getClasslists(uc,D2LOrgUnit(ctx,D2LOrgUnitTypeInfo(0,"",""),"",None,None,None))
-      //println("incoming grades: %s".format(grades))
+      //println("classlists: %s".format(classlists))
+      //trace("incoming grades: %s".format(grades))
       if (grades.length > 1){
+        //println("grades being sent! %s".format(grades))
         val originalGrades = interface.getGradeValues(uc,ctx,gradeId).flatMap(_.GradeValue.map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))) 
-        grades.filterNot(gv => originalGrades.exists(og => {
+        //println("original grades! %s".format(originalGrades))
+        val gradesToSend = grades.filterNot(gv => originalGrades.exists(og => {
           og.getType == gv.getType &&
           og.getGradedUser == gv.getGradedUser && (
-            og.getNumericGrade == gv.getNumericGrade ||
-            og.getTextGrade == gv.getTextGrade ||
-            og.getBooleanGrade == gv.getBooleanGrade 
+            (gv.getNumericGrade.isDefined && og.getNumericGrade == gv.getNumericGrade) ||
+            (gv.getTextGrade.isDefined && og.getTextGrade == gv.getTextGrade) ||
+            (gv.getBooleanGrade.isDefined && og.getBooleanGrade == gv.getBooleanGrade) 
           ) &&
           og.getPrivateComment == gv.getPrivateComment &&
           og.getComment == gv.getComment
-        })).flatMap(gv => { //only update the ones which have a changed value
+        }))
+        //println("grades which are different: %s".format(gradesToSend))
+        gradesToSend.foreach(gv => { //only update the ones which have a changed value
           interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       } else {
-        grades.flatMap(gv => {
+        grades.foreach(gv => {
           interface.updateGradeValue(uc,ctx,gradeId,classlists.find(_.Username.exists(_ == gv.getGradedUser)).map(_.Identifier).getOrElse(lookupD2LUserId(uc,gv.getGradedUser)),fromGradeValue(uc,gv))
         })
       }
-      interface.getGradeValues(uc,ctx,gradeId).flatMap(ugv => {
+      val returnedGradeValues = interface.getGradeValues(uc,ctx,gradeId)
+      //println("d2lGrades which are returned: %s".format(returnedGradeValues))
+      val returnedGrades = returnedGradeValues.flatMap(ugv => {
         (for {
           gv <- ugv.GradeValue
           ufw = ugv.User
@@ -302,6 +313,8 @@ class D2LGradebook(override val name:String,d2lBaseUrl:String,appId:String,appKe
           cgv
         }).map(gv => toGradeValue(uc,gradeId,gv,(t) => classlists.find(_.Identifier == t._2).flatMap(_.Username).getOrElse(lookupUsername(t._1,t._2))))
       })
+      //println("grades which are returned: %s".format(returnedGrades))
+      returnedGrades
     })
   }
 }

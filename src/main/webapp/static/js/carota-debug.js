@@ -2235,6 +2235,7 @@
 
                     exports.defaultFormatting = {
                         size: 14,
+                        newBoxSize:14,
                         font: 'sans-serif',
                         color: ['#000000',255],
                         bold: false,
