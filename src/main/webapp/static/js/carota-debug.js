@@ -14,7 +14,7 @@ var carotaTest = (function(){
         var mean = _.mean(samples);
         console.log(sprintf("//Average %s milis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
     }
-    var wordCount = 100;
+    var wordCount = 5000;
     var prime = function(){
         var width = 2000;
         var height = 500;
@@ -46,7 +46,9 @@ var carotaTest = (function(){
         };
         boardContent.multiWordTexts[stanza.identity] = stanza;
         prerenderMultiwordText(stanza);
-	boardContent.multiWordTexts[stanza.identity].doc.invalidateBounds();
+        boardContent.multiWordTexts[stanza.identity].doc.invalidateBounds();
+        var bounds = boardContent.multiWordTexts[stanza.identity].bounds;
+        console.log(bounds[3] - bounds[1],bounds);
     };
     var paintCount = 0;
     return {
@@ -1073,11 +1075,17 @@ var carotaTest = (function(){
                             return document.focussedElement == textArea;
                         }
 
+                        var maxDimension = 32767;
                         doc.updateCanvas = function(){
                             console.log("updateCanvas");
                             var c = this.canvas = $("<canvas/>")[0];
-                            c.width = this.bounds[2] - this.bounds[0];
-                            c.height = this.bounds[3] - this.bounds[1];
+                            var h = this.bounds[3] - this.bounds[1];
+			    var scale = Math.min(1,maxDimension / h);
+                            var w = this.bounds[2] - this.bounds[0];
+			    var context = c.getContext("2d");
+                            c.width = w * scale;
+                            c.height = h * scale;
+			    context.scale(scale,scale);
                             paint(c,doc,hasFocus());
                         }
 
