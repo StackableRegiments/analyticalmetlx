@@ -623,11 +623,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val sessionId = getArgAsString(args(0))
       (for {
         tb <- Globals.tokBox
-        s <- tokSessions.find(_.sessionId == sessionId)
+        st <- tokSessions.find(_._2.exists(_.sessionId == sessionId))
+        s <- st._2
       } yield {
         try {
         val a = tb.startArchive(s,None,true)
-        runningArchives += a
+        runningArchives += ((sessionId,a))
         //val defaultLayout = ""
         //val b = tb.startBroadcast(s,defaultLayout)
         //runningBroadcasts += b

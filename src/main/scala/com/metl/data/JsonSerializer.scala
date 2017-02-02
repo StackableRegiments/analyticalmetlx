@@ -437,7 +437,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
             case _ => None
           }
         })
-        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences)
+        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences,foreignRelationship)
       }
       case _ => MeTLVideoStream.empty
     }

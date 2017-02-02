@@ -35,11 +35,26 @@ javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.lo
 
 fork in Jetty := true
 
-target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
+((target in webappPrepare) in Compile) := baseDirectory.value / "target" / "webapp"
+
+((target in webappPrepare) in (ContainerPlugin.start in Compile)) := (sourceDirectory in Compile).value / "webapp"
 
 watchSources := watchSources.value.filterNot { x => x.isDirectory || x.getAbsolutePath.contains("webapp") }
 
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
+
+unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "src/main/extras" }
+
+webappPostProcess := {
+  (webappDir:File) => {
+    println("post process")
+    val baseDir = baseDirectory.value / "src" / "main"
+    IO.createDirectory(webappDir / "minified2")
+    IO.copyFile(baseDir / "webapp" / "board.html",webappDir / "board.mhtml")
+    IO.copyFile(baseDir / "webapp" / "board.html",webappDir / "minified2" / "board.html")
+    println("post processed")
+  }
+}
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
