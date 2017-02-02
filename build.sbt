@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
-import com.earldouglas.xsbtwebplugin.WebPlugin
+
 import collection.JavaConversions._
 import com.stackableregiments.Minifier
 
@@ -25,26 +25,23 @@ resolvers ++= Seq(
   "releases"        at "https://oss.sonatype.org/content/repositories/releases"
 )
 
-seq(webSettings :_*)
+enablePlugins(JettyPlugin)
 
-startScriptJettyVersion in Compile := "9.2.10.v20150310"
+val jettyVersion = "9.4.0.v20161208"
 
-startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
+containerLibs in Jetty := Seq("org.eclipse.jetty" % "jetty-runner" % jettyVersion intransitive())
 
-startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://refer.adm.monash.edu/jetty-distribution-" + version + ".zip" }
+containerPort := 8080
 
-startScriptJettyContextPath := "/"
+javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.local.xml", "-Dlogback.configurationFile=config/logback.xml", "-Drun.mode=development", "-Dmetl.stopwatch.enabled=true", "-Dmetl.stopwatch.minimumLog=1000")
 
-startScriptJettyHome in Compile <<= (streams, target, startScriptJettyURL in Compile, startScriptJettyChecksum in Compile) map startScriptJettyHomeTask
+fork in Jetty := true
 
-startScriptForWar in Compile <<= (streams, startScriptBaseDirectory, startScriptFile in Compile, com.earldouglas.xsbtwebplugin.PluginKeys.packageWar in Compile, startScriptJettyHome in Compile, startScriptJettyContextPath in Compile) map startScriptForWarTask
+target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
 
-startScript in Compile <<= startScriptForWar in Compile
-
-seq(genericStartScriptSettings:_*)
+watchSources := watchSources.value.filterNot { x => x.isDirectory || x.getAbsolutePath.contains("webapp") }
 
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
-unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "target/extra-resources" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
@@ -52,11 +49,7 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val jettyVersion = "9.3.10.v20160621"
   Seq(
-    //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-    //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
-    //"org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
     "org.eclipse.jetty" % "jetty-webapp"  % jettyVersion % "container,test",
     "org.eclipse.jetty" %  "jetty-server"   % jettyVersion % "container,test", // _for _jetty _config
     "org.eclipse.jetty" %  "jetty-util"   % jettyVersion % "container,test", // _for _jetty _config
@@ -86,18 +79,9 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "net.sf.ehcache" % "ehcache" % "2.10.1",
-    //"io.github.stackableregiments" %% "metldata" % "3.20.+",
-    //"io.github.stackableregiments" %% "metl2011" % "3.12.+",
-    //"io.github.stackableregiments" %% "metl-h2" % "3.28.+",
-    //"io.github.stackableregiments" %% "common-utils" % "0.4.+",
-    //"io.github.stackableregiments" %% "ldap-authentication" % "0.3.+",
-    //"io.github.stackableregiments" %% "form-authentication" % "0.4.+",
-    //"io.github.stackableregiments" %% "cas-authentication" % "0.3.+",
-    //"io.github.stackableregiments" %% "openid-connect-authentication" % "0.3.+",
     "io.github.stackableregiments" %% "xmpp" % "3.5.+" ,
     "com.h2database" % "h2" % "1.4.192",
     "mysql" % "mysql-connector-java" % "5.1.38",
-    //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "org.apache.shiro" % "shiro-core" % "1.2.4",
     "org.apache.shiro" % "shiro-web" % "1.2.4",
     "org.apache.commons" % "commons-compress" % "1.1",
@@ -115,8 +99,6 @@ libraryDependencies ++= {
     //for tokbox
     "com.tokbox" % "opentok-server-sdk" % "2.3.2",
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
-    //    "org.scalactic" %% "scalactic" % "3.0.0",
-    //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
