@@ -22,6 +22,7 @@ public class Minifier {
     private static final String INPUT_HTML_DIR = "src/main/webapp/";
     private static final String OUTPUT_HTML_DIR = "target/extra-resources/";
     private static final String OUTPUT_JS_DIR = "target/extra-resources/minified/";
+    private static final String MINIFIED_HTML_EXTENSION = ".hmin";
 
     public static void minify(List<String> args) throws IOException {
         long startTime = Calendar.getInstance().getTimeInMillis();
@@ -69,7 +70,7 @@ public class Minifier {
         if (!Files.exists(outputHtmlDir)) {
             Files.createDirectories(outputHtmlDir);
         }
-        final Path outputHtmlPath = Paths.get(outputHtmlDir + File.separator + inputHtmlName + ".html");
+        final Path outputHtmlPath = Paths.get(outputHtmlDir + File.separator + inputHtmlName + MINIFIED_HTML_EXTENSION);
         try (Stream<String> stream = Files.lines(inputHtmlPath)) {
             try (BufferedWriter writer = Files.newBufferedWriter(outputHtmlPath)) {
                 stream.filter(line -> !line.matches(".*static/js.*\\.js.*"))
