@@ -85,29 +85,28 @@ case class KurentoUserSession(userId:String,userActor:LiftActor,sdpOffer:Kurento
 }		
 		
 trait KurentoPipelineType {		
-  def generatePipeline(name:String):KurentoPipeline		
+  def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline		
 }		
 object Loopback extends KurentoPipelineType {		
-  override def generatePipeline(name:String):KurentoPipeline = LoopbackPipeline(name)		
+  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = LoopbackPipeline(client,pipeline,name)		
 }		
 object Broadcast extends KurentoPipelineType {		
-  override def generatePipeline(name:String):KurentoPipeline = BroadcastPipeline(name)		
+  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = BroadcastPipeline(client,pipeline,name)		
 }		
 object Roulette extends KurentoPipelineType {		
-  override def generatePipeline(name:String):KurentoPipeline = RoulettePipeline(name)		
+  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = RoulettePipeline(client,pipeline,name)		
 }		
 object GroupRoom extends KurentoPipelineType {		
-  override def generatePipeline(name:String):KurentoPipeline = GroupRoomPipeline(name)		
+  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = GroupRoomPipeline(client,pipeline,name)		
 }		
 		
 class KurentoEventListener[T <: Event](onStateChanged:T => Unit) extends EventListener[T]{
   override def onEvent(a:T) = onStateChanged(a)
 }
 
-class KurentoPipeline(val name:String) extends Logger {		
+class KurentoPipeline(val kurentoManager:KurentoManager,pipeline:MediaPipeline,val name:String) extends Logger {		
   protected val videoKbps = 256 // max send rate		
   protected val audioKbps = 10 // max send rate		
-  protected val pipeline = KurentoManager.client.createMediaPipeline()		
   def buildRtcEndpoint:WebRtcEndpoint = {		
     val wre = new WebRtcEndpoint.Builder(pipeline).build()		
     // setting video bandwidth doesn't appear to work in firefox etc		
@@ -155,7 +154,7 @@ class KurentoPipeline(val name:String) extends Logger {
   }		
 }		
 		
-case class LoopbackPipeline(override val name:String) extends KurentoPipeline(name) {		
+case class LoopbackPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String) extends KurentoPipeline(kurentoManager,pipeline,name) {		
   var thisVideo:Option[WebRtcEndpoint] = None		
   override def buildRtcEndpoint:WebRtcEndpoint = {		
     val newEndpoint = super.buildRtcEndpoint		
@@ -164,13 +163,13 @@ case class LoopbackPipeline(override val name:String) extends KurentoPipeline(na
     newEndpoint		
   }		
   override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
-    KurentoManager.removePipeline(name,Loopback)		
+    kurentoManager.removePipeline(name,Loopback)		
     thisVideo.foreach(_.release())		
     super.shutdown(rtc)		
   }		
 }		
 		
-case class RoulettePipeline(override val name:String) extends KurentoPipeline(name) {		
+case class RoulettePipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String) extends KurentoPipeline(kurentoManager,pipeline,name) {		
   var a:Option[WebRtcEndpoint] = None		
   var b:Option[WebRtcEndpoint] = None		
   override def buildRtcEndpoint:WebRtcEndpoint = {		
@@ -207,13 +206,13 @@ case class RoulettePipeline(override val name:String) extends KurentoPipeline(na
       })		
     }		
     if (a == None && b == None){		
-      KurentoManager.removePipeline(name,Roulette)		
+      kurentoManager.removePipeline(name,Roulette)		
       super.shutdown(rtc)		
     }		
   }		
 }		
 		
-case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(name) {		
+case class GroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String) extends KurentoPipeline(kurentoManager,pipeline,name) {		
   protected var members:Map[WebRtcEndpoint,HubPort] = Map.empty[WebRtcEndpoint,HubPort]		
   protected val hub = new Composite.Builder(pipeline).build()		
   override def buildRtcEndpoint:WebRtcEndpoint = {		
@@ -222,6 +221,11 @@ case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(n
     hubPort.connect(newEndpoint)		
     newEndpoint.connect(hubPort)		
     members = members.updated(newEndpoint,hubPort)		
+
+    println("<---")
+    println(hub.getGstreamerDot())
+    println("--->")
+
     newEndpoint		
   }		
   override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
@@ -236,12 +240,12 @@ case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(n
     })
     if (members.keys.toList == Nil){		
       trace("removing groupRoom (%s)".format(name))
-      KurentoManager.removePipeline(name,GroupRoom)		
+      kurentoManager.removePipeline(name,GroupRoom)		
       super.shutdown(rtc)		
     }		
   }		
 }		
-case class MeTLGroupRoomPipeline(override val name:String, val recorderUrl:String) extends KurentoPipeline(name) {		
+case class MeTLGroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String, val recorderUrl:String) extends KurentoPipeline(kurentoManager,pipeline,name) {		
   protected var members:Map[WebRtcEndpoint,HubPort] = Map.empty[WebRtcEndpoint,HubPort]		
   protected val hub = new Composite.Builder(pipeline).build()		
   override def buildRtcEndpoint:WebRtcEndpoint = {		
@@ -263,12 +267,12 @@ case class MeTLGroupRoomPipeline(override val name:String, val recorderUrl:Strin
       members = members - r		
     })
     if (members.keys.toList.length < 1){		
-      KurentoManager.removePipeline(name,GroupRoom)		
+      kurentoManager.removePipeline(name,GroupRoom)		
       super.shutdown(rtc)		
     }		
   }		
 }		
-case class BroadcastPipeline(override val name:String) extends KurentoPipeline(name) {		
+case class BroadcastPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String) extends KurentoPipeline(kurentoManager,pipeline,name) {		
   protected var sender:Option[WebRtcEndpoint] = None		
 //  protected var dispatcher:Option[DispatcherOneToMany] = None		
   protected var receivers:List[WebRtcEndpoint] = Nil		
@@ -314,16 +318,20 @@ case class BroadcastPipeline(override val name:String) extends KurentoPipeline(n
     toClose.foreach(_.release())		
     receivers = remaining		
     if (receivers == Nil){		
-      KurentoManager.removePipeline(name,Broadcast)		
+      kurentoManager.removePipeline(name,Broadcast)		
       super.shutdown(rtc)		
     }		
   }		
 }		
 		
-object KurentoManager extends KurentoManager("ws://kurento.stackableregiments.com:8888/kurento")		
-//object KurentoManager extends KurentoManager("ws://52.20.87.206:8888/kurento")		
-class KurentoManager(kmsUrl:String) extends Logger {		
-  lazy val client = {		
+trait KurentoManager {
+  def getPipeline(name:String,pipeType:KurentoPipelineType):Option[KurentoPipeline]
+  def removePipeline(name:String,pipeType:KurentoPipelineType)		
+  def shutdown
+}
+
+class RemoteKurentoManager(kmsUrl:String) extends KurentoManager with Logger {
+  protected lazy val client:KurentoClient = {
     val kurento:KurentoClient = KurentoClient.create(kmsUrl, new KurentoConnectionListener() {		
       override def reconnected(sameServer:Boolean):Unit = {		
         warn("kurento reconnected: %s".format(sameServer));		
@@ -337,22 +345,25 @@ class KurentoManager(kmsUrl:String) extends Logger {
       override def connected:Unit = {		
         warn("kurento connected") 		
       }		
-    });		
-    kurento		
+    })		
+    kurento
   }		
   protected val pipelines = new java.util.concurrent.ConcurrentHashMap[Tuple2[KurentoPipelineType,String],KurentoPipeline]		
-  def getPipeline(name:String,pipeType:KurentoPipelineType):KurentoPipeline = pipelines.computeIfAbsent((pipeType,name),new java.util.function.Function[Tuple2[KurentoPipelineType,String],KurentoPipeline]{		
-    override def apply(k:Tuple2[KurentoPipelineType,String]):KurentoPipeline = {		
-      val newPipeline = k._1.generatePipeline(k._2)		
-      info("generated new pipeline: %s => %s".format(k,newPipeline))		
-      newPipeline		
-    }		
-  })		
-  def removePipeline(name:String,pipeType:KurentoPipelineType) = {		
+  override def getPipeline(name:String,pipeType:KurentoPipelineType):Option[KurentoPipeline] = {
+    val thisKm = this
+    Some(pipelines.computeIfAbsent((pipeType,name),new java.util.function.Function[Tuple2[KurentoPipelineType,String],KurentoPipeline]{		
+      override def apply(k:Tuple2[KurentoPipelineType,String]):KurentoPipeline = {		
+        val newPipeline = k._1.generatePipeline(thisKm,client.createMediaPipeline(),k._2)		
+        info("generated new pipeline: %s => %s".format(k,newPipeline))		
+        newPipeline		
+      }		
+    }))
+  }
+  override def removePipeline(name:String,pipeType:KurentoPipelineType) = {		
     info("removing pipeline: %s, %s".format(name,pipeType))		
     pipelines.remove((name,pipeType))		
   }		
-  def shutdown = {
+  override def shutdown = {
     pipelines.entrySet.toArray.foreach{
       case pTup:java.util.Map.Entry[Tuple2[KurentoPipelineType,String],KurentoPipeline] => {
         pTup.getValue.shutdown()
@@ -362,9 +373,15 @@ class KurentoManager(kmsUrl:String) extends Logger {
   }
 }		
  	
+object EmptyKurentoManager extends KurentoManager {
+  override def getPipeline(name:String,pipeType:KurentoPipelineType):Option[KurentoPipeline] = None
+  override def removePipeline(name:String,pipeType:KurentoPipelineType) = {}		
+  override def shutdown = {}
+}
+
 trait KurentoUtils {		
   lazy implicit val kurentoFormats = Serialization.formats(NoTypeHints)		
-  protected def kurentoClient = KurentoManager.client		
+  protected def kurentoManager = Globals.kurentoManager		
   def candidateFromJValue(jObj:JValue):Option[IceCandidate] = {		
     try {		
       val candidateId = (jObj \ "candidate").extract[String]		
@@ -382,6 +399,6 @@ trait KurentoUtils {
         case "roulette" => Some(Roulette)		
         case "groupRoom" => Some(GroupRoom)		
         case _ => None		
-    }).map(pipelineType => KurentoManager.getPipeline(name,pipelineType))		
+    }).flatMap(pipelineType => kurentoManager.getPipeline(name,pipelineType))		
   }		
 }

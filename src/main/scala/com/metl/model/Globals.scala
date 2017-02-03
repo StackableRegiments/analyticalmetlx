@@ -99,6 +99,14 @@ object Globals extends PropertyReader with Logger {
     new TokBox(apiKey,secret)
   } else None
 
+  var kurentoManager:KurentoManager = (for {
+    kmNode <- (propFile \\ "kurento").headOption
+    url <- (kmNode \ "@url").headOption.map(_.text)
+  } yield {
+    new RemoteKurentoManager(url)
+  }).getOrElse(EmptyKurentoManager)
+
+  LiftRules.unloadHooks.append(() => kurentoManager.shutdown)
 
   val liftConfig = (propFile \\ "liftConfiguration")
   readBool(liftConfig,"allowParallelSnippets").foreach(allowParallelSnippets => {
