@@ -33,15 +33,8 @@ import com.metl.snippet.Metl._
 import java.io.IOException;		
 import java.util.concurrent.ConcurrentHashMap;		
 		
-import org.kurento.client.{EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany,RecorderEndpoint}		
+import org.kurento.client.{Event,EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany,RecorderEndpoint,ConnectionStateChangedEvent,ConnectionState,DataChannelOpenEvent,DataChannelCloseEvent,MediaStateChangedEvent,MediaState}		
 import org.kurento.jsonrpc.JsonUtils;		
-/*		
- -import org.springframework.beans.factory.annotation.Autowired;		
- -import org.springframework.web.socket.CloseStatus;		
- -import org.springframework.web.socket.TextMessage;		
- -import org.springframework.web.socket.WebSocketSession;		
- -import org.springframework.web.socket.handler.TextWebSocketHandler;		
-*/		
 import com.google.gson.Gson;		
 import com.google.gson.GsonBuilder;		
 import com.google.gson.JsonObject;		
@@ -65,44 +58,29 @@ case class KurentoUserSession(userId:String,userActor:LiftActor,sdpOffer:Kurento
     pipeline = Some(p)		
     val pipeId = p.name		
     val nwrtc = p.buildRtcEndpoint		
-    //var candidates:List[KurentoServerSideIceCandidate] = Nil		
-    //var lastCandidateAdded = new java.util.Date().getTime()		
-    nwrtc.addIceCandidateFoundListener(new EventListener[IceCandidateFoundEvent](){		
-      override def onEvent(event:IceCandidateFoundEvent):Unit = {		
-        val response:JsonObject = new JsonObject()		
-        response.addProperty("id","iceCandidate")		
-        response.add("candidate",JsonUtils.toJsonObject(event.getCandidate()))		
-        userActor ! KurentoServerSideIceCandidate(userId,pipeId,response.toString)		
-        //candidates = candidates ::: List(KurentoServerSideIceCandidate(userId,pipeId,response.toString))		
-        //lastCandidateAdded = new java.util.Date().getTime()		
-      }		
-    })		
+    nwrtc.addIceCandidateFoundListener(new KurentoEventListener[IceCandidateFoundEvent]((event:IceCandidateFoundEvent) => {		
+      val response:JsonObject = new JsonObject()		
+      response.addProperty("id","iceCandidate")		
+      response.add("candidate",JsonUtils.toJsonObject(event.getCandidate()))		
+      userActor ! KurentoServerSideIceCandidate(userId,pipeId,response.toString)		
+    }))		
     val sdpAnswer = nwrtc.processOffer(sdpOffer.sdpOffer)		
     val responseSuccess = accepted		
     userActor ! KurentoAnswer(userId,pipeId,responseSuccess,sdpAnswer)		
     nwrtc.gatherCandidates()		
-    /*		
-    var threshold = 3 * 1000		
-    while (lastCandidateAdded > (new java.util.Date().getTime() - threshold)){		
-    }		
-    userActor ! KurentoChannelDefinition(userId,pipeId,sdpAnswer,candidates)		
-    */		
     webRtcEndpoint = Some(nwrtc)		
-    //println("settingPipeline: %s, endpoint: %s".format(pipeline,webRtcEndpoint))		
+    trace("settingPipeline: %s, endpoint: %s".format(pipeline,webRtcEndpoint))		
     this		
   }		
   def getPipeline:Option[KurentoPipeline] = pipeline		
   def addIceCandidate(candidate:IceCandidate):KurentoUserSession = {		
-    //println("addingIceCandidate: %s".format(candidate))		
+    trace("addingIceCandidate: %s".format(candidate))		
     webRtcEndpoint.foreach(_.addIceCandidate(candidate))		
     this		
   }		
   def getWebRtcEndpoint:Option[WebRtcEndpoint] = webRtcEndpoint		
   def shutdown:Unit = {		
-    webRtcEndpoint.foreach(rtc => {		
-      pipeline.foreach(_.shutdown(rtc))		
-      //rtc.release()		
-    })		
+    pipeline.foreach(_.shutdown(webRtcEndpoint))		
   }		
 }		
 		
@@ -122,8 +100,12 @@ object GroupRoom extends KurentoPipelineType {
   override def generatePipeline(name:String):KurentoPipeline = GroupRoomPipeline(name)		
 }		
 		
+class KurentoEventListener[T <: Event](onStateChanged:T => Unit) extends EventListener[T]{
+  override def onEvent(a:T) = onStateChanged(a)
+}
+
 class KurentoPipeline(val name:String) extends Logger {		
-  protected val videoKbps = 500 // max send rate		
+  protected val videoKbps = 256 // max send rate		
   protected val audioKbps = 10 // max send rate		
   protected val pipeline = KurentoManager.client.createMediaPipeline()		
   def buildRtcEndpoint:WebRtcEndpoint = {		
@@ -131,13 +113,44 @@ class KurentoPipeline(val name:String) extends Logger {
     // setting video bandwidth doesn't appear to work in firefox etc		
 //    wre.setMaxVideoSendBandwidth(videoKbps)		
 //    wre.setMaxVideoRecvBandwidth(videoKbps)		
+//    wre.setOutputBitrate((videoKbps + audioKbps) * 1024) // measured in bps		
 //  setting the audio bandwidth doesn't appear implemented in Kurento, or maybe I'm using the wrong method signatures		
 //    wre.setMaxAudioSendBandwidth(audioKbps)		
 //    wre.setMaxAudioRecvBandwidth(audioKbps)		
+    wre.addConnectionStateChangedListener(new KurentoEventListener[ConnectionStateChangedEvent]((stateChangedEvent:ConnectionStateChangedEvent) => {
+      trace("connection (%s) state changed: %s => %s ::: %s".format(name,stateChangedEvent.getOldState,stateChangedEvent.getNewState,wre))
+      (stateChangedEvent.getOldState(),stateChangedEvent.getNewState()) match {
+        case (ConnectionState.CONNECTED,ConnectionState.DISCONNECTED) => {
+        //  shutdown this connection when the connection state drops, so that the server can recover resources or relayout composites, etc.
+          shutdown(Some(wre))
+        }
+        case _ => {}
+      }
+    }))
+    wre.addMediaStateChangedListener(new KurentoEventListener[MediaStateChangedEvent]((stateChangedEvent:MediaStateChangedEvent) => {
+      trace("mediaState (%s) state changed: %s => %s ::: %s".format(name,stateChangedEvent.getOldState(),stateChangedEvent.getNewState(),wre))
+      (stateChangedEvent.getOldState(),stateChangedEvent.getNewState()) match {
+        case (MediaState.CONNECTED,MediaState.DISCONNECTED) => {
+//  shutdown this connection when the connection state drops, so that the server can recover resources or relayout composites, etc.
+          trace("removing endpoint (%s): %s".format(name,wre))
+          shutdown(Some(wre))
+        }
+        case _ => {}
+      }
+    }))
+    // we're not using data channels!
+    /*
+    wre.addDataChannelOpenListener(new KurentoEventListener[DataChannelOpenEvent]((dce:DataChannelOpenEvent) => {
+      trace("dataChannelOpen (%s) state changed: %s ::: %s".format(name,dce,wre))
+    }))
+    wre.addDataChannelCloseListener(new KurentoEventListener[DataChannelCloseEvent]((dce:DataChannelCloseEvent) => {
+      trace("dataChannelClose (%s) state changed: %s ::: %s".format(name,dce,wre))
+    }))
+    */
     wre		
   }		
   def getPipeline:MediaPipeline = pipeline		
-  def shutdown(rtc:WebRtcEndpoint):Unit = {		
+  def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
     pipeline.release()		
   }		
 }		
@@ -150,7 +163,7 @@ case class LoopbackPipeline(override val name:String) extends KurentoPipeline(na
     thisVideo = Some(newEndpoint)		
     newEndpoint		
   }		
-  override def shutdown(rtc:WebRtcEndpoint):Unit = {		
+  override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
     KurentoManager.removePipeline(name,Loopback)		
     thisVideo.foreach(_.release())		
     super.shutdown(rtc)		
@@ -181,7 +194,7 @@ case class RoulettePipeline(override val name:String) extends KurentoPipeline(na
     }		
     newEndpoint		
   }		
-  override def shutdown(rtc:WebRtcEndpoint):Unit = {		
+  override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
     if (a.exists(_ == rtc)){		
       a.foreach(e => {		
         e.release()		
@@ -211,13 +224,18 @@ case class GroupRoomPipeline(override val name:String) extends KurentoPipeline(n
     members = members.updated(newEndpoint,hubPort)		
     newEndpoint		
   }		
-  override def shutdown(rtc:WebRtcEndpoint):Unit = {		
-    members.get(rtc).foreach(hubPort => {		
-      rtc.release		
-      hubPort.release		
-    })		
-    members = members - rtc		
-    if (members.keys.toList.length < 1){		
+  override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
+    trace("removing from groupRoom (%s) rtc (%s)".format(name,rtc))
+    rtc.foreach(r => {
+      members.get(r).foreach(hubPort => {		
+        trace("removing from groupRoom (%s) rtc (%s) (%s)".format(name,r,hubPort))
+        r.release		
+        hubPort.release		
+      })		
+      members = members - r	
+    })
+    if (members.keys.toList == Nil){		
+      trace("removing groupRoom (%s)".format(name))
       KurentoManager.removePipeline(name,GroupRoom)		
       super.shutdown(rtc)		
     }		
@@ -236,12 +254,14 @@ case class MeTLGroupRoomPipeline(override val name:String, val recorderUrl:Strin
     members = members.updated(newEndpoint,hubPort)		
     newEndpoint		
   }		
-  override def shutdown(rtc:WebRtcEndpoint):Unit = {		
-    members.get(rtc).foreach(hubPort => {		
-      rtc.release		
-      hubPort.release		
-    })		
-    members = members - rtc		
+  override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
+    rtc.foreach(r => {
+      members.get(r).foreach(hubPort => {		
+        r.release		
+        hubPort.release		
+      })		
+      members = members - r		
+    })
     if (members.keys.toList.length < 1){		
       KurentoManager.removePipeline(name,GroupRoom)		
       super.shutdown(rtc)		
@@ -261,9 +281,9 @@ case class BroadcastPipeline(override val name:String) extends KurentoPipeline(n
       ePort.connect(newEndpoint)		
       newEndpoint.connect(ePort)		
       receivers = newEndpoint :: receivers		
-      println("adding listener to broadcast: %s".format(name))		
+      trace("adding listener to broadcast: %s".format(name))		
     }).getOrElse({		
-      println("adding sender to broadcast: %s".format(name))		
+      trace("adding sender to broadcast: %s".format(name))		
       sender = Some(newEndpoint)		
       val d = new DispatcherOneToMany.Builder(pipeline).build()		
       val sourcePort = new HubPort.Builder(d).build()		
@@ -277,25 +297,26 @@ case class BroadcastPipeline(override val name:String) extends KurentoPipeline(n
     sender.map(s => {		
       s.connect(newEndpoint)		
       receivers = newEndpoint :: receivers		
-      println("adding listener to broadcast: %s".format(name))		
+      trace("adding listener to broadcast: %s".format(name))		
     }).getOrElse({		
-      println("adding sender to broadcast: %s".format(name))		
+      trace("adding sender to broadcast: %s".format(name))		
       sender = Some(newEndpoint)		
     })		
     newEndpoint		
   }		
-  override def shutdown(rtc:WebRtcEndpoint):Unit = {		
-    if ((sender.toList ::: receivers).filterNot(_ == rtc) == Nil){		
-      KurentoManager.removePipeline(name,Broadcast)		
-      super.shutdown(rtc)		
-    }		
-    if (sender.exists(_ == rtc)){		
+  override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
+    trace("removing from broadcast (%s) rtc (%s)".format(name,rtc))
+    if (sender == rtc){		
       sender.foreach(_.release())		
       sender = None		
     }		
-    val (toClose,remaining) = receivers.partition(_ == rtc)		
+    val (toClose,remaining) = receivers.partition(r => rtc.exists(_ == r))		
     toClose.foreach(_.release())		
     receivers = remaining		
+    if (receivers == Nil){		
+      KurentoManager.removePipeline(name,Broadcast)		
+      super.shutdown(rtc)		
+    }		
   }		
 }		
 		
@@ -305,16 +326,16 @@ class KurentoManager(kmsUrl:String) extends Logger {
   lazy val client = {		
     val kurento:KurentoClient = KurentoClient.create(kmsUrl, new KurentoConnectionListener() {		
       override def reconnected(sameServer:Boolean):Unit = {		
-        println("kurento reconnected: %s".format(sameServer));		
+        warn("kurento reconnected: %s".format(sameServer));		
       }		
       override def disconnected:Unit = {		
-        println("kurento disconnected");		
+        warn("kurento disconnected");		
       }		
       override def connectionFailed:Unit = {		
-        println("kurento connectionFailed");		
+        warn("kurento connectionFailed");		
       }		
       override def connected:Unit = {		
-        println("kurento connected") 		
+        warn("kurento connected") 		
       }		
     });		
     kurento		
@@ -323,14 +344,22 @@ class KurentoManager(kmsUrl:String) extends Logger {
   def getPipeline(name:String,pipeType:KurentoPipelineType):KurentoPipeline = pipelines.computeIfAbsent((pipeType,name),new java.util.function.Function[Tuple2[KurentoPipelineType,String],KurentoPipeline]{		
     override def apply(k:Tuple2[KurentoPipelineType,String]):KurentoPipeline = {		
       val newPipeline = k._1.generatePipeline(k._2)		
-      println("generated new pipeline: %s => %s".format(k,newPipeline))		
+      info("generated new pipeline: %s => %s".format(k,newPipeline))		
       newPipeline		
     }		
   })		
   def removePipeline(name:String,pipeType:KurentoPipelineType) = {		
-    println("removing pipeline: %s, %s".format(name,pipeType))		
+    info("removing pipeline: %s, %s".format(name,pipeType))		
     pipelines.remove((name,pipeType))		
   }		
+  def shutdown = {
+    pipelines.entrySet.toArray.foreach{
+      case pTup:java.util.Map.Entry[Tuple2[KurentoPipelineType,String],KurentoPipeline] => {
+        pTup.getValue.shutdown()
+        pipelines.remove(pTup.getKey)
+      }
+    }
+  }
 }		
  	
 trait KurentoUtils {		

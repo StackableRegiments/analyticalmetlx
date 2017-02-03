@@ -627,7 +627,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
        val videoType = getArgAsString(args(0))		
        val offer = getArgAsString(args(1))		
        val id = getArgAsString(args(2))		
-       println("kurento initiate video stream: (%s, %s, %s)".format(id,videoType,offer))		
+       //println("kurento initiate video stream: (%s, %s, %s)".format(id,videoType,offer))		
        val (matching,others) = kurentoSessions.partition(_.getId == id)		
        matching.foreach(_.shutdown)		
        kurentoSessions = (for {		
@@ -643,7 +643,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
      },Empty),		
      ClientSideFunction("sendVideoStreamIceCandidate",List("iceCandidate","id"),(args) => {		
        val id = getArgAsString(args(1))		
-       println("kurento sendVideoStreamIceCandidate: %s, %s".format(id, args))		
+       //println("kurento sendVideoStreamIceCandidate: %s, %s".format(id, args))		
       for {		
          session <- kurentoSessions.find(_.getId == id)		
          jObj = args(0).asInstanceOf[JValue]		
