@@ -19,39 +19,37 @@ import java.util.stream.Stream;
 
 public class Minifier {
 
-    private static final String INPUT_HTML_DIR = "src/main/webapp/";
-    private static final String OUTPUT_HTML_DIR = "target/extra-resources/";
-    private static final String OUTPUT_JS_DIR = "target/extra-resources/minified/";
-    private static final String MINIFIED_HTML_EXTENSION = ".hmin";
+    private final String _inputHtmlDir;
+    private final String _outputHtmlDir;
+    private final String _outputJsSubDir;
+    private final String _minifiedHtmlExtension;
 
-    public static void minify(List<String> args) throws IOException {
+    public Minifier(final String inputHtmlDir,
+                    final String outputHtmlDir,
+                    final String outputJsSubDir,
+                    final String minifiedHtmlExtension) {
+        _inputHtmlDir = inputHtmlDir;
+        _outputHtmlDir = outputHtmlDir;
+        _outputJsSubDir = outputJsSubDir;
+        _minifiedHtmlExtension = minifiedHtmlExtension;
+    }
+
+    public void minify(final List<String> args) throws IOException {
         long startTime = Calendar.getInstance().getTimeInMillis();
-        System.out.println("Minifier started...");
-
         for (String arg : args) {
             doMinify(arg);
         }
-//        for (final String inputHtmlName : args) {
-/*
-        args.forEach(a -> {
-            try {
-                doMinify(a);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-*/
 
         final long duration = (Calendar.getInstance().getTimeInMillis() - startTime) / 1000;
         System.out.println(String.format("Minifier finished in %ds.", duration));
     }
 
-    private static void doMinify(final String inputHtmlName) throws IOException {
-        final Path inputHtmlPath = Paths.get(INPUT_HTML_DIR + inputHtmlName + ".html").toAbsolutePath();
+    private void doMinify(final String inputHtmlName) throws IOException {
+        final Path inputHtmlPath = Paths.get(_inputHtmlDir + File.separator + inputHtmlName + ".html").toAbsolutePath();
         System.out.println("Minifying js from: " + inputHtmlPath);
 
         // Compile javascript to single file.
-        final Path outputJsDir = Paths.get(OUTPUT_JS_DIR);
+        final Path outputJsDir = Paths.get(_outputHtmlDir + File.separator + _outputJsSubDir);
         if (!Files.exists(outputJsDir)) {
             Files.createDirectories(outputJsDir);
         }
@@ -59,23 +57,23 @@ public class Minifier {
         final String compiled = compile(grep(".*static/js.*\\.js.*", inputHtmlPath)
                 .map(s -> s.replaceFirst(".*src=\"", ""))
                 .map(s -> s.replaceFirst("\".*", ""))
-                .map(s -> new File(INPUT_HTML_DIR + s)));
+                .map(s -> new File(_inputHtmlDir + File.separator + s)));
         try (BufferedWriter writer = Files.newBufferedWriter(outputJsPath)) {
             writer.write(compiled);
         }
-        System.out.println("Created minified js in: " + outputJsPath.toString());
 
         // Copy original html and replace javascript references with single file reference.
-        final Path outputHtmlDir = Paths.get(OUTPUT_HTML_DIR);
+        final Path outputHtmlDir = Paths.get(_outputHtmlDir);
         if (!Files.exists(outputHtmlDir)) {
             Files.createDirectories(outputHtmlDir);
         }
-        final Path outputHtmlPath = Paths.get(outputHtmlDir + File.separator + inputHtmlName + MINIFIED_HTML_EXTENSION);
+        final Path outputHtmlPath = Paths.get(outputHtmlDir + File.separator + inputHtmlName + _minifiedHtmlExtension);
         try (Stream<String> stream = Files.lines(inputHtmlPath)) {
             try (BufferedWriter writer = Files.newBufferedWriter(outputHtmlPath)) {
                 stream.filter(line -> !line.matches(".*static/js.*\\.js.*"))
                         .map(line -> line.matches(".*<span class=\"minifiedScript\"></span>.*") ?
-                                "<script data-lift=\"with-resource-id\" src=\"minified/board.js\"></script>" :
+                                "<script data-lift=\"with-resource-id\" src=\"" +
+                                        _outputJsSubDir + File.separator + inputHtmlName + ".js\"></script>" :
                                 line)
                         .forEach(line -> {
                             try {
@@ -86,15 +84,13 @@ public class Minifier {
                         });
             }
         }
-
-        System.out.println("Created modified html in: " + outputHtmlPath.toString());
     }
 
     /**
      * @param inputFiles Files containing JavaScript source code to compile.
      * @return The compiled version of the code.
      */
-    private static String compile(final Stream<File> inputFiles) {
+    private String compile(final Stream<File> inputFiles) {
         // To get the complete set of externs, the logic in
         // CompilerRunner.getDefaultExterns() should be used here.
 //        final SourceFile extern = SourceFile.fromCode("externs.js", "function alert(x) {}");

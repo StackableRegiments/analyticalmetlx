@@ -37,11 +37,12 @@ javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.lo
 
 fork in Jetty := true
 
-target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
+//target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
+target in webappPrepare := (baseDirectory).value / "target/webapp"
 
 watchSources := watchSources.value.filterNot { x => x.isDirectory || x.getAbsolutePath.contains("webapp") }
 
-unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
+unmanagedResourceDirectories in Test <+= {(baseDirectory) { _ / "src/main/webapp" }}
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
@@ -186,12 +187,32 @@ lazy val library = (project in file("library")).
     }
   )
 
-val minifyFiles = List("admin", "board", "clientSidePrintConversation", "conversationSearch", "conversations", "dashboard", "editConversation", "enterprise", "mobile", "remotePluginConversationChooser")
-excludeFilter in unmanagedResources := minifyFiles.map(fn => "%s.html".format(fn)).foldLeft(HiddenFileFilter:FileFilter)((acc, item) => acc || item)
+unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "target/extra-resources" }
 
-lazy val minify = taskKey[Unit]("Minify javascript referenced by html files")
-minify := {
-  Minifier.minify(minifyFiles)
+webappPostProcess := { (webappDir:File) => {
+  val targetWebappDir = baseDirectory.value / "target" / "webapp"
+  val htmlSubDir = "hmin"
+  val jsRelativePath = "js-min"
+  val htmlExtension = ".html"
+  val javascriptExtension = ".js"
+
+  println("Minifying javascript")
+  val minifier = new Minifier(targetWebappDir.getPath, (targetWebappDir / htmlSubDir).getPath, jsRelativePath, htmlExtension);
+  val minifyFiles = List("admin", "board", "clientSidePrintConversation", "conversationSearch", "conversations", "dashboard", "editConversation", "enterprise", "mobile", "remotePluginConversationChooser")
+  minifier.minify(minifyFiles)
+
+  println("Replacing original html and javascript with minified")
+  IO.createDirectory(targetWebappDir / jsRelativePath)
+
+  minifyFiles.foreach(fn => {
+    IO.copyFile(targetWebappDir / htmlSubDir / (fn + htmlExtension), targetWebappDir / (fn + htmlExtension))
+    IO.copyFile(targetWebappDir / htmlSubDir / jsRelativePath / (fn + javascriptExtension), targetWebappDir / jsRelativePath / (fn + javascriptExtension))
+    IO.delete( targetWebappDir / htmlSubDir / (fn + htmlExtension))
+    IO.delete( targetWebappDir / htmlSubDir / jsRelativePath / (fn + javascriptExtension))
+  })
+
+  println("Cleaning up minified html and javascript")
+  IO.delete(targetWebappDir / htmlSubDir / jsRelativePath)
+  IO.delete(targetWebappDir / htmlSubDir)
 }
-
-(packageBin in Compile) <<= (packageBin in Compile) dependsOn (minify)
+}
