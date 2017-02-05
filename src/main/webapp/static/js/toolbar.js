@@ -383,7 +383,6 @@ function registerPositionHandlers(contexts,down,move,up){
                 Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y,e){
-                console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
@@ -1009,8 +1008,10 @@ var Modes = (function(){
                             text.doc.select(range.start,range.end);
                             Modes.text.scaleEditor(text.doc,resized.xScale);
                             text.doc.select(0,0);
-                            text.doc.width(text.doc.width() * resized.xScale);
-                            text.doc.invalidateBounds();
+                            var startingWidth = text.doc.width();
+                            text.doc.width(startingWidth * resized.xScale);
+                            text.doc.updateCanvas();
+                            blit();
                         });
                         registerTracker(resized.identity,function(){
                             Progress.call("onSelectionChanged");
@@ -1108,22 +1109,23 @@ var Modes = (function(){
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
                     resized.videoIds = _.keys(Modes.select.selected.videos);
+		    var s = scale();
                     _.each(Modes.select.selected.multiWordTexts,function(word){
-                        word.doc.width(Math.max(
-                            word.doc.width() * resized.xScale,
-                            Modes.text.minimumWidth / scale()
-                        ));
-                        word.doc.invalidateBounds();
                         if(word.doc.save().length > 0){
+                            word.doc.width(Math.max(
+                                word.doc.width() * resized.xScale,
+                                Modes.text.minimumWidth / s
+                            ));
+			    word.doc.updateCanvas();
                             sendRichText(word);
                         }
                     });
+                    blit();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
                     sendStanza(resized);
-                    blit();
                     return false;
                 },
                 render:function(canvasContext){
@@ -1161,6 +1163,7 @@ var Modes = (function(){
                 manualMove.rehome(totalBounds);
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
+                blit();
             }
         };
         Progress.onSelectionChanged["selectionHandles"] = function(){
@@ -1173,6 +1176,7 @@ var Modes = (function(){
                 manualMove.rehome(totalBounds);
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
+                blit();
             }
         };
     });
@@ -1304,6 +1308,7 @@ var Modes = (function(){
                     refStart = refEnd;
                 },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
+                d.invalidateBounds();
                 return sizes;
             };
             var scaleCurrentSelection = function(factor){
@@ -1373,7 +1378,6 @@ var Modes = (function(){
                         $(this).addClass("active");
                         Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
-                        console.log("Clicked",subject);
                     });
                 });
             });
@@ -1474,7 +1478,6 @@ var Modes = (function(){
                         editor.doc = carota.editor.create(
                             $("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
                             board[0],
-                            isAuthor? blit : noop,
                             t);
                         if(isAuthor){
                             var onChange = _.debounce(function(){
@@ -1486,7 +1489,6 @@ var Modes = (function(){
                                 sendRichText(source);
                                 /*This is important to the zoom strategy*/
                                 incorporateBoardBounds(editor.bounds);
-                                console.log("Content changed.  Paint count %s",carotaTest.getPaintCount());
                             },1000);
                             Progress.beforeChangingAudience[t.identity] = function(){
                                 onChange.flush();
@@ -1531,9 +1533,7 @@ var Modes = (function(){
                                     if(canMoveViewport){
                                         Modes.text.scrollToCursor(editor);
                                     }
-				    else{
-					blit();
-				    }
+                                    blit();
                                 }
                             });
                         }
@@ -2377,13 +2377,11 @@ var Modes = (function(){
             };
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
-                    console.log("Showing administer");
                     $("#ban").show();
                     $("#ban").removeClass("disabledButton");
                     $("#administerContent").show();
                     $("#administerContent").removeClass("disabledButton");
                 } else {
-                    console.log("Hiding administer");
                     $("#ban").addClass("disabledButton");
                     $("#ban").hide();
                     $("#administerContent").addClass("disabledButton");
@@ -2400,16 +2398,13 @@ var Modes = (function(){
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
             Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
-                console.log("Conversation details received in ModesSelect",conversation);
                 if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
                 if (Conversations.shouldModifyConversation(conversation)){
-                    console.log("Showing administer");
                     $("#administerContent").show().unbind("click").bind("click",administerContentFunction);
                     $("#ban").unbind("click").show().bind("click",banContentFunction);
                 } else {
-                    console.log("Hiding administer");
                     $("#administerContent").hide().unbind("click");
                     $("#ban").hide().unbind("click");
                 }
@@ -2627,6 +2622,9 @@ var Modes = (function(){
                                                 case "video":
                                                     prerenderVideo(item);
                                                     break;
+                                                case "multiWordText":
+                                                    prerenderMultiwordText(item);
+                                                    break;
                                                 default:
                                                     item.bounds = [NaN,NaN,NaN,NaN];
                                                 }
@@ -2799,12 +2797,10 @@ var Modes = (function(){
         feedback:(function(){
             var applyStateStyling = function(){
                 if (Conversations.shouldModifyConversation()){
-                    console.log("showing participants button");
                     $("#participantsButton").unbind("click").on("click",function(){
                         Participants.openMenu();
                     }).show();
                 } else {
-                    console.log("hiding participants button");
                     $("#participantsButton").unbind("click").hide();
                 }
                 switch(currentBackstage){

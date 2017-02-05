@@ -801,6 +801,7 @@ var carotaTest = (function(){
                             }
                             this._width = width;
                             this.layout();
+			    return width;
                         },
                         children: function() {
                             return [this.frame];
@@ -871,6 +872,7 @@ var carotaTest = (function(){
                             var getFormatting = function() {
                                 return self.selectedRange().getFormatting();
                             };
+                            this.updateCanvas();
                             this.selectionChanged.fire(getFormatting, canMoveViewport);
                         },
                         select: function(ordinal, ordinalEnd, canMoveViewport) {
@@ -1010,11 +1012,9 @@ var carotaTest = (function(){
 
 
                     var currentTo = Date.now();
-                    var paint = function(canvas,doc,hasFocus){
-                        console.log("paint");
+                    var paint = exports.paint = function(canvas,doc,hasFocus){
                         carotaTest.paint();
                         var ctx = canvas.getContext('2d');
-                        ctx.save();
                         var output =  rect(0, 0, canvas.width, canvas.height);
                         if(doc.privacy == "PRIVATE"){
                             ctx.fillStyle = "red";
@@ -1046,7 +1046,7 @@ var carotaTest = (function(){
                         }
                     }
 
-                    exports.create = function(host,externalCanvas,requestPaintFunc,stanza) {
+                    exports.create = function(host,externalCanvas,stanza) {
                         host.innerHTML =
                             '<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
                             '<textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" ' +
@@ -1077,15 +1077,14 @@ var carotaTest = (function(){
 
                         var maxDimension = 32767;
                         doc.updateCanvas = function(){
-                            console.log("updateCanvas");
                             var c = this.canvas = $("<canvas/>")[0];
-                            var h = this.bounds[3] - this.bounds[1];
-			    var scale = Math.min(1,maxDimension / h);
                             var w = this.bounds[2] - this.bounds[0];
-			    var context = c.getContext("2d");
+                            var h = this.bounds[3] - this.bounds[1];
+                            var scale = Math.min(1,maxDimension / h);
+                            var context = c.getContext("2d");
                             c.width = w * scale;
                             c.height = h * scale;
-			    context.scale(scale,scale);
+                            context.scale(scale,scale);
                             paint(c,doc,hasFocus());
                         }
 
@@ -1284,7 +1283,7 @@ var carotaTest = (function(){
                             if (ctrlKey && toggle) {
                                 var selRange = doc.selectedRange();
                                 selRange.setFormatting(toggle, selRange.getFormatting()[toggle] !== true);
-                                requestPaintFunc();
+                                blit();
                                 handled = true;
                             }
 
@@ -1345,10 +1344,6 @@ var carotaTest = (function(){
                             textArea.select();
                             textArea.focus();
                         };
-
-                        doc.selectionChanged(function(getformatting, canMoveViewport) {
-                            requestPaintFunc();
-                        });
 
                         doc.dblclickHandler = function(node) {
                             keyboardX = null;
@@ -2972,9 +2967,7 @@ var carotaTest = (function(){
         "per": {
             ":mainpath:": "per.js",
             "per.js": function (exports, module, require) {
-
                 (function(exportFunction) {
-
                     function toFunc(valOrFunc, bindThis) {
                         if (typeof valOrFunc !== 'function') {
                             return Array.isArray(valOrFunc)

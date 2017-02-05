@@ -838,11 +838,10 @@ function drawImage(image,incCanvasContext){
 function drawMultiwordText(item,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
     try{
-        if(item.doc.canvas != undefined){
+        if(item.doc && item.doc.canvas){
             var sBounds = screenBounds(item.bounds);
             visibleBounds.push(item.bounds);
             if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-		console.log("drawMultiwordText");
                 canvasContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
             }
         }
