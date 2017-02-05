@@ -880,7 +880,7 @@ var renderImages = function(images,canvasContext,rendered,viewBounds){
         try{
             if(intersectRect(image.bounds,viewBounds)){
                 drawImage(image,canvasContext);
-		rendered.push(image);
+                rendered.push(image);
             }
         }
         catch(e){
@@ -929,22 +929,6 @@ function render(content,hq,incCanvasContext,incViewBounds){
         throw e;
     }
 }
-function lightBlueGradient(context,width,height){
-    var bgd = context.createLinearGradient(0,0,0,height);
-    bgd.addColorStop(0,"#F5FAFF");
-    bgd.addColorStop(0.61,"#D0DEEF");
-    bgd.addColorStop(0.40,"#CADAED");
-    bgd.addColorStop(1,"#E7F2FF");
-    return bgd;
-}
-function monashBlueGradient(context,width,height){
-    var bgd = context.createLinearGradient(0,0,0,height);
-    bgd.addColorStop(1-0,"#C5D5F6");
-    bgd.addColorStop(1-0.35,"#87ACF2");
-    bgd.addColorStop(1-0.40,"#7AA3F4");
-    bgd.addColorStop(1-1,"#C5D5F6");
-    return bgd;
-}
 var blit = function(canvasContext,content){
     try {
         render(content == undefined ? boardContent : content,false,canvasContext == undefined ? boardContext : canvasContext);
@@ -952,7 +936,6 @@ var blit = function(canvasContext,content){
         console.log("exception in render:",e);
     }
 };
-//blit = _.throttle(blit,33);
 function pica(value){
     return value / 128;
 }

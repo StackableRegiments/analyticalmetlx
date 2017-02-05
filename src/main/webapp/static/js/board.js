@@ -839,7 +839,7 @@ function drawImage(image,incCanvasContext){
 
 function drawMultiwordText(item,incCanvasContext){
     var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
-    try{
+    try {
         if(item.doc && item.doc.canvas){
             var sBounds = screenBounds(item.bounds);
             visibleBounds.push(item.bounds);

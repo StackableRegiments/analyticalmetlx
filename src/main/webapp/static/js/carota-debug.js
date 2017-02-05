@@ -801,7 +801,7 @@ var carotaTest = (function(){
                             }
                             this._width = width;
                             this.layout();
-			    return width;
+                            return width;
                         },
                         children: function() {
                             return [this.frame];
@@ -905,7 +905,7 @@ var carotaTest = (function(){
                                     toStack.push(newCommand);
                                 });
                                 this.layout();
-                                self.updateCanvas();
+                                this.updateCanvas();
                                 this.contentChanged.fire();
                             }
                         },
@@ -1013,7 +1013,6 @@ var carotaTest = (function(){
 
                     var currentTo = Date.now();
                     var paint = exports.paint = function(canvas,doc,hasFocus){
-                        carotaTest.paint();
                         var ctx = canvas.getContext('2d');
                         var output =  rect(0, 0, canvas.width, canvas.height);
                         if(doc.privacy == "PRIVATE"){
@@ -1077,7 +1076,10 @@ var carotaTest = (function(){
 
                         var maxDimension = 32767;
                         doc.updateCanvas = function(){
-                            var c = this.canvas = $("<canvas/>")[0];
+			    if(!this.canvas){
+				this.canvas = $("<canvas/>")[0];
+			    }
+                            var c = this.canvas;
                             var w = this.bounds[2] - this.bounds[0];
                             var h = this.bounds[3] - this.bounds[1];
                             var scale = Math.min(1,maxDimension / h);
@@ -1353,10 +1355,10 @@ var carotaTest = (function(){
                                 doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
                             }
                             updateTextArea();
-                            doc.update();
+                            doc.updateCanvas();
+                            blit();
                         };
                         doc.mousedownHandler = function(node) {
-                            nextCaretToggle = 0;
                             selectDragStart = node.ordinal;
                             doc.select(node.ordinal, node.ordinal,false);
                             keyboardX = null;
@@ -1378,6 +1380,11 @@ var carotaTest = (function(){
                             doc.isActive = true;
                             updateTextArea();
                             doc.update();
+                            doc.selectionJustChanged = true;
+                            nextCaretToggle = 0;
+                            repaintCursor(doc);
+                            doc.updateCanvas();
+                            blit();
                         };
 
                         var nextCaretToggle = new Date().getTime(),
