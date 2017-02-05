@@ -169,6 +169,10 @@ li img {
     padding: 0;
 }
 
+ol li ol li {
+    list-style-type: lower-roman;
+}
+
 pre, code {
     width: 100%;
     color: #222;
