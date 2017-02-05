@@ -1007,9 +1007,9 @@ var Modes = (function(){
                             var range = text.doc.documentRange();
                             text.doc.select(range.start,range.end);
                             Modes.text.scaleEditor(text.doc,resized.xScale);
-                            text.doc.select(0,0);
                             var startingWidth = text.doc.width();
                             text.doc.width(startingWidth * resized.xScale);
+                            text.doc.select(0);
                             text.doc.updateCanvas();
                             blit();
                         });
@@ -1534,9 +1534,6 @@ var Modes = (function(){
                                     setIf(textColors[2],"color",["#0000ff",255]);
                                     setIf(textColors[3],"color",["#ffff00",255]);
                                     setIf(textColors[4],"color",["#00ff00",255]);
-                                    if(canMoveViewport){
-                                        Modes.text.scrollToCursor(editor);
-                                    }
                                     blit();
                                 }
                             });
