@@ -1,3 +1,74 @@
+var carotaTest = (function(){
+    //Pre-optimization
+    //Average 88.45 milis over 20 runs of Textbox sample render width 20000 words in 1769 milis
+    var time = function(label,f){
+        var samples = [];
+        var testCount = 1;
+        for(var i = 0; i < testCount; i++){
+            var start = new Date();
+            f();
+            var end = new Date();
+            samples.push(end - start);
+        }
+        var elapsed = _.sum(samples);
+        var mean = _.mean(samples);
+        console.log(sprintf("//Average %s milis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
+    }
+    var wordCount = 5000;
+    var prime = function(){
+        var width = 2000;
+        var height = 500;
+        var x = 100;
+        var y = 100;
+        var stanza = {
+            bounds:[x,y,x+width,y+height],
+            identity:"sim1",
+            privacy:"PUBLIC",
+            slide:1001,
+            target:"presentationSpace",
+            requestedWidth:width,
+            width:width,
+            height:height,
+            x:x,
+            y:y,
+            type:"multiWordText",
+            author:UserSettings.getUsername(),
+            words:_.map(_.range(0,wordCount),function(i){
+                return {
+                    text: sprintf("primo %s secundo %s tertius %s quaternius %s quintum %s ",i,i,i,i,i),
+                    italic: i % 2 == 0,
+                    bold: i % 5 == 0,
+                    underline: i % 20 == 0,
+                    color: ['#00ff00',255],
+                    size:25
+                };
+            })
+        };
+        boardContent.multiWordTexts[stanza.identity] = stanza;
+        prerenderMultiwordText(stanza);
+        boardContent.multiWordTexts[stanza.identity].doc.invalidateBounds();
+        var bounds = boardContent.multiWordTexts[stanza.identity].bounds;
+        console.log(bounds[3] - bounds[1],bounds);
+    };
+    var paintCount = 0;
+    return {
+        paint:function(){
+            paintCount++;
+        },
+        getPaintCount:function(){
+            return paintCount;
+        },
+        prime:prime,
+        run:function(){
+            prime();
+            carotaTest.sample = function(){
+                time(sprintf("Textbox sample render width %s words",wordCount * 5 * 2),blit);
+                console.log(sprintf("Paint called %s times",carotaTest.getPaintCount()));
+            }
+            carotaTest.sample();
+        }
+    };
+})();
 (function(){
     (function (modules) {
         'use strict';
@@ -730,6 +801,7 @@
                             }
                             this._width = width;
                             this.layout();
+                            return width;
                         },
                         children: function() {
                             return [this.frame];
@@ -786,17 +858,6 @@
                         },
                         drawSelection: function(ctx, hasFocus) {
                             if (this.selection.end === this.selection.start) {
-                                var drawCaret = this.selectionJustChanged || this.caretVisible;
-                                if (drawCaret) {
-                                    var caret = this.getCaretCoords(this.selection.start);
-                                    if (caret) {
-                                        ctx.save();
-                                        ctx.globalAlpha = 1;
-                                        ctx.fillStyle = 'black';
-                                        caret.fill(ctx);
-                                        ctx.restore();
-                                    }
-                                }
                             } else {
                                 ctx.save();
                                 ctx.fillStyle = hasFocus ? 'rgba(0, 100, 200, 0.3)' : 'rgba(160, 160, 160, 0.3)';
@@ -811,6 +872,7 @@
                             var getFormatting = function() {
                                 return self.selectedRange().getFormatting();
                             };
+                            this.updateCanvas();
                             this.selectionChanged.fire(getFormatting, canMoveViewport);
                         },
                         select: function(ordinal, ordinalEnd, canMoveViewport) {
@@ -843,6 +905,7 @@
                                     toStack.push(newCommand);
                                 });
                                 this.layout();
+                                this.updateCanvas();
                                 this.contentChanged.fire();
                             }
                         },
@@ -870,6 +933,7 @@
                                 }));
                                 if (changed) {
                                     self.layout();
+                                    self.updateCanvas();
                                     self.contentChanged.fire();
                                 }
                             }
@@ -948,18 +1012,9 @@
 
 
                     var currentTo = Date.now();
-
                     var paint = exports.paint = function(canvas,doc,hasFocus){
-                        var screenPos = worldToScreen(doc.position.x,doc.position.y),
-                            logicalWidth = canvas.width,
-                            logicalHeight = canvas.height;
-
                         var ctx = canvas.getContext('2d');
-                        ctx.save();
-                        var output =  rect(0, 0, logicalWidth, logicalHeight);
-                        var s = scale();
-                        ctx.translate(screenPos.x,screenPos.y);
-                        ctx.scale(s,s);
+                        var output =  rect(0, 0, canvas.width, canvas.height);
                         if(doc.privacy == "PRIVATE"){
                             ctx.fillStyle = "red";
                             ctx.globalAlpha = 0.1;
@@ -973,8 +1028,24 @@
                         ctx.restore();
                     };
 
-                    exports.create = function(host,externalCanvas,requestPaintFunc,stanza) {
+                    var repaintCursor = function(doc){
+                        var drawCaret = doc.selectionJustChanged || doc.caretVisible;
+                        var ctx = boardContext;
+                        var caret = doc.getCaretCoords(doc.selection.start);
+                        if (caret) {
+                            ctx.save();
+                            var screenPos = worldToScreen(doc.position.x,doc.position.y);
+                            var s = scale();
+                            ctx.translate(screenPos.x,screenPos.y);
+                            ctx.scale(s,s);
+                            ctx.globalAlpha = 1;
+                            ctx.fillStyle = drawCaret ? 'black' : 'white';
+                            caret.fill(ctx);
+                            ctx.restore();
+                        }
+                    }
 
+                    exports.create = function(host,externalCanvas,stanza) {
                         host.innerHTML =
                             '<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
                             '<textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" ' +
@@ -1001,6 +1072,22 @@
 
                         var hasFocus = function(){
                             return document.focussedElement == textArea;
+                        }
+
+                        var maxDimension = 32767;
+                        doc.updateCanvas = function(){
+			    if(!this.canvas){
+				this.canvas = $("<canvas/>")[0];
+			    }
+                            var c = this.canvas;
+                            var w = this.bounds[2] - this.bounds[0];
+                            var h = this.bounds[3] - this.bounds[1];
+                            var scale = Math.min(1,maxDimension / h);
+                            var context = c.getContext("2d");
+                            c.width = w * scale;
+                            c.height = h * scale;
+                            context.scale(scale,scale);
+                            paint(c,doc,hasFocus());
                         }
 
                         var toggles = {
@@ -1198,7 +1285,7 @@
                             if (ctrlKey && toggle) {
                                 var selRange = doc.selectedRange();
                                 selRange.setFormatting(toggle, selRange.getFormatting()[toggle] !== true);
-                                requestPaintFunc();
+                                blit();
                                 handled = true;
                             }
 
@@ -1240,28 +1327,6 @@
                             }
                         });
 
-                        var verticalAlignment = 'top';
-
-                        doc.setVerticalAlignment = function(va) {
-                            verticalAlignment = va;
-                            requestPaintFunc();
-                        }
-
-                        function getVerticalOffset() {
-                            if(doc.frame.bounds){
-                                var docHeight = doc.frame.bounds().h;
-                                if (docHeight < host.clientHeight) {
-                                    switch (verticalAlignment) {
-                                    case 'middle':
-                                        return (host.clientHeight - docHeight) / 2;
-                                    case 'bottom':
-                                        return host.clientHeight - docHeight;
-                                    }
-                                }
-                            }
-                            return 0;
-                        }
-
                         dom.handleEvent(textArea, 'input', function() {
                             var newText = textArea.value;
                             if (textAreaContent != newText) {
@@ -1279,15 +1344,8 @@
                             textAreaContent = doc.selectedRange().plainText();
                             textArea.value = textAreaContent;
                             textArea.select();
-
-                            setTimeout(function() {
-                                textArea.focus();
-                            }, 10);
+                            textArea.focus();
                         };
-
-                        doc.selectionChanged(function(getformatting, canMoveViewport) {
-                            requestPaintFunc();
-                        });
 
                         doc.dblclickHandler = function(node) {
                             keyboardX = null;
@@ -1297,10 +1355,10 @@
                                 doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
                             }
                             updateTextArea();
-                            doc.update();
+                            doc.updateCanvas();
+                            blit();
                         };
                         doc.mousedownHandler = function(node) {
-                            nextCaretToggle = 0;
                             selectDragStart = node.ordinal;
                             doc.select(node.ordinal, node.ordinal,false);
                             keyboardX = null;
@@ -1322,6 +1380,11 @@
                             doc.isActive = true;
                             updateTextArea();
                             doc.update();
+                            doc.selectionJustChanged = true;
+                            nextCaretToggle = 0;
+                            repaintCursor(doc);
+                            doc.updateCanvas();
+                            blit();
                         };
 
                         var nextCaretToggle = new Date().getTime(),
@@ -1337,7 +1400,7 @@
                                     if (now > nextCaretToggle) {
                                         nextCaretToggle = now + 500;
                                         if (doc.toggleCaret()) {
-                                            requestPaintFunc();
+                                            repaintCursor(doc);
                                         }
                                     }
                                     setTimeout(doc.update,500);
@@ -2911,9 +2974,7 @@
         "per": {
             ":mainpath:": "per.js",
             "per.js": function (exports, module, require) {
-
                 (function(exportFunction) {
-
                     function toFunc(valOrFunc, bindThis) {
                         if (typeof valOrFunc !== 'function') {
                             return Array.isArray(valOrFunc)

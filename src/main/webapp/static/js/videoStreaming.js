@@ -41,7 +41,6 @@ var TokBox = (function(){
     var permitStudentsToPublishCheckbox = undefined;
     var publishingPermitted = false;
     var actOnConversationDetails = function(c){
-        console.log("TokBox conv",c);
         if (c){
             publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast);
             if (teacherControls){
@@ -144,7 +143,6 @@ var TokBoxSession = function(desc,sessionContainer){
     var refreshVisualState = function(){
         streamButton.unbind("click");
 
-        console.log("refreshing visual state:",TokBox.canPublish());
         if (isConnected() && TokBox.canPublish()){
             streamContainer.show();
             if ("capabilities" in session && "publish" in session.capabilities && session.capabilities.publish == 1){
@@ -277,7 +275,6 @@ var TokBoxSession = function(desc,sessionContainer){
     Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
 
     var onConversationDetailsReceived = function(conv){
-        console.log("videoStreaming conversationDetails",conv);
         if ("jid" in conv && "Conversations" in window && "permissions" in conv && "studentsMayBroadcast" in conv.permissions){
             refreshVisualState();
         }
