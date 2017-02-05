@@ -1247,6 +1247,7 @@ var Modes = (function(){
                             /*General would interfere with specific during setFormatting*/
                             carota.runs.nextInsertFormatting = {};
                             selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
+			    t.doc.updateCanvas();
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1258,6 +1259,7 @@ var Modes = (function(){
                         var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
                         target.toggleClass("active",intention);
                     }
+		    blit();
                 }
             }
             var setFormattingProperty = function(prop,newValue){
@@ -1272,6 +1274,7 @@ var Modes = (function(){
                             t.doc.selectedRange().setFormatting(prop,newValue);
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             carota.runs.nextInsertFormatting[prop] = newValue;
+			    t.doc.updateCanvas();
                             t.doc.claimFocus();/*Focus might have left when a control was clicked*/
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
@@ -1282,6 +1285,7 @@ var Modes = (function(){
                         carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                         carota.runs.nextInsertFormatting[prop] = newValue;
                     }
+		    blit();
                 }
             };
             var scaleEditor = function(d,factor){

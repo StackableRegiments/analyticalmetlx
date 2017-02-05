@@ -276,8 +276,10 @@ function richTextReceived(t){
     if(t.identity in Modes.text.echoesToDisregard) return;
     if(isUsable(t)){
         WorkQueue.enqueue(function(){
-            Modes.text.editorFor(t).doc.load(t.words);
-            blit();
+            var e = Modes.text.editorFor(t);
+            e.doc.load(t.words);
+	    e.doc.updateCanvas();
+	    return true;
         });
     }
 }
