@@ -7,7 +7,7 @@ then
 	echo "Building $SRC_WAR"
 	
 	./sbt.sh clean
-	./sbt.sh compile
+	#./sbt.sh compile
 	./sbt.sh package
 
 	REV=$(git log -1 --format="%H")
