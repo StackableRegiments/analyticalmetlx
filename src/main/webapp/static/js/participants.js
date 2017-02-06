@@ -270,7 +270,7 @@ var Participants = (function(){
             {name:"highlighters",type:"number",title:"Highlighters",readOnly:true},
             {name:"texts",type:"number",title:"Texts",readOnly:true},
             {name:"quizResponses",type:"number",title:"Poll responses",readOnly:true},
-            {name:"submissions",type:"number",title:"Submissions",readOnly:true},
+            {name:"submissions",type:"number",title:"Submissions",readOnly:true}
         ];
         participantsDatagrid.jsGrid({
             width:"100%",
