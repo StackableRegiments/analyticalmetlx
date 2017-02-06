@@ -223,7 +223,7 @@ case class GroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline
     members = members.updated(newEndpoint,hubPort)		
 
     println("<---")
-    println(hub.getGstreamerDot())
+    println(pipeline.getGstreamerDot())
     println("--->")
 
     newEndpoint		

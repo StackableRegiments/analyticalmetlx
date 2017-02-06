@@ -15,6 +15,7 @@ var WebRtcStreamManager = (function(){
 	var videoElemWidth = 240, videoElemHeight = 180;
 	var defaultConstraints = {
 		audio:true,
+		/*
 		video:{
 			width:{
 				min:"160",
@@ -29,7 +30,7 @@ var WebRtcStreamManager = (function(){
 				max:"25"
 			}
 		}
-		/*
+		*/
 		video:{
 			width:{
 				min:"300",
@@ -44,7 +45,6 @@ var WebRtcStreamManager = (function(){
 				max:"25"
 			}
 		}
-		*/
 	};
 
 	function setBandwidth(sdp) {
