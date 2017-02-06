@@ -54,7 +54,7 @@ public class Minifier {
             Files.createDirectories(outputJsDir);
         }
         final Path outputJsPath = Paths.get(outputJsDir + File.separator + inputHtmlName + ".js");
-        final String compiled = compile(grep(".*static/js.*\\.js.*", inputHtmlPath)
+        final String compiled = compile(grep(".*static/js/.*\\.js.*", inputHtmlPath)
                 .map(s -> s.replaceFirst(".*src=\"", ""))
                 .map(s -> s.replaceFirst("\".*", ""))
                 .map(s -> new File(_inputHtmlDir + File.separator + s)));
@@ -70,7 +70,7 @@ public class Minifier {
         final Path outputHtmlPath = Paths.get(outputHtmlDir + File.separator + inputHtmlName + _minifiedHtmlExtension);
         try (Stream<String> stream = Files.lines(inputHtmlPath)) {
             try (BufferedWriter writer = Files.newBufferedWriter(outputHtmlPath)) {
-                stream.filter(line -> !line.matches(".*static/js.*\\.js.*"))
+                stream.filter(line -> !line.matches(".*static/js/.*\\.js.*"))
                         .map(line -> line.matches(".*<span class=\"minifiedScript\"></span>.*") ?
                                 "<script data-lift=\"with-resource-id\" src=\"" +
                                         _outputJsSubDir + File.separator + inputHtmlName + ".js\"></script>" :
