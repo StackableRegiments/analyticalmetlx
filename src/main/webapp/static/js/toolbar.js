@@ -383,7 +383,6 @@ function registerPositionHandlers(contexts,down,move,up){
                 Modes.finishInteractableStates();
             });
             var mouseOut = function(x,y,e){
-                console.log("mouseout",x,y);
                 WorkQueue.gracefullyResume();
                 var worldPos = screenToWorld(x,y);
                 var worldX = worldPos.x;
@@ -963,7 +962,7 @@ var Modes = (function(){
                         blit();
                         return false;
                     },
-                    move:function(worldPos){
+                    move:_.throttle(function(worldPos){
                         if(resizeAspectLocked.activated){
                             bounds = [
                                 worldPos.x - s,
@@ -982,7 +981,7 @@ var Modes = (function(){
                             blit();
                         }
                         return false;
-                    },
+                    },20),
                     deactivate:function(){
                         Modes.select.aspectLocked = false;
                         resizeAspectLocked.activated = false;
@@ -1008,9 +1007,11 @@ var Modes = (function(){
                             var range = text.doc.documentRange();
                             text.doc.select(range.start,range.end);
                             Modes.text.scaleEditor(text.doc,resized.xScale);
-                            text.doc.select(0,0);
-                            text.doc.width(text.doc.width() * resized.xScale);
-                            text.doc.invalidateBounds();
+                            var startingWidth = text.doc.width();
+                            text.doc.width(startingWidth * resized.xScale);
+                            text.doc.select(0);
+                            text.doc.updateCanvas();
+                            blit();
                         });
                         registerTracker(resized.identity,function(){
                             Progress.call("onSelectionChanged");
@@ -1108,22 +1109,23 @@ var Modes = (function(){
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
                     resized.videoIds = _.keys(Modes.select.selected.videos);
+                    var s = scale();
                     _.each(Modes.select.selected.multiWordTexts,function(word){
-                        word.doc.width(Math.max(
-                            word.doc.width() * resized.xScale,
-                            Modes.text.minimumWidth / scale()
-                        ));
-                        word.doc.invalidateBounds();
                         if(word.doc.save().length > 0){
+                            word.doc.width(Math.max(
+                                word.doc.width() * resized.xScale,
+                                Modes.text.minimumWidth / s
+                            ));
+                            word.doc.updateCanvas();
                             sendRichText(word);
                         }
                     });
+                    blit();
                     registerTracker(resized.identity,function(){
                         Progress.call("onSelectionChanged");
                         blit();
                     });
                     sendStanza(resized);
-                    blit();
                     return false;
                 },
                 render:function(canvasContext){
@@ -1161,6 +1163,7 @@ var Modes = (function(){
                 manualMove.rehome(totalBounds);
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
+                blit();
             }
         };
         Progress.onSelectionChanged["selectionHandles"] = function(){
@@ -1173,6 +1176,7 @@ var Modes = (function(){
                 manualMove.rehome(totalBounds);
                 resizeFree.rehome(totalBounds);
                 resizeAspectLocked.rehome(totalBounds);
+                blit();
             }
         };
     });
@@ -1243,6 +1247,7 @@ var Modes = (function(){
                             /*General would interfere with specific during setFormatting*/
                             carota.runs.nextInsertFormatting = {};
                             selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
+                            t.doc.updateCanvas();
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1254,6 +1259,7 @@ var Modes = (function(){
                         var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
                         target.toggleClass("active",intention);
                     }
+                    blit();
                 }
             }
             var setFormattingProperty = function(prop,newValue){
@@ -1268,6 +1274,7 @@ var Modes = (function(){
                             t.doc.selectedRange().setFormatting(prop,newValue);
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             carota.runs.nextInsertFormatting[prop] = newValue;
+                            t.doc.updateCanvas();
                             t.doc.claimFocus();/*Focus might have left when a control was clicked*/
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
@@ -1278,6 +1285,7 @@ var Modes = (function(){
                         carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                         carota.runs.nextInsertFormatting[prop] = newValue;
                     }
+                    blit();
                 }
             };
             var scaleEditor = function(d,factor){
@@ -1304,6 +1312,7 @@ var Modes = (function(){
                     refStart = refEnd;
                 },d.range(originalRange.start,originalRange.end));
                 d.select(originalRange.start,originalRange.end,true);
+                d.invalidateBounds();
                 return sizes;
             };
             var scaleCurrentSelection = function(factor){
@@ -1373,7 +1382,6 @@ var Modes = (function(){
                         $(this).addClass("active");
                         Modes.text.refocussing = true;
                         setFormattingProperty("color",[colorCodes[subject],255])();
-                        console.log("Clicked",subject);
                     });
                 });
             });
@@ -1446,7 +1454,7 @@ var Modes = (function(){
                         var margin = 4;
                         var freeLinesFromBoxTop = Math.floor((viewboxHeight - boxOffset) / cursorY.h) - margin;
                         var takenLinesFromBoxTop = Math.floor(cursorY.t / cursorY.h);
-                        var adjustment = Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h;
+                        var adjustment = scaleWorldToScreen(Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h);
                         if(adjustment != 0){
                             TweenController.zoomAndPanViewbox(
                                 viewboxX,
@@ -1474,11 +1482,9 @@ var Modes = (function(){
                         editor.doc = carota.editor.create(
                             $("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
                             board[0],
-                            isAuthor? blit : noop,
                             t);
                         if(isAuthor){
                             var onChange = _.debounce(function(){
-                                Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
@@ -1496,6 +1502,10 @@ var Modes = (function(){
                                 delete Progress.beforeLeavingSlide[t.identity];
                             };
                             editor.doc.contentChanged(onChange);
+                            editor.doc.contentChanged(function(){//This one isn't debounced so it scrolls as we type and stays up to date
+                                Modes.text.scrollToCursor(editor);
+				blit();
+                            });
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 if(Modes.text.refocussing){
                                     Modes.text.refocussing = false;
@@ -1527,9 +1537,7 @@ var Modes = (function(){
                                     setIf(textColors[2],"color",["#0000ff",255]);
                                     setIf(textColors[3],"color",["#ffff00",255]);
                                     setIf(textColors[4],"color",["#00ff00",255]);
-                                    if(canMoveViewport){
-                                        Modes.text.scrollToCursor(editor);
-                                    }
+                                    blit();
                                 }
                             });
                         }
@@ -1537,11 +1545,6 @@ var Modes = (function(){
                     editor.doc.position = {x:t.x,y:t.y};
                     editor.doc.width(t.width);
                     return editor;
-                },
-                draw:function(t){
-                    if(t && t.doc){
-                        carota.editor.paint(board[0],t.doc,true);
-                    }
                 },
                 oldEditorAt : function(x,y,z,worldPos){
                     var threshold = 10;
@@ -1694,7 +1697,6 @@ var Modes = (function(){
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
                         };
-                        Modes.text.scrollToCursor(editor);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     registerPositionHandlers(board,down,move,up);
@@ -2023,12 +2025,12 @@ var Modes = (function(){
                 var thisCurrentImage = state != undefined ? state : currentImage;
                 var renderCanvas = $("<canvas/>");
                 var img = new Image();
-								if (originalSrc.indexOf("data") == 0){
-									// if it's a dataUrl, then don't set crossOrigin of anonymous
-								} else {
-									// set cross origin if it's not a dataUrl
-									img.setAttribute("crossOrigin","Anonymous");
-								}
+                if (originalSrc.indexOf("data") == 0){
+                    // if it's a dataUrl, then don't set crossOrigin of anonymous
+                } else {
+                    // set cross origin if it's not a dataUrl
+                    img.setAttribute("crossOrigin","Anonymous");
+                }
                 img.onerror = function(e){
                     errorAlert("Error dropping image","The source server you're dragging the image from does not allow dragging the image directly.  You may need to download the image first and then upload it.");
                 };
@@ -2149,16 +2151,16 @@ var Modes = (function(){
                     insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
                     imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
                     imageFileChoice[0].addEventListener("change",function(e){
-											try {
-                        var files = e.target.files || e.dataTransfer.files;
-                        var file = files[0];
-                        if (file.type.indexOf("image") == 0) {
-                            currentImage.fileUpload = file;
+                        try {
+                            var files = e.target.files || e.dataTransfer.files;
+                            var file = files[0];
+                            if (file.type.indexOf("image") == 0) {
+                                currentImage.fileUpload = file;
+                            }
+                            clientSideProcessImage(sendImageToServer);
+                        } catch(ex) {
+                            console.log("imageFileChoiceHandleChanged exception:",ex);
                         }
-                        clientSideProcessImage(sendImageToServer);
-											} catch(ex) {
-												console.log("imageFileChoiceHandleChanged exception:",ex);
-											}
                     },false);
                     resetImageUpload();
                 }
@@ -2189,7 +2191,7 @@ var Modes = (function(){
                     insertOptions.show();
                 },
                 handleDroppedSrc:function(src,x,y){
-									console.log("handleDroppedSrc:",src,x,y);
+                    console.log("handleDroppedSrc:",src,x,y);
                     var worldPos = screenToWorld(x,y);
                     var thisCurrentImage = {
                         "type":"imageDefinition",
@@ -2204,35 +2206,35 @@ var Modes = (function(){
                 handleDrop:function(dataTransfer,x,y){
                     var yOffset = 0;
                     var processed = [];
-										console.log("handling drop:",dataTransfer,x,y);
+                    console.log("handling drop:",dataTransfer,x,y);
                     var processFile = function(file,sender){
-											try {
-                        if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
-                            var worldPos = screenToWorld(x,y + yOffset);
-                            var thisCurrentImage = {
-                                "type":"imageDefinition",
-                                "screenX":x,
-                                "screenY":y + yOffset,
-                                "x":worldPos.x,
-                                "y":worldPos.y
-                            };
-                            thisCurrentImage.fileUpload = file;
-                            processed.push(file);
-                            clientSideProcessImage(sendImageToServer,thisCurrentImage);
-                            yOffset += 50;
+                        try {
+                            if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
+                                var worldPos = screenToWorld(x,y + yOffset);
+                                var thisCurrentImage = {
+                                    "type":"imageDefinition",
+                                    "screenX":x,
+                                    "screenY":y + yOffset,
+                                    "x":worldPos.x,
+                                    "y":worldPos.y
+                                };
+                                thisCurrentImage.fileUpload = file;
+                                processed.push(file);
+                                clientSideProcessImage(sendImageToServer,thisCurrentImage);
+                                yOffset += 50;
+                            }
+                        } catch(e){
+                            console.log("could not processFile:",file,sender);
                         }
-											} catch(e){
-												console.log("could not processFile:",file,sender);
-											}
                     };
                     _.forEach(dataTransfer.files,function(f){processFile(f,"file");});
                     _.forEach(dataTransfer.items,function(item){
-											try {
-                        var file = item.getAsFile(0);
-                        processFile(file,"item");
-											} catch(e){
-												console.log("could not get item as file:",e);
-											}
+                        try {
+                            var file = item.getAsFile(0);
+                            processFile(file,"item");
+                        } catch(e){
+                            console.log("could not get item as file:",e);
+                        }
                     });
 
                 },
@@ -2378,13 +2380,11 @@ var Modes = (function(){
             };
             var updateAdministerContentVisualState = function(conversation){
                 if (Conversations.shouldModifyConversation(conversation)){
-		    console.log("Showing administer");
                     $("#ban").show();
                     $("#ban").removeClass("disabledButton");
                     $("#administerContent").show();
                     $("#administerContent").removeClass("disabledButton");
                 } else {
-		    console.log("Hiding administer");
                     $("#ban").addClass("disabledButton");
                     $("#ban").hide();
                     $("#administerContent").addClass("disabledButton");
@@ -2401,16 +2401,13 @@ var Modes = (function(){
             Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
             Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
             Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
-		console.log("Conversation details received in ModesSelect",conversation);
                 if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
                 if (Conversations.shouldModifyConversation(conversation)){
-		    console.log("Showing administer");
                     $("#administerContent").show().unbind("click").bind("click",administerContentFunction);
                     $("#ban").unbind("click").show().bind("click",banContentFunction);
                 } else {
-		    console.log("Hiding administer");
                     $("#administerContent").hide().unbind("click");
                     $("#ban").hide().unbind("click");
                 }
@@ -2419,7 +2416,7 @@ var Modes = (function(){
             return {
                 name:"select",
                 isAdministeringContent:function(){return isAdministeringContent;},
-		updateAdministerContentVisualState:updateAdministerContentVisualState,
+                updateAdministerContentVisualState:updateAdministerContentVisualState,
                 selected:{
                     images:{},
                     texts:{},
@@ -2628,6 +2625,9 @@ var Modes = (function(){
                                                 case "video":
                                                     prerenderVideo(item);
                                                     break;
+                                                case "multiWordText":
+                                                    prerenderMultiwordText(item);
+                                                    break;
                                                 default:
                                                     item.bounds = [NaN,NaN,NaN,NaN];
                                                 }
@@ -2800,12 +2800,10 @@ var Modes = (function(){
         feedback:(function(){
             var applyStateStyling = function(){
                 if (Conversations.shouldModifyConversation()){
-                    console.log("showing participants button");
                     $("#participantsButton").unbind("click").on("click",function(){
                         Participants.openMenu();
                     }).show();
                 } else {
-                    console.log("hiding participants button");
                     $("#participantsButton").unbind("click").hide();
                 }
                 switch(currentBackstage){
