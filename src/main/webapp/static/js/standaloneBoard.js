@@ -1314,7 +1314,7 @@ var board = function(options){
         width:outputX,
         height:outputY,
         scaleX:outputScaleX,
-        scaleY:outputScaleY,
+        scaleY:outputScaleY
     };
 	}
 	var prerenderInk = function(ink){

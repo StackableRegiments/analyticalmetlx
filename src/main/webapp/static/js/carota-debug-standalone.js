@@ -2026,9 +2026,9 @@
                             var x = 0, self = this, ordinal = this.ordinal,
                                 codes = this.parentOfType('document').codes;
                             this.parts(function(wordPart) {
-                                runs.pieceCharacters(function(char) {
+                                runs.pieceCharacters(function(char1) {
                                     var charRun = Object.create(wordPart.run);
-                                    charRun.text = char;
+                                    charRun.text = char1;
                                     var p = part(charRun, codes);
                                     cache.push(Object.create(positionedChar, {
                                         left: { value: x },
