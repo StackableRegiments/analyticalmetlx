@@ -6,7 +6,7 @@ import com.stackableregiments.Minifier
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "1.4.1"
+version := "1.4.6"
 
 val scalaVersionString = "2.11.5"
 
