@@ -229,8 +229,8 @@ var rightPoint = function(xDelta,yDelta,l,x2,y2,bulge){
 }
 var determineCanvasConstants = _.once(function(){
     var currentDevice = DeviceConfiguration.getCurrentDevice();
-    var maxX = 8192;//2147483647;
-    var maxY = 8192;//2147483647;
+    var maxX = 32767;//2147483647;
+    var maxY = 32767;//2147483647;
     if (currentDevice == "browser"){
         //      maxX = 500;
         //      maxY = 500;
@@ -850,6 +850,7 @@ var renderSelectionGhosts = function(canvasContext){
                     }, canvasContext, noop, _.cloneDeep(item));
                     scaledText.position = {x:bounds[0],y:bounds[1]};
                     scaledText.load(item.doc.save());
+                    delete scaledText.canvas;
                     var fullRange = scaledText.documentRange();
                     scaledText.select(fullRange.start,fullRange.end);
                     if(Modes.select.aspectLocked){
