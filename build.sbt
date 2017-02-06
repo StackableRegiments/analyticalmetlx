@@ -192,7 +192,7 @@ unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "target/extra-
 webappPostProcess := { (webappDir:File) => {
   val targetWebappDir = baseDirectory.value / "target" / "webapp"
   val htmlSubDir = "hmin"
-  val jsRelativePath = "js-min"
+  val jsRelativePath = { "static/js-min" }
   val htmlExtension = ".html"
   val javascriptExtension = ".js"
 
