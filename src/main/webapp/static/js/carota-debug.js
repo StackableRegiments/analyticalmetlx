@@ -48,7 +48,6 @@ var carotaTest = (function(){
         prerenderMultiwordText(stanza);
         boardContent.multiWordTexts[stanza.identity].doc.invalidateBounds();
         var bounds = boardContent.multiWordTexts[stanza.identity].bounds;
-        console.log(bounds[3] - bounds[1],bounds);
     };
     var paintCount = 0;
     return {
@@ -618,12 +617,12 @@ var carotaTest = (function(){
                             return this.range(start, end);
                         },
                         insert: function(text, canMoveViewport) {
-                            this.select(this.selection.end + this.selectedRange().setText(text), null, canMoveViewport);
+                            var insertLength = this.selectedRange().setText(text);
+                            this.select(this.selection.end + insertLength, null, canMoveViewport);
                         },
                         modifyInsertFormatting: function(attribute, value) {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             carota.runs.nextInsertFormatting[attribute] = value;
-                            this.notifySelectionChanged();
                         },
                         applyInsertFormatting: function(text) {
                             var formatting = carota.runs.nextInsertFormatting;
@@ -872,7 +871,6 @@ var carotaTest = (function(){
                             var getFormatting = function() {
                                 return self.selectedRange().getFormatting();
                             };
-                            this.updateCanvas();
                             this.selectionChanged.fire(getFormatting, canMoveViewport);
                         },
                         select: function(ordinal, ordinalEnd, canMoveViewport) {
@@ -886,13 +884,6 @@ var carotaTest = (function(){
                                 this.frame.length - 1
                             );
                             carota.runs.nextInsertFormatting = {};
-
-                            /*  NB. always fire this even if the positions stayed the same. The
-                             event means that the formatting of the selection has changed
-                             (which can happen either by moving the selection range or by
-                             altering the formatting)
-                             */
-                            this.notifySelectionChanged(canMoveViewport);
                             this.selectionJustChanged = true;
                         },
                         performUndo: function(redo) {
@@ -926,6 +917,8 @@ var carotaTest = (function(){
                                     self._currentTransaction = log;
                                     try {
                                         perform(log);
+                                    } catch(e){
+                                        console.log("Transaction e",e);
                                     } finally {
                                         changed = log.length > 0;
                                         self._currentTransaction = null;
@@ -964,21 +957,11 @@ var carotaTest = (function(){
                     };
                 },
                 "dom.js": function (exports, module, require) {
-
-                    exports.isAttached = function(element) {
-                        var ancestor = element;
-                        while(ancestor.parentNode) {
-                            ancestor = ancestor.parentNode;
-                        }
-                        return !!ancestor.body;
-                    };
-
                     exports.clear = function(element) {
                         while (element.firstChild) {
                             element.removeChild(element.firstChild);
                         }
                     };
-
                     exports.setText = function(element, text) {
                         exports.clear(element);
                         element.appendChild(document.createTextNode(text));
@@ -991,17 +974,6 @@ var carotaTest = (function(){
                             }
                         });
                     };
-
-                    exports.handleMouseEvent = function(element, name, handler) {
-                        exports.handleEvent(element, name, function(ev) {
-                            var rect = element.getBoundingClientRect();
-                            return handler(ev, ev.clientX - rect.left, ev.clientY - rect.top);
-                        });
-                    };
-
-                    exports.effectiveStyle = function(element, name) {
-                        return document.defaultView.getComputedStyle(element).getPropertyValue(name);
-                    };
                 },
                 "editor.js": function (exports, module, require) {
                     var per = require('per');
@@ -1010,11 +982,11 @@ var carotaTest = (function(){
                     var rect = require('./rect');
                     var selectDragStart = null;
 
-
                     var currentTo = Date.now();
                     var paint = exports.paint = function(canvas,doc,hasFocus){
                         var ctx = canvas.getContext('2d');
-                        var output =  rect(0, 0, canvas.width, canvas.height);
+                        var b = doc.bounds;
+                        var output =  rect(0, 0, b[2] - b[0], b[3] - b[1]);
                         if(doc.privacy == "PRIVATE"){
                             ctx.fillStyle = "red";
                             ctx.globalAlpha = 0.1;
@@ -1025,7 +997,6 @@ var carotaTest = (function(){
                         if(doc.isActive && Modes.currentMode == Modes.text){
                             doc.drawSelection(ctx, selectDragStart || hasFocus);
                         }
-                        ctx.restore();
                     };
 
                     var repaintCursor = function(doc){
@@ -1053,8 +1024,7 @@ var carotaTest = (function(){
                             'outline: none; font-size: 4px;"></textarea>' +
                             '</div>';
 
-                        var canvas = externalCanvas || host.querySelector('canvas'),
-                            textAreaDiv = host.querySelector('.carotaTextArea'),
+                        var textAreaDiv = host.querySelector('.carotaTextArea'),
                             textArea = host.querySelector('textarea'),
                             doc = carotaDoc(stanza),
                             keyboardSelect = 0,
@@ -1064,8 +1034,6 @@ var carotaTest = (function(){
                             richClipboard = null,
                             plainClipboard = null;
 
-                        doc.width(canvas.clientWidth);
-
                         doc.claimFocus = function(){
                             $(textArea).focus();
                         }
@@ -1074,19 +1042,20 @@ var carotaTest = (function(){
                             return document.focussedElement == textArea;
                         }
 
-                        var maxDimension = 32767;
+                        var maxDimension = determineCanvasConstants().y;
                         doc.updateCanvas = function(){
-			    if(!this.canvas){
-				this.canvas = $("<canvas/>")[0];
-			    }
-                            var c = this.canvas;
-                            var w = this.bounds[2] - this.bounds[0];
-                            var h = this.bounds[3] - this.bounds[1];
-                            var scale = Math.min(1,maxDimension / h);
+			    delete doc.stanza.mipMap;
+                            if(!doc.canvas){
+                                doc.canvas = $("<canvas/>")[0];
+                            }
+                            var c = doc.canvas;
+                            var w = doc.bounds[2] - doc.bounds[0];
+                            var h = doc.bounds[3] - doc.bounds[1];
+			    var scaled = determineScaling(w,h);
                             var context = c.getContext("2d");
-                            c.width = w * scale;
-                            c.height = h * scale;
-                            context.scale(scale,scale);
+                            c.width = scaled.width;
+                            c.height = scaled.height;
+                            context.setTransform(scaled.scaleX,0,0,scaled.scaleY,0,0);
                             paint(c,doc,hasFocus());
                         }
 
@@ -1244,6 +1213,7 @@ var carotaTest = (function(){
                                     doc.range(start - 1, start).clear();
                                     focusChar = start - 1;
                                     doc.select(focusChar, focusChar,true);
+                                    doc.notifySelectionChanged(true);
                                     handled = true;
                                 }
                                 break;
@@ -1285,7 +1255,6 @@ var carotaTest = (function(){
                             if (ctrlKey && toggle) {
                                 var selRange = doc.selectedRange();
                                 selRange.setFormatting(toggle, selRange.getFormatting()[toggle] !== true);
-                                blit();
                                 handled = true;
                             }
 
@@ -1314,6 +1283,7 @@ var carotaTest = (function(){
                                 }
                                 focusChar = ordinal;
                                 doc.select(start, end,true);
+                                doc.notifySelectionChanged(true);
                                 handled = true;
                             }
 
@@ -1354,6 +1324,7 @@ var carotaTest = (function(){
                             if (node) {
                                 doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
                             }
+                            selectDragStart = null;
                             updateTextArea();
                             doc.updateCanvas();
                             blit();
@@ -1376,15 +1347,21 @@ var carotaTest = (function(){
                             }
                         };
                         doc.mouseupHandler = function(node) {
-                            keyboardX = null;
-                            doc.isActive = true;
-                            updateTextArea();
-                            doc.update();
-                            doc.selectionJustChanged = true;
-                            nextCaretToggle = 0;
-                            repaintCursor(doc);
-                            doc.updateCanvas();
-                            blit();
+                            try{
+                                keyboardX = null;
+                                doc.isActive = true;
+                                updateTextArea();
+                                selectDragStart = null;
+                                doc.selectionJustChanged = true;
+                                nextCaretToggle = 0;
+                                repaintCursor(doc);
+                                doc.updateCanvas();
+                                doc.update();
+                                blit();
+                            }
+                            catch(e){
+                                console.log("mouseUp e",e);
+                            }
                         };
 
                         var nextCaretToggle = new Date().getTime(),

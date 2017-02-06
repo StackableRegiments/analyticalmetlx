@@ -962,7 +962,7 @@ var Modes = (function(){
                         blit();
                         return false;
                     },
-                    move:function(worldPos){
+                    move:_.throttle(function(worldPos){
                         if(resizeAspectLocked.activated){
                             bounds = [
                                 worldPos.x - s,
@@ -981,7 +981,7 @@ var Modes = (function(){
                             blit();
                         }
                         return false;
-                    },
+                    },20),
                     deactivate:function(){
                         Modes.select.aspectLocked = false;
                         resizeAspectLocked.activated = false;
@@ -1109,14 +1109,14 @@ var Modes = (function(){
                     resized.textIds = _.keys(Modes.select.selected.texts);
                     resized.imageIds = _.keys(Modes.select.selected.images);
                     resized.videoIds = _.keys(Modes.select.selected.videos);
-		    var s = scale();
+                    var s = scale();
                     _.each(Modes.select.selected.multiWordTexts,function(word){
                         if(word.doc.save().length > 0){
                             word.doc.width(Math.max(
                                 word.doc.width() * resized.xScale,
                                 Modes.text.minimumWidth / s
                             ));
-			    word.doc.updateCanvas();
+                            word.doc.updateCanvas();
                             sendRichText(word);
                         }
                     });
@@ -1247,7 +1247,7 @@ var Modes = (function(){
                             /*General would interfere with specific during setFormatting*/
                             carota.runs.nextInsertFormatting = {};
                             selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
-			    t.doc.updateCanvas();
+                            t.doc.updateCanvas();
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
                             }
@@ -1259,7 +1259,7 @@ var Modes = (function(){
                         var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
                         target.toggleClass("active",intention);
                     }
-		    blit();
+                    blit();
                 }
             }
             var setFormattingProperty = function(prop,newValue){
@@ -1274,7 +1274,7 @@ var Modes = (function(){
                             t.doc.selectedRange().setFormatting(prop,newValue);
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             carota.runs.nextInsertFormatting[prop] = newValue;
-			    t.doc.updateCanvas();
+                            t.doc.updateCanvas();
                             t.doc.claimFocus();/*Focus might have left when a control was clicked*/
                             if(t.doc.save().length > 0){
                                 sendRichText(t);
@@ -1285,7 +1285,7 @@ var Modes = (function(){
                         carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                         carota.runs.nextInsertFormatting[prop] = newValue;
                     }
-		    blit();
+                    blit();
                 }
             };
             var scaleEditor = function(d,factor){
@@ -1454,7 +1454,7 @@ var Modes = (function(){
                         var margin = 4;
                         var freeLinesFromBoxTop = Math.floor((viewboxHeight - boxOffset) / cursorY.h) - margin;
                         var takenLinesFromBoxTop = Math.floor(cursorY.t / cursorY.h);
-                        var adjustment = Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h;
+                        var adjustment = scaleWorldToScreen(Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h);
                         if(adjustment != 0){
                             TweenController.zoomAndPanViewbox(
                                 viewboxX,
@@ -1485,7 +1485,6 @@ var Modes = (function(){
                             t);
                         if(isAuthor){
                             var onChange = _.debounce(function(){
-                                Modes.text.scrollToCursor(editor);
                                 var source = boardContent.multiWordTexts[editor.identity];
                                 source.target = "presentationSpace";
                                 source.slide = Conversations.getCurrentSlideJid();
@@ -1503,6 +1502,10 @@ var Modes = (function(){
                                 delete Progress.beforeLeavingSlide[t.identity];
                             };
                             editor.doc.contentChanged(onChange);
+                            editor.doc.contentChanged(function(){//This one isn't debounced so it scrolls as we type and stays up to date
+                                Modes.text.scrollToCursor(editor);
+				blit();
+                            });
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 if(Modes.text.refocussing){
                                     Modes.text.refocussing = false;
@@ -1694,7 +1697,6 @@ var Modes = (function(){
                         Progress.historyReceived["ClearMultiTextEchoes"] = function(){
                             Modes.text.echoesToDisregard = {};
                         };
-                        Modes.text.scrollToCursor(editor);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     registerPositionHandlers(board,down,move,up);

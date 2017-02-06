@@ -10,19 +10,24 @@ var TokBox = (function(){
     var receiveTokBoxSessionFunc = function(desc){
         if (initialized){
             sessionsContainer.css({display:"flex"});
-            var support = OT.checkSystemRequirements();
-            if (support == 0){
-                if (!shownError){
-                    errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome or Firefox.");
-                    shownError = true;
+            if(window["OT"]){
+                var support = OT.checkSystemRequirements();
+                if (support == 0){
+                    if (!shownError){
+                        errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome or Firefox.");
+                        shownError = true;
+                    }
+                } else if (enabled && !(desc.sessionId in sessions)){
+                    var container = sessionContainer.clone();
+                    sessionsContainer.append(container);
+                    var session = TokBoxSession(desc,container);
+                    sessions[session.id] = session;
+                    session.refreshVisualState();
                 }
-            } else if (enabled && !(desc.sessionId in sessions)){
-                var container = sessionContainer.clone();
-                sessionsContainer.append(container);
-                var session = TokBoxSession(desc,container);
-                sessions[session.id] = session;
-                session.refreshVisualState();
             }
+	    else{
+		errorAlert("Could not connect video","Please check your network connection");
+	    }
         }
     };
     var removeSessionsFunc = function(sessionIds){
