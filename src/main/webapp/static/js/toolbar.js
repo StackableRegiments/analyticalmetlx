@@ -833,6 +833,13 @@ var Modes = (function(){
             }
         };
         var s = Modes.select.handlesAtZoom();
+        var clipToInteractableSpace = function(y){
+            var s = Modes.select.handlesAtZoom();
+            var ceiling = scaleScreenToWorld(DeviceConfiguration.headerHeight + s);
+            var floor = scaleScreenToWorld(DeviceConfiguration.footerHeight);
+            var clipped = Math.min(viewboxY+viewboxHeight-(floor - s/2),Math.max(y,viewboxY+ceiling));
+            return clipped;
+        }
         var manualMove = (
             function(){
                 var bounds = undefined;
@@ -845,14 +852,14 @@ var Modes = (function(){
                         if(!manualMove.activated){
                             var s = Modes.select.handlesAtZoom();
                             var x = root.x;
-                            var y = root.y;
+                            var y = clipToInteractableSpace(root.y);
                             var width = root.x2 - root.x;
                             var center = root.x + s / 2;
                             bounds = [
                                 center - s / 2,
-                                root.y - s,
+                                y - s,
                                 center + s / 2,
-                                root.y
+                                y
                             ];
                         }
                     },
@@ -942,7 +949,7 @@ var Modes = (function(){
                         if(!resizeAspectLocked.activated){
                             var s = Modes.select.handlesAtZoom();
                             var x = root.x2;
-                            var y = root.y;
+                            var y = clipToInteractableSpace(root.y) - s;
                             bounds = [
                                 x,
                                 y,
@@ -1055,7 +1062,7 @@ var Modes = (function(){
                     if(!resizeFree.activated){
                         var s = Modes.select.handlesAtZoom();
                         var x = root.x2;
-                        var y = root.y2;
+                        var y = clipToInteractableSpace(root.y2);
                         bounds = [
                             x,
                             y - s,
@@ -1504,7 +1511,7 @@ var Modes = (function(){
                             editor.doc.contentChanged(onChange);
                             editor.doc.contentChanged(function(){//This one isn't debounced so it scrolls as we type and stays up to date
                                 Modes.text.scrollToCursor(editor);
-				blit();
+                                blit();
                             });
                             editor.doc.selectionChanged(function(formatReport,canMoveViewport){
                                 if(Modes.text.refocussing){
