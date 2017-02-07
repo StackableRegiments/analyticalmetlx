@@ -159,12 +159,10 @@ var Blacklist = (function(){
     var refreshToolState = function(conversation){
         WorkQueue.enqueue(function(){
             if (Conversations.shouldModifyConversation(conversation)){
-		console.log("Showing administer");
                 $("#ban").show();
                 $("#administerContent").show();
                 $("#menuBlacklist").show();
             } else {
-		console.log("Hiding administer");
                 $("#ban").hide();
                 $("#administerContent").hide();
                 $("#menuBlacklist").hide();
