@@ -112,7 +112,8 @@ class Boot extends Logger {
     LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
-    info("started version: %s\r\nrelease-notes:\r\n%s".format(com.metl.BuildInfo.version,com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n"))) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
+    info("Started version: %s\r\n".format(com.metl.BuildInfo.version)) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
+//    info("release-notes:\r\n%s".format(com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n")))
     trace("Boot ends")
   }
 }
