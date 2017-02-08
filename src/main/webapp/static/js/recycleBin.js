@@ -173,7 +173,6 @@ var RecycleBin = (function(){
         try {
             if ("type" in history && history.type == "history"){
                 clearState();
-								console.log("history",history);
                 _.forEach(history.deletedCanvasContents,function(stanza){
                     onCanvasContentDeleted(stanza,true);
                 });
