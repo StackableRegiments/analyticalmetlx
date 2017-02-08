@@ -1,0 +1,17 @@
+language: scala
+
+scala:
+  - 2.11.5
+
+jdk:
+  - oraclejdk8
+
+build:
+  ci:
+    - sbt test
+    - mkdir -p shippable/testresults
+    - cp -R target/test-reports/* shippable/testresults/
+  cache: true
+  cache_dir_list:
+    - $SHIPPABLE_BUILD_DIR/.ivy2
+    - $SHIPPABLE_BUILD_DIR/node_modules
