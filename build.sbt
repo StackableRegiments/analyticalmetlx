@@ -87,6 +87,9 @@ libraryDependencies ++= {
     "org.apache.shiro" % "shiro-web" % "1.2.4",
     "org.apache.commons" % "commons-compress" % "1.1",
     "org.imsglobal" % "basiclti-util" % "1.1.1",
+    //for metl-utils
+    "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
+    "org.apache.httpcomponents" % "httpclient" % "4.1",
     //for google openId connect authentication
     "com.google.api-client" % "google-api-client" % "1.22.0",
     "io.github.stackableregiments" %% "ldap" % "0.3.+",
@@ -186,8 +189,6 @@ lazy val library = (project in file("library")).
       Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
     }
   )
-
-unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "target/extra-resources" }
 
 webappPostProcess := { (webappDir:File) => {
   val targetWebappDir = baseDirectory.value / "target" / "webapp"
