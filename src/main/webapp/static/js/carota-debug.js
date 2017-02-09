@@ -1318,60 +1318,49 @@ var carotaTest = (function(){
                         };
 
                         doc.dblclickHandler = function(node) {
-                            if(ContentFilter.exposes(doc.stanza)){
-                                keyboardX = null;
-                                doc.isActive = true;
-                                node = node.parent();
-                                if (node) {
-                                    doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
-                                }
-                                selectDragStart = null;
-                                updateTextArea();
-                                doc.updateCanvas();
-                                blit();
+                            keyboardX = null;
+                            doc.isActive = true;
+                            node = node.parent();
+                            if (node) {
+                                doc.select(node.ordinal, node.ordinal + (node.word ? node.word.text.length : node.length));
                             }
+                            selectDragStart = null;
+                            updateTextArea();
+                            doc.updateCanvas();
+                            blit();
                         };
                         doc.mousedownHandler = function(node) {
-                            if(ContentFilter.exposes(doc.stanza)){
-                                selectDragStart = node.ordinal;
-                                doc.select(node.ordinal, node.ordinal,false);
-                                keyboardX = null;
-                            }
-			    else{
-				console.log("hidden");
-			    }
+                            selectDragStart = node.ordinal;
+                            doc.select(node.ordinal, node.ordinal,false);
+                            keyboardX = null;
                         }
                         doc.mousemoveHandler = function(node) {
-                            if(ContentFilter.exposes(doc.stanza)){
-                                if (selectDragStart !== null) {
-                                    if (node) {
-                                        focusChar = node.ordinal;
-                                        if (selectDragStart > node.ordinal) {
-                                            doc.select(node.ordinal, selectDragStart,false);
-                                        } else {
-                                            doc.select(selectDragStart, node.ordinal,false);
-                                        }
+                            if (selectDragStart !== null) {
+                                if (node) {
+                                    focusChar = node.ordinal;
+                                    if (selectDragStart > node.ordinal) {
+                                        doc.select(node.ordinal, selectDragStart,false);
+                                    } else {
+                                        doc.select(selectDragStart, node.ordinal,false);
                                     }
                                 }
                             }
                         };
                         doc.mouseupHandler = function(node) {
-                            if(ContentFilter.exposes(doc.stanza)){
-                                try{
-                                    keyboardX = null;
-                                    doc.isActive = true;
-                                    updateTextArea();
-                                    selectDragStart = null;
-                                    doc.selectionJustChanged = true;
-                                    nextCaretToggle = 0;
-                                    repaintCursor(doc);
-                                    doc.updateCanvas();
-                                    doc.update();
-                                    blit();
-                                }
-                                catch(e){
-                                    console.log("mouseUp e",e);
-                                }
+                            try{
+                                keyboardX = null;
+                                doc.isActive = true;
+                                updateTextArea();
+                                selectDragStart = null;
+                                doc.selectionJustChanged = true;
+                                nextCaretToggle = 0;
+                                repaintCursor(doc);
+                                doc.updateCanvas();
+                                doc.update();
+                                blit();
+                            }
+                            catch(e){
+                                console.log("mouseUp e",e);
                             }
                         };
 
