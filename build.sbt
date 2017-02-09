@@ -44,6 +44,7 @@ seq(genericStartScriptSettings:_*)
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
+scalacOptions ++= Seq("-Xmax-classfile-name", "100")
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 

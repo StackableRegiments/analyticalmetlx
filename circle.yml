@@ -1,0 +1,12 @@
+machine:
+  java:
+    version: oraclejdk8
+
+test:
+  override:
+    # Run unit tests
+    - sbt test
+  post:
+    # Make test reports available to Circle
+    - mkdir -p $CIRCLE_TEST_REPORTS/reports/
+    - cp -R target/test-reports/* $CIRCLE_TEST_REPORTS/reports/
