@@ -6,12 +6,12 @@ test:
   override:
     # Run unit tests
     - sbt test
-        parallel: true
-        files:
-          - src/test/scala/com/metl/data/**/*
-          - src/test/scala/com/metl/model/**/*
-          - src/test/scala/com/metl/utils/**/*
-          - src/test/scala/com/metl/*
+#        parallel: true
+#        files:
+#          - src/test/scala/com/metl/data/**/*
+#          - src/test/scala/com/metl/model/**/*
+#          - src/test/scala/com/metl/utils/**/*
+#          - src/test/scala/com/metl/*
   post:
     # Make test reports available to Circle
     - mkdir -p $CIRCLE_TEST_REPORTS/reports/
