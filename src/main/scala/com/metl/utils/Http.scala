@@ -452,6 +452,8 @@ object HttpClientProviderConfigurator {
   }
 }
 
+object Http extends HttpClientProvider()
+
 class HttpClientProvider(
   connectionTimeout:Int = 3600,
   keepAliveTimeout:Int = 5400,

@@ -87,6 +87,9 @@ libraryDependencies ++= {
     "org.apache.shiro" % "shiro-web" % "1.2.4",
     "org.apache.commons" % "commons-compress" % "1.1",
     "org.imsglobal" % "basiclti-util" % "1.1.1",
+    //for metl-utils
+    "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
+    "org.apache.httpcomponents" % "httpclient" % "4.1",
     //for google openId connect authentication
     "com.google.api-client" % "google-api-client" % "1.22.0",
     "io.github.stackableregiments" %% "ldap" % "0.3.+",
@@ -106,7 +109,7 @@ libraryDependencies ++= {
     //for AWS API Gateway interaction
 	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
   )
-}.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
+}.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri").exclude("io.github.stackableregiments","common-utils-2.11"))
 
 javacOptions ++= Seq("-source", "8", "-target", "8")
 
