@@ -1,4 +1,9 @@
 1.5.1
+Story: METL-276: GoogleAnalytics for MeTL.
+Bugfix: METL-301: Last line of a text box often separated by a line from previous text.
+Bugfix: METL-557: Textbox in group not currently isolated still picks up click and becomes active.
+Improvement: METL-544: Apply initial randomization after group creation.
+Improvement: METL-555: Interactable handles should never sit under transparent header and footer.
 Improvement: METL-294: Single JS file for board.
 Improvement: METL-548: Remove obsolete "future" spike.
 
