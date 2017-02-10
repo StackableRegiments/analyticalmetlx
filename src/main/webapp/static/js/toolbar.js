@@ -1575,7 +1575,7 @@ var Modes = (function(){
                     var texts = _.values(boardContent.multiWordTexts).filter(function(text){
                         var intersects = intersectRect(text.bounds,ray)
                         return intersects && (text.author == me);
-                    });
+                    }).filter(ContentFilter.exposes);
                     if(texts.length > 0){
                         return texts[0];
                     }
