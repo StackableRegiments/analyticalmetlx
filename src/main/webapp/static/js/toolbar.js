@@ -1451,10 +1451,10 @@ var Modes = (function(){
                     else{
                         var boxTop = b[1];
                         var boxOffset = boxTop - viewboxY;
-                        var margin = 4;
+                        var margin = 8;
                         var freeLinesFromBoxTop = Math.floor((viewboxHeight - boxOffset) / cursorY.h) - margin;
                         var takenLinesFromBoxTop = Math.floor(cursorY.t / cursorY.h);
-                        var adjustment = scaleWorldToScreen(Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h);
+                        var adjustment = Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h;
                         if(adjustment != 0){
                             TweenController.zoomAndPanViewbox(
                                 viewboxX,
