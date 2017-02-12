@@ -6,6 +6,7 @@ Improvement: METL-544: Apply initial randomization after group creation.
 Improvement: METL-555: Interactable handles should never sit under transparent header and footer.
 Improvement: METL-294: Single JS file for board.
 Improvement: METL-548: Remove obsolete "future" spike.
+Improvement: METL-523: Use canvas renders for text as well so we don't rewrite constantly.
 
 1.4.8
 Bugfix: METL-550: Ink font width is stretched as text is added to box.
