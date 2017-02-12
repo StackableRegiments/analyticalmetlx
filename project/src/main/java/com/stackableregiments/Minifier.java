@@ -76,7 +76,7 @@ public class Minifier {
                 stream.filter(line -> !line.matches(jsToMinifyRegex))
                         .map(line -> line.matches(".*<span class=\"minifiedScript\"></span>.*") ?
                                 "<script data-lift=\"with-resource-id\" src=\"" +
-                                        _outputJsSubDir + File.separator + inputHtmlName + ".js\"></script>" :
+                                        _outputJsSubDir + "/" + inputHtmlName + ".js\"></script>" :
                                 line)
                         .forEach(line -> {
                             try {
