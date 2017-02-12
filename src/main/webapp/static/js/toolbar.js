@@ -835,7 +835,7 @@ var Modes = (function(){
         var s = Modes.select.handlesAtZoom();
         var clipToInteractableSpace = function(y){
             var s = Modes.select.handlesAtZoom();
-            var ceiling = scaleScreenToWorld(DeviceConfiguration.headerHeight + s);
+            var ceiling = scaleScreenToWorld(DeviceConfiguration.headerHeight)+s;
             var floor = scaleScreenToWorld(DeviceConfiguration.footerHeight);
             var clipped = Math.min(viewboxY+viewboxHeight-(floor - s/2),Math.max(y,viewboxY+ceiling));
             return clipped;

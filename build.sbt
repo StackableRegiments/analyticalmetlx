@@ -37,8 +37,8 @@ javaOptions in Jetty := Seq("-Dmetlx.configurationFile=./config/configuration.lo
 
 fork in Jetty := true
 
-//target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
-target in webappPrepare := (baseDirectory).value / "target/webapp"
+target in webappPrepare := (sourceDirectory in Compile).value / "webapp"
+//target in webappPrepare := (baseDirectory).value / "target/webapp"
 
 watchSources := watchSources.value.filterNot { x => x.isDirectory || x.getAbsolutePath.contains("webapp") }
 
@@ -193,6 +193,7 @@ lazy val library = (project in file("library")).
 
 unmanagedResourceDirectories in Compile <+= (baseDirectory) { _ / "target/extra-resources" }
 
+/*
 webappPostProcess := { (webappDir:File) => {
   val targetWebappDir = baseDirectory.value / "target" / "webapp"
   val htmlSubDir = "hmin"
@@ -220,3 +221,4 @@ webappPostProcess := { (webappDir:File) => {
   IO.delete(targetWebappDir / htmlSubDir)
 }
 }
+ */
