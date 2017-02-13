@@ -1354,9 +1354,10 @@ var carotaTest = (function(){
                                 selectDragStart = null;
                                 doc.selectionJustChanged = true;
                                 nextCaretToggle = 0;
-                                repaintCursor(doc);
                                 doc.updateCanvas();
                                 doc.update();
+				doc.notifySelectionChanged();
+                                repaintCursor(doc);
                                 blit();
                             }
                             catch(e){
