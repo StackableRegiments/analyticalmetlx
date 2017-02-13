@@ -6,7 +6,7 @@ import com.stackableregiments.Minifier
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "1.5.2"
+version := "1.5.3"
 
 val scalaVersionString = "2.11.5"
 
@@ -221,4 +221,4 @@ webappPostProcess := { (webappDir:File) => {
   IO.delete(targetWebappDir / htmlSubDir)
 }
 }
- */
+*/
