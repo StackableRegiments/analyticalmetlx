@@ -27,6 +27,8 @@ var Progress = (function(){
         afterJoiningSlide:{},
         onConversationJoin:{},
         onSelectionChanged:{},
+        isolated:{},
+        deisolated:{},
         onBoardContentChanged:{},
         onViewboxChanged:{},
         onLayoutUpdated:{},

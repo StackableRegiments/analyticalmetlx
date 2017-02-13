@@ -44,15 +44,17 @@ var ContentFilter = (function(){
             enabled:true
         };
     };
+    var isIsolatedFromFunction = function(stanza){
+        return audiences.length &&
+            stanza.audiences &&
+            stanza.audiences.length && !(_.some(stanza.audiences,function(audience){
+                return _.includes(audiences,audience.name) || _.includes(audiences,audience);
+            }));
+    };
     var applyFilters = function(stanza){
         var observed = Participants.getParticipants()[stanza.author];
         if(observed && !observed.following) return false;
-        var isolated = audiences.length &&
-                stanza.audiences &&
-                stanza.audiences.length && !(_.some(stanza.audiences,function(audience){
-                    return _.includes(audiences,audience.name) || _.includes(audiences,audience);
-                }));
-        if(isolated){
+        if(isIsolatedFromFunction(stanza)){
             return false;
         }
         return _.some(filters,function(filter){
@@ -183,6 +185,8 @@ var ContentFilter = (function(){
         setFilter:setFilterFunction,
         getAudiences:getAudiencesFunction,
         setAudience:setAudienceFunction,
-        clearAudiences:clearAudiencesFunction
+        clearAudiences:clearAudiencesFunction,
+        isIsolatedFrom:isIsolatedFromFunction,
+	exposes:applyFilters
     };
 })();
