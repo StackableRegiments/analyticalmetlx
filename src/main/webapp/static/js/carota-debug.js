@@ -2605,7 +2605,7 @@ var carotaTest = (function(){
                         div.style.position = 'absolute';
                         div.style.top = '0';
                         div.style.left = '0';
-                        div.style.width = '500px';
+                        div.style.width = '10000px';
                         div.style.height = '200px';
 
                         div.appendChild(span);
