@@ -228,6 +228,8 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 var headerHeight = masterHeader.height();
+		DeviceConfiguration.headerHeight = headerHeight;
+		DeviceConfiguration.footerHeight = masterFooter.height();
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 

@@ -352,6 +352,7 @@ var TweenController = (function(){
                     onComplete();
                 }
                 Progress.call("onViewboxChanged");
+                Progress.call("textBoundsChanged");
             }).start();
         var update = function(t){
             if (tween){

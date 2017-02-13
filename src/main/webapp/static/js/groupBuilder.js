@@ -20,6 +20,12 @@ var GroupBuilder = (function(){
         }
         return view;
     };
+    var doShuffle = function(){
+        participants = _.shuffle(participants);
+        clearRandomGroups();
+        allocate();
+        renderAllocations();
+    };
     var seedParticipants = function(){
         console.log("Clearing %s participants",_.keys(participants).length);
         participants = {};
@@ -57,6 +63,7 @@ var GroupBuilder = (function(){
                 participants[name].present = true;
             }
         });
+        doShuffle();
         console.log("Seeded %s participants",_.keys(participants).length);
     };
     var allocationsFor = function(cohort){
@@ -289,7 +296,7 @@ var GroupBuilder = (function(){
                             _.each(validMembers,function(obj){
                                 var name = obj.name;
                                 if(!(name in participants)){
-				    /*If this person were present, enrolled or had acted we would have registered them at seeding*/
+                                    /*If this person were present, enrolled or had acted we would have registered them at seeding*/
                                     participants[name] = {
                                         name:name,
                                         enrolled:false,
@@ -370,12 +377,7 @@ var GroupBuilder = (function(){
         var groupsV = container.find(".groups");
         renderStrategies(strategySelect);
         renderGroupScopes(groupScopeV);
-	container.find("#randomizeGroups").off("click").on("click",function(){
-	    participants = _.shuffle(participants);
-            clearRandomGroups();
-	    allocate();
-            renderAllocations();
-	});
+        container.find("#randomizeGroups").off("click").on("click",doShuffle);
 
         container.on("change",".groupScope",function(){
             groupScope = $(this).val();

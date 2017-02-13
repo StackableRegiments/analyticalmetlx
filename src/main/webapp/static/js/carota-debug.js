@@ -1044,14 +1044,14 @@ var carotaTest = (function(){
 
                         var maxDimension = determineCanvasConstants().y;
                         doc.updateCanvas = function(){
-			    delete doc.stanza.mipMap;
+                            delete doc.stanza.mipMap;
                             if(!doc.canvas){
                                 doc.canvas = $("<canvas/>")[0];
                             }
                             var c = doc.canvas;
                             var w = doc.bounds[2] - doc.bounds[0];
                             var h = doc.bounds[3] - doc.bounds[1];
-			    var scaled = determineScaling(w,h);
+                            var scaled = determineScaling(w,h);
                             var context = c.getContext("2d");
                             c.width = scaled.width;
                             c.height = scaled.height;
@@ -2604,7 +2604,7 @@ var carotaTest = (function(){
                         div.style.visibility = 'hidden';
                         div.style.position = 'absolute';
                         div.style.top = '0';
-                        div.style.left = '0';
+                        div.style.left = '-10000px';
                         div.style.width = '10000px';
                         div.style.height = '200px';
 
