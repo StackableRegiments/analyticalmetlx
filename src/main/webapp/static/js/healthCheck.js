@@ -20,6 +20,12 @@ var HealthChecker = (function(){
         });
         updateGraph();
     };
+    var setLatencyIndeterminate = function(isIndeterminate){
+        $("#healthStatus")
+            .attr("low",isIndeterminate? 11 : 4)
+            .attr("high",isIndeterminate? 12 : 8)
+            .attr("optimum",isIndeterminate? 13 : 10)
+    }
     var check = function(){
         var clientStart = new Date().getTime();
         var reportableHealthObj = describeHealthFunction();
@@ -28,9 +34,11 @@ var HealthChecker = (function(){
             var reportableHealth = reportableHealthObj.latency;
             url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
         }
+        setLatencyIndeterminate(true);
         $.ajax(url,{
             method:"GET",
             success:function(jsonTime){
+                setLatencyIndeterminate(false);
                 var nowTime = new Date();
                 var timeObj = JSON.parse(jsonTime);
                 var time = timeObj.serverWorkTime;
@@ -47,6 +55,7 @@ var HealthChecker = (function(){
             },
             dataType:"text",
             error:function(){
+                setLatencyIndeterminate(true);
                 addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
                 _.delay(check,serverStatusInterval);
             }
@@ -56,7 +65,7 @@ var HealthChecker = (function(){
         var checkData = getAggregatedMeasuresFunc(1000);
         var describedData = describeHealthFunction();
         HealthCheckViewer.refreshDisplays(checkData,describedData);
-    },500);
+    },1000);
     var resumeHealthCheckFunc = function(immediate){
         healthChecking = true;
         if (immediate){
@@ -230,11 +239,11 @@ var HealthCheckViewer = (function(){
                 title: {
                     display: true,
                     text: categoryName,
-		    padding:20
+                    padding:20
                 },
-		legend:{
-		    display:false
-		},
+                legend:{
+                    display:false
+                },
                 scales: {
                     yAxes: [
                         {
@@ -382,12 +391,9 @@ var HealthCheckViewer = (function(){
             health -= Math.min(8,data.render.recent / 20);
         }
         $("#healthStatus").prop({
-            max:10,
+            max:13,
             min:0,
-            value:health,
-            low:0,
-            optimum:8,
-            high:6
+            value:health
         });
     }
     var cells = {};
