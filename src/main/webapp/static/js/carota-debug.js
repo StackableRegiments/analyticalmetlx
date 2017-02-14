@@ -1076,7 +1076,6 @@ var carotaTest = (function(){
                         };
 
                         var changeLine = function(ordinal, direction) {
-
                             var originalCaret = doc.getCaretCoords(ordinal), newCaret;
                             nextKeyboardX = (keyboardX !== null) ? keyboardX : originalCaret.l;
 
