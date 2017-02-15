@@ -525,7 +525,7 @@ var Conversations = (function(){
         if (Conversations.shouldModifyConversation()){
             $("#editConversation").unbind("click").click(function(){
                 $.jAlert({
-                    title:"Edit Conversation",
+                    title:"Edit conversation",
                     iframe:sprintf("/editConversation?conversationJid=%s&unique=true&links=false", targetConversationJid),
                     width:"100%"
                 });

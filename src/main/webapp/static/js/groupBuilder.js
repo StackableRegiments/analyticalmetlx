@@ -351,7 +351,7 @@ var GroupBuilder = (function(){
         getGroupsProviders();
         var container = $("#groupSlideDialog").clone().show();
         var jAlert = $.jAlert({
-            title:"Add Group page",
+            title:"Add group page",
             width:"75%",
             content:container[0].outerHTML,
             btns:[{
