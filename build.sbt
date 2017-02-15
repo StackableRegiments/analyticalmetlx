@@ -106,7 +106,7 @@ libraryDependencies ++= {
     //for AWS API Gateway interaction
 	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
   )
-}.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
+}.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri").exclude("io.github.stackableregiments","common-utils_2.11"))
 
 javacOptions ++= Seq("-source", "8", "-target", "8")
 
