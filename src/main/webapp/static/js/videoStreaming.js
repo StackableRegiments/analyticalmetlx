@@ -10,19 +10,24 @@ var TokBox = (function(){
     var receiveTokBoxSessionFunc = function(desc){
         if (initialized){
             sessionsContainer.css({display:"flex"});
-            var support = OT.checkSystemRequirements();
-            if (support == 0){
-                if (!shownError){
-                    errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome or Firefox.");
-                    shownError = true;
+            if(window["OT"]){
+                var support = OT.checkSystemRequirements();
+                if (support == 0){
+                    if (!shownError){
+                        errorAlert("Video conferencing disabled","Video conferencing is disabled because your browser does not support it.  You could try recent versions of Chrome or Firefox.");
+                        shownError = true;
+                    }
+                } else if (enabled && !(desc.sessionId in sessions)){
+                    var container = sessionContainer.clone();
+                    sessionsContainer.append(container);
+                    var session = TokBoxSession(desc,container);
+                    sessions[session.id] = session;
+                    session.refreshVisualState();
                 }
-            } else if (enabled && !(desc.sessionId in sessions)){
-                var container = sessionContainer.clone();
-                sessionsContainer.append(container);
-                var session = TokBoxSession(desc,container);
-                sessions[session.id] = session;
-                session.refreshVisualState();
             }
+	    else{
+		errorAlert("Could not connect video","Please check your network connection");
+	    }
         }
     };
     var removeSessionsFunc = function(sessionIds){
@@ -41,7 +46,6 @@ var TokBox = (function(){
     var permitStudentsToPublishCheckbox = undefined;
     var publishingPermitted = false;
     var actOnConversationDetails = function(c){
-        console.log("TokBox conv",c);
         if (c){
             publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast);
             if (teacherControls){
@@ -144,7 +148,6 @@ var TokBoxSession = function(desc,sessionContainer){
     var refreshVisualState = function(){
         streamButton.unbind("click");
 
-        console.log("refreshing visual state:",TokBox.canPublish());
         if (isConnected() && TokBox.canPublish()){
             streamContainer.show();
             if ("capabilities" in session && "publish" in session.capabilities && session.capabilities.publish == 1){
@@ -277,7 +280,6 @@ var TokBoxSession = function(desc,sessionContainer){
     Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
 
     var onConversationDetailsReceived = function(conv){
-        console.log("videoStreaming conversationDetails",conv);
         if ("jid" in conv && "Conversations" in window && "permissions" in conv && "studentsMayBroadcast" in conv.permissions){
             refreshVisualState();
         }
