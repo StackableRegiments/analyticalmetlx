@@ -1625,6 +1625,10 @@ var Modes = (function(){
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
+			    if((t.doc.selection.start + t.doc.selection.end) > 0 && t.doc.identity != editor.identity){
+				t.doc.select(0,0);
+				t.doc.updateCanvas();
+			    }
                             if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
                                 blit();
