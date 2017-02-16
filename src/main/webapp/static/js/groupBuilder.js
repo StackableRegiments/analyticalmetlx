@@ -31,7 +31,7 @@ var GroupBuilder = (function(){
         participants = {};
         console.log("Cleared participants: %s",_.keys(participants).length);
         var seed = function(name,enrolled){
-            if(name != Conversations.getCurrentConversation().author){
+            if(name != Conversations.getCurrentConversation().author && name != "mother"){
                 participants[name] = {
                     name:name,
                     enrolled:enrolled,
@@ -41,7 +41,7 @@ var GroupBuilder = (function(){
                 console.log(sprintf("%s seeding as enrolled: %s (%s)",name,enrolled,_.keys(participants).length));
             }
             else{
-                console.log(sprintf("%s not seeding because AUTHOR DOES NOT GROUP",name));
+                console.log(sprintf("%s not seeding because AUTHOR AND MOTHER DON'T GROUP",name));
             }
         }
         _.each(Participants.getPossibleParticipants(),function(name){
