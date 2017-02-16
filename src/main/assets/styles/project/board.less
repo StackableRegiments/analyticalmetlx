@@ -186,9 +186,9 @@ html{
         margin-left:4px;
     }
     .heading{
-	text-align:center;
+        text-align:center;
         vertical-align:top;
-	margin-top:-2px;
+        margin-top:-2px;
         padding-left:1em;
         flex-grow:1;
         color:darkgray;
@@ -252,22 +252,23 @@ body{
 .inactiveMode {
     display:none;
 }
+.disabledButton {
+    .btn-raised.disabled;
+    .icon-txt{
+        .btn-raised.disabled;
+        text-decoration: none !important;
+    }
+}
 .tools {
     button {
         margin:2px;
         .btn-active;
         .btn-raised;
-        &.disabledButton {
-            .btn-raised.disabled;
-        }
     }
     .activeMode button {
         .btn-subtool;
         &.activeBrush {
             .btn-subtool.active;
-        }
-        &.disabledButton {
-            .btn-raised.disabled;
         }
     }
     .activeTool {
