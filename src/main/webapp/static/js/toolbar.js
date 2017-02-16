@@ -1918,7 +1918,7 @@ var Modes = (function(){
                     setActiveMode("#insertTools","#videoMode");
                     $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
                     $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
-                    $(".active").removeClass("active");
+                    $(".toolbar.active").removeClass("active");
                     $("#videoMode").addClass("active");
                     $("#insertTools .insetColumn").hide();
                     $("#videoTools").show();
@@ -2183,12 +2183,13 @@ var Modes = (function(){
             });
             return {
                 activate:function(){
+		    console.log("activating insert");
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
                     setActiveMode("#insertTools","#imageMode");
                     $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
                     $("#insertMode").addClass("activeTool").removeClass("inactiveTool");
-                    $(".active").removeClass("active");
+                    $(".toolbar.active").removeClass("active");
                     $("#imageMode").addClass("active");
                     $("#insertTools .insetColumn").hide();
                     $("#imageTools").show();
@@ -2205,6 +2206,7 @@ var Modes = (function(){
                     Progress.call("onLayoutUpdated");
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
+		    console.log("activated insert");
                 },
                 handleDroppedSrc:function(src,x,y){
                     console.log("handleDroppedSrc:",src,x,y);
