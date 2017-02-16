@@ -1,3 +1,16 @@
+1.6.1
+METL-538 Improvement: Open help links in new tabs.
+METL-301 Bugfix: Last line of a text box often separated by a line from previous text.
+METL-443 Bugfix: Activating Insert mode makes Public/Private highlight disappear.
+METL-475 Bugfix: When "Students can publish" is unchecked, "Show" is disabled (and grey) but "Public" is disabled and NOT grey.
+METL-519 Bugfix: Mother should not appear as groupable.
+METL-554 Bugfix: Selection rectangle persists after clicking away from the box.
+METL-543 Bugfix: Capitalize Options such as Group Editor.
+METL-549 Bugfix: Text subcontrol not initially selected.
+METL-558 Bugfix: Extra carriage return rendered after long unwrapped word.
+METL-560 Bugfix: Aspect locked resize on a textbox fix.
+METL-562 Bugfix: Health meter incorrectly shows total disconnection as green.
+
 1.5.1
 Story: METL-276: GoogleAnalytics for MeTL.
 Bugfix: METL-301: Last line of a text box often separated by a line from previous text.
