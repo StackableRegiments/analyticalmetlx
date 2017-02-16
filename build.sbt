@@ -4,7 +4,7 @@ import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "1.3.12"
+version := "1.5.4"
 
 val scalaVersionString = "2.11.5"
 
@@ -44,6 +44,7 @@ seq(genericStartScriptSettings:_*)
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
+scalacOptions ++= Seq("-Xmax-classfile-name", "100")
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 

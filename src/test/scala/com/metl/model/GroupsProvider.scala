@@ -18,7 +18,7 @@ class MockGroupStoreProvider(gsd:GroupStoreData) extends GroupStoreProvider {
 
 class GroupsProviderSuite extends FunSuite with ShouldMatchers {
   def fixture(groupsByMember:Map[String,List[OrgUnit]]):GroupsProvider = {
-    new StoreBackedGroupsProvider("mock",new MockGroupStoreProvider(GroupStoreData(
+    new StoreBackedGroupsProvider("mockId","mock",new MockGroupStoreProvider(GroupStoreData(
       groupsForMembers = groupsByMember
     )))
   }
