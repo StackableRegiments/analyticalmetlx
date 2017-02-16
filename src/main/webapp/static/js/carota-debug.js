@@ -1354,9 +1354,10 @@ var carotaTest = (function(){
                                 selectDragStart = null;
                                 doc.selectionJustChanged = true;
                                 nextCaretToggle = 0;
-                                repaintCursor(doc);
                                 doc.updateCanvas();
                                 doc.update();
+				doc.notifySelectionChanged();
+                                repaintCursor(doc);
                                 blit();
                             }
                             catch(e){
@@ -2604,7 +2605,7 @@ var carotaTest = (function(){
                         div.style.position = 'absolute';
                         div.style.top = '0';
                         div.style.left = '-10000px';
-                        div.style.width = '5000px';
+                        div.style.width = '10000px';
                         div.style.height = '200px';
 
                         div.appendChild(span);

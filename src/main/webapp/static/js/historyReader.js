@@ -835,35 +835,38 @@ var renderSelectionGhosts = function(canvasContext){
                     });
                     break;
                 case "multiWordTexts":
-                    canvasContext.save();
-                    canvasContext.translate(x,y);
-                    canvasContext.globalAlpha = 0.7;
-                    var s = scale();
-                    canvasContext.scale(s,s);
-                    var scaledText = carota.editor.create({
-                        querySelector:function(){
-                            return {
-                                addEventListener:noop
-                            }
-                        },
-                        handleEvent:noop
-                    }, canvasContext, noop, _.cloneDeep(item));
-                    scaledText.position = {x:bounds[0],y:bounds[1]};
-                    scaledText.load(item.doc.save());
-                    delete scaledText.canvas;
-                    var fullRange = scaledText.documentRange();
-                    scaledText.select(fullRange.start,fullRange.end);
                     if(Modes.select.aspectLocked){
-                        Modes.text.scaleEditor(scaledText,xScale);
+                        transform(x,y,function(){
+                            drawMultiwordText(item,canvasContext);
+                        });
                     }
-                    var nominatedWidth = Math.max(
-                        item.doc.width() * xScale,
-                        Modes.text.minimumWidth / scale()
-                    );
-                    scaledText.width(nominatedWidth);
-                    scaledText.updateCanvas();
-                    carota.editor.paint(board[0],scaledText);
-                    canvasContext.restore();
+                    else{
+                        canvasContext.save();
+                        canvasContext.translate(x,y);
+                        canvasContext.globalAlpha = 0.7;
+                        var s = scale();
+                        canvasContext.scale(s,s);
+                        var scaledText = carota.editor.create({
+                            querySelector:function(){
+                                return {
+                                    addEventListener:noop
+                                }
+                            },
+                            handleEvent:noop
+                        }, canvasContext, noop, _.cloneDeep(item));
+                        scaledText.position = {x:bounds[0],y:bounds[1]};
+                        scaledText.load(item.doc.save());
+                        delete scaledText.canvas;
+                        var fullRange = scaledText.documentRange();
+                        var nominatedWidth = Math.max(
+                            item.doc.width() * xScale,
+                            Modes.text.minimumWidth / scale()
+                        );
+                        scaledText.width(nominatedWidth);
+                        scaledText.updateCanvas();
+                        carota.editor.paint(board[0],scaledText);
+                        canvasContext.restore();
+                    }
                     break;
                 case "inks":
                     transform(x,y,function(){

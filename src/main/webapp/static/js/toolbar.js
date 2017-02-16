@@ -1400,6 +1400,43 @@ var Modes = (function(){
                     }
                 });
             };
+            var setV = function(context,selector,prop){
+                var isToggled = (context[prop] == true);
+                if(isToggled){
+                    carota.runs.nextInsertFormatting[prop] = isToggled;
+                }
+                selector.toggleClass("active",isToggled);
+            };
+            var setIf = function(context,selector,prop,value){
+                var equal = _.isEqual(context[prop],value);
+                if(prop in context){
+                    if(equal){
+                        carota.runs.nextInsertFormatting[prop] = value;
+                    }
+                }
+                selector.toggleClass("active",equal);
+            }
+            var getTextColors = function(){
+                return [
+                    $("#blackText"),
+                    $("#redText"),
+                    $("#blueText"),
+                    $("#yellowText"),
+                    $("#greenText")
+                ]
+            };
+            var textColors = getTextColors();
+            var updateControlState = function(context){
+                carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+                setV(context,fontBoldSelector,"bold");
+                setV(context,fontItalicSelector,"italic");
+                setV(context,fontUnderlineSelector,"underline");
+                setIf(context,textColors[0],"color",["#000000",255]);
+                setIf(context,textColors[1],"color",["#ff0000",255]);
+                setIf(context,textColors[2],"color",["#0000ff",255]);
+                setIf(context,textColors[3],"color",["#ffff00",255]);
+                setIf(context,textColors[4],"color",["#00ff00",255]);
+            }
             return {
                 name:"text",
                 echoesToDisregard:{},
@@ -1473,13 +1510,6 @@ var Modes = (function(){
                 },
                 refocussing:false,
                 editorFor: function(t){
-                    var textColors = [
-                        $("#blackText"),
-                        $("#redText"),
-                        $("#blueText"),
-                        $("#yellowText"),
-                        $("#greenText")
-                    ];
                     var editor = boardContent.multiWordTexts[t.identity];
                     if(!editor){
                         editor = boardContent.multiWordTexts[t.identity] = t;
@@ -1519,31 +1549,7 @@ var Modes = (function(){
                                 }
                                 else{
                                     var format = formatReport();
-                                    carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                                    var setV = function(selector,prop){
-                                        var isToggled = (format[prop] == true);
-                                        if(isToggled){
-                                            carota.runs.nextInsertFormatting[prop] = isToggled;
-                                        }
-                                        selector.toggleClass("active",isToggled);
-                                    };
-                                    var setIf = function(selector,prop,value){
-                                        var equal = _.isEqual(format[prop],value);
-                                        if(prop in format){
-                                            if(equal){
-                                                carota.runs.nextInsertFormatting[prop] = value;
-                                            }
-                                        }
-                                        selector.toggleClass("active",equal);
-                                    }
-                                    setV(fontBoldSelector,"bold");
-                                    setV(fontItalicSelector,"italic");
-                                    setV(fontUnderlineSelector,"underline");
-                                    setIf(textColors[0],"color",["#000000",255]);
-                                    setIf(textColors[1],"color",["#ff0000",255]);
-                                    setIf(textColors[2],"color",["#0000ff",255]);
-                                    setIf(textColors[3],"color",["#ffff00",255]);
-                                    setIf(textColors[4],"color",["#00ff00",255]);
+                                    updateControlState(format,getTextColors());
                                     blit();
                                 }
                             });
@@ -1634,7 +1640,6 @@ var Modes = (function(){
                             }
                             sendStanza(deleteTransform);
 
-                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
                                 text: oldEditor.text,
                                 italic: oldEditor.style == "italic",
@@ -1679,7 +1684,6 @@ var Modes = (function(){
                             sel.multiWordTexts[editor.identity] = editor;
                             Modes.select.setSelection(sel);
                         } else {
-                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                             var newEditor = createBlankText(worldPos,[{
                                 text:" ",
                                 italic:carota.runs.nextInsertFormatting.italic == true,
@@ -1706,6 +1710,8 @@ var Modes = (function(){
                         };
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
+                    textColors = getTextColors();
+                    updateControlState(carota.runs.defaultFormatting);
                     registerPositionHandlers(board,down,move,up);
                 },
                 handleDrop:function(html,x,y){
@@ -1716,7 +1722,6 @@ var Modes = (function(){
                         var clickTime = Date.now();
                         var sel;
                         Modes.select.clearSelection();
-                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                         var newEditor = createBlankText(worldPos,[{
                             text:" ",
                             italic:carota.runs.nextInsertFormatting.italic == true,
