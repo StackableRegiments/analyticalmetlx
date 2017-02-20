@@ -225,6 +225,11 @@ class Metl extends Logger {
     //warn("generating editConversation comet html: %s".format(output))
     output
   }
+  def trainer(in:NodeSeq):NodeSeq = {
+    val name = Globals.currentUser.is
+    val clazz = "lift:comet?type=TrainerActor&amp;name=%s".format(name)
+    <span class={clazz}>{in}</span>
+  }
   def specific(in:NodeSeq):NodeSeq = {
     S.param("conversationJid").openOr(S.redirectTo(noBoard))
     val name = generateName()
