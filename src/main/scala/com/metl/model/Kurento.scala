@@ -33,7 +33,7 @@ import com.metl.snippet.Metl._
 import java.io.IOException;		
 import java.util.concurrent.ConcurrentHashMap;		
 		
-import org.kurento.client.{Event,EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany,RecorderEndpoint,ConnectionStateChangedEvent,ConnectionState,DataChannelOpenEvent,DataChannelCloseEvent,MediaStateChangedEvent,MediaState}		
+import org.kurento.client.{Event,EventListener,IceCandidate,IceCandidateFoundEvent,KurentoClient,KurentoConnectionListener,MediaPipeline,WebRtcEndpoint,Properties,Composite,HubPort,DispatcherOneToMany,RecorderEndpoint,ConnectionStateChangedEvent,ConnectionState,DataChannelOpenEvent,DataChannelCloseEvent,MediaStateChangedEvent,MediaState,MediaType}		
 import org.kurento.jsonrpc.JsonUtils;		
 import com.google.gson.Gson;		
 import com.google.gson.GsonBuilder;		
@@ -245,6 +245,72 @@ case class GroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline
     }		
   }		
 }		
+
+case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String,lowerMaxSize:Int) extends KurentoPipeline(kurentoManager,pipeline,name) {		
+  protected var members:Map[WebRtcEndpoint,Tuple2[HubPort,HubPort]] = Map.empty[WebRtcEndpoint,Tuple2[HubPort,HubPort]]		
+  protected val masterHub = new Composite.Builder(pipeline).build()		
+  protected var lowerHubs:Map[Tuple2[Composite,List[HubPort]],List[WebRtcEndpoint]] = Map.empty[Tuple2[Composite,List[HubPort]],List[WebRtcEndpoint]]
+  //protected var lowerHub = new Composite.Builder(pipeline).build() // this is the bit where I'll make the separate composites.  Still need to work through the logic of adding and removing pieces.
+  protected def addMemberFromHubs(newEndpoint:WebRtcEndpoint,lowerHub:Composite,connectingPorts:List[HubPort]):WebRtcEndpoint = {
+    val hubPort = new HubPort.Builder(lowerHub).build()
+    val masterHubPort = new HubPort.Builder(masterHub).build()
+    hubPort.connect(newEndpoint,MediaType.VIDEO)		
+    masterHubPort.connect(newEndpoint,MediaType.AUDIO)		
+    newEndpoint.connect(masterHubPort)		
+    members = members.updated(newEndpoint,(hubPort,masterHubPort))		
+    val key = (lowerHub,connectingPorts)
+    lowerHubs = lowerHubs.updated(key,newEndpoint :: lowerHubs.get(key).getOrElse(Nil))
+    newEndpoint
+  }
+  override def buildRtcEndpoint:WebRtcEndpoint = {		
+    val newEndpoint = super.buildRtcEndpoint		
+    val (lowerHub,connectingPorts) = lowerHubs.toList.find(_._2.length < lowerMaxSize).getOrElse({
+      val newLowerHub = new Composite.Builder(pipeline).build()
+      val newLowerHubUpperPort = new HubPort.Builder(newLowerHub).build()
+      val newUpperHubLowerPort = new HubPort.Builder(masterHub).build()
+      newLowerHubUpperPort.connect(newUpperHubLowerPort)
+      val newKey = (newLowerHub,List(newLowerHubUpperPort,newUpperHubLowerPort))
+      val newValue = Nil
+      lowerHubs = lowerHubs.updated(newKey,newValue)
+      (newKey,newValue)
+    })._1
+    addMemberFromHubs(newEndpoint,lowerHub,connectingPorts)
+
+    println("<---")
+    println(pipeline.getGstreamerDot())
+    println("--->")
+
+    newEndpoint		
+  }		
+  override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
+    trace("removing from groupRoom (%s) rtc (%s)".format(name,rtc))
+    rtc.foreach(r => {
+      members.get(r).foreach(hubPort => {		
+        trace("removing from groupRoom (%s) rtc (%s) (%s)".format(name,r,hubPort))
+        r.release		
+        hubPort._1.release		
+        hubPort._2.release
+        lowerHubs.toList.find(_._2.contains(r)).foreach(lh => {
+          lh._2.filterNot(_ == r) match {
+            case Nil => {
+              lowerHubs = lowerHubs - lh._1
+              lh._1._2.foreach(_.release)
+            }
+            case remaining => lowerHubs = lowerHubs.updated(lh._1,remaining)
+          }
+        })
+      })		
+      members = members - r	
+    })
+    if (members.keys.toList == Nil){		
+      trace("removing groupRoom (%s)".format(name))
+      kurentoManager.removePipeline(name,GroupRoom)		
+      super.shutdown(rtc)		
+    }		
+  }		
+}	
+
+
 case class MeTLGroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String, val recorderUrl:String) extends KurentoPipeline(kurentoManager,pipeline,name) {		
   protected var members:Map[WebRtcEndpoint,HubPort] = Map.empty[WebRtcEndpoint,HubPort]		
   protected val hub = new Composite.Builder(pipeline).build()		
