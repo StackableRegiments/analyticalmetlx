@@ -99,6 +99,9 @@ object Roulette extends KurentoPipelineType {
 object GroupRoom extends KurentoPipelineType {		
   override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = GroupRoomPipeline(client,pipeline,name)		
 }		
+object LargeGroupRoom extends KurentoPipelineType {		
+  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = LargeGroupRoomPipeline(client,pipeline,name,1)		
+}		
 		
 class KurentoEventListener[T <: Event](onStateChanged:T => Unit) extends EventListener[T]{
   override def onEvent(a:T) = onStateChanged(a)
@@ -254,9 +257,9 @@ case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pip
   protected def addMemberFromHubs(newEndpoint:WebRtcEndpoint,lowerHub:Composite,connectingPorts:List[HubPort]):WebRtcEndpoint = {
     val hubPort = new HubPort.Builder(lowerHub).build()
     val masterHubPort = new HubPort.Builder(masterHub).build()
-    hubPort.connect(newEndpoint,MediaType.VIDEO)		
-    masterHubPort.connect(newEndpoint,MediaType.AUDIO)		
-    newEndpoint.connect(masterHubPort)		
+    newEndpoint.connect(hubPort,MediaType.VIDEO)		
+    newEndpoint.connect(masterHubPort,MediaType.AUDIO)		
+    masterHubPort.connect(newEndpoint)		
     members = members.updated(newEndpoint,(hubPort,masterHubPort))		
     val key = (lowerHub,connectingPorts)
     lowerHubs = lowerHubs.updated(key,newEndpoint :: lowerHubs.get(key).getOrElse(Nil))
@@ -275,11 +278,11 @@ case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pip
       (newKey,newValue)
     })._1
     addMemberFromHubs(newEndpoint,lowerHub,connectingPorts)
-
+/*
     println("<---")
     println(pipeline.getGstreamerDot())
     println("--->")
-
+*/
     newEndpoint		
   }		
   override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
@@ -464,6 +467,7 @@ trait KurentoUtils {
         case "broadcast" => Some(Broadcast)		
         case "roulette" => Some(Roulette)		
         case "groupRoom" => Some(GroupRoom)		
+        case "largeGroupRoom" => Some(LargeGroupRoom)
         case _ => None		
     }).flatMap(pipelineType => kurentoManager.getPipeline(name,pipelineType))		
   }		

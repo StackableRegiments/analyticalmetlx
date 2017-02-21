@@ -236,6 +236,9 @@ var WebRtcStreamManager = (function(){
 	var groupChatFunc = function(id){
 		return createVideoStream(id,"groupRoom",true,true);
 	};
+	var largeGroupChatFunc = function(id){
+		return createVideoStream(id,"largeGroupRoom",true,true);
+	};
 	var removeFunc = function(id){
 		if (id in activeVideoClients){
 			activeVideoClients[id].shutdown();
@@ -249,6 +252,7 @@ var WebRtcStreamManager = (function(){
 		listen:listenFunc,
 		roulette:rouletteFunc,
 		groupchat:groupChatFunc,
+		largeGroupchat:largeGroupChatFunc,
 		removeVideoStream:removeFunc,
 		getActiveSessions:function(){return activeVideoClients;}
 	};
@@ -294,6 +298,15 @@ var GroupRoomTest = function(id){
 	$(videoSelector).append(localVideo).append(remoteVideo);
 	return stream;
 }
+var LargeGroupRoomTest = function(id){
+	var videoSelector = "#masterHeader";
+	var stream = WebRtcStreamManager.largeGroupchat(id);
+	var localVideo = stream.getLocalVideo();
+	var remoteVideo = stream.getRemoteVideo();
+	$(videoSelector).append(localVideo).append(remoteVideo);
+	return stream;
+}
+
 
 
 function receiveKurentoAnswer(answer,id){
