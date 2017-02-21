@@ -2,3 +2,6 @@ body *{
     background-color:white;
     color:black;
 }
+#exerciseControls .control {
+    flex:1;
+}

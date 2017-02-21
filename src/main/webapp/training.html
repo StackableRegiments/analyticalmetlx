@@ -3,17 +3,27 @@
   <script src="static/js/stable/lodash.js"></script>
   <script data-lift="with-resource-id" src="static/js/trainer.js"></script>
   <link rel="stylesheet" href="static/css/trainer.css"></link>
+  <style>
+    html, body, #content{
+    height:100%;
+    }
+    #exerciseTitle,#exerciseBlurb{
+    flex-grow:1;
+    }
+  </style>
   <div class="lift:Metl.trainer">
     <div class="flex-container-row">
-      <div class="flex-container-column">
-        <div id="exerciseTitle"></div>
+      <div>
+        <div class="flex-container-row">
+          <div id="exerciseTitle"></div>
+          <div id="exerciseBlurb"></div>
+        </div>
         <div id="exerciseInstructions"></div>
-        <div id="exerciseControls"></div>
+        <div id="exerciseControls">
+          <div class="control"></div>
+        </div>
       </div>
-      <div class="flex-container-column">
-        <div id="exerciseBlurb"></div>
-        <iframe width="800" height="600" id="simulation"></iframe>
-      </div>
+      <iframe width="1024" height="768" id="simulation"></iframe>
     </div>
   </div>
 </div>
