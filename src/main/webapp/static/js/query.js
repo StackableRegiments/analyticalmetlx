@@ -1,4 +1,4 @@
-var Query = (function () {
+var Query = function () {
 
     var resultsTemplate = {};
     var resultsListing = undefined;
@@ -25,7 +25,7 @@ var Query = (function () {
             paging: true,
             //                          pageSize:10,
             //                          pageButtonCount:5,
-            noDataContent: "No conversations match your query",
+            noDataContent: "No results for your query",
             controller: {
                 loadData: function (filter) {
                     if ("sortField" in filter) {
@@ -161,7 +161,9 @@ var Query = (function () {
         getQuery: getQueryFunc,
         search: searchFunc
     };
-})();
+};
+
+// $(Query);
 
 function serverResponse(response) { //invoked by Lift
 }
