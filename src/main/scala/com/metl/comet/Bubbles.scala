@@ -908,9 +908,14 @@ object StackOverflow extends StackOverflow {
     }
     openedComments.get(location)
   }
-  private lazy val requestedDetailedQuestion = new SynchronizedWriteMap[Tuple2[String,String],Box[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],Box[String]],true,(k:Tuple2[String,String]) => Empty)
-  def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = requestedDetailedQuestion(where)
-  def setRequestedDetailedQuestion(where:Tuple2[String,String],what:String):Unit = requestedDetailedQuestion(where) = Full(what)
+  private lazy val requestedDetailedQuestion = new java.util.concurrent.ConcurrentHashMap[Tuple2[String,String],Box[String]]()
+  def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = {
+    if (!requestedDetailedQuestion.contains(where)) {
+      requestedDetailedQuestion.put(where, Empty)
+    }
+    requestedDetailedQuestion.get(where)
+  }
+  def setRequestedDetailedQuestion(where:Tuple2[String,String],what:String):Unit = requestedDetailedQuestion.put(where, Full(what))
   def localSession = S.session
   def remoteMessageRecieved(message:Any, location:String):Unit = {
     StackServerManager.get(location) ! message
