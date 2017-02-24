@@ -901,9 +901,12 @@ object StackOverflow extends StackOverflow {
     })
     case other => warn("StackOverflow:localOpenAction received unknown message: %s".format(other))
   }
-  private lazy val openedComments = new SynchronizedWriteMap[Tuple2[String,String],List[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],List[String]],true,(k:Tuple2[String,String]) => List.empty[String])
+  private lazy val openedComments = new java.util.concurrent.ConcurrentHashMap[Tuple2[String,String],List[String]]()
   def getOpenedComments(location:Tuple2[String,String]) = {
-    openedComments.getOrElseUpdate(location, List.empty[String])
+    if(!openedComments.contains(location)) {
+      openedComments.put( location, List.empty[String])
+    }
+    openedComments.get(location)
   }
   private lazy val requestedDetailedQuestion = new SynchronizedWriteMap[Tuple2[String,String],Box[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],Box[String]],true,(k:Tuple2[String,String]) => Empty)
   def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = requestedDetailedQuestion(where)
@@ -928,14 +931,14 @@ object StackOverflow extends StackOverflow {
     val identifier = Tuple2(currentUser.is,questionId)
     val oldList = getOpenedComments(identifier).filterNot(a => a == changedNode)
     val newList = if (newState){ changedNode :: oldList} else oldList
-    openedComments(identifier) = newList
+    openedComments.put(identifier, newList)
     local(SetExpansionState(questionId,newList),location,session)
   }
   def setCommentState(location:String, questionId:String,changedNode:String,newState:Boolean,who:String,session:Box[LiftSession]):Unit = {
     val identifier = Tuple2(who,questionId)
     val oldList = getOpenedComments(identifier).filterNot(a => a == changedNode)
     val newList = if (newState){ changedNode :: oldList} else oldList
-    openedComments(identifier) = newList
+    openedComments.put(identifier, newList)
     local(SetExpansionState(questionId,newList),who,location,session)
   }
   def getCommentState(where:String,qId:String,rqT:String):Boolean = getCommentState(where,qId,rqT,currentUser.is)
@@ -943,7 +946,7 @@ object StackOverflow extends StackOverflow {
   def setInitialState(location:String,questionId:String,openTopics:List[String]):Unit = setInitialState(location,questionId,openTopics,localSession)
   def setInitialState(location:String,questionId:String,openTopics:List[String],session:Box[LiftSession]):Unit = setInitialState(location,questionId,openTopics,currentUser.is,session)
   def setInitialState(location:String,questionId:String,openTopics:List[String],who:String,session:Box[LiftSession]):Unit = {
-    openedComments(Tuple2(who,questionId)) = openTopics
+    openedComments.put(Tuple2(who,questionId), openTopics)
     local(SetExpansionState(questionId,openTopics),who,location,session)
     setDetailedQuestion(location,questionId,who,session)
   }
