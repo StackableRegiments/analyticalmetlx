@@ -434,6 +434,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getResource(jid:String,identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(jid:String,data:Array[Byte]):String = ""
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
+  override def runQuery(query:String):List[String] = List.empty[String]
 }
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)

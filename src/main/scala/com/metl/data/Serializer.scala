@@ -51,6 +51,7 @@ abstract class Serializer {
   def fromMeTLFile(input:MeTLFile):T = throw new SerializationNotImplementedException
   def toMeTLVideoStream(input:T):MeTLVideoStream = throw new SerializationNotImplementedException
   def fromMeTLVideoStream(input:MeTLVideoStream):T = throw new SerializationNotImplementedException
+  def fromQueryResults(input:List[String]):T = throw new SerializationNotImplementedException
   def toConversation(input:T):Conversation = throw new SerializationNotImplementedException
   def fromConversation(input:Conversation):T = throw new SerializationNotImplementedException
   def fromConversationList(input:List[Conversation]):T = throw new SerializationNotImplementedException

@@ -883,6 +883,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case _ => Conversation.empty
     }
   })
+  override def fromQueryResults(input:List[String]):JValue = Stopwatch.time("JsonSerializer.fromQueryResults",{JArray(input.map(s => JField("bob", JString("bob"))))})
   override def fromConversationList(input:List[Conversation]):JValue = Stopwatch.time("JsonSerializer.fromConversationList",JArray(input.map(c => fromConversation(c))))
   override def fromConversation(input:Conversation):JValue = Stopwatch.time("JsonSerializer.fromConversation",{
     JObject(List(

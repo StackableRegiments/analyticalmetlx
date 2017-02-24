@@ -39,6 +39,14 @@ object MeTLActorManager extends LiftActor with ListenerManager with Logger {
   }
 }
 
+object MeTLQueryActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case m:MeTLCommand => sendListenersMessage(m)
+    case id:ImportDescription => sendListenersMessage(id)
+    case _ => warn("MeTLQueryActorManager received unknown message")
+  }
+}
 object MeTLConversationSearchActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
   override def lowPriority = {
@@ -151,6 +159,26 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
   override def perImportAction(conv:Conversation) = {
     ".importSuccess [href]" #> boardFor(conv.jid)
   }
+}
+
+class MeTLQueryActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils {
+  override def registerWith = MeTLConversationSearchActorManager
+
+  private lazy val RECEIVE_RESULTS = "receiveResults"
+
+  override lazy val functionDefinitions = List(
+    ClientSideFunction("getSearchResult",List("query"),(args) => {
+      val q = getArgAsString(args(0)).toLowerCase.trim
+      query = Some(q)
+      listing = serverConfig.runQuery(q)
+      //debug(listing.toString())
+      trace("runQuery: %s => %s".format(query,listing.length))
+      serializer.fromQueryResults(listing)
+    },Full(RECEIVE_RESULTS))
+  )
+
+  protected var query:Option[String] = None
+  protected var listing:List[String] = Nil
 }
 
 class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
