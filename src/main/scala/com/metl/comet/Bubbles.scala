@@ -840,16 +840,22 @@ class StackWorker(location:String) extends LiftActor with Logger {
 }
 
 object StackServerManager {
-  private lazy val stackServers = new SynchronizedWriteMap[String,StackServer](scala.collection.mutable.HashMap.empty[String,StackServer],true,(k:String) => createNewStackServer(k))
-  def get(location:String) = {
-    stackServers.getOrElseUpdate(location, createNewStackServer(location))
+  private lazy val stackServers = new java.util.concurrent.ConcurrentHashMap[String, StackServer]()
+  def get(location: String) = {
+    if (!stackServers.containsKey(location)) {
+      stackServers.put(location, createNewStackServer(location))
+    }
+    stackServers.get(location)
   }
   def createNewStackServer(location:String) = {
     new StackServer(location)
   }
-  private lazy val stackWorkers = new SynchronizedWriteMap[String,StackWorker](scala.collection.mutable.HashMap.empty[String,StackWorker],true,(k:String) => createNewStackWorker(k))
+  private lazy val stackWorkers = new java.util.concurrent.ConcurrentHashMap[String,StackWorker]()
   def getWorker(location:String) = {
-    stackWorkers.getOrElseUpdate(location, createNewStackWorker(location))
+    if( !stackWorkers.containsKey(location)) {
+      stackWorkers.put(location, createNewStackWorker(location))
+    }
+    stackWorkers.get(location)
   }
   def createNewStackWorker(location:String) = {
     new StackWorker(location)
