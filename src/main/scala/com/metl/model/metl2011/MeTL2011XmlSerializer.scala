@@ -8,14 +8,16 @@ import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import Privacy._
-
 import javax.imageio._
-import java.io.{ByteArrayInputStream,ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.util.concurrent.ConcurrentHashMap
+
+import scala.collection.JavaConversions
 
 class MeTL2011XmlSerializer(config:ServerConfiguration,cacheImages:Boolean = false,transcodePng:Boolean = false) extends GenericXmlSerializer(config) with Logger {
 
-  private val imageCache = new SynchronizedWriteMap[String,Array[Byte]](scala.collection.mutable.HashMap.empty[String,Array[Byte]],true,(k:String) => config.getResource(k))
-  private def getCachedImage(url:String) = Stopwatch.time("MeTL2011XmlSerializer.getCachedImage", imageCache.getOrElseUpdate(url,config.getResource(url)))
+  private val imageCache = JavaConversions.mapAsScalaMap(new ConcurrentHashMap[String,Array[Byte]]())
+  private def getCachedImage(url:String) = Stopwatch.time("MeTL2011XmlSerializer.getCachedImage", imageCache.getOrElseUpdate(url, config.getResource(url)))
   private val metlUtils = new MeTL2011Utils(config)
   override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("MeTL2011XmlSerializer.fromMeTLImage",{
     val newSource = input.source.map(u => metlUtils.deabsolutizeUri(u,config)).getOrElse(Empty)

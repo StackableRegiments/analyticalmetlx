@@ -1,11 +1,13 @@
 package com.metl.comet
 
-import com.metl.utils.{Stopwatch,SynchronizedWriteMap,PeriodicallyRefreshingVar}
+import com.metl.utils.{PeriodicallyRefreshingVar, Stopwatch, SynchronizedWriteMap}
 import java.util.Date
+
 import org.apache.commons.io.IOUtils
 import net.liftweb.http._
+
 import scala.collection.mutable.{HashMap, SynchronizedMap}
-import net.liftweb.mongodb.{Limit}
+import net.liftweb.mongodb.Limit
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonParser._
@@ -19,6 +21,7 @@ import S._
 import net.liftweb.util._
 import Helpers._
 import net.liftweb.actor.LiftActor
+
 import xml.{NodeSeq, Text}
 import collection.mutable.ListBuffer
 import ElemAttr._
@@ -26,6 +29,7 @@ import org.bson.types.ObjectId
 import com.metl.model._
 import com.metl.model.Globals._
 import java.text.SimpleDateFormat
+import java.util.concurrent.ConcurrentHashMap
 //import scala.concurrent.ops._
 import org.bson.types.ObjectId
 import com.metl.utils.FunctionConverter._
@@ -840,14 +844,14 @@ class StackWorker(location:String) extends LiftActor with Logger {
 }
 
 object StackServerManager {
-  private lazy val stackServers = new java.util.concurrent.ConcurrentHashMap[String, StackServer]()
+  private lazy val stackServers = new ConcurrentHashMap[String, StackServer]()
   def get(location: String) = {
     stackServers.computeIfAbsent(location, (location:String) => createNewStackServer(location))
   }
   def createNewStackServer(location:String) = {
     new StackServer(location)
   }
-  private lazy val stackWorkers = new java.util.concurrent.ConcurrentHashMap[String,StackWorker]()
+  private lazy val stackWorkers = new ConcurrentHashMap[String,StackWorker]()
   def getWorker(location:String) = {
     stackWorkers.computeIfAbsent(location, (location:String) => createNewStackWorker(location))
   }
@@ -896,11 +900,11 @@ object StackOverflow extends StackOverflow {
     case other => warn("StackOverflow:localOpenAction received unknown message: %s".format(other))
   }
 
-  private lazy val openedComments = new java.util.concurrent.ConcurrentHashMap[Tuple2[String,String],List[String]]()
+  private lazy val openedComments = new ConcurrentHashMap[Tuple2[String,String],List[String]]()
   def getOpenedComments(location:Tuple2[String,String]) = {
     openedComments.computeIfAbsent(location, (location:Tuple2[String,String]) => List.empty[String])
   }
-  private lazy val requestedDetailedQuestion = new java.util.concurrent.ConcurrentHashMap[Tuple2[String,String],Box[String]]()
+  private lazy val requestedDetailedQuestion = new ConcurrentHashMap[Tuple2[String,String],Box[String]]()
   def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = {
     requestedDetailedQuestion.computeIfAbsent(where, (where:Tuple2[String,String]) => Empty)
   }
