@@ -1,5 +1,6 @@
 package com.metl.snippet
 
+import com.metl.data.ServerConfiguration
 import net.liftweb.common.Logger
 import net.liftweb._
 import net.liftweb.common._
@@ -12,6 +13,7 @@ import net.liftweb.http.js.JsCommands._
 import net.liftweb.json.JsonAST.JString
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
+import net.liftweb.mapper._
 
 object Query extends Query
 
@@ -32,6 +34,8 @@ class Query extends Logger {
         val jObj = net.liftweb.json.parse(s)
         Call("makeANoise", jObj)
       }))))
-
   }
+
+//  DB.runQuery("SELECT * FROM ", )
+  // returns (List[String] headers, List[List[String]] data)
 }
