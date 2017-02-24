@@ -60,7 +60,7 @@ var Query = function () {
         resultsListing = $("#conversationContainerListing");
         resultsTemplate = resultsListing.find(".conversationContainer").clone();
         resultsListing.empty();
-        var searchBoxContainer = $("#conversationSearchBox");
+        var searchBoxContainer = $("#searchBox");
         searchBox = $("<input/>", {
             type: "text",
             val: getQueryFunc()
