@@ -28,7 +28,7 @@ import com.metl.model.Globals._
 import java.text.SimpleDateFormat
 //import scala.concurrent.ops._
 import org.bson.types.ObjectId
-
+import com.metl.utils.FunctionConverter._
 
 case class Emerge(onPageSelector:String)
 trait Bob{}
@@ -842,20 +842,14 @@ class StackWorker(location:String) extends LiftActor with Logger {
 object StackServerManager {
   private lazy val stackServers = new java.util.concurrent.ConcurrentHashMap[String, StackServer]()
   def get(location: String) = {
-    if (!stackServers.containsKey(location)) {
-      stackServers.put(location, createNewStackServer(location))
-    }
-    stackServers.get(location)
+    stackServers.computeIfAbsent(location, (location:String) => createNewStackServer(location))
   }
   def createNewStackServer(location:String) = {
     new StackServer(location)
   }
   private lazy val stackWorkers = new java.util.concurrent.ConcurrentHashMap[String,StackWorker]()
   def getWorker(location:String) = {
-    if( !stackWorkers.containsKey(location)) {
-      stackWorkers.put(location, createNewStackWorker(location))
-    }
-    stackWorkers.get(location)
+    stackWorkers.computeIfAbsent(location, (location:String) => createNewStackWorker(location))
   }
   def createNewStackWorker(location:String) = {
     new StackWorker(location)
@@ -901,19 +895,14 @@ object StackOverflow extends StackOverflow {
     })
     case other => warn("StackOverflow:localOpenAction received unknown message: %s".format(other))
   }
+
   private lazy val openedComments = new java.util.concurrent.ConcurrentHashMap[Tuple2[String,String],List[String]]()
   def getOpenedComments(location:Tuple2[String,String]) = {
-    if(!openedComments.contains(location)) {
-      openedComments.put( location, List.empty[String])
-    }
-    openedComments.get(location)
+    openedComments.computeIfAbsent(location, (location:Tuple2[String,String]) => List.empty[String])
   }
   private lazy val requestedDetailedQuestion = new java.util.concurrent.ConcurrentHashMap[Tuple2[String,String],Box[String]]()
   def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = {
-    if (!requestedDetailedQuestion.contains(where)) {
-      requestedDetailedQuestion.put(where, Empty)
-    }
-    requestedDetailedQuestion.get(where)
+    requestedDetailedQuestion.computeIfAbsent(where, (where:Tuple2[String,String]) => Empty)
   }
   def setRequestedDetailedQuestion(where:Tuple2[String,String],what:String):Unit = requestedDetailedQuestion.put(where, Full(what))
   def localSession = S.session
