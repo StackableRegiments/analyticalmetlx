@@ -11,28 +11,38 @@
         <script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
         <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
         <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
+        <style>
+            .result{
+                text-align:right;
+            }
+        </style>
     </head>
     <script type="text/javascript">
-        var makeANoise = function(s){
-            console.log("Making noise: ", s);
+        var addResults = function(s){
+            console.log('Adding results: ', s);
+            $('#results').replaceWith('<span id="results">' + s + '</span>');
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
         <div class="mbt">
             <div class="indent flex-container-row" id="optionBlocks">
                 <div class="flex-container-column">
-                    <h1 class="directlyOnBackground">Enterprise Queries</h1>
+                    <h1 class="directlyOnBackground">Enterprise Statistics</h1>
                     <div id="searchBoxContainer" class="mbt indent">
                         <span id="searchBox"></span>
                         <div class="flex-container-row">
-                            <span class="lift:query">
-                                <input id="queryParam" type="text"/>
+                            <span class="lift:statistics">
+                                <!--<input id="queryParam" type="text"/>-->
+                                <div class="directlyOnBackground">
+                                    <span id="results"/>
+                                </div>
                                 <button id="queryButton" type="button" value="Search">
                                     <span class="fa fa-search">
                                       <span class="icon-txt">Search</span>
                                     </span>
                                 </button>
                                 <span id="script"/>
+                                <span id="bootstrap"/>
                             </span>
                         </div>
                     </div>
