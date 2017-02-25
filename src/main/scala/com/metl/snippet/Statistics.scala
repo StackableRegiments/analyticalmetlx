@@ -29,20 +29,13 @@ class Statistics extends Logger {
     "#refreshButton" #> ajaxButton("Refresh", () => {
       Call("updateResults", JString(createHtmlTable(runAllQueries))).cmd
     }) &
-      "#script" #> Script(JsCrVar("fred", AnonFunc(ajaxCall(JsRaw("JSON.stringify(arguments)"), (s: String) => {
-        val jObj = net.liftweb.json.parse(s)
-        Call("updateResults", jObj)
-      })))) &
-      "#bootstrap *" #> Script(OnLoad(Call("addResults", JString(createHtmlTable(runAllQueries))).cmd))
+      "#loader" #> Script(OnLoad(Call("updateResults", JString(createHtmlTable(runAllQueries))).cmd))
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {
     val results = DB.runQuery(sql, params)
     // results: (List[String] headers, List[List[String]] data)
-    val data = results._2
-    val row1 = data.head
-    val field1 = row1.head
-    List(name, field1)
+    List(name, results._2.head.head)
   }
 
   def runAllQueries: List[List[String]] = {
