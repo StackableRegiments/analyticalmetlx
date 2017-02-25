@@ -18,9 +18,11 @@
         </style>
     </head>
     <script type="text/javascript">
-        var addResults = function(s){
-            console.log('Adding results: ', s);
+        var updateResults = function(s){
             $('#results').replaceWith('<span id="results">' + s + '</span>');
+            var now = new Date();
+            var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
+            $('#timestamp').replaceWith('<span id="timestamp" class="directlyOnBackground">Last run: ' + t + '</span>');
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
@@ -32,15 +34,15 @@
                         <span id="searchBox"></span>
                         <div class="flex-container-row">
                             <span class="lift:statistics">
-                                <!--<input id="queryParam" type="text"/>-->
                                 <div class="directlyOnBackground">
                                     <span id="results"/>
                                 </div>
-                                <button id="queryButton" type="button" value="Search">
+                                <button id="refreshButton" type="button" value="Search">
                                     <span class="fa fa-search">
                                       <span class="icon-txt">Search</span>
                                     </span>
                                 </button>
+                                <span id="timestamp"/>
                                 <span id="script"/>
                                 <span id="bootstrap"/>
                             </span>

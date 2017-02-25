@@ -26,20 +26,14 @@ class Statistics extends Logger {
   val startDate = "20160801"
 
   def render: CssBindFunc = {
-    "#queryButton" #> ajaxButton("Refresh", () => {
-      jsExpToJsCmd(Call("addResults", JString(createHtmlTable(runAllQueries))))
+    "#refreshButton" #> ajaxButton("Refresh", () => {
+      Call("updateResults", JString(createHtmlTable(runAllQueries))).cmd
     }) &
-      /*
-            "#queryParam" #> ajaxText("stuff", (param) => {
-              // Server side
-              println("User entered: " + param)
-            }) &
-      */
       "#script" #> Script(JsCrVar("fred", AnonFunc(ajaxCall(JsRaw("JSON.stringify(arguments)"), (s: String) => {
         val jObj = net.liftweb.json.parse(s)
-        Call("addResult", jObj)
+        Call("updateResults", jObj)
       })))) &
-      "#bootstrap" #> Script(OnLoad(Call("addResults", JString(createHtmlTable(runAllQueries))).cmd))
+      "#bootstrap *" #> Script(OnLoad(Call("addResults", JString(createHtmlTable(runAllQueries))).cmd))
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {
