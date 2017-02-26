@@ -53,6 +53,8 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   override def insertResource(jid:String,data:Array[Byte]):String = postResource(jid,net.liftweb.util.Helpers.nextFuncName,false,data)
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = postResource(jid,identifier,true,data)
 
+  override def runQuery(query:String):List[String] = List.empty[String]
+
   protected def generatePath(jid:String):String = {
     net.liftweb.util.Helpers.urlEncode("Resource/%s/%s".format(resourceProvider.utils.stem(jid.toString),jid.toString))
   }
@@ -155,6 +157,8 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   override def getResource(jid:String,identifier:String):Array[Byte] = http.getClient.getAsBytes("%s/%s/%s".format(rootAddress,generatePath(jid),generateFilename(identifier)))
   override def insertResource(jid:String,data:Array[Byte]):String = postResource(jid,net.liftweb.util.Helpers.nextFuncName,false,data)
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = postResource(jid,identifier,true,data)
+
+  override def runQuery(query:String):List[String] = List.empty[String]
 
   protected def generatePath(jid:String):String = {
     net.liftweb.util.Helpers.urlEncode("Resource/%s/%s".format(resourceProvider.utils.stem(jid.toString),jid.toString))
