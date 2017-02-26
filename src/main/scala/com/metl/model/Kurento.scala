@@ -250,55 +250,85 @@ case class GroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline
 }		
 
 case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String,lowerMaxSize:Int) extends KurentoPipeline(kurentoManager,pipeline,name) {
-  import scala.collection.mutable.{ListBuffer => MList}
-  protected val members:MList[WebRtcEndpoint] = new MList[WebRtcEndpoint]()
+  import scala.collection.mutable.{ListBuffer => MList,HashMap => HMap}
   protected val masterHub = new Composite.Builder(pipeline).build()		
 
-  protected val intermediateHubs:MList[Composite] = new MList[Composite]()
-  protected val intermediateHubPorts:MList[HubPort] = new MList[HubPort]()
+  protected val hubs = new HMap[Composite,Tuple2[List[HubPort],HMap[WebRtcEndpoint,List[HubPort]]]]()
+  protected val members = new HMap[WebRtcEndpoint,Composite]()
 
-  protected def reAttachMiddleLayer:Unit = {
-    intermediateHubPorts.foreach(_.release)
-    intermediateHubs.foreach(_.release)
-    val newHubTups = members.toList.grouped(Math.max(1,lowerMaxSize)).map(ms => {
-      val lowerHub = new Composite.Builder(pipeline).build()
-      val mhubPorts = ms.flatMap(m => {
-        val ausp = new HubPort.Builder(masterHub).build()
-        val vusp = new HubPort.Builder(masterHub).build()
-        val dsp = new HubPort.Builder(lowerHub).build()
-        m.connect(dsp,MediaType.VIDEO)
-        m.connect(ausp,MediaType.AUDIO)
-        dsp.connect(vusp,MediaType.VIDEO)
-        ausp.connect(m)
-        List(ausp,vusp,dsp)
-      })
-      (lowerHub,mhubPorts)
-    }).toList
-    println("newHubTups: %s".format(newHubTups))
-    println("generating middle layer: %s (%s : %s)".format(newHubTups.length,members.length,newHubTups.flatMap(_._2).length))
-    intermediateHubs.clear
-    intermediateHubs ++= newHubTups.map(_._1)
-    intermediateHubPorts.clear
-    intermediateHubPorts ++= newHubTups.flatMap(_._2)
-  }
   override def buildRtcEndpoint:WebRtcEndpoint = {		
-    val newEndpoint = super.buildRtcEndpoint		
-    members += newEndpoint 
-    reAttachMiddleLayer
-    newEndpoint		
+    val m = super.buildRtcEndpoint		
+  
+    val lowerHub = hubs.toList.find(_._2._2.keys.toList.length < Math.max(1,lowerMaxSize)).map(_._1).getOrElse({
+      val lowerHub = new Composite.Builder(pipeline).build()
+      val vusp = new HubPort.Builder(masterHub).build()
+      val dsp = new HubPort.Builder(lowerHub).build()
+      dsp.connect(vusp,MediaType.VIDEO)
+      val ports = List(vusp,dsp)
+      hubs.put(lowerHub,(ports,new HMap[WebRtcEndpoint,List[HubPort]]()))
+      println("constructed new hub: %s ] : %s".format(lowerHub,ports))
+      lowerHub
+    })
+    members.put(m,lowerHub)
+    hubs.get(lowerHub).foreach(hcTup => {
+      val hc = hcTup._2
+      val ausp = new HubPort.Builder(masterHub).build()
+      val dsp = new HubPort.Builder(lowerHub).build()
+      m.connect(dsp,MediaType.VIDEO)
+      m.connect(ausp,MediaType.AUDIO)
+      ausp.connect(m)
+      val ports = List(ausp,dsp)
+      println("connected (%s) to (%s ]: %s)".format(m,hc,ports))
+      hc.put(m,ports)
+    })
+    println("newState\r\nmembers: %s\r\nhubs: %s\r\n".format(members.keys.toList.length,hubs.keys.toList.length))
+    m		
   }		
   override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
     println("removing from groupRoom (%s) rtc (%s)".format(name,rtc))
-    rtc.foreach(r => {
-      members -= r
-      reAttachMiddleLayer
-    })
-    if (members == Nil){
+    rtc.map(r => {
+      members.get(r).foreach(comp => {
+        hubs.get(comp).foreach(hubConnectorsTup => {
+          val hubConnectors = hubConnectorsTup._2
+          hubConnectors.get(r).foreach(portsToShutdown => {
+            println("shutting down ports (%s)".format(portsToShutdown))
+            portsToShutdown.foreach(_.release)
+          })
+          hubConnectors - r
+          if (hubConnectors.keys.toList.length == 0){
+            println("releasing hub: %s".format(comp))
+            hubConnectorsTup._1.foreach(_.release)
+            hubs - comp
+            comp.release
+          }
+        })
+      })
+      members - r
+      if (members.keys.toList == Nil){
+        masterHub.release
+        println("removing groupRoom (%s)".format(name))
+        kurentoManager.removePipeline(name,GroupRoom)		
+        super.shutdown(rtc)		
+      }
+    }).getOrElse({
+      //full shutdown of the pipeline
+      hubs.foreach(ht => {
+        val lowerHub = ht._1
+        val lowerHubPorts = ht._2._1
+        val lowerHubMembers = ht._2._2
+        lowerHubMembers.toList.foreach(lhm => {
+          lhm._2.foreach(_.release)
+          lhm._1.release
+        })
+        lowerHubPorts.foreach(_.release)
+        lowerHub.release
+      })
       masterHub.release
       println("removing groupRoom (%s)".format(name))
       kurentoManager.removePipeline(name,GroupRoom)		
       super.shutdown(rtc)		
-    }		
+
+    })
   }		
 }	
 

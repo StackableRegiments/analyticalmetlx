@@ -618,9 +618,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
 
   protected var kurentoSessions:List[KurentoUserSession] = Nil
   def kurentoShutdown:Unit = {
+    kurentoSessions.foreach(_.shutdown)
   }
   def kurentoStartup:Unit = {
-    //KurentoManager.client
+    kurentoManager
   }
   protected lazy val kurentoClientSideFunctionDefinitions = List(
     ClientSideFunction("initiateVideoStream",List("videoType","offer","id"),(args) => {		
