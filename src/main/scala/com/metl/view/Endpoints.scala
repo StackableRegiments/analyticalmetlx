@@ -205,6 +205,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
+    case req@Req("kurentoSessions" :: Nil,_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLRestHelper.kurentoSessions", {
+      Full(PlainTextResponse(Globals.kurentoManager.getPipelines.map(p => {
+        "name:%s\r\nmanager:%s\r\ngStreamerDot:\r\n%s\r\n\r\n".format(p.name,p.kurentoManager.toString,p.getGStreamerDot)
+      }).mkString("\r\n"),200))
+    })
     case req@Req("logout" :: Nil,_,_) => () => Stopwatch.time("MeTLRestHelper.logout", {
       S.session.foreach(_.destroySession())
       //S.containerSession.foreach(s => s.terminate)

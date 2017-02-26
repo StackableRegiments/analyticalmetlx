@@ -110,6 +110,9 @@ class KurentoEventListener[T <: Event](onStateChanged:T => Unit) extends EventLi
 class KurentoPipeline(val kurentoManager:KurentoManager,pipeline:MediaPipeline,val name:String) extends Logger {		
   protected val videoKbps = 256 // max send rate		
   protected val audioKbps = 10 // max send rate		
+  def getGStreamerDot:String = {
+    pipeline.getGstreamerDot()
+  }
   def buildRtcEndpoint:WebRtcEndpoint = {		
     val wre = new WebRtcEndpoint.Builder(pipeline).build()		
     // setting video bandwidth doesn't appear to work in firefox etc		
@@ -263,7 +266,7 @@ case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pip
       val lowerHub = new Composite.Builder(pipeline).build()
       val vusp = new HubPort.Builder(masterHub).build()
       val dsp = new HubPort.Builder(lowerHub).build()
-      dsp.connect(vusp,MediaType.VIDEO)
+      dsp.connect(vusp)
       val ports = List(vusp,dsp)
       hubs.put(lowerHub,(ports,new HMap[WebRtcEndpoint,List[HubPort]]()))
       println("constructed new hub: %s ] : %s".format(lowerHub,ports))
@@ -276,7 +279,8 @@ case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pip
       val dsp = new HubPort.Builder(lowerHub).build()
       m.connect(dsp,MediaType.VIDEO)
       m.connect(ausp,MediaType.AUDIO)
-      ausp.connect(m)
+      val ousp = new HubPort.Builder(masterHub).build()
+      ousp.connect(m)
       val ports = List(ausp,dsp)
       println("connected (%s) to (%s ]: %s)".format(m,hc,ports))
       hc.put(m,ports)
@@ -415,6 +419,7 @@ case class BroadcastPipeline(override val kurentoManager:KurentoManager,pipeline
 trait KurentoManager {
   def getPipeline(name:String,pipeType:KurentoPipelineType):Option[KurentoPipeline]
   def removePipeline(name:String,pipeType:KurentoPipelineType)		
+  def getPipelines:List[KurentoPipeline]
   def shutdown
 }
 
@@ -437,6 +442,10 @@ class RemoteKurentoManager(kmsUrl:String) extends KurentoManager with Logger {
     kurento
   }		
   protected val pipelines = new java.util.concurrent.ConcurrentHashMap[Tuple2[KurentoPipelineType,String],KurentoPipeline]		
+  override def getPipelines:List[KurentoPipeline] = pipelines.entrySet.toArray.toList.flatMap{
+    case pTup:java.util.Map.Entry[Tuple2[KurentoPipelineType,String],KurentoPipeline] => Some(pTup.getValue)
+    case _ => None
+  }
   override def getPipeline(name:String,pipeType:KurentoPipelineType):Option[KurentoPipeline] = {
     val thisKm = this
     Some(pipelines.computeIfAbsent((pipeType,name),new java.util.function.Function[Tuple2[KurentoPipelineType,String],KurentoPipeline]{		
@@ -464,6 +473,7 @@ class RemoteKurentoManager(kmsUrl:String) extends KurentoManager with Logger {
 object EmptyKurentoManager extends KurentoManager {
   override def getPipeline(name:String,pipeType:KurentoPipelineType):Option[KurentoPipeline] = None
   override def removePipeline(name:String,pipeType:KurentoPipelineType) = {}		
+  override def getPipelines:List[KurentoPipeline] = Nil
   override def shutdown = {}
 }
 
