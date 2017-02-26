@@ -12,11 +12,7 @@ title: Academy
 
 ## How do I teach with MeTL?
 
-- read the [User Guide](guide.html)
-- check the [Frequently Asked Questions](academy-faq.html)
-- explore the [Teaching Examples](academy-examples.html)
-- engage with relevant [Pedagogy](academy-pedagogy.html)
-<!--- view the [Tutorials](academy-tutorials.html)-->
+{% include areas.html %}
 
 ## Why do I teach with MeTL?
 
