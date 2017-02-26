@@ -53,7 +53,7 @@ class Statistics extends Logger {
       List(toUnixTimestamp(startDate),
         toUnixTimestamp(startDate),
         toUnixTimestamp(startDate)))
-    val formalStanzas = runQuery("Formal (poll answer) stanzas created",
+    val formalStanzas = runQuery("Formal (poll response) stanzas created",
       "select count(id) from h2quizresponse where timestamp_c > ?;",
       List(toUnixTimestamp(startDate)))
     val allStanzas = informalStanzas(1).toInt + formalStanzas(1).toInt
