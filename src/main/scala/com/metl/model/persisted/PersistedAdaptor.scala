@@ -40,5 +40,4 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getResource(identifier:String):Array[Byte] = resourceProvider.getResource(identifier)
   override def insertResource(data:Array[Byte]):String = resourceProvider.insertResource(data)
   override def upsertResource(identifier:String,data:Array[Byte]):String = resourceProvider.upsertResource(identifier,data)
-  override def runQuery(query:String) = List("bob", "fred", "wanda")
 }

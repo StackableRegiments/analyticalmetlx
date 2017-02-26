@@ -76,7 +76,6 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getResource(identifier:String):Array[Byte] = getResource(commonLocation,identifier)
   def insertResource(data:Array[Byte]):String = insertResource(commonLocation,data)
   def upsertResource(identifier:String,data:Array[Byte]):String = upsertResource(commonLocation,identifier,data)
-  def runQuery(query:String):List[String]
 
   //shutdown is a function to be called when the serverConfiguration is to be disposed
   def shutdown:Unit = {}
@@ -205,7 +204,6 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def getResource(identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(data:Array[Byte]):String = ""
   override def upsertResource(identifier:String,data:Array[Byte]):String = ""
-  override def runQuery(query:String):List[String] = List.empty[String]
 }
 
 object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
@@ -238,7 +236,6 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def getResource(identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(data:Array[Byte]):String = ""
   override def upsertResource(identifier:String,data:Array[Byte]):String = ""
-  override def runQuery(query:String):List[String] = List.empty[String]
 }
 
 object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
@@ -270,7 +267,6 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def getResource(identifier:String):Array[Byte] = sc.getResource(identifier)
   override def insertResource(data:Array[Byte]):String = sc.insertResource(data)
   override def upsertResource(identifier:String,data:Array[Byte]):String = sc.upsertResource(identifier,data)
-  override def runQuery(query:String):List[String] = sc.runQuery(query)
   override def shutdown:Unit = sc.shutdown
   override def isReady:Boolean = sc.isReady
   override def getMockHistory:History = sc.getMockHistory
