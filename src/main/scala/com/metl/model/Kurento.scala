@@ -100,7 +100,7 @@ object GroupRoom extends KurentoPipelineType {
   override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = GroupRoomPipeline(client,pipeline,name)		
 }		
 object LargeGroupRoom extends KurentoPipelineType {		
-  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = LargeGroupRoomPipeline(client,pipeline,name,1)		
+  override def generatePipeline(client:KurentoManager,pipeline:MediaPipeline,name:String):KurentoPipeline = LargeGroupRoomPipeline(client,pipeline,name,2)		
 }		
 		
 class KurentoEventListener[T <: Event](onStateChanged:T => Unit) extends EventListener[T]{
@@ -249,64 +249,53 @@ case class GroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline
   }		
 }		
 
-case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String,lowerMaxSize:Int) extends KurentoPipeline(kurentoManager,pipeline,name) {		
-  protected var members:Map[WebRtcEndpoint,Tuple2[HubPort,HubPort]] = Map.empty[WebRtcEndpoint,Tuple2[HubPort,HubPort]]		
+case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pipeline:MediaPipeline,override val name:String,lowerMaxSize:Int) extends KurentoPipeline(kurentoManager,pipeline,name) {
+  import scala.collection.mutable.{ListBuffer => MList}
+  protected val members:MList[WebRtcEndpoint] = new MList[WebRtcEndpoint]()
   protected val masterHub = new Composite.Builder(pipeline).build()		
-  protected var lowerHubs:Map[Tuple2[Composite,List[HubPort]],List[WebRtcEndpoint]] = Map.empty[Tuple2[Composite,List[HubPort]],List[WebRtcEndpoint]]
-  //protected var lowerHub = new Composite.Builder(pipeline).build() // this is the bit where I'll make the separate composites.  Still need to work through the logic of adding and removing pieces.
-  protected def addMemberFromHubs(newEndpoint:WebRtcEndpoint,lowerHub:Composite,connectingPorts:List[HubPort]):WebRtcEndpoint = {
-    val hubPort = new HubPort.Builder(lowerHub).build()
-    val masterHubPort = new HubPort.Builder(masterHub).build()
-    newEndpoint.connect(hubPort,MediaType.VIDEO)		
-    newEndpoint.connect(masterHubPort,MediaType.AUDIO)		
-    masterHubPort.connect(newEndpoint)		
-    members = members.updated(newEndpoint,(hubPort,masterHubPort))		
-    val key = (lowerHub,connectingPorts)
-    lowerHubs = lowerHubs.updated(key,newEndpoint :: lowerHubs.get(key).getOrElse(Nil))
-    newEndpoint
+
+  protected val intermediateHubs:MList[Composite] = new MList[Composite]()
+  protected val intermediateHubPorts:MList[HubPort] = new MList[HubPort]()
+
+  protected def reAttachMiddleLayer:Unit = {
+    intermediateHubPorts.foreach(_.release)
+    intermediateHubs.foreach(_.release)
+    val newHubTups = members.toList.grouped(Math.max(1,lowerMaxSize)).map(ms => {
+      val lowerHub = new Composite.Builder(pipeline).build()
+      val mhubPorts = ms.flatMap(m => {
+        val ausp = new HubPort.Builder(masterHub).build()
+        val vusp = new HubPort.Builder(masterHub).build()
+        val dsp = new HubPort.Builder(lowerHub).build()
+        m.connect(dsp,MediaType.VIDEO)
+        m.connect(ausp,MediaType.AUDIO)
+        dsp.connect(vusp,MediaType.VIDEO)
+        ausp.connect(m)
+        List(ausp,vusp,dsp)
+      })
+      (lowerHub,mhubPorts)
+    }).toList
+    println("newHubTups: %s".format(newHubTups))
+    println("generating middle layer: %s (%s : %s)".format(newHubTups.length,members.length,newHubTups.flatMap(_._2).length))
+    intermediateHubs.clear
+    intermediateHubs ++= newHubTups.map(_._1)
+    intermediateHubPorts.clear
+    intermediateHubPorts ++= newHubTups.flatMap(_._2)
   }
   override def buildRtcEndpoint:WebRtcEndpoint = {		
     val newEndpoint = super.buildRtcEndpoint		
-    val (lowerHub,connectingPorts) = lowerHubs.toList.find(_._2.length < lowerMaxSize).getOrElse({
-      val newLowerHub = new Composite.Builder(pipeline).build()
-      val newLowerHubUpperPort = new HubPort.Builder(newLowerHub).build()
-      val newUpperHubLowerPort = new HubPort.Builder(masterHub).build()
-      newLowerHubUpperPort.connect(newUpperHubLowerPort)
-      val newKey = (newLowerHub,List(newLowerHubUpperPort,newUpperHubLowerPort))
-      val newValue = Nil
-      lowerHubs = lowerHubs.updated(newKey,newValue)
-      (newKey,newValue)
-    })._1
-    addMemberFromHubs(newEndpoint,lowerHub,connectingPorts)
-/*
-    println("<---")
-    println(pipeline.getGstreamerDot())
-    println("--->")
-*/
+    members += newEndpoint 
+    reAttachMiddleLayer
     newEndpoint		
   }		
   override def shutdown(rtc:Option[WebRtcEndpoint] = None):Unit = {		
-    trace("removing from groupRoom (%s) rtc (%s)".format(name,rtc))
+    println("removing from groupRoom (%s) rtc (%s)".format(name,rtc))
     rtc.foreach(r => {
-      members.get(r).foreach(hubPort => {		
-        trace("removing from groupRoom (%s) rtc (%s) (%s)".format(name,r,hubPort))
-        r.release		
-        hubPort._1.release		
-        hubPort._2.release
-        lowerHubs.toList.find(_._2.contains(r)).foreach(lh => {
-          lh._2.filterNot(_ == r) match {
-            case Nil => {
-              lowerHubs = lowerHubs - lh._1
-              lh._1._2.foreach(_.release)
-            }
-            case remaining => lowerHubs = lowerHubs.updated(lh._1,remaining)
-          }
-        })
-      })		
-      members = members - r	
+      members -= r
+      reAttachMiddleLayer
     })
-    if (members.keys.toList == Nil){		
-      trace("removing groupRoom (%s)".format(name))
+    if (members == Nil){
+      masterHub.release
+      println("removing groupRoom (%s)".format(name))
       kurentoManager.removePipeline(name,GroupRoom)		
       super.shutdown(rtc)		
     }		
