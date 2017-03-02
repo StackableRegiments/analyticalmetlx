@@ -9,7 +9,7 @@ import scala.collection.JavaConversions
 
 case class Standing(who:String,formative:Int,summative:Int)
 object Reputation extends Logger{
-  private val standingMap = JavaConversions.mapAsScalaMap(new java.util.concurrent.ConcurrentHashMap[String,Int])
+  private val standingMap = JavaConversions.mapAsScalaConcurrentMap(new java.util.concurrent.ConcurrentHashMap[String,Int])
 
   def allStandings:List[Standing] =
     Stopwatch.time("Reputation:allStandings", standingMap.toList.map(e => {Standing(e._1, e._2, 0)}))

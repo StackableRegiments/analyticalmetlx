@@ -1,6 +1,6 @@
 package com.metl.comet
 
-import com.metl.utils.{PeriodicallyRefreshingVar, Stopwatch, SynchronizedWriteMap}
+import com.metl.utils.{PeriodicallyRefreshingVar, Stopwatch}
 import java.util.Date
 
 import org.apache.commons.io.IOUtils
@@ -846,14 +846,14 @@ class StackWorker(location:String) extends LiftActor with Logger {
 object StackServerManager {
   private lazy val stackServers = new ConcurrentHashMap[String, StackServer]()
   def get(location: String) = {
-    stackServers.computeIfAbsent(location, (location:String) => createNewStackServer(location))
+    stackServers.computeIfAbsent(location, (l:String) => createNewStackServer(l))
   }
   def createNewStackServer(location:String) = {
     new StackServer(location)
   }
   private lazy val stackWorkers = new ConcurrentHashMap[String,StackWorker]()
   def getWorker(location:String) = {
-    stackWorkers.computeIfAbsent(location, (location:String) => createNewStackWorker(location))
+    stackWorkers.computeIfAbsent(location, (l:String) => createNewStackWorker(l))
   }
   def createNewStackWorker(location:String) = {
     new StackWorker(location)

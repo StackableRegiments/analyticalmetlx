@@ -24,7 +24,7 @@ abstract class MessageBusProvider {
   def sendMessageToBus(busFilter:MessageBusDefinition => Boolean, message:MeTLStanza):Unit = {}
 }
 abstract class OneBusPerRoomMessageBusProvider extends MessageBusProvider {
-  protected lazy val busses = JavaConversions.mapAsScalaMap(new ConcurrentHashMap[MessageBusDefinition,MessageBus]())
+  protected lazy val busses = JavaConversions.mapAsScalaConcurrentMap(new ConcurrentHashMap[MessageBusDefinition,MessageBus]())
   protected def createNewMessageBus(definition:MessageBusDefinition):MessageBus
   override def getMessageBus(definition:MessageBusDefinition) = Stopwatch.time("OneBusPerRoomMessageBusProvider",busses.getOrElseUpdate(definition,createNewMessageBus(definition)))
   override def releaseMessageBus(definition:MessageBusDefinition) = Stopwatch.time("OneBusPerRoomMessageBusProvider",busses.remove(definition))

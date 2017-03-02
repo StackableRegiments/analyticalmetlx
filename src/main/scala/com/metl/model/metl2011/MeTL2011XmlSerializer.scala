@@ -16,7 +16,7 @@ import scala.collection.JavaConversions
 
 class MeTL2011XmlSerializer(config:ServerConfiguration,cacheImages:Boolean = false,transcodePng:Boolean = false) extends GenericXmlSerializer(config) with Logger {
 
-  private val imageCache = JavaConversions.mapAsScalaMap(new ConcurrentHashMap[String,Array[Byte]]())
+  private val imageCache = JavaConversions.mapAsScalaConcurrentMap(new ConcurrentHashMap[String,Array[Byte]]())
   private def getCachedImage(url:String) = Stopwatch.time("MeTL2011XmlSerializer.getCachedImage", imageCache.getOrElseUpdate(url, config.getResource(url)))
   private val metlUtils = new MeTL2011Utils(config)
   override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("MeTL2011XmlSerializer.fromMeTLImage",{
