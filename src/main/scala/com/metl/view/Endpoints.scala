@@ -82,6 +82,12 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     </msapplication>
     </browserconfig>
   }
+  private def searchForConversation(query: String) = {
+    val server = ServerConfiguration.default
+    <conversations>
+      {server.searchForConversation(query).map(c => serializer.fromConversation(c))}
+    </conversations>
+  }
   protected var id = 1000;
   serve {
     //security enforced security
@@ -153,8 +159,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("search" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.search", {
         val query = S.params("query").head
-        val server = ServerConfiguration.default
-        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
+        val x = searchForConversation(query)
         Full(S.params("format") match {
           case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
           case _ => XmlResponse(x)
@@ -190,6 +195,9 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("testFetchGlobalRoom" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchGlobalRoom", {
       val room = MeTLXConfiguration.getRoom("global",ServerConfiguration.default.name,GlobalRoom(ServerConfiguration.default.name))
       Full(PlainTextResponse(room.roomMetaData.getJid, List.empty[Tuple2[String,String]], 200))
+    })
+    case Req("testSearchForConversation" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testSearchForConversation", {
+      Full(PlainTextResponse((searchForConversation("created") \\ "title").length.toString))
     })
   }
 }
