@@ -1,3 +1,8 @@
+1.8.1
+METL-570: Story: Create /testFetchGlobalRoom endpoint.
+METL-571: Story: Create /testCountConversations endpoint.
+METL-568: Bugfix: Enterprise stats page should report over h2multiwordtext not h2text.
+
 1.7.1
 METL-535: Story: Add /statistics page.
 
