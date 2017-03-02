@@ -1,0 +1,51 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+    <head>
+        <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+        <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+        <script src="static/js/stable/lodash.min.js"></script>
+        <script src="static/js/stable/moment.min.js"></script>
+        <script src="static/js/stable/d3.v4.min.js"></script>
+        <script src="static/js/stable/d3.layout.cloud.js"></script>
+        <script src="static/js/stable/typo.js"></script>
+        <style>
+            .result{
+                text-align:right;
+            }
+        </style>
+    </head>
+    <script type="text/javascript">
+        var updateResults = function(s){
+            $('#results').replaceWith('<span id="results">' + s + '</span>');
+            var now = new Date();
+            var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
+            $('#timestamp').replaceWith('<span id="timestamp" class="directlyOnBackground">Last run: ' + t + '</span>');
+        };
+    </script>
+    <div id="masterLayout" class="flex-container-column">
+        <div class="mbt">
+            <div class="indent flex-container-row" id="optionBlocks">
+                <div class="flex-container-column">
+                    <h1 class="directlyOnBackground">Enterprise Statistics</h1>
+                    <div id="searchBoxContainer" class="mbt indent">
+                        <span id="searchBox"></span>
+                        <div class="flex-container-row">
+                            <span class="lift:statistics">
+                                <div class="directlyOnBackground">
+                                    <span id="results"/>
+                                </div>
+                                <button id="refreshButton" type="button" value="Search">
+                                    <span class="fa fa-search">
+                                      <span class="icon-txt">Search</span>
+                                    </span>
+                                </button>
+                                <span id="timestamp"/>
+                                <span id="script"/>
+                                <div id="loader"></div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
