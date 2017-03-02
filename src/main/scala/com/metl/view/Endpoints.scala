@@ -176,6 +176,9 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
     })
+    case Req("studentActivity" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.studentActivity", {
+      Full(PlainTextResponse("OK"))
+    })
     case Req("testFetchAndRender" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchAndRender", {
       for {
         width <- S.param("width")
