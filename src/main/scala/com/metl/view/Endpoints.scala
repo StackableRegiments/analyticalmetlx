@@ -82,12 +82,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     </msapplication>
     </browserconfig>
   }
-  private def searchForConversation(query: String) = {
-    val server = ServerConfiguration.default
-    <conversations>
-      {server.searchForConversation(query).map(c => serializer.fromConversation(c))}
-    </conversations>
-  }
   protected var id = 1000;
   serve {
     //security enforced security
@@ -159,7 +153,8 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("search" :: Nil,_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.search", {
         val query = S.params("query").head
-        val x = searchForConversation(query)
+        val server = ServerConfiguration.default
+        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
         Full(S.params("format") match {
           case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
           case _ => XmlResponse(x)
@@ -198,9 +193,10 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     })
     case Req("testCountConversations" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCountConversations", {
       for {
-        query <- S.param("q")
+        query <- S.param("query")
       } yield {
-        PlainTextResponse((searchForConversation(query) \\ "title").length.toString)
+        val server = ServerConfiguration.default
+        PlainTextResponse(server.searchForConversation(query).length.toString)
       }
     })
   }
