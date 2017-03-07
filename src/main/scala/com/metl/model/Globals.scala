@@ -194,7 +194,7 @@ object Globals extends PropertyReader with Logger {
   def getGradebookProvider(providerId:String):Option[ExternalGradebook] = gradebookProviders.find(_.id == providerId)
   def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
 
-  def getGroupsProvider(providerName:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerName)
+  def getGroupsProvider(providerStoreId:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
   def getGroupsProviders:List[GroupsProvider] = groupsProviders
 
   object casState {
