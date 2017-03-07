@@ -15,6 +15,7 @@ import actor._
 import scala.xml._
 import com.metl.model._
 import SHtml._
+import org.fluttercode.datafactory.impl._
 
 import js._
 import JsCmds._
@@ -32,21 +33,24 @@ trait SimulatedActivity
 case class Watching(ticks:Int) extends SimulatedActivity
 case class Scribbling(what:List[Char]) extends SimulatedActivity
 
-case class SimulatedUser(name:String,claim:List[Point],focus:Point,intention:String,activity:SimulatedActivity,history:List[SimulatedActivity]){
+case class ClaimedArea(left:Double,top:Double,right:Double,bottom:Double,width:Double)
+case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,intention:String,activity:SimulatedActivity,history:List[SimulatedActivity]){
   def pan(x:Int,y:Int = 0) = copy(focus = Point(focus.x + x,focus.y + y,0))
 }
 case class TrainingManual(actor:TrainerActor) {
+  val namer = new DataFactory
   val pages = List(
     TrainingPage(Text("Exercise 1"),
       Text("These controls will bring virtual students into your classroom.  Bring one in now."),
       Text("Sharing an open space"),
       List("benign","malicious").map(intent => TrainingControl(
         "Bring in a %s student".format(intent),() => {
-          actor.users = SimulatedUser(new String(('a' to 'z').toArray),List(Point(0,0,0),Point(0,0,0)),Point(100,100,0),"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
+          actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,0,0),Point(0,0,0),"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
         }))))
 }
 
 class TrainerActor extends StronglyTypedJsonActor with Logger {
+  implicit val formats = net.liftweb.json.DefaultFormats
   var manual = new TrainingManual(this)
   var users = List.empty[SimulatedUser]
   def registerWith = MeTLActorManager
@@ -61,29 +65,70 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   val rand = new scala.util.Random
   val sum = 0.0
 
+  trait ScanDirection
+  case object Above extends ScanDirection
+  case object Below extends ScanDirection
+  case object Leftwards extends ScanDirection
+  case object Rightwards extends ScanDirection
+
+  val lineHeight = 150
+
+  def findFreeSpace(width:Double,direction:ScanDirection,claims:List[ClaimedArea]):Point = direction match {
+    case Above => claims.sortBy(_.top).head match {
+      case p => Point(p.left,p.top - lineHeight,0)
+    }
+    case Below => claims.sortBy(_.bottom).last match {
+      case p => Point(p.left,p.top + lineHeight,0)
+    }
+    case Leftwards => claims.sortBy(_.left).head match {
+      case p => Point(p.left - width,p.top,0)
+    }
+    case Rightwards => claims.sortBy(c => c.right + c.width).last match {
+      case p => Point(p.left + p.width,p.top,0)
+    }
+  }
+
   override def lowPriority  = {
     case SimulatorTick => {
+      var furtherClaimsAllowed = true
       users = users.map {
         case u@SimulatedUser(name,claim,focus,intention,_,history) if history.size >= name.size => u
         case u@SimulatedUser(name,claim,focus,intention,Watching(ticks),history) => rand.nextInt(2) match {
-          case 1 => u.copy(activity = Scribbling(name.toLowerCase.toList))
+          case 1 if furtherClaimsAllowed => {
+            val width = (rand.nextInt(name.length / 2) - name.length / 2) * Alphabet.averageWidth
+            val focus = findFreeSpace(width, rand.nextInt(6) match {
+              case 1 => Above
+              case 2 | 3 => Rightwards
+              case 4 | 5 => Below
+              case _ => Leftwards
+            },users.map(_.claim))
+            val claim = ClaimedArea(
+              focus.x,focus.y,
+              focus.x + width,focus.y + lineHeight,
+              width)
+            furtherClaimsAllowed = false
+            u.copy(activity=Scribbling(name.toLowerCase.toList), focus=focus, claim=claim)
+          }
           case _ => u.copy(activity = Watching(ticks + 1))
         }
         case u@SimulatedUser(name,claim,focus,intention,Scribbling(Nil),history) => u.copy(activity = Watching(0))
-        case u@SimulatedUser(name,claim,focus,intention,Scribbling(h :: t),history) if h == ' ' => u.pan(50)
-        case u@SimulatedUser(name,claim,focus,intention,Scribbling(h :: t),history) => {
-          currentSlide.map(slide => {
-            val room = MeTLXConfiguration.getRoom(slide,server)
-            Alphabet.geometry(h,focus).map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig,name,new java.util.Date().getTime,sum,sum,
-              geometry,intention match {
-                case "benign" => Color(255,255,0,0)
-                case "malicious" => Color(255,0,0,255)
-                case _ => Color(255,0,255,0)
-              },2.0,false,"presentationSpace",Privacy.PUBLIC,slide.toString,nextFuncName)))
-          })
-          u.pan(100).copy(activity = Scribbling(t),history = Scribbling(List(h)) :: u.history)
+        case u@SimulatedUser(name,claim,focus,intention,Scribbling(h :: t),history) if h == ' ' => u.pan(Alphabet.space.width).copy(activity = Scribbling(t),history = Scribbling(List(h)) :: u.history)
+        case u@SimulatedUser(name,claim,focus,intention,Scribbling(h :: t),history) => Alphabet.geometry(h,focus) match {
+          case g => {
+            currentSlide.map(slide => {
+              val room = MeTLXConfiguration.getRoom(slide,server)
+              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig,name,new java.util.Date().getTime,sum,sum,
+                geometry,intention match {
+                  case "benign" => Color(255,255,0,0)
+                  case "malicious" => Color(255,0,0,255)
+                  case _ => Color(255,0,255,0)
+                },2.0,false,"presentationSpace",Privacy.PUBLIC,slide.toString,nextFuncName)))
+            })
+            u.pan(g.width).copy(activity = Scribbling(t),history = Scribbling(List(h)) :: u.history)
+          }
         }
       }
+      partialUpdate(Call("simulatedUsers",Extraction.decompose(users)).cmd)
       ActorPing.schedule(this,SimulatorTick,1000)
     }
   }
@@ -104,13 +149,18 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     ajaxButton(c.label,c.behaviour))
 }
 
+case class Glyph(width:Int,strokes:List[List[Point]])
 object Alphabet {
   implicit val formats = net.liftweb.json.DefaultFormats
+  val space = Glyph(50,Nil)
   def geometry(c:Char,p:Point) = c match {
-    case char if char >= 'a' && char <= 'z' => glyphs(char - 'a').map(stroke => stroke.map(point => Point(point.x + p.x,point.y + p.y,point.thickness)))
-    case _ => Nil
+    case char if char >= 'a' && char <= 'z' => glyphs(char - 'a') match {
+      case g => g.copy(strokes = g.strokes.map(stroke => stroke.map(point => Point(point.x + p.x,point.y + p.y,point.thickness))))
+    }
+    case _ => space
   }
-  lazy val glyphs:List[List[List[Point]]] = (List(2,1,1,2,2,3,1,3,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,2,1,1).foldLeft((pointJ.extract[List[List[Int]]],List.empty[List[List[Point]]])){
+  val averageWidth = glyphs.map(_.width).reduceLeft(_ + _) / glyphs.size
+  lazy val glyphs:List[Glyph] = (List(2,1,1,2,2,3,1,3,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,2,1,1).foldLeft((pointJ.extract[List[List[Int]]],List.empty[List[List[Point]]])){
     case ((source,acc),i) => source.splitAt(i) match {
       case (strokes,t) => (t, strokes.map(points => points.grouped(3).map {
         case List(x,y,p) => Point(x,y,p)
@@ -120,10 +170,12 @@ object Alphabet {
     case (_,absoluteChars) => absoluteChars.collect {
       case absoluteStrokes if !absoluteStrokes.isEmpty => {
         val absolutePoints = absoluteStrokes.flatten
-        val offset = Point(absolutePoints.map(_.x).min,absolutePoints.map(_.y).min,0)
-        absoluteStrokes.map(stroke => {
+        val xs = absolutePoints.map(_.x)
+        val ys = absolutePoints.map(_.y)
+        val offset = Point(xs.min,ys.min,0)
+        Glyph((xs.max - xs.min).intValue,absoluteStrokes.map(stroke => {
           stroke.map(abs => Point(abs.x - offset.x,abs.y - offset.y,0)).toList
-        })
+        }))
       }
     }
   }).reverse
