@@ -57,6 +57,7 @@ class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider,
       }.map(_._2).toList
     }
   })
+  override def searchByCourse(courseId:String):List[Conversation] = Stopwatch.time("CachedConversations.searchByCourse",List.empty[Conversation])
   override def detailsOf(conversationJid:Int) =
   {
     try {
@@ -160,6 +161,7 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
   override def search(query:String):List[Conversation] = Stopwatch.time("Conversations.search",{
     (scala.xml.XML.loadString(http.getClient.get(searchBaseUrl + "search?query=" + Helpers.urlEncode(query))) \\ "conversation").map(c => serializer.toConversation(c)).toList
   })
+  override def searchByCourse(courseId:String):List[Conversation] = Stopwatch.time("Conversations.search",List.empty[Conversation])
   override def conversationFor(slide:Int):Int = Stopwatch.time("Conversations.conversationFor",{
     config.name match {
       case "reifier" => ((slide / 1000) * 1000) + 400

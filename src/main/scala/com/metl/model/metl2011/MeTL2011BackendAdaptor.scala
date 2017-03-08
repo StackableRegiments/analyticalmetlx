@@ -33,6 +33,7 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString
   override def searchForConversation(query:String) = conversations.search(query)
+  override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid.toInt)
   override def createConversation(title:String,author:String) = conversations.createConversation(title,author)
   override def deleteConversation(jid:String):Conversation = conversations.deleteConversation(jid)
@@ -136,6 +137,7 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString
   override def searchForConversation(query:String) = conversations.search(query)
+  override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid.toInt)
   override def createConversation(title:String,author:String) = Conversation.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
