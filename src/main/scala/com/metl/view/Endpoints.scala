@@ -5,21 +5,17 @@ import java.io.StringWriter
 import com.metl.data._
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
-import javax.xml.bind.DatatypeConverter
 
 import net.liftweb.json._
 import net.liftweb.util._
 import net.liftweb.common._
 import net.liftweb.http._
 import net.liftweb.http.rest._
-import net.liftweb.http.provider._
 import Helpers._
 import com.metl.model._
-import Http._
+import com.metl.view.ReportHelper._
 
 import scala.xml.XML
-import org.apache.commons.io._
-import com.github.tototoshi.csv._
 
 trait Stemmer {
   def stem(in:String):Tuple2[String,String] = {
@@ -181,12 +177,12 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       HttpResponder.snapshotDataUri(jid,"thumbnail")
     })
     case Req("studentActivity" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.studentActivity", {
-      val stringWriter = new StringWriter()
-      val writer = CSVWriter.open(stringWriter)
-      writer.writeRow(List("StudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation"))
-      writer.writeRow(List("bob", "one", """here, "it" is""", "5,2,3", "2", "lots", "y"))
-      writer.close()
-      Full(PlainTextResponse(stringWriter.toString))
+      for{
+        courseId <- S.param("courseId")
+      } yield {
+//        val courseId = "6678"
+        PlainTextResponse(ReportHelper.studentActivity(courseId))
+      }
     })
     case Req("testFetchAndRender" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchAndRender", {
       for {
