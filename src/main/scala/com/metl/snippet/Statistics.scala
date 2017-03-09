@@ -33,8 +33,8 @@ class Statistics extends Logger {
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {
-    val results = DB.runQuery(sql, params)
     // results: (List[String] headers, List[List[String]] data)
+    val results = DB.runQuery(sql, params)
     List(name, results._2.head.head)
   }
 
