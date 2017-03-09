@@ -176,14 +176,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
     case Req("thumbnailDataUri" :: jid :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.thumbnailDataUri", {
       HttpResponder.snapshotDataUri(jid,"thumbnail")
     })
-    case Req("studentActivity" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.studentActivity", {
-      for{
-        courseId <- S.param("courseId")
-      } yield {
-//        val courseId = "6678"
-        PlainTextResponse(ReportHelper.studentActivity(courseId))
-      }
-    })
     case Req("testFetchAndRender" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchAndRender", {
       for {
         width <- S.param("width")
@@ -600,6 +592,14 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         PlainTextResponse("loggedUserAgent")
       })
     }
+    case Req("studentActivity" :: Nil,_,_) if Globals.isAnalyst => () => Stopwatch.time("MeTLRestHelper.studentActivity", {
+      for{
+        courseId <- S.param("courseId")
+      } yield {
+        //        val courseId = "6678"
+        PlainTextResponse(ReportHelper.studentActivity(courseId))
+      }
+    })
   }
 }
 object WebMeTLStatefulRestHelper extends RestHelper with Logger{

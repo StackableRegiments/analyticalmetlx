@@ -211,6 +211,9 @@ object Globals extends PropertyReader with Logger {
     def isSuperUser:Boolean = {
       is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
     }
+    def isAnalyst:Boolean = {
+      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "analyst")
+    }
     def isImpersonator:Boolean = actuallyIsImpersonator.is
     def authenticatedUsername:String = actualUsername.is
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
@@ -260,6 +263,7 @@ object Globals extends PropertyReader with Logger {
   // special roles
   def isSuperUser:Boolean = casState.isSuperUser
   def isImpersonator:Boolean = casState.isImpersonator
+  def isAnalyst:Boolean = casState.isAnalyst
   def assumeContainerSession:LiftAuthStateData = casState.assumeContainerSession
   def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = casState.impersonate(newUsername,personalAttributes)
 
