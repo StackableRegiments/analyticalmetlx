@@ -8,9 +8,9 @@ import com.metl.data.ServerConfiguration
 import com.metl.model.{ConversationRoom, GlobalRoom, MeTLXConfiguration}
 import net.liftweb.mapper.DB
 
-case class RawRow(author: String, conversationJid: Int, location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
+case class RawRow(author: String, conversationJid: Int, conversationTitle: String, location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-case class ProcessedRow(author: String, conversationJid: Int, location: String, index: Int, duration: Int, approx: Boolean, visits: Int, activity: Long)
+case class ProcessedRow(author: String, conversationJid: Int, conversationTitle: String, location: String, index: Int, duration: Int, approx: Boolean, visits: Int, activity: Long)
 
 object ReportHelper {
 
@@ -54,12 +54,12 @@ object ReportHelper {
       // Sort attendances just in case.
       val slideAttendances = room.getHistory.getAttendances.sortBy(_.timestamp)
 
-      println("Room " + room.location + ", " + slideAttendances.length + "attendances")
+      println("Room " + room.location + ": " + slideAttendances.length + " attendances")
 
       slideAttendances.foreach(a => {
         // Translate a.location (jid) into index via conversation.slides
         val index = conversation.slides.find(_.id == a.location.toInt).map(_.index + 1).getOrElse(0)
-        val newRow = RawRow(a.author, conversation.jid, a.location, index, a.timestamp, a.present)
+        val newRow = RawRow(a.author, conversation.jid, conversation.title, a.location, index, a.timestamp, a.present)
         rawRows = newRow :: rawRows
       })
     })
@@ -71,7 +71,7 @@ object ReportHelper {
     grouped.foreach(g => {
       val head = g._2.head
       val duration = getSecondsOnPage(g._2)
-      processedRows = ProcessedRow(head.author, head.conversationJid, head.location, head.index,
+      processedRows = ProcessedRow(head.author, head.conversationJid, head.conversationTitle, head.location, head.index,
         duration._1, duration._2, g._2.length,
         getRoomActivity(head.author, head.location)) :: processedRows
     })
@@ -85,16 +85,38 @@ object ReportHelper {
         r.duration.toString,
         r.visits.toString,
         r.activity.toString,
-        r.approx.toString) :: rows
+        r.approx.toString,
+        r.conversationTitle) :: rows
     })
 
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("StudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation"))
-    rows.reverse.foreach(r => writer.writeRow(r))
+    writer.writeRow(List("StudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "ConversationTitle"))
+    rows.sortWith(sortRows).foreach(r => writer.writeRow(r))
     writer.close()
 
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
     stringWriter.toString
+  }
+
+  def sortRows(l1: List[String], l2: List[String]): Boolean = {
+    if (l1.length >= 3) {
+      if (l2.length >= 3) {
+        val compare0 = l1.head.compareTo(l2.head)
+        if (compare0 == 0) {
+          val compare1 = l1(1).compareTo(l2(1))
+          if (compare1 == 0)
+            l1(2).compareTo(l2(2)) < 0
+          else
+            compare1 < 0
+        }
+        else
+          compare0 < 0
+      }
+      else
+        true
+    }
+    else
+      false
   }
 }
