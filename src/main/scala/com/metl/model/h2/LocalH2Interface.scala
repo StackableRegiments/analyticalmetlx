@@ -277,8 +277,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     val dirtyVids = Stopwatch.time("h2.fetch.dirtyVideos",H2DirtyVideo.findAll(By(H2DirtyVideo.room,jid)))
     val mds = Stopwatch.time("h2.fetch.moveDeltas",H2MoveDelta.findAll(By(H2MoveDelta.room,jid)))
     val quizResponses = Stopwatch.time("h2.fetch.quizzes",H2QuizResponse.findAll(By(H2QuizResponse.room,jid)))
-    val videoStreams = Stopwatch.time("h2.fetch.vidoeStreams",H2VideoStream.findAll(By(H2VideoStream.room,jid)))
-    val attendances = Stopwatch.time("h2.fetch.attendances",H2Attendance.findAll(By(H2Attendance.location,jid)))
+    val videoStreams = Stopwatch.time("h2.fetch.videoStreams",H2VideoStream.findAll(By(H2VideoStream.room,jid)))
+    val attendances = Stopwatch.time("h2.fetch.attendances",H2Attendance.findAll(By(H2Attendance.room,jid)))
     val grades = Stopwatch.time("h2.fetch.grades",H2Grade.findAll(By(H2Grade.room,jid)))
     val numericGradeValues = Stopwatch.time("h2.fetch.numericGradeValues",H2NumericGradeValue.findAll(By(H2NumericGradeValue.room,jid)))
     val booleanGradeValues = Stopwatch.time("h2.fetch.booleanGradeValues",H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)))
@@ -382,7 +382,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       },
       () => H2QuizResponse.findAll(By(H2QuizResponse.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s))),
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
-      () => H2Attendance.findAll(By(H2Attendance.location,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
+      () => H2Attendance.findAll(By(H2Attendance.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
       () => H2Theme.findAll(By(H2Theme.room,jid)).foreach(s => newHistory.addStanza(serializer.toTheme(s))),
       () => H2ChatMessage.findAll(By(H2ChatMessage.room,jid)).foreach(s => newHistory.addStanza(serializer.toChatMessage(s))),
       () => H2Command.findAll(By(H2Command.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLCommand(s))),
