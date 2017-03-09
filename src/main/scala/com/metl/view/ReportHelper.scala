@@ -26,12 +26,35 @@ object ReportHelper {
   }
 
   /* Traverse via incrementing counter. Increment on enter, decrement on exit, >= 1 is "in", <= 0 is "out". */
-  def getSecondsOnPage(rows: List[RawRow]): (Int, Boolean) = {
+  def getSecondsOnPage(pageRows: List[RawRow]): (Int, Boolean) = {
+    val rows = pageRows.sortBy(_.timestamp)
+    println("Getting seconds for " + rows.length + " rows")
+
     var counter = 0
+    var totalTime:Int = 0
+    var lastTime:Long = rows.head.timestamp
     for (r <- rows) {
+      println("Timestamp: " + r.timestamp)
+
       if (r.present) counter += 1 else counter -= 1
+      if (counter > 0) {
+        // In room
+        val currentDuration:Int = (r.timestamp - lastTime).toInt
+        println("Adding duration: " + currentDuration)
+
+        totalTime += currentDuration
+        lastTime = r.timestamp
+      }
+      else {
+        // Left room
+        lastTime = 0
+      }
     }
-    (counter, counter > 0)
+    // Number of exits was less than the number of entries.
+    val approx = counter > 0
+    val duration = totalTime / 1000
+    println("Total time (s): " + duration)
+    (duration, approx)
   }
 
   def studentActivity(courseId: String): String = {
