@@ -95,7 +95,7 @@ object ReportHelper {
           orgUnit <- g.getOrgUnit(courseId)
           members = g.getMembersFor(orgUnit)
         } yield {
-          println("Loaded " + members.length + " members")
+          println("Loaded " + members.length + " members from D2L for courseId: " + courseId)
           members
         }
       case _ => None
@@ -107,7 +107,6 @@ object ReportHelper {
     conversationForeignRelationship match {
       case Some(fr) =>
         val members = membersCache.get((fr.system, fr.key))
-//        println("Members for " + fr.key + ": " + members)
         members match {
           case Some(m) =>
             findUserIdInMembers(m, metlUser)
@@ -115,17 +114,15 @@ object ReportHelper {
         }
       case _ => ""
     }
-    ""
   }
 
   private def findUserIdInMembers(members: List[Member], metlUser: String): String = {
-    println("Finding " + metlUser + " in members: " + members)
-
-    members.find(m => m.name.equals(metlUser)) match {
-      case Some(m) => m.foreignRelationship match {
-        case Some(f) => f.key
-        case None => ""
-      }
+    members.find(m => m.name.toLowerCase.equals(metlUser.toLowerCase)) match {
+      case Some(m) =>
+        m.details.find(d => d.key.equals("OrgDefinedId")) match {
+          case Some(d) => d.value
+          case _ => ""
+        }
       case None => ""
     }
   }
@@ -150,7 +147,7 @@ object ReportHelper {
     var totalTime: Int = 0
     var lastTime: Long = rows.head.timestamp
     for (r <- rows) {
-      println("Timestamp: " + r.timestamp)
+      println("Timestamp: " + r.timestamp + " (" + r.present + ")")
 
       if (r.present) counter += 1 else counter -= 1
       if (counter > 0) {
@@ -169,7 +166,7 @@ object ReportHelper {
     // Number of exits was less than the number of entries.
     val approx = counter > 0
     val duration = totalTime / 1000
-    println("Total time (s): " + duration)
+    println("Total time (s) in room: " + duration)
     (duration, approx)
   }
 
