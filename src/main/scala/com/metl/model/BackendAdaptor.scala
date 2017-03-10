@@ -491,7 +491,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
 }
 
 class ResourceCachingAdaptor(sc:ServerConfiguration,cacheConfig:CacheConfig) extends PassThroughAdaptor(sc){
-  val imageCache = new ManagedCache[String,MeTLImage]("imageByIdentiity",((i:String)) => super.getImage(i),cacheConfig)
+  val imageCache = new ManagedCache[String,MeTLImage]("imageByIdentity",((i:String)) => super.getImage(i),cacheConfig)
   val imageWithJidCache = new ManagedCache[Tuple2[String,String],MeTLImage]("imageByIdentityAndJid",(ji) => super.getImage(ji._1,ji._2),cacheConfig)
   val resourceCache = new ManagedCache[String,Array[Byte]]("resourceByIdentity",(i:String) => super.getResource(i),cacheConfig)
   val resourceWithJidCache = new ManagedCache[Tuple2[String,String],Array[Byte]]("resourceByIdentityAndJid",(ji) => super.getResource(ji._1,ji._2),cacheConfig)

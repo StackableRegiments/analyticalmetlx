@@ -5,57 +5,17 @@ import java.util.Date
 
 import com.github.tototoshi.csv.CSVWriter
 import com.metl.data.ServerConfiguration
-import com.metl.model.{ConversationRoom, GlobalRoom, MeTLXConfiguration}
+import com.metl.liftAuthenticator.{ForeignRelationship, Member}
+import com.metl.model._
 import net.liftweb.mapper.DB
+import net.sf.ehcache.config.MemoryUnit
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
-case class RawRow(author: String, conversationJid: Int, conversationTitle: String, location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
+case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-case class ProcessedRow(author: String, conversationJid: Int, conversationTitle: String, location: String, index: Int, duration: Int, approx: Boolean, visits: Int, activity: Long)
+case class ProcessedRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Int, approx: Boolean, visits: Int, activity: Long)
 
 object ReportHelper {
-
-  /* Activity on page is number of h2ink, h2multiwordtext, h2image for that page in conv */
-  def getRoomActivity(author: String, location: String): Long = {
-    // results: (List[String] headers, List[List[String]] data)
-    val results = DB.runQuery("select (" +
-      "(select count(*) from h2ink where author = ? and slide = ?) + " +
-      "(select count(*) from h2multiwordtext where author = ? and slide = ?) + " +
-      "(select count(*) from h2image where author = ? and slide = ?)" +
-      ") as total", List.fill(3)(List(author, location)).flatten)
-    results._2.head.head.toLong
-  }
-
-  /* Traverse via incrementing counter. Increment on enter, decrement on exit, >= 1 is "in", <= 0 is "out". */
-  def getSecondsOnPage(pageRows: List[RawRow]): (Int, Boolean) = {
-    val rows = pageRows.sortBy(_.timestamp)
-    println("Getting seconds for " + rows.length + " rows")
-
-    var counter = 0
-    var totalTime:Int = 0
-    var lastTime:Long = rows.head.timestamp
-    for (r <- rows) {
-      println("Timestamp: " + r.timestamp)
-
-      if (r.present) counter += 1 else counter -= 1
-      if (counter > 0) {
-        // In room
-        val currentDuration:Int = (r.timestamp - lastTime).toInt
-        println("Adding duration: " + currentDuration)
-
-        totalTime += currentDuration
-        lastTime = r.timestamp
-      }
-      else {
-        // Left room
-        lastTime = 0
-      }
-    }
-    // Number of exits was less than the number of entries.
-    val approx = counter > 0
-    val duration = totalTime / 1000
-    println("Total time (s): " + duration)
-    (duration, approx)
-  }
 
   def studentActivity(courseId: String): String = {
     println("Generating student activity...")
@@ -82,7 +42,7 @@ object ReportHelper {
       slideAttendances.foreach(a => {
         // Translate a.location (jid) into index via conversation.slides
         val index = conversation.slides.find(_.id == a.location.toInt).map(_.index + 1).getOrElse(0)
-        val newRow = RawRow(a.author, conversation.jid, conversation.title, a.location, index, a.timestamp, a.present)
+        val newRow = RawRow(a.author, conversation.jid, conversation.title, conversation.foreignRelationship, a.location, index, a.timestamp, a.present)
         rawRows = newRow :: rawRows
       })
     })
@@ -94,7 +54,7 @@ object ReportHelper {
     grouped.foreach(g => {
       val head = g._2.head
       val duration = getSecondsOnPage(g._2)
-      processedRows = ProcessedRow(head.author, head.conversationJid, head.conversationTitle, head.location, head.index,
+      processedRows = ProcessedRow(head.author, head.conversationJid, head.conversationTitle, head.conversationForeignRelationship, head.location, head.index,
         duration._1, duration._2, g._2.length,
         getRoomActivity(head.author, head.location)) :: processedRows
     })
@@ -104,6 +64,7 @@ object ReportHelper {
     processedRows.reverse.foreach(r => {
       rows = List(r.author,
         r.conversationJid.toString,
+        getD2LUserId(r.conversationForeignRelationship, r.author),
         r.index.toString,
         r.duration.toString,
         r.visits.toString,
@@ -122,7 +83,98 @@ object ReportHelper {
     stringWriter.toString
   }
 
-  def sortRows(l1: List[String], l2: List[String]): Boolean = {
+  private val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
+  private val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
+
+  /** Use cached list if available, otherwise retrieve from D2L. */
+  private def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
+    val key = (system, courseId)
+    membersCache.get(key) match {
+      case None =>
+        val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.name.equals(system))
+        membersCache.loader.load(key, groupsProviders.flatMap {
+          case g: D2LGroupsProvider =>
+            for {
+              orgUnit <- g.getOrgUnit(courseId)
+              members <- g.getMembersFor(orgUnit)
+            } yield {
+              println("Loaded " + members.length + " members")
+              members
+            }
+          case _ => None
+        })
+        membersCache.get(key)
+      case _ => membersCache.get(key)
+    }
+  }
+
+  private def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
+    conversationForeignRelationship match {
+      case Some(fr) =>
+        val members = getD2LMembers(fr.system, fr.key)
+        members match {
+          case Some(m) =>
+            findUserIdInMembers(m, metlUser)
+          case _ => ""
+        }
+      case _ => ""
+    }
+  }
+
+  private def findUserIdInMembers(members: List[Member], metlUser: String): String = {
+    for {
+      m <- members.find(m => m.name.equals(metlUser))
+      fr <- m.foreignRelationship
+      k <- fr.key
+    } yield {
+      k
+    }
+  }
+
+  /* Activity on page is number of h2ink, h2multiwordtext, h2image for that page in conv */
+  private def getRoomActivity(author: String, location: String): Long = {
+    // results: (List[String] headers, List[List[String]] data)
+    val results = DB.runQuery("select (" +
+      "(select count(*) from h2ink where author = ? and slide = ?) + " +
+      "(select count(*) from h2multiwordtext where author = ? and slide = ?) + " +
+      "(select count(*) from h2image where author = ? and slide = ?)" +
+      ") as total", List.fill(3)(List(author, location)).flatten)
+    results._2.head.head.toLong
+  }
+
+  /* Traverse via incrementing counter. Increment on enter, decrement on exit, >= 1 is "in", <= 0 is "out". */
+  private def getSecondsOnPage(pageRows: List[RawRow]): (Int, Boolean) = {
+    val rows = pageRows.sortBy(_.timestamp)
+    println("Getting seconds for " + rows.length + " rows")
+
+    var counter = 0
+    var totalTime: Int = 0
+    var lastTime: Long = rows.head.timestamp
+    for (r <- rows) {
+      println("Timestamp: " + r.timestamp)
+
+      if (r.present) counter += 1 else counter -= 1
+      if (counter > 0) {
+        // In room
+        val currentDuration: Int = (r.timestamp - lastTime).toInt
+        println("Adding duration: " + currentDuration)
+
+        totalTime += currentDuration
+        lastTime = r.timestamp
+      }
+      else {
+        // Left room
+        lastTime = 0
+      }
+    }
+    // Number of exits was less than the number of entries.
+    val approx = counter > 0
+    val duration = totalTime / 1000
+    println("Total time (s): " + duration)
+    (duration, approx)
+  }
+
+  private def sortRows(l1: List[String], l2: List[String]): Boolean = {
     if (l1.length >= 3) {
       if (l2.length >= 3) {
         val compare0 = l1.head.compareTo(l2.head)
