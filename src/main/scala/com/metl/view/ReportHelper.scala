@@ -11,9 +11,11 @@ import net.liftweb.mapper.DB
 import net.sf.ehcache.config.MemoryUnit
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
-case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
+private case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-case class ProcessedRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Int, approx: Boolean, visits: Int, activity: Long)
+private case class ProcessedRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, visits: Int, activity: Long)
+
+case class RowTime(timestamp: Long, present: Boolean)
 
 object ReportHelper {
 
@@ -53,7 +55,7 @@ object ReportHelper {
     var processedRows: List[ProcessedRow] = List()
     grouped.foreach(g => {
       val head = g._2.head
-      val duration = getSecondsOnPage(g._2)
+      val duration = getSecondsOnPage(g._2.map(r => RowTime(r.timestamp, r.present)))
       processedRows = ProcessedRow(head.author, head.conversationJid, head.conversationTitle, head.conversationForeignRelationship, head.location, head.index,
         duration._1, duration._2, g._2.length,
         getRoomActivity(head.author, head.location)) :: processedRows
@@ -83,7 +85,7 @@ object ReportHelper {
     stringWriter.toString
   }
 
-  private val config = CacheConfig(25, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
+  private val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
   private val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
   /** Retrieve from D2L for insert into cache. */
@@ -139,34 +141,31 @@ object ReportHelper {
   }
 
   /* Traverse via incrementing counter. Increment on enter, decrement on exit, >= 1 is "in", <= 0 is "out". */
-  private def getSecondsOnPage(pageRows: List[RawRow]): (Int, Boolean) = {
+  def getSecondsOnPage(pageRows: List[RowTime]): (Long, Boolean) = {
     val rows = pageRows.sortBy(_.timestamp)
-    println("Getting seconds for " + rows.length + " rows")
-
+//    println("Getting seconds for " + rows.length + " rows")
     var counter = 0
-    var totalTime: Int = 0
+    var totalTime: Long = 0
     var lastTime: Long = rows.head.timestamp
+    var lastPresent: Boolean = false
     for (r <- rows) {
-      println("Timestamp: " + r.timestamp + " (" + r.present + ")")
-
-      if (r.present) counter += 1 else counter -= 1
-      if (counter > 0) {
+      if (r.present) counter += 1
+//      println("Timestamp: " + r.timestamp + " (c = " + counter + ", p = " + r.present + ")")
+      if (counter > 0 && lastPresent) {
         // In room
-        val currentDuration: Int = (r.timestamp - lastTime).toInt
-        println("Adding duration: " + currentDuration)
-
+        val currentDuration: Long = r.timestamp - lastTime
+//        println("Adding duration: " + currentDuration)
         totalTime += currentDuration
-        lastTime = r.timestamp
       }
-      else {
-        // Left room
-        lastTime = 0
-      }
+      if (!r.present) counter = 0
+      lastPresent = r.present
+      lastTime = r.timestamp
     }
     // Number of exits was less than the number of entries.
     val approx = counter > 0
-    val duration = totalTime / 1000
-    println("Total time (s) in room: " + duration)
+    // Cap duration at 5 min per segment.
+    val duration = Math.min(totalTime / 1000, 300)
+//    println("Total time (s) in room: " + duration)
     (duration, approx)
   }
 
