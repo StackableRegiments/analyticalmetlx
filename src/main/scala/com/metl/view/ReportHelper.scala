@@ -63,8 +63,8 @@ object ReportHelper {
     var rows: List[List[String]] = List(List())
     processedRows.reverse.foreach(r => {
       rows = List(r.author,
-        r.conversationJid.toString,
         getD2LUserId(r.conversationForeignRelationship, r.author),
+        r.conversationJid.toString,
         r.index.toString,
         r.duration.toString,
         r.visits.toString,
@@ -75,7 +75,7 @@ object ReportHelper {
 
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("StudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "ConversationTitle"))
+    writer.writeRow(List("MeTLStudentID", "D2LStudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "ConversationTitle"))
     rows.sortWith(sortRows).foreach(r => writer.writeRow(r))
     writer.close()
 
@@ -83,35 +83,31 @@ object ReportHelper {
     stringWriter.toString
   }
 
-  private val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
+  private val config = CacheConfig(25, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
   private val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
-  /** Use cached list if available, otherwise retrieve from D2L. */
+  /** Retrieve from D2L for insert into cache. */
   private def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
-    val key = (system, courseId)
-    membersCache.get(key) match {
-      case None =>
-        val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.name.equals(system))
-        membersCache.loader.load(key, groupsProviders.flatMap {
-          case g: D2LGroupsProvider =>
-            for {
-              orgUnit <- g.getOrgUnit(courseId)
-              members <- g.getMembersFor(orgUnit)
-            } yield {
-              println("Loaded " + members.length + " members")
-              members
-            }
-          case _ => None
-        })
-        membersCache.get(key)
-      case _ => membersCache.get(key)
+    val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.storeId.equals(system))
+    val m = groupsProviders.flatMap {
+      case g: D2LGroupsProvider =>
+        for {
+          orgUnit <- g.getOrgUnit(courseId)
+          members = g.getMembersFor(orgUnit)
+        } yield {
+          println("Loaded " + members.length + " members")
+          members
+        }
+      case _ => None
     }
+    Some(m.flatten)
   }
 
   private def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
     conversationForeignRelationship match {
       case Some(fr) =>
-        val members = getD2LMembers(fr.system, fr.key)
+        val members = membersCache.get((fr.system, fr.key))
+//        println("Members for " + fr.key + ": " + members)
         members match {
           case Some(m) =>
             findUserIdInMembers(m, metlUser)
@@ -119,15 +115,18 @@ object ReportHelper {
         }
       case _ => ""
     }
+    ""
   }
 
   private def findUserIdInMembers(members: List[Member], metlUser: String): String = {
-    for {
-      m <- members.find(m => m.name.equals(metlUser))
-      fr <- m.foreignRelationship
-      k <- fr.key
-    } yield {
-      k
+    println("Finding " + metlUser + " in members: " + members)
+
+    members.find(m => m.name.equals(metlUser)) match {
+      case Some(m) => m.foreignRelationship match {
+        case Some(f) => f.key
+        case None => ""
+      }
+      case None => ""
     }
   }
 
