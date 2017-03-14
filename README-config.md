@@ -8,7 +8,9 @@ Of particular interest for end-user customisation are:
 <serverConfiguration>
 ```
 
-Database (We use [H2](http://www.h2database.com) as an in-memory database for local development):
+## Database 
+We use [H2](http://www.h2database.com) as an in-memory database for local development.
+
 ```
   <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
 	<serverConfigurations>
@@ -27,7 +29,8 @@ Database (We use [H2](http://www.h2database.com) as an in-memory database for lo
 	</serverConfigurations>
 ```
 
-Caching:
+##Caching
+Tune server caching. 
 ```
 	<caches>
 		<roomLifetime miliseconds="3600000"/>
@@ -35,7 +38,8 @@ Caching:
 	</caches>
 ```
 
-Groups (see sample files for format):
+##Groups
+See sample files for format.
 ```
   <groupsProvider>
 		<selfGroups/>
@@ -45,6 +49,7 @@ Groups (see sample files for format):
 	</groupsProvider>
 ```
 
+## Service Providers
 Upstream foreign document import into images, if required:
 ```
 	<cloudConverterApiKey>anExampleApiKey</cloudConverterApiKey>
@@ -60,7 +65,8 @@ Upstream theme analysis, if required:
 	<themeAnalysisApiKey>anExampleApiKey</themeAnalysisApiKey>
 ```
 
-Google analytics, if required:
+## Google Analytics
+Add your tracking ID here.
 ```
 	<googleAnalytics>anExampleGoogleAnalytics</googleAnalytics>
 ```
