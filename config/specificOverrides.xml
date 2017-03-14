@@ -2,17 +2,17 @@
   <personalDetails username="david.hagen">
     <detail key="firstname" value="David"/>
     <detail key="surname" value="Hagan"/>
-    <detail key="email" value="david.hagan@gmail.com"/>
+    <detail key="email" value="a@b.c"/>
   </personalDetails>
   <personalDetails username="dave">
     <detail key="firstname" value="Dave"/>
     <detail key="surname" value="Hagan"/>
-    <detail key="email" value="dave@stackableregiments.com"/>
+    <detail key="email" value="b@b.c"/>
   </personalDetails>
   <personalDetails username="doug">
     <detail key="firstname" value="Doug"/>
     <detail key="surname" value="Hagan"/>
-    <detail key="email" value="doug@stackableregiments.com"/>
+    <detail key="email" value="d@b.c"/>
   </personalDetails>
   <personalDetails username="a">
   </personalDetails>
