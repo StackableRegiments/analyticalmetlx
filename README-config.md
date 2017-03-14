@@ -1,17 +1,15 @@
 # Configuration
 
-An example config file which uses a local database and no authentication might look like:
+An example config file which uses a local database and no authentication can be found in [config/configuration.sample.xml](config/configuration.sample.xml).
+
+Of particular interest for end-user customisation are:
 
 ```
 <serverConfiguration>
-  <liftConfiguration>
-    <cometRequestTimeout>25</cometRequestTimeout>
-    <maxMimeSize>1048576000</maxMimeSize>
-    <maxMimeFileSize>524288000</maxMimeFileSize>
-    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
-    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
-    <allowParallelSnippets>true</allowParallelSnippets>
-  </liftConfiguration>
+```
+
+Database (We use [H2](http://www.h2database.com) as an in-memory database for local development):
+```
   <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
 	<serverConfigurations>
     <server>
@@ -27,41 +25,46 @@ An example config file which uses a local database and no authentication might l
       <type>frontend</type>
     </server>
 	</serverConfigurations>
+```
+
+Caching:
+```
 	<caches>
 		<roomLifetime miliseconds="3600000"/>
 		<resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
 	</caches>
-	<importerPerformance parallelism="8"/>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	<securityProvider>
-		<stableKeyProvider/> 
-	</securityProvider>
-	<authenticationConfiguration>
-	  <requestUriStartWith value="/comet_request"/>
-	  <requestUriStartWith value="/ajax_request"/>
-	  <requestUriStartWith value="/favicon.ico"/>
-	  <requestUriStartWith value="/serverStatus"/>
-	  <requestUriStartWith value="/static"/>
-	  <requestUriStartWith value="/classpath"/>
-	</authenticationConfiguration>
-	<authentication>
-		<mock/>
-  </authentication>
+```
+
+Groups (see sample files for format):
+```
   <groupsProvider>
 		<selfGroups/>
 		<flatFileGroups format="globalOverrides" location="config/globalOverrides.txt" refreshPeriod="5 minutes"/>
 		<flatFileGroups format="specificOverrides" location="config/specificOverrides.txt" refreshPeriod="5 minutes"/>
 		<flatFileGroups format="xmlSpecificOverrides" location="config/specificOverrides.xml" refreshPeriod="5 minutes"/>
 	</groupsProvider>
-	<cloudConverterApiKey>anExampleApiKey</cloudConverterApiKey>
-	<textAnalysisApiKey>anExampleApiKey</textAnalysisApiKey>
-	<themeAnalysisApiKey>anExampleApiKey</themeAnalysisApiKey>
-</serverConfiguration>
 ```
 
-- Provide cloudConverterApiKey to enable upstream foreign document import into images, if required.
-- Provide textAnalysisApiKey to enable upstream text analysis, if required.
-- Provide themeAnalysisApiKey to enable upstream theme analysis, if required.
+Upstream foreign document import into images, if required:
+```
+	<cloudConverterApiKey>anExampleApiKey</cloudConverterApiKey>
+```
+
+Upstream text analysis, if required:
+```
+	<textAnalysisApiKey>anExampleApiKey</textAnalysisApiKey>
+```
+
+Upstream theme analysis, if required:
+```
+	<themeAnalysisApiKey>anExampleApiKey</themeAnalysisApiKey>
+```
+
+Google analytics, if required:
+```
+	<googleAnalytics>anExampleGoogleAnalytics</googleAnalytics>
+```
+
+```
+</serverConfiguration>
+```
