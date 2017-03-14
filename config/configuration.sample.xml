@@ -28,7 +28,6 @@
 	</caches>
 	<importerPerformance parallelism="8"/>
 	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
 		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
 	</clientConfig>
 	<securityProvider>
