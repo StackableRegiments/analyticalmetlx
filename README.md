@@ -2,7 +2,7 @@
 
 ## Description
 
-This project provides the primary MeTL server.  It provides the server-rendered low-interaction metlviewer product, the high interaction comet-enabled javascript product (available at /board), and endpoints for the native windows client to connect.  This is developed in scala, and deploys as a WAR directly into a java web container.  We've been using Jetty. 
+This project provides the primary MeTL server, the high interaction comet-enabled javascript product (available at `/board`).  This is developed in Scala, and deploys as a WAR directly into a Java web container.  We've been using Jetty. 
 
 ## Run
 
