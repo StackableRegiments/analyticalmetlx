@@ -17,27 +17,16 @@ import net.liftweb.util._
 
 class StudentActivity extends Logger {
 
-  val format = new SimpleDateFormat("yyyyMMdd")
-  val startDate = "20160801"
-
   val blankOption: (String, String) = "" -> ""
 
   def getOptions: List[(String, String)] = {
-    val courses = getCoursesForCurrentUser
-    println("D2L Courses: " + courses)
-
     blankOption ::
-      courses.getOrElse(List()).map(c => (c.foreignRelationship.get.key.toString, c.name))
-//      List(("6678", "Bob (6678)"))
+      getCoursesForCurrentUser.getOrElse(List()).map(c => (c.foreignRelationship.get.key.toString, c.name))
   }
 
   def handler(courseId: String): JsCmd = {
-    println("CourseId = " + courseId)
-
-    val csv = ReportHelper.studentActivity(courseId)
-    val stringReader = new StringReader(csv)
-    val reader = CSVReader.open(stringReader)
-    val headers = reader.allWithOrderedHeaders()
+    val stringReader = new StringReader(ReportHelper.studentActivity(courseId))
+    val headers = CSVReader.open(stringReader).allWithOrderedHeaders()
     println("Student Activity: " + headers)
     stringReader.close()
 
