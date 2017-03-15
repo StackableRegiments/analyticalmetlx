@@ -14,11 +14,17 @@
         </style>
     </head>
     <script type="text/javascript">
-        var updateResults = function(s){
-            $('#results').replaceWith('<span id="results">' + s + '</span>');
+        var updateStatistics = function(s){
+            $('#statistics').replaceWith('<span id="statistics">' + s + '</span>');
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
-            $('#timestamp').replaceWith('<span id="timestamp" class="directlyOnBackground">Last run: ' + t + '</span>');
+            $('#timestampStats').replaceWith('<span id="timestampStats" class="directlyOnBackground">Last run: ' + t + '</span>');
+        };
+        var updateActivity = function(s){
+            $('#studentActivity').replaceWith('<span id="studentActivity">' + s + '</span>');
+            var now = new Date();
+            var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
+            $('#timestampActivity').replaceWith('<span id="timestampActivity" class="directlyOnBackground">Last run: ' + t + '</span>');
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
@@ -31,16 +37,35 @@
                         <div class="flex-container-row">
                             <span class="lift:statistics">
                                 <div class="directlyOnBackground">
-                                    <span id="results"/>
+                                    <span id="statistics"/>
                                 </div>
-                                <button id="refreshButton" type="button" value="Search">
+                                <button id="statisticsButton" type="button" value="Search">
                                     <span class="fa fa-search">
                                       <span class="icon-txt">Search</span>
                                     </span>
                                 </button>
-                                <span id="timestamp"/>
-                                <span id="script"/>
-                                <div id="loader"></div>
+                                <span id="timestampStats"/>
+                                <div id="loaderStats"></div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-container-column">
+                    <h1 class="directlyOnBackground">Student Statistics</h1>
+                    <div id="selectBoxContainer" class="mbt indent">
+                        <span id="selectBox"></span>
+                        <div class="flex-container-row">
+                            <span class="lift:studentActivity">
+                                <div class="directlyOnBackground">
+                                    <span id="studentActivity"/>
+                                </div>
+                                <button id="activityButton" type="button" value="Search">
+                                    <span class="fa fa-search">
+                                      <span class="icon-txt">Search</span>
+                                    </span>
+                                </button>
+                                <span id="timestampActivity"/>
+                                <div id="loaderActivity"></div>
                             </span>
                         </div>
                     </div>
