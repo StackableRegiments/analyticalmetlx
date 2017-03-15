@@ -1,98 +1,53 @@
 package com.metl.snippet
 
+import java.io.StringReader
 import java.text.SimpleDateFormat
 
-import net.liftweb.common.Logger
+import com.github.tototoshi.csv.CSVReader
+import com.metl.view.ReportHelper
+import net.liftweb.common.{Empty, Logger}
 import net.liftweb.http.SHtml._
-import net.liftweb.http.js.JE._
-import net.liftweb.http.js.JsCmds._
+import net.liftweb.http.js.JE.Call
+import net.liftweb.http.js.JsCmd
 import net.liftweb.json.JsonAST.JString
-import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
-
 
 class StudentActivity extends Logger {
 
   val format = new SimpleDateFormat("yyyyMMdd")
   val startDate = "20160801"
 
+  val blankOption: (String, String) = "" -> ""
+
+  def getOptions: List[(String, String)] = {
+    blankOption ::
+      List(("6678", "Bob (6678)"))
+  }
+
+  def handler(courseId: String): JsCmd = {
+    println("CourseId = " + courseId)
+
+    val csv = ReportHelper.studentActivity(courseId)
+    val stringReader = new StringReader(csv)
+    val reader = CSVReader.open(stringReader)
+    val headers = reader.allWithOrderedHeaders()
+    println("Student Activity: " + headers)
+    stringReader.close()
+
+    Call("updateActivity", JString(createHtmlTable(headers))).cmd
+  }
+
   def render: CssBindFunc = {
-    "#activityButton" #> ajaxButton("Refresh", () => {
-      Call("updateActivity", JString(createHtmlTable(runAllQueries))).cmd
-    }) &
-      "#loaderActivity" #> Script(OnLoad(Call("updateActivity", JString(createHtmlTable(runAllQueries))).cmd))
+    "#course" #> ajaxSelect(getOptions, Empty, handler)
   }
 
-  def runQuery(name: String, sql: String, params: List[Any]): List[String] = {
-    // results: (List[String] headers, List[List[String]] data)
-    val results = DB.runQuery(sql, params)
-    List(name, results._2.head.head)
-  }
-
-  def runAllQueries: List[List[String]] = {
-    def toUnixTimestamp(s: String): String = {
-      val second = format.parse(s).toInstant.getEpochSecond
-      f"$second%d"
-    }
-
-    val informalStanzas = runQuery("Informal (ink, text, image) stanzas created",
-      "select sum(" +
-        "( select count(id) from h2ink where timestamp_c > ? ) + " +
-        "( select count(id) from h2multiwordtext where timestamp_c > ? ) + " +
-        "( select count(id) from h2image where timestamp_c > ? ) " +
-        ");",
-      List(toUnixTimestamp(startDate),
-        toUnixTimestamp(startDate),
-        toUnixTimestamp(startDate)))
-    val formalStanzas = runQuery("Formal (poll response) stanzas created",
-      "select count(id) from h2quizresponse where timestamp_c > ?;",
-      List(toUnixTimestamp(startDate)))
-    val allStanzas = informalStanzas(1).toInt + formalStanzas(1).toInt
-
-    List(runQuery("Conversation count",
-      "select count(*) from h2conversation where creation > ?;",
-      List(toUnixTimestamp(startDate))),
-      runQuery("Unique conversation authors",
-        "select count(distinct author) from h2conversation where creation > ?;",
-        List(toUnixTimestamp(startDate))),
-      runQuery("Unique conversation attendees",
-        "select count(distinct author) from h2attendance where timestamp_c > ?;",
-        List(toUnixTimestamp(startDate))),
-      List("All stanzas created", allStanzas.toString),
-      informalStanzas,
-      formalStanzas,
-      runQuery("Unique stanza creators",
-        "select count(a) from ( " +
-          "select distinct author as a from h2ink where timestamp_c > ? " +
-          "union " +
-          "select distinct author as a from h2multiwordtext where timestamp_c > ? " +
-          "union " +
-          "select distinct author as a from h2image where timestamp_c > ? " +
-          "union " +
-          "select distinct author as a from h2quizresponse where timestamp_c > ? " +
-          ") as bob;",
-        List(toUnixTimestamp(startDate),
-          toUnixTimestamp(startDate),
-          toUnixTimestamp(startDate),
-          toUnixTimestamp(startDate))),
-      runQuery("Unique informal (ink, text, image) stanza creators",
-        "select count(a) from (" +
-          "select distinct author as a from h2ink where timestamp_c > ? " +
-          "union " +
-          "select distinct author as a from h2multiwordtext where timestamp_c > ? " +
-          "union " +
-          "select distinct author as a from h2image where timestamp_c > ? " +
-          ") as bob;",
-        List(toUnixTimestamp(startDate),
-          toUnixTimestamp(startDate),
-          toUnixTimestamp(startDate))),
-      runQuery("Unique formal (poll response) stanza creators",
-        "select count(distinct author) from h2quizresponse where timestamp_c > ?;",
-        List(toUnixTimestamp(startDate))))
-  }
-
-  def createHtmlTable(results: List[List[String]]): String = {
-    "<table>" + results.map(m => "<tr><td>" + m.head + "</td><td>&nbsp;</td><td class='result'>" + m(1) + "<td>").mkString + "</table>"
+  def createHtmlTable(results: (List[String], List[Map[String, String]])): String = {
+    "<table>" +
+      "<tr>" +
+      results._1.map(m => "<th>" + m + "</th>").mkString +
+      "</tr>" +
+      results._2.map(l => "<tr>" + results._1.map(m => "<td>" + l.getOrElse(m, "") + "</td>") + "</tr>").mkString +
+      "</table>"
   }
 }

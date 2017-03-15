@@ -1,6 +1,7 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
     <head>
         <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+        <link rel="stylesheet" href="static/css/statistics.css"></link>
         <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
         <script src="static/js/stable/lodash.min.js"></script>
         <script src="static/js/stable/moment.min.js"></script>
@@ -8,19 +9,19 @@
         <script src="static/js/stable/d3.layout.cloud.js"></script>
         <script src="static/js/stable/typo.js"></script>
         <style>
-            .result{
-                text-align:right;
+            .result {
+                text-align: right;
             }
         </style>
     </head>
     <script type="text/javascript">
-        var updateStatistics = function(s){
+        var updateStatistics = function (s) {
             $('#statistics').replaceWith('<span id="statistics">' + s + '</span>');
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampStats').replaceWith('<span id="timestampStats" class="directlyOnBackground">Last run: ' + t + '</span>');
         };
-        var updateActivity = function(s){
+        var updateActivity = function (s) {
             $('#studentActivity').replaceWith('<span id="studentActivity">' + s + '</span>');
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
@@ -29,44 +30,42 @@
     </script>
     <div id="masterLayout" class="flex-container-column">
         <div class="mbt">
-            <div class="indent flex-container-row" id="optionBlocks">
+            <div class="indent flex-container-row">
                 <div class="flex-container-column">
                     <h1 class="directlyOnBackground">Enterprise Statistics</h1>
                     <div id="searchBoxContainer" class="mbt indent">
                         <span id="searchBox"></span>
                         <div class="flex-container-row">
-                            <span class="lift:statistics">
-                                <div class="directlyOnBackground">
-                                    <span id="statistics"/>
-                                </div>
-                                <button id="statisticsButton" type="button" value="Search">
-                                    <span class="fa fa-search">
-                                      <span class="icon-txt">Search</span>
-                                    </span>
-                                </button>
-                                <span id="timestampStats"/>
-                                <div id="loaderStats"></div>
-                            </span>
+                        <span class="lift:statistics">
+                            <div class="directlyOnBackground">
+                                <span id="statistics"/>
+                            </div>
+                            <button id="statisticsButton" type="button" value="Search">
+                                <span class="fa fa-search">
+                                  <span class="icon-txt">Search</span>
+                                </span>
+                            </button>
+                            <span id="timestampStats"/>
+                            <div id="loaderStats"></div>
+                        </span>
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="indent flex-container-row">
                 <div class="flex-container-column">
                     <h1 class="directlyOnBackground">Student Statistics</h1>
                     <div id="selectBoxContainer" class="mbt indent">
                         <span id="selectBox"></span>
                         <div class="flex-container-row">
-                            <span class="lift:studentActivity">
-                                <div class="directlyOnBackground">
-                                    <span id="studentActivity"/>
-                                </div>
-                                <button id="activityButton" type="button" value="Search">
-                                    <span class="fa fa-search">
-                                      <span class="icon-txt">Search</span>
-                                    </span>
-                                </button>
-                                <span id="timestampActivity"/>
-                                <div id="loaderActivity"></div>
-                            </span>
+                        <span class="lift:studentActivity">
+                            <label for="course" class="directlyOnBackground">Select Course</label>
+                            <select id="course"></select>
+                            <div class="directlyOnBackground">
+                                <span id="studentActivity"/>
+                            </div>
+                            <span id="timestampActivity"/>
+                        </span>
                         </div>
                     </div>
                 </div>

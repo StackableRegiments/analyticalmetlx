@@ -101,6 +101,6 @@ class Statistics extends Logger {
   }
 
   def createHtmlTable(results: List[List[String]]): String = {
-    "<table>" + results.map(m => "<tr><td>" + m.head + "</td><td>&nbsp;</td><td class='result'>" + m(1) + "<td>").mkString + "</table>"
+    "<table>" + results.map(m => "<tr><td>" + m.head + "</td><td>&nbsp;</td><td class='result'>" + m(1) + "</td></tr>").mkString + "</table>"
   }
 }
