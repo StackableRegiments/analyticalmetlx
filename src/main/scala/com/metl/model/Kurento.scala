@@ -143,15 +143,6 @@ class KurentoPipeline(val kurentoManager:KurentoManager,pipeline:MediaPipeline,v
         case _ => {}
       }
     }))
-    // we're not using data channels!
-    /*
-    wre.addDataChannelOpenListener(new KurentoEventListener[DataChannelOpenEvent]((dce:DataChannelOpenEvent) => {
-      trace("dataChannelOpen (%s) state changed: %s ::: %s".format(name,dce,wre))
-    }))
-    wre.addDataChannelCloseListener(new KurentoEventListener[DataChannelCloseEvent]((dce:DataChannelCloseEvent) => {
-      trace("dataChannelClose (%s) state changed: %s ::: %s".format(name,dce,wre))
-    }))
-    */
     wre		
   }		
   def getPipeline:MediaPipeline = pipeline		
@@ -282,8 +273,8 @@ case class LargeGroupRoomPipeline(override val kurentoManager:KurentoManager,pip
       val ousp = new HubPort.Builder(masterHub).build()
       ousp.connect(m)
       val ports = List(ausp,dsp)
-      println("connected (%s) to (%s ]: %s)".format(m,hc,ports))
       hc.put(m,ports)
+      println("connected (%s) to (%s ]: %s)".format(m,hc,ports))
     })
     println("newState\r\nmembers: %s\r\nhubs: %s\r\n".format(members.keys.toList.length,hubs.keys.toList.length))
     m		
@@ -427,13 +418,13 @@ class RemoteKurentoManager(kmsUrl:String) extends KurentoManager with Logger {
   protected lazy val client:KurentoClient = {
     val kurento:KurentoClient = KurentoClient.create(kmsUrl, new KurentoConnectionListener() {		
       override def reconnected(sameServer:Boolean):Unit = {		
-        warn("kurento reconnected: %s".format(sameServer));		
+        warn("kurento reconnected: %s".format(sameServer))
       }		
       override def disconnected:Unit = {		
-        warn("kurento disconnected");		
+        warn("kurento disconnected")
       }		
       override def connectionFailed:Unit = {		
-        warn("kurento connectionFailed");		
+        warn("kurento connectionFailed")
       }		
       override def connected:Unit = {		
         warn("kurento connected") 		
