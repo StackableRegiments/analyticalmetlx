@@ -1,7 +1,6 @@
 package com.metl.snippet
 
 import java.io.StringReader
-import java.text.SimpleDateFormat
 
 import com.github.tototoshi.csv.CSVReader
 import com.metl.liftAuthenticator.OrgUnit
@@ -11,7 +10,7 @@ import net.liftweb.common.{Empty, Logger}
 import net.liftweb.http.SHtml._
 import net.liftweb.http.js.JE.Call
 import net.liftweb.http.js.JsCmd
-import net.liftweb.json.JsonAST.JString
+import net.liftweb.json.JsonAST.{JArray, JField, JObject, JString}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 
@@ -30,20 +29,20 @@ class StudentActivity extends Logger {
     println("Student Activity: " + headers)
     stringReader.close()
 
-    Call("updateActivity", JString(createHtmlTable(headers))).cmd
+    Call("updateActivity", createHtmlTable(headers)).cmd
   }
 
   def render: CssBindFunc = {
     "#course" #> ajaxSelect(getOptions, Empty, handler)
   }
 
-  def createHtmlTable(results: (List[String], List[Map[String, String]])): String = {
-    "<table>" +
-      "<tr>" +
-      results._1.map(m => "<th>" + m + "</th>").mkString +
-      "</tr>" +
-      results._2.map(l => "<tr>" + results._1.map(m => "<td>" + l.getOrElse(m, "") + "</td>") + "</tr>").mkString +
-      "</table>"
+  def createHtmlTable(results: (List[String], List[Map[String, String]])): JObject = {
+    JObject(List(
+      JField("headers",JArray(results._1.map(h => JString(h)))),
+      JField("data",JArray(results._2.map(r => {
+        JObject(r.toList.map(kv => JField(kv._1,JString(kv._2))))
+      })))
+    ))
   }
 
   /** Retrieve from D2L. */
