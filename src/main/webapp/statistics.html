@@ -21,11 +21,27 @@
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampStats').replaceWith('<span id="timestampStats" class="directlyOnBackground">Last run: ' + t + '</span>');
         };
-        var updateActivity = function (s) {
-            $('#studentActivity').replaceWith('<span id="studentActivity">' + s + '</span>');
+        var createTable = function(a) {
+            var table = $("<table/>");
+            var tr = $("<tr/>");
+            table.append(tr);
+            _.forEach(a.headers, function(header){
+                tr.append('<th>' + header + '</th>');
+            });
+            _.forEach(a.data, function(row){
+                tr = $("<tr/>");
+                table.append(tr);
+                _.forEach(a.headers, function(header){
+                    tr.append('<td>' + row[header] + '</td>');
+                });
+            });
+            return table;
+        };
+        var updateActivity = function (a) {
+            $('#studentActivity').html(createTable(a));
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
-            $('#timestampActivity').replaceWith('<span id="timestampActivity" class="directlyOnBackground">Last run: ' + t + '</span>');
+            $('#timestampActivity').html('Last run: ' + t);
         };
     </script>
     <div id="masterLayout" class="flex-container-column">

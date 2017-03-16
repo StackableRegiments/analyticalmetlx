@@ -38,9 +38,9 @@ class StudentActivity extends Logger {
 
   def createHtmlTable(results: (List[String], List[Map[String, String]])): JObject = {
     JObject(List(
-      JField("headers",JArray(results._1.map(h => JString(h)))),
-      JField("data",JArray(results._2.map(r => {
-        JObject(r.toList.map(kv => JField(kv._1,JString(kv._2))))
+      JField("headers", JArray(results._1.map(h => JString(h)))),
+      JField("data", JArray(results._2.map(r => {
+        JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))
       })))
     ))
   }
