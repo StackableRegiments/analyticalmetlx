@@ -61,55 +61,42 @@ object ReportHelper {
         getRoomActivity(head.author, head.location)) :: processedRows
     })
 
-    // Assemble CSV rows from processedRows
-    var rows: List[List[String]] = List(List())
-    processedRows.reverse.foreach(r => {
-      rows = List(r.conversationJid.toString,
-        r.author,
-        r.index.toString,
-        r.duration.toString,
-        r.visits.toString,
-        r.activity.toString,
-        r.approx.toString,
-        getD2LUserId(r.conversationForeignRelationship, r.author),
-        r.conversationTitle) :: rows
-    })
-    rows = rows.filter(r => r.nonEmpty && r.tail.head.nonEmpty).sortWith(sortRows)
-
     // Add rows for enrolled students who have never attended.
-    var nonAttendingRows: List[ProcessedRow] = List()
+    var nonAttendingRows: List[List[String]] = List(List())
     if (conversations.nonEmpty) {
       val conversation = conversations.head
       val ids = getAllD2LUserIds(conversation.foreignRelationship)
       println("ids = " + ids)
       nonAttendingRows = ids.map(m => {
-        ProcessedRow(getMemberOrgDefinedId(m), "", "", None, "", 0, 0, approx = false, 0, 0)
-      }) ::: nonAttendingRows
+        List("", "", "", "", "", "", "", getMemberOrgDefinedId(m), "")
+      }).filter(l => l(7).nonEmpty).sortWith((left, right) => left(7).compareTo(right(7)) < 0) ::: nonAttendingRows
     }
 
-    var moreRows: List[List[String]] = List(List())
-    nonAttendingRows.reverse.foreach(r => {
-      moreRows = List(r.conversationJid.toString,
+    val stringWriter = new StringWriter()
+    val writer = CSVWriter.open(stringWriter)
+    writer.writeRow(List("ConversationTitle", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationID"))
+    createCsvRows(processedRows).foreach(r => writer.writeRow(r))
+    nonAttendingRows.foreach(r => writer.writeRow(r))
+    writer.close()
+
+    println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
+    stringWriter.toString
+  }
+
+  protected def createCsvRows(processedRows: List[ProcessedRow]): List[List[String]] = {
+    var csvRows: List[List[String]] = List(List())
+    processedRows.reverse.foreach(r => {
+      csvRows = List(r.conversationTitle,
         r.author,
         r.index.toString,
         r.duration.toString,
         r.visits.toString,
         r.activity.toString,
         r.approx.toString,
-        getD2LUserId(r.conversationForeignRelationship, r.author),
-        r.conversationTitle) :: moreRows
+        r.conversationJid.toString,
+        getD2LUserId(r.conversationForeignRelationship, r.author)) :: csvRows
     })
-    moreRows = moreRows.filter(r => r.nonEmpty && r.tail.head.nonEmpty).sortWith(sortRows)
-
-    val stringWriter = new StringWriter()
-    val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("ConversationID", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationTitle"))
-    rows.foreach(r => writer.writeRow(r))
-    moreRows.foreach(r => writer.writeRow(r))
-    writer.close()
-
-    println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
-    stringWriter.toString
+    csvRows.filter(r => r.nonEmpty && r.head.trim.nonEmpty).sortWith(sortRows)
   }
 
   protected val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
