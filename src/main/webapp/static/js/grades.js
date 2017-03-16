@@ -479,11 +479,13 @@ var Grades = (function(){
                                 var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
                                 gradebookDatagrid.empty();
                                 var generateData = function(andThen){
-                                    var data = gradeValues[grade.id];
-                                    if (data == undefined){
-                                        gradeValues[grade.id] = {};
-                                        data = {};
-                                    };
+																		var candidateData = gradeValues[grade.id];
+                                    var data = {};
+                                    if (candidateData === undefined){
+                                        gradeValues[grade.id] = data;
+                                    } else {
+																			data = _.cloneDeep(candidateData);
+																		}
                                     var gradeType = sprintf("%sGradeValue",grade.gradeType);
                                     var possibleParticipants = Participants.getPossibleParticipants();
                                     if ("foreignRelationship" in grade){
@@ -501,7 +503,7 @@ var Grades = (function(){
                                             possibleParticipants = _.uniq(possibleParticipants);
                                             _.forEach(possibleParticipants,function(name){
                                                 var oldValue = data[name];
-                                                if (oldValue.type != gradeType || oldValue == undefined){
+																								if (oldValue === undefined || oldValue.type != gradeType){
                                                     data[name] = {
                                                         type:gradeType,
                                                         gradeId:grade.id,
@@ -527,7 +529,7 @@ var Grades = (function(){
                                     } else {
                                         _.forEach(possibleParticipants,function(name){
                                             var oldValue = data[name];
-                                            if (oldValue == undefined){
+                                            if (oldValue === undefined || oldValue.type != gradeType){
                                                 data[name] = {
                                                     type:gradeType,
                                                     gradeId:grade.id,
@@ -625,7 +627,7 @@ var Grades = (function(){
                                             gv.gradeValue = newGv.gradeValue;
                                             gv.gradeComment = newGv.gradeComment;
                                             gv.gradePrivateComment = newGv.gradePrivateComment;
-                                            //console.log("sending:",newGv);
+																						gradeValues[grade.id][newGv.gradedUser] = newGv;
                                             changeGvAlert.closeAlert();
                                             generateData(withData);
                                         });
