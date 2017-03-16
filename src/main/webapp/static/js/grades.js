@@ -186,33 +186,6 @@ var Grades = (function(){
                                 minTextbox.unbind("blur").on("blur",changeMinFunction).attr("id",minId);
                                 maxTextbox.unbind("blur").on("blur",changeMaxFunction).attr("id",maxId);
 																
-																var badGradeValues = _.filter(gradeValues[grade.id],function(gv){
-																	return gv.gradeType != grade.gradeType;
-																});
-																var gradeFixesContainer = innerRoot.find(".fixGradeTypeErrorsContainer");
-																if (_.size(badGradeValues) > 0){
-																	gradeFixesContainer.show();
-																	var indivFixesContainer = gradeFixesContainer.find(".individualFixesContainer");
-																	var indivFixTemplate = indivFixesContainer.find(".individualFix").clone();
-																	indivFixesContainer.html(_.map(badGradeValues,function(bgv){
-																		var bgvf = indivFixTemplate.clone();
-																		bgvf.find(".individualFixGradedUser").text(bgv.gradedUser);
-																		bgvf.find(".individualFixOldValue").text(bgv.gradeValue);
-																		var newValue = undefined;
-																		switch (grade.gradeType){
-																		}	
-																		bgvf.find(".individualFixNewValue").text(newValue);
-																		bgvf.find(".commitIndividualFix").unbind("click").on("click",function(){
-																			bgv.gradeValue = newValue;
-																			sendStanza(newValue);
-																			bgvf.unbind("click");
-																			bgvf.remove();
-																		});
-																		return bgvf;
-																	}));
-																} else {
-																	gradeFixesContainer.hide();
-																}
 
                                 var reRenderGradeTypeOptions = function(){
 																	if ("foreignRelationship" in newGrade){
@@ -242,7 +215,6 @@ var Grades = (function(){
                                     newGrade.gradeType = typeSelect.val();
                                     reRenderGradeTypeOptions();
                                 }).val(newGrade.gradeType);
-                                reRenderGradeTypeOptions();
                                 innerRoot.find(".gradeTypeLabel").attr("for",selectId);
                                 var visibleId = sprintf("gradeVisible_%s",uniqId);
                                 innerRoot.find(".gradeVisibleLabel").attr("for",visibleId);
@@ -446,13 +418,120 @@ var Grades = (function(){
                                         }
                                     }
                                 };
+																var gradeFixesContainer = innerRoot.find(".fixGradeTypeErrorsContainer");
+																var gradeFixesContainerTemplate = gradeFixesContainer.clone();
+																gradeFixesContainer.empty();
+																
                                 reRenderAssociations();
                                 innerRoot.find(".cancelGradeEdit").unbind("click").on("click",function(){
                                     jAlert.closeAlert();
                                 });
                                 innerRoot.find(".submitGradeEdit").unbind("click").on("click",function(){
                                     sendStanza(newGrade);
-                                    jAlert.closeAlert();
+																		var newGradeType = sprintf("%sGradeValue",newGrade.gradeType);
+																		console.log("gradeFilter:",newGradeType,gradeValues[newGrade.id]);
+																		var badGradeValues = _.filter(gradeValues[newGrade.id],function(gv){
+																			return gv.type != newGradeType && "gradeValue" in gv;
+																		});
+																		jAlert.closeAlert();
+																		if (_.size(badGradeValues) > 0){
+																			var gradeFixUniqId = _.uniqueId();
+																			var outer = $("<div/>",{
+																					id:gradeFixUniqId
+																			});
+																			var gradeFixJAlert = $.jAlert({
+																					title:"Fix gradeValues after grade type change",
+																					width:"auto",
+																					content:outer[0].outerHTML,
+																					onClose:function(){
+																							reRenderFunc();
+																					}
+																			});
+																			var gradeFixInnerRoot = gradeFixesContainerTemplate.clone();
+																			$("#"+gradeFixUniqId).append(gradeFixInnerRoot);
+																			gradeFixesContainer.show();
+																			var indivFixesContainer = gradeFixInnerRoot.find(".individualFixesContainer");
+																			var indivFixTemplate = indivFixesContainer.find(".individualFix").clone();
+																			indivFixesContainer.html(_.map(badGradeValues,function(bgvi){
+																				var bgv = _.cloneDeep(bgvi);
+																				var bgvf = indivFixTemplate.clone();
+																				bgvf.find(".individualFixGradedUser").text(bgv.gradedUser.toString());
+																				bgvf.find(".individualFixOldValue").text(bgv.gradeValue.toString());
+																				var newValue = undefined;
+																				switch (newGrade.gradeType){
+																					case "numeric":
+																						switch (bgv.type){
+																							case "textGradeValue":
+																								var candidate = parseInt(bgv.gradeValue);
+																								if ("numericMinimum" in newGrade && !isNaN(newGrade.numericMinimum) && "numericMaximum" in newGrade && !isNaN(newGrade.numericMaximum)){
+																									if (isNaN(candidate)){
+																										newValue = newGrade.numericMinimum;
+																									} else {
+																										newValue = Math.min(newGrade.numericMaximum,Math.max(candidate,newGrade.numericMinimum));
+																									}
+																								} else {
+																									if (isNaN(candidate)){
+																										newValue = 0;
+																									} else {
+																										newValue = candidate;
+																									}
+																								}
+																								break;
+																							case "booleanGradeValue":
+																								newValue = bgv.gradeValue ? newGrade.numericMaximum : newGrade.numericMinimum;
+																								break;
+																							default:
+																								break;
+																						}
+																						break;
+																					case "text":
+																						switch (bgv.type){
+																							case "numericGradeValue":
+																								newValue = bgv.gradeValue.toString();
+																								break;
+																							case "booleanGradeValue":
+																								newValue = bgv.gradeValue.toString();
+																								break;
+																							default:
+																								break;
+																						}
+																						break;
+																					case "boolean":
+																						switch (bgv.type){
+																							case "numericGradeValue":
+																								newValue = bgv.gradeValue != 0;
+																								break;
+																							case "textGradeValue":
+																								var candidate = bgv.gradeValue.toLowerCase().trim();
+																								newValue = !(candidate == "false" || candidate == "0" || candidate == "no" || candidate == "" || candidate == "n"); // general falsey
+																								break;
+																							default:
+																								break;
+																						}
+																						break;
+																					default:
+																						break;	
+																				}	
+																				bgvf.find(".individualFixNewValue").text(newValue.toString());
+																				bgvf.find(".commitIndividualFix").unbind("click").on("click",function(){
+																					bgv.type = newGradeType;
+																					bgv.gradeValue = newValue;
+																					sendStanza(bgv);
+																					badGradeValues = _.filter(badGradeValues,function(tbgvi){
+																						return tbgvi.gradedUser != bgv.gradedUser;
+																					});
+																					bgvf.unbind("click");
+																					bgvf.remove();
+																					if (_.size(badGradeValues) < 1){
+																						gradeFixJAlert.closeAlert();	
+																					}
+																				});
+																				return bgvf;
+																			}));
+																			gradeFixInnerRoot.find(".closeIndividualFixesPopup").on("click",function(){
+																				gradeFixJAlert.closeAlert();
+																			});
+																		}
                                 });
                                 $("#"+uniqId).append(innerRoot);
                             }

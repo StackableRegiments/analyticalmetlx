@@ -306,13 +306,14 @@
                       <button class="createGrade button-transparent-border mth"><span>Create a new grade in the course</span></button>
                     </span>
 										<span class="fixGradeTypeErrorsContainer">
-											<label>Fix grade type errors</label>
+											<div>The grade has changed type, and some scores have already been assigned.  Those scores cannot be shown in the gradebook against this grade anymore, because they are of the wrong type.  MeTL can propose the following converions.  Please review them and apply them individually, by clicking the "apply" button for each one that you wish to keep.</div>
 											<div class="individualFixesContainer">
 												<div class="individualFix">
-													<span class="individualFixGradedUser"></span> : <span class="individualFixOldValue"></span> becomes <span class="individualFixNewValue"></span>
-												 	<button class="commitIndividualFix">Commit proposed change</button>
+													<span class="individualFixGradedUser"></span> : <span class="individualFixOldValue"></span> converts to <span class="individualFixNewValue"></span>
+												 	<button class="commitIndividualFix">apply</button>
 												</div>
 											</div>
+											<button class="closeIndividualFixesPopup">Done</button>
 										</span>
                   </span>
                   <div class="grades blocker" style="display:none;height:100%;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>
