@@ -184,6 +184,35 @@ var Grades = (function(){
                                 innerRoot.find(".numericMaxLabel").attr("for",maxId);
                                 minTextbox.unbind("blur").on("blur",changeMinFunction).attr("id",minId);
                                 maxTextbox.unbind("blur").on("blur",changeMaxFunction).attr("id",maxId);
+																
+																var badGradeValues = _.filter(gradeValues[grade.id],function(gv){
+																	return gv.gradeType != grade.gradeType;
+																});
+																var gradeFixesContainer = innerRoot.find(".fixGradeTypeErrorsContainer");
+																if (_.size(badGradeValues) > 0){
+																	gradeFixesContainer.show();
+																	var indivFixesContainer = gradeFixesContainer.find(".individualFixesContainer");
+																	var indivFixTemplate = indivFixesContainer.find(".individualFix").clone();
+																	indivFixesContainer.html(_.map(badGradeValues,function(bgv){
+																		var bgvf = indivFixTemplate.clone();
+																		bgvf.find(".individualFixGradedUser").text(bgv.gradedUser);
+																		bgvf.find(".individualFixOldValue").text(bgv.gradeValue);
+																		var newValue = undefined;
+																		switch (grade.gradeType){
+																		}	
+																		bgvf.find(".individualFixNewValue").text(newValue);
+																		bgvf.find(".commitIndividualFix").unbind("click").on("click",function(){
+																			bgv.gradeValue = newValue;
+																			sendStanza(newValue);
+																			bgvf.unbind("click");
+																			bgvf.remove();
+																		});
+																		return bgvf;
+																	}));
+																} else {
+																	gradeFixesContainer.hide();
+																}
+
                                 var reRenderGradeTypeOptions = function(){
                                     if ("foreignRelationship" in newGrade){
                                         minTextbox.prop("disabled",true);
