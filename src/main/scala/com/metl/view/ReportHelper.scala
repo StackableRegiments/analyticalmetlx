@@ -65,9 +65,7 @@ object ReportHelper {
     var nonAttendingRows: List[List[String]] = List(List())
     if (conversations.nonEmpty) {
       val conversation = conversations.head
-      val ids = getAllD2LUserIds(conversation.foreignRelationship)
-      println("ids = " + ids)
-      nonAttendingRows = ids.map(m => {
+      nonAttendingRows = getAllD2LUserIds(conversation.foreignRelationship).map(m => {
         List("", "", "", "", "", "", "", getMemberOrgDefinedId(m), "")
       }).filter(l => l(7).nonEmpty).sortWith((left, right) => left(7).compareTo(right(7)) < 0) ::: nonAttendingRows
     }
