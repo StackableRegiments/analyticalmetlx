@@ -26,7 +26,6 @@ class StudentActivity extends Logger {
   def handler(courseId: String): JsCmd = {
     val stringReader = new StringReader(ReportHelper.studentActivity(courseId))
     val headers = CSVReader.open(stringReader).allWithOrderedHeaders()
-    println("Student Activity: " + headers)
     stringReader.close()
 
     Call("updateActivity", createHtmlTable(headers)).cmd
