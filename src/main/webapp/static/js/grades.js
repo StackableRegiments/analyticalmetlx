@@ -9,6 +9,7 @@ var Grades = (function(){
     var gradeAssessTemplate = {};
     var gradebooks = [];
     var reRenderFunc = function(){};
+		var gradebookReRenderFunc = function(){};
     var spin = function(el,off){
         $(el).prop("disabled",off);
         $(".grades.blocker").toggle(off);
@@ -438,6 +439,7 @@ var Grades = (function(){
                                     width:"auto",
                                     content:outer[0].outerHTML,
                                     onClose:function(){
+																				gradebookReRenderFunc = function(){};
                                         reRenderFunc();
                                     }
                                 });
@@ -777,6 +779,9 @@ var Grades = (function(){
                                     }
                                     spin(innerRoot,false);
                                 };
+																gradebookReRenderFunc = function(){
+																	generateData(withData)
+																};
                                 generateData(withData);
                             });
                             return rootElem;
@@ -886,6 +891,7 @@ var Grades = (function(){
                     } else {
                         gradeCreateButton.hide();
                     }
+										gradebookReRenderFunc();
                 });
             }
             reRenderFunc();
