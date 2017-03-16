@@ -13,7 +13,7 @@ import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
 private case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-private case class ProcessedRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, visits: Int, activity: Long)
+private case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, visits: Int, activity: Long)
 
 case class RowTime(timestamp: Long, present: Boolean)
 
@@ -56,40 +56,67 @@ object ReportHelper {
     grouped.foreach(g => {
       val head = g._2.head
       val duration = getSecondsOnPage(g._2.map(r => RowTime(r.timestamp, r.present)))
-      processedRows = ProcessedRow(head.author, head.conversationJid, head.conversationTitle, head.conversationForeignRelationship, head.location, head.index,
+      processedRows = ProcessedRow(head.author, head.conversationJid.toString, head.conversationTitle, head.conversationForeignRelationship, head.location, head.index,
         duration._1, duration._2, g._2.length,
         getRoomActivity(head.author, head.location)) :: processedRows
     })
 
-    // Reassemble CSV rows from rawRows
+    // Assemble CSV rows from processedRows
     var rows: List[List[String]] = List(List())
     processedRows.reverse.foreach(r => {
-      rows = List(r.author,
-        getD2LUserId(r.conversationForeignRelationship, r.author),
-        r.conversationJid.toString,
+      rows = List(r.conversationJid.toString,
+        r.author,
         r.index.toString,
         r.duration.toString,
         r.visits.toString,
         r.activity.toString,
         r.approx.toString,
+        getD2LUserId(r.conversationForeignRelationship, r.author),
         r.conversationTitle) :: rows
     })
+    rows = rows.filter(r => r.nonEmpty && r.tail.head.nonEmpty).sortWith(sortRows)
+
+    // Add rows for enrolled students who have never attended.
+    var nonAttendingRows: List[ProcessedRow] = List()
+    if (conversations.nonEmpty) {
+      val conversation = conversations.head
+      val ids = getAllD2LUserIds(conversation.foreignRelationship)
+      println("ids = " + ids)
+      nonAttendingRows = ids.map(m => {
+        ProcessedRow(getMemberOrgDefinedId(m), "", "", None, "", 0, 0, approx = false, 0, 0)
+      }) ::: nonAttendingRows
+    }
+
+    var moreRows: List[List[String]] = List(List())
+    nonAttendingRows.reverse.foreach(r => {
+      moreRows = List(r.conversationJid.toString,
+        r.author,
+        r.index.toString,
+        r.duration.toString,
+        r.visits.toString,
+        r.activity.toString,
+        r.approx.toString,
+        getD2LUserId(r.conversationForeignRelationship, r.author),
+        r.conversationTitle) :: moreRows
+    })
+    moreRows = moreRows.filter(r => r.nonEmpty && r.tail.head.nonEmpty).sortWith(sortRows)
 
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("MeTLStudentID", "D2LStudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "ConversationTitle"))
-    rows.filter(r => r.nonEmpty && r.head.nonEmpty).sortWith(sortRows).foreach(r => writer.writeRow(r))
+    writer.writeRow(List("ConversationID", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationTitle"))
+    rows.foreach(r => writer.writeRow(r))
+    moreRows.foreach(r => writer.writeRow(r))
     writer.close()
 
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
     stringWriter.toString
   }
 
-  private val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
-  private val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
+  protected val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
+  protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
   /** Retrieve from D2L for insert into cache. */
-  private def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
+  protected def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
     val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.storeId.equals(system))
     val m = groupsProviders.flatMap {
       case g: D2LGroupsProvider =>
@@ -105,7 +132,20 @@ object ReportHelper {
     Some(m.flatten)
   }
 
-  private def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
+  protected def getAllD2LUserIds(conversationForeignRelationship: Option[ForeignRelationship]): List[Member] = {
+    conversationForeignRelationship match {
+      case Some(fr) =>
+        val members = membersCache.get((fr.system, fr.key))
+        members match {
+          case Some(m) =>
+            members.getOrElse(List())
+          case _ => List()
+        }
+      case _ => List()
+    }
+  }
+
+  protected def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
     conversationForeignRelationship match {
       case Some(fr) =>
         val members = membersCache.get((fr.system, fr.key))
@@ -118,43 +158,48 @@ object ReportHelper {
     }
   }
 
-  private def findUserIdInMembers(members: List[Member], metlUser: String): String = {
+  protected def findUserIdInMembers(members: List[Member], metlUser: String): String = {
     members.find(m => m.name.toLowerCase.equals(metlUser.toLowerCase)) match {
       case Some(m) =>
-        m.details.find(d => d.key.equals("OrgDefinedId")) match {
-          case Some(d) => d.value
-          case _ => ""
-        }
+        getMemberOrgDefinedId(m)
       case None => ""
     }
   }
 
+  protected def getMemberOrgDefinedId(m: Member): String = {
+    m.details.find(d => d.key.equals("OrgDefinedId")) match {
+      case Some(d) => d.value
+      case _ => ""
+    }
+  }
+
   /* Activity on page is number of h2ink, h2multiwordtext, h2image for that page in conv */
-  private def getRoomActivity(author: String, location: String): Long = {
+  protected def getRoomActivity(author: String, location: String): Long = {
     // results: (List[String] headers, List[List[String]] data)
-    val results = DB.runQuery("select (" +
-      "(select count(*) from h2ink where author = ? and slide = ?) + " +
-      "(select count(*) from h2multiwordtext where author = ? and slide = ?) + " +
-      "(select count(*) from h2image where author = ? and slide = ?)" +
-      ") as total", List.fill(3)(List(author, location)).flatten)
+    val results = DB.runQuery(
+      """select (
+      (select count(*) from h2ink where author = ? and room like ?) +
+      (select count(*) from h2multiwordtext where author = ? and room like ?) +
+      (select count(*) from h2image where author = ? and room like ?)
+      ) as total""", List.fill(3)(List(author, location + "%")).flatten)
     results._2.head.head.toLong
   }
 
   /* Traverse via incrementing counter. Increment on enter, decrement on exit, >= 1 is "in", <= 0 is "out". */
   def getSecondsOnPage(pageRows: List[RowTime]): (Long, Boolean) = {
     val rows = pageRows.sortBy(_.timestamp)
-//    println("Getting seconds for " + rows.length + " rows")
+    //    println("Getting seconds for " + rows.length + " rows")
     var counter = 0
     var totalTime: Long = 0
     var lastTime: Long = rows.head.timestamp
     var lastPresent: Boolean = false
     for (r <- rows) {
       if (r.present) counter += 1
-//      println("Timestamp: " + r.timestamp + " (c = " + counter + ", p = " + r.present + ")")
+      //      println("Timestamp: " + r.timestamp + " (c = " + counter + ", p = " + r.present + ")")
       if (counter > 0 && lastPresent) {
         // In room
         val currentDuration: Long = r.timestamp - lastTime
-//        println("Adding duration: " + currentDuration)
+        //        println("Adding duration: " + currentDuration)
         totalTime += currentDuration
       }
       if (!r.present) counter = 0
@@ -165,11 +210,11 @@ object ReportHelper {
     val approx = counter > 0
     // Cap duration at 5 min per segment.
     val duration = Math.min(totalTime / 1000, 300)
-//    println("Total time (s) in room: " + duration)
+    //    println("Total time (s) in room: " + duration)
     (duration, approx)
   }
 
-  private def sortRows(l1: List[String], l2: List[String]): Boolean = {
+  protected def sortRows(l1: List[String], l2: List[String]): Boolean = {
     if (l1.length >= 3) {
       if (l2.length >= 3) {
         val compare0 = l1.head.compareTo(l2.head)
