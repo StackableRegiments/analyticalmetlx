@@ -78,7 +78,7 @@ object ReportHelper {
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
     writer.writeRow(List("MeTLStudentID", "D2LStudentID", "ConversationID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "ConversationTitle"))
-    rows.sortWith(sortRows).foreach(r => writer.writeRow(r))
+    rows.filter(r => r.nonEmpty && r.head.nonEmpty).sortWith(sortRows).foreach(r => writer.writeRow(r))
     writer.close()
 
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
