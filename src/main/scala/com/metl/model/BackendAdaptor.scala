@@ -266,9 +266,33 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         case _ => MemoryStoreEvictionPolicy.LRU
       })
     ) yield {
-      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy)
+      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy,None)
       info("setting up resourceCaches with config: %s".format(cacheConfig))
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
+    }
+    for (
+      scn <- (XML.load(filePath) \\ "caches" \\ "d2lMemberCache").headOption;
+      heapSize <- (scn \\ "@heapSize").headOption.map(_.text.toLowerCase.trim.toInt);
+      heapUnits <- (scn \\ "@heapUnits").headOption.map(_.text.toLowerCase.trim match {
+        case "bytes" => MemoryUnit.BYTES
+        case "kilobytes" => MemoryUnit.KILOBYTES
+        case "megabytes" => MemoryUnit.MEGABYTES
+        case "gigabytes" => MemoryUnit.GIGABYTES
+        case _ => MemoryUnit.MEGABYTES
+      });
+      evictionPolicy <- (scn \\ "@evictionPolicy").headOption.map(_.text.toLowerCase.trim match {
+        case "clock" => MemoryStoreEvictionPolicy.CLOCK
+        case "fifo" => MemoryStoreEvictionPolicy.FIFO
+        case "lfu" => MemoryStoreEvictionPolicy.LFU
+        case "lru" => MemoryStoreEvictionPolicy.LRU
+        case _ => MemoryStoreEvictionPolicy.LRU
+      });
+      timeToLiveSeconds = (scn \\ "@timeToLiveSeconds").headOption.map(_.text.toLowerCase.trim.toInt)
+    ) yield {
+      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy,timeToLiveSeconds)
+      info("setting up resourceCaches with config: %s".format(cacheConfig))
+      // TODO: setup the member cache
+//      ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
   }
   def setupUserProfileProvidersFromFile(filePath:String) = {
@@ -437,7 +461,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
 }
 
-case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
+case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int])
 
 class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
@@ -455,6 +479,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     .memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy)
     .persistence(new PersistenceConfiguration().strategy(PersistenceConfiguration.Strategy.NONE))
     .logging(false)
+  cacheConfig.timeToLiveSeconds.foreach(s => cacheConfiguration.timeToLiveSeconds(s))
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {
