@@ -266,7 +266,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
         case _ => MemoryStoreEvictionPolicy.LRU
       })
     ) yield {
-      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy,None)
+      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy)
       info("setting up resourceCaches with config: %s".format(cacheConfig))
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
@@ -437,7 +437,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
 }
 
-case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int])
+case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int]=None)
 
 class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
