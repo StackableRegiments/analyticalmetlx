@@ -16,10 +16,10 @@
     </head>
     <script type="text/javascript">
         var updateStatistics = function (s) {
-            $('#statistics').replaceWith('<span id="statistics">' + s + '</span>');
+            $('#statistics').html(s);
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
-            $('#timestampStats').replaceWith('<span id="timestampStats" class="directlyOnBackground">Last run: ' + t + ' (cached for 1 minute)</span>');
+            $('#timestampStats').html('Last run: ' + t);
         };
         var createTable = function(a) {
             var table = $("<table/>");
@@ -41,7 +41,7 @@
             $('#studentActivity').html(createTable(a));
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
-            $('#timestampActivity').html('Last run: ' + t);
+            $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
@@ -61,7 +61,7 @@
                                   <span class="icon-txt">Search</span>
                                 </span>
                             </button>
-                            <span id="timestampStats"/>
+                            <span id="timestampStats" class="directlyOnBackground"/>
                             <div id="loaderStats"></div>
                         </span>
                         </div>
@@ -75,12 +75,12 @@
                         <span id="selectBox"></span>
                         <div class="flex-container-row">
                         <span class="lift:studentActivity">
-                            <label for="course" class="directlyOnBackground">Select Course</label>
+                            <label for="course" class="directlyOnBackground">Select Course:</label>
                             <select id="course"></select>
                             <div class="directlyOnBackground">
                                 <span id="studentActivity"/>
                             </div>
-                            <span id="timestampActivity"/>
+                            <span id="timestampActivity" class="directlyOnBackground"/>
                         </span>
                         </div>
                     </div>
