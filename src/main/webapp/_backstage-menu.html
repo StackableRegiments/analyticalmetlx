@@ -306,6 +306,17 @@
                       <button class="linkGrade button-transparent-border mth"><span>Link this grade to an existing grade in the course</span></button>
                       <button class="createGrade button-transparent-border mth"><span>Create a new grade in the course</span></button>
                     </span>
+                    <span class="fixGradeTypeErrorsContainer">
+                      <div>The grade has changed type.  Scores that have already been assigned can no longer be shown against this grade because they are of the previous type.  Here are some suggested conversions.  Please review them, and click the "Apply" button for each one that you wish to keep.  Each will be immediately converted.</div>
+                      <div class="individualFixesContainer">
+                        <div class="individualFix">
+                          <button class="commitIndividualFix button-transparent-border mr" style="display:inline-block;">Apply</button>
+                          <span class="individualFixOldValue"></span> converts to <span class="individualFixNewValue mr"></span><span> for </span>
+                          <span class="individualFixGradedUser"></span>
+                        </div>
+                      </div>
+                      <button class="closeIndividualFixesPopup button-transparent-border">Done</button>
+                    </span>
                   </span>
                   <div class="grades blocker" style="display:none;height:100%;top:0;left:0;position:absolute;width:100%;background-color:lightgray;opacity:0.5;"><span class="fa fa-icon fa-cog fa-spin"></span></div>
                 </div>
