@@ -1,22 +1,22 @@
 package com.metl.model
 
 import com.metl.liftAuthenticator._
-
 import com.metl.data._
+import com.metl.model.MeTLXConfiguration.info
 import com.metl.utils._
 import com.metl.view._
-
 import net.liftweb.http.SessionVar
 import net.liftweb.http.LiftRules
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
-
 import net.liftweb.util.Props
+
 import scala.xml._
 import scala.util._
 import com.metl.renderer.RenderDescription
-
 import net.liftweb.http._
+import net.sf.ehcache.config.MemoryUnit
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
 case class PropertyNotFoundException(key: String) extends Exception(key) {
   override def getMessage: String = "Property not found: " + key
@@ -172,6 +172,30 @@ object Globals extends PropertyReader with Logger {
   val themeName = readText(propFile,"themeName").getOrElse("neutral")
   val googleAnalytics = ("stackable",readText(propFile,"googleAnalytics"))
   val clientGoogleAnalytics = ("client",readText(propFile,"clientGoogleAnalytics"))
+
+  val d2LCachingAdaptor:Option[D2LCachingAdaptor] = for (
+    scn <- (propFile \\ "caches" \\ "d2lCache").headOption;
+    heapSize <- (scn \\ "@heapSize").headOption.map(_.text.toLowerCase.trim.toInt);
+    heapUnits <- (scn \\ "@heapUnits").headOption.map(_.text.toLowerCase.trim match {
+      case "bytes" => MemoryUnit.BYTES
+      case "kilobytes" => MemoryUnit.KILOBYTES
+      case "megabytes" => MemoryUnit.MEGABYTES
+      case "gigabytes" => MemoryUnit.GIGABYTES
+      case _ => MemoryUnit.MEGABYTES
+    });
+    evictionPolicy <- (scn \\ "@evictionPolicy").headOption.map(_.text.toLowerCase.trim match {
+      case "clock" => MemoryStoreEvictionPolicy.CLOCK
+      case "fifo" => MemoryStoreEvictionPolicy.FIFO
+      case "lfu" => MemoryStoreEvictionPolicy.LFU
+      case "lru" => MemoryStoreEvictionPolicy.LRU
+      case _ => MemoryStoreEvictionPolicy.LRU
+    });
+    timeToLiveSeconds = (scn \\ "@timeToLiveSeconds").headOption.map(_.text.toLowerCase.trim.toInt)
+  ) yield {
+    val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy,timeToLiveSeconds)
+    info("setting up d2lCache with config: %s".format(cacheConfig))
+    new D2LCachingAdaptor(cacheConfig)
+  }
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)

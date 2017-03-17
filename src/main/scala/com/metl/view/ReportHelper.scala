@@ -8,8 +8,6 @@ import com.metl.data.ServerConfiguration
 import com.metl.liftAuthenticator.{ForeignRelationship, Member}
 import com.metl.model._
 import net.liftweb.mapper.DB
-import net.sf.ehcache.config.MemoryUnit
-import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
 private case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
@@ -99,33 +97,12 @@ object ReportHelper {
     csvRows.filter(r => r.nonEmpty && r.head.trim.nonEmpty).sortWith(sortRows)
   }
 
-  protected val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
-  protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
-
-  /** Retrieve from D2L for insert into cache. */
-  protected def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
-    val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.storeId.equals(system))
-    val m = groupsProviders.flatMap {
-      case g: D2LGroupsProvider =>
-        for {
-          orgUnit <- g.getOrgUnit(courseId)
-          members = g.getMembersFor(orgUnit)
-        } yield {
-          println("Loaded " + members.length + " members from D2L for courseId: " + courseId)
-          members
-        }
-      case _ => None
-    }
-    Some(m.flatten)
-  }
-
   protected def getAllD2LUserIds(conversationForeignRelationship: Option[ForeignRelationship]): List[Member] = {
     conversationForeignRelationship match {
       case Some(fr) =>
-        val members = membersCache.get((fr.system, fr.key))
+        val members = Globals.d2LCachingAdaptor.map(c => c.getMembers((fr.system, fr.key)))
         members match {
-          case Some(m) =>
-            members.getOrElse(List())
+          case Some(m) => m.get
           case _ => List()
         }
       case _ => List()
@@ -135,10 +112,10 @@ object ReportHelper {
   protected def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
     conversationForeignRelationship match {
       case Some(fr) =>
-        val members = membersCache.get((fr.system, fr.key))
+        val members = Globals.d2LCachingAdaptor.map(c => c.getMembers((fr.system, fr.key)))
         members match {
           case Some(m) =>
-            findUserIdInMembers(m, metlUser)
+            findUserIdInMembers(m.get, metlUser)
           case _ => ""
         }
       case _ => ""

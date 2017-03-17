@@ -437,7 +437,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
 }
 
-case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy)
+case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int]=None)
 
 class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
@@ -455,6 +455,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     .memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy)
     .persistence(new PersistenceConfiguration().strategy(PersistenceConfiguration.Strategy.NONE))
     .logging(false)
+  cacheConfig.timeToLiveSeconds.foreach(s => cacheConfiguration.timeToLiveSeconds(s))
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
   class FuncCacheLoader extends CacheLoader {
@@ -548,5 +549,30 @@ class ResourceCachingAdaptor(sc:ServerConfiguration,cacheConfig:CacheConfig) ext
   override def isReady:Boolean = {
     initialize
     super.isReady
+  }
+}
+
+class D2LCachingAdaptor(cacheConfig:CacheConfig) {
+  protected val memberCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), cacheConfig)
+
+  def getMembers(identifier: (String, String)): Option[List[Member]] = {
+    memberCache.get(identifier)
+  }
+
+  /** Retrieve from D2L for insert into cache. */
+  protected def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
+    val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.storeId.equals(system))
+    val m = groupsProviders.flatMap {
+      case g: D2LGroupsProvider =>
+        for {
+          orgUnit <- g.getOrgUnit(courseId)
+          members = g.getMembersFor(orgUnit)
+        } yield {
+          println("Loaded " + members.length + " members from D2L for courseId: " + courseId)
+          members
+        }
+      case _ => None
+    }
+    Some(m.flatten)
   }
 }
