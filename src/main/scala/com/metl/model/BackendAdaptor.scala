@@ -270,30 +270,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       info("setting up resourceCaches with config: %s".format(cacheConfig))
       ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
     }
-    for (
-      scn <- (XML.load(filePath) \\ "caches" \\ "d2lMemberCache").headOption;
-      heapSize <- (scn \\ "@heapSize").headOption.map(_.text.toLowerCase.trim.toInt);
-      heapUnits <- (scn \\ "@heapUnits").headOption.map(_.text.toLowerCase.trim match {
-        case "bytes" => MemoryUnit.BYTES
-        case "kilobytes" => MemoryUnit.KILOBYTES
-        case "megabytes" => MemoryUnit.MEGABYTES
-        case "gigabytes" => MemoryUnit.GIGABYTES
-        case _ => MemoryUnit.MEGABYTES
-      });
-      evictionPolicy <- (scn \\ "@evictionPolicy").headOption.map(_.text.toLowerCase.trim match {
-        case "clock" => MemoryStoreEvictionPolicy.CLOCK
-        case "fifo" => MemoryStoreEvictionPolicy.FIFO
-        case "lfu" => MemoryStoreEvictionPolicy.LFU
-        case "lru" => MemoryStoreEvictionPolicy.LRU
-        case _ => MemoryStoreEvictionPolicy.LRU
-      });
-      timeToLiveSeconds = (scn \\ "@timeToLiveSeconds").headOption.map(_.text.toLowerCase.trim.toInt)
-    ) yield {
-      val cacheConfig = CacheConfig(heapSize,heapUnits,evictionPolicy,timeToLiveSeconds)
-      info("setting up resourceCaches with config: %s".format(cacheConfig))
-      // TODO: setup the member cache
-//      ServerConfiguration.setServerConfMutator(sc => new ResourceCachingAdaptor(sc,cacheConfig))
-    }
   }
   def setupUserProfileProvidersFromFile(filePath:String) = {
     val fileXml = XML.load(filePath)
@@ -573,5 +549,30 @@ class ResourceCachingAdaptor(sc:ServerConfiguration,cacheConfig:CacheConfig) ext
   override def isReady:Boolean = {
     initialize
     super.isReady
+  }
+}
+
+class D2LCachingAdaptor(cacheConfig:CacheConfig) {
+  protected val memberCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), cacheConfig)
+
+  def getMembers(identifier: (String, String)): Option[List[Member]] = {
+    memberCache.get(identifier)
+  }
+
+  /** Retrieve from D2L for insert into cache. */
+  protected def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
+    val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.storeId.equals(system))
+    val m = groupsProviders.flatMap {
+      case g: D2LGroupsProvider =>
+        for {
+          orgUnit <- g.getOrgUnit(courseId)
+          members = g.getMembersFor(orgUnit)
+        } yield {
+          println("Loaded " + members.length + " members from D2L for courseId: " + courseId)
+          members
+        }
+      case _ => None
+    }
+    Some(m.flatten)
   }
 }
