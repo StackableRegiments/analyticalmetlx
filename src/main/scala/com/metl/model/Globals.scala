@@ -91,6 +91,13 @@ object Globals extends PropertyReader with Logger {
   val importerParallelism = (propFile \\ "importerPerformance").headOption.map(ipn => readAttribute(ipn,"parallelism").toInt).filter(_ > 0).getOrElse(1)
   var isDevMode:Boolean = true
 
+  var vidyo = if(liveIntegration) for {
+    vNode <- (propFile \\ "vidyo").headOption
+    appId <- (vNode \ "@applicationId").headOption.map(_.text)
+    devKey <- (vNode \ "@developerKey").headOption.map(_.text)
+  } yield {
+    new VidyoProvider(appId,devKey)
+  } else None
   var tokBox = if(liveIntegration) for {
     tbNode <- (propFile \\ "tokBox").headOption
     apiKey <- (tbNode \\ "@apiKey").headOption.map(_.text.toInt)

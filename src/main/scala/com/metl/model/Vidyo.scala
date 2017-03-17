@@ -11,7 +11,11 @@ import java.util.Date
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.digest.HmacUtils
 
-object VidyoTokenProvider extends VidyoTokenProvider("","") 
+class VidyoProvider(applicationId:String,developerKey:String){
+  val tokenProvider = new VidyoTokenProvider(applicationId,developerKey)
+  def generateToken(username:String,secondsUntilExpiry:Long):String = tokenProvider.generateToken(username,secondsUntilExpiry)
+}
+
 class VidyoTokenProvider(applicationId:String,developerKey:String){
   protected val provisionToken = "provision"
   protected val epochSeconds = 62167219200L
