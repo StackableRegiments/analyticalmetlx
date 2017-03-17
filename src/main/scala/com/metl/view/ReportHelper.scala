@@ -11,15 +11,23 @@ import net.liftweb.mapper.DB
 import net.sf.ehcache.config.MemoryUnit
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
-private case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
+protected case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-private case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, visits: Int, activity: Long)
+protected case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, visits: Int, activity: Long)
 
 case class RowTime(timestamp: Long, present: Boolean)
 
 object ReportHelper {
 
+  protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(60))
+  protected val reportCache = new ManagedCache[String, String]("studentActivity", (key: String) => generateStudentActivity(key), config)
+  protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
+
   def studentActivity(courseId: String): String = {
+    reportCache.get(courseId)
+  }
+
+  protected def generateStudentActivity(courseId: String): String = {
     println("Generating student activity...")
     val start = new Date().toInstant
 
@@ -61,11 +69,7 @@ object ReportHelper {
         getRoomActivity(head.author, head.location)) :: processedRows
     })
 
-    val stringWriter = new StringWriter()
-    val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("ConversationTitle", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationID"))
     val csvRows = createCsvRows(processedRows)
-    csvRows.foreach(r => writer.writeRow(r))
 
     // Add rows for enrolled students who have never attended.
     var nonAttendingRows: List[List[String]] = List(List())
@@ -75,32 +79,17 @@ object ReportHelper {
         List("", "", "", "", "", "", "", getMemberOrgDefinedId(m), "")
       }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(7).equals(c(7)))).sortWith((left, right) => left(7).compareTo(right(7)) < 0) ::: nonAttendingRows
     }
-    nonAttendingRows.foreach(r => writer.writeRow(r))
 
+    val stringWriter = new StringWriter()
+    val writer = CSVWriter.open(stringWriter)
+    writer.writeRow(List("ConversationTitle", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationID"))
+    csvRows.foreach(r => writer.writeRow(r))
+    nonAttendingRows.foreach(r => writer.writeRow(r))
     writer.close()
 
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
     stringWriter.toString
   }
-
-  protected def createCsvRows(processedRows: List[ProcessedRow]): List[List[String]] = {
-    var csvRows: List[List[String]] = List(List())
-    processedRows.reverse.foreach(r => {
-      csvRows = List(r.conversationTitle,
-        r.author,
-        r.index.toString,
-        r.duration.toString,
-        r.visits.toString,
-        r.activity.toString,
-        r.approx.toString,
-        getD2LUserId(r.conversationForeignRelationship, r.author),
-        r.conversationJid.toString) :: csvRows
-    })
-    csvRows.filter(r => r.nonEmpty && r.head.trim.nonEmpty).sortWith(sortRows)
-  }
-
-  protected val config = CacheConfig(100, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU)
-  protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
   /** Retrieve from D2L for insert into cache. */
   protected def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
@@ -143,6 +132,22 @@ object ReportHelper {
         }
       case _ => ""
     }
+  }
+
+  protected def createCsvRows(processedRows: List[ProcessedRow]): List[List[String]] = {
+    var csvRows: List[List[String]] = List(List())
+    processedRows.reverse.foreach(r => {
+      csvRows = List(r.conversationTitle,
+        r.author,
+        r.index.toString,
+        r.duration.toString,
+        r.visits.toString,
+        r.activity.toString,
+        r.approx.toString,
+        getD2LUserId(r.conversationForeignRelationship, r.author),
+        r.conversationJid.toString) :: csvRows
+    })
+    csvRows.filter(r => r.nonEmpty && r.head.trim.nonEmpty).sortWith(sortRows)
   }
 
   protected def findUserIdInMembers(members: List[Member], metlUser: String): String = {

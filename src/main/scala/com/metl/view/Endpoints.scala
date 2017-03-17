@@ -596,7 +596,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for{
         courseId <- S.param("courseId")
       } yield {
-        //        val courseId = "6678"
         PlainTextResponse(ReportHelper.studentActivity(courseId))
       }
     })
