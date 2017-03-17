@@ -26,10 +26,10 @@ class Statistics extends Logger {
   val startDate = "20160801"
 
   def render: CssBindFunc = {
-    "#refreshButton" #> ajaxButton("Refresh", () => {
-      Call("updateResults", JString(createHtmlTable(runAllQueries))).cmd
+    "#statisticsButton" #> ajaxButton("Refresh", () => {
+      Call("updateStatistics", JString(createHtmlTable(runAllQueries))).cmd
     }) &
-      "#loader" #> Script(OnLoad(Call("updateResults", JString(createHtmlTable(runAllQueries))).cmd))
+      "#loaderStats" #> Script(OnLoad(Call("updateStatistics", JString(createHtmlTable(runAllQueries))).cmd))
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {
@@ -101,6 +101,6 @@ class Statistics extends Logger {
   }
 
   def createHtmlTable(results: List[List[String]]): String = {
-    "<table>" + results.map(m => "<tr><td>" + m.head + "</td><td>&nbsp;</td><td class='result'>" + m(1) + "<td>").mkString + "</table>"
+    "<table>" + results.map(m => "<tr><td>" + m.head + "</td><td>&nbsp;</td><td class='result'>" + m(1) + "</td></tr>").mkString + "</table>"
   }
 }
