@@ -1,3 +1,12 @@
+1.10.1
+METL-577: Story: Create analyst portal (at /statistics).
+METL-581: Story: Disassociate grade from remote.
+METL-582: Grade values should be converted when the grade type changes.
+METL-580: Bugfix: Students can be ungradeable after grade type changed.
+METL-573: Improvement: Enhance /studentActivity with all enrolled students.
+METL-576: Improvement: Include private content counts in /studentActivity.
+METL-567: Improvement: Enhance /statistics.
+
 1.9.1
 METL-569: Story: Create /studentActivity endpoint for individual student analytics within course.
 
