@@ -19,7 +19,7 @@
             $('#statistics').replaceWith('<span id="statistics">' + s + '</span>');
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
-            $('#timestampStats').replaceWith('<span id="timestampStats" class="directlyOnBackground">Last run: ' + t + '</span>');
+            $('#timestampStats').replaceWith('<span id="timestampStats" class="directlyOnBackground">Last run: ' + t + ' (cached for 1 minute)</span>');
         };
         var createTable = function(a) {
             var table = $("<table/>");
