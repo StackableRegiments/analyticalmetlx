@@ -2,7 +2,7 @@ var Grades = (function(){
     var gradesDatagrid = {};
     var grades = {};
     var gradeValues = {};
-		var remoteGradeValuesCache = {};
+    var remoteGradeValuesCache = {};
     var gradeCreateButton = {};
     var gradeActionButtonsTemplate = {};
     var gradeEditTemplate = {};
@@ -16,7 +16,7 @@ var Grades = (function(){
     var clearState = function(){
         grades = {};
         gradeValues = {};
-				remoteGradeValuesCache = {};
+        remoteGradeValuesCache = {};
         reRenderFunc();
     };
     var historyReceivedFunc = function(history){
@@ -185,31 +185,31 @@ var Grades = (function(){
                                 innerRoot.find(".numericMaxLabel").attr("for",maxId);
                                 minTextbox.unbind("blur").on("blur",changeMinFunction).attr("id",minId);
                                 maxTextbox.unbind("blur").on("blur",changeMaxFunction).attr("id",maxId);
-																
+
 
                                 var reRenderGradeTypeOptions = function(){
-																	if ("foreignRelationship" in newGrade){
-																		minTextbox.prop("disabled",true);
-																		maxTextbox.prop("disabled",true);
-																		typeSelect.prop("disabled",true);
-																	} 
-																	typeSelect.val(newGrade.gradeType);
-																	switch (newGrade.gradeType){
-																	case "numeric":
-																			innerRoot.find(".numericOptions").show();
-																			if (newGrade.numericMinimum === undefined){
-																					newGrade.numericMinimum = 0;
-																			};
-																			if (newGrade.numericMaximum === undefined){
-																					newGrade.numericMaximum = 100;
-																			};
-																			minTextbox.val(newGrade.numericMinimum);
-																			maxTextbox.val(newGrade.numericMaximum);
-																			break;
-																	default:
-																			innerRoot.find(".numericOptions").hide();
-																			break;
-																	}
+                                    if ("foreignRelationship" in newGrade){
+                                        minTextbox.prop("disabled",true);
+                                        maxTextbox.prop("disabled",true);
+                                        typeSelect.prop("disabled",true);
+                                    }
+                                    typeSelect.val(newGrade.gradeType);
+                                    switch (newGrade.gradeType){
+                                    case "numeric":
+                                        innerRoot.find(".numericOptions").show();
+                                        if (newGrade.numericMinimum === undefined){
+                                            newGrade.numericMinimum = 0;
+                                        };
+                                        if (newGrade.numericMaximum === undefined){
+                                            newGrade.numericMaximum = 100;
+                                        };
+                                        minTextbox.val(newGrade.numericMinimum);
+                                        maxTextbox.val(newGrade.numericMaximum);
+                                        break;
+                                    default:
+                                        innerRoot.find(".numericOptions").hide();
+                                        break;
+                                    }
                                 };
                                 typeSelect.attr("id",selectId).unbind("change").on("change",function(){
                                     newGrade.gradeType = typeSelect.val();
@@ -312,86 +312,86 @@ var Grades = (function(){
                                             }).fail(function(jqxhr,textStatus,error){
                                                 spin(aNodes,false);
                                                 console(sprintf("error: %s \r\n %s",textStatus,error));
-																								alert(sprintf("error: %s \r\n %s",textStatus,error));
+                                                alert(sprintf("error: %s \r\n %s",textStatus,error));
                                             });
                                         } else {
                                             aNodes.find(".requestAssocPhase4").show();
-																						spin(aNodes,true);
-																						var linkGradeButton = aNodes.find(".linkGrade");
-																						var preExistingGrades = [];
-																						var existingGradesSelectBox = aNodes.find("#chooseExistingGradeSelectBox");
-																						var chosenPreExistingGrade = undefined;
-																						linkGradeButton.unbind("click").on("click",function(){
-																							if (chosenPreExistingGrade !== undefined && "foreignRelationship" in chosenPreExistingGrade && "sys" in chosenPreExistingGrade.foreignRelationship && "key" in chosenPreExistingGrade.foreignRelationship){
-																								newGrade.foreignRelationship = {
-																									sys:chosenPreExistingGrade.foreignRelationship.sys,
-																									key:chosenPreExistingGrade.foreignRelationship.key
-																								}
+                                            spin(aNodes,true);
+                                            var linkGradeButton = aNodes.find(".linkGrade");
+                                            var preExistingGrades = [];
+                                            var existingGradesSelectBox = aNodes.find("#chooseExistingGradeSelectBox");
+                                            var chosenPreExistingGrade = undefined;
+                                            linkGradeButton.unbind("click").on("click",function(){
+                                                if (chosenPreExistingGrade !== undefined && "foreignRelationship" in chosenPreExistingGrade && "sys" in chosenPreExistingGrade.foreignRelationship && "key" in chosenPreExistingGrade.foreignRelationship){
+                                                    newGrade.foreignRelationship = {
+                                                        sys:chosenPreExistingGrade.foreignRelationship.sys,
+                                                        key:chosenPreExistingGrade.foreignRelationship.key
+                                                    }
 
-																								//clone the values from the remote system
-																								newGrade.gradeType = chosenPreExistingGrade.gradeType;
-																								newGrade.numericMinimum = chosenPreExistingGrade.numericMinimum;	
-																								newGrade.numericMaximum = chosenPreExistingGrade.numericMaximum;	
-																								newGrade.name = chosenPreExistingGrade.name;
-																								nameInputBox.val(newGrade.name);
-																								newGrade.description = chosenPreExistingGrade.description;
-																								descInputBox.val(newGrade.description);
+                                                    //clone the values from the remote system
+                                                    newGrade.gradeType = chosenPreExistingGrade.gradeType;
+                                                    newGrade.numericMinimum = chosenPreExistingGrade.numericMinimum;
+                                                    newGrade.numericMaximum = chosenPreExistingGrade.numericMaximum;
+                                                    newGrade.name = chosenPreExistingGrade.name;
+                                                    nameInputBox.val(newGrade.name);
+                                                    newGrade.description = chosenPreExistingGrade.description;
+                                                    descInputBox.val(newGrade.description);
 
-																								sendStanza(newGrade);
-																								reRenderAssociations();
-																								reRenderGradeTypeOptions();
-																							} else {
-																								alert("no pre-existing grade chosen");
-																							}
-																						}).prop("disabled",true);
-																						existingGradesSelectBox.unbind("change").on("change",function(ev){
-																							var chosenGrade = $(this).val();
-																							if (chosenGrade !== undefined && chosenGrade !== "no-choice"){
-																								chosenPreExistingGrade = _.find(preExistingGrades,function(peg){
-																									return "foreignRelationship" in peg && "key" in peg.foreignRelationship && peg.foreignRelationship.key == chosenGrade;
-																								});
-																								if (chosenPreExistingGrade !== undefined){
-																									linkGradeButton.prop("disabled",false);
-																								} else {
-																									linkGradeButton.prop("disabled",true);
-																								}
-																							} else {
-																								chosenPreExistingGrade = undefined;
-																								linkGradeButton.prop("disabled",true);
-																							}
-																						});
-																						$.ajax({
-																							type:"GET",
-																							url:sprintf("/getExternalGrades/%s/%s",chosenGradebook,chosenOrgUnit),
-																							success:function(data){
-																								//console.log("found external grades:",data);
-																								preExistingGrades = data;
-																								if (data.length){
-																									existingGradesSelectBox.html(_.map([
-																											{
-																												text:"",
-																												foreignRelationship:{
-																													system:"no-system",
-																													key:"no-choice"
-																												}
-																											}].concat(data),function(eg){
-																										return $("<option/>",{
-																											text:eg.name,
-																											value:eg.foreignRelationship.key
-																										});
-																									}));
-																								} else {
-																									existingGradesSelectBox.hide();
-																									linkGradeButton.prop("disabled",true);
-																									linkGradeButton.hide();
-																								}
-																								spin(aNodes,false);
-																							},
-																							dataType:"json"
-																						}).fail(function(jqxhr,textStatus,error){
-																							spin(aNodes,false);
-																							alert(sprintf("error - could not fetch existing grades from remote gradebook: %s \r\n %s",textStatus,error));
-																						});
+                                                    sendStanza(newGrade);
+                                                    reRenderAssociations();
+                                                    reRenderGradeTypeOptions();
+                                                } else {
+                                                    alert("no pre-existing grade chosen");
+                                                }
+                                            }).prop("disabled",true);
+                                            existingGradesSelectBox.unbind("change").on("change",function(ev){
+                                                var chosenGrade = $(this).val();
+                                                if (chosenGrade !== undefined && chosenGrade !== "no-choice"){
+                                                    chosenPreExistingGrade = _.find(preExistingGrades,function(peg){
+                                                        return "foreignRelationship" in peg && "key" in peg.foreignRelationship && peg.foreignRelationship.key == chosenGrade;
+                                                    });
+                                                    if (chosenPreExistingGrade !== undefined){
+                                                        linkGradeButton.prop("disabled",false);
+                                                    } else {
+                                                        linkGradeButton.prop("disabled",true);
+                                                    }
+                                                } else {
+                                                    chosenPreExistingGrade = undefined;
+                                                    linkGradeButton.prop("disabled",true);
+                                                }
+                                            });
+                                            $.ajax({
+                                                type:"GET",
+                                                url:sprintf("/getExternalGrades/%s/%s",chosenGradebook,chosenOrgUnit),
+                                                success:function(data){
+                                                    //console.log("found external grades:",data);
+                                                    preExistingGrades = data;
+                                                    if (data.length){
+                                                        existingGradesSelectBox.html(_.map([
+                                                            {
+                                                                text:"",
+                                                                foreignRelationship:{
+                                                                    system:"no-system",
+                                                                    key:"no-choice"
+                                                                }
+                                                            }].concat(data),function(eg){
+                                                                return $("<option/>",{
+                                                                    text:eg.name,
+                                                                    value:eg.foreignRelationship.key
+                                                                });
+                                                            }));
+                                                    } else {
+                                                        existingGradesSelectBox.hide();
+                                                        linkGradeButton.prop("disabled",true);
+                                                        linkGradeButton.hide();
+                                                    }
+                                                    spin(aNodes,false);
+                                                },
+                                                dataType:"json"
+                                            }).fail(function(jqxhr,textStatus,error){
+                                                spin(aNodes,false);
+                                                alert(sprintf("error - could not fetch existing grades from remote gradebook: %s \r\n %s",textStatus,error));
+                                            });
                                             aNodes.find(".createGrade").unbind("click").on("click",function(){
                                                 spin(aNodes,true);
                                                 $.ajax({
@@ -412,126 +412,126 @@ var Grades = (function(){
                                                     dataType:'json'
                                                 }).fail(function(jqxhr,textStatus,error){
                                                     spin(aNodes,false);
-																										alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
+                                                    alert("Could not create remote grade.  Please ensure that the grade has a non-blank name which will be unique within the remote system");
                                                 });
                                             });
                                         }
                                     }
                                 };
-																var gradeFixesContainer = innerRoot.find(".fixGradeTypeErrorsContainer");
-																var gradeFixesContainerTemplate = gradeFixesContainer.clone();
-																gradeFixesContainer.empty();
-																
+                                var gradeFixesContainer = innerRoot.find(".fixGradeTypeErrorsContainer");
+                                var gradeFixesContainerTemplate = gradeFixesContainer.clone();
+                                gradeFixesContainer.empty();
+
                                 reRenderAssociations();
                                 innerRoot.find(".cancelGradeEdit").unbind("click").on("click",function(){
                                     jAlert.closeAlert();
                                 });
                                 innerRoot.find(".submitGradeEdit").unbind("click").on("click",function(){
                                     sendStanza(newGrade);
-																		var newGradeType = sprintf("%sGradeValue",newGrade.gradeType);
-																		console.log("gradeFilter:",newGradeType,gradeValues[newGrade.id]);
-																		var badGradeValues = _.filter(gradeValues[newGrade.id],function(gv){
-																			return gv.type != newGradeType && "gradeValue" in gv;
-																		});
-																		jAlert.closeAlert();
-																		if (_.size(badGradeValues) > 0){
-																			var gradeFixUniqId = _.uniqueId();
-																			var outer = $("<div/>",{
-																					id:gradeFixUniqId
-																			});
-																			var gradeFixJAlert = $.jAlert({
-																					title:"Fix gradeValues after grade type change",
-																					width:"auto",
-																					content:outer[0].outerHTML,
-																					onClose:function(){
-																							reRenderFunc();
-																					}
-																			});
-																			var gradeFixInnerRoot = gradeFixesContainerTemplate.clone();
-																			$("#"+gradeFixUniqId).append(gradeFixInnerRoot);
-																			gradeFixesContainer.show();
-																			var indivFixesContainer = gradeFixInnerRoot.find(".individualFixesContainer");
-																			var indivFixTemplate = indivFixesContainer.find(".individualFix").clone();
-																			indivFixesContainer.html(_.map(badGradeValues,function(bgvi){
-																				var bgv = _.cloneDeep(bgvi);
-																				var bgvf = indivFixTemplate.clone();
-																				bgvf.find(".individualFixGradedUser").text(bgv.gradedUser.toString());
-																				bgvf.find(".individualFixOldValue").text(bgv.gradeValue.toString());
-																				var newValue = undefined;
-																				switch (newGrade.gradeType){
-																					case "numeric":
-																						switch (bgv.type){
-																							case "textGradeValue":
-																								var candidate = parseInt(bgv.gradeValue);
-																								if ("numericMinimum" in newGrade && !isNaN(newGrade.numericMinimum) && "numericMaximum" in newGrade && !isNaN(newGrade.numericMaximum)){
-																									if (isNaN(candidate)){
-																										newValue = newGrade.numericMinimum;
-																									} else {
-																										newValue = Math.min(newGrade.numericMaximum,Math.max(candidate,newGrade.numericMinimum));
-																									}
-																								} else {
-																									if (isNaN(candidate)){
-																										newValue = 0;
-																									} else {
-																										newValue = candidate;
-																									}
-																								}
-																								break;
-																							case "booleanGradeValue":
-																								newValue = bgv.gradeValue ? newGrade.numericMaximum : newGrade.numericMinimum;
-																								break;
-																							default:
-																								break;
-																						}
-																						break;
-																					case "text":
-																						switch (bgv.type){
-																							case "numericGradeValue":
-																								newValue = bgv.gradeValue.toString();
-																								break;
-																							case "booleanGradeValue":
-																								newValue = bgv.gradeValue.toString();
-																								break;
-																							default:
-																								break;
-																						}
-																						break;
-																					case "boolean":
-																						switch (bgv.type){
-																							case "numericGradeValue":
-																								newValue = bgv.gradeValue != 0;
-																								break;
-																							case "textGradeValue":
-																								var candidate = bgv.gradeValue.toLowerCase().trim();
-																								newValue = !(candidate == "false" || candidate == "0" || candidate == "no" || candidate == "" || candidate == "n"); // general falsey
-																								break;
-																							default:
-																								break;
-																						}
-																						break;
-																					default:
-																						break;	
-																				}	
-																				bgvf.find(".individualFixNewValue").text(newValue.toString());
-																				bgvf.find(".commitIndividualFix").unbind("click").on("click",function(){
-																					bgv.type = newGradeType;
-																					bgv.gradeValue = newValue;
-																					sendStanza(bgv);
-																					badGradeValues = _.filter(badGradeValues,function(tbgvi){
-																						return tbgvi.gradedUser != bgv.gradedUser;
-																					});
-																					bgvf.unbind("click");
-																					bgvf.remove();
-																					if (_.size(badGradeValues) < 1){
-																						gradeFixJAlert.closeAlert();	
-																					}
-																				});
-																				return bgvf;
-																			}));
-																			gradeFixInnerRoot.find(".closeIndividualFixesPopup").on("click",function(){
-																				gradeFixJAlert.closeAlert();
-																			});
-																		}
+                                    var newGradeType = sprintf("%sGradeValue",newGrade.gradeType);
+                                    console.log("gradeFilter:",newGradeType,gradeValues[newGrade.id]);
+                                    var badGradeValues = _.filter(gradeValues[newGrade.id],function(gv){
+                                        return gv.type != newGradeType && "gradeValue" in gv;
+                                    });
+                                    jAlert.closeAlert();
+                                    if (_.size(badGradeValues) > 0){
+                                        var gradeFixUniqId = _.uniqueId();
+                                        var outer = $("<div/>",{
+                                            id:gradeFixUniqId
+                                        });
+                                        var gradeFixJAlert = $.jAlert({
+                                            title:"Fix grade values after grade type change",
+                                            width:"auto",
+                                            content:outer[0].outerHTML,
+                                            onClose:function(){
+                                                reRenderFunc();
+                                            }
+                                        });
+                                        var gradeFixInnerRoot = gradeFixesContainerTemplate.clone();
+                                        $("#"+gradeFixUniqId).append(gradeFixInnerRoot);
+                                        gradeFixesContainer.show();
+                                        var indivFixesContainer = gradeFixInnerRoot.find(".individualFixesContainer");
+                                        var indivFixTemplate = indivFixesContainer.find(".individualFix").clone();
+                                        indivFixesContainer.html(_.map(badGradeValues,function(bgvi){
+                                            var bgv = _.cloneDeep(bgvi);
+                                            var bgvf = indivFixTemplate.clone();
+                                            bgvf.find(".individualFixGradedUser").text(bgv.gradedUser.toString());
+                                            bgvf.find(".individualFixOldValue").text(bgv.gradeValue.toString());
+                                            var newValue = undefined;
+                                            switch (newGrade.gradeType){
+                                            case "numeric":
+                                                switch (bgv.type){
+                                                case "textGradeValue":
+                                                    var candidate = parseInt(bgv.gradeValue);
+                                                    if ("numericMinimum" in newGrade && !isNaN(newGrade.numericMinimum) && "numericMaximum" in newGrade && !isNaN(newGrade.numericMaximum)){
+                                                        if (isNaN(candidate)){
+                                                            newValue = newGrade.numericMinimum;
+                                                        } else {
+                                                            newValue = Math.min(newGrade.numericMaximum,Math.max(candidate,newGrade.numericMinimum));
+                                                        }
+                                                    } else {
+                                                        if (isNaN(candidate)){
+                                                            newValue = 0;
+                                                        } else {
+                                                            newValue = candidate;
+                                                        }
+                                                    }
+                                                    break;
+                                                case "booleanGradeValue":
+                                                    newValue = bgv.gradeValue ? newGrade.numericMaximum : newGrade.numericMinimum;
+                                                    break;
+                                                default:
+                                                    break;
+                                                }
+                                                break;
+                                            case "text":
+                                                switch (bgv.type){
+                                                case "numericGradeValue":
+                                                    newValue = bgv.gradeValue.toString();
+                                                    break;
+                                                case "booleanGradeValue":
+                                                    newValue = bgv.gradeValue.toString();
+                                                    break;
+                                                default:
+                                                    break;
+                                                }
+                                                break;
+                                            case "boolean":
+                                                switch (bgv.type){
+                                                case "numericGradeValue":
+                                                    newValue = bgv.gradeValue != 0;
+                                                    break;
+                                                case "textGradeValue":
+                                                    var candidate = bgv.gradeValue.toLowerCase().trim();
+                                                    newValue = !(candidate == "false" || candidate == "0" || candidate == "no" || candidate == "" || candidate == "n"); // general falsey
+                                                    break;
+                                                default:
+                                                    break;
+                                                }
+                                                break;
+                                            default:
+                                                break;
+                                            }
+                                            bgvf.find(".individualFixNewValue").text(newValue.toString());
+                                            bgvf.find(".commitIndividualFix").unbind("click").on("click",function(){
+                                                bgv.type = newGradeType;
+                                                bgv.gradeValue = newValue;
+                                                sendStanza(bgv);
+                                                badGradeValues = _.filter(badGradeValues,function(tbgvi){
+                                                    return tbgvi.gradedUser != bgv.gradedUser;
+                                                });
+                                                bgvf.unbind("click");
+                                                bgvf.remove();
+                                                if (_.size(badGradeValues) < 1){
+                                                    gradeFixJAlert.closeAlert();
+                                                }
+                                            });
+                                            return bgvf;
+                                        }));
+                                        gradeFixInnerRoot.find(".closeIndividualFixesPopup").on("click",function(){
+                                            gradeFixJAlert.closeAlert();
+                                        });
+                                    }
                                 });
                                 $("#"+uniqId).append(innerRoot);
                             }
@@ -558,13 +558,13 @@ var Grades = (function(){
                                 var assessUserTemplate = gradebookDatagrid.find(".gradeUserContainer").clone();
                                 gradebookDatagrid.empty();
                                 var generateData = function(andThen){
-																		var candidateData = gradeValues[grade.id];
+                                    var candidateData = gradeValues[grade.id];
                                     var data = {};
                                     if (candidateData === undefined){
                                         gradeValues[grade.id] = data;
                                     } else {
-																			data = _.cloneDeep(candidateData);
-																		}
+                                        data = _.cloneDeep(candidateData);
+                                    }
                                     var gradeType = sprintf("%sGradeValue",grade.gradeType);
                                     var possibleParticipants = Participants.getPossibleParticipants();
                                     if ("foreignRelationship" in grade){
@@ -582,7 +582,7 @@ var Grades = (function(){
                                             possibleParticipants = _.uniq(possibleParticipants);
                                             _.forEach(possibleParticipants,function(name){
                                                 var oldValue = data[name];
-																								if (oldValue === undefined || oldValue.type != gradeType){
+                                                if (oldValue === undefined || oldValue.type != gradeType){
                                                     data[name] = {
                                                         type:gradeType,
                                                         gradeId:grade.id,
@@ -698,15 +698,15 @@ var Grades = (function(){
                                         gvChangeElem.find(".gradeValuePrivateCommentTextboxLabel").attr("for",pvcbId);
                                         var gvChangeSubmit = gvChangeElem.find(".submitGradeValueChange");
                                         gvChangeSubmit.unbind("click").on("click",function(){
-																						var stanzaToSend = _.cloneDeep(newGv);
-																						delete stanzaToSend.remoteGrade;
-																						delete stanzaToSend.remoteComment;
-																						delete stanzaToSend.remotePrivateComment;
+                                            var stanzaToSend = _.cloneDeep(newGv);
+                                            delete stanzaToSend.remoteGrade;
+                                            delete stanzaToSend.remoteComment;
+                                            delete stanzaToSend.remotePrivateComment;
                                             sendStanza(stanzaToSend);
                                             gv.gradeValue = newGv.gradeValue;
                                             gv.gradeComment = newGv.gradeComment;
                                             gv.gradePrivateComment = newGv.gradePrivateComment;
-																						gradeValues[grade.id][newGv.gradedUser] = newGv;
+                                            gradeValues[grade.id][newGv.gradedUser] = newGv;
                                             changeGvAlert.closeAlert();
                                             generateData(withData);
                                         });
@@ -748,27 +748,27 @@ var Grades = (function(){
                                         noDataContent: "No gradeable users",
                                         controller: {
                                             loadData: function(filter){
-																								var enriched = data;
-																								_.forEach(data,function(d){
-																									if ("foreignRelationship" in grade && grade.id in remoteGradeValuesCache){
-																										var remoteGradeValues = remoteGradeValuesCache[grade.id];
-																										var rgv = _.find(remoteGradeValues,function(rgval){
-																											return rgval.gradedUser == d.gradedUser;
-																										});
-																										if (rgv != undefined){
-																											if ("gradeValue" in rgv && !("remoteGradeValue" in d)){
-																												d.remoteGrade = rgv.gradeValue;
-																											}
-																											if ("gradeComment" in rgv && !("remoteComment" in d)){
-																												d.remoteComment = rgv.gradeComment;
-																											}
-																											if ("gradePrivateComment" in rgv && !("remotePrivateComment" in d)){
-																												d.remotePrivateComment = rgv.gradePrivateComment;
-																											}
-																										}
-																									}
-																								});
-																								//console.log("loading data",grade,remoteGradeValuesCache,data,enriched);
+                                                var enriched = data;
+                                                _.forEach(data,function(d){
+                                                    if ("foreignRelationship" in grade && grade.id in remoteGradeValuesCache){
+                                                        var remoteGradeValues = remoteGradeValuesCache[grade.id];
+                                                        var rgv = _.find(remoteGradeValues,function(rgval){
+                                                            return rgval.gradedUser == d.gradedUser;
+                                                        });
+                                                        if (rgv != undefined){
+                                                            if ("gradeValue" in rgv && !("remoteGradeValue" in d)){
+                                                                d.remoteGrade = rgv.gradeValue;
+                                                            }
+                                                            if ("gradeComment" in rgv && !("remoteComment" in d)){
+                                                                d.remoteComment = rgv.gradeComment;
+                                                            }
+                                                            if ("gradePrivateComment" in rgv && !("remotePrivateComment" in d)){
+                                                                d.remotePrivateComment = rgv.gradePrivateComment;
+                                                            }
+                                                        }
+                                                    }
+                                                });
+                                                //console.log("loading data",grade,remoteGradeValuesCache,data,enriched);
                                                 if ("sortField" in filter){
                                                     var sorted = _.sortBy(enriched,function(gv){
                                                         return gv[filter.sortField];
@@ -799,7 +799,7 @@ var Grades = (function(){
                                             var b = this;
                                             spin(b,true);
                                             $.getJSON(sprintf("/getExternalGradeValues/%s/%s/%s",system,orgUnit,gradeId),function(remoteGrades){
-																								remoteGradeValuesCache[grade.id] = remoteGrades;
+                                                remoteGradeValuesCache[grade.id] = remoteGrades;
                                                 generateData(function(data){
                                                     var modifiedData = data;
                                                     _.forEach(modifiedData,function(datum){
@@ -807,15 +807,15 @@ var Grades = (function(){
                                                             return rg.gradedUser == datum.gradedUser;
                                                         });
                                                         if (thisRemoteGrade !== undefined){
-																													if ("gradeValue" in thisRemoteGrade){
-                                                            datum.remoteGrade = thisRemoteGrade.gradeValue;
-																													}
-																													if ("gradeComment" in thisRemoteGrade){
-                                                            datum.remoteComment = thisRemoteGrade.gradeComment;
-																													}
-																													if ("gradePrivateComment" in thisRemoteGrade){
-                                                            datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
-																													}
+                                                            if ("gradeValue" in thisRemoteGrade){
+                                                                datum.remoteGrade = thisRemoteGrade.gradeValue;
+                                                            }
+                                                            if ("gradeComment" in thisRemoteGrade){
+                                                                datum.remoteComment = thisRemoteGrade.gradeComment;
+                                                            }
+                                                            if ("gradePrivateComment" in thisRemoteGrade){
+                                                                datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
+                                                            }
                                                         }
                                                         spin(b,false);
                                                     });
@@ -839,18 +839,18 @@ var Grades = (function(){
                                                 data:JSON.stringify(gradesToSend),
                                                 dataType:"json",
                                                 success:function(remoteGrades){
-																										remoteGradeValuesCache[grade.id] = remoteGrades;
-																										var failedGrades = _.filter(gradesToSend,function(gts){
-																											var matchingGrade = _.find(remoteGrades,function(rg){
-																												return rg.gradedUser == gts.gradedUser && rg.gradeValue == gts.gradeValue && (gts.gradeComment === undefined || rg.gradeComment == gts.gradeComment) && (gts.gradePrivateComment === undefined || rg.gradePrivateComment == gts.gradePrivateComment);
-																											});
-																											return matchingGrade === undefined;
-																										});
-																										if (failedGrades.length){
-																											errorAlert("External grade synchronization failed",sprintf("<div><div>Some grades failed to synchronize to the external gradebook:</div><div><ul>%s</ul></div><div>This might be because these users aren't available in the external gradebook to be assessed.</div><div>These grades are still available in this gradebook, but may not be available in the external gradebook.</div>",_.map(failedGrades,function(fg){
-																												return sprintf("<li>%s</li>",fg.gradedUser);
-																											}).join("")));
-																										}
+                                                    remoteGradeValuesCache[grade.id] = remoteGrades;
+                                                    var failedGrades = _.filter(gradesToSend,function(gts){
+                                                        var matchingGrade = _.find(remoteGrades,function(rg){
+                                                            return rg.gradedUser == gts.gradedUser && rg.gradeValue == gts.gradeValue && (gts.gradeComment === undefined || rg.gradeComment == gts.gradeComment) && (gts.gradePrivateComment === undefined || rg.gradePrivateComment == gts.gradePrivateComment);
+                                                        });
+                                                        return matchingGrade === undefined;
+                                                    });
+                                                    if (failedGrades.length){
+                                                        errorAlert("External grade synchronization failed",sprintf("<div><div>Some grades failed to synchronize to the external gradebook:</div><div><ul>%s</ul></div><div>This might be because these users aren't available in the external gradebook to be assessed.</div><div>These grades are still available in this gradebook, but may not be available in the external gradebook.</div>",_.map(failedGrades,function(fg){
+                                                            return sprintf("<li>%s</li>",fg.gradedUser);
+                                                        }).join("")));
+                                                    }
                                                     generateData(function(data){
                                                         var modifiedData = data;
                                                         _.forEach(modifiedData,function(datum){
@@ -858,15 +858,15 @@ var Grades = (function(){
                                                                 return rg.gradedUser == datum.gradedUser;
                                                             });
                                                             if (thisRemoteGrade !== undefined){
-																															if ("gradeValue" in thisRemoteGrade){
-                                                                datum.remoteGrade = thisRemoteGrade.gradeValue;
-																															}
-																															if ("gradeComment" in thisRemoteGrade){
-                                                                datum.remoteComment = thisRemoteGrade.gradeComment;
-																															}
-																															if ("gradePrivateComment" in thisRemoteGrade){
-                                                                datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
-																															}
+                                                                if ("gradeValue" in thisRemoteGrade){
+                                                                    datum.remoteGrade = thisRemoteGrade.gradeValue;
+                                                                }
+                                                                if ("gradeComment" in thisRemoteGrade){
+                                                                    datum.remoteComment = thisRemoteGrade.gradeComment;
+                                                                }
+                                                                if ("gradePrivateComment" in thisRemoteGrade){
+                                                                    datum.remotePrivateComment = thisRemoteGrade.gradePrivateComment;
+                                                                }
                                                             }
                                                         });
                                                         spin(b,false);
