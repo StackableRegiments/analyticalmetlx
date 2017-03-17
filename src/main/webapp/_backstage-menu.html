@@ -278,12 +278,13 @@
                 </div>
                 <div class="associateController" style="position:relative;min-height:150px;width:100%;">
                   <span class="refreshAssociation">
-                    <label>Associated grade</label>
-                    <span class="associationSystem"></span> :
-                    <span class="associationOrgUnit"></span> :
+                    <label style="display:inline-block">Associated grade</label>:
+                    <span class="associationSystem"></span>->
+                    <span class="associationOrgUnit"></span>->
                     <span class="associationGradeId"></span>
                     <span class="association"></span>
                     <button class="requestRefreshAssociation button-transparent-border mth"><span>Refresh from remote</span></button>
+                    <button class="disassociateGrade button-transparent-border mth"><span>Disassociate grade</span></button>
                   </span>
                   <span class="createAssociation">
                     <span class="requestAssocPhase1 associationPhase">
@@ -300,9 +301,9 @@
                       <button class="commitOrgUnit button-transparent-border mth"><span>Associate within this course</span></button>
                     </span>
                     <span class="requestAssocPhase4 associationPhase">
-											<label for="chooseExistingGradeSelectBox">Choose an existing grade</label>
-											<select id="chooseExistingGradeSelectBox" class="linkGradeChoices"></select>
-											<button class="linkGrade button-transparent-border mth"><span>Link this grade to an existing grade in the course</span></button>
+                      <label for="chooseExistingGradeSelectBox">Choose an existing grade</label>
+                      <select id="chooseExistingGradeSelectBox" class="linkGradeChoices"></select>
+                      <button class="linkGrade button-transparent-border mth"><span>Link this grade to an existing grade in the course</span></button>
                       <button class="createGrade button-transparent-border mth"><span>Create a new grade in the course</span></button>
                     </span>
                   </span>
