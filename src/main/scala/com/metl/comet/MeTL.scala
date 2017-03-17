@@ -589,33 +589,49 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   import net.liftweb.json.DefaultFormats
   implicit val formats = net.liftweb.json.DefaultFormats
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
-  private val userUniqueId = nextFuncName
+  protected val userUniqueId = nextFuncName
 
   // javascript functions to fire
-  private lazy val RECEIVE_SYNC_MOVE = "receiveSyncMove"
-  private lazy val RECEIVE_CURRENT_CONVERSATION = "receiveCurrentConversation"
-  private lazy val RECEIVE_CURRENT_SLIDE = "receiveCurrentSlide"
-  private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
-  private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
-  private lazy val RECEIVE_METL_STANZA = "receiveMeTLStanza"
-  private lazy val RECEIVE_USERNAME = "receiveUsername"
-  private lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
-  private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
-  private lazy val RECEIVE_HISTORY = "receiveHistory"
-  private lazy val RECEIVE_USER_OPTIONS = "receiveUserOptions"
-  private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
-  private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
-  private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
-  private lazy val RECEIVE_ATTENDANCE = "receiveAttendance"
-  private lazy val UPDATE_THUMB = "updateThumb"
-  private lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
-  private lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
-  private lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
-  private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
-  private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+  protected lazy val RECEIVE_SYNC_MOVE = "receiveSyncMove"
+  protected lazy val RECEIVE_CURRENT_CONVERSATION = "receiveCurrentConversation"
+  protected lazy val RECEIVE_CURRENT_SLIDE = "receiveCurrentSlide"
+  protected lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
+  protected lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  protected lazy val RECEIVE_METL_STANZA = "receiveMeTLStanza"
+  protected lazy val RECEIVE_USERNAME = "receiveUsername"
+  protected lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
+  protected lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
+  protected lazy val RECEIVE_HISTORY = "receiveHistory"
+  protected lazy val RECEIVE_USER_OPTIONS = "receiveUserOptions"
+  protected lazy val RECEIVE_QUIZZES = "receiveQuizzes"
+  protected lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
+  protected lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
+  protected lazy val RECEIVE_ATTENDANCE = "receiveAttendance"
+  protected lazy val UPDATE_THUMB = "updateThumb"
+  protected lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
+  protected lazy val RECEIVE_TOK_BOX_SESSION_TOKEN = "receiveTokBoxSessionToken"
+  protected lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
+  protected lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
+  protected lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+  protected lazy val RECEIVE_VIDYO_ENABLED = "receiveVidyoEnabled"
+  protected lazy val RECEIVE_VIDYO_SESSION_TOKEN = "receiveVidyoSessionToken"
   protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
+  protected val vidyoSessions:scala.collection.mutable.HashMap[String,VidyoSession] = new scala.collection.mutable.HashMap[String,VidyoSession]()
   override lazy val functionDefinitions = List(
+    ClientSideFunction("getVidyoSession",List("roomId"),(args) => {
+      val roomId = getArgAsString(args(0))
+      JArray((for {
+        vp <- Globals.vidyo
+      } yield {
+        val s = vidyoSessions.get(roomId).getOrElse({
+          val newSession = vp.generateSession(username)
+          vidyoSessions.put(roomId,newSession)
+          newSession
+        })
+        Extraction.decompose(s)
+      }).toList)
+    },Full(RECEIVE_VIDYO_SESSION_TOKEN)),
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
         tb <- Globals.tokBox.toList
@@ -1331,6 +1347,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       })
     }
+    val receiveVidyoEnabled:Box[JsCmd] = Full(Call(RECEIVE_VIDYO_ENABLED,JBool(Globals.vidyo.isDefined)))
     val receiveTokBoxEnabled:Box[JsCmd] = Full(Call(RECEIVE_TOK_BOX_ENABLED,JBool(Globals.tokBox.isDefined)))
     def receiveTokBoxSessionsFunc(tokSessionCol:scala.collection.mutable.HashMap[String,Option[TokBoxSession]]):List[Box[JsCmd]] = tokSessionCol.toList.map(tokSessionTup => {
       val sessionName = tokSessionTup._1
@@ -1384,7 +1401,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     } yield {
       hideLoader
     }
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled,receiveVidyoEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {

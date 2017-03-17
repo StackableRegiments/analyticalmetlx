@@ -96,7 +96,9 @@ object Globals extends PropertyReader with Logger {
     appId <- (vNode \ "@applicationId").headOption.map(_.text)
     devKey <- (vNode \ "@developerKey").headOption.map(_.text)
   } yield {
-    new VidyoProvider(appId,devKey)
+    val vp = new VidyoProvider(appId,devKey)
+    println("created VidyoProvider: %s (%s,%s)".format(vp,appId,devKey))
+    vp
   } else None
   var tokBox = if(liveIntegration) for {
     tbNode <- (propFile \\ "tokBox").headOption
