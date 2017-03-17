@@ -61,20 +61,22 @@ object ReportHelper {
         getRoomActivity(head.author, head.location)) :: processedRows
     })
 
+    val stringWriter = new StringWriter()
+    val writer = CSVWriter.open(stringWriter)
+    writer.writeRow(List("ConversationTitle", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationID"))
+    val csvRows = createCsvRows(processedRows)
+    csvRows.foreach(r => writer.writeRow(r))
+
     // Add rows for enrolled students who have never attended.
     var nonAttendingRows: List[List[String]] = List(List())
     if (conversations.nonEmpty) {
       val conversation = conversations.head
       nonAttendingRows = getAllD2LUserIds(conversation.foreignRelationship).map(m => {
         List("", "", "", "", "", "", "", getMemberOrgDefinedId(m), "")
-      }).filter(l => l(7).nonEmpty).sortWith((left, right) => left(7).compareTo(right(7)) < 0) ::: nonAttendingRows
+      }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(7).equals(c(7)))).sortWith((left, right) => left(7).compareTo(right(7)) < 0) ::: nonAttendingRows
     }
-
-    val stringWriter = new StringWriter()
-    val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("ConversationTitle", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationID"))
-    createCsvRows(processedRows).foreach(r => writer.writeRow(r))
     nonAttendingRows.foreach(r => writer.writeRow(r))
+
     writer.close()
 
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
@@ -91,8 +93,8 @@ object ReportHelper {
         r.visits.toString,
         r.activity.toString,
         r.approx.toString,
-        r.conversationJid.toString,
-        getD2LUserId(r.conversationForeignRelationship, r.author)) :: csvRows
+        getD2LUserId(r.conversationForeignRelationship, r.author),
+        r.conversationJid.toString) :: csvRows
     })
     csvRows.filter(r => r.nonEmpty && r.head.trim.nonEmpty).sortWith(sortRows)
   }
